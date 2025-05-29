@@ -79,12 +79,13 @@ export default function HomePage() {
   <section className="relative py-12 md:py-16">
         {/* Hero Background */}
         <div className="absolute inset-0 w-full h-full overflow-hidden">
-        <Image
-  src="/colorful-childrens-party.png"
-  alt="Colorful children's party with balloons and streamers"
-  layout="fill"
-  objectFit="cover"
-/>
+          <Image
+            src="/blog-hero.png"
+            alt="Colorful children's party with balloons and streamers"
+            fill
+
+            objectFit="cover" 
+          />
         </div>
 
         {/* Semi-transparent overlay - slightly darker to make text pop more */}
@@ -93,76 +94,89 @@ export default function HomePage() {
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-5xl mx-auto">
             <div className="bg-white/90 backdrop-blur-sm p-8 md:p-10 rounded-lg shadow-lg">
-              {/* Eye-Catching Offer Badge */}
-              <div className="flex justify-center mb-4">
+              {/* Eye-Catching Offer Badge - More compact on mobile */}
+              <div className="flex justify-center mb-3 md:mb-4">
                 <div className="relative">
-                  <div className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] text-white px-6 py-3 rounded-full text-lg font-bold inline-flex items-center gap-2 shadow-lg animate-pulse">
-                    <span className="text-2xl">🎉</span>
-                    Limited Offer: First 100 Suppliers Get 3 Months Free!
+                  <div className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] text-white px-3 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-lg font-bold inline-flex items-center gap-1 md:gap-2 shadow-lg animate-pulse">
+                    <span className="text-lg md:text-2xl">🎉</span>
+                    <span className="hidden md:inline">Limited Offer: First 100 Suppliers Get 3 Months Free!</span>
+                    <span className="md:hidden">First 100 Get 3 Months Free!</span>
                   </div>
-                  {/* Starburst decoration */}
-                  <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full transform rotate-12 shadow-md">
+                  {/* Starburst decoration - smaller on mobile */}
+                  <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-1 py-0.5 md:px-2 md:py-1 rounded-full transform rotate-12 shadow-md">
                     HOT!
                   </div>
                 </div>
               </div>
 
-              {/* Urgency Counter */}
-              <div className="flex justify-center mb-4">
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-medium">
-                  ⏰ Only <span className="font-bold text-red-600">37 spots left</span> - Don&apos;t miss out!
+              {/* Urgency Counter - More compact on mobile */}
+              <div className="flex justify-center mb-3 md:mb-4">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium">
+                  ⏰ Only <span className="font-bold text-red-600">37 spots left</span>
+                  <span className="hidden md:inline"> - Don't miss out!</span>
                 </div>
               </div>
 
-              <div className="text-center mb-6">
-                <h1 className="text-3xl md:text-5xl font-bold text-[#2F2F2F] mb-4">
-                  Get{" "}
-                  <span className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] bg-clip-text text-transparent">
-                    3 Months Commission-Free
-                  </span>{" "}
-                  — Be Among the First 100 Suppliers!
+              <div className="text-center mb-4 md:mb-6">
+                <h1 className="text-2xl md:text-5xl font-bold text-[#2F2F2F] mb-3 md:mb-4 leading-tight">
+                  <span className="md:hidden">
+                    Get{" "}
+                    <span className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] bg-clip-text text-transparent">
+                      3 Months Free
+                    </span>{" "}
+                    — First 100 Suppliers!
+                  </span>
+                  <span className="hidden md:block">
+                    Get{" "}
+                    <span className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] bg-clip-text text-transparent">
+                      3 Months Commission-Free
+                    </span>{" "}
+                    — Be Among the First 100 Suppliers!
+                  </span>
                 </h1>
-                <p className="text-xl text-[#707070]">
-                  Reach more customers and grow your party services with BookABash.
+                <p className="text-lg md:text-xl text-[#707070]">
+                  <span className="md:hidden">Reach more customers and grow your business.</span>
+                  <span className="hidden md:block">
+                    Reach more customers and grow your party services with BookABash.
+                  </span>
                 </p>
               </div>
 
-              {/* Supplier Form - Prominent */}
-              <div className="max-w-lg mx-auto mb-8">
-                <div className="bg-[#2F2F2F]/5 p-6 rounded-lg">
-                  <form onSubmit={handleRegisterSubmit}>
-                    <div className="flex flex-col gap-3">
+              {/* Supplier Form - More compact on mobile */}
+              <div className="max-w-lg mx-auto mb-6 md:mb-8">
+                <div className="bg-[#2F2F2F]/5 p-4 md:p-6 rounded-lg">
+                  <form>
+                    <div className="flex flex-col gap-2 md:gap-3">
                       <input
                         type="email"
-                        name="email"
-                        value={registerEmail}
-                        onChange={(e) => setRegisterEmail(e.target.value)}
                         placeholder="Your business email"
-                        required
-                        className="p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FC6B57] text-lg"
+                        className="p-3 md:p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FC6B57] text-base md:text-lg"
                       />
-         
                       <button
                         type="submit"
-                        className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] text-white px-4 py-4 rounded-md hover:from-[#e55c48] hover:to-[#d54a37] transition-all duration-300 font-bold text-lg shadow-lg transform hover:scale-105"
+                        className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] text-white px-4 py-3 md:py-4 rounded-md hover:from-[#e55c48] hover:to-[#d54a37] transition-all duration-300 font-bold text-base md:text-lg shadow-lg transform hover:scale-105"
                       >
-                        🚀 Claim Your Spot Now - Limited Time!
+                        <span className="md:hidden">🚀 Claim Your Spot!</span>
+                        <span className="hidden md:block">🚀 Claim Your Spot Now - Limited Time!</span>
                       </button>
                     </div>
                   </form>
-                  <p className="text-[#707070] text-sm mt-3 text-center">
-                    No commission fees for your first 3 months if you&apos;re in the first 100 suppliers to sign up.
+                  <p className="text-[#707070] text-xs md:text-sm mt-2 md:mt-3 text-center">
+                    <span className="md:hidden">No commission for 3 months if you're in the first 100.</span>
+                    <span className="hidden md:block">
+                      No commission fees for your first 3 months if you're in the first 100 suppliers to sign up.
+                    </span>
                   </p>
                 </div>
               </div>
 
-              {/* Key Benefits for Suppliers */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* Key Benefits for Suppliers - Simplified on mobile */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
                 <div className="flex items-start">
                   <div className="bg-[#FC6B57]/10 p-2 rounded-full mr-3 flex-shrink-0">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-[#FC6B57]"
+                      className="h-4 w-4 md:h-5 md:w-5 text-[#FC6B57]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -171,15 +185,20 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-[#2F2F2F]">Reach thousands of local customers</h3>
-                    <p className="text-sm text-[#707070]">Connect with parents looking for your exact services</p>
+                    <h3 className="font-medium text-[#2F2F2F] text-sm md:text-base">
+                      <span className="md:hidden">Reach local customers</span>
+                      <span className="hidden md:block">Reach thousands of local customers</span>
+                    </h3>
+                    <p className="text-xs md:text-sm text-[#707070] hidden md:block">
+                      Connect with parents looking for your exact services
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <div className="bg-[#FC6B57]/10 p-2 rounded-full mr-3 flex-shrink-0">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-[#FC6B57]"
+                      className="h-4 w-4 md:h-5 md:w-5 text-[#FC6B57]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -188,15 +207,20 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-[#2F2F2F]">Easy online booking system</h3>
-                    <p className="text-sm text-[#707070]">Manage your calendar and bookings in one place</p>
+                    <h3 className="font-medium text-[#2F2F2F] text-sm md:text-base">
+                      <span className="md:hidden">Easy booking system</span>
+                      <span className="hidden md:block">Easy online booking system</span>
+                    </h3>
+                    <p className="text-xs md:text-sm text-[#707070] hidden md:block">
+                      Manage your calendar and bookings in one place
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <div className="bg-[#FC6B57]/10 p-2 rounded-full mr-3 flex-shrink-0">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-[#FC6B57]"
+                      className="h-4 w-4 md:h-5 md:w-5 text-[#FC6B57]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -205,37 +229,48 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-[#2F2F2F]">Secure payments and support</h3>
-                    <p className="text-sm text-[#707070]">Get paid on time with our secure payment system</p>
+                    <h3 className="font-medium text-[#2F2F2F] text-sm md:text-base">
+                      <span className="md:hidden">Secure payments</span>
+                      <span className="hidden md:block">Secure payments and support</span>
+                    </h3>
+                    <p className="text-xs md:text-sm text-[#707070] hidden md:block">
+                      Get paid on time with our secure payment system
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Supplier Testimonial */}
-              {/* <div className="bg-gradient-to-r from-[#FC6B57]/10 to-[#e55c48]/10 p-6 rounded-lg mb-8 border border-[#FC6B57]/20">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="flex text-yellow-400 text-lg">★★★★★</div>
+              {/* Supplier Testimonial - Simplified on mobile */}
+              <div className="bg-gradient-to-r from-[#FC6B57]/10 to-[#e55c48]/10 p-4 md:p-6 rounded-lg mb-6 md:mb-8 border border-[#FC6B57]/20">
+                <div className="flex items-center justify-center mb-3 md:mb-4">
+                  <div className="flex text-yellow-400 text-base md:text-lg">★★★★★</div>
                 </div>
                 <blockquote className="text-center">
-                  <p className="text-lg text-[#2F2F2F] italic mb-4">
-                    "This platform is a game-changer for party providers! I've already booked 15 parties this month
-                    through early access."
+                  <p className="text-base md:text-lg text-[#2F2F2F] italic mb-3 md:mb-4">
+                    <span className="md:hidden">"Game-changer! 15 parties booked this month."</span>
+                    <span className="hidden md:block">
+                      "This platform is a game-changer for party providers! I've already booked 15 parties this month
+                      through early access."
+                    </span>
                   </p>
-                  <footer className="text-[#707070]">— Sarah M., Face Painter & Balloon Artist, London</footer>
+                  <footer className="text-[#707070] text-sm md:text-base">— Sarah M., Face Painter, London</footer>
                 </blockquote>
-              </div> */}
+              </div>
 
-              {/* Secondary Customer Option */}
-              <div className="border-t border-gray-200 pt-6 text-center">
-                <p className="text-[#707070] mb-3">Looking for party services for your child?</p>
+              {/* Secondary Customer Option - More compact on mobile */}
+              <div className="border-t border-gray-200 pt-4 md:pt-6 text-center">
+                <p className="text-[#707070] mb-2 md:mb-3 text-sm md:text-base">
+                  <span className="md:hidden">Looking for party services?</span>
+                  <span className="hidden md:block">Looking for party services for your child?</span>
+                </p>
                 <button
                   onClick={() => setActiveTab("customer")}
-                  className="text-[#FC6B57] font-medium hover:underline inline-flex items-center"
+                  className="text-[#FC6B57] font-medium hover:underline inline-flex items-center text-sm md:text-base"
                 >
                   Get notified when we launch
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 ml-1"
+                    className="h-3 w-3 md:h-4 md:w-4 ml-1"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -302,7 +337,7 @@ export default function HomePage() {
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <p className="text-green-700 text-sm">Thank you! We&apos;ll notify you when BookABash launches.</p>
+                        <p className="text-green-700 text-sm">Thank you! We'll notify you when BookABash launches.</p>
                       </div>
                     )}
                     <button

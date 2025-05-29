@@ -15,25 +15,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center">
-                <svg
-                  width="40"
-                  height="48"
-                  viewBox="0 0 100 120"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-2"
-                >
-                  <path
-                    d="M50 10C30 10 20 30 20 50C20 70 30 90 50 90C70 90 80 70 80 50C80 30 70 10 50 10Z"
-                    fill="white"
-                  />
-                  <path d="M35 30C35 30 40 40 40 50C40 60 35 70 35 70" stroke="#2F2F2F" strokeWidth="5" />
-                  <path d="M50 90L45 120" stroke="white" strokeWidth="2" />
-                  <path d="M75 15L85 5" stroke="white" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-                <span className="text-white text-2xl font-bold">BookABash</span>
-              </div>
+            <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748440622/logo-darker_jhviti.png" alt="BookABash Logo" className="" />
               <p className="text-gray-400 mt-4">The all-in-one platform for booking children's parties.</p>
               <div className="mt-6">
                 <p className="text-gray-400 flex items-center">
