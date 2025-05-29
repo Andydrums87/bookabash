@@ -12,6 +12,8 @@ export default function HomePage() {
   const [status, setStatus] = useState("")
   const [registered, setRegistered] = useState(false)
   const [activeTab, setActiveTab] = useState("supplier") 
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const testimonials = [
     {
@@ -40,36 +42,55 @@ export default function HomePage() {
       rating: 5
     }
   ]
+  // const handleRegisterSubmit = async (e) => {
+  //   e.preventDefault()
+  //   // In a real implementation, this would send the email to a backend service
+  //   try {
+  //     const response = await fetch("/api/subscribe", {
+  //       method: "POST",
+  //       body: JSON.stringify({ email: registerEmail}),
+  //       headers: { Accept: "application/json" },
+  //     });
+
+  //     if (response.ok) {
+  //       setRegistered(true)
+  //       console.log("Registered email:", registerEmail)
+  //       setStatus("Thank you for signing up! Please check your email for confirmation.");
+  //       setRegisterEmail("");
+  //           // Reset form after 5 seconds
+  //   setTimeout(() => {
+  //     setRegistered(false)
+  //     setRegisterEmail("")
+  //   }, 5000)
+  //     } else {
+  //       setStatus("Oops! Something went wrong.");
+  //     }
+  //   } catch (error) {
+  //     setStatus("Oops! Something went wrong.", error);
+  //   }
+  // }
+
   const handleRegisterSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setIsSubmitting(true)
+  console.log("Registering email:", registerEmail);
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: registerEmail }),
+    });
+  
+    const data = await res.json();
+  
+    if (res.ok) {
+      setIsSubmitting(false)
+     setShowSuccessModal(true)
+      setRegisterEmail("");
 
-    const formData = new FormData();
-    formData.append("email", registerEmail);
-    // In a real implementation, this would send the email to a backend service
-    try {
-      const response = await fetch("https://formspree.io/f/xldbqleo", {
-        method: "POST",
-        body: formData,
-        headers: { Accept: "application/json" },
-      });
-
-      if (response.ok) {
-        setRegistered(true)
-        console.log("Registered email:", registerEmail)
-        setStatus("Thank you for signing up! Please check your email for confirmation.");
-        setRegisterEmail("");
-            // Reset form after 5 seconds
-    setTimeout(() => {
-      setRegistered(false)
-      setRegisterEmail("")
-    }, 5000)
-      } else {
-        setStatus("Oops! Something went wrong.");
-      }
-    } catch (error) {
-      setStatus("Oops! Something went wrong.", error);
+    } else {
+      alert(data.error || "Something went wrong");
     }
-  }
+  };
 
 
   return (
@@ -143,21 +164,56 @@ export default function HomePage() {
               </div>
 
               {/* Supplier Form - More compact on mobile */}
-              <div className="max-w-lg mx-auto mb-6 md:mb-8">
+              
+                 <div className="max-w-lg mx-auto mb-6 md:mb-8">
                 <div className="bg-[#2F2F2F]/5 p-4 md:p-6 rounded-lg">
-                  <form>
+                  <form onSubmit={handleRegisterSubmit}>
                     <div className="flex flex-col gap-2 md:gap-3">
                       <input
                         type="email"
                         placeholder="Your business email"
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
                         className="p-3 md:p-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FC6B57] text-base md:text-lg"
+                        required
+                        disabled={isSubmitting}
                       />
                       <button
                         type="submit"
-                        className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] text-white px-4 py-3 md:py-4 rounded-md hover:from-[#e55c48] hover:to-[#d54a37] transition-all duration-300 font-bold text-base md:text-lg shadow-lg transform hover:scale-105"
+                        disabled={isSubmitting}
+                        className="bg-gradient-to-r from-[#FC6B57] to-[#e55c48] text-white px-4 py-3 md:py-4 rounded-md hover:from-[#e55c48] hover:to-[#d54a37] transition-all duration-300 font-bold text-base md:text-lg shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                       >
-                        <span className="md:hidden">🚀 Claim Your Spot!</span>
-                        <span className="hidden md:block">🚀 Claim Your Spot Now - Limited Time!</span>
+                        {isSubmitting ? (
+                          <span className="flex items-center justify-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 md:h-5 md:w-5 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            <span className="md:hidden">Claiming...</span>
+                            <span className="hidden md:block">Claiming Your Spot...</span>
+                          </span>
+                        ) : (
+                          <>
+                            <span className="md:hidden">🚀 Claim Your Spot!</span>
+                            <span className="hidden md:block">🚀 Claim Your Spot Now - Limited Time!</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>
@@ -819,7 +875,67 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+{/* Success Modal */}
+{showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+            <div className="p-8 text-center">
+              {/* Success Icon */}
+              <div className="mx-auto mb-6 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-green-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
 
+              {/* Title */}
+              <h3 className="text-2xl font-bold text-[#2F2F2F] mb-4">🎉 Welcome to BookABash!</h3>
+
+              {/* Message */}
+              <p className="text-[#707070] mb-6 leading-relaxed">
+                Thanks for signing up! We&apos;ve sent you a confirmation email with next steps to get your business listed.
+              </p>
+
+              {/* Email reminder */}
+              <div className="bg-[#FFF8F7] border border-[#FC6B57]/20 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center mb-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-[#FC6B57] mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium text-[#2F2F2F]">Check your email</span>
+                </div>
+                <p className="text-xs text-[#707070]">
+                  Don&apos;t forget to check your spam folder if you don&apos;t see it in your inbox!
+                </p>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-[#FC6B57] text-white px-6 py-3 rounded-full hover:bg-[#e55c48] transition-colors font-medium"
+              >
+                Got it, thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Footer */}
     
    
