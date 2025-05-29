@@ -110,7 +110,7 @@ export default function HomePage() {
               {/* Urgency Counter */}
               <div className="flex justify-center mb-4">
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-medium">
-                  ⏰ Only <span className="font-bold text-red-600">37 spots left</span> - Don't miss out!
+                  ⏰ Only <span className="font-bold text-red-600">37 spots left</span> - Don&apos;t miss out!
                 </div>
               </div>
 
@@ -570,7 +570,7 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-[#2F2F2F] mb-3">Built just for kids&apos; parties</h3>
-              <p className="text-[#707070]">Specialized for children&apos;s events, not generic bookings. We understand what makes a great kids' party.</p>
+              <p className="text-[#707070]">Specialized for children&apos;s events, not generic bookings. We understand what makes a great kids&apos; party.</p>
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <span className="text-sm text-[#FC6B57] font-medium">10,000+ successful parties</span>
               </div>
@@ -658,13 +658,13 @@ export default function HomePage() {
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#FC6B57] rounded-full"></div>
             </h2>
             <p className="text-[#707070] max-w-2xl mx-auto mt-6">
-              Don't just take our word for it — hear from parents who&apos;ve used BookABash
+              Don&apos;t just take our word for it — hear from parents who&apos;ve used BookABash
             </p>
           </div>
 
           <div className="max-w-4xl mx-auto">
             <div className="relative bg-white p-8 md:p-12 rounded-2xl shadow-xl">
-              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-[#FC6B57] text-7xl">"</div>
+              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-[#FC6B57] text-7xl">&quot;</div>
               
               <div className="mt-6 text-center">
                 <p className="text-xl md:text-2xl text-[#2F2F2F] italic mb-8">
