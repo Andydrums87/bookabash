@@ -151,7 +151,7 @@ export default function HomePage() {
                     </div>
                   </form>
                   <p className="text-[#707070] text-sm mt-3 text-center">
-                    No commission fees for your first 3 months if you're in the first 100 suppliers to sign up.
+                    No commission fees for your first 3 months if you&apos;re in the first 100 suppliers to sign up.
                   </p>
                 </div>
               </div>
@@ -302,7 +302,7 @@ export default function HomePage() {
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <p className="text-green-700 text-sm">Thank you! We'll notify you when BookABash launches.</p>
+                        <p className="text-green-700 text-sm">Thank you! We&apos;ll notify you when BookABash launches.</p>
                       </div>
                     )}
                     <button
@@ -344,7 +344,7 @@ export default function HomePage() {
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#FC6B57] rounded-full"></div>
             </h2>
             <p className="text-[#707070] max-w-2xl mx-auto mt-6">
-              Our simple three-step process takes the stress out of planning your child's perfect celebration
+              Our simple three-step process takes the stress out of planning your child&apos;s perfect celebration
             </p>
           </div>
 
@@ -468,11 +468,11 @@ export default function HomePage() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-[#2F2F2F] mb-4 relative inline-block">
-              Parents love BookABash because it's…
+              Parents love BookABash because it&apos;s…
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#FC6B57] rounded-full"></div>
             </h2>
             <p className="text-[#707070] max-w-2xl mx-auto mt-6">
-              We've designed our platform with busy parents in mind, making party planning a breeze
+              We&apos;ve designed our platform with busy parents in mind, making party planning a breeze
             </p>
           </div>
 
@@ -544,7 +544,7 @@ export default function HomePage() {
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-[#2F2F2F] mb-3">Transparent pricing</h3>
-              <p className="text-[#707070]">No hidden fees or surprises — see exactly what you'll pay. Compare options easily to stay within budget.</p>
+              <p className="text-[#707070]">No hidden fees or surprises — see exactly what you&apos;ll pay. Compare options easily to stay within budget.</p>
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <span className="text-sm text-[#FC6B57] font-medium">Average savings of £75 per booking</span>
               </div>
@@ -569,8 +569,8 @@ export default function HomePage() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-[#2F2F2F] mb-3">Built just for kids' parties</h3>
-              <p className="text-[#707070]">Specialized for children's events, not generic bookings. We understand what makes a great kids' party.</p>
+              <h3 className="text-xl font-semibold text-[#2F2F2F] mb-3">Built just for kids&apos; parties</h3>
+              <p className="text-[#707070]">Specialized for children&apos;s events, not generic bookings. We understand what makes a great kids' party.</p>
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <span className="text-sm text-[#FC6B57] font-medium">10,000+ successful parties</span>
               </div>
@@ -658,7 +658,7 @@ export default function HomePage() {
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#FC6B57] rounded-full"></div>
             </h2>
             <p className="text-[#707070] max-w-2xl mx-auto mt-6">
-              Don't just take our word for it — hear from parents who've used BookABash
+              Don't just take our word for it — hear from parents who&apos;ve used BookABash
             </p>
           </div>
 
@@ -750,7 +750,7 @@ export default function HomePage() {
                   Ready to plan your next bash?
                 </h2>
                 <p className="text-[#707070] mb-8">
-                  Join thousands of happy parents who've made party planning a breeze with BookABash. Your perfect party is just a few clicks away.
+                  Join thousands of happy parents who&apos;ve made party planning a breeze with BookABash. Your perfect party is just a few clicks away.
                 </p>
                 <div className="space-y-4">
                   <a
