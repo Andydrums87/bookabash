@@ -113,7 +113,7 @@ export default function HomePage() {
               <div className="flex justify-center mb-3 md:mb-4">
                 <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium">
                   ⏰ Only <span className="font-bold text-red-600">37 spots left</span>
-                  <span className="hidden md:inline"> - Don't miss out!</span>
+                  <span className="hidden md:inline"> - Don&apos;t miss out!</span>
                 </div>
               </div>
 
@@ -162,9 +162,9 @@ export default function HomePage() {
                     </div>
                   </form>
                   <p className="text-[#707070] text-xs md:text-sm mt-2 md:mt-3 text-center">
-                    <span className="md:hidden">No commission for 3 months if you're in the first 100.</span>
+                    <span className="md:hidden">No commission for 3 months if you&apos;re in the first 100.</span>
                     <span className="hidden md:block">
-                      No commission fees for your first 3 months if you're in the first 100 suppliers to sign up.
+                      No commission fees for your first 3 months if you&apos;re in the first 100 suppliers to sign up.
                     </span>
                   </p>
                 </div>
@@ -241,7 +241,7 @@ export default function HomePage() {
               </div>
 
               {/* Supplier Testimonial - Simplified on mobile */}
-              <div className="bg-gradient-to-r from-[#FC6B57]/10 to-[#e55c48]/10 p-4 md:p-6 rounded-lg mb-6 md:mb-8 border border-[#FC6B57]/20">
+              {/* <div className="bg-gradient-to-r from-[#FC6B57]/10 to-[#e55c48]/10 p-4 md:p-6 rounded-lg mb-6 md:mb-8 border border-[#FC6B57]/20">
                 <div className="flex items-center justify-center mb-3 md:mb-4">
                   <div className="flex text-yellow-400 text-base md:text-lg">★★★★★</div>
                 </div>
@@ -255,7 +255,7 @@ export default function HomePage() {
                   </p>
                   <footer className="text-[#707070] text-sm md:text-base">— Sarah M., Face Painter, London</footer>
                 </blockquote>
-              </div>
+              </div> */}
 
               {/* Secondary Customer Option - More compact on mobile */}
               <div className="border-t border-gray-200 pt-4 md:pt-6 text-center">
@@ -337,7 +337,7 @@ export default function HomePage() {
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <p className="text-green-700 text-sm">Thank you! We'll notify you when BookABash launches.</p>
+                        <p className="text-green-700 text-sm">Thank you! We&apos;ll notify you when BookABash launches.</p>
                       </div>
                     )}
                     <button
