@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Nav = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,9 +12,16 @@ const Nav = () => {
   return (
     <div className="relative z-50 dark:bg-[#2F2F2F]">
       <nav className="container mx-auto px-4 py-6 flex items-center justify-between relative">
-        <div className="flex items-center">
-          <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748440622/logo-darker_jhviti.png" alt="BookABash Logo" className=" h-40 absolute py-10" />
-        </div>
+      <div className="relative flex items-center py-10" style={{ height: '16px' }}>
+  <Image
+    src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1748440622/logo-darker_jhviti.png"
+    alt="BookABash Logo"
+    width={160} // Adjust as needed
+    height={160} // Maintain aspect ratio accordingly
+    priority
+    className="relative" // remove absolute, handled by next/image
+  />
+</div>
 
         {/* Desktop Menu */}
         

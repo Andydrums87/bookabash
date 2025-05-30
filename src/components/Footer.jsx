@@ -1,5 +1,7 @@
 "use client";
 
+import Image from 'next/image';
+
 const Footer = () => {
     return (
       <footer className="bg-[#2F2F2F] text-white py-12 relative">
@@ -15,7 +17,14 @@ const Footer = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-            <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748440622/logo-darker_jhviti.png" alt="BookABash Logo" className="" />
+              <Image
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1748440622/logo-darker_jhviti.png"
+                alt="BookABash Logo"
+                width={160} // Adjust as needed
+                height={160} // Maintain aspect ratio accordingly
+                priority
+                className="relative" // remove absolute, handled by next/image
+              />
               <p className="text-gray-400 mt-4">The all-in-one platform for booking children's parties.</p>
               <div className="mt-6">
                 <p className="text-gray-400 flex items-center">
