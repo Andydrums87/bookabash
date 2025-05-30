@@ -12,7 +12,7 @@ const Nav = () => {
   return (
     <div className="relative z-50 dark:bg-[#2F2F2F]">
       <nav className="container mx-auto px-4 py-6 flex items-center justify-between relative">
-      <div className="relative flex items-center py-10" style={{ height: '16px' }}>
+      <div className="relative flex items-center " style={{ height: '16px' }}>
   <Image
     src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1748440622/logo-darker_jhviti.png"
     alt="BookABash Logo"
