@@ -31,14 +31,6 @@ export default function BlogDetailPage({ params }) {
 
   const related = allPosts.filter((p) => post.relatedPosts?.includes(p.id));
 
-  const getOgImage = (title) => {
-    const encoded = encodeURIComponent(title);
-    return `https://res.cloudinary.com/dghzq6xtd/image/upload/
-      w_1200,h_630,c_fill,q_auto,f_auto,
-      l_title-bg,g_north_west,x_40,y_40,
-      l_text:Arial_44_bold:${encoded},co_rgb:ffffff,g_north_west,x_60,y_60,w_1000,c_fit,fl_layer_apply/
-      v1747834903/ChatGPT_Image_May_21_2025_02_41_28_PM_lneibo.png`.replace(/\s+/g, '');
-  };
 
   return (
     <div className="min-h-screen bg-[#FDFDFB]">

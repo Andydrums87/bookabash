@@ -99,13 +99,14 @@ export default function HomePage() {
   {/* Hero Section */}
   <section className="relative py-12 md:py-16">
         {/* Hero Background */}
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
           <Image
-            src="/blog-hero.png"
+            src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748522377/blog-hero_lhgb8b.png"
             alt="Colorful children's party with balloons and streamers"
             fill
-
-            objectFit="cover" 
+            priority={true} 
+            objectFit="cover"
+      
           />
         </div>
 
@@ -687,11 +688,11 @@ export default function HomePage() {
 
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-5xl mx-auto">
       {[
-        { src: "/face-painter.png", alt: "Face painter with child", title: "Face Painters", price: "From £85" },
-        { src: "/bouncy-castle.png", alt: "Bouncy castle", title: "Bouncy Castles", price: "From £120" },
-        { src: "/party-host.jpg", alt: "Party host", title: "Party Hosts", price: "From £150" },
-        { src: "/birthday-cake.png", alt: "Birthday cake", title: "Cakes & Catering", price: "From £65" },
-        { src: "/balloons.png", alt: "Party decorations", title: "Decor & Extras", price: "From £45" },
+        { src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594938/face-painter_kdiqia.png", alt: "Face painter with child", title: "Face Painters", price: "From £85" },
+        { src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png", alt: "Bouncy castle", title: "Bouncy Castles", price: "From £120" },
+        { src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594968/party-host_omxpqr.jpg", alt: "Party host", title: "Party Hosts", price: "From £150" },
+        { src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594980/birthday-cake_f8wr1u.png", alt: "Birthday cake", title: "Cakes & Catering", price: "From £65" },
+        { src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594997/balloons_r2wbfh.png", alt: "Party decorations", title: "Decor & Extras", price: "From £45" },
       ].map((item, idx) => (
         <div key={idx} className="relative group overflow-hidden rounded-xl shadow-md w-full h-64">
           <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/70 to-transparent z-10"></div>
@@ -860,7 +861,7 @@ export default function HomePage() {
               </div>
               <div className="md:w-1/2 relative min-h-[300px]">
                 <Image   
-                  src="/party.png" 
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595066/party_uam87x.png" 
                   alt="Happy children celebrating at a birthday party" 
                   fill
                   className="absolute inset-0 w-full h-full object-cover"

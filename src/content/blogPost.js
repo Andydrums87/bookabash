@@ -202,7 +202,7 @@ export const allPosts = [
 </section>
 `,
       
-      image: "/blog-post-1.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
       category: "Planning",
       date: "May 15, 2025",
       readTime: "8 min read",
@@ -221,7 +221,7 @@ export const allPosts = [
       metaTitle: "How Much Does a Children's Party Cost in London? A Complete Breakdown | BookABash",
       excerpt:
         "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies for parents.",
-      image: "/blog-post-2.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
       category: "Budget",
       date: "May 10, 2025",
       author: {
@@ -236,7 +236,7 @@ export const allPosts = [
       title: "15 Trending Children's Party Themes in London for 2025",
       excerpt:
         "Discover the hottest party themes that London kids are loving this year, from tech-inspired celebrations to eco-friendly gatherings.",
-      image: "/blog-post-3.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
       category: "Themes",
       date: "May 5, 2025",
       author: {
@@ -251,7 +251,7 @@ export const allPosts = [
       title: "DIY Party Decorations That Will Wow Your Guests",
       excerpt:
         "Create stunning party decorations on a budget with these simple DIY ideas that anyone can master.",
-      image: "/images/blog-post-5.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
       category: "Planning",
       date: "April 22, 2025",
       author: {
@@ -266,7 +266,7 @@ export const allPosts = [
         title: "Healthy Party Food Options That Kids Actually Love",
         excerpt:
           "Nutritious and delicious party food ideas that will keep both kids and parents happy at your next celebration.",
-        image: "/blog-post-6.png",
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
         category: "Food",
         date: "April 15, 2025",
         author: {

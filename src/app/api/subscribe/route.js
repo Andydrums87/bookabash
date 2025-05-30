@@ -1,6 +1,6 @@
-import sgMail from '@sendgrid/mail';
+import { ServerClient } from "postmark";
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const client = new ServerClient(process.env.POSTMARK_API_TOKEN);
 
 const emailTemplate = `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -268,19 +268,19 @@ export async function POST(req) {
       throw new Error('Failed to save email to Google Sheets');
     }
 
-    // 2. Send confirmation email with SendGrid
-    const msg = {
-      to: email,
-      from: 'hello@bookabash.com', // Verified sender in SendGrid
-      html: emailTemplate,  // Here you include the full HTML string
-      subject: 'Thanks for signing up to BookABash!',
-    };
-
-    await sgMail.send(msg);
+       // Send confirmation email
+       await client.sendEmail({
+        From: "hello@bookabash.com",
+        To: email,
+    
+        Subject: "Thanks for signing up to BookABash!",
+        HtmlBody: emailTemplate,
+        TextBody: "Plain text fallback here",
+      });
 
     return new Response(JSON.stringify({ message: 'Email saved and confirmation sent' }), { status: 200 });
   } catch (error) {
-    console.error('SendGrid Error:', error);
+    console.error('Postmark Error:', error);
     let errorMsg = error.message || 'Unknown error';
 
     // If SendGrid returns a response with body, include that:
