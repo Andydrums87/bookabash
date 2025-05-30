@@ -5,35 +5,42 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { allPosts } from "@/content/blogPost"; // adjust path as needed
+import NotFoundMessage from "@/components/NotFoundMessage";
+import Head from "next/head";
 
 export default function BlogDetailPage({ params }) {
-  const { id } = React.use(params); // React.use() unwraps the promise of params
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-
-  const post = allPosts.find((p) => String(p.id) === id);
-
+  const { slug } = React.use(params);
+console.log(params)
+  const post = allPosts.find((p) => p.slug === slug);
   if (!post) {
-    return (
-      <div className="text-center py-16 text-xl">
-        Post not found.
-        <div className="mt-6">
-          <button
-            onClick={() => router.push("/blog")}
-            className="bg-[#FC6B57] text-white px-6 py-3 rounded-full hover:bg-[#e55c48] transition-colors"
-          >
-            Back to Blog
-          </button>
-        </div>
-      </div>
-    );
+    return <NotFoundMessage />;
   }
+
 
   const related = allPosts.filter((p) => post.relatedPosts?.includes(p.id));
 
-
   return (
+    <>
+      <head>
+        <title>{post.title}</title>
+        <meta name="description" content={post.metaDescription || post.excerpt} />
+        <link rel="canonical" href={`https://yourdomain.com/blog/${post.slug}`} />
+
+        {/* Open Graph Meta */}
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.metaDescription || post.excerpt} />
+        <meta property="og:image" content={post.image} />
+        <meta property="og:url" content={`https://yourdomain.com/blog/${post.slug}`} />
+        <meta property="og:type" content="article" />
+
+        {/* Twitter Meta */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.metaDescription || post.excerpt} />
+        <meta name="twitter:image" content={post.image} />
+      </head>
     <div className="min-h-screen bg-[#FDFDFB]">
+  
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-100 relative z-20">
         <div className="container mx-auto px-4 py-3">
@@ -67,7 +74,7 @@ export default function BlogDetailPage({ params }) {
         </div>
 
         <h1 className="text-3xl md:text-5xl font-bold text-[#2F2F2F] mb-6">{post.title}</h1>
-        <p className="text-xl text-[#707070] mb-6">{post.excerpt}</p>
+        <p className="text-xl text-[#707070] mb-6 ">{post.excerpt}</p>
 
         <div className="flex items-center mb-10">
           <div className="relative w-12 h-12 mr-4 rounded-full overflow-hidden">
@@ -119,7 +126,7 @@ export default function BlogDetailPage({ params }) {
         </div>
 
         <div
-          className="prose prose-lg max-w-none mb-12"
+          className="prose prose-lg max-w-none mb-12 dark:text-[#707070]"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
@@ -184,8 +191,8 @@ export default function BlogDetailPage({ params }) {
               type="email"
               placeholder="Your email address"
               className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FC6B57]"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              // value={email}
+              // onChange={(e) => setEmail(e.target.value)}
             />
             <button className="bg-[#FC6B57] text-white px-6 py-3 rounded-md hover:bg-[#e55c48] transition-colors">
               Subscribe
@@ -197,5 +204,6 @@ export default function BlogDetailPage({ params }) {
         </div>
       </section>
     </div>
+    </>
   );
 }

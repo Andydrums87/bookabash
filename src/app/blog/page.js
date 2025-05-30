@@ -8,12 +8,20 @@ export default function Blog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
+  const slugify = (text) =>
+    text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/[\s\W-]+/g, "-"); // replaces spaces & special characters with dashes
+
   const categories = ["All", "Planning", "Budget", "Themes", "Activities", "Food", "Venues"];
 
   const featuredPosts = [
     {
       id: 1,
       title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
+      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
       excerpt: "Everything you need to know about planning the perfect children's party in London this year, from venues to entertainment.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
       category: "Planning",
@@ -24,6 +32,7 @@ export default function Blog() {
     {
       id: 2,
       title: "How Much Does a Children's Party Cost in London? A Complete Breakdown",
+      slug: slugify("How Much Does a Children's Party Cost in London? A Complete Breakdown"),
       excerpt: "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies for parents.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
       category: "Budget",
@@ -34,6 +43,7 @@ export default function Blog() {
     {
       id: 3,
       title: "15 Trending Children's Party Themes in London for 2025",
+      slug: slugify("15 Trending Children's Party Themes in London for 2025"),
       excerpt: "Discover the hottest party themes that London kids are loving this year, from tech-inspired celebrations to eco-friendly gatherings.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
       category: "Themes",
@@ -47,6 +57,7 @@ export default function Blog() {
     {
       id: 4,
       title: "10 Outdoor Party Games That London Kids Can't Get Enough Of",
+      slug: slugify("10 Outdoor Party Games That London Kids Can't Get Enough Of"),
       excerpt: "Get kids moving with these popular outdoor party games that are perfect for London parks and gardens.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595136/blog-post-4_d2bv5i.png",
       category: "Activities",
@@ -56,6 +67,7 @@ export default function Blog() {
     {
       id: 5,
       title: "DIY Party Decorations That Will Wow Your Guests",
+      slug: slugify("DIY Party Decorations That Will Wow Your Guests"),
       excerpt: "Create stunning party decorations on a budget with these simple DIY ideas that anyone can master.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
       category: "Planning",
@@ -65,6 +77,7 @@ export default function Blog() {
     {
       id: 6,
       title: "Healthy Party Food Options That Kids Actually Love",
+      slug: slugify("Healthy Party Food Options That Kids Actually Love"),
       excerpt: "Nutritious and delicious party food ideas that will keep both kids and parents happy at your next celebration.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
       category: "Food",
@@ -148,7 +161,7 @@ export default function Blog() {
                         </div>
                         <h3 className="text-xl font-bold text-[#2F2F2F] mb-2 line-clamp-2">{post.title}</h3>
                         <p className="text-[#707070] mb-4 line-clamp-3">{post.excerpt}</p>
-                        <Link href={`/blog/${post.id}`} className="text-[#FC6B57] flex items-center hover:underline">
+                        <Link href={`/blog/${post.slug}`} onClick={console.log(`${post.title}`)} className="text-[#FC6B57] flex items-center hover:underline">
                           Read more
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />

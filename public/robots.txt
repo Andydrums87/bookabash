@@ -1,0 +1,18 @@
+# robots.txt for https://www.bookabash.com
+
+# Allow all bots to crawl everything
+User-agent: *
+Disallow:
+
+# Disallow crawling of internal API routes (optional, only if you have them)
+Disallow: /api/
+
+# Disallow crawling of static build artifacts (optional)
+Disallow: /_next/
+Disallow: /static/
+
+# Allow crawling of blog posts
+Allow: /blog/
+
+# Specify the location of your sitemap
+Sitemap: https://www.bookabash.com/sitemap.xml

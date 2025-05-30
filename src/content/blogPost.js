@@ -1,9 +1,18 @@
+function slugify(text) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\W-]+/g, "-");
+}
+
 export const allPosts = [
     {
       id: 1,
       title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
-      metaTitle: "Guide to Planning a Children's Party London 2025 | BookABash",
-      metaDescription: "A complete children’s party planning London guide with tips, ideas & timelines, perfect for busy parents planning a fun 2025 celebration.",
+      metaTitle: "Ultimate 2025 Guide to Planning a Children's Party in London | BookABash",
+      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
+      metaDescription: "Your essential guide to planning the perfect children's party in London 2025, packed with venue ideas, themes, and entertainment options for every budget.",
       excerpt:
         "Everything you need to know about planning the perfect children's party in London this year, from venues to entertainment.",
       content: `<section class="prose max-w-none">
@@ -13,7 +22,7 @@ export const allPosts = [
 
   <p class="mb-6">And if you ever feel like it’s all a bit much, just know help is out there when you need it. Let’s get started.</p>
   <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1747830618/joyce-adams-eF_3z15RmWY-unsplash_dnzifw.jpg" alt="Dinosaur" />
-  <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 1 – Start Planning Early</h2>
+  <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 1 – Start Early for Stress-Free Kids Party Planning in London</h2>
   <p class="mb-4">How to plan a children’s party: the golden rule is simple — start early.</p>
 
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">When Should You Start Planning?</h3>
@@ -52,7 +61,7 @@ export const allPosts = [
   <div class="p-4 border-l-4 border-[#FC6B57] bg-[#FFF8F7] rounded shadow mb-6">
     <strong>Tip:</strong> You don’t need to go overboard to make a theme work. A few thoughtful touches, like themed invites and coordinated colors, go a long way. The best children’s birthday party ideas are the ones that tap into your child’s personality.
   </div>
-  <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 3 – Find the Right Venue for Your Party Style</h2>
+  <h2 class="text-[#FC6B57] text-2xl font-bold mb-4">Step 3 – Find the Perfect London Venue for Your 2025 Children's Party</h2>
   <p class="mb-4">Once you’ve picked a theme, the next step is finding a venue that suits your party style, guest list, and budget. There’s no shortage of fantastic kids party venues London families can choose from.</p>
 
   <h3 class="text-[#FC6B57] text-xl font-semibold mt-4 mb-2">Questions to Ask Before Booking</h3>
@@ -219,6 +228,7 @@ export const allPosts = [
       id: 2,
       title: "How Much Does a Children's Party Cost in London? A Complete Breakdown",
       metaTitle: "How Much Does a Children's Party Cost in London? A Complete Breakdown | BookABash",
+      slug: slugify("How Much Does a Children's Party Cost in London? A Complete Breakdown"),
       excerpt:
         "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies for parents.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
@@ -234,6 +244,7 @@ export const allPosts = [
     {
       id: 3,
       title: "15 Trending Children's Party Themes in London for 2025",
+      slug: slugify("15 Trending Children's Party Themes in London for 2025"),
       excerpt:
         "Discover the hottest party themes that London kids are loving this year, from tech-inspired celebrations to eco-friendly gatherings.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
@@ -249,6 +260,7 @@ export const allPosts = [
     {
       id: 5,
       title: "DIY Party Decorations That Will Wow Your Guests",
+      slug: slugify("DIY Party Decorations That Will Wow Your Guests"),
       excerpt:
         "Create stunning party decorations on a budget with these simple DIY ideas that anyone can master.",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
@@ -264,6 +276,7 @@ export const allPosts = [
     {
         id: 6,
         title: "Healthy Party Food Options That Kids Actually Love",
+        slug: slugify("Healthy Party Food Options That Kids Actually Love"),
         excerpt:
           "Nutritious and delicious party food ideas that will keep both kids and parents happy at your next celebration.",
         image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
