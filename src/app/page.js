@@ -24,9 +24,9 @@ export default function HomePage() {
                 <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-gray-900">
                   Plan Your Perfect Party in Minutes
                 </h1>
-                <h2 className="text-xl lg:text-2xl text-gray-700">Choose your theme, we'll handle everything else</h2>
+                <h2 className="text-xl lg:text-2xl text-gray-700">Choose your theme, we&apos;ll handle everything else</h2>
                 <p className="text-lg text-gray-600 leading-relaxed">
-                  From theme selection to thank you bags - get a complete party plan with London's best suppliers, all
+                  From theme selection to thank you bags - get a complete party plan with London&apos;s best suppliers, all
                   coordinated in one place
                 </p>
               </div>
@@ -379,7 +379,7 @@ export default function HomePage() {
                 </div>
                 <CardContent className="p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{story.name}</h3>
-                  <p className="text-gray-600 italic mb-4">"{story.quote}"</p>
+                  <p className="text-gray-600 italic mb-4">&ldquo;{story.quote}&ldquo;</p>
                   <div className="flex items-center space-x-2">
                     <div className="flex">
                       {[...Array(5)].map((_, i) => (
