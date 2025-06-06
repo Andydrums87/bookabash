@@ -11,6 +11,17 @@ const nextConfig = {
       },
     ],
   },
+
+  async redirects() {
+    return [
+      {
+        source: '/',
+        has: [{ type: 'host', value: 'bookabash.com' }],
+        destination: 'https://www.bookabash.com',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
