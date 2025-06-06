@@ -4,7 +4,9 @@ import Image from 'next/image';
 
 const Footer = () => {
     return (
+
       <footer className="bg-[#2F2F2F] text-white py-12 relative">
+
         <div className="absolute top-0 left-0 w-full overflow-hidden">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-12 -mt-12">
             <path
