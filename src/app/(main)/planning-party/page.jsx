@@ -54,7 +54,7 @@ export default function PlanningPartyPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-primary-100 via-pink-50 to-yellow-50 p-6 text-center">
       <div className="mb-8">
-        <Image src="/images/logo.png" alt="BookABash" width={200} height={60} className="object-contain" />
+        <Image src="/logo-darker.png" alt="BookABash" width={200} height={60} className="object-contain" />
       </div>
       <div className="relative w-24 h-24 mb-8">
         {icons.map((icon, index) => (

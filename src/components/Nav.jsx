@@ -43,7 +43,7 @@ const Nav = () => {
                 >
                   List with us
                 </Link>
-                <Button variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" asChild>
+                <Button variant="outline" className="border-gray-200 bg-primary-500 text-white hover:text-white hover:bg-[hsl(var(--primary-700))]" asChild>
                   <Link href="/signin">Sign In</Link>
                 </Button>
               </nav>

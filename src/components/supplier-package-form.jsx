@@ -1,239 +1,174 @@
 "use client"
 
-import React from "react"
-
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
-  DialogClose,
 } from "@/components/ui/dialog"
-import { Package } from "./supplier-package-card"
-
-
-
-const generateNewId = () => `pkg${Date.now()}${Math.random().toString(36).substring(2, 7)}`
-
-const emptyPackage = {
-  // ID will be generated on save if new
-  name: "",
-  description: "",
-  price: 0,
-  priceType: "flat",
-  duration: "",
-  whatsIncluded: [],
-}
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useState, useEffect } from "react"
+import Image from "next/image"
 
 export function SupplierPackageForm({ isOpen, onClose, onSave, initialData }) {
-  const [packageData, setPackageData] = useState(initialData || { ...emptyPackage, id: generateNewId() })
-  const [includedItemInput, setIncludedItemInput] = useState("")
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [price, setPrice] = useState("")
+  const [duration, setDuration] = useState("")
+  const [priceType, setPriceType] = useState("flat") // Default to flat
+  const [whatsIncluded, setWhatsIncluded] = useState("") // Storing as comma-separated string for simplicity
+  const [imageUrl, setImageUrl] = useState("")
 
   useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setPackageData(initialData)
-      } else {
-        // For new package, ensure a unique ID is ready (or generate on save)
-        setPackageData({ ...emptyPackage, id: generateNewId() })
-      }
+    if (isOpen && initialData) {
+      setName(initialData.name || "")
+      setDescription(initialData.description || "")
+      setPrice(initialData.price || "")
+      setDuration(initialData.duration || "")
+      setPriceType(initialData.priceType || "flat")
+      setWhatsIncluded(initialData.whatsIncluded ? initialData.whatsIncluded.join(", ") : "")
+      setImageUrl(initialData.imageUrl || "")
+    } else if (isOpen) {
+      // Reset form for new package
+      setName("")
+      setDescription("")
+      setPrice("")
+      setDuration("")
+      setPriceType("flat")
+      setWhatsIncluded("")
+      setImageUrl("")
     }
   }, [initialData, isOpen])
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setPackageData((prev) => ({ ...prev, [name]: name === "price" ? Number.parseFloat(value) || 0 : value }))
-  }
-
-  const handleSelectChange = (name, value) => {
-    setPackageData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleAddIncludedItem = () => {
-    if (includedItemInput.trim() !== "") {
-      setPackageData((prev) => ({
-        ...prev,
-        whatsIncluded: [...prev.whatsIncluded, includedItemInput.trim()],
-      }))
-      setIncludedItemInput("")
+  const handleSubmit = () => {
+    const packageDetails = {
+      name,
+      description,
+      price: Number.parseFloat(price) || 0,
+      duration,
+      priceType,
+      whatsIncluded: whatsIncluded
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item), // Convert string to array
+      imageUrl,
     }
-  }
-
-  const handleRemoveIncludedItem = (index) => {
-    setPackageData((prev) => ({
-      ...prev,
-      whatsIncluded: prev.whatsIncluded.filter((_, i) => i !== index),
-    }))
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!packageData.name || packageData.price <= 0) {
-      alert("Package name and a valid price (greater than 0) are required.")
-      return
-    }
-    onSave(packageData) // The ID is already part of packageData
+    onSave(packageDetails)
+    onClose() // Close after save
   }
 
   if (!isOpen) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg md:max-w-xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{initialData ? "Edit Package" : "Add New Package"}</DialogTitle>
           <DialogDescription>
-            Fill in the details for your service package. Click save when you're done.
+            {initialData
+              ? "Update the details of your service package."
+              : "Fill in the details for your new service package."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4 max-h-[calc(80vh-150px)] overflow-y-auto pr-3">
-            {" "}
-            {/* Adjusted max-h and pr */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
+        <div className="flex-grow overflow-y-auto pr-2 space-y-4 py-4">
+          <div className="space-y-1">
+            <Label htmlFor="pkg-name">Package Name</Label>
+            <Input
+              id="pkg-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Gold Party Package"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pkg-description">Description</Label>
+            <Textarea
+              id="pkg-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what this package offers..."
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="pkg-price">Price (£)</Label>
               <Input
-                id="name"
-                name="name"
-                value={packageData.name}
-                onChange={handleChange}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={packageData.description}
-                onChange={handleChange}
-                className="col-span-3"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="price" className="text-right">
-                Price (£)
-              </Label>
-              <Input
-                id="price"
-                name="price"
+                id="pkg-price"
                 type="number"
-                value={packageData.price}
-                onChange={handleChange}
-                className="col-span-3"
-                min="0.01"
-                step="0.01"
-                required
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="e.g., 250"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="priceType" className="text-right">
-                Price Type
-              </Label>
-              <Select
-                value={packageData.priceType}
-                onValueChange={(value) => handleSelectChange("priceType", value)}
+            <div className="space-y-1">
+              <Label htmlFor="pkg-price-type">Price Type</Label>
+              <select
+                id="pkg-price-type"
+                value={priceType}
+                onChange={(e) => setPriceType(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select price type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="flat">Flat Fee</SelectItem>
-                  <SelectItem value="per_hour">Per Hour</SelectItem>
-                  <SelectItem value="per_person">Per Person</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="duration" className="text-right">
-                Duration
-              </Label>
-              <Input
-                id="duration"
-                name="duration"
-                value={packageData.duration || ""}
-                onChange={handleChange}
-                className="col-span-3"
-                placeholder="e.g., 2 hours, Full Day (Optional)"
-              />
-            </div>
-            <div className="col-span-4 space-y-2">
-              {" "}
-              {/* Changed to col-span-4 and added space-y-2 */}
-              <Label htmlFor="whatsIncludedInput">What's Included (items or services)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="whatsIncludedInput"
-                  value={includedItemInput}
-                  onChange={(e) => setIncludedItemInput(e.target.value)}
-                  placeholder="e.g., Face painting for 10 kids"
-                  className="flex-grow"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault()
-                      handleAddIncludedItem()
-                    }
-                  }}
-                />
-                <Button type="button" onClick={handleAddIncludedItem} variant="outline">
-                  Add Item
-                </Button>
-              </div>
-              {packageData.whatsIncluded.length > 0 && (
-                <ul className="space-y-1 mt-2 border rounded-md p-2 max-h-32 overflow-y-auto">
-                  {packageData.whatsIncluded.map((item, index) => (
-                    <li
-                      key={index}
-                      className="flex justify-between items-center text-sm p-1.5 bg-muted/50 rounded hover:bg-muted"
-                    >
-                      <span>{item}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveIncludedItem(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                <option value="flat">Flat Rate</option>
+                <option value="per_hour">Per Hour</option>
+                <option value="per_person">Per Person</option>
+              </select>
             </div>
           </div>
-          <DialogFooter className="mt-4">
-            {" "}
-            {/* Added margin-top */}
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                {" "}
-                {/* Removed onClick={onClose} as DialogClose handles it */}
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="submit">
-              {" "}
-              {/* Changed to type="submit" */}
-              {initialData ? "Save Changes" : "Create Package"}
-            </Button>
-          </DialogFooter>
-        </form>
+          <div className="space-y-1">
+            <Label htmlFor="pkg-duration">Duration</Label>
+            <Input
+              id="pkg-duration"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="e.g., 2 hours, 90 minutes"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pkg-whats-included">What's Included (comma-separated)</Label>
+            <Textarea
+              id="pkg-whats-included"
+              value={whatsIncluded}
+              onChange={(e) => setWhatsIncluded(e.target.value)}
+              placeholder="e.g., Face painting, Balloon animals, Magic show"
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pkg-image-url">Image URL</Label>
+            <Input
+              id="pkg-image-url"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
+            {imageUrl && (
+              <div className="mt-2 relative w-full h-40 rounded border overflow-hidden">
+                <Image
+                  src={imageUrl || "/placeholder.svg"}
+                  alt="Package preview"
+                  layout="fill"
+                  objectFit="contain"
+                  className="bg-muted"
+                />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              In a full application, this would be a file upload. For now, please use a direct image URL.
+            </p>
+          </div>
+        </div>
+        <DialogFooter className="mt-auto pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>Save Package</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

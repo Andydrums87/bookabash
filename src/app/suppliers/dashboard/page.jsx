@@ -1,402 +1,316 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Clock, DollarSign, MessageSquare, Star, Mail, ArrowUp } from "lucide-react"
+import { Clock, DollarSign, MessageSquare, Star, Mail, ArrowUp, Briefcase, TrendingUp } from "lucide-react"
 import Image from "next/image"
-import SupplierLayout from "@/components/supplier-layout"
+import { Calendar } from "@/components/ui/calendar" // shadcn calendar
+import { useState } from "react"
 
 export default function SupplierDashboardPage() {
+  const [date, setDate] = useState(new Date())
+
+  const metrics = [
+    {
+      title: "New Leads",
+      value: "12",
+      change: "+3 from yesterday",
+      Icon: Mail,
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      trendIcon: ArrowUp,
+      trendColor: "text-green-600",
+    },
+    {
+      title: "Response Rate",
+      value: "94%",
+      change: "Above average",
+      Icon: MessageSquare,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+    },
+    {
+      title: "Bookings",
+      value: "8",
+      change: "This month",
+      Icon: Briefcase,
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
+    },
+    {
+      title: "Earnings",
+      value: "£2,450",
+      change: "This month",
+      Icon: DollarSign,
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-600",
+    },
+  ]
+
+  const leads = [
+    {
+      id: 1,
+      title: "Sarah's Princess Party",
+      contact: "Emma Thompson",
+      timeAgo: "2 hours ago",
+      status: "New",
+      date: "April 12, 2025",
+      time: "2:00 PM - 4:00 PM",
+      budget: "£200 - £300",
+      description:
+        "Looking for princess-themed entertainment for 15 children aged 4-7. Need face painting and interactive activities.",
+      avatar: "/andrew.jpg",
+    },
+    {
+      id: 2,
+      title: "Superhero Adventure",
+      contact: "Mark Johnson",
+      timeAgo: "5 hours ago",
+      status: "New",
+      date: "May 8, 2025",
+      time: "1:00 PM - 4:00 PM",
+      budget: "£300 - £400",
+      description:
+        "Need superhero entertainer for 20 kids. Must include games, face painting, and photo opportunities.",
+      avatar: "/andrew.jpg",
+    },
+    {
+      id: 3,
+      title: "Pirate Treasure Hunt",
+      contact: "Lisa Chen",
+      timeAgo: "1 day ago",
+      status: "Responded",
+      date: "March 25, 2025",
+      time: "3:00 PM - 5:00 PM",
+      budget: "£250 - £350",
+      description: "Outdoor pirate party for 12 children. Need treasure hunt activities and pirate character.",
+      avatar: "/andrew.jpg",
+    },
+  ]
+
+  const recentBookings = [
+    { id: 1, title: "Emma's Party", date: "March 15, 2025", status: "Confirmed", statusColor: "bg-green-500" },
+    { id: 2, title: "Jake's Birthday", date: "March 22, 2025", status: "Pending", statusColor: "bg-yellow-500" },
+    { id: 3, title: "Mia's Celebration", date: "April 5, 2025", status: "Completed", statusColor: "bg-blue-500" },
+  ]
+
   return (
-    <SupplierLayout>
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Supplier Dashboard</h1>
-          <p className="text-gray-600">Manage your bookings, leads, and business performance</p>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Supplier Dashboard</h1>
+          <p className="text-muted-foreground">Manage your bookings, leads, and business performance.</p>
         </div>
+        <Button>
+          <TrendingUp className="mr-2 h-4 w-4" /> View Analytics
+        </Button>
+      </div>
 
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* New Leads */}
-          <Card>
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {metrics.map((metric) => (
+          <Card key={metric.title} className="shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">New Leads</h3>
-                  <div className="text-3xl font-bold">12</div>
-                  <div className="flex items-center mt-1 text-xs text-green-600 font-medium">
-                    <ArrowUp className="h-3 w-3 mr-1" />
-                    <span>+3 from yesterday</span>
-                  </div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">{metric.title}</h3>
+                  <div className="text-3xl font-bold text-foreground">{metric.value}</div>
+                  {metric.change && (
+                    <div
+                      className={`flex items-center mt-1 text-xs font-medium ${metric.trendColor || "text-muted-foreground"}`}
+                    >
+                      {metric.trendIcon && <metric.trendIcon className="h-3 w-3 mr-1" />}
+                      <span>{metric.change}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="bg-blue-50 p-2 rounded-full">
-                  <Mail className="h-5 w-5 text-blue-500" />
+                <div className={`p-3 rounded-lg ${metric.iconBg}`}>
+                  <metric.Icon className={`h-6 w-6 ${metric.iconColor}`} />
                 </div>
               </div>
             </CardContent>
           </Card>
+        ))}
+      </div>
 
-          {/* Response Rate */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Response Rate</h3>
-                  <div className="text-3xl font-bold">94%</div>
-                  <div className="text-xs text-gray-500 mt-1">Above average</div>
-                </div>
-                <div className="bg-purple-50 p-2 rounded-full">
-                  <MessageSquare className="h-5 w-5 text-purple-500" />
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Lead Inbox */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Lead Inbox</CardTitle>
+                <Badge variant="secondary" className="text-sm">
+                  5 New
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Bookings */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Bookings</h3>
-                  <div className="text-3xl font-bold">8</div>
-                  <div className="text-xs text-gray-500 mt-1">This month</div>
-                </div>
-                <div className="bg-green-50 p-2 rounded-full">
-                  <Calendar className="h-5 w-5 text-green-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Earnings */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Earnings</h3>
-                  <div className="text-3xl font-bold">£2,450</div>
-                  <div className="text-xs text-gray-500 mt-1">This month</div>
-                </div>
-                <div className="bg-amber-50 p-2 rounded-full">
-                  <DollarSign className="h-5 w-5 text-amber-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {/* Lead Inbox */}
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Lead Inbox</h2>
-                <Badge className="bg-gray-900 hover:bg-gray-800">5 New</Badge>
-              </div>
-
+              <CardDescription>Review and respond to new customer inquiries.</CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                {/* Lead 1 */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                {leads.map((lead) => (
+                  <Card key={lead.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row items-start gap-4">
                         <Image
-                          src="/placeholder.svg?height=40&width=40"
+                          src={lead.avatar || "/placeholder.svg"}
                           alt="Profile"
-                          width={40}
-                          height={40}
-                          className="rounded-full"
+                          width={48}
+                          height={48}
+                          className="rounded-full border"
                         />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">Sarah's Princess Party</h3>
-                            <p className="text-sm text-gray-500">Emma Thompson • 2 hours ago</p>
+                        <div className="flex-1">
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-2">
+                            <div>
+                              <h3 className="font-semibold text-foreground">{lead.title}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {lead.contact} • {lead.timeAgo}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={lead.status === "New" ? "default" : "outline"}
+                              className={`mt-2 sm:mt-0 ${lead.status === "New" ? "bg-primary text-primary-foreground" : ""}`}
+                            >
+                              {lead.status}
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50">
-                            New
-                          </Badge>
-                        </div>
 
-                        <div className="grid grid-cols-3 gap-4 my-3">
-                          <div>
-                            <p className="text-xs text-gray-500">Date</p>
-                            <p className="text-sm font-medium">April 12, 2025</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-3 text-sm">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Date</p>
+                              <p className="font-medium text-foreground">{lead.date}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Time</p>
+                              <p className="font-medium text-foreground">{lead.time}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Budget</p>
+                              <p className="font-medium text-foreground">{lead.budget}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Time</p>
-                            <p className="text-sm font-medium">2:00 PM - 4:00 PM</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Budget</p>
-                            <p className="text-sm font-medium">£200 - £300</p>
-                          </div>
-                        </div>
 
-                        <p className="text-sm text-gray-700 mb-3">
-                          Looking for princess-themed entertainment for 15 children aged 4-7. Need face painting and
-                          interactive activities.
-                        </p>
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{lead.description}</p>
 
-                        <div className="flex gap-2">
-                          <Button size="sm" className="bg-primary-500 hover:bg-primary-600">
-                            Respond
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Lead 2 */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                        <Image
-                          src="/placeholder.svg?height=40&width=40"
-                          alt="Profile"
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">Superhero Adventure</h3>
-                            <p className="text-sm text-gray-500">Mark Johnson • 5 hours ago</p>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button size="sm">{lead.status === "Responded" ? "View Response" : "Respond"}</Button>
+                            <Button size="sm" variant="outline">
+                              {lead.status === "Responded" ? "Follow Up" : "View Details"}
+                            </Button>
                           </div>
-                          <Badge variant="outline" className="text-blue-500 border-blue-200 bg-blue-50">
-                            New
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 my-3">
-                          <div>
-                            <p className="text-xs text-gray-500">Date</p>
-                            <p className="text-sm font-medium">May 8, 2025</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Time</p>
-                            <p className="text-sm font-medium">1:00 PM - 4:00 PM</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Budget</p>
-                            <p className="text-sm font-medium">£300 - £400</p>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-gray-700 mb-3">
-                          Need superhero entertainer for 20 kids. Must include games, face painting, and photo
-                          opportunities.
-                        </p>
-
-                        <div className="flex gap-2">
-                          <Button size="sm" className="bg-primary-500 hover:bg-primary-600">
-                            Respond
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            View Details
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Lead 3 */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                        <Image
-                          src="/placeholder.svg?height=40&width=40"
-                          alt="Profile"
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">Pirate Treasure Hunt</h3>
-                            <p className="text-sm text-gray-500">Lisa Chen • 1 day ago</p>
-                          </div>
-                          <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50">
-                            Responded
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 my-3">
-                          <div>
-                            <p className="text-xs text-gray-500">Date</p>
-                            <p className="text-sm font-medium">March 25, 2025</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Time</p>
-                            <p className="text-sm font-medium">3:00 PM - 5:00 PM</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Budget</p>
-                            <p className="text-sm font-medium">£250 - £350</p>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-gray-700 mb-3">
-                          Outdoor pirate party for 12 children. Need treasure hunt activities and pirate character.
-                        </p>
-
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            View Response
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            Follow Up
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-
-              <div className="mt-4 text-center">
-                <Button variant="outline" className="text-primary-500 border-primary-200">
-                  View All Leads
-                </Button>
+              <div className="mt-6 text-center">
+                <Button variant="outline">View All Leads</Button>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <div className="space-y-6">
-            {/* Quick Calendar */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Calendar</h2>
-              <Card className="mb-4">
-                <CardContent className="p-0">
-                  <div className="bg-gray-600 text-white p-4 text-center">Calendar Widget</div>
-                </CardContent>
-              </Card>
-
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Available Days</p>
-                  <p className="text-xl font-bold">18</p>
+        <div className="space-y-6">
+          {/* Quick Calendar */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Quick Calendar</CardTitle>
+              <CardDescription>Check your availability at a glance.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center">
+              <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border p-0" />
+              <div className="grid grid-cols-3 gap-4 my-4 w-full text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground">Available</p>
+                  <p className="text-lg font-bold text-foreground">18</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Booked Days</p>
-                  <p className="text-xl font-bold">8</p>
+                <div>
+                  <p className="text-xs text-muted-foreground">Booked</p>
+                  <p className="text-lg font-bold text-foreground">8</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500">Blocked Days</p>
-                  <p className="text-xl font-bold">3</p>
+                <div>
+                  <p className="text-xs text-muted-foreground">Blocked</p>
+                  <p className="text-lg font-bold text-foreground">3</p>
                 </div>
               </div>
-
               <Button variant="outline" className="w-full">
                 Manage Calendar
               </Button>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Recent Bookings */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Bookings</h2>
+          {/* Recent Bookings */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Recent Bookings</CardTitle>
+              <CardDescription>A quick look at your latest bookings.</CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
-                <Card>
-                  <CardContent className="p-3">
+                {recentBookings.map((booking) => (
+                  <Card key={booking.id} className="p-3">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="font-medium text-gray-900">Emma's Party</h3>
-                        <p className="text-xs text-gray-500">March 15, 2025</p>
+                        <h3 className="font-medium text-sm text-foreground">{booking.title}</h3>
+                        <p className="text-xs text-muted-foreground">{booking.date}</p>
                       </div>
-                      <Badge className="bg-green-500 hover:bg-green-600">Confirmed</Badge>
+                      <Badge className={`${booking.statusColor} text-white text-xs`}>{booking.status}</Badge>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Jake's Birthday</h3>
-                        <p className="text-xs text-gray-500">March 22, 2025</p>
-                      </div>
-                      <Badge className="bg-amber-500 hover:bg-amber-600">Pending</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-gray-900">Mia's Celebration</h3>
-                        <p className="text-xs text-gray-500">April 5, 2025</p>
-                      </div>
-                      <Badge className="bg-blue-500 hover:bg-blue-600">Completed</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </Card>
+                ))}
               </div>
-
               <div className="mt-4">
                 <Button variant="outline" className="w-full">
                   View All Bookings
                 </Button>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Performance */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Performance</h2>
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm text-gray-600">Conversion Rate</p>
-                      <p className="text-sm font-medium">68%</p>
-                    </div>
-                    <Progress value={68} className="h-2" />
+          {/* Performance */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Performance Snapshot</CardTitle>
+              <CardDescription>Key performance indicators.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                  <p className="text-sm font-medium text-foreground">68%</p>
+                </div>
+                <Progress value={68} className="h-2" />
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4 mr-2" />
+                  Avg Response Time
+                </div>
+                <p className="text-sm font-medium text-foreground">2.4 hours</p>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Star className="w-4 h-4 mr-2" />
+                  Rating
+                </div>
+                <div className="flex items-center">
+                  <p className="text-sm font-medium text-foreground mr-1">4.8</p>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${i < 4 ? "text-yellow-400 fill-yellow-400" : i === 4 ? "text-yellow-400 fill-yellow-400 opacity-50" : "text-muted-foreground"}`}
+                      />
+                    ))}
                   </div>
-
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                      <p className="text-sm text-gray-600">Avg Response Time</p>
-                    </div>
-                    <p className="text-sm font-medium">2.4 hours</p>
-                  </div>
-
-                  <div className="flex justify-between items-center py-2">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-gray-400 mr-2" />
-                      <p className="text-sm text-gray-600">Rating</p>
-                    </div>
-                    <div className="flex items-center">
-                      <p className="text-sm font-medium mr-1">4.8</p>
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3 h-3 ${i < 4 || i === 4 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </SupplierLayout>
+    </div>
   )
 }

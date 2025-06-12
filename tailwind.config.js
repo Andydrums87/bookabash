@@ -11,6 +11,7 @@ module.exports = {
     'rounded-md',
     'rounded-lg',
     'rounded-xl',
+  
     'rounded-2xl',
     'h-12',
     'border',
@@ -19,9 +20,9 @@ module.exports = {
     'btn-primary',
     'bg-primary',
     'hover:bg-primary',
-
+   
     'hover:bg-primary-600',
-
+'font-poppins'
   ],
   content: [
     "./src/**/*.{ts,tsx,js,jsx}",
@@ -31,12 +32,17 @@ module.exports = {
   
   prefix: "",
   theme: {
+    screens: {
+      'xs': '375px',    // Extra small devices
+      'sm': '640px',    // Small devices (default)
+      'md': '768px',    // Medium devices (default)
+      'lg': '1024px',   // Large devices (default)
+      'xl': '1280px',   // Extra large devices (default)
+      "2xl": "1400px",
+    },
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
     },
     extend: {
       colors: {
@@ -131,7 +137,9 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["var(--font-geist-sans)", ...fontFamily.sans],
+        mono: ["var(--font-geist-mono)", ...fontFamily.mono],
+        poppins: ["var(--font-poppins)", ...fontFamily.sans],
       },
       keyframes: {
         "accordion-down": {

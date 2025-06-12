@@ -1,7 +1,14 @@
+"use client"
+
+import { useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { usePartyBuilder } from '@/utils/partyBuilderBackend';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Star, ArrowRight, ArrowDown, Search, User, Calendar, UsersIcon, MapPin } from "lucide-react"
 import Image from "next/image"
@@ -9,115 +16,533 @@ import Link from "next/link"
 import MobileNav from "@/components/mobile-nav" // Assuming MobileNav is still desired here
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
 
+   
+
+
 export default function HomePage() {
+
+  const router = useRouter();
+  const { buildParty, loading, error } = usePartyBuilder();
+
+  const scrollToForm = () => {
+    document.getElementById('search-form')?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  // Form state to capture user inputs
+  const [formData, setFormData] = useState({
+    date: '2025-08-16',
+    theme: 'princess',
+    guestCount: '15',
+    postcode: 'w3-7qd',
+    childName: '', // We'll need to add this field or derive from theme
+    childAge: 6 // Default age, we can make this dynamic
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false); // For button state
+  const [showPartyLoader, setShowPartyLoader] = useState(false); // For full-screen loader
+  const [buildingProgress, setBuildingProgress] = useState(0);
+
+
+ 
+const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+  const [visibleImages, setVisibleImages] = useState([]);
+
+  const partyImages = [
+    {
+      src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473245/iStock-1150333197_bw6j3b.jpg",
+      alt: "Kids enjoying party games"
+    },
+    {
+      src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473373/iStock-469207460_romywt.jpg", 
+      alt: "Children celebrating at party"
+    },
+    {
+      src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473689/iStock-1369813086_osxnjy.jpg",
+      alt: "Fun party activities"
+    }
+  ];
+
+  const themeEmojis = {
+    'spiderman': '🕷️',
+    'taylor-swift': '🎤',
+    'princess': '👑',
+    'dinosaur': '🦕',
+    'unicorn': '🦄',
+    'science': '🔬',
+    'superhero': '🦸',
+    'default': '🎉'
+  };
+
+  const messages = [
+    `Finding the perfect ${theme} entertainment for ${childName}...`,
+    `Searching for amazing venues in your area...`,
+    `Selecting delicious party food and treats...`,
+    `Adding magical decorations and party supplies...`,
+    `Putting together the perfect party bags...`,
+    `Creating your personalized party timeline...`,
+    `Almost ready! Adding final touches...`,
+    `🎉 Your perfect party is ready! 🎉`
+  ];
+
+  // Handle message cycling
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const interval = setInterval(() => {
+      setCurrentMessageIndex(prev => {
+        if (prev < messages.length - 1) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [isVisible, messages.length]);
+
+  // Handle image popping animations
+  useEffect(() => {
+    if (!isVisible) {
+      setVisibleImages([]);
+      return;
+    }
+
+    const addRandomImage = () => {
+      const randomImage = partyImages[Math.floor(Math.random() * partyImages.length)];
+      
+      // Calculate position to avoid center area where main content is
+      let top, left;
+      const centerAreaTop = 25; // Main content starts around 25%
+      const centerAreaBottom = 75; // Main content ends around 75%
+      const centerAreaLeft = 20; // Main content spans roughly 20% to 80%
+      const centerAreaRight = 80;
+      
+      // Randomly choose if image goes on top/bottom or left/right of center
+      const placement = Math.random();
+      
+      if (placement < 0.4) {
+        // Top area
+        top = Math.random() * 20 + 5; // 5% to 25%
+        left = Math.random() * 80 + 10; // 10% to 90%
+      } else if (placement < 0.8) {
+        // Bottom area
+        top = Math.random() * 20 + 75; // 75% to 95%
+        left = Math.random() * 80 + 10; // 10% to 90%
+      } else {
+        // Side areas
+        top = Math.random() * 60 + 20; // 20% to 80%
+        if (Math.random() < 0.5) {
+          // Left side
+          left = Math.random() * 15 + 2; // 2% to 17%
+        } else {
+          // Right side
+          left = Math.random() * 15 + 83; // 83% to 98%
+        }
+      }
+      
+      const randomPosition = {
+        top,
+        left,
+        size: Math.random() * 120 + 150, // 150px to 270px (much bigger!)
+        rotation: Math.random() * 20 - 10, // -10deg to +10deg
+        id: Date.now() + Math.random()
+      };
+
+      setVisibleImages(prev => [...prev, { ...randomImage, ...randomPosition }]);
+
+      // Remove image with smooth timing
+      setTimeout(() => {
+        setVisibleImages(prev => prev.filter(img => img.id !== randomPosition.id));
+      }, 5000); // 5 seconds - allows 2-3 images on screen at once
+    };
+
+    // Add first image quickly
+    setTimeout(addRandomImage, 300);
+    
+    // Add images at consistent, frequent intervals for smooth experience
+    const interval = setInterval(() => {
+      addRandomImage();
+    }, 1800); // Fixed 1.8 second intervals for consistency
+
+    return () => clearInterval(interval);
+  }, [isVisible]);
+
+  if (!isVisible) return null;
+
+  const currentEmoji = themeEmojis[theme] || themeEmojis['default'];
+
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      {/* Header - Restored from previous version */}
-      {/* Hero Section */}
-      <section className=" pt-6 md:pt-20 pb-8 md:pb-12">
-        <div className="container mx-auto px-4">
-          {/* Desktop Layout */}
-          <div className="hidden lg:grid lg:grid-cols-2 gap-8 items-center mb-8">
-            {/* Hero Text - Left Side */}
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-gray-900">
-                  Plan Your Perfect Party in Minutes
-                </h1>
-                <h2 className="text-xl lg:text-2xl text-gray-700">Choose your theme, we&apos;ll handle everything else</h2>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  From theme selection to thank you bags - get a complete party plan with London&apos;s best suppliers, all
-                  coordinated in one place
-                </p>
-              </div>
-            </div>
-
-            {/* Hero Visual - Right Side */}
-            <div className="relative">
-              <div className="relative w-full h-64 lg:h-80">
-                {/* Main party image */}
-                <div className="relative w-full h-full">
-                  <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748522377/blog-hero_lhgb8b.png"
-                    alt="People celebrating at a party"
-                    fill
-                    className="object-cover rounded-2xl"
-                  />
-                </div>
-
-                {/* Floating illustrated elements */}
-                <div className="absolute rounded-md -top-8 -left-8 w-16 h-16 opacity-80">
-                  <Image src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594938/face-painter_kdiqia.png" alt="Top hat" fill className="object-contain rounded-2xl" />
-                </div>
-
-                <div className="absolute  top-4 -right-12 w-20 h-20 opacity-80">
-                  <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png"
-                    alt="Playing cards"
-                    fill
-                    className="object-contain rounded-xl"
-                  />
-                </div>
-
-                <div className="absolute -bottom-8 -right-8 w-16 h-16 opacity-80">
-                  <Image src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png" alt="Teacup" fill className="object-contain" />
-                </div>
-
-                <div className="absolute bottom-12 -left-12 w-24 h-24 opacity-80">
-                  <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594997/balloons_r2wbfh.png"
-                    alt="Plant decoration"
-                    fill
-                    className="object-contain rounded-2xl"
-                  />
-                </div>
-              </div>
-            </div>
+    <div className="fixed inset-0 bg-white flex items-center justify-center z-50 overflow-hidden">
+      
+      {/* Animated party images popping around the screen */}
+      {visibleImages.map((image) => (
+        <div
+          key={image.id}
+          className="absolute pointer-events-none animate-bounce-in-scale z-30"
+          style={{
+            top: `${image.top}%`,
+            left: `${image.left}%`,
+            transform: `rotate(${image.rotation}deg)`,
+            animationDuration: '0.6s', // Quicker, smoother animation
+            animationFillMode: 'forwards'
+          }}
+        >
+          <div 
+            className="rounded-2xl shadow-2xl border-4 border-white overflow-hidden opacity-85 hover:opacity-100 transition-opacity duration-500"
+            style={{
+              width: `${image.size}px`,
+              height: `${image.size}px`
+            }}
+          >
+            <img
+              src={image.src}
+              alt={image.alt}
+              className="w-full h-full object-cover"
+              style={{ objectPosition: 'center' }}
+            />
           </div>
+        </div>
+      ))}
 
-          {/* Mobile Layout */}
-          <div className="lg:hidden">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold leading-tight text-gray-900 mb-4">
-                home of extraordinary party experiences
+      {/* Main content container */}
+      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-12 max-w-lg mx-4 text-center relative z-20">
+        
+        {/* Header */}
+        <div className="mb-8">
+          <div className="text-7xl mb-4 animate-bounce">
+            {currentEmoji}
+          </div>
+          
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+            Building Your Party!
+          </h1>
+          
+          <p className="text-lg text-gray-600 leading-relaxed">
+            Creating the perfect <span className="font-semibold text-[#FF6B4A]">{theme}</span> experience for <span className="font-semibold">{childName}</span>
+          </p>
+        </div>
+
+        {/* Progress section */}
+        <div className="mb-8">
+          <div className="bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-[#FF6B4A] to-[#FF8A70] h-full rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          
+          <div className="text-2xl font-bold text-[#FF6B4A] mb-6">
+            {Math.round(progress)}%
+          </div>
+        </div>
+
+        {/* Loading message */}
+        <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+          <p className="text-base text-gray-700 font-medium leading-relaxed animate-pulse">
+            {messages[currentMessageIndex]}
+          </p>
+        </div>
+
+        {/* Loading dots */}
+        <div className="flex justify-center items-center mt-8 space-x-2">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="w-2 h-2 bg-[#FF6B4A] rounded-full animate-bounce"
+              style={{ animationDelay: `${i * 0.3}s` }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Custom CSS for the bounce-in animation */}
+      <style jsx>{`
+        @keyframes bounce-in-scale {
+          0% {
+            transform: scale(0) rotate(${Math.random() * 360}deg);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.1) rotate(${Math.random() * 20 - 10}deg);
+            opacity: 0.9;
+          }
+          100% {
+            transform: scale(1) rotate(var(--final-rotation));
+            opacity: 0.85;
+          }
+        }
+        
+        .animate-bounce-in-scale {
+          animation: bounce-in-scale 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes gentle-float {
+          0%, 100% { transform: translateY(0px) rotate(var(--rotation)); }
+          50% { transform: translateY(-10px) rotate(var(--rotation)); }
+        }
+        
+        .animate-bounce-in-scale:hover {
+          animation: gentle-float 2s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+};
+  
+  
+
+  // Handle form field changes
+  const handleFieldChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const mapThemeValue = (formTheme) => {
+    const themeMapping = {
+      // Specific character themes
+      'spiderman': 'spiderman',
+      'spider-man': 'spiderman', 
+      'taylor-swift': 'taylor-swift',
+      'taylor swift': 'taylor-swift',
+      'swiftie': 'taylor-swift',
+      'princess': 'princess',
+      'dinosaur': 'dinosaur',
+      'dino': 'dinosaur',
+      'unicorn': 'unicorn',
+      'science': 'science',
+      'scientist': 'science',
+      'laboratory': 'science',
+      
+      // Generic themes (fallback to superhero)
+      'superhero': 'superhero',
+      'superheroes': 'superhero',
+      'hero': 'superhero',
+      'action': 'superhero',
+      
+      // Other themes you might have
+      'fairy-tale': 'princess',
+      'fairy tale': 'princess',
+      'royal': 'princess',
+      'prehistoric': 'dinosaur',
+      'jurassic': 'dinosaur',
+      'magic': 'unicorn',
+      'magical': 'unicorn',
+      'rainbow': 'unicorn',
+      'stem': 'science',
+      'experiment': 'science',
+      'chemistry': 'science'
+    };
+    
+    // Convert to lowercase for matching
+    const lowerTheme = formTheme?.toLowerCase() || '';
+    
+    // Return mapped theme or fallback to original
+    return themeMapping[lowerTheme] || lowerTheme || 'superhero';
+  };
+
+  const mapPostcodeToLocation = (postcode) => {
+    const postcodeMap = {
+      'w3-7qd': 'West London',
+      'sw1-1aa': 'Central London',
+      'e1-6an': 'East London',
+      'n1-9gu': 'North London',
+      'se1-9sg': 'South London'
+    };
+    return postcodeMap[postcode] || 'London';
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    
+    // Don't submit if already submitting
+    if (isSubmitting) return;
+    
+    try {
+      // Set button to loading state first
+      setIsSubmitting(true);
+      
+      // Small delay then show full-screen loader
+      setTimeout(() => {
+        setShowPartyLoader(true);
+        setBuildingProgress(0);
+      }, 200);
+  
+      const partyDetails = {
+        date: formData.date,
+        theme: mapThemeValue(formData.theme),
+        guestCount: parseInt(formData.guestCount),
+        location: mapPostcodeToLocation(formData.postcode),
+        childName: formData.childName || 'Your Child',
+        childAge: formData.childAge,
+        budget: 500
+      };
+  
+      console.log('🎪 Submitting party with theme:', partyDetails.theme);
+  
+      // Progress simulation
+      setBuildingProgress(15);
+      await new Promise(resolve => setTimeout(resolve, 800));
+  
+      setBuildingProgress(30);
+      await new Promise(resolve => setTimeout(resolve, 600));
+  
+      setBuildingProgress(50);
+      
+      // Build the party
+      const result = await buildParty(partyDetails);
+      
+      setBuildingProgress(75);
+      await new Promise(resolve => setTimeout(resolve, 800));
+  
+      setBuildingProgress(90);
+      await new Promise(resolve => setTimeout(resolve, 600));
+  
+      if (result.success) {
+        setBuildingProgress(100);
+        console.log('✅ Party built successfully with themed entertainment!');
+        
+        // Show completion for a moment
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Navigate to dashboard
+        router.push('/dashboard?show_welcome=true');
+      } else {
+        console.error('Failed to build party:', result.error);
+        // Reset states on error
+        setIsSubmitting(false);
+        setShowPartyLoader(false);
+        setBuildingProgress(0);
+      }
+    } catch (error) {
+      console.error('Error during party building:', error);
+      // Reset states on error
+      setIsSubmitting(false);
+      setShowPartyLoader(false);
+      setBuildingProgress(0);
+    }
+  };
+  
+
+
+  
+
+
+  
+  return (
+
+      <div className="min-h-screen bg-[#F5F5F5]">
+       <PartyBuildingLoader 
+  isVisible={showPartyLoader} // Use showPartyLoader instead of isBuilding
+  theme={mapThemeValue(formData.theme)}
+  childName={formData.childName || 'Your Child'}
+  progress={buildingProgress}
+/>
+
+  {/* Header - Restored from previous version */}
+  {/* Hero Section */}
+  <section className="pt-6 md:pt-15 pb-8 md:pb-12">
+    <div className="container mx-auto px-4">
+      
+      {/* Desktop Layout - Original */}
+      <div className="hidden lg:block">
+        <div className="grid lg:grid-cols-2 gap-8 items-center mb-8">
+          {/* Hero Text - Left Side */}
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-gray-900">
+                Plan Your <span className="text-[#FF6B6B]">Dream</span> Party in Minutes
               </h1>
-              <p className="text-lg text-gray-600 leading-relaxed px-4">
-                Explore our curated selection of party food, drinks & entertainment experiences
+              <h2 className="text-xl lg:text-2xl text-gray-700">Choose your theme, we&apos;ll handle everything else</h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                From theme selection to thank you bags - get a complete party plan with London&apos;s best suppliers, all
+                coordinated in one place
               </p>
             </div>
           </div>
 
-          {/* Search Form - Mobile First Design */}
-          <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-gray-100 shadow-md">
-            <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-5 md:gap-5 md:items-end">
-              {/* Event Date */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    type="date"
-                    defaultValue="2025-08-16"
-                    className="bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] !rounded-xl h-12 pl-10 w-full"
-                    placeholder="Date"
+          {/* Hero Visual - Right Side */}
+          <div className="relative">
+            <div className="relative w-full h-64 lg:h-100">
+              {/* Main party image */}
+              <div className="relative w-full h-full">
+                <Image
+       
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg"
+                  
+                  alt="People celebrating at a party"
+                  fill
+                  className="object-cover rounded-2xl"
+                />
+              </div>
+
+              {/* Floating illustrated elements */}
+              <div className="absolute rounded-xl -top-8 -left-8 w-16 h-26 opacity-80">
+                <Image src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg" alt="Top hat" fill className="object-contain rounded-2xl" />
+              </div>
+
+              <div className="absolute top-4 -right-12 w-20 h-26 opacity-80">
+                <Image
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473641/iStock-1205509072_th1rww.jpg"
+                  alt="Playing cards"
+                  fill
+                  className="object-contain rounded-2xl"
+                />
+              </div>
+
+              <div className="absolute -bottom-8 -right-8 w-16 h-26 opacity-80">
+                <Image src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473720/iStock-1047163654_h53byx.jpg" alt="Teacup" fill className="object-contain" />
+              </div>
+
+              <div className="absolute bottom-12 -left-12 w-24 h-26 opacity-80">
+                <Image
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473689/iStock-1369813086_osxnjy.jpg"
+                  alt="Plant decoration"
+                  fill
+                  className="object-contain rounded-2xl"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Search Form - Original Position */}
+        {/* Desktop Search Form - Updated with party builder */}
+        <form onSubmit={handleSearch} className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-gray-100 shadow-md">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
+                
+                {/* Event Date */}
+                <div className="col-span-2 md:col-span-1 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Event date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => handleFieldChange('date', e.target.value)}
+                      className="bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] !rounded-xl h-12 pl-10 w-full"
+                      placeholder="Date"
+                    />
+                  </div>
+                </div>
+
+                {/* Event Type */}
+                <div className="col-span-2 md:col-span-1 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Event type</label>
+                  <SearchableEventTypeSelect 
+                    value={formData.theme}
+                    onValueChange={(value) => handleFieldChange('theme', value)}
+                    defaultValue="princess" 
                   />
                 </div>
-             
-              </div>
 
-              {/* Event Type - Now with searchable dropdown */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event type</label>
-                <SearchableEventTypeSelect defaultValue="princess" />
-              </div>
-
-              {/* Guests and Postcode - Side by side on mobile */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:contents">
-                <div className="space-y-2">
+                {/* Guests */}
+                <div className="col-span-1 md:col-span-1 space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Guests (up to)</label>
                   <div className="relative">
                     <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Select defaultValue="15">
+                    <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)}>
                       <SelectTrigger className="bg-white py-6 px-22 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
                         <SelectValue placeholder="Guests" />
                       </SelectTrigger>
@@ -133,11 +558,12 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* Postcode */}
+                <div className="col-span-1 md:col-span-1 space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Event postcode</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Select defaultValue="w3-7qd">
+                    <Select value={formData.postcode} onValueChange={(value) => handleFieldChange('postcode', value)}>
                       <SelectTrigger className="bg-white py-6 px-22 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
                         <SelectValue placeholder="Postcode" />
                       </SelectTrigger>
@@ -151,32 +577,177 @@ export default function HomePage() {
                     </Select>
                   </div>
                 </div>
-              </div>
 
-              {/* Search Button - Full width on mobile */}
-              <div className="md:col-span-1">
-                <Button
-                  className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-primary-foreground font-bold h-12 rounded-xl px-8 text-lg shadow-md transition-all hover:shadow-lg"
-                  asChild
-                >
-                  <Link href="/planning-party">SEARCH</Link>
+                {/* Search Button - Updated */}
+                <div className="col-span-2 md:col-span-1 mt-4 md:mt-0 md:flex md:items-end">
+                <Button 
+  type="submit" 
+  disabled={isSubmitting} // Use isSubmitting instead of loading
+  className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+>
+  {isSubmitting ? (
+    <div className="flex items-center justify-center">
+      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+      Building Your Party...
+    </div>
+  ) : (
+    "Create My Perfect Party"
+  )}
+</Button>
+                </div>
+                
+              </div>
+            </form>
+      </div>
+
+      {/* Mobile Layout - Full Screen Hero */}
+      <div className="lg:hidden">
+        {/* Hero section */}
+        <div className="relative h-screen">
+          {/* Background image */}
+          <div className="absolute inset-0">
+            <Image
+              src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg"
+              alt="People celebrating at a party"
+              fill
+              className="object-cover object-center"
+            />
+            {/* Overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
+          </div>
+
+          {/* Content overlay */}
+          <div className="relative z-10 flex flex-col text-center h-full px-6">
+            <div className="max-w-sm mx-auto">
+              <h1 className="text-5xl hero-title-width font-poppins-fix font-black leading-tight text-white mb-6 drop-shadow-2xl tracking-tight" style={{fontFamily: 'var(--font-poppins), sans-serif'}}>
+                Plan Your Dream Party In Minutes
+              </h1>
+              
+              <p className="text-xl font-bold text-white/90 leading-relaxed mb-8 drop-shadow">
+                Choose your theme, we'll handle everything else
+              </p>
+
+              {/* CTA Button */}
+              <Link href="#search-form">
+                <Button className="bg-[#FF6B6B] hover:bg-[#FF5252] text-white font-black h-14 rounded-xl px-8 text-lg shadow-lg transition-all hover:shadow-xl transform hover:scale-105 mb-8">
+                  Plan Your Party
                 </Button>
+              </Link>
+
+              {/* Scroll indicator */}
+              <div className="flex flex-col items-center text-white/70">
+                <span className="text-sm mb-2">Scroll down to get started</span>
+                <div className="animate-bounce">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Secondary Option */}
-          <div className="text-center mt-4">
-            <Link
-              href="#categories"
-              className="inline-flex items-center text-gray-600 hover:text-primary-500 transition-colors group"
-            >
-              Just need one supplier? Browse categories
-              <ArrowDown className="w-4 h-4 ml-2 group-hover:translate-y-1 transition-transform" />
-            </Link>
-          </div>
         </div>
-      </section>
+      </div>
+    </div>
+  </section>
+
+  {/* Mobile Search Form Section - ONLY MOBILE */}
+          {/* Decorative Elements */}
+
+          <form onSubmit={handleSearch} className="bg-white md:hidden rounded-3xl mobile-form-container border border-gray-100 shadow-xl max-w-2xl mx-auto">
+            
+            <div className="mobile-form-grid">
+      
+              {/* Event Date - Full width */}
+              <div className="form-field-date form-field-full space-y-2 w-full">
+                <label className="block text-sm font-medium text-gray-700">Event date</label>
+                <div className="relative w-full">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                  <Input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => handleFieldChange('date', e.target.value)}
+                    className="w-screen bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 pl-10"
+                    style={{width: '100%'}}
+                    placeholder="Date"
+                  />
+                </div>
+              </div>
+
+              {/* Event Type - Full width */}
+              <div className="form-field-type form-field-full space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Event type</label>
+                <div className="w-full">
+                  <SearchableEventTypeSelect 
+                    value={formData.theme}
+                    onValueChange={(value) => handleFieldChange('theme', value)}
+                    defaultValue="princess" 
+                    className="w-full" 
+                  />
+                </div>
+              </div>
+
+              {/* Guests - Half width on larger mobile */}
+              <div className="form-field-guests form-field-half space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Guests (up to)</label>
+                <div className="relative w-full">
+                  <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                  <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)}>
+                    <SelectTrigger className="w-full bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 pl-10">
+                      <SelectValue placeholder="Guests" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 guests</SelectItem>
+                      <SelectItem value="10">10 guests</SelectItem>
+                      <SelectItem value="15">15 guests</SelectItem>
+                      <SelectItem value="20">20 guests</SelectItem>
+                      <SelectItem value="25">25 guests</SelectItem>
+                      <SelectItem value="30">30+ guests</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Postcode - Half width on larger mobile */}
+              <div className="form-field-postcode form-field-half space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Event postcode</label>
+                <div className="relative w-full">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                  <Select value={formData.postcode} onValueChange={(value) => handleFieldChange('postcode', value)}>
+                    <SelectTrigger className="w-full bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 pl-10">
+                      <SelectValue placeholder="Postcode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="w3-7qd">W3 7QD</SelectItem>
+                      <SelectItem value="sw1-1aa">SW1 1AA</SelectItem>
+                      <SelectItem value="e1-6an">E1 6AN</SelectItem>
+                      <SelectItem value="n1-9gu">N1 9GU</SelectItem>
+                      <SelectItem value="se1-9sg">SE1 9SG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Search Button - Full width - Updated */}
+              <div className="form-field-button form-field-full">
+              <Button 
+  type="submit" 
+  disabled={isSubmitting} // Use isSubmitting instead of loading
+  className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+>
+  {isSubmitting ? (
+    <div className="flex items-center justify-center">
+      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+      Building Your Party...
+    </div>
+  ) : (
+    "Create My Perfect Party"
+  )}
+</Button>
+              </div>
+              
+            </div>
+          </form>
+
 
       {/* Trust Indicators */}
       <section className="bg-white py-6 border-b border-gray-100">
@@ -206,27 +777,27 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 title: "Garden Party Deluxe",
                 badge: "EXTRAORDINARY ✨",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
               },
               {
                 title: "Rooftop Celebration",
                 badge: "POPTOP CHOICE 💖",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595066/party_uam87x.png",
               },
               {
                 title: "Vintage Tea Party",
                 badge: "POPTOP CHOICE 💖",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594997/balloons_r2wbfh.png",
               },
               {
                 title: "Beach Party Bash",
                 badge: "TRENDING 🔥",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594938/face-painter_kdiqia.png",
               },
             ].map((experience, index) => (
               <Card
@@ -355,19 +926,19 @@ export default function HomePage() {
                 name: "Emma's Superhero Adventure",
                 theme: "Superhero",
                 quote: "BookABash made planning so easy! All the suppliers worked perfectly together.",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "/superhero.webp",
               },
               {
                 name: "Lucas's Jungle Safari",
                 theme: "Jungle Safari",
                 quote: "The themed coordination was amazing. Best party we've ever thrown!",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "/bouncy-castle.png",
               },
               {
                 name: "Sophia's Princess Palace",
                 theme: "Princess",
                 quote: "Everything matched our theme perfectly. The dashboard made planning stress-free.",
-                image: "/placeholder.svg?height=300&width=400",
+                image: "/princessbanner.webp",
               },
             ].map((story, index) => (
               <Card key={index} className="overflow-hidden border-0 shadow-lg">
@@ -427,9 +998,9 @@ export default function HomePage() {
                   </a>
                 </div>
               </div>
-              <div className="md:w-1/2 relative min-h-[300px]">
+              <div className="md:w-3/4 relative min-h-[300px]">
               <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1748595066/party_uam87x.png"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg"
                 alt="Happy children celebrating at a birthday party"
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"

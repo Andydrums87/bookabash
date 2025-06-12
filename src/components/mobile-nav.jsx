@@ -14,7 +14,7 @@ export default function MobileNav() {
     { href: "/browse", label: "Browse Suppliers" },
     { href: "/dashboard", label: "My Events" }, // This is the customer dashboard
     { href: "/help", label: "Help" },
-    { href: "/about", label: "About Us" },
+    { href: "/blog", label: "Blog" },
     { href: "/contact", label: "Contact" },
     { href: "/suppliers/onboarding", label: "List with us", highlight: true },
   ]
@@ -58,8 +58,8 @@ export default function MobileNav() {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <Link href="/" onClick={closeMenu}>
-              <div className="h-8 w-auto relative">
-                <Image src="/images/logo.png" alt="BookABash" width={120} height={32} className="object-contain" />
+              <div className="h-8 absolute top-[-55px] left-0 w-auto relative">
+                <Image src="/logo-darker.png" alt="BookABash" width={150} height={10} className="object-contain" />
               </div>
             </Link>
             <Button variant="ghost" size="sm" onClick={closeMenu}>

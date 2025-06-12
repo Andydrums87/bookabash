@@ -11,6 +11,7 @@ const eventTypes = [
   { value: "unicorn", label: "Unicorn Magic", category: "Popular" },
   { value: "dinosaur", label: "Dinosaur", category: "Popular" },
   { value: "pirate", label: "Pirate Adventure", category: "Popular" },
+  { value: "taylor-swift", label: "Taylor Swift", category: "Popular" },
 
   // Adventure themes
   { value: "jungle", label: "Jungle Safari", category: "Adventure" },
