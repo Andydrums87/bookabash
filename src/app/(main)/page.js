@@ -624,7 +624,7 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
               </h1>
               
               <p className="text-xl font-bold text-white/90 leading-relaxed mb-8 drop-shadow">
-                Choose your theme, we'll handle everything else
+                Choose your theme, we&apos;ll handle everything else
               </p>
 
               {/* CTA Button */}

@@ -863,7 +863,7 @@ export function useSupplier(supplierId) {
     if (supplierId) {
       loadSupplier();
     }
-  }, [supplierId]);
+  }, [supplierId, loadSupplier]);
 
   return {
     supplier,
