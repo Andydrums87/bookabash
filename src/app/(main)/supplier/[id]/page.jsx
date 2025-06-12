@@ -132,7 +132,7 @@ const portfolioImages = Array.from({ length: 6 }, (_, index) => ({
     "Professional Setup",
     "Event Results"
   ][index],
-  image: supplier?.image || "/placeholder.svg?height=300&width=400"
+  image: supplier?.image || "/placeholder.jpg"
 }))
 
 const credentials = [
