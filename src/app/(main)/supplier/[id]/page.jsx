@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useMemo } from "react";
+import { useEffect } from "react";
 import { use } from 'react';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,7 +40,7 @@ import { useRouter } from "next/navigation"
 
 export default function SupplierProfilePage({ params }) {
 
-  const { partyPlan, addSupplier, addAddon, hasAddon } = usePartyPlan();
+ 
   const router = useRouter()
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedPackageId, setSelectedPackageId] = useState('premium')
@@ -51,8 +53,12 @@ export default function SupplierProfilePage({ params }) {
   const [showGallery, setShowGallery] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [notification, setNotification] = useState(null)
-  const { id } = use(params);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const resolvedParams = use(params);
 
+  const id = useMemo(() => resolvedParams.id, [resolvedParams.id]);
+
+  console.log('📍 Stable ID:', id);
 
 
   // const supplier = {
@@ -73,68 +79,88 @@ export default function SupplierProfilePage({ params }) {
   //   email: "hello@magicmoments.co.uk",
   // }
   const { supplier: backendSupplier, loading: supplierLoading, error } = useSupplier(id);
- // Map backend supplier data to the format your UI expects
- const supplier = backendSupplier ? {
-  id: backendSupplier.id,
-  name: backendSupplier.name,
-  avatar: "/placeholder.svg?height=80&width=80", // You can add avatars to your backend data later
-  rating: backendSupplier.rating,
-  reviewCount: backendSupplier.reviewCount,
-  location: backendSupplier.location,
-  activeSince: "2020", // You can add this to your backend data later
-  description: backendSupplier.description,
-  verified: true, // You can add this to your backend data later
-  highlyRated: backendSupplier.badges?.includes("Highly Rated") || false,
-  fastResponder: true, // You can add this to your backend data later
-  responseTime: "Within 2 hours", // You can add this to your backend data later
-  phone: "+44 7123 456 789", // You can add this to your backend data later
-  email: "hello@" + backendSupplier.name.toLowerCase().replace(/[^a-z0-9]/g, '') + ".co.uk",
-  image: backendSupplier.image,
-  category: backendSupplier.category,
-  priceFrom: backendSupplier.priceFrom,
-  priceUnit: backendSupplier.priceUnit,
-  badges: backendSupplier.badges,
-  availability: backendSupplier.availability
-} : null;
+  console.log('2. useSupplier returned');
 
- // Update packages to be more dynamic based on supplier data
- const packages = supplier ? [
-  {
-    id: "basic",
-    name: "Basic Package",
-    price: Math.round(supplier.priceFrom * 1.0),
-    duration: supplier.priceUnit,
-    features: ["Standard service", "Up to 15 children", "Basic setup"],
-  },
-  {
-    id: "premium",
-    name: "Premium Package", 
-    price: Math.round(supplier.priceFrom * 1.5),
-    duration: supplier.priceUnit,
-    features: ["Enhanced service", "Professional setup", "Up to 25 children", "Extended time"],
-    popular: true,
-  },
-  {
-    id: "deluxe",
-    name: "Deluxe Package",
-    price: Math.round(supplier.priceFrom * 2.0),
-    duration: supplier.priceUnit,
-    features: ["Premium service", "Full setup & cleanup", "Up to 35 children", "Additional extras", "Priority support"],
-  },
-] : [];
 
-const portfolioImages = Array.from({ length: 6 }, (_, index) => ({
-  title: [
-    "Main Service",
-    "Setup Process", 
-    "In Action",
-    "Happy Customers",
-    "Professional Setup",
-    "Event Results"
-  ][index],
-  image: supplier?.image || "/placeholder.jpg"
-}))
+  console.log('1. ID extracted:', id);
+  const { partyPlan, addSupplier, addAddon, hasAddon } = usePartyPlan();
 
+
+
+  const { navigateWithContext, navigationContext } = useContextualNavigation();
+  console.log('4. useContextualNavigation returned');
+
+
+
+  const supplier = useMemo(() => {
+    if (!backendSupplier) return null;
+    
+    return {
+      id: backendSupplier.id,
+      name: backendSupplier.name,
+      avatar: "/placeholder.jpg",
+      rating: backendSupplier.rating,
+      reviewCount: backendSupplier.reviewCount,
+      location: backendSupplier.location,
+      activeSince: "2020",
+      description: backendSupplier.description,
+      verified: true,
+      highlyRated: backendSupplier.badges?.includes("Highly Rated") || false,
+      fastResponder: true,
+      responseTime: "Within 2 hours",
+      phone: "+44 7123 456 789",
+      email: "hello@" + backendSupplier.name.toLowerCase().replace(/[^a-z0-9]/g, '') + ".co.uk",
+      image: backendSupplier.image,
+      category: backendSupplier.category,
+      priceFrom: backendSupplier.priceFrom,
+      priceUnit: backendSupplier.priceUnit,
+      badges: backendSupplier.badges,
+      availability: backendSupplier.availability
+    };
+  }, [backendSupplier]);
+
+  const packages = useMemo(() => {
+    if (!supplier) return [];
+    
+    return [
+      {
+        id: "basic",
+        name: "Basic Package",
+        price: Math.round(supplier.priceFrom * 1.0),
+        duration: supplier.priceUnit,
+        features: ["Standard service", "Up to 15 children", "Basic setup"],
+      },
+      {
+        id: "premium",
+        name: "Premium Package", 
+        price: Math.round(supplier.priceFrom * 1.5),
+        duration: supplier.priceUnit,
+        features: ["Enhanced service", "Professional setup", "Up to 25 children", "Extended time"],
+        popular: true,
+      },
+      {
+        id: "deluxe",
+        name: "Deluxe Package",
+        price: Math.round(supplier.priceFrom * 2.0),
+        duration: supplier.priceUnit,
+        features: ["Premium service", "Full setup & cleanup", "Up to 35 children", "Additional extras", "Priority support"],
+      },
+    ];
+  }, [supplier]);
+
+  const portfolioImages = useMemo(() => 
+    Array.from({ length: 6 }, (_, index) => ({
+      title: [
+        "Main Service",
+        "Setup Process", 
+        "In Action",
+        "Happy Customers",
+        "Professional Setup",
+        "Event Results"
+      ][index],
+      image: supplier?.image || "/placeholder.jpg"
+    }))
+  , [supplier?.image]);
 const credentials = [
   {
     title: "DBS Certificate",
@@ -158,7 +184,11 @@ const credentials = [
   },
 ]
 
-
+useEffect(() => {
+  if (!supplierLoading && backendSupplier) {
+    setHasLoadedOnce(true);
+  }
+}, [supplierLoading, backendSupplier]);
 
 const getSupplierInPartyDetails = () => {
   if (!supplier) return { inParty: false, currentPackage: null, supplierType: null }
@@ -528,7 +558,7 @@ const reviews = [
   {
     id: 1,
     name: "Sarah Thompson",
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/placeholder.jpg",
     rating: 5,
     date: "2 weeks ago",
     text: "Absolutely fantastic! The team made my son's 6th birthday unforgettable. The superhero theme was executed perfectly, and all the kids were completely engaged throughout the party.",
@@ -537,7 +567,7 @@ const reviews = [
   {
     id: 2,
     name: "Mike Johnson",
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/placeholder.jpg",
     rating: 5,
     date: "1 month ago",
     text: "Professional, punctual, and incredibly entertaining. The magic show had everyone mesmerized, and the face painting was top quality. Highly recommend!",
@@ -545,7 +575,7 @@ const reviews = [
   {
     id: 3,
     name: "Emma Davis",
-    avatar: "/placeholder.svg?height=40&width=40",
+    avatar: "/placeholder.jpg",
     rating: 4,
     date: "2 months ago",
     text: "Great entertainment value and the kids loved every minute. Setup was quick and professional. Only minor issue was running slightly over time, but overall excellent service.",
@@ -871,31 +901,55 @@ const AddingToPlanModal = ({ isAddingToPlan, loadingStep, theme = 'default' }) =
 };
 
 
-  const { navigateWithContext, navigationContext } = useContextualNavigation();
 
-  // Loading state
-  if (supplierLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse text-center">
-          <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-// Error state
-if (error || !supplier) {
+  console.log('5. About to render main content');
+
+  const showLoading = supplierLoading && !hasLoadedOnce;
+
+if (showLoading) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Supplier Not Found</h1>
-        <p className="text-gray-600 mb-4">The supplier you're looking for doesn't exist.</p>
-        <Button onClick={() => router.back()}>Go Back</Button>
+      <div className="animate-pulse text-center">
+        <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
       </div>
     </div>
   );
 }
+
+//   return (
+//     <div className="min-h-screen bg-gray-50">
+//       <h1>Supplier: {id}</h1>
+//       <p>Loading: {(supplierLoading)}</p>
+//       <p>Has supplier: {(!!backendSupplier)}</p>
+//     </div>
+//   );
+// }
+
+
+  // if (supplierLoading) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+  //       <div className="animate-pulse text-center">
+  //         <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4"></div>
+  //         <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+// Error state
+// if (error || !supplier) {
+//   return (
+//     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+//       <div className="text-center">
+//         <h1 className="text-2xl font-bold text-gray-900 mb-2">Supplier Not Found</h1>
+//         <p className="text-gray-600 mb-4">The supplier you're looking for doesn't exist.</p>
+//         <Button onClick={() => router.back()}>Go Back</Button>
+//       </div>
+//     </div>
+//   );
+// }
+
 
 
   return (
@@ -942,7 +996,7 @@ if (error || !supplier) {
       {/* Top section with avatar and basic info */}
       <div className="flex items-start space-x-4 mb-4">
         <Avatar className="w-16 h-16 flex-shrink-0 border-2 border-white/30">
-          <AvatarImage src={supplier?.avatar || "/placeholder.svg"} alt={supplier?.name} />
+          <AvatarImage src={supplier?.avatar || "/placeholder.jpg"} alt={supplier?.name} />
           <AvatarFallback className="text-white bg-white/20">
             {supplier?.name?.substring(0, 2).toUpperCase()}
           </AvatarFallback>
@@ -1074,7 +1128,7 @@ if (error || !supplier) {
   <div className="relative flex items-start gap-6 p-6 rounded-lg overflow-hidden min-h-[300px]">
     {/* Background Image */}
     <Image
-      src={supplier?.image || "/placeholder.svg"}
+      src={supplier?.image || "/placeholder.jpg"}
       alt={supplier?.name || "Supplier"}
       fill
       className="object-cover"
@@ -1085,7 +1139,7 @@ if (error || !supplier) {
     {/* Content on top of background */}
     <div className="relative z-10 flex items-start gap-6 w-full">
       <Avatar className="w-20 h-20">
-        <AvatarImage src={supplier?.avatar || "/placeholder.svg"} alt={supplier?.name} />
+        <AvatarImage src={supplier?.avatar || "/placeholder.jpg"} alt={supplier?.name} />
         <AvatarFallback className="text-white bg-white/20">{supplier?.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
 
@@ -1228,7 +1282,7 @@ if (error || !supplier) {
                       {portfolioImages.map((item, index) => (
                         <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden">
                           <Image
-                            src={item.image || "/placeholder.svg"}
+                            src={item?.image || "/placeholder.jpg"}
                             alt={item.title}
                             fill
                             className="object-cover"
@@ -1248,7 +1302,7 @@ if (error || !supplier) {
                   onClick={() => setShowGallery(true)}
                 >
                   <Image
-                    src={item.image || "/placeholder.svg"}
+                    src={item.image || "/placeholder.jpg"}
                     alt={item.title}
                     fill
                     className="object-cover hover:scale-105 transition-transform"
@@ -1319,9 +1373,9 @@ if (error || !supplier) {
                 <div key={review.id} className="border-b border-gray-100 pb-4 last:border-b-0">
                   <div className="flex items-start gap-3">
                     <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={review.avatar || "/placeholder.svg"} alt={review.name} />
+                      <AvatarImage src={review?.avatar || "/placeholder.jpg"} alt={review.name} />
                       <AvatarFallback>
-                        {review.name
+                        {review?.name
                           .split(" ")
                           .map((n) => n[0])
                           .join("")}
@@ -1348,7 +1402,7 @@ if (error || !supplier) {
                           {review.images.map((img, i) => (
                             <div key={i} className="w-12 h-12 bg-gray-200 rounded-lg overflow-hidden">
                               <Image
-                                src={img || "/placeholder.svg"}
+                                src={img || "/placeholder.jpg"}
                                 alt="Review photo"
                                 width={48}
                                 height={48}
@@ -1378,6 +1432,82 @@ if (error || !supplier) {
             </div>
           </CardContent>
         </Card>
+         {/* Availability Calendar */}
+         <Card className="border-gray-300 md:hidden">
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Availability Calendar</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">
+                        {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                      </h3>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
+                          }
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
+                          }
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-500 mb-2">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+  <div key={`day-${index}`} className="h-8 flex items-center justify-center">
+    {day}
+  </div>
+))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-4">
+                      <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
+                      <span>Your selected date</span>
+                    </div>
+                    <div className="text-sm text-gray-500">Unavailable</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card className="border-gray-300 md:hidden">
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Stats</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Response Time</span>
+                      <span className="font-semibold">{supplier?.responseTime}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Parties Completed</span>
+                      <span className="font-semibold">150+</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Repeat Customers</span>
+                      <span className="font-semibold">85%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Years Experience</span>
+                      <span className="font-semibold">5 years</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+      
+      
 
         {/* Desktop Layout */}
         <div className="hidden md:block container px-10 min-w-screen py-8">
@@ -1397,7 +1527,7 @@ if (error || !supplier) {
                         className="relative aspect-[4/3] bg-gray-200 rounded-lg overflow-hidden group cursor-pointer"
                       >
                         <Image
-                          src={item.image || "/placeholder.svg"}
+                          src={item.image || "/placeholder.jpg"}
                           alt={item.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform"
@@ -1450,7 +1580,7 @@ if (error || !supplier) {
                       <div key={review.id} className="border-b border-gray-100 pb-6 last:border-b-0">
                         <div className="flex items-start gap-4">
                           <Avatar className="w-10 h-10">
-                            <AvatarImage src={review.avatar || "/placeholder.svg"} alt={review.name} />
+                            <AvatarImage src={review.avatar || "/placeholder.jpg"} alt={review.name} />
                             <AvatarFallback>
                               {review.name
                                 .split(" ")
@@ -1479,7 +1609,7 @@ if (error || !supplier) {
                                 {review.images.map((img, i) => (
                                   <div key={i} className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                                     <Image
-                                      src={img || "/placeholder.svg"}
+                                      src={img || "/placeholder.jpg"}
                                       alt="Review photo"
                                       width={64}
                                       height={64}
@@ -1509,8 +1639,9 @@ if (error || !supplier) {
                 <CardContent className="p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Service Packages</h2>
                   <div className="space-y-4">
-                    {packages.map((pkg) => (
+                    {packages.map((pkg, index) => (
                      <div
+                     key={`pkg-${index}`}
                      className={`border-2 rounded-lg p-4 transition-all cursor-pointer ${
                        pkg.popular ? "border-primary-500 bg-primary-50" : 
                        selectedPackageId === pkg.id ? "border-primary-500 bg-primary-100 ring-2 ring-primary-200" : 
@@ -1583,11 +1714,11 @@ if (error || !supplier) {
                     </div>
 
                     <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-500 mb-2">
-                      {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-                        <div key={day} className="h-8 flex items-center justify-center">
-                          {day}
-                        </div>
-                      ))}
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+  <div key={`day-${index}`} className="h-8 flex items-center justify-center">
+    {day}
+  </div>
+))}
                     </div>
 
                     <div className="grid grid-cols-7 gap-1">{renderCalendar()}</div>

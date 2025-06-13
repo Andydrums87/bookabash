@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
@@ -307,81 +308,106 @@ export default function RecommendedAddons({
             const isLimitedTime = supplier.availability?.includes("Limited") || supplier.availability?.includes("today")
             
             return (
-              <CarouselItem key={supplier.id} className="pl-4 basis-4/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                <div className="h-full">
-                  <Card 
-                    className="group border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col cursor-pointer"
-                    onClick={(e) => handleCardClick(supplier, e)}
-                  >
-                    <CardContent className="p-0 flex flex-col h-full">
-                      <div className="relative h-48 overflow-hidden">
-                        <Image
-                          src={supplier.image || "/placeholder.svg"}
-                          alt={supplier.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+              <CarouselItem key={supplier.id} className="pl-4 basis-[45%] sm:basis-1/3 md:basis-1/3 lg:basis-1/4">
+              <div className="h-full">
+                <Card 
+                  className="group border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col cursor-pointer p-0"
+                  onClick={(e) => handleCardClick(supplier, e)}
+                >
+                  <CardContent className="p-0 flex flex-col h-full">
+                    {/* Shorter image on mobile */}
+                    <div className="relative h-32 sm:h-40 md:h-48 overflow-hidden">
+                      <Image
+                        src={supplier.image || "/placeholder.svg"}
+                        alt={supplier.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {isPopular && (
+                          <Badge className="bg-primary-500 text-white text-xs px-1.5 py-0.5">
+                            <Star className="w-2.5 h-2.5 mr-0.5" />
+                            Popular
+                          </Badge>
+                        )}
+                        {isLimitedTime && (
+                          <Badge className="bg-orange-500 text-white text-xs px-1.5 py-0.5">Limited</Badge>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavorite(supplier.id)
+                        }}
+                        className="absolute top-2 right-2 w-6 h-6 sm:w-8 sm:h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+                      >
+                        <Heart
+                          className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                            favorites.includes(supplier.id) ? "fill-red-500 text-red-500" : "text-gray-400"
+                          }`}
                         />
-                        <div className="absolute top-3 left-3 flex flex-col gap-1">
-                          {isPopular && (
-                            <Badge className="bg-primary-500 text-white text-xs px-2 py-1">
-                              <Star className="w-3 h-3 mr-1" />
-                              Popular
-                            </Badge>
-                          )}
-                          {isLimitedTime && (
-                            <Badge className="bg-orange-500 text-white text-xs px-2 py-1">Limited Time</Badge>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleFavorite(supplier.id)
-                          }}
-                          className="absolute top-3 right-3 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
-                        >
-                          <Heart
-                            className={`w-4 h-4 ${
-                              favorites.includes(supplier.id) ? "fill-red-500 text-red-500" : "text-gray-400"
-                            }`}
-                          />
-                        </button>
-                      </div>
-                      <div className="p-4 flex-1 flex flex-col">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 text-lg leading-tight line-clamp-2">{supplier.name}</h3>
-                          {showPricing && (
-                            <div className="text-right ml-2 flex-shrink-0">
-                              <div className="text-xl font-bold text-primary-500">£{supplier.priceFrom}</div>
-                              <div className="text-xs text-gray-500">{supplier.priceUnit}</div>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3 flex-1 line-clamp-2">{supplier.description}</p>
-                        <div className="flex items-center justify-between text-xs text-gray-500 mt-auto pt-3 border-t">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{supplier.rating}</span>
-                            <span>({supplier.reviewCount})</span>
+                      </button>
+                    </div>
+            
+                    {/* Compact content for mobile */}
+                    <div className="p-2 sm:p-3 md:p-4 flex-1 flex flex-col">
+                      {/* Title and price - more compact on mobile */}
+                      <div className="mb-2">
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base md:text-lg leading-tight line-clamp-1 sm:line-clamp-2">
+                          {supplier.name}
+                        </h3>
+                        {showPricing && (
+                          <div className="flex items-baseline justify-between mt-1">
+                            <div className="text-lg sm:text-xl font-bold text-primary-500">£{supplier.priceFrom}</div>
+                            <div className="text-xs text-gray-500">{supplier.priceUnit}</div>
                           </div>
-                          <span className="truncate">{supplier.location}</span>
-                        </div>
-                        <Button
-                          onClick={(e) => handleAddToCart(supplier, e)}
-                          disabled={buttonState.disabled}
-                          className={`w-full mt-4 ${buttonState.className} transition-all`}
-                        >
-                          {buttonState.content}
-                        </Button>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CarouselItem>
+            
+                      {/* Description - hidden on mobile, shown on larger screens */}
+                      <p className="text-xs sm:text-sm text-gray-600 mb-2 flex-1 line-clamp-1 sm:line-clamp-2 hidden sm:block">
+                        {supplier.description}
+                      </p>
+            
+                      {/* Rating - more compact */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-2 sm:mb-3">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span className="font-medium">{supplier.rating}</span>
+                          <span className="hidden sm:inline">({supplier.reviewCount})</span>
+                        </div>
+                        <span className="truncate text-xs hidden sm:block">{supplier.location}</span>
+                      </div>
+            
+                      {/* Smaller button on mobile */}
+                      <Button
+                        onClick={(e) => handleAddToCart(supplier, e)}
+                        disabled={buttonState.disabled}
+                        className={`w-full text-xs sm:text-sm py-1.5 sm:py-2 ${buttonState.className} transition-all`}
+                      >
+                        <span className="flex items-center justify-center">
+                          {/* Smaller icons on mobile */}
+                          {buttonState.content.props?.children?.[0] && (
+                            <span className="mr-1 sm:mr-2">
+                              {React.cloneElement(buttonState.content.props.children[0], {
+                                className: "w-3 h-3 sm:w-4 sm:h-4"
+                              })}
+                            </span>
+                          )}
+                          <span className="hidden sm:inline">{getContextualCTA()}</span>
+                          <span className="sm:hidden">Add</span>
+                        </span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CarouselItem>
             )
           })}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 hover:bg-white shadow-md" />
-        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 hover:bg-white shadow-md" />
+        <CarouselPrevious className="absolute left-20 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 hover:bg-white shadow-md hidden" />
+        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/80 hover:bg-white shadow-md hidden " />
       </Carousel>
     </div>
   )

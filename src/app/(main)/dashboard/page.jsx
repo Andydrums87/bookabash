@@ -141,46 +141,35 @@ const MobileSupplierTabs = ({
   const [touchEnd, setTouchEnd] = useState(0);
   const tabsRef = useRef(null);
 
-  // Extended tab configuration with decorations and balloons
   const tabs = [
     {
+      id: 'essentials',
       name: 'Party Essentials',
-      emoji: '🏰',
-      icon: Building,
-      color: 'from-blue-400 to-purple-500',
-      bgColor: 'bg-blue-500',
+      icon: <Building className="w-5 h-5" />,
       types: ['venue', 'entertainment']
     },
     {
+      id: 'activities', 
       name: 'Fun Activities',
-      emoji: '🎨',
-      icon: Music, 
-      color: 'from-pink-400 to-red-500',
-      bgColor: 'bg-pink-500',
+      icon: <Music className="w-5 h-5" />,
       types: ['facePainting', 'activities']
     },
     {
-      name: 'Yummy Treats',
-      emoji: '🍰',
-      icon: Utensils,
-      color: 'from-yellow-400 to-orange-500',
-      bgColor: 'bg-yellow-500',
+      id: 'treats',
+      name: 'Yummy Treats', 
+      icon: <Utensils className="w-5 h-5" />,
       types: ['catering', 'partyBags']
     },
     {
+      id: 'decorations',
       name: 'Pretty Decorations',
-      emoji: '🎀',
-      icon: Palette,
-      color: 'from-purple-400 to-pink-500',
-      bgColor: 'bg-purple-500',
+      icon: <Palette className="w-5 h-5" />,
       types: ['decorations', 'balloons']
     },
     {
+      id: 'invites',
       name: 'Magic Invites',
-      emoji: '✨',
-      icon: Gift,
-      color: 'from-green-400 to-blue-500',
-      bgColor: 'bg-green-500',
+      icon: <Gift className="w-5 h-5" />,
       types: ['einvites']
     }
   ];
@@ -433,6 +422,10 @@ const MobileSupplierTabs = ({
     )
   }
 
+  const handleTabSelect = (tabIndex) => {
+    setActiveTab(tabIndex);
+  };
+
   const currentTabTypes = tabs[activeTab]?.types || [];
   const currentSuppliers = currentTabTypes.map(type => ({
     type,
@@ -441,53 +434,65 @@ const MobileSupplierTabs = ({
 
   return (
     <div className="w-full">
-      {/* Tab Navigation */}
-      <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
-        {tabs.map((tab, index) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === index;
-          const hasSuppliers = tab.types.some(type => suppliers[type]);
-          
-          return (
-            <button
-              key={index}
-              onClick={() => setActiveTab(index)}
-              className={`flex-1 flex flex-col items-center justify-center px-2 py-3 rounded-md text-xs font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center space-x-1 mb-1">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-500' : ''}`} />
-                {hasSuppliers && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                )}
-              </div>
-              <span className="text-center leading-tight">{tab.name}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tab Content - Show suppliers for active tab */}
-      <div className="space-y-6">
-        {currentSuppliers.map(({ type, supplier }) => (
-          <MobileSupplierCard
-            key={type}
-            type={type}
-            supplier={supplier}
-          />
-        ))}
-      </div>
-
-      {/* Progress indicator */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-gray-500">
-          {currentSuppliers.filter(({supplier}) => supplier).length} of {currentSuppliers.length} selected in {tabs[activeTab].name}
-        </p>
+    {/* NEW: Browse Page Style Tab Navigation */}
+    <div className="bg-white border-b border-gray-100 mb-6">
+      <div className="px-4 py-4">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex space-x-0 min-w-max pr-8">
+            {tabs.map((tab, index) => {
+              const isActive = activeTab === index;
+              const hasSuppliers = tab.types.some(type => suppliers[type]);
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabSelect(index)}
+                  className={`flex flex-col items-center space-y-2 px-2 py-3 rounded-xl min-w-[70px] transition-all ${
+                    isActive
+                      ? "bg-primary-100 text-primary-700 shadow-sm"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg relative ${
+                      isActive ? "bg-primary-200" : "bg-gray-100"
+                    }`}
+                  >
+                    {tab.icon}
+                    {/* Supplier indicator dot */}
+                    {hasSuppliers && (
+                      <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary-500 rounded-full border border-white" />
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-center leading-tight">
+                    {tab.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
+
+    {/* Tab Content - Show suppliers for active tab */}
+    <div className="space-y-6 px-4">
+      {currentSuppliers.map(({ type, supplier }) => (
+        <MobileSupplierCard
+          key={type}
+          type={type}
+          supplier={supplier}
+        />
+      ))}
+    </div>
+
+    {/* Progress indicator */}
+    <div className="mt-6 text-center px-4">
+      <p className="text-xs text-gray-500">
+        {currentSuppliers.filter(({supplier}) => supplier).length} of {currentSuppliers.length} selected in {tabs[activeTab].name}
+      </p>
+    </div>
+  </div>
   );
 };
   
@@ -1113,11 +1118,11 @@ const PartyHeader = ({ theme, partyDetails }) => {
         
         {/* Party Title - Responsive sizing */}
         <div>
-          <h1 className="text-lg md:text-5xl font-bold text-white drop-shadow-lg mb-1 md:mb-2 leading-tight">
-            {partyDetails?.childName}'s {currentTheme.name} Party
+          <h1 suppressHydrationWarning={true} className="text-lg md:text-5xl font-bold text-white drop-shadow-lg mb-1 md:mb-2 leading-tight">
+            {partyDetails?.childName || "Emma"}'s {currentTheme?.name} Party
           </h1>
           <p className="text-sm md:text-xl text-white/90 drop-shadow-md hidden md:block">
-            {currentTheme.description}
+            {currentTheme?.description}
           </p>
         </div>
         
@@ -1129,7 +1134,7 @@ const PartyHeader = ({ theme, partyDetails }) => {
             </div>
             <div>
               <p className="text-xs md:text-sm opacity-90">Date</p>
-              <p className="font-semibold text-xs md:text-sm">{partyDetails.date}</p>
+              <p suppressHydrationWarning={true}  className="font-semibold text-xs md:text-sm">{partyDetails?.date || "Saturday, June 14, 2025 • 2:00 PM - 4:00 PM"}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -1138,7 +1143,7 @@ const PartyHeader = ({ theme, partyDetails }) => {
             </div>
             <div>
               <p className="text-xs md:text-sm opacity-90">Age</p>
-              <p className="font-semibold text-xs md:text-sm">{partyDetails.childAge} years</p>
+              <p suppressHydrationWarning={true}  className="font-semibold text-xs md:text-sm">{partyDetails?.childAge} years</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -1147,8 +1152,8 @@ const PartyHeader = ({ theme, partyDetails }) => {
             </div>
             <div>
               <p className="text-xs md:text-sm opacity-90">Location</p>
-              <p className="font-semibold text-xs md:text-sm truncate max-w-[100px] md:max-w-none">
-                {partyDetails.location}
+              <p suppressHydrationWarning={true}  className="font-semibold text-xs md:text-sm truncate max-w-[100px] md:max-w-none">
+                {partyDetails?.location}
               </p>
             </div>
           </div>
@@ -1474,7 +1479,7 @@ useEffect(() => {
         <div className="container mx-auto flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Budget</p>
-            <p className="font-semibold text-lg">
+            <p suppressHydrationWarning={true} className="font-semibold text-lg">
               £{totalSpent} <span className="text-sm text-muted-foreground">/ £{tempBudget}</span>
             </p>
           </div>

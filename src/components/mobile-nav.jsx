@@ -5,21 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { NavbarSearch } from "./NavBarSearch"
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false)
-
+  
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/browse", label: "Browse Suppliers" },
-    { href: "/dashboard", label: "My Events" }, // This is the customer dashboard
+    { href: "/dashboard", label: "My Events" },
     { href: "/help", label: "Help" },
     { href: "/blog", label: "Blog" },
     { href: "/contact", label: "Contact" },
     { href: "/suppliers/onboarding", label: "List with us", highlight: true },
   ]
 
-  // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden"
@@ -56,15 +56,19 @@ export default function MobileNav() {
         `}
       >
         <div className="flex flex-col h-full">
+          {/* Header with Search */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <Link href="/" onClick={closeMenu}>
               <div className="h-8 absolute top-[-55px] left-0 w-auto relative">
                 <Image src="/logo-darker.png" alt="BookABash" width={150} height={10} className="object-contain" />
               </div>
             </Link>
-            <Button variant="ghost" size="sm" onClick={closeMenu}>
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center space-x-2">
+ 
+              <Button variant="ghost" size="sm" onClick={closeMenu}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           <nav className="flex-1 py-6">

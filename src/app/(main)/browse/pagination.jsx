@@ -100,9 +100,9 @@ const LoadMoreSuppliersSection = ({
 
   // Supplier card component
   const SupplierCard = ({ supplier }) => (
-    <Card className="border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow p-0">
       <CardContent className="p-0 relative">
-        <div className="relative w-full h-48 md:h-40 lg:h-48">
+        <div className=" w-full h-48 md:h-40 lg:h-48">
           <img 
             src={supplier?.image || "/placeholder.svg"} 
             alt={supplier.name} 

@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Plus, X, Share2, Send, MessageCircle, Users, Mail, Link, Check } from "lucide-react"
+import { Plus, X, Share2, Send, MessageCircle, Users, Mail, Link, Check, ChevronLeft, AlertCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-const EInvitesPage= ({ onSaveSuccess }) => {
+const EInvitesPage = ({ onSaveSuccess }) => {
+  const router = useRouter()
   const canvasRef = useRef(null);
   const [selectedTheme, setSelectedTheme] = useState('princess');
   const [generatedImage, setGeneratedImage] = useState(null);
@@ -16,6 +18,8 @@ const EInvitesPage= ({ onSaveSuccess }) => {
   const [newGuest, setNewGuest] = useState({ name: '', contact: '', type: 'email' });
   const [shareableLink, setShareableLink] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedState, setLastSavedState] = useState(null);
   const [inviteData, setInviteData] = useState({
     childName: "Emma",
     age: "6",
@@ -75,6 +79,59 @@ const EInvitesPage= ({ onSaveSuccess }) => {
       decorations: ['🐘', '🦒', '🌴', '🦎']
     }
   };
+
+  // Track changes to determine if there are unsaved changes
+  const getCurrentState = () => {
+    return {
+      selectedTheme,
+      inviteData,
+      guestList: guestList.map(g => ({ ...g })), // Deep copy
+      generatedImage
+    }
+  }
+
+  // Check if current state differs from last saved state
+  const checkForUnsavedChanges = () => {
+    if (!lastSavedState) return false
+    
+    const currentState = getCurrentState()
+    return JSON.stringify(currentState) !== JSON.stringify(lastSavedState)
+  }
+
+  // Update unsaved changes status
+  useEffect(() => {
+    const hasChanges = checkForUnsavedChanges()
+    setHasUnsavedChanges(hasChanges)
+    
+    if (hasChanges && isSaved) {
+      setIsSaved(false) // Reset saved status when changes are made
+    }
+  }, [selectedTheme, inviteData, guestList, generatedImage, lastSavedState])
+
+  // Breadcrumb component
+  const Breadcrumb = () => (
+    <div className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="max-w-7xl mx-auto">
+        <nav className="flex items-center space-x-2 text-sm">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Dashboard
+          </button>
+          <span className="text-gray-400">/</span>
+          <span className="text-gray-900 font-medium">E-Invites</span>
+          {hasUnsavedChanges && (
+            <div className="flex items-center ml-4 text-orange-600">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              <span className="text-xs font-medium">Unsaved changes</span>
+            </div>
+          )}
+        </nav>
+      </div>
+    </div>
+  )
 
   const generateInvite = () => {
     const canvas = canvasRef.current;
@@ -229,7 +286,6 @@ const EInvitesPage= ({ onSaveSuccess }) => {
   useEffect(() => {
     const loadExistingData = () => {
       try {
-        // Check if there's existing invite data
         const savedInvite = localStorage.getItem('party_einvites');
         const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
         
@@ -242,10 +298,10 @@ const EInvitesPage= ({ onSaveSuccess }) => {
           if (data.generatedImage) {
             setGeneratedImage(data.generatedImage);
             setIsSaved(true);
+            setLastSavedState(getCurrentState()); // Set initial saved state
           }
         }
         
-        // Also check party plan for existing invite data
         if (partyPlan.einvites && partyPlan.einvites.image) {
           setGeneratedImage(partyPlan.einvites.image);
           setIsSaved(true);
@@ -258,6 +314,10 @@ const EInvitesPage= ({ onSaveSuccess }) => {
           if (partyPlan.einvites.guestList) {
             setGuestList(partyPlan.einvites.guestList);
           }
+          // Set saved state after loading
+          setTimeout(() => {
+            setLastSavedState(getCurrentState());
+          }, 100);
         }
       } catch (error) {
         console.error('Error loading existing invite data:', error);
@@ -275,10 +335,8 @@ const EInvitesPage= ({ onSaveSuccess }) => {
     }
 
     try {
-      // Get current party plan using your backend storage key
       const currentPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
       
-      // Ensure the plan has the default structure
       if (!currentPlan.einvites) {
         currentPlan.einvites = {
           id: "digital-invites",
@@ -293,18 +351,16 @@ const EInvitesPage= ({ onSaveSuccess }) => {
         };
       }
       
-      // Update the e-invites with generated data
       currentPlan.einvites = {
         ...currentPlan.einvites,
         id: "digital-invites",
         name: `${inviteData.childName}'s ${themes[selectedTheme].name} Invites`,
         description: `Custom ${selectedTheme} themed digital invitations`,
         price: 25,
-        status: "created", // Changed from confirmed to created
-        image: generatedImage, // 👈 KEY: This shows on your dashboard
+        status: "created",
+        image: generatedImage,
         category: "Digital Services",
         priceUnit: "per set",
-        // Store additional invite data
         theme: selectedTheme,
         inviteData: inviteData,
         guestList: guestList,
@@ -313,10 +369,8 @@ const EInvitesPage= ({ onSaveSuccess }) => {
         updatedAt: new Date().toISOString()
       };
       
-      // Save back to your party plan backend
       localStorage.setItem('user_party_plan', JSON.stringify(currentPlan));
       
-      // Also save detailed invite data for this component
       const inviteDetails = {
         theme: selectedTheme,
         inviteData,
@@ -328,23 +382,22 @@ const EInvitesPage= ({ onSaveSuccess }) => {
       localStorage.setItem('party_einvites', JSON.stringify(inviteDetails));
       
       setIsSaved(true);
+      setHasUnsavedChanges(false);
+      setLastSavedState(getCurrentState()); // Update saved state
       
-      // Emit event for real-time updates (triggers your usePartyPlan hook)
       const event = new CustomEvent('partyPlanUpdated', { 
         detail: currentPlan 
       });
       window.dispatchEvent(event);
       
-      // Also trigger storage event for compatibility
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'user_party_plan',
         newValue: JSON.stringify(currentPlan),
         oldValue: null
       }));
       
-      console.log('✅ Invite saved to party plan - should now appear on dashboard!');
+      console.log('✅ Invite saved to party plan');
       
-      // Call success callback
       if (onSaveSuccess) {
         onSaveSuccess(currentPlan.einvites);
       }
@@ -362,7 +415,6 @@ const EInvitesPage= ({ onSaveSuccess }) => {
     const link = `${window.location.origin}/party-invite/${inviteId}`;
     setShareableLink(link);
     
-    // Save the invite with this ID for public viewing
     const publicInvite = {
       id: inviteId,
       theme: selectedTheme,
@@ -371,7 +423,6 @@ const EInvitesPage= ({ onSaveSuccess }) => {
       createdAt: new Date().toISOString()
     };
     
-    // Store public invite (in real app, this would go to your backend)
     localStorage.setItem(`public_invite_${inviteId}`, JSON.stringify(publicInvite));
     
     return link;
@@ -406,13 +457,12 @@ const EInvitesPage= ({ onSaveSuccess }) => {
     const whatsappUrl = `https://wa.me/${guest.contact.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     
-    // Update guest status
     setGuestList(prev => prev.map(g => 
       g.id === guest.id ? { ...g, status: 'sent', sentAt: new Date().toISOString() } : g
     ));
   };
 
-  // Send invites via email (would integrate with your email service)
+  // Send invites via email
   const sendViaEmail = (guest) => {
     const subject = `You're invited to ${inviteData.childName}'s Birthday Party!`;
     const body = `View your invitation: ${shareableLink || generateShareableLink()}`;
@@ -420,7 +470,6 @@ const EInvitesPage= ({ onSaveSuccess }) => {
     const mailtoUrl = `mailto:${guest.contact}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(mailtoUrl);
     
-    // Update guest status
     setGuestList(prev => prev.map(g => 
       g.id === guest.id ? { ...g, status: 'sent', sentAt: new Date().toISOString() } : g
     ));
@@ -434,7 +483,6 @@ const EInvitesPage= ({ onSaveSuccess }) => {
       alert('Invite link copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy link:', error);
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = link;
       document.body.appendChild(textArea);
@@ -452,15 +500,71 @@ const EInvitesPage= ({ onSaveSuccess }) => {
     }));
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Themed E-Invite</h1>
-          <p className="text-gray-600">Design beautiful birthday invitations in seconds!</p>
-        </div>
+  // Get save button state
+  const getSaveButtonState = () => {
+    if (!generatedImage) {
+      return {
+        disabled: true,
+        className: 'bg-gray-400',
+        text: 'Generating...',
+        icon: <AlertCircle className="w-4 h-4 mr-2" />
+      }
+    }
+    
+    if (isSaved && !hasUnsavedChanges) {
+      return {
+        disabled: false,
+        className: 'bg-green-600 hover:bg-green-700',
+        text: 'Saved to Dashboard',
+        icon: <Check className="w-4 h-4 mr-2" />
+      }
+    }
+    
+    if (hasUnsavedChanges) {
+      return {
+        disabled: false,
+        className: 'bg-orange-600 hover:bg-orange-700',
+        text: 'Save Changes',
+        icon: <AlertCircle className="w-4 h-4 mr-2" />
+      }
+    }
+    
+    return {
+      disabled: false,
+      className: 'bg-blue-600 hover:bg-blue-700',
+      text: 'Save to Dashboard',
+      icon: <Send className="w-4 h-4 mr-2" />
+    }
+  }
 
-        <div className="grid lg:grid-cols-3 gap-8">
+  const saveButtonState = getSaveButtonState()
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb />
+      
+      {/* Hero Section */}
+      <div 
+        className="relative w-full h-[50vh] md:h-[50vh] lg:h-[60vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/2198498096/photo/childs-hand-holding-balloon-with-many-balloons-scattered-around-on-pink-background-concept-of.jpg?s=612x612&w=0&k=20&c=cdVCB_5x0znC2lsqekYLdOHxhgOAzxmdkWIBJKaXjX8=)] bg-bottom-left"
+      >
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative h-full flex items-center justify-center px-4">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-2xl text-shadow-lg">
+              Create Your Own
+              <span className="text-white block drop-shadow-2xl">Themed Invite</span>
+            </h1>
+            <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
+              Design beautiful birthday invitations and send to guests in seconds!
+            </p>
+          </div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent"></div>
+      </div>
+
+      <div className="max-w-screen mx-auto p-4">
+        <div className="grid lg:grid-cols-3 gap-8 md:p-6">
           {/* Left Column - Theme Selection & Customization */}
           <div className="lg:col-span-2 space-y-6">
             {/* Theme Selection */}
@@ -543,12 +647,12 @@ const EInvitesPage= ({ onSaveSuccess }) => {
                 </div>
               </CardContent>
             </Card>
+
             {/* Guest Management */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Guest List & Sending</h2>
                 
-                {/* Add Guest */}
                 <div className="space-y-3 mb-6">
                   <div className="grid grid-cols-2 gap-2">
                     <Input
@@ -578,7 +682,6 @@ const EInvitesPage= ({ onSaveSuccess }) => {
                   </div>
                 </div>
 
-                {/* Guest List */}
                 {guestList.length > 0 && (
                   <div className="space-y-3 mb-6">
                     <h3 className="font-medium text-gray-900">Guests ({guestList.length})</h3>
@@ -692,20 +795,11 @@ const EInvitesPage= ({ onSaveSuccess }) => {
                       saveInviteToPartyPlan();
                       if (!shareableLink) generateShareableLink();
                     }}
-                    className={`w-full ${isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                    disabled={!generatedImage}
+                    className={`w-full ${saveButtonState.className}`}
+                    disabled={saveButtonState.disabled}
                   >
-                    {isSaved ? (
-                      <>
-                        <Check className="w-4 h-4 mr-2" />
-                        Saved to Dashboard
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Save Invite
-                      </>
-                    )}
+                    {saveButtonState.icon}
+                    {saveButtonState.text}
                   </Button>
                   
                   <Button 
@@ -732,6 +826,18 @@ const EInvitesPage= ({ onSaveSuccess }) => {
                 <div className="text-xs text-gray-500">
                   Your invite will be automatically saved and can be used on your dashboard.
                 </div>
+                
+                {/* Unsaved Changes Warning */}
+                {hasUnsavedChanges && (
+                  <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center text-orange-700">
+                      <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="text-xs font-medium">
+                        You have unsaved changes. Don't forget to save!
+                      </span>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -749,4 +855,4 @@ const EInvitesPage= ({ onSaveSuccess }) => {
   );
 };
 
-export default EInvitesPage ;
+export default EInvitesPage;

@@ -252,9 +252,12 @@ export default function BrowseSuppliersPage() {
 
     return () => clearTimeout(timer);
   }, []);
-
   const handleSupplierClick = (supplierId) => {
+    // Change this line to go to test page:
     navigateWithContext(`/supplier/${supplierId}`, navigationContext || 'browse');
+    
+    // Original line (comment out):
+    // navigateWithContext(`/supplier/${supplierId}`, navigationContext || 'browse');
   };
 
   // Search handling functions
@@ -345,34 +348,30 @@ export default function BrowseSuppliersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div 
-        className="relative w-full h-[67vh] md:h-[50vh] lg:h-[60vh] overflow-hidden bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473245/iStock-1150333197_bw6j3b.jpg')"
-        }}
-      >
-    
-        
-        {/* Hero Content Overlay */}
-        <div className="relative h-full flex items-center justify-center px-4">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg">
-              Find Your Perfect
-              <span className="text-primary-300 block">Party Suppliers</span>
-            </h1>
-            <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-md opacity-90">
-              Browse our curated list of trusted party suppliers to make your celebration unforgettable. 
-              From entertainment to catering, we've got everything you need for the perfect event.
-            </p>
-            
-        
-          </div>
-        </div>
+      <ContextualBreadcrumb currentPage="browse"/>
+ {/* Hero Section - Simpler Approach */}
+<div 
+  className="relative w-full h-[50vh] md:h-[50vh] lg:h-[60vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/1820228846/photo/photo-of-positive-attractive-guy-hand-hold-wired-microphone-singing-flying-confetti-christmas.jpg?s=612x612&w=0&k=20&c=7JN43WzSQJQkCN2kOnXkonLFVxDFF8wXHflsSCKsaUg=)] bg-bottom-left"
+>
+  {/* Strong dark overlay */}
+  <div className="absolute inset-0 bg-black/10"></div>
+  
+  {/* Hero Content Overlay */}
+  <div className="relative h-full flex items-center justify-center px-4">
+    <div className="max-w-4xl mx-auto text-center text-white">
+    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-2xl text-shadow-lg">
+  Find trusted
+  <span className="text-white block drop-shadow-2xl">Party Suppliers</span>
+</h1>
+      <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
+      Create magical moments. Everything you need for the perfect party, all in one place.
+      </p>
+    </div>
+  </div>
 
-        {/* Bottom fade for smooth transition */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent"></div>
-      </div>
+  {/* Bottom fade for smooth transition */}
+  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent"></div>
+</div>
 
       {/* Search & Filter Controls */}
       <div className="bg-white border-b border-gray-100 px-4 py-6">
@@ -474,7 +473,7 @@ export default function BrowseSuppliersPage() {
       </div>
 
       {/* Results Section */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-screen mx-auto px-3 py-8">
         <LoadMoreSuppliersSection
           allSuppliers={searchedSuppliers}
           isInitialLoading={isLoading}

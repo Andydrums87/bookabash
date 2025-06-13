@@ -478,7 +478,7 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
               </div>
 
               {/* Floating illustrated elements */}
-              <div className="absolute rounded-xl -top-8 -left-8 w-16 h-26 opacity-80">
+              {/* <div className="absolute rounded-xl -top-8 -left-8 w-16 h-26 opacity-80">
                 <Image src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg" alt="Top hat" fill className="object-contain rounded-2xl" />
               </div>
 
@@ -502,7 +502,7 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
                   fill
                   className="object-contain rounded-2xl"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
