@@ -7,6 +7,7 @@ import { useContextualNavigation } from '@/hooks/useContextualNavigation';
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Progress } from "@/components/ui/progress"
+import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb";
 
 import BudgetControls from "@/components/budget-controls"
 import {
@@ -54,12 +55,32 @@ import { useSearchParams, useRouter } from "next/navigation"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
+const getPartyDetails = () => {
+  try {
+    const partyDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
+    return {
+      childName: partyDetails?.childName || 'Emma',
+      date: partyDetails?.date || 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM',
+      childAge: partyDetails?.childAge || 6,
+      location: partyDetails?.location
+    };
+  } catch {
+    return {
+      childName: 'Emma',
+      date: 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM', 
+      childAge: 6,
+      location: 'Manchester, M1 4BT'
+    };
+  }
+};
+
+
 export default function DashboardPage() {
   const [currentBudget, setCurrentBudget] = useState(600)
   const [showAdvancedControls, setShowAdvancedControls] = useState(false)
   const [tempBudget, setTempBudget] = useState(600)
 
-
+  const [partyDetails] = useState(() => getPartyDetails());
   const [loadingCards, setLoadingCards] = useState([])
 
   const [isBudgetDrawerOpen, setIsBudgetDrawerOpen] = useState(false)
@@ -1191,32 +1212,13 @@ useEffect(() => {
 }, [themeLoaded]);
 
 
-  // Helper function to get party details
-  const getPartyDetails = () => {
-    try {
-      const partyDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
-      return {
-        childName: partyDetails.childName || 'Emma',
-        date: partyDetails.date || 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM',
-        childAge: partyDetails.childAge || 6,
-        location: 'Manchester, M1 4BT'
-      };
-    } catch {
-      return {
-        childName: 'Emma',
-        date: 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM', 
-        childAge: 6,
-        location: 'Manchester, M1 4BT'
-      };
-    }
-  };
-
 
 
   
   return (
     <div className="min-h-screen bg-gray-50">
-      
+            <ContextualBreadcrumb currentPage="dashboard"/>
+
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
        
 
@@ -1520,9 +1522,9 @@ useEffect(() => {
       <SupplierSelectionModal
   isOpen={selectedSupplierModal?.isOpen}
   onClose={closeSupplierModal}
-  category={selectedSupplierModal?.category}
+  category={selectedSupplierModal?.category || "entertainment"}
   theme="Superhero"
-  date="June 15, 2025"
+  date={partyDetails?.date} 
   onSelectSupplier={handleSupplierSelection}
 />
       <WelcomeDashboardPopup isOpen={showWelcomePopup} onClose={handleCloseWelcomePopup} />

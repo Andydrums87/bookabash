@@ -30,6 +30,9 @@ import {
   Users,
   X,
   Clock,
+  Crown,
+  Zap,
+  Rocket,
   TrendingUp,
   ChevronUp,
   Settings,
@@ -41,6 +44,22 @@ import Link from "next/link"
 import MobileNav from "@/components/mobile-nav"
 import { useSuppliers } from '@/utils/mockBackend';
 
+const partyThemes = [
+  { id: "princess", name: "Princess", icon: <Crown className="w-4 h-4" />, color: "bg-pink-500", count: 31 },
+  { id: "superhero", name: "Superhero", icon: <Zap className="w-4 h-4" />, color: "bg-red-500", count: 23 },
+  { id: "unicorn", name: "Unicorn", icon: <Sparkles className="w-4 h-4" />, color: "bg-purple-500", count: 18 },
+  { id: "pirate", name: "Pirate", icon: <div className="text-sm">🏴‍☠️</div>, color: "bg-amber-600", count: 15 },
+  { id: "space", name: "Space", icon: <Rocket className="w-4 h-4" />, color: "bg-blue-600", count: 12 },
+  { id: "dinosaur", name: "Dinosaur", icon: <div className="text-sm">🦕</div>, color: "bg-green-600", count: 19 },
+  { id: "art", name: "Art & Craft", icon: <Palette className="w-4 h-4" />, color: "bg-indigo-500", count: 14 },
+  { id: "music", name: "Music & Dance", icon: <Music className="w-4 h-4" />, color: "bg-purple-600", count: 16 },
+  { id: "sports", name: "Sports", icon: <div className="text-sm">⚽</div>, color: "bg-orange-500", count: 11 },
+  { id: "science", name: "Science", icon: <div className="text-sm">🔬</div>, color: "bg-cyan-500", count: 8 },
+  { id: "fairy", name: "Fairy Tale", icon: <div className="text-sm">🧚</div>, color: "bg-pink-400", count: 13 },
+  { id: "animals", name: "Animals", icon: <div className="text-sm">🐾</div>, color: "bg-yellow-600", count: 9 }
+];
+
+
 export default function BrowseSuppliersPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -50,11 +69,13 @@ export default function BrowseSuppliersPage() {
   const [favorites, setFavorites] = useState([])
   const [isLoading, setIsLoading] = useState(true);
   const [searchHistory, setSearchHistory] = useState([]);
-  
+  const [selectedThemes, setSelectedThemes] = useState([])
   // New modal states
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+
+
 
   const categories = [
     { id: "all", name: "All", icon: <Sparkles className="w-5 h-5" /> },
@@ -190,7 +211,8 @@ export default function BrowseSuppliersPage() {
     });
   };
 
-  // Enhanced filtering function
+
+
   const filteredSuppliers = backendSuppliers.filter((supplier) => {
     // Category filter
     if (selectedCategory !== "all" && supplier.category.toLowerCase() !== selectedCategory) return false;
@@ -199,7 +221,7 @@ export default function BrowseSuppliersPage() {
     if (subcategory !== "all" && supplier.subcategory !== subcategory) return false;
     
     // Location filter
-    if (selectedLocation && selectedLocation !== "all") {
+    if (selectedLocation && selectedLocation !== "") {
       const locationMatch = supplier.location.toLowerCase().includes(selectedLocation.toLowerCase().replace('-', ' '));
       if (!locationMatch) return false;
     }
@@ -223,12 +245,25 @@ export default function BrowseSuppliersPage() {
       }
     }
     
+
+    if (selectedThemes.length > 0) {
+      const hasMatchingTheme = selectedThemes.some(selectedTheme => 
+        supplier.themes && supplier.themes.includes(selectedTheme)
+      );
+      if (!hasMatchingTheme) return false;
+    }
+    
     return true;
   });
 
+
   // Apply search to filtered suppliers
   const searchedSuppliers = searchSuppliers(filteredSuppliers, searchQuery);
-
+  console.log("🔍 About to render with:", {
+    backendSuppliers: backendSuppliers?.length,
+    filteredSuppliers: filteredSuppliers?.length,
+    isLoading: isLoading
+  });
   const toggleFavorite = supplierId => {
     setFavorites(prev =>
       prev.includes(supplierId)
@@ -236,6 +271,8 @@ export default function BrowseSuppliersPage() {
         : [...prev, supplierId]
     )
   }
+  
+
   
   const getAvailableSubcategories = () => {
     if (selectedCategory === "all") return ["All Categories"]
@@ -332,11 +369,29 @@ export default function BrowseSuppliersPage() {
 
   const currentCategory = categories.find(cat => cat.id === selectedCategory);
 
+  const toggleTheme = (themeId) => {
+    setSelectedThemes(prev => 
+      prev.includes(themeId) 
+        ? prev.filter(id => id !== themeId)
+        : [...prev, themeId]
+    );
+  };
+
   // Check if any filters are active
   const hasActiveFilters = subcategory !== "all" || 
                           selectedLocation !== "" || 
-                          priceRange !== "all";
+                          priceRange !== "all" ||
+                          selectedThemes.length > 0;
 
+
+                          const activeFilterCount = [
+                            subcategory !== "all", 
+                            selectedLocation !== "", 
+                            priceRange !== "all",
+                            selectedThemes.length > 0
+                          ].filter(Boolean).length;
+                        
+                          // if (!showFiltersModal) return null;
   // Clear all filters
   const clearAllFilters = () => {
     setSubcategory("all");
@@ -351,7 +406,7 @@ export default function BrowseSuppliersPage() {
       <ContextualBreadcrumb currentPage="browse"/>
  {/* Hero Section - Simpler Approach */}
 <div 
-  className="relative w-full h-[50vh] md:h-[50vh] lg:h-[60vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/1820228846/photo/photo-of-positive-attractive-guy-hand-hold-wired-microphone-singing-flying-confetti-christmas.jpg?s=612x612&w=0&k=20&c=7JN43WzSQJQkCN2kOnXkonLFVxDFF8wXHflsSCKsaUg=)] bg-bottom-left"
+  className="relative w-full h-[30vh] md:h-[50vh] lg:h-[60vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/1820228846/photo/photo-of-positive-attractive-guy-hand-hold-wired-microphone-singing-flying-confetti-christmas.jpg?s=612x612&w=0&k=20&c=7JN43WzSQJQkCN2kOnXkonLFVxDFF8wXHflsSCKsaUg=)] bg-bottom-left"
 >
   {/* Strong dark overlay */}
   <div className="absolute inset-0 bg-black/10"></div>
@@ -359,11 +414,11 @@ export default function BrowseSuppliersPage() {
   {/* Hero Content Overlay */}
   <div className="relative h-full flex items-center justify-center px-4">
     <div className="max-w-4xl mx-auto text-center text-white">
-    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-2xl text-shadow-lg">
+    <h1 className="text-4xl sm:text-4xl lg:text-6xl font-bold mb-6 drop-shadow-2xl text-shadow-lg">
   Find trusted
   <span className="text-white block drop-shadow-2xl">Party Suppliers</span>
 </h1>
-      <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
+      <p className="text-lg sm:text-md lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
       Create magical moments. Everything you need for the perfect party, all in one place.
       </p>
     </div>
@@ -606,109 +661,198 @@ export default function BrowseSuppliersPage() {
       {/* Filters Modal */}
       {showFiltersModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div className="flex items-center space-x-3">
-                <h3 className="text-xl font-semibold text-gray-900">Filter Suppliers</h3>
-                {hasActiveFilters && (
-                  <Badge className="bg-orange-100 text-orange-800">
-                    {[subcategory !== "all", selectedLocation !== "", priceRange !== "all"].filter(Boolean).length} active
-                  </Badge>
-                )}
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-xl font-semibold text-gray-900">Filter Suppliers</h3>
+              {hasActiveFilters && (
+                <Badge className="bg-orange-100 text-orange-800">
+                  {activeFilterCount} active
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                  Clear All
+                </Button>
+              )}
+              <button
+                onClick={() => setShowFiltersModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+  
+          {/* Filter Content */}
+          <div className="p-6 max-h-96 overflow-y-auto">
+            {/* Basic Filters Row */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Subcategory
+                </label>
+                <Select value={subcategory} onValueChange={setSubcategory}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose subcategory" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAvailableSubcategories().map((sub) => (
+                      <SelectItem key={sub} value={sub === getAvailableSubcategories()[0] ? "all" : sub}>
+                        {sub}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex items-center space-x-2">
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-                    Clear All
-                  </Button>
-                )}
-                <button
-                  onClick={() => setShowFiltersModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
+  
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Location
+                </label>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All locations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="uk-wide">All locations</SelectItem>
+                    <SelectItem value="central-london">Central London</SelectItem>
+                    <SelectItem value="north-london">North London</SelectItem>
+                    <SelectItem value="south-london">South London</SelectItem>
+                    <SelectItem value="east-london">East London</SelectItem>
+                    <SelectItem value="west-london">West London</SelectItem>
+                    <SelectItem value="uk-wide">UK Wide</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+  
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Price Range
+                </label>
+                <Select value={priceRange} onValueChange={setPriceRange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All prices" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All prices</SelectItem>
+                    <SelectItem value="0-50">£0 - £50</SelectItem>
+                    <SelectItem value="50-100">£50 - £100</SelectItem>
+                    <SelectItem value="100-200">£100 - £200</SelectItem>
+                    <SelectItem value="200+">£200+</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-
-            {/* Filter Content */}
-            <div className="p-6 max-h-96 overflow-y-auto">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Subcategory
-                  </label>
-                  <Select value={subcategory} onValueChange={setSubcategory}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose subcategory" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableSubcategories().map((sub) => (
-                        <SelectItem key={sub} value={sub === getAvailableSubcategories()[0] ? "all" : sub}>
-                          {sub}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Location
-                  </label>
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All locations" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All locations</SelectItem>
-                      <SelectItem value="central-london">Central London</SelectItem>
-                      <SelectItem value="north-london">North London</SelectItem>
-                      <SelectItem value="south-london">South London</SelectItem>
-                      <SelectItem value="east-london">East London</SelectItem>
-                      <SelectItem value="west-london">West London</SelectItem>
-                      <SelectItem value="uk-wide">UK Wide</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Price Range
-                  </label>
-                  <Select value={priceRange} onValueChange={setPriceRange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All prices" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All prices</SelectItem>
-                      <SelectItem value="0-50">£0 - £50</SelectItem>
-                      <SelectItem value="50-100">£50 - £100</SelectItem>
-                      <SelectItem value="100-200">£100 - £200</SelectItem>
-                      <SelectItem value="200+">£200+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+  
+            {/* Party Themes Section */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Party Themes
+                </label>
+                {selectedThemes.length > 0 && (
+                  <button
+                    onClick={() => setSelectedThemes([])}
+                    className="text-sm text-gray-500 hover:text-gray-700 underline"
+                  >
+                    Clear themes
+                  </button>
+                )}
               </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {partyThemes.map((theme) => (
+                  <button
+                    key={theme.id}
+                    onClick={() => toggleTheme(theme.id)}
+                    className={`relative p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedThemes.includes(theme.id)
+                        ? 'border-primary-500 bg-primary-50 shadow-md'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 ${theme.color} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
+                        {theme.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {theme.name}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {theme.count} suppliers
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {selectedThemes.includes(theme.id) && (
+                      <div className="absolute top-2 right-2">
+                        <div className="w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+  
+              {/* Selected Themes Display */}
+              {selectedThemes.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium mb-2">
+                    Selected themes ({selectedThemes.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedThemes.map((themeId) => {
+                      const theme = partyThemes.find(t => t.id === themeId);
+                      return (
+                        <Badge 
+                          key={themeId}
+                          variant="outline" 
+                          className="flex items-center gap-2 pr-1 border-blue-300 bg-blue-100 text-blue-800"
+                        >
+                          <div className={`w-3 h-3 ${theme.color} rounded-full flex items-center justify-center text-white text-xs`}>
+                            {theme.icon}
+                          </div>
+                          {theme.name}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTheme(themeId);
+                            }}
+                            className="ml-1 hover:bg-blue-200 rounded-full p-0.5 text-blue-600"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between p-6 bg-gray-50 border-t border-gray-100">
-              <div className="text-sm text-gray-600">
-                {searchedSuppliers.length} suppliers match your criteria
-              </div>
-              <div className="flex space-x-3">
-                <Button variant="outline" onClick={() => setShowFiltersModal(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => setShowFiltersModal(false)}>
-                  Apply Filters
-                </Button>
-              </div>
+          </div>
+  
+          {/* Modal Footer */}
+          <div className="flex items-center justify-between p-6 bg-gray-50 border-t border-gray-100">
+            <div className="text-sm text-gray-600">
+              {searchedSuppliers.length} suppliers match your criteria
+            </div>
+            <div className="flex space-x-3">
+              <Button variant="outline" onClick={() => setShowFiltersModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setShowFiltersModal(false)}>
+                Apply Filters ({searchedSuppliers.length} results)
+              </Button>
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Click outside to close modals */}

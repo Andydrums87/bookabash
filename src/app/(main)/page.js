@@ -7,17 +7,16 @@ import { usePartyBuilder } from '@/utils/partyBuilderBackend';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+
 import { Input } from "@/components/ui/input"
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Star, ArrowRight, ArrowDown, Search, User, Calendar, UsersIcon, MapPin } from "lucide-react"
+import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar, UsersIcon, MapPin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import MobileNav from "@/components/mobile-nav" // Assuming MobileNav is still desired here
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
-
-   
-
+import FlexibleLocationInput from '@/components/FlexibleLocationInput';
 
 export default function HomePage() {
 
@@ -36,16 +35,18 @@ export default function HomePage() {
     date: '2025-08-16',
     theme: 'princess',
     guestCount: '15',
-    postcode: 'w3-7qd',
+    postcode: '',
     childName: '', // We'll need to add this field or derive from theme
     childAge: 6 // Default age, we can make this dynamic
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false); // For button state
   const [showPartyLoader, setShowPartyLoader] = useState(false); // For full-screen loader
   const [buildingProgress, setBuildingProgress] = useState(0);
 
 
- 
+
+  
 const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [visibleImages, setVisibleImages] = useState([]);
@@ -293,11 +294,19 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
 };
   
   
+const [testValue, setTestValue] = useState('');
+const handleFieldChange = (field, value) => {
+  console.log('🔄 handleFieldChange called with:', { field, value });
+  
+  // Add this to see exactly which field is being called
+  if (field === 'postcode') {
+    console.log('🚨 POSTCODE field update detected!');
+    console.log('🚨 Call stack:', new Error().stack);
+  }
+  
+  setFormData(prev => ({ ...prev, [field]: value }));
+};
 
-  // Handle form field changes
-  const handleFieldChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
 
   const mapThemeValue = (formTheme) => {
     const themeMapping = {
@@ -426,7 +435,27 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
   
 
 
+  const [postcodeValid, setPostcodeValid] = useState(true);
+
+// 3. Add this validation function in your component:
+const validateAndFormatPostcode = (postcode) => {
+  if (!postcode) return { isValid: true, formatted: '' };
   
+  const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i;
+  const isValid = UK_POSTCODE_REGEX.test(postcode.trim());
+  
+  // Format postcode (uppercase with space)
+  let formatted = postcode;
+  if (isValid) {
+    const clean = postcode.replace(/\s/g, '').toUpperCase();
+    if (clean.length >= 5) {
+      formatted = clean.slice(0, -3) + ' ' + clean.slice(-3);
+    }
+  }
+  
+  return { isValid, formatted };
+};
+
 
 
   
@@ -452,7 +481,7 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
           <div className="space-y-4">
             <div className="space-y-3">
               <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-gray-900">
-                Plan Your <span className="text-[#FF6B6B]">Dream</span> Party in Minutes
+                Book Your <span className="text-[#FF6B6B]">Dream</span> Party in Minutes
               </h1>
               <h2 className="text-xl lg:text-2xl text-gray-700">Choose your theme, we&apos;ll handle everything else</h2>
               <p className="text-lg text-gray-600 leading-relaxed">
@@ -558,26 +587,67 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
                   </div>
                 </div>
 
-                {/* Postcode */}
-                <div className="col-span-1 md:col-span-1 space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Event postcode</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Select value={formData.postcode} onValueChange={(value) => handleFieldChange('postcode', value)}>
-                      <SelectTrigger className="bg-white py-6 px-22 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
-                        <SelectValue placeholder="Postcode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="w3-7qd">W3 7QD</SelectItem>
-                        <SelectItem value="sw1-1aa">SW1 1AA</SelectItem>
-                        <SelectItem value="e1-6an">E1 6AN</SelectItem>
-                        <SelectItem value="n1-9gu">N1 9GU</SelectItem>
-                        <SelectItem value="se1-9sg">SE1 9SG</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
+{/* Postcode - Desktop with validation (fixed layout) */}
+<div className="col-span-1 md:col-span-1 space-y-2">
+  <label className="block text-sm font-medium text-gray-700">
+    Event postcode
+  </label>
+  
+  <div className="relative">
+    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+    <Input
+      type="text"
+      value={formData.postcode}
+      onChange={(e) => {
+        const value = e.target.value;
+        handleFieldChange('postcode', value);
+        const { isValid } = validateAndFormatPostcode(value);
+        setPostcodeValid(isValid);
+      }}
+      onBlur={() => {
+        // Format when user finishes typing
+        const { isValid, formatted } = validateAndFormatPostcode(formData.postcode);
+        if (isValid && formatted !== formData.postcode) {
+          handleFieldChange('postcode', formatted);
+        }
+      }}
+      placeholder="Enter your postcode"
+      className={`
+        bg-white py-6 px-12 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10 pr-10
+        ${!postcodeValid && formData.postcode ? 'border-red-300 focus:border-red-500' : ''}
+      `}
+    />
+    
+    {/* Validation icon */}
+    {formData.postcode && (
+      postcodeValid ? (
+        <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
+      ) : (
+        <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-500" />
+      )
+    )}
+    
+    {/* Validation message - positioned absolutely to not affect layout */}
+    {!postcodeValid && formData.postcode && (
+      <div className="absolute top-full left-0 right-0 mt-1 z-10">
+        <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
+          <AlertCircle className="w-3 h-3" />
+          Please enter a valid UK postcode
+        </p>
+      </div>
+    )}
+    
+    {postcodeValid && formData.postcode && (
+      <div className="absolute top-full left-0 right-0 mt-1 z-10">
+        <p className="text-xs text-green-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-green-200">
+          <Check className="w-3 h-3" />
+          Valid postcode
+        </p>
+      </div>
+    )}
+  </div>
+</div>
                 {/* Search Button - Updated */}
                 <div className="col-span-2 md:col-span-1 mt-4 md:mt-0 md:flex md:items-end">
                 <Button 
@@ -620,7 +690,7 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
           <div className="relative z-10 flex flex-col text-center h-full px-6">
             <div className="max-w-sm mx-auto">
               <h1 className="text-5xl hero-title-width font-poppins-fix font-black leading-tight text-white mb-6 drop-shadow-2xl tracking-tight" style={{fontFamily: 'var(--font-poppins), sans-serif'}}>
-                Plan Your Dream Party In Minutes
+                Book Your Dream Party In Minutes
               </h1>
               
               <p className="text-xl font-bold text-white/90 leading-relaxed mb-8 drop-shadow">
@@ -706,26 +776,54 @@ const PartyBuildingLoader = ({ isVisible, theme, childName, progress }) => {
                   </Select>
                 </div>
               </div>
-
-              {/* Postcode - Half width on larger mobile */}
-              <div className="form-field-postcode form-field-half space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event postcode</label>
-                <div className="relative w-full">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
-                  <Select value={formData.postcode} onValueChange={(value) => handleFieldChange('postcode', value)}>
-                    <SelectTrigger className="w-full bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 pl-10">
-                      <SelectValue placeholder="Postcode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="w3-7qd">W3 7QD</SelectItem>
-                      <SelectItem value="sw1-1aa">SW1 1AA</SelectItem>
-                      <SelectItem value="e1-6an">E1 6AN</SelectItem>
-                      <SelectItem value="n1-9gu">N1 9GU</SelectItem>
-                      <SelectItem value="se1-9sg">SE1 9SG</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+{/* Postcode - Mobile with validation (fixed layout) */}
+<div className="form-field-postcode form-field-half space-y-2">
+  <label className="block text-sm font-medium text-gray-700">Event postcode</label>
+  <div className="relative w-full">
+    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+    <Input
+      type="text"
+      value={formData.postcode}
+      onChange={(e) => {
+        const value = e.target.value;
+        handleFieldChange('postcode', value);
+        const { isValid } = validateAndFormatPostcode(value);
+        setPostcodeValid(isValid);
+      }}
+      onBlur={() => {
+        // Format when user finishes typing
+        const { isValid, formatted } = validateAndFormatPostcode(formData.postcode);
+        if (isValid && formatted !== formData.postcode) {
+          handleFieldChange('postcode', formatted);
+        }
+      }}
+      placeholder="Enter your postcode"
+      className={`
+        w-full bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 pl-10 pr-10
+        ${!postcodeValid && formData.postcode ? 'border-red-300 focus:border-red-500' : ''}
+      `}
+    />
+    
+    {/* Validation icon */}
+    {formData.postcode && (
+      postcodeValid ? (
+        <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
+      ) : (
+        <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-500" />
+      )
+    )}
+    
+    {/* Validation message - positioned absolutely for mobile */}
+    {!postcodeValid && formData.postcode && (
+      <div className="absolute top-full left-0 right-0 mt-1 z-20">
+        <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
+          <AlertCircle className="w-3 h-3" />
+          Please enter a valid UK postcode
+        </p>
+      </div>
+    )}
+  </div>
+</div>
 
               {/* Search Button - Full width - Updated */}
               <div className="form-field-button form-field-full">

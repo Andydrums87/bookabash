@@ -1,3 +1,5 @@
+// components/supplier-form.jsx - Updated to use the new backend
+
 "use client"
 
 import React from "react"
@@ -8,19 +10,21 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MapPin } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useSupplierOnboarding } from "@/utils/mockBackend" // Import the new hook
 
 const serviceTypes = [
-  { id: "entertainers", name: "Entertainers" },
-  { id: "venues", name: "Venues" },
-  { id: "catering", name: "Catering" },
-  { id: "facepainting", name: "Face Painting" },
-  { id: "decorations", name: "Decorations" },
-  { id: "partybags", name: "Party Bags" },
-  { id: "other", name: "Other (Specify in Dashboard)" },
+  { id: "Entertainment", name: "Entertainment" },
+  { id: "Venues", name: "Venues" },
+  { id: "Catering", name: "Catering" },
+  { id: "Photography", name: "Photography" },
+  { id: "Decorations", name: "Decorations" },
+  { id: "Activities", name: "Activities & Games" },
+  { id: "other", name: "Other" },
 ]
 
 export function SupplierForm() {
   const router = useRouter()
+  const { loading, error, addSupplier } = useSupplierOnboarding() // Use the new hook
 
   const [formData, setFormData] = useState({
     businessName: "",
@@ -31,47 +35,61 @@ export function SupplierForm() {
     supplierType: "",
   })
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [formError, setFormError] = useState(null)
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    setError(null)
+    setFormError(null)
   }
 
   const handleSelectChange = (value) => {
     setFormData((prev) => ({ ...prev, supplierType: value }))
-    setError(null)
+
+    console.log(formData)
+    setFormError(null)
   }
 
   const validateForm = () => {
     const { businessName, yourName, email, phone, postcode, supplierType } = formData
+
     if (!businessName || !yourName || !email || !phone || !postcode || !supplierType) {
-      setError("All fields are required.")
+      setFormError("All fields are required.")
       return false
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Please enter a valid email address.")
+      setFormError("Please enter a valid email address.")
       return false
     }
     return true
   }
+
   const submitForm = async (event) => {
     event.preventDefault()
     if (!validateForm()) return
 
-    setIsLoading(true)
-    setError(null) // Clear previous errors
+    setFormError(null)
 
-    console.log("Form submitted:", formData)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    // On successful submission, navigate to the success page
-    router.push("/suppliers/onboarding/success")
-    // setIsLoading will remain true until navigation completes, which is fine.
-    // No need to reset form here as we are navigating away.
+    try {
+      const result = await addSupplier(formData)
+      
+      if (result.success) {
+        console.log('✅ Supplier added successfully:', result.supplier)
+        console.log('🔍 Check localStorage "allSuppliers" to see the new supplier')
+        
+        // Store the supplier ID so the dashboard knows which supplier this is
+        localStorage.setItem('currentSupplierId', result.supplier.id)
+        
+        // Navigate to success page
+        router.push("/suppliers/onboarding/success")
+      } else {
+        setFormError(result.error || 'Failed to create supplier account')
+      }
+    } catch (error) {
+      console.error("Error during signup:", error)
+      setFormError("Something went wrong. Please try again.")
+    }
   }
+ 
 
   const labelClasses = "text-gray-700 dark:text-gray-300 font-medium"
   const inputClasses =
@@ -143,7 +161,8 @@ export function SupplierForm() {
           <Label htmlFor="supplierType" className={labelClasses}>
             Primary Supplier Type {requiredStar}
           </Label>
-          <Select value={formData.supplierType} onValueChange={handleSelectChange}>
+          <Select   value={formData.supplierType} 
+  onValueChange={(value) => setFormData((prev) => ({ ...prev, supplierType: value }))}>
             <SelectTrigger
               id="supplierType"
               className={`mt-1 w-full ${inputClasses.replace("placeholder:text-gray-400 dark:placeholder:text-gray-500", "")}`}
@@ -181,15 +200,20 @@ export function SupplierForm() {
         </div>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {/* Show errors */}
+      {(formError || error) && (
+        <p className="mt-4 text-sm text-red-600 dark:text-red-400">
+          {formError || error}
+        </p>
+      )}
 
       <div className="mt-8 md:col-span-2 flex justify-end">
         <Button
           type="submit"
           className="bg-primary-600 hover:bg-[hsl(var(--primary-700))] text-white dark:bg-primary-500 dark:hover:bg-primary-600 px-8 py-7 shadow-2xl text-base text-lg font-semibold rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:bg-[hsl(var(--primary-500))]  focus:ring-offset-2"
-          disabled={isLoading}
+          disabled={loading}
         >
-          {isLoading ? "Signing Up..." : "Sign Up"}
+          {loading ? "Creating Account..." : "Join BookABash"}
         </Button>
       </div>
     </form>

@@ -5,6 +5,11 @@ const mockSuppliers = [
   {
     id: "magic-mike",
     name: "Magic Mike's Superhero Show",
+    owner: {
+      name: "Mike Johnson",
+      email: "mike@magicmike.com",
+      phone: "07123456789"
+    },
     category: "Entertainment",
     subcategory: "Magicians",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749460635/edson-junior-YlgnX_ISPLo-unsplash_wlsz60.jpg",
@@ -17,13 +22,28 @@ const mockSuppliers = [
     description: "Professional superhero magic show with audience participation",
     badges: ["DBS Checked", "Highly Rated"],
     availability: "Available this weekend",
+    themes: ["superhero", "magic", "entertainment"],
+    businessDescription: "Professional superhero magic show with audience participation",
+    serviceType: "entertainer",
+    packages: [
+      {
+        id: "magic-basic",
+        name: "Basic Magic Show",
+        description: "45-minute magic show with superhero theme",
+        price: 150,
+        priceType: "flat",
+        duration: "45 minutes",
+        whatsIncluded: ["Magic Show", "Superhero Theme", "Audience Participation"]
+      }
+    ],
+    isComplete: true // Existing suppliers are complete
   },
   {
     id: "spiderman-live-show",
     name: "Amazing Spider-Man Live Show",
     category: "Entertainment",
     subcategory: "Character Visits",
-    themes: ["spiderman", "superhero", "marvel"],
+    themes: ["spiderman", "superhero", "marvel", "princess", "dinosaur"],
     image: "https://images.unsplash.com/photo-1521714161819-15534968fc5f?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3BpZGVybWFufGVufDB8MHwwfHx8MA%3D%3D",
     rating: 4.9,
     reviewCount: 156,
@@ -76,7 +96,7 @@ const mockSuppliers = [
     name: "Eras Tour DJ Experience",
     category: "Entertainment",
     subcategory: "DJ Services", 
-    themes: ["taylor-swift", "music", "pop", "dance"],
+    themes: ["taylor-swift", "music", "pop", "dance", "princess"],
     image: "https://images.unsplash.com/photo-1692796226663-dd49d738f43c?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dGF5bG9yJTIwc3dpZnR8ZW58MHx8MHx8fDA%3D",
     rating: 4.7,
     reviewCount: 178,
@@ -761,52 +781,439 @@ const mockSuppliers = [
     availability: "Available weekends",
   }
 ];
-// Enhanced supplier search with theme filtering
+
+// Function to add a new supplier from onboarding form
+const addSupplierFromOnboarding = (formData) => {
+
+  const getThemesFromServiceType = (serviceType) => {
+    const themeMapping = {
+      'magician': ['magic', 'superhero', 'general'],
+      'clown': ['circus', 'comedy', 'general'],
+      'entertainer': ['general', 'superhero', 'princess'],
+      'dj': ['music', 'dance', 'general'],
+      'musician': ['music', 'taylor-swift', 'general'],
+      'face-painting': ['general', 'superhero', 'princess'],
+      'decorations': ['general'],
+      'venue': ['general'],
+      'catering': ['general']
+    };
+    
+    return themeMapping[serviceType] || ['general'];
+  };
+  const newSupplier = {
+    id: `supplier-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    name: formData.businessName,
+    owner: {
+      name: formData.yourName, // From the onboarding form
+      email: formData.email,
+      phone: formData.phone
+    },
+    category: formData.supplierType, // Default until they complete profile
+    subcategory: formData.supplierType,
+    image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(formData.businessName),
+    rating: 0, // New supplier, no rating yet
+    reviewCount: 0,
+    bookingCount: 0,
+    location: formData.postcode || "Location TBD",
+    priceFrom: 0, // They haven't set packages yet
+    priceUnit: "per event",
+    description: "New supplier - profile setup in progress",
+    badges: ["New Provider"],
+    availability: "Contact for availability",
+    themes: getThemesFromServiceType(formData.supplierType), // Add this
+  serviceType: formData.supplierType,
+    businessDescription: "",
+    serviceType: formData.supplierType,
+    packages: [],
+    portfolioImages: formData.portfolioImages || [],  // ✅ CORRECT
+  portfolioVideos: formData.portfolioVideos || [],  // ✅ CORRECT
+    isComplete: false, // They still need to complete their profile
+    createdAt: new Date().toISOString(),
+    workingHours: {
+      Monday: { active: true, start: "09:00", end: "17:00" },
+      Tuesday: { active: true, start: "09:00", end: "17:00" },
+      Wednesday: { active: true, start: "09:00", end: "17:00" },
+      Thursday: { active: true, start: "09:00", end: "17:00" },
+      Friday: { active: true, start: "09:00", end: "17:00" },
+      Saturday: { active: true, start: "10:00", end: "16:00" },
+      Sunday: { active: false, start: "10:00", end: "16:00" },
+    },
+    unavailableDates: [],
+    busyDates: [],
+    availabilityNotes: "",
+    advanceBookingDays: 7,
+    maxBookingDays: 365,
+  };
+
+  return newSupplier;
+};
+
+// Save to localStorage
+const saveSuppliers = (suppliers) => {
+  try {
+    localStorage.setItem('allSuppliers', JSON.stringify(suppliers));
+    return true;
+  } catch (error) {
+    console.error('Error saving suppliers:', error);
+    return false;
+  }
+};
+
+// Get all suppliers from localStorage, or return mock data
+const getAllSuppliers = () => {
+  try {
+    const stored = localStorage.getItem('allSuppliers');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    return mockSuppliers;
+  } catch (error) {
+    console.error('Error loading suppliers:', error);
+    return mockSuppliers;
+  }
+};
+
+
+
+// Hook for the dashboard to manage the current supplier
+export function useSupplierDashboard() {
+  const [currentSupplier, setCurrentSupplier] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  
+
+  // Load the current supplier when component mounts
+  useEffect(() => {
+    const loadCurrentSupplier = async () => {
+      try {
+        setLoading(true);
+        
+        // Get the supplier ID that was stored during onboarding
+        const supplierId = localStorage.getItem('currentSupplierId');
+        
+        if (supplierId) {
+          const supplier = await suppliersAPI.getSupplierById(supplierId);
+          if (supplier) {
+            setCurrentSupplier(supplier);
+            console.log('📥 Loaded current supplier for dashboard:', supplier);
+          } else {
+            setError('Supplier not found');
+          }
+        } else {
+          setError('No supplier ID found - user may not be signed up');
+        }
+      } catch (err) {
+        setError(err.message);
+        console.error('Error loading current supplier:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCurrentSupplier();
+  }, []);
+
+  // Function to update the supplier profile
+  const updateProfile = async (profileData, packages = []) => {
+    if (!currentSupplier) {
+      return { success: false, error: 'No current supplier loaded' };
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const result = await suppliersAPI.updateSupplierProfile(currentSupplier.id, profileData, packages);
+      
+      if (result.success) {
+        setCurrentSupplier(result.supplier);
+        console.log('🎉 Supplier profile updated successfully!');
+      }
+      
+      return result;
+    } catch (error) {
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return {
+    currentSupplier,
+    loading,
+    saving,
+    error,
+    updateProfile
+  };
+}
+
+// API functions
 export const suppliersAPI = {
   // Get all suppliers
   getAllSuppliers: async () => {
     await new Promise(resolve => setTimeout(resolve, 600));
-    return mockSuppliers;
+    return getAllSuppliers();
+  },
+
+  getEntertainmentByTheme: async (theme) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    try {
+      const allSuppliers = getAllSuppliers();
+      
+      // Filter for entertainment suppliers that match the theme
+      const entertainmentSuppliers = allSuppliers.filter(supplier => {
+        // Check if supplier is entertainment
+        const isEntertainment = supplier.category === 'Entertainment' || 
+                               supplier.serviceType === 'entertainer' ||
+                               supplier.serviceType === 'magician' ||
+                               supplier.serviceType === 'clown' ||
+                               supplier.serviceType === 'dj' ||
+                               supplier.serviceType === 'musician';
+        
+        if (!isEntertainment) return false;
+        
+        // Check theme matching
+        const matchesTheme = 
+          // Direct theme match
+          supplier.themes?.includes(theme) ||
+          supplier.serviceType === theme ||
+          // Name/description contains theme keywords
+          supplier.name.toLowerCase().includes(theme.toLowerCase()) ||
+          supplier.description?.toLowerCase().includes(theme.toLowerCase()) ||
+          // Handle specific theme mappings
+          (theme === 'spiderman' && (
+            supplier.themes?.includes('superhero') ||
+            supplier.name.toLowerCase().includes('spider') ||
+            supplier.name.toLowerCase().includes('superhero')
+          )) ||
+          (theme === 'princess' && (
+            supplier.themes?.includes('princess') ||
+            supplier.themes?.includes('fairy') ||
+            supplier.name.toLowerCase().includes('princess')
+          )) ||
+          (theme === 'taylor-swift' && (
+            supplier.serviceType === 'musician' ||
+            supplier.serviceType === 'dj' ||
+            supplier.themes?.includes('music')
+          ));
+          (theme === 'pokemon' && (
+            supplier.serviceType === 'pokemon' ||
+            supplier.serviceType === 'pokemon' ||
+            supplier.themes?.includes('pokemon')
+          ));
+        
+        return matchesTheme;
+      });
+      
+      console.log(`🎭 Found ${entertainmentSuppliers.length} entertainment suppliers for theme: ${theme}`);
+      return entertainmentSuppliers;
+      
+    } catch (error) {
+      console.error('Error getting entertainment by theme:', error);
+      return [];
+    }
+  },
+
+  getVenuesByTheme: async (theme) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    try {
+      const allSuppliers = getAllSuppliers();
+      
+      const venueSuppliers = allSuppliers.filter(supplier => {
+        const isVenue = supplier.category === 'Venues' || 
+                       supplier.serviceType === 'venue';
+        
+        if (!isVenue) return false;
+        
+        const matchesTheme = supplier.themes?.includes(theme) ||
+                           supplier.name.toLowerCase().includes(theme.toLowerCase()) ||
+                           supplier.description?.toLowerCase().includes(theme.toLowerCase());
+        
+        return matchesTheme;
+      });
+      
+      console.log(`🏢 Found ${venueSuppliers.length} venues for theme: ${theme}`);
+      return venueSuppliers;
+      
+    } catch (error) {
+      console.error('Error getting venues by theme:', error);
+      return [];
+    }
+  },
+
+  getCateringByTheme: async (theme) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    try {
+      const allSuppliers = getAllSuppliers();
+      
+      const cateringSuppliers = allSuppliers.filter(supplier => {
+        const isCatering = supplier.category === 'Catering' || 
+                          supplier.serviceType === 'catering';
+        
+        if (!isCatering) return false;
+        
+        const matchesTheme = supplier.themes?.includes(theme) ||
+                           supplier.name.toLowerCase().includes(theme.toLowerCase()) ||
+                           supplier.description?.toLowerCase().includes(theme.toLowerCase());
+        
+        return matchesTheme;
+      });
+      
+      console.log(`🍰 Found ${cateringSuppliers.length} catering suppliers for theme: ${theme}`);
+      return cateringSuppliers;
+      
+    } catch (error) {
+      console.error('Error getting catering by theme:', error);
+      return [];
+    }
+  },
+
+
+updateSupplierProfile: async (supplierId, updatedData, packages = []) => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  try {
+    const allSuppliers = getAllSuppliers();
+    const supplierIndex = allSuppliers.findIndex(s => s.id === supplierId);
+    
+    if (supplierIndex === -1) {
+      return { success: false, error: 'Supplier not found' };
+    }
+
+    // Update the supplier with new data
+    const updatedSupplier = {
+      ...allSuppliers[supplierIndex],
+      name: updatedData.businessName,
+      description: updatedData.businessDescription || "Professional service provider",
+      location: updatedData.postcode || allSuppliers[supplierIndex].location,
+      serviceType: updatedData.serviceType,
+      packages: packages,
+
+      portfolioImages: updatedData.portfolioImages || allSuppliers[supplierIndex].portfolioImages || [],
+      portfolioVideos: updatedData.portfolioVideos || allSuppliers[supplierIndex].portfolioVideos || [],
+
+      serviceDetails: updatedData.serviceDetails || allSuppliers[supplierIndex].serviceDetails,
+
+      coverPhoto: updatedData.coverPhoto || allSuppliers[supplierIndex].coverPhoto,
+      image: updatedData.coverPhoto || allSuppliers[supplierIndex].image,
+
+      workingHours: updatedData.workingHours || allSuppliers[supplierIndex].workingHours,
+      unavailableDates: updatedData.unavailableDates || allSuppliers[supplierIndex].unavailableDates || [],
+      busyDates: updatedData.busyDates || allSuppliers[supplierIndex].busyDates || [],
+      availabilityNotes: updatedData.availabilityNotes || allSuppliers[supplierIndex].availabilityNotes || "",
+      advanceBookingDays: updatedData.advanceBookingDays || allSuppliers[supplierIndex].advanceBookingDays || 7,
+      maxBookingDays: updatedData.maxBookingDays || allSuppliers[supplierIndex].maxBookingDays || 365,
+      
+      // Update pricing based on packages
+      priceFrom: packages.length > 0 ? Math.min(...packages.map(p => p.price)) : 0,
+      priceUnit: packages.length > 0 && packages[0]?.priceType === 'hourly' ? 'per hour' : 'per event',
+      
+      // Update completion status
+      isComplete: packages.length > 0 && updatedData.businessDescription, // Complete if they have packages and description
+      
+      // Update badges
+      badges: [
+        ...(packages.length > 0 ? ['Packages Available'] : ['New Provider']),
+        ...(allSuppliers[supplierIndex].badges || []).filter(b => !['New Provider', 'Packages Available'].includes(b))
+      ],
+      
+      // Update the owner info too
+      owner: {
+        ...allSuppliers[supplierIndex].owner,
+        name: updatedData.contactName || allSuppliers[supplierIndex].owner.name,
+        email: updatedData.email || allSuppliers[supplierIndex].owner.email,
+        phone: updatedData.phone || allSuppliers[supplierIndex].owner.phone
+      }
+    };
+
+    allSuppliers[supplierIndex] = updatedSupplier;
+    const success = saveSuppliers(allSuppliers);
+    
+    if (success) {
+      console.log('✅ Supplier profile updated:', updatedSupplier);
+      return { success: true, supplier: updatedSupplier };
+    } else {
+      return { success: false, error: 'Failed to save updates' };
+    }
+  } catch (error) {
+    console.error('Error updating supplier:', error);
+    return { success: false, error: error.message };
+  }
+},
+
+
+  // Add new supplier from onboarding
+  addSupplierFromOnboarding: async (formData) => {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    
+    try {
+      const currentSuppliers = getAllSuppliers();
+      const newSupplier = addSupplierFromOnboarding(formData);
+      
+      const updatedSuppliers = [...currentSuppliers, newSupplier];
+      const success = saveSuppliers(updatedSuppliers);
+      
+      if (success) {
+        console.log('✅ New supplier added:', newSupplier);
+        return { success: true, supplier: newSupplier };
+      } else {
+        return { success: false, error: 'Failed to save supplier' };
+      }
+    } catch (error) {
+      console.error('Error adding supplier:', error);
+      return { success: false, error: error.message };
+    }
   },
 
   // Get supplier by ID
   getSupplierById: async (id) => {
     await new Promise(resolve => setTimeout(resolve, 300));
-    return mockSuppliers.find(supplier => supplier.id === id) || null;
+    const allSuppliers = getAllSuppliers();
+    return allSuppliers.find(supplier => supplier.id === id) || null;
   },
 
-  // Get suppliers by category
-  getSuppliersByCategory: async (category) => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    if (category === 'all') return mockSuppliers;
-    return mockSuppliers.filter(supplier => 
-      supplier.category.toLowerCase() === category.toLowerCase()
-    );
-  },
-
-  // NEW: Get suppliers by theme
-  getSuppliersByTheme: async (theme) => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return mockSuppliers.filter(supplier => 
-      supplier.themes && supplier.themes.some(t => 
-        t.toLowerCase().includes(theme.toLowerCase())
-      )
-    );
-  },
-
-  // NEW: Get entertainment suppliers by theme (for party builder)
-  getEntertainmentByTheme: async (theme) => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    return mockSuppliers.filter(supplier => 
-      supplier.category === 'Entertainment' &&
-      supplier.themes && supplier.themes.some(t => 
-        t.toLowerCase().includes(theme.toLowerCase())
-      )
-    );
+  // Check if user owns a supplier (for redirecting to dashboard)
+  getSupplierByOwnerEmail: async (email) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const allSuppliers = getAllSuppliers();
+    return allSuppliers.find(supplier => supplier.owner.email === email) || null;
   }
 };
 
-// React hooks remain the same but with enhanced functionality
+// Hook for adding supplier from onboarding
+export function useSupplierOnboarding() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const addSupplier = async (formData) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await suppliersAPI.addSupplierFromOnboarding(formData);
+      return result;
+    } catch (error) {
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    loading,
+    error,
+    addSupplier
+  };
+}
+
+// Your existing hooks stay the same
 import { useState, useEffect } from 'react';
 
 export function useSuppliers() {
@@ -846,6 +1253,11 @@ export function useSupplier(supplierId) {
   const [error, setError] = useState(null);
 
   const loadSupplier = async () => {
+    if (!supplierId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -860,49 +1272,13 @@ export function useSupplier(supplierId) {
   };
 
   useEffect(() => {
-    if (supplierId) {
-      loadSupplier();
-    }
-  }, [supplierId, loadSupplier]);
+    loadSupplier();
+  }, [supplierId]);
 
   return {
     supplier,
     loading,
     error,
     refetch: loadSupplier
-  };
-}
-
-// NEW: Hook for theme-based supplier search
-export function useSuppliersByTheme(theme) {
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const loadSuppliersByTheme = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await suppliersAPI.getSuppliersByTheme(theme);
-      setSuppliers(data);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error loading themed suppliers:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (theme) {
-      loadSuppliersByTheme();
-    }
-  }, [theme]);
-
-  return {
-    suppliers,
-    loading,
-    error,
-    refetch: loadSuppliersByTheme
   };
 }
