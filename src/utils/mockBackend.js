@@ -3,6 +3,200 @@
 
 const mockSuppliers = [
   {
+    id: "andys-entertainment-company",
+    name: "Andy's Entertainment Company",
+    owner: {
+      name: "Andrew Joseph",
+      email: "neon_4@hotmail.com",
+      phone: "07835444903"
+    },
+    category: "Entertainment",
+    subcategory: "Entertainment",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171099/zsvzr5lwitllaao0dhpo.jpg",
+    rating: 0,
+    reviewCount: 0,
+    bookingCount: 0,
+    location: "W3 7QD",
+    priceFrom: 250,
+    priceUnit: "per event",
+    description: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events",
+    badges: ["Packages Available"],
+    availability: "Contact for availability",
+    themes: ["general"],
+    serviceType: "Entertainment",
+    businessDescription: "",
+    packages: [
+      {
+        name: "Bronze Package",
+        description: "👑 One Princess Character of your choice\n\n📚 Storytime & Sing-Along with themed songs\n\n🎉 Interactive Games tailored for ages 3–7\n\n📸 Photo Opportunities with the princess\n\n🎂 Happy Birthday Song and cake ceremony assistance\n\n⏰ 30-Minute Visit – perfect for smaller gatherings\n\n✨ Royal Entrance & Farewell",
+        price: 250,
+        duration: "2 houts",
+        priceType: "per_hour",
+        whatsIncluded: ["Face Painting", "Princess Visit"],
+        imageUrl: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171112/lolt3lwfsefpayjtyohg.jpg",
+        id: "pkg1750170716562",
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171112/lolt3lwfsefpayjtyohg.jpg"
+      },
+      {
+        name: "Gold Package",
+        description: "👑 One Princess Character of your choice\n\n📚 Storytime & Sing-Along with themed songs\n\n🎉 Interactive Games tailored for ages 3–7\n\n📸 Photo Opportunities with the princess\n\n🎂 Happy Birthday Song and cake ceremony assistance\n\n⏰ 30-Minute Visit – perfect for smaller gatherings\n\n✨ Royal Entrance & Farewell",
+        price: 270,
+        duration: "2 hours",
+        priceType: "per_hour",
+        whatsIncluded: ["Face painting etc"],
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171118/uz0nvrjpqhi3sqmypx4c.jpg",
+        id: "pkg1750172553383",
+        imageUrl: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171118/uz0nvrjpqhi3sqmypx4c.jpg"
+      }
+    ],
+    portfolioImages: [
+      {
+        id: 1750171107817.9058,
+        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171106/wsennsprk7yat8ymf7ev.jpg",
+        alt: "Portfolio image 1",
+        title: "iStock 469207460",
+        description: "",
+        originalFileName: "iStock-469207460.jpg",
+        fileSize: 594340,
+        cloudinaryId: "wsennsprk7yat8ymf7ev"
+      },
+      {
+        id: 1750171113325.3438,
+        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171112/lolt3lwfsefpayjtyohg.jpg",
+        alt: "Portfolio image 2",
+        title: "iStock 1205509072",
+        description: "",
+        originalFileName: "iStock-1205509072.jpg",
+        fileSize: 368967,
+        cloudinaryId: "lolt3lwfsefpayjtyohg"
+      },
+      {
+        id: 1750171119084.7903,
+        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171118/uz0nvrjpqhi3sqmypx4c.jpg",
+        alt: "Portfolio image 3",
+        title: "iStock 1369813086",
+        description: "",
+        originalFileName: "iStock-1369813086.jpg",
+        fileSize: 616590,
+        cloudinaryId: "uz0nvrjpqhi3sqmypx4c"
+      },
+      {
+        id: 1750171127496.0366,
+        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171126/am8r9ikaskn1606hbe6q.jpg",
+        alt: "Portfolio image 4",
+        title: "iStock 1150515783",
+        description: "",
+        originalFileName: "iStock-1150515783.jpg",
+        fileSize: 556923,
+        cloudinaryId: "am8r9ikaskn1606hbe6q"
+      },
+      {
+        id: 1750171136697.3655,
+        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171135/b0mkhgyktwev4iomrbbf.jpg",
+        alt: "Portfolio image 5",
+        title: "iStock 1047163654",
+        description: "",
+        originalFileName: "iStock-1047163654.jpg",
+        fileSize: 538670,
+        cloudinaryId: "b0mkhgyktwev4iomrbbf"
+      },
+      {
+        id: 1750171150110.6064,
+        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171149/chvdxf5xt326jbrtm6b4.jpg",
+        alt: "Portfolio image 6",
+        title: "iStock 177828270",
+        description: "",
+        originalFileName: "iStock-177828270.jpg",
+        fileSize: 692073,
+        cloudinaryId: "chvdxf5xt326jbrtm6b4"
+      }
+    ],
+    portfolioVideos: [],
+    isComplete: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events",
+    createdAt: "2025-06-17T14:29:07.847Z",
+    workingHours: {
+      Monday: { active: false, start: "09:00", end: "17:00" },
+      Tuesday: { active: false, start: "09:00", end: "17:00" },
+      Wednesday: { active: false, start: "09:00", end: "17:00" },
+      Thursday: { active: true, start: "09:00", end: "17:00" },
+      Friday: { active: true, start: "09:00", end: "17:00" },
+      Saturday: { active: true, start: "10:00", end: "16:00" },
+      Sunday: { active: false, start: "10:00", end: "16:00" }
+    },
+    unavailableDates: [
+      "2025-06-20T23:00:00.000Z",
+      "2025-06-27T23:00:00.000Z",
+      "2025-06-30T23:00:00.000Z",
+      "2025-07-01T23:00:00.000Z",
+      "2025-07-02T23:00:00.000Z",
+      "2025-07-03T23:00:00.000Z",
+      "2025-07-04T23:00:00.000Z"
+    ],
+    busyDates: [],
+    availabilityNotes: "",
+    advanceBookingDays: 7,
+    maxBookingDays: 365,
+    serviceDetails: {
+      aboutService: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events. Our professionally trained performers arrive as beloved princesses, ready to delight with storytelling, singing, games, and photo opportunities. Whether it’s a birthday, tea party, or community celebration, we create enchanting memories that children will cherish forever. With exquisite costumes, personalized interactions, and a commitment to high-quality entertainment, we turn every party into a royal celebration. Let us make your little one’s dream come true—because every child deserves a happily ever after.",
+      serviceHighlights: "Professional Performers – Talented, trained actors with singing and storytelling experience.\n\nAuthentic Costumes – High-quality, screen-accurate princess gowns for a truly magical experience.\n\nInteractive Entertainment – Activities include games, sing-alongs, dancing, face painting, and photo ops.\n\nCustomizable Packages – Flexible party options to suit different budgets, themes, and group sizes.\n\nMobile Service – We bring the magic to your home, venue, or event location.\n\nSpecial Appearances – Available for birthdays, school visits, charity events, and more.\n\nMemorable Keepsakes – Add-ons available such as tiaras, certificates, and party favors.",
+      durationOptions: {
+        minHours: 1,
+        maxHours: 4,
+        availableOptions: ["1 hour", "1.5 hours", "2 hours", "2.5 hours", "3 hours", "4 hours"]
+      },
+      pricingInfo: {
+        pricingModel: "per-hour",
+        basePrice: 0,
+        priceDescription: "",
+        whatIncluded: []
+      },
+      serviceStandards: {
+        setupTime: 30,
+        equipmentProvided: true,
+        cleanupIncluded: false,
+        setupDescription: ""
+      },
+      serviceIncludes: {
+        performerGenders: [],
+        ageGroups: [],
+        teamSize: 1,
+        teamDescription: "",
+        actType: "",
+        travelRadius: "",
+        equipment: "",
+        performanceOptions: []
+      },
+      venueDetails: {
+        venueType: "",
+        capacity: "",
+        facilities: [],
+        accessibility: ""
+      },
+      requirements: {
+        spaceRequired: "",
+        powerNeeded: false,
+        indoorOutdoor: [],
+        specialRequirements: ""
+      },
+      certifications: {
+        dbsCertificate: false,
+        publicLiability: false,
+        firstAid: false,
+        otherCerts: []
+      },
+      personalBio: {
+        yearsExperience: 20,
+        inspiration: "My grandmother who was a trapeze artist",
+        favoriteEvent: "I performed at the London 2012 Olympics",
+        dreamCelebrity: "Brian Blessed - I'm a huge fan",
+        personalStory: "",
+        funFacts: []
+      }
+    },
+    coverPhoto: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171099/zsvzr5lwitllaao0dhpo.jpg"
+  },
+  
+  {
     id: "magic-moments",
     name: "Magic Moments Entertainment",
     owner: {
