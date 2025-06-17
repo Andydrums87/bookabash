@@ -17,7 +17,7 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
       {imageUrl ? (
         <div className="relative w-full h-48">
           <Image
-            src={imageUrl || "/placeholder.svg"}
+            src={imageUrl || "/placeholder.jpg"}
             alt={name || "Package image"}
             layout="fill"
             objectFit="cover"

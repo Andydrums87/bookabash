@@ -53,7 +53,7 @@ export default function SignInPage() {
         <Card className="w-full max-w-md shadow-xl border-gray-200">
           <CardHeader className="text-center">
             {/* Logo inside card removed as it's in the header now, but title remains */}
-            <CardTitle className="text-3xl font-bold text-primary-700 pt-2">Welcome Back!</CardTitle>
+            <CardTitle className="text-3xl font-bold text-primary-700 pt-10">Welcome Back!</CardTitle>
             <CardDescription className="text-gray-600">
               Sign in to continue planning your bash or managing your services.
             </CardDescription>
@@ -166,7 +166,7 @@ export default function SignInPage() {
                 Facebook
               </Button>
             </div>
-            <p className="mt-6 text-center text-sm text-gray-600">
+            <p className="mt-6 text-center text-sm text-gray-600 pb-10">
               Don&apos;t have an account?{" "}
               <Link
                 href="/signup"

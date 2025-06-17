@@ -3,15 +3,125 @@
 
 const mockSuppliers = [
   {
+    id: "magic-moments",
+    name: "Magic Moments Entertainment",
+    owner: {
+      name: "Alex Johnson",
+      email: "hello@magicmoments.co.uk",
+      phone: "+44 7123 456 789",
+    },
+    category: "Entertainment",
+    subcategory: "Magicians",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750112354/evvqofjwxsxdhshwc7lt.jpg",
+    rating: 4.9,
+    reviewCount: 127,
+    bookingCount: 89,
+    location: "London, UK",
+    priceFrom: 150,
+    priceUnit: "per event",
+    description:
+      "Professional children's entertainers specializing in superhero-themed parties. We bring magic, laughter, and unforgettable memories to your special day.",
+    badges: ["Highly Rated", "Fast Responder", "Verified"],
+    themes: ["superhero", "magic", "entertainment"],
+    businessDescription:
+      "Professional children's entertainers specializing in superhero-themed parties. We bring magic, laughter, and unforgettable memories to your special day.",
+    serviceType: "entertainer",
+    packages: [
+      {
+        id: "basic",
+        name: "Basic Magic Show",
+        description: "A fun and engaging magic show.",
+        price: 150,
+        priceType: "flat",
+        duration: "1 hour",
+        whatsIncluded: ["30-min magic show", "Balloon animals for 10 kids"],
+      },
+      {
+        id: "premium",
+        name: "Premium Party Package",
+        description: "The ultimate party experience.",
+        price: 250,
+        priceType: "flat",
+        duration: "2 hours",
+        whatsIncluded: ["1-hour interactive show", "Games & activities", "Face painting for 15 kids"],
+        popular: true,
+      },
+    ],
+    portfolioImages: [
+      { id: "img1", image: "/superhero.webp", title: "Superhero Fun" },
+      { id: "img2", image: "/superhero.webp", title: "Balloon Twisting" },
+      { id: "img3", image: "/superhero.webp", title: "Happy Faces" },
+      { id: "img4", image: "/placeholder.jpg", title: "Party Games" },
+    ],
+    portfolioVideos: [],
+    isComplete: true,
+    workingHours: {
+      Sunday: { active: true, start: "10:00", end: "18:00" },
+      Monday: { active: false, start: "09:00", end: "17:00" },
+      Tuesday: { active: false, start: "09:00", end: "17:00" },
+      Wednesday: { active: true, start: "14:00", end: "20:00" },
+      Thursday: { active: false, start: "09:00", end: "17:00" },
+      Friday: { active: true, start: "14:00", end: "20:00" },
+      Saturday: { active: true, start: "09:00", end: "20:00" },
+    },
+    unavailableDates: ["2025-12-25", "2026-01-01"],
+    busyDates: [],
+    availabilityNotes: "",
+    advanceBookingDays: 7,
+    maxBookingDays: 90,
+    serviceDetails: {
+      aboutService:
+        "We provide top-notch entertainment for children's parties. Our experienced performers know how to keep kids engaged and thrilled.",
+      serviceHighlights:
+        "Interactive Magic Shows\nProfessional Face Painting\nExciting Party Games\nCustomizable Themes",
+      serviceIncludes: {
+        actType: "Magician, Face Painter, Balloon Modeler",
+        travelRadius: 30,
+        equipment: "All necessary props, small sound system, face paints, balloons.",
+        performanceOptions: ["Indoor", "Outdoor (weather permitting)"],
+        ageGroups: ["3-5 years", "6-8 years", "9-12 years"],
+      },
+      durationOptions: { minHours: 1, maxHours: 3 },
+      pricingInfo: {
+        pricingModel: "per-event",
+        priceDescription: "Packages are fixed price. Custom quotes available for longer events or special requests.",
+      },
+      serviceStandards: {
+        setupTime: 30,
+        equipmentProvided: true,
+        cleanupIncluded: false,
+        setupDescription: "We arrive 30 minutes prior to the start time for setup.",
+      },
+      certifications: { dbsCertificate: true, publicLiability: true, firstAid: true },
+      personalBio: {
+        yearsExperience: 5,
+        inspiration: "Bringing joy to children!",
+        personalStory: "Started as a hobby, now a passion to create magical memories.",
+      },
+    },
+    stats: {
+      partiesCompleted: "200+",
+      repeatCustomerRate: 90,
+      yearsExperience: 5,
+    },
+    ownerName: "Alex Johnson",
+  },
+  {
     id: "magic-mike",
     name: "Magic Mike's Superhero Show",
     owner: {
       name: "Mike Johnson",
       email: "mike@magicmike.com",
-      phone: "07123456789"
+      phone: "07123456789",
     },
     category: "Entertainment",
     subcategory: "Magicians",
+    portfolioImages: [
+      { id: "img1", image: "/superhero.webp", title: "Superhero Fun" },
+      { id: "img2", image: "/superhero.webp", title: "Balloon Twisting" },
+      { id: "img3", image: "/superhero.webp", title: "Happy Faces" },
+      { id: "img4", image: "/placeholder.jpg", title: "Party Games" },
+    ],
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749460635/edson-junior-YlgnX_ISPLo-unsplash_wlsz60.jpg",
     rating: 4.9,
     reviewCount: 127,
@@ -21,7 +131,6 @@ const mockSuppliers = [
     priceUnit: "per show",
     description: "Professional superhero magic show with audience participation",
     badges: ["DBS Checked", "Highly Rated"],
-    availability: "Available this weekend",
     themes: ["superhero", "magic", "entertainment"],
     businessDescription: "Professional superhero magic show with audience participation",
     serviceType: "entertainer",
@@ -30,13 +139,69 @@ const mockSuppliers = [
         id: "magic-basic",
         name: "Basic Magic Show",
         description: "45-minute magic show with superhero theme",
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750112354/evvqofjwxsxdhshwc7lt.jpg",
         price: 150,
         priceType: "flat",
         duration: "45 minutes",
-        whatsIncluded: ["Magic Show", "Superhero Theme", "Audience Participation"]
-      }
+        whatsIncluded: ["Magic Show", "Superhero Theme", "Audience Participation"],
+      },
     ],
-    isComplete: true // Existing suppliers are complete
+    isComplete: true,
+    workingHours: {
+      Sunday: { active: true, start: "10:00", end: "18:00" },
+      Monday: { active: false, start: "09:00", end: "17:00" },
+      Tuesday: { active: false, start: "09:00", end: "17:00" },
+      Wednesday: { active: true, start: "14:00", end: "20:00" },
+      Thursday: { active: false, start: "09:00", end: "17:00" },
+      Friday: { active: true, start: "14:00", end: "20:00" },
+      Saturday: { active: true, start: "09:00", end: "20:00" },
+    },
+    unavailableDates: ["2025-12-25", "2026-01-01"],
+    busyDates: ["2025-07-20", "2025-08-15"],
+    availabilityNotes: "Peak season bookings require 2 weeks notice.",
+    advanceBookingDays: 7,
+    maxBookingDays: 90,
+    serviceDetails: {
+      aboutService:
+        "Magic Mike brings the wow factor to any party! Specializing in superhero themes, Mike's shows are packed with amazing tricks, audience participation, and lots of laughter. Perfect for ages 4-10.",
+      serviceHighlights: "Interactive Magic\nSuperhero Theming\nBalloon Animals\nProfessional & Reliable",
+      serviceIncludes: {
+        actType: "Magician, Children's Entertainer",
+        travelRadius: 50,
+        equipment: "All props, small PA system if needed.",
+        performanceOptions: ["Indoor", "Outdoor (weather permitting)"],
+        ageGroups: ["4-6 years", "7-10 years"],
+      },
+      durationOptions: { minHours: 0.75, maxHours: 2 },
+      pricingInfo: {
+        pricingModel: "per-event",
+        priceDescription:
+          "Basic package is for a 45-minute show. Longer shows and additional services available. Travel fees may apply outside a 20-mile radius.",
+      },
+      serviceStandards: {
+        setupTime: 20,
+        equipmentProvided: true,
+        cleanupIncluded: false,
+        setupDescription: "Arrives 20 minutes before showtime for setup. Requires a small clear area.",
+      },
+      certifications: {
+        dbsCertificate: true,
+        publicLiability: true,
+        firstAid: false,
+      },
+      personalBio: {
+        yearsExperience: 8,
+        inspiration: "Seeing the joy and wonder on children's faces!",
+        personalStory:
+          "Mike started learning magic at age 10 and has been performing professionally for 8 years. He loves superheroes as much as the kids do!",
+      },
+    },
+    stats: {
+      partiesCompleted: "500+",
+      repeatCustomerRate: 75,
+      yearsExperience: 8,
+    },
+    ownerName: "Mike Johnson",
   },
   {
     id: "spiderman-live-show",

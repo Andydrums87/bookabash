@@ -32,7 +32,8 @@ export function SupplierPackageForm({ isOpen, onClose, onSave, initialData }) {
       setDuration(initialData.duration || "")
       setPriceType(initialData.priceType || "flat")
       setWhatsIncluded(initialData.whatsIncluded ? initialData.whatsIncluded.join(", ") : "")
-      setImageUrl(initialData.imageUrl || "")
+      // Handle both imageUrl and image properties for backwards compatibility
+      setImageUrl(initialData.imageUrl || initialData.image || "")
     } else if (isOpen) {
       // Reset form for new package
       setName("")
@@ -56,7 +57,10 @@ export function SupplierPackageForm({ isOpen, onClose, onSave, initialData }) {
         .split(",")
         .map((item) => item.trim())
         .filter((item) => item), // Convert string to array
-      imageUrl,
+      // Save as 'image' to match what the display component expects
+      image: imageUrl,
+      // Also include imageUrl for backwards compatibility
+      imageUrl: imageUrl,
     }
     onSave(packageDetails)
     onClose() // Close after save
@@ -152,9 +156,8 @@ export function SupplierPackageForm({ isOpen, onClose, onSave, initialData }) {
                 <Image
                   src={imageUrl || "/placeholder.svg"}
                   alt="Package preview"
-                  layout="fill"
-                  objectFit="contain"
-                  className="bg-muted"
+                  fill
+                  className="object-contain bg-muted"
                 />
               </div>
             )}

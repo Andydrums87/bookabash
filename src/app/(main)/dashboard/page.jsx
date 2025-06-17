@@ -957,7 +957,7 @@ if (type === "einvites") {
               </div>
               
               {/* Category badge */}
-              <div className="absolute px-4 py-2 top-0 bg-primary-500 rounded-full left-3 flex items-center space-x-2 text-white text-xs z-10">
+              <div className="absolute px-4 py-2 top-2 bg-primary-500 rounded-full left-3 flex items-center space-x-2 text-white text-xs z-10">
                 <span className="font-medium">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
               </div>
               
@@ -980,7 +980,7 @@ if (type === "einvites") {
           )}
         </div>
       
-        <CardContent className="px-4 pt-4 pb-5">
+        <CardContent className="px-4 pb-5">
           {isLoading ? (
             <>
               <Skeleton className="h-6 w-3/4 mb-2" />

@@ -34,19 +34,19 @@ export function ContextualBreadcrumb({
           action: () => goBack()
         };
 
-      case 'supplier-detail':
-        return {
-          show: true,
-          backText: 'Browse Suppliers',
-          currentText: 'Supplier Details',
-          action: () => {
-            if (navigationContext === 'dashboard') {
-              window.history.back();
-            } else {
-              window.history.back();
+        case 'supplier-detail':
+          return {
+            show: true,
+            backText: navigationContext === 'dashboard' ? 'Dashboard' : 'Browse Suppliers',
+            currentText: 'Supplier Details',
+            action: () => {
+              if (navigationContext === 'dashboard') {
+                router.push('/dashboard');
+              } else {
+                router.push('/browse'); // Explicitly go to browse instead of history.back()
+              }
             }
-          }
-        };
+          };
 
       case 'add-supplier':
         return {

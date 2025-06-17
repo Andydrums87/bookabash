@@ -139,8 +139,11 @@ const LoadMoreSuppliersSection = ({
     const remainingCount = Math.max(0, supplierThemes.length - maxVisibleThemes);
 
     return (
-      <Card className="border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-        <CardContent className="p-0 relative">
+      <Card  className="border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+        <CardContent  onClick={(e) => {
+                  e.stopPropagation();
+                  onSupplierClick?.(supplier.id);
+                }} className="p-0 relative">
           {/* Image Section */}
           <div className="relative w-full h-48 md:h-40 lg:h-48 overflow-hidden">
             <img 
@@ -286,21 +289,7 @@ const LoadMoreSuppliersSection = ({
 
   return (
     <>
-      {/* Results Count Header */}
-      <div className="px-4 py-4 bg-white border-b border-gray-100">
-        {isInitialLoading ? (
-          <Skeleton className="h-6 w-64" />
-        ) : (
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">
-              {totalSuppliers} service{totalSuppliers !== 1 ? 's' : ''} available to book now
-            </h2>
-            <div className="text-sm text-gray-600">
-              Showing {displayedSuppliers.length} of {totalSuppliers}
-            </div>
-          </div>
-        )}
-      </div>
+     
 
       {/* Supplier Cards Grid */}
       <div className="px-4 py-4">

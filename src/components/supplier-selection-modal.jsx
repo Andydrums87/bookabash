@@ -88,6 +88,12 @@ export default function SupplierSelectionModal({
     try {
       checkDate = new Date(date);
       checkDate.setHours(0, 0, 0, 0);
+      
+      // Validate the date is actually valid
+      if (isNaN(checkDate.getTime())) {
+        console.log(`📅 Invalid date format: ${date}, assuming available`);
+        return true;
+      }
     } catch (e) {
       console.log(`📅 Invalid date format: ${date}, assuming available`);
       return true;
@@ -101,7 +107,7 @@ export default function SupplierSelectionModal({
     
     // 2. Check specific unavailable dates if they exist
     if (supplier.unavailableDates && Array.isArray(supplier.unavailableDates)) {
-      const checkDateStr = checkDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const checkDateStr = checkDate.toISOString().split('T')[0]; // Now safe to use
       
       const isUnavailable = supplier.unavailableDates.some(unavailableDate => {
         try {
@@ -119,12 +125,10 @@ export default function SupplierSelectionModal({
           return false;
         }
       });
-      
-      if (isUnavailable) {
-        console.log(`❌ ${supplier.name}: Found in unavailable dates list`);
-        return false;
-      }
+    
+      if (isUnavailable) return false;
     }
+    
     
     // 3. Check working hours for the day of the week
     if (supplier.workingHours) {

@@ -402,92 +402,95 @@ export default function BrowseSuppliersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+<div className="min-h-screen bg-gray-50">
       <ContextualBreadcrumb currentPage="browse"/>
- {/* Hero Section - Simpler Approach */}
-<div 
-  className="relative w-full h-[30vh] md:h-[50vh] lg:h-[60vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/1820228846/photo/photo-of-positive-attractive-guy-hand-hold-wired-microphone-singing-flying-confetti-christmas.jpg?s=612x612&w=0&k=20&c=7JN43WzSQJQkCN2kOnXkonLFVxDFF8wXHflsSCKsaUg=)] bg-bottom-left"
->
-  {/* Strong dark overlay */}
-  <div className="absolute inset-0 bg-black/10"></div>
-  
-  {/* Hero Content Overlay */}
-  <div className="relative h-full flex items-center justify-center px-4">
-    <div className="max-w-4xl mx-auto text-center text-white">
-    <h1 className="text-4xl sm:text-4xl lg:text-6xl font-bold mb-6 drop-shadow-2xl text-shadow-lg">
-  Find trusted
-  <span className="text-white block drop-shadow-2xl">Party Suppliers</span>
-</h1>
-      <p className="text-lg sm:text-md lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
-      Create magical moments. Everything you need for the perfect party, all in one place.
-      </p>
-    </div>
-  </div>
+ 
+      {/* Hero Section - Mobile Optimized Heights */}
+      <div 
+        className="relative w-full h-[25vh] md:h-[42vh] lg:h-[43vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/1795529616/photo/emotional-man-blowing-up-party-popper-on-pink-background.jpg?s=612x612&w=0&k=20&c=nQDOq_vqEYGMUgKLQdxxgLzgg3rpb-TEeBg-hfwqB3U=)] bg-bottom-left"
+      >
+        {/* Strong dark overlay */}
+        <div className="absolute inset-0 bg-black/10"></div>
+        
+        {/* Hero Content Overlay */}
+        <div className="relative h-full flex items-center justify-center px-4">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 md:mb-6 drop-shadow-2xl text-shadow-lg">
+              Find trusted
+              <span className="text-white block drop-shadow-2xl">Party Suppliers</span>
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg lg:text-2xl mb-4 md:mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
+              Create magical moments. Everything you need for the perfect party, all in one place.
+            </p>
+          </div>
+        </div>
 
-  {/* Bottom fade for smooth transition */}
-  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent"></div>
-</div>
+        {/* Bottom fade for smooth transition */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 md:h-20 bg-gradient-to-t from-white to-transparent"></div>
+      </div>
 
-      {/* Search & Filter Controls */}
-      <div className="bg-white border-b border-gray-100 px-4 py-6">
+      {/* Search & Filter Controls - Mobile Optimized */}
+      <div className="bg-white border-b border-gray-100 px-3 md:px-4  md:py-2">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <h2 className="text-2xl font-semibold text-gray-900">
-                {searchedSuppliers.length} Suppliers Found
+          <div className="flex items-center justify-between py-2 md:mb-2">
+            <div className="flex items-center space-x-2 md:space-x-4 flex-1 min-w-0">
+              <h2 className="text-sm md:text-2xl font-semibold text-gray-900 truncate">
+                {searchedSuppliers.length} Party Pro's Ready To Party!
               </h2>
               
-              {/* Active Search Display */}
+              {/* Active Search Display - Mobile Responsive */}
               {searchQuery && (
-                <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                  <Search className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm text-blue-800 font-medium">"{searchQuery}"</span>
+                <div className="flex items-center space-x-1 md:space-x-2 bg-blue-50 px-2 md:px-3 py-1 rounded-full border border-blue-200 max-w-[150px] md:max-w-none">
+                  <Search className="w-3 h-3 md:w-4 md:h-4 text-blue-600 flex-shrink-0" />
+                  <span className="text-xs md:text-sm text-blue-800 font-medium truncate">"{searchQuery}"</span>
                   <button
                     onClick={clearSearch}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-blue-600 hover:text-blue-800 flex-shrink-0"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               )}
 
-              {/* Active Filters Display */}
+              {/* Active Filters Display - Mobile */}
               {hasActiveFilters && (
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                <div className="flex items-center space-x-1 md:space-x-2">
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
                     <Filter className="w-3 h-3 mr-1" />
-                    Filters Active
+                    <span className="hidden sm:inline">Filters</span>
                   </Badge>
                   <button
                     onClick={clearAllFilters}
-                    className="text-sm text-gray-500 hover:text-gray-700 underline"
+                    className="text-xs md:text-sm text-gray-500 hover:text-gray-700 underline hidden sm:block"
                   >
-                    Clear all
+                    Clear
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Search & Filter Buttons */}
-            <div className="flex items-center space-x-3">
+            {/* Search & Filter Buttons - Compact Mobile */}
+            <div className="flex items-center space-x-2 md:space-x-3">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setShowSearchModal(true)}
-                className="border-gray-200 hover:bg-gray-50"
+                className="border-gray-200 hover:bg-gray-50 px-2 md:px-4"
               >
-                <Search className="w-4 h-4 mr-2" />
-                Search
+                <Search className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Search</span>
               </Button>
               
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setShowFiltersModal(true)}
-                className={`border-gray-200 ${hasActiveFilters ? 'bg-orange-50 border-orange-200 text-orange-700' : 'hover:bg-gray-50'}`}
+                className={`border-gray-200 px-2 md:px-4 ${hasActiveFilters ? 'bg-orange-50 border-orange-200 text-orange-700' : 'hover:bg-gray-50'}`}
               >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filters
+                <SlidersHorizontal className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Filters</span>
                 {hasActiveFilters && (
-                  <Badge className="ml-2 bg-orange-600 text-white text-xs">
+                  <Badge className="ml-1 md:ml-2 bg-orange-600 text-white text-xs px-1">
                     {[subcategory !== "all", selectedLocation !== "", priceRange !== "all"].filter(Boolean).length}
                   </Badge>
                 )}
@@ -497,29 +500,31 @@ export default function BrowseSuppliersPage() {
         </div>
       </div>
 
-      {/* Category Tabs - Non-sticky */}
+      {/* Category Tabs - Mobile Optimized */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
           <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex space-x-2 min-w-max">
+            <div className="flex space-x-1 md:space-x-2 min-w-max">
               {categories.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => handleCategorySelect(category.id)}
-                  className={`flex flex-col items-center space-y-2 px-4 py-3 rounded-xl min-w-[90px] transition-all ${
+                  className={`flex flex-col items-center space-y-1 md:space-y-2 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl min-w-[70px] md:min-w-[90px] transition-all ${
                     selectedCategory === category.id
                       ? "bg-primary-100 text-primary-700 shadow-sm"
                       : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   <div
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg ${
+                    className={`w-7 h-7 md:w-10 md:h-10 flex items-center justify-center rounded-md md:rounded-lg ${
                       selectedCategory === category.id ? "bg-primary-200" : "bg-gray-100"
                     }`}
                   >
-                    {category.icon}
+                    <div className="scale-75 md:scale-100">
+                      {category.icon}
+                    </div>
                   </div>
-                  <span className="text-sm font-medium text-center leading-tight">{category.name}</span>
+                  <span className="text-xs md:text-sm font-medium text-center leading-tight">{category.name}</span>
                 </button>
               ))}
             </div>
@@ -527,8 +532,8 @@ export default function BrowseSuppliersPage() {
         </div>
       </div>
 
-      {/* Results Section */}
-      <div className="max-w-screen mx-auto px-3 py-8">
+      {/* Results Section - Streamlined for Mobile */}
+      <div className="max-w-screen mx-auto px-2 md:px-3 py-3 md:py-8">
         <LoadMoreSuppliersSection
           allSuppliers={searchedSuppliers}
           isInitialLoading={isLoading}
@@ -538,13 +543,13 @@ export default function BrowseSuppliersPage() {
         />
       </div>
 
-      {/* Search Modal */}
+      {/* Search Modal - Mobile Optimized */}
       {showSearchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-4 md:pt-20 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] md:max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h3 className="text-xl font-semibold text-gray-900">Search Suppliers</h3>
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
+              <h3 className="text-lg md:text-xl font-semibold text-gray-900">Search Suppliers</h3>
               <button
                 onClick={() => setShowSearchModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -554,10 +559,10 @@ export default function BrowseSuppliersPage() {
             </div>
 
             {/* Search Input */}
-            <div className="p-6">
+            <div className="p-4 md:p-6">
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                 </div>
                 <Input
                   type="text"
@@ -570,16 +575,16 @@ export default function BrowseSuppliersPage() {
                       handleSearchSubmit(searchQuery);
                     }
                   }}
-                  className="pl-12 pr-4 py-4 text-lg border-gray-200 focus:border-primary-500 focus:ring-primary-500 rounded-xl"
+                  className="pl-10 md:pl-12 pr-4 py-3 md:py-4 text-base md:text-lg border-gray-200 focus:border-primary-500 focus:ring-primary-500 rounded-xl"
                   autoFocus
                 />
               </div>
 
               {/* Search Results Summary */}
               {searchQuery && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mt-4 p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between">
-                    <span className="text-blue-800">
+                    <span className="text-blue-800 text-sm md:text-base">
                       <span className="font-semibold">{searchedSuppliers.length}</span> results for "{searchQuery}"
                     </span>
                     <Button size="sm" onClick={() => handleSearchSubmit(searchQuery)}>
@@ -590,11 +595,11 @@ export default function BrowseSuppliersPage() {
               )}
             </div>
 
-            {/* Search Suggestions */}
-            <div className="max-h-96 overflow-y-auto">
+            {/* Search Suggestions - Mobile Scrollable */}
+            <div className="max-h-60 md:max-h-96 overflow-y-auto">
               {/* Recent Searches */}
               {!searchQuery && searchHistory.length > 0 && (
-                <div className="px-6 pb-4">
+                <div className="px-4 md:px-6 pb-4">
                   <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
                     <Clock className="w-4 h-4 mr-2" />
                     Recent Searches
@@ -604,10 +609,10 @@ export default function BrowseSuppliersPage() {
                       <button
                         key={index}
                         onClick={() => handleSuggestionClick(term)}
-                        className="flex items-center space-x-3 w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="flex items-center space-x-3 w-full text-left p-2 md:p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       >
                         <Clock className="w-4 h-4 text-gray-400" />
-                        <span>{term}</span>
+                        <span className="text-sm md:text-base">{term}</span>
                       </button>
                     ))}
                   </div>
@@ -616,7 +621,7 @@ export default function BrowseSuppliersPage() {
 
               {/* Popular Searches */}
               {!searchQuery && (
-                <div className="px-6 pb-6">
+                <div className="px-4 md:px-6 pb-6">
                   <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Popular Searches
@@ -637,17 +642,17 @@ export default function BrowseSuppliersPage() {
 
               {/* Live Suggestions */}
               {searchQuery && getSearchSuggestions().length > 0 && (
-                <div className="px-6 pb-6">
+                <div className="px-4 md:px-6 pb-6">
                   <h4 className="text-sm font-medium text-gray-500 mb-3">Suggestions</h4>
                   <div className="space-y-2">
                     {getSearchSuggestions().map((suggestion, index) => (
                       <button
                         key={index}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="flex items-center space-x-3 w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="flex items-center space-x-3 w-full text-left p-2 md:p-3 hover:bg-gray-50 rounded-lg transition-colors"
                       >
                         <Search className="w-4 h-4 text-gray-400" />
-                        <span>{suggestion}</span>
+                        <span className="text-sm md:text-base">{suggestion}</span>
                       </button>
                     ))}
                   </div>
@@ -658,201 +663,207 @@ export default function BrowseSuppliersPage() {
         </div>
       )}
 
-      {/* Filters Modal */}
+      {/* Filters Modal - Mobile Optimized */}
       {showFiltersModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <div className="flex items-center space-x-3">
-              <h3 className="text-xl font-semibold text-gray-900">Filter Suppliers</h3>
-              {hasActiveFilters && (
-                <Badge className="bg-orange-100 text-orange-800">
-                  {activeFilterCount} active
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-                  Clear All
-                </Button>
-              )}
-              <button
-                onClick={() => setShowFiltersModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-          </div>
-  
-          {/* Filter Content */}
-          <div className="p-6 max-h-96 overflow-y-auto">
-            {/* Basic Filters Row */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Subcategory
-                </label>
-                <Select value={subcategory} onValueChange={setSubcategory}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose subcategory" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAvailableSubcategories().map((sub) => (
-                      <SelectItem key={sub} value={sub === getAvailableSubcategories()[0] ? "all" : sub}>
-                        {sub}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-  
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Location
-                </label>
-                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="All locations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="uk-wide">All locations</SelectItem>
-                    <SelectItem value="central-london">Central London</SelectItem>
-                    <SelectItem value="north-london">North London</SelectItem>
-                    <SelectItem value="south-london">South London</SelectItem>
-                    <SelectItem value="east-london">East London</SelectItem>
-                    <SelectItem value="west-london">West London</SelectItem>
-                    <SelectItem value="uk-wide">UK Wide</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-  
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Price Range
-                </label>
-                <Select value={priceRange} onValueChange={setPriceRange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="All prices" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All prices</SelectItem>
-                    <SelectItem value="0-50">£0 - £50</SelectItem>
-                    <SelectItem value="50-100">£50 - £100</SelectItem>
-                    <SelectItem value="100-200">£100 - £200</SelectItem>
-                    <SelectItem value="200+">£200+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-  
-            {/* Party Themes Section */}
-            <div className="border-t border-gray-200 pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Party Themes
-                </label>
-                {selectedThemes.length > 0 && (
-                  <button
-                    onClick={() => setSelectedThemes([])}
-                    className="text-sm text-gray-500 hover:text-gray-700 underline"
-                  >
-                    Clear themes
-                  </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] md:max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900">Filter Suppliers</h3>
+                {hasActiveFilters && (
+                  <Badge className="bg-orange-100 text-orange-800 text-xs">
+                    {activeFilterCount} active
+                  </Badge>
                 )}
               </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {partyThemes.map((theme) => (
-                  <button
-                    key={theme.id}
-                    onClick={() => toggleTheme(theme.id)}
-                    className={`relative p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedThemes.includes(theme.id)
-                        ? 'border-primary-500 bg-primary-50 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${theme.color} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
-                        {theme.icon}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-gray-900 text-sm">
-                          {theme.name}
-                        </h4>
-                        <p className="text-xs text-gray-500">
-                          {theme.count} suppliers
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {selectedThemes.includes(theme.id) && (
-                      <div className="absolute top-2 right-2">
-                        <div className="w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                ))}
+              <div className="flex items-center space-x-2">
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                    <span className="hidden sm:inline">Clear All</span>
+                    <span className="sm:hidden">Clear</span>
+                  </Button>
+                )}
+                <button
+                  onClick={() => setShowFiltersModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
               </div>
-  
-              {/* Selected Themes Display */}
-              {selectedThemes.length > 0 && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium mb-2">
-                    Selected themes ({selectedThemes.length}):
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedThemes.map((themeId) => {
-                      const theme = partyThemes.find(t => t.id === themeId);
-                      return (
-                        <Badge 
-                          key={themeId}
-                          variant="outline" 
-                          className="flex items-center gap-2 pr-1 border-blue-300 bg-blue-100 text-blue-800"
-                        >
-                          <div className={`w-3 h-3 ${theme.color} rounded-full flex items-center justify-center text-white text-xs`}>
+            </div>
+    
+            {/* Filter Content - Mobile Scrollable */}
+            <div className="p-4 md:p-6 max-h-[60vh] md:max-h-96 overflow-y-auto">
+              {/* Basic Filters Row - Mobile Stack */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 md:mb-3">
+                    Subcategory
+                  </label>
+                  <Select value={subcategory} onValueChange={setSubcategory}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose subcategory" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableSubcategories().map((sub) => (
+                        <SelectItem key={sub} value={sub === getAvailableSubcategories()[0] ? "all" : sub}>
+                          {sub}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+    
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 md:mb-3">
+                    Location
+                  </label>
+                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="uk-wide">All locations</SelectItem>
+                      <SelectItem value="central-london">Central London</SelectItem>
+                      <SelectItem value="north-london">North London</SelectItem>
+                      <SelectItem value="south-london">South London</SelectItem>
+                      <SelectItem value="east-london">East London</SelectItem>
+                      <SelectItem value="west-london">West London</SelectItem>
+                      <SelectItem value="uk-wide">UK Wide</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+    
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 md:mb-3">
+                    Price Range
+                  </label>
+                  <Select value={priceRange} onValueChange={setPriceRange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All prices" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All prices</SelectItem>
+                      <SelectItem value="0-50">£0 - £50</SelectItem>
+                      <SelectItem value="50-100">£50 - £100</SelectItem>
+                      <SelectItem value="100-200">£100 - £200</SelectItem>
+                      <SelectItem value="200+">£200+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+    
+              {/* Party Themes Section - Mobile Optimized */}
+              <div className="border-t border-gray-200 pt-4 md:pt-6">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Party Themes
+                  </label>
+                  {selectedThemes.length > 0 && (
+                    <button
+                      onClick={() => setSelectedThemes([])}
+                      className="text-sm text-gray-500 hover:text-gray-700 underline"
+                    >
+                      Clear themes
+                    </button>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+                  {partyThemes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => toggleTheme(theme.id)}
+                      className={`relative p-2 md:p-3 rounded-lg border-2 transition-all text-left ${
+                        selectedThemes.includes(theme.id)
+                          ? 'border-primary-500 bg-primary-50 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <div className={`w-6 h-6 md:w-8 md:h-8 ${theme.color} rounded-md md:rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
+                          <div className="scale-75 md:scale-100">
                             {theme.icon}
                           </div>
-                          {theme.name}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleTheme(themeId);
-                            }}
-                            className="ml-1 hover:bg-blue-200 rounded-full p-0.5 text-blue-600"
-                          >
-                            ×
-                          </button>
-                        </Badge>
-                      );
-                    })}
-                  </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-gray-900 text-xs md:text-sm">
+                            {theme.name}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {theme.count} suppliers
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {selectedThemes.includes(theme.id) && (
+                        <div className="absolute top-1 right-1 md:top-2 md:right-2">
+                          <div className="w-3 h-3 md:w-4 md:h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                            <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-white rounded-full"></div>
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
-              )}
+    
+                {/* Selected Themes Display - Mobile Compact */}
+                {selectedThemes.length > 0 && (
+                  <div className="mt-3 md:mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800 font-medium mb-2">
+                      Selected themes ({selectedThemes.length}):
+                    </p>
+                    <div className="flex flex-wrap gap-1 md:gap-2">
+                      {selectedThemes.map((themeId) => {
+                        const theme = partyThemes.find(t => t.id === themeId);
+                        return (
+                          <Badge 
+                            key={themeId}
+                            variant="outline" 
+                            className="flex items-center gap-1 md:gap-2 pr-1 border-blue-300 bg-blue-100 text-blue-800 text-xs"
+                          >
+                            <div className={`w-2 h-2 md:w-3 md:h-3 ${theme.color} rounded-full flex items-center justify-center text-white text-xs`}>
+                              <div className="scale-75">
+                                {theme.icon}
+                              </div>
+                            </div>
+                            <span className="truncate max-w-20 md:max-w-none">{theme.name}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTheme(themeId);
+                              }}
+                              className="ml-1 hover:bg-blue-200 rounded-full p-0.5 text-blue-600"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-  
-          {/* Modal Footer */}
-          <div className="flex items-center justify-between p-6 bg-gray-50 border-t border-gray-100">
-            <div className="text-sm text-gray-600">
-              {searchedSuppliers.length} suppliers match your criteria
-            </div>
-            <div className="flex space-x-3">
-              <Button variant="outline" onClick={() => setShowFiltersModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setShowFiltersModal(false)}>
-                Apply Filters ({searchedSuppliers.length} results)
-              </Button>
+    
+            {/* Modal Footer - Mobile Responsive */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-6 bg-gray-50 border-t border-gray-100 gap-3 md:gap-0">
+              <div className="text-sm text-gray-600 text-center md:text-left">
+                {searchedSuppliers.length} suppliers match your criteria
+              </div>
+              <div className="flex space-x-3">
+                <Button variant="outline" onClick={() => setShowFiltersModal(false)} className="flex-1 md:flex-none">
+                  Cancel
+                </Button>
+                <Button onClick={() => setShowFiltersModal(false)} className="flex-1 md:flex-none">
+                  <span className="hidden sm:inline">Apply Filters ({searchedSuppliers.length} results)</span>
+                  <span className="sm:hidden">Apply ({searchedSuppliers.length})</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Click outside to close modals */}
@@ -866,13 +877,13 @@ export default function BrowseSuppliersPage() {
         />
       )}
 
-      {/* Quick Action Bar - Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-20">
+      {/* Quick Action Bar - Mobile Optimized */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-20 safe-area-pb">
         <div className="flex space-x-3">
           <Button variant="outline" className="flex-1 border-gray-200" asChild>
             <Link href="/dashboard">
               <Calendar className="w-4 h-4 mr-2" />
-              My Dashboard
+              Dashboard
             </Link>
           </Button>
           <Button className="flex-1 bg-primary-500 hover:bg-primary-600 text-white" asChild>
@@ -885,7 +896,7 @@ export default function BrowseSuppliersPage() {
       </div>
 
       {/* Bottom Padding for Mobile Action Bar */}
-      <div className="md:hidden h-20"></div>
+      <div className="md:hidden h-16"></div>
     </div>
   )
 }

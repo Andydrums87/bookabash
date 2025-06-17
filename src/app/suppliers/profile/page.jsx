@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Building,
   Palette,
+  Plus,
+  X,
   Eye,
   Briefcase,
   Info,
@@ -227,7 +229,6 @@ const EntertainerDetailsForm = () => (
 
 
 
-
 const EnhancedServiceDetailsTabContent = ({ 
   currentSupplier, 
   supplierData,
@@ -239,7 +240,7 @@ const EnhancedServiceDetailsTabContent = ({
   const [serviceDetails, setServiceDetails] = useState({
     // About Service
     aboutService: "",
-    serviceHighlights: "",
+    serviceHighlights: [], // Changed from string to array
     
     // Duration & Pricing
     durationOptions: {
@@ -312,6 +313,12 @@ const EnhancedServiceDetailsTabContent = ({
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [localSaving, setLocalSaving] = useState(false);
+  const [newHighlight, setNewHighlight] = useState("");
+
+  // Word count helper
+  const getWordCount = (text) => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
 
   // Load existing data
   useEffect(() => {
@@ -326,6 +333,17 @@ const EnhancedServiceDetailsTabContent = ({
           ...prev,
           ...currentSupplier.serviceDetails
         };
+        
+        // Handle legacy serviceHighlights - convert string to array if needed
+        if (typeof merged.serviceHighlights === 'string' && merged.serviceHighlights) {
+          merged.serviceHighlights = merged.serviceHighlights
+            .split('\n')
+            .map(line => line.replace(/^•\s*/, '').trim())
+            .filter(line => line.length > 0);
+        } else if (!Array.isArray(merged.serviceHighlights)) {
+          merged.serviceHighlights = [];
+        }
+        
         console.log('🔀 Merged service details:', merged);
         return merged;
       });
@@ -335,22 +353,27 @@ const EnhancedServiceDetailsTabContent = ({
       // Try to load from supplierData as fallback
       if (supplierData?.serviceDetails) {
         console.log('🔄 Found service details in supplierData, loading...');
-        setServiceDetails(prev => ({
-          ...prev,
-          ...supplierData.serviceDetails
-        }));
+        setServiceDetails(prev => {
+          const merged = {
+            ...prev,
+            ...supplierData.serviceDetails
+          };
+          
+          // Handle legacy serviceHighlights here too
+          if (typeof merged.serviceHighlights === 'string' && merged.serviceHighlights) {
+            merged.serviceHighlights = merged.serviceHighlights
+              .split('\n')
+              .map(line => line.replace(/^•\s*/, '').trim())
+              .filter(line => line.length > 0);
+          } else if (!Array.isArray(merged.serviceHighlights)) {
+            merged.serviceHighlights = [];
+          }
+          
+          return merged;
+        });
       }
     }
   }, [currentSupplier, supplierData]);
-
-  // Also check if data needs to be loaded when currentSupplier changes
-  useEffect(() => {
-    console.log('🔄 currentSupplier changed:', {
-      hasCurrentSupplier: !!currentSupplier,
-      hasServiceDetails: !!currentSupplier?.serviceDetails,
-      serviceDetailsKeys: currentSupplier?.serviceDetails ? Object.keys(currentSupplier.serviceDetails) : 'none'
-    });
-  }, [currentSupplier]);
 
   // Helper function to update nested state
   const updateServiceDetail = (section, field, value) => {
@@ -383,6 +406,32 @@ const EnhancedServiceDetailsTabContent = ({
         ...prev[section],
         [field]: prev[section][field].filter((_, i) => i !== index)
       }
+    }));
+  };
+
+  // Highlight management functions
+  const addHighlight = () => {
+    if (!newHighlight.trim()) return;
+    setServiceDetails(prev => ({
+      ...prev,
+      serviceHighlights: [...prev.serviceHighlights, newHighlight.trim()]
+    }));
+    setNewHighlight("");
+  };
+
+  const removeHighlight = (index) => {
+    setServiceDetails(prev => ({
+      ...prev,
+      serviceHighlights: prev.serviceHighlights.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateHighlight = (index, value) => {
+    setServiceDetails(prev => ({
+      ...prev,
+      serviceHighlights: prev.serviceHighlights.map((highlight, i) => 
+        i === index ? value : highlight
+      )
     }));
   };
 
@@ -446,20 +495,17 @@ const EnhancedServiceDetailsTabContent = ({
     }
   };
 
-  // Add null checks for supplierData and fix serviceType detection
+  // Get service type helper
   const getServiceType = () => {
-    // Check multiple possible sources for service type
     const type = supplierData?.serviceType || 
                  currentSupplier?.serviceType || 
                  supplierData?.category || 
                  currentSupplier?.category;
     
-    // Normalize the service type
     if (!type) return "entertainer";
     
     const normalizedType = type.toLowerCase();
     
-    // Map various category names to our internal types
     if (normalizedType.includes('venue') || normalizedType === 'venues') {
       return "venue";
     }
@@ -470,24 +516,14 @@ const EnhancedServiceDetailsTabContent = ({
       return "entertainer";
     }
     
-    // Default to entertainer for most categories
     return "entertainer";
   };
 
   const serviceType = getServiceType();
+  const wordCount = getWordCount(serviceDetails.aboutService);
+  const maxWords = 150;
 
-  // Debug logging - expanded to show more info
-  console.log('🔍 Service Details Debug:', {
-    supplierData: supplierData ? 'Available' : 'Missing',
-    currentSupplier: currentSupplier ? 'Available' : 'Missing',
-    rawServiceType: supplierData?.serviceType || currentSupplier?.serviceType,
-    rawCategory: supplierData?.category || currentSupplier?.category,
-    finalServiceType: serviceType,
-    supplierDataKeys: supplierData ? Object.keys(supplierData) : 'N/A',
-    currentSupplierKeys: currentSupplier ? Object.keys(currentSupplier) : 'N/A'
-  });
-
-  // More lenient loading check - only require that we have some data
+  // Loading check
   if (!supplierData && !currentSupplier) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -524,7 +560,16 @@ const EnhancedServiceDetailsTabContent = ({
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <Label htmlFor="aboutService">Service Description</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="aboutService">Service Description</Label>
+              <span className={`text-sm ${
+                wordCount > maxWords ? 'text-red-500' : 
+                wordCount > maxWords * 0.8 ? 'text-amber-500' : 
+                'text-gray-500'
+              }`}>
+                {wordCount}/{maxWords} words
+              </span>
+            </div>
             <Textarea
               id="aboutService"
               value={serviceDetails.aboutService}
@@ -534,167 +579,79 @@ const EnhancedServiceDetailsTabContent = ({
                 "Describe your service in detail. What do you offer? What makes you different? What can customers expect?"
               }
               rows={5}
-              className="mt-1"
+              className={`mt-1 ${wordCount > maxWords ? 'border-red-300 focus:border-red-500' : ''}`}
             />
             <p className="text-sm text-gray-500 mt-1">
-              This will be prominently displayed on your profile page
+              This will be prominently displayed on your profile page. Keep it concise and engaging.
             </p>
+            {wordCount > maxWords && (
+              <p className="text-sm text-red-500 mt-1">
+                ⚠️ Your description is too long. Please reduce it by {wordCount - maxWords} words for better readability.
+              </p>
+            )}
           </div>
 
           <div>
-            <Label htmlFor="serviceHighlights">Key Highlights</Label>
-            <Textarea
-              id="serviceHighlights"
-              value={serviceDetails.serviceHighlights}
-              onChange={(e) => setServiceDetails(prev => ({ ...prev, serviceHighlights: e.target.value }))}
-              placeholder={serviceType === "venue" ? 
-                "• Spacious main hall&#10;• Full kitchen facilities&#10;• Free parking&#10;• Wheelchair accessible" :
-                "• Interactive science experiments&#10;• Every child gets a take-home item&#10;• Educational and fun&#10;• All equipment provided"
-              }
-              rows={4}
-              className="mt-1"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Use bullet points to highlight your key features
+            <Label>Key Highlights</Label>
+            <div className="space-y-3 mt-2">
+              {/* Existing highlights */}
+              {serviceDetails.serviceHighlights.map((highlight, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={highlight}
+                    onChange={(e) => updateHighlight(index, e.target.value)}
+                    placeholder="Enter a key highlight..."
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeHighlight(index)}
+                    className="px-3"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              {/* Add new highlight */}
+              <div className="flex gap-2">
+                <Input
+                  value={newHighlight}
+                  onChange={(e) => setNewHighlight(e.target.value)}
+                  placeholder={serviceType === "venue" ? 
+                    "e.g., Spacious main hall, Full kitchen facilities, Free parking" :
+                    "e.g., Interactive science experiments, Educational and fun"
+                  }
+                  className="flex-1"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addHighlight();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addHighlight}
+                  disabled={!newHighlight.trim()}
+                  className="px-3"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Add key features that make your service stand out. Each highlight will appear as a bullet point on your profile.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Service Type Specific Section */}
-      {serviceType === "venue" ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5" />
-              Venue Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="venueType">Venue Type</Label>
-                <Input 
-                  id="venueType" 
-                  value={serviceDetails.venueDetails.venueType}
-                  onChange={(e) => updateServiceDetail('venueDetails', 'venueType', e.target.value)}
-                  placeholder="e.g., Hall, Outdoor Space, Community Center" 
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="capacity">Max Capacity</Label>
-                <Input 
-                  id="capacity" 
-                  type="number" 
-                  value={serviceDetails.venueDetails.capacity}
-                  onChange={(e) => updateServiceDetail('venueDetails', 'capacity', e.target.value)}
-                  placeholder="e.g., 100" 
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label>Facilities</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-2">
-                {["Kitchen", "Parking", "Toilets", "Sound System", "Projector", "Garden", "Wi-Fi", "Stage"].map(
-                  (facility) => (
-                    <div key={facility} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`facility-${facility}`}
-                        checked={serviceDetails.venueDetails.facilities.includes(facility)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            addToArray('venueDetails', 'facilities', facility);
-                          } else {
-                            const index = serviceDetails.venueDetails.facilities.indexOf(facility);
-                            if (index > -1) removeFromArray('venueDetails', 'facilities', index);
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`facility-${facility}`} className="font-normal text-sm">
-                        {facility}
-                      </Label>
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="accessibility">Accessibility Features</Label>
-              <Textarea
-                id="accessibility"
-                value={serviceDetails.venueDetails.accessibility}
-                onChange={(e) => updateServiceDetail('venueDetails', 'accessibility', e.target.value)}
-                placeholder="e.g., Wheelchair accessible, step-free access, accessible toilets..."
-              />
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Entertainer Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="actType">Act Type / Specialties</Label>
-                <Input 
-                  id="actType" 
-                  value={serviceDetails.serviceIncludes.actType}
-                  onChange={(e) => updateServiceDetail('serviceIncludes', 'actType', e.target.value)}
-                  placeholder="e.g., Magician, Clown, Face Painter, DJ" 
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="travelRadius">Travel Radius (miles)</Label>
-                <Input 
-                  id="travelRadius" 
-                  type="number" 
-                  value={serviceDetails.serviceIncludes.travelRadius}
-                  onChange={(e) => updateServiceDetail('serviceIncludes', 'travelRadius', e.target.value)}
-                  placeholder="e.g., 20" 
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="equipment">Equipment Provided</Label>
-              <Input 
-                id="equipment" 
-                value={serviceDetails.serviceIncludes.equipment}
-                onChange={(e) => updateServiceDetail('serviceIncludes', 'equipment', e.target.value)}
-                placeholder="e.g., Sound system, lighting, props, costumes" 
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Performance Options</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-2">
-                {["Indoor", "Outdoor", "Virtual Events", "Workshops", "Walkaround"].map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`option-${option}`}
-                      checked={serviceDetails.serviceIncludes.performanceOptions.includes(option)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          addToArray('serviceIncludes', 'performanceOptions', option);
-                        } else {
-                          const index = serviceDetails.serviceIncludes.performanceOptions.indexOf(option);
-                          if (index > -1) removeFromArray('serviceIncludes', 'performanceOptions', index);
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`option-${option}`} className="font-normal text-sm">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+     
 
       {/* Duration & Pricing */}
       <Card>
@@ -787,7 +744,6 @@ const EnhancedServiceDetailsTabContent = ({
               className="mt-1"
             />
           </div>
-          
 
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
@@ -1082,6 +1038,142 @@ const EnhancedServiceDetailsTabContent = ({
         </CardContent>
       </Card>
 
+        
+      {/* Service Type Specific Section */}
+      {serviceType === "venue" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Venue Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="venueType">Venue Type</Label>
+                <Input 
+                  id="venueType" 
+                  value={serviceDetails.venueDetails.venueType}
+                  onChange={(e) => updateServiceDetail('venueDetails', 'venueType', e.target.value)}
+                  placeholder="e.g., Hall, Outdoor Space, Community Center" 
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="capacity">Max Capacity</Label>
+                <Input 
+                  id="capacity" 
+                  type="number" 
+                  value={serviceDetails.venueDetails.capacity}
+                  onChange={(e) => updateServiceDetail('venueDetails', 'capacity', e.target.value)}
+                  placeholder="e.g., 100" 
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Facilities</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-2">
+                {["Kitchen", "Parking", "Toilets", "Sound System", "Projector", "Garden", "Wi-Fi", "Stage"].map(
+                  (facility) => (
+                    <div key={facility} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`facility-${facility}`}
+                        checked={serviceDetails.venueDetails.facilities.includes(facility)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            addToArray('venueDetails', 'facilities', facility);
+                          } else {
+                            const index = serviceDetails.venueDetails.facilities.indexOf(facility);
+                            if (index > -1) removeFromArray('venueDetails', 'facilities', index);
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`facility-${facility}`} className="font-normal text-sm">
+                        {facility}
+                      </Label>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="accessibility">Accessibility Features</Label>
+              <Textarea
+                id="accessibility"
+                value={serviceDetails.venueDetails.accessibility}
+                onChange={(e) => updateServiceDetail('venueDetails', 'accessibility', e.target.value)}
+                placeholder="e.g., Wheelchair accessible, step-free access, accessible toilets..."
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Entertainer Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="actType">Act Type / Specialties</Label>
+                <Input 
+                  id="actType" 
+                  value={serviceDetails.serviceIncludes.actType}
+                  onChange={(e) => updateServiceDetail('serviceIncludes', 'actType', e.target.value)}
+                  placeholder="e.g., Magician, Clown, Face Painter, DJ" 
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="travelRadius">Travel Radius (miles)</Label>
+                <Input 
+                  id="travelRadius" 
+                  type="number" 
+                  value={serviceDetails.serviceIncludes.travelRadius}
+                  onChange={(e) => updateServiceDetail('serviceIncludes', 'travelRadius', e.target.value)}
+                  placeholder="e.g., 20" 
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="equipment">Equipment Provided</Label>
+              <Input 
+                id="equipment" 
+                value={serviceDetails.serviceIncludes.equipment}
+                onChange={(e) => updateServiceDetail('serviceIncludes', 'equipment', e.target.value)}
+                placeholder="e.g., Sound system, lighting, props, costumes" 
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Performance Options</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mt-2">
+                {["Indoor", "Outdoor", "Virtual Events", "Workshops", "Walkaround"].map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`option-${option}`}
+                      checked={serviceDetails.serviceIncludes.performanceOptions.includes(option)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          addToArray('serviceIncludes', 'performanceOptions', option);
+                        } else {
+                          const index = serviceDetails.serviceIncludes.performanceOptions.indexOf(option);
+                          if (index > -1) removeFromArray('serviceIncludes', 'performanceOptions', index);
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`option-${option}`} className="font-normal text-sm">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Save Button */}
       <div className="flex justify-end">
         <Button 
@@ -1103,8 +1195,11 @@ const EnhancedServiceDetailsTabContent = ({
         </Button>
       </div>
     </div>
+    
   );
 };
+
+
 
 
 
