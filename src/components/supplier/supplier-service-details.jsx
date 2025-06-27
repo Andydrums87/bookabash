@@ -70,7 +70,7 @@ export default function SupplierServiceDetails({ supplier }) {
   const isVenue = serviceType?.toLowerCase().includes("venue") || serviceType === "Venues"
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-z">
       {/* About Service - Clean White */}
       {(serviceDetails.aboutService || serviceDetails.serviceHighlights) && (
         <Card className="bg-gradient-to-br from-primary-50 to-primary-100 shadow-lg overflow-hidden">

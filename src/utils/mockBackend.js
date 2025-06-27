@@ -111,6 +111,7 @@ const mockSuppliers = [
         cloudinaryId: "chvdxf5xt326jbrtm6b4"
       }
     ],
+    themes: ["superhero", "magic", "entertainment"],
     portfolioVideos: [],
     isComplete: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events",
     createdAt: "2025-06-17T14:29:07.847Z",
@@ -134,7 +135,7 @@ const mockSuppliers = [
     ],
     busyDates: [],
     availabilityNotes: "",
-    advanceBookingDays: 7,
+    advanceBookingDays: 0,
     maxBookingDays: 365,
     serviceDetails: {
       aboutService: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events. Our professionally trained performers arrive as beloved princesses, ready to delight with storytelling, singing, games, and photo opportunities. Whether it’s a birthday, tea party, or community celebration, we create enchanting memories that children will cherish forever. With exquisite costumes, personalized interactions, and a commitment to high-quality entertainment, we turn every party into a royal celebration. Let us make your little one’s dream come true—because every child deserves a happily ever after.",

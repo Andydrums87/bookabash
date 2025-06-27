@@ -680,10 +680,10 @@ const validateAndFormatPostcode = (postcode) => {
               src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg"
               alt="People celebrating at a party"
               fill
-              className="object-cover object-center"
+              className="object-cover object-[65%_25%]"
             />
             {/* Overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/50"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/20 to-black/50"></div>
           </div>
 
           {/* Content overlay */}
@@ -736,8 +736,8 @@ const validateAndFormatPostcode = (postcode) => {
                     type="date"
                     value={formData.date}
                     onChange={(e) => handleFieldChange('date', e.target.value)}
-                    className="w-screen bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 pl-10"
-                    style={{width: '100%'}}
+                    className=" bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12"
+           
                     placeholder="Date"
                   />
                 </div>

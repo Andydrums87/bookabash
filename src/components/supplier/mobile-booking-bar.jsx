@@ -20,7 +20,6 @@ const MobileBookingBar = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
 
-
   // Default package if none provided
   const packageInfo = selectedPackage || {
     name: "Select Package",
@@ -176,14 +175,14 @@ const MobileBookingBar = ({
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="font-semibold text-gray-900">{packageInfo.name}</p>
-              <p className="text-sm text-gray-600">
+              <p className="font-semibold text-gray-900 text-xs">{packageInfo.name}</p>
+              <p className="text-sm text-gray-600 text-xs">
                 {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
               </p>
             </div>
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center gap-2"
+              className="bg-gray-100 hover:bg-gray-200 text-xs text-gray-700 font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center gap-2"
             >
               <Calendar className="w-4 h-4" />
               Check Dates
@@ -191,7 +190,7 @@ const MobileBookingBar = ({
           </div>
           <button 
             onClick={() => selectedDate ? handleAddToPlan() : setIsModalOpen(true)}
-            className="w-full bg-primary hover:bg-[hsl(var(--primary-600))] text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-primary hover:bg-[hsl(var(--primary-600))] text-white font-semibold md:py-3 py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
             disabled={!packageInfo.price}
           >
             <Plus className="w-5 h-5" />

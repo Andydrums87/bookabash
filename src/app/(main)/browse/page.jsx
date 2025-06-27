@@ -402,31 +402,42 @@ export default function BrowseSuppliersPage() {
   };
 
   return (
-<div className="min-h-screen bg-gray-50">
+<div className="min-h-screen bg-gray-100">
       <ContextualBreadcrumb currentPage="browse"/>
  
       {/* Hero Section - Mobile Optimized Heights */}
       <div 
-        className="relative w-full h-[25vh] md:h-[42vh] lg:h-[43vh] overflow-hidden bg-cover md:bg-left bg-no-repeat bg-[url(https://media.istockphoto.com/id/1795529616/photo/emotional-man-blowing-up-party-popper-on-pink-background.jpg?s=612x612&w=0&k=20&c=nQDOq_vqEYGMUgKLQdxxgLzgg3rpb-TEeBg-hfwqB3U=)] bg-bottom-left"
+        className="relative w-full h-[36vh] md:h-[42vh] lg:h-[43vh] overflow-hidden"
       >
+     <div className="w-full h-full absolute">
+    <Image
+      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1751015347/iStock-614872550_gke6eh.jpg"
+      alt="People celebrating at a party"
+      fill
+      className="object-cover"
+    />
+    {/* Optional overlay for text contrast */}
+    <div className="absolute inset-0 bg-black/20" />
+  </div>
         {/* Strong dark overlay */}
-        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute inset-0 bg-black/8"></div>
         
         {/* Hero Content Overlay */}
-        <div className="relative h-full flex items-center justify-center px-4">
+        <div className="relative h-full flex justify-center px-4">
           <div className="max-w-4xl mx-auto text-center text-white">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 md:mb-6 drop-shadow-2xl text-shadow-lg">
+            <h1 className="mt-10 md:text-6xl text-4xl font-extrabold mb-3 md:mb-6 drop-shadow-2xl text-shadow-lg">
               Find trusted
-              <span className="text-white block drop-shadow-2xl">Party Suppliers</span>
+              <span className="text-white block drop-shadow-2xl"><span className="text-primary drop-shadow-xl">Party</span> Suppliers</span>
             </h1>
-            <p className="text-sm sm:text-base md:text-lg lg:text-2xl mb-4 md:mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
+            <p className="text-md py-5 sm:text-base md:text-lg lg:text-2xl mb-4 md:mb-8  md:w-[70%] mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
               Create magical moments. Everything you need for the perfect party, all in one place.
             </p>
           </div>
         </div>
 
         {/* Bottom fade for smooth transition */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 md:h-20 bg-gradient-to-t from-white to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-6 md:h-12 bg-gradient-to-t from-white to-transparent" />
+
       </div>
 
       {/* Search & Filter Controls - Mobile Optimized */}

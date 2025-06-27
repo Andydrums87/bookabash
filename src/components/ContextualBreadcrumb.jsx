@@ -90,7 +90,7 @@ export function ContextualBreadcrumb({
   return (
     <div className={`bg-white border-b border-gray-200 px-4 py-3 ${className}`}>
       <div className="max-w-7xl mx-auto">
-        <nav className="flex items-center space-x-2 text-sm">
+        <nav className="flex items-center space-x-2 text-xs">
           <button
             onClick={handleClick}
             className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"

@@ -29,7 +29,7 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 export default function SupplierProfilePage({ params }) {
   const router = useRouter()
   const resolvedParams = use(params)
-  const [selectedPackageId, setSelectedPackageId] = useState("premium")
+  const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [isAddingToPlan, setIsAddingToPlan] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -89,6 +89,8 @@ export default function SupplierProfilePage({ params }) {
       ownerName: backendSupplier?.ownerName,
     }
   }, [backendSupplier])
+
+
 
 
   const packages = useMemo(() => {
@@ -255,15 +257,23 @@ export default function SupplierProfilePage({ params }) {
     ],
     [],
   )
-
   useEffect(() => {
     if (!supplierLoading && !hasLoadedOnce) {
       setHasLoadedOnce(true)
-      if (!selectedPackageId && packages.length > 0) {
+      
+      // Check if supplier is already in party plan
+      const partyDetails = getSupplierInPartyDetails()
+      
+      if (partyDetails.inParty && partyDetails.currentPackage) {
+        // If supplier is in plan, select that package
+        setSelectedPackageId(partyDetails.currentPackage)
+        
+      } else if (!selectedPackageId && packages.length > 0) {
+        // Otherwise, select first package as before
         setSelectedPackageId(packages[0].id)
       }
     }
-  }, [supplierLoading, hasLoadedOnce, packages, selectedPackageId])
+  }, [supplierLoading, hasLoadedOnce, packages, selectedPackageId]) 
 
   const getSupplierInPartyDetails = () => {
     if (!supplier) return { inParty: false, currentPackage: null, supplierType: null }
@@ -315,10 +325,12 @@ export default function SupplierProfilePage({ params }) {
       let result
       if (partyDetails.inParty) {
         if (partyDetails.currentPackage === selectedPackageId) {
+          console.log("uviuho")
           setNotification({
             type: "info",
             message: `${supplier.name} with ${selectedPkg?.name || "this package"} is already in your dashboard!`,
           })
+    
           setIsAddingToPlan(false)
           setTimeout(() => setNotification(null), 3000)
           return
@@ -411,7 +423,7 @@ export default function SupplierProfilePage({ params }) {
         text: "Select a Package",
       }
     }
-    return { disabled: false, className: "bg-primary-500 hover:bg-primary-600 text-white", text: "Add to Plan" }
+    return { disabled: false, className: "bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white", text: "Add to Plan" }
   }
 
   if (supplierLoading && !hasLoadedOnce) {
@@ -468,9 +480,13 @@ export default function SupplierProfilePage({ params }) {
           <main className="lg:col-span-2 space-y-8">
                  {/* SupplierPackages moved here */}
                  <SupplierPackages
-              packages={packages}
-              selectedPackageId={selectedPackageId}
-              setSelectedPackageId={setSelectedPackageId}
+             packages={packages}
+             selectedPackageId={selectedPackageId}
+             setSelectedPackageId={setSelectedPackageId}
+             handleAddToPlan={handleAddToPlan}
+             getAddToPartyButtonState={getAddToPartyButtonState}
+             getSupplierInPartyDetails={getSupplierInPartyDetails}
+        
             />
             <SupplierServiceDetails supplier={supplier} />
             <SupplierPortfolioGallery portfolioImages={portfolioImages} />
@@ -511,10 +527,9 @@ export default function SupplierProfilePage({ params }) {
       
       <MobileBookingBar 
   selectedPackage={packages.find(pkg => pkg.id === selectedPackageId)}
-  supplier={supplier}  // Make sure this line is added
   onAddToPlan={handleAddToPlan}
+  addToPlanButtonState={getAddToPartyButtonState(selectedPackageId)}
   onSaveForLater={(data) => {
-    // You can implement save for later logic here
     console.log('Saving for later:', data);
     setNotification({ 
       type: "success", 
