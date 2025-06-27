@@ -471,8 +471,8 @@ const validateAndFormatPostcode = (postcode) => {
 
   {/* Header - Restored from previous version */}
   {/* Hero Section */}
-  <section className="pt-6 md:pt-15 pb-8 md:pb-12">
-    <div className="container mx-auto px-4">
+  <section className=" md:pt-15 pb-8 md:pb-12">
+    <div className="container mx-auto">
       
       {/* Desktop Layout - Original */}
       <div className="hidden lg:block">
@@ -672,51 +672,58 @@ const validateAndFormatPostcode = (postcode) => {
 
       {/* Mobile Layout - Full Screen Hero */}
       <div className="lg:hidden">
-        {/* Hero section */}
-        <div className="relative h-screen">
-          {/* Background image */}
-          <div className="absolute inset-0">
-            <Image
-              src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473145/iStock-1150515783_xilnlz.jpg"
-              alt="People celebrating at a party"
-              fill
-              className="object-cover object-[65%_25%]"
-            />
-            {/* Overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/20 to-black/50"></div>
-          </div>
+  {/* Hero section */}
+  <div className="relative h-screen">
+    {/* Background image */}
+    <div className="absolute inset-0">
+      <Image
+        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1751018218/iStock-1149320278_srn8ti.jpg"
+        alt="People celebrating at a party"
+        fill
+        className="object-cover scale-110 -translate-y-12"
+      />
+      {/* Lighter overlay - let the image breathe more */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50"></div>
+    </div>
+     
+    {/* Content overlay */}
+    <div className="relative z-10 flex flex-col pt-20 items-center text-center h-full px-6">
+      <div className="max-w-sm mx-auto">
+        <h1 className="text-5xl font-poppins-fix font-black leading-tight text-white mb-6 tracking-tight" 
+            style={{
+              fontFamily: 'var(--font-poppins), sans-serif',
+              textShadow: '0 4px 16px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.4)'
+            }}>
+          Your <span className="text-[#FF6B6B]">Dream</span> Party In Minutes
+        </h1>
+                         
+        <p className="text-xl font-bold text-white leading-relaxed mb-8" 
+           style={{textShadow: '0 3px 12px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4)'}}>
+          Choose your theme, we&apos;ll handle everything else
+        </p>
 
-          {/* Content overlay */}
-          <div className="relative z-10 flex flex-col text-center h-full px-6">
-            <div className="max-w-sm mx-auto">
-              <h1 className="text-5xl hero-title-width font-poppins-fix font-black leading-tight text-white mb-6 drop-shadow-2xl tracking-tight" style={{fontFamily: 'var(--font-poppins), sans-serif'}}>
-                Book Your Dream Party In Minutes
-              </h1>
-              
-              <p className="text-xl font-bold text-white/90 leading-relaxed mb-8 drop-shadow">
-                Choose your theme, we&apos;ll handle everything else
-              </p>
-
-              {/* CTA Button */}
-              <Link href="#search-form">
-                <Button className="bg-[#FF6B6B] hover:bg-[#FF5252] text-white font-black h-14 rounded-xl px-8 text-lg shadow-lg transition-all hover:shadow-xl transform hover:scale-105 mb-8">
-                  Plan Your Party
-                </Button>
-              </Link>
-
-              {/* Scroll indicator */}
-              <div className="flex flex-col items-center text-white/70">
-                <span className="text-sm mb-2">Scroll down to get started</span>
-                <div className="animate-bounce">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+        {/* CTA Button */}
+        <Link href="#search-form">
+          <Button className="bg-[#FF6B6B] hover:bg-[#FF5252] text-white font-black h-14 rounded-xl px-8 text-lg shadow-xl transition-all hover:shadow-2xl transform hover:scale-105 mb-8 w-full max-w-xs">
+            Plan Your Party
+          </Button>
+        </Link>
+         
+        {/* Scroll indicator */}
+        <div className="flex flex-col items-center text-white">
+          <span className="text-sm mb-2 font-medium" style={{textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}>
+            Scroll down to get started
+          </span>
+          <div className="animate-bounce">
+            <svg className="w-6 h-6 drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
     </div>
   </section>
 
