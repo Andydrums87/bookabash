@@ -138,8 +138,11 @@ module.exports = {
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", ...fontFamily.sans],
+        montserrat: ['var(--font-montserrat)', ...fontFamily.sans],
         mono: ["var(--font-geist-mono)", ...fontFamily.mono],
         poppins: ["var(--font-poppins)", ...fontFamily.sans],
+
+
       },
       keyframes: {
         "accordion-down": {

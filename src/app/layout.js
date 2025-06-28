@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, Montserrat } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
@@ -20,6 +20,12 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700", "800", "900"], // Add more weights
 });
 
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+});
+
 export const metadata = {
   title: "BookABash",
   icons: {
@@ -33,7 +39,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-     <body className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}>
+     <body className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${montserrat.variable} font-montserrat antialiased`}>
 
         {children}
   

@@ -15,6 +15,7 @@ import {
   ChevronDown, 
   ChevronUp,
   MapPin,
+  Heart,
   DollarSign,
   Calendar
 } from "lucide-react"
@@ -210,11 +211,7 @@ export default function SupplierSelectionModal({
     maxBookingDays: 365
   };
   
-  // Test cases:
-  console.log("Testing availability function:");
-  console.log("June 15, 2025 (unavailable):", checkSupplierAvailabilityOnDate(testSupplier, "June 15, 2025"));
-  console.log("June 16, 2025 (available):", checkSupplierAvailabilityOnDate(testSupplier, "June 16, 2025"));
-  console.log("June 18, 2025 (busy but available):", checkSupplierAvailabilityOnDate(testSupplier, "June 18, 2025"));
+
   
   // How to add unavailable dates to a supplier:
   const addUnavailableDateToSupplier = (supplierId, unavailableDate) => {
@@ -718,17 +715,59 @@ suppliers.slice(0, 3).forEach(supplier => {
     const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
     
     return (
-      <Card className="border border-gray-200 shadow-sm overflow-hidden rounded-lg flex flex-col">
-        <div className="relative w-full h-40 md:h-48 bg-gray-200">
-          <Image
+      <Card className="border-2 border-gray-100 shadow-sm overflow-hidden rounded-lg flex flex-col">
+        <div className="relative w-full h-60 md:h-60">
+           <svg
+                    width="0"
+                    height="0"
+                    style={{
+                      position: "absolute",
+                      overflow: "hidden",
+                      top: "-9999px",
+                      left: "-9999px",
+                    }}
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <clipPath id={`funCloudClip-${supplier.id}`} clipPathUnits="objectBoundingBox">
+                        <circle cx="0.5" cy="0.5" r="0.35" />
+                        <circle cx="0.5" cy="0.2" r="0.2" />
+                        <circle cx="0.75" cy="0.35" r="0.22" />
+                        <circle cx="0.7" cy="0.65" r="0.2" />
+                        <circle cx="0.5" cy="0.8" r="0.22" />
+                        <circle cx="0.25" cy="0.65" r="0.2" />
+                        <circle cx="0.3" cy="0.35" r="0.22" />
+                      </clipPath>
+                    </defs>
+                  </svg> 
+          
+                  {/* Image container with clip path */}
+                   <div className="relative w-[100%] md:w-full h-90 md:h-90 mx-auto mb-4 -mt-px group-hover:scale-105 transition-transform duration-300 ">
+                    <div
+                      className="absolute inset-5 mb-20"
+                      style={{
+                        clipPath: `url(#funCloudClip-${supplier.id})`,
+                        WebkitClipPath: `url(#funCloudClip-${supplier.id})`,
+                      }}
+                    >
+                      <Image
+                        src={supplier.image || supplier.imageUrl || `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`}
+                        alt={supplier.name}
+                        fill
+                        className="object-cover group-hover:brightness-110 transition-all duration-300"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </div>
+                  </div>
+          {/* <Image
             src={supplier.image || "https://placehold.co/600x200?text=Event+Banner"}
             alt={`${supplier.name} banner`}
             fill
             className="object-cover"
-          />
+          /> */}
           
           {/* Availability badge when date is selected */}
-          {selectedDate && (
+          {/* {selectedDate && (
             <Badge className={`absolute top-3 right-3 text-xs px-2 py-1 shadow-md ${
               isAvailableOnDate 
                 ? 'bg-green-500 text-white' 
@@ -736,36 +775,54 @@ suppliers.slice(0, 3).forEach(supplier => {
             }`}>
               {isAvailableOnDate ? '✅ Available' : '❌ Unavailable'}
             </Badge>
-          )}
-          
+          )} */}
+{/*           
           {supplier.badges && supplier.badges[0] && (
             <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs px-2 py-1 shadow-md">
               {supplier.badges[0]}
             </Badge>
+          )} */}
+              {/* Bookmark button - top right */}
+              {supplier.badges && supplier.badges[0] && (
+            <Badge className="absolute top-3 left-3 bg-primary-100 text-primary-700 text-xs px-2 py-1 shadow-md">
+              {supplier.badges[0]}
+            </Badge>
           )}
+        <button
+          // onClick={() => setIsBookmarked(!isBookmarked)}
+          className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
+        >
+          <Heart className={`w-4 h-4`} />
+        </button>
         </div>
         
         <CardContent className="p-4 flex-grow flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-lg font-semibold text-gray-900 leading-tight">{supplier.name}</h3>
             <div className="text-right flex-shrink-0 ml-2">
-              <div className="text-xl font-bold text-gray-900">£{supplier.priceFrom}</div>
-              <div className="text-xs text-gray-600">{supplier.priceUnit}</div>
+              {/* <div className="text-xl font-bold text-gray-900">£{supplier.priceFrom}</div> */}
+              <div className="flex px-2 items-center gap-1 rounded-full justify-center border-[hsl(var(--primary-900))] border-1">
+              <Star className="w-3 h-3 fill-[hsl(var(--primary-700))] text-primary-700" />
+              <span className="font-medium text-sm text-primary-700">{supplier.rating}</span>
+              {/* <span className="text-gray-500">({supplier.reviewCount} reviews)</span> */}
+            </div>
+             
             </div>
           </div>
 
           <div className="flex items-center gap-3 text-sm text-gray-700 mb-2">
-            <div className="flex items-center gap-1">
+            {/* <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               <span className="font-medium">{supplier.rating}</span>
               <span className="text-gray-500">({supplier.reviewCount} reviews)</span>
-            </div>
-            <span>•</span>
-            <span className="text-gray-600">{supplier.location}</span>
+            </div> */}
+
+            {/* <span className="text-gray-600">{supplier.location}</span> */}
+                    <div className="text-sm font-bold text-gray-400">From £{supplier.priceFrom}</div>
           </div>
 
           {/* Show working hours if date is selected */}
-          {selectedDate && isAvailableOnDate && (() => {
+          {/* {selectedDate && isAvailableOnDate && (() => {
             const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
             const daySchedule = supplier.workingHours?.[dayName];
             return daySchedule?.active && (
@@ -775,24 +832,24 @@ suppliers.slice(0, 3).forEach(supplier => {
                 </Badge>
               </div>
             );
-          })()}
+          })()} */}
 
           <div className="mb-3">
-            <Badge variant="default" className="text-xs bg-green-100 text-green-700">
-              {supplier.availability}
+            <Badge variant="default" className="text-[0.7rem] rounded-full bg-primary-200 text-primary-900 font-light">
+              {supplier.availability || "Available this weekend"}
             </Badge>
           </div>
 
-          <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">{supplier.description}</p>
+          {/* <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">{supplier.description}</p> */}
 
           <div className="mt-auto pt-4 border-t border-gray-100">
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button size="lg" variant="outline" className="flex-1 py-2" asChild>
+              <Button size="lg" variant="outline" className="flex-1 py-2 rounded-full bg-primary-100 border-none text-primary-900" asChild>
                 <Link href={`/supplier/${supplier.id}`}>View Details</Link>
               </Button>
               <Button
                 size="lg"
-                className="bg-primary-500 hover:bg-[hsl(var(--primary-700))] py-3 text-white flex-1 relative"
+                className="bg-primary-500 hover:bg-[hsl(var(--primary-700))] py-3 text-gray-100 flex-1 relative rounded-full"
                 onClick={() => handleAddSupplier(supplier)}
                 disabled={addingSupplier === supplier.id || (selectedDate && !isAvailableOnDate)}
               >
@@ -808,7 +865,6 @@ suppliers.slice(0, 3).forEach(supplier => {
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
                     Add to Plan
                   </>
                 )}

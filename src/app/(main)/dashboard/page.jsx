@@ -12,6 +12,10 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb";
 import BudgetControls from "@/components/budget-controls"
 import {
   Edit,
+  Zap,
+  PartyPopper,
+  Clock,
+  Sparkles,
   CheckCircle,
   MapPin,
   Calendar,
@@ -96,6 +100,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
+  const [timeUntilParty, setTimeUntilParty] = useState({ days: 0, hours: 0, minutes: 0 })
   const welcomePopupShownRef = useRef(false)
 
   // Party plan backend integration
@@ -148,6 +153,63 @@ useEffect(() => {
   
   return () => clearTimeout(timeoutId);
 }, [tempBudget, hasInitialized, isUpdating, lastProcessedBudget]);
+
+  // Countdown timer
+  useEffect(() => {
+    const calculateTimeUntilParty = () => {
+      const partyDate = new Date("2025-06-14T14:00:00")
+      const now = new Date()
+      const difference = partyDate.getTime() - now.getTime()
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+
+        setTimeUntilParty({ days, hours, minutes })
+      }
+    }
+
+    calculateTimeUntilParty()
+    const interval = setInterval(calculateTimeUntilParty, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const CountdownWidget = () => (
+    <Card className="bg-primary-50 border-2 border-primary-200 shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardContent className="p-6">
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center gap-2">
+            <PartyPopper className="w-8 h-8 text-orange-500 animate-bounce" />
+            <h3 className="text-xl font-bold text-gray-900">Party Countdown!</h3>
+            <PartyPopper className="w-8 h-8 text-orange-500 animate-bounce" style={{ animationDelay: "0.5s" }} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl p-3 shadow-sm border-2 border-primary-200">
+              <div className="text-3xl font-bold text-primary-600">{timeUntilParty.days}</div>
+              <div className="text-sm text-gray-600 font-medium">Days</div>
+            </div>
+            <div className="bg-white rounded-xl p-3 shadow-sm border-2 border-primary-300">
+              <div className="text-3xl font-bold text-primary-700">{timeUntilParty.hours}</div>
+              <div className="text-sm text-gray-600 font-medium">Hours</div>
+            </div>
+            <div className="bg-white rounded-xl p-3 shadow-sm border-2 border-primary-400">
+              <div className="text-3xl font-bold text-primary-800">{timeUntilParty.minutes}</div>
+              <div className="text-sm text-gray-600 font-medium">Minutes</div>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-700 font-medium flex items-center justify-center gap-2">
+            <Clock className="w-4 h-4" />
+            Until the magical day arrives!
+            <Sparkles className="w-4 h-4 animate-pulse" />
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
 const MobileSupplierTabs = ({ 
   suppliers, 
@@ -652,7 +714,97 @@ const MobileSupplierTabs = ({
   //   return () => clearTimeout(handler)
   // }, [tempBudget, currentBudget, isUpdating])
 
+  const FunBudgetTracker = () => (
+    <Card
+      className={`${theme.colors.light} ${theme.colors.border} border-2 shadow-lg hover:shadow-xl transition-all duration-300`}
+    >
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 ${theme.colors.accent} rounded-full flex items-center justify-center shadow-lg`}>
+              <Sparkles className="w-6 h-6 text-white animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Party Budget Magic!</h2>
+              <p className="text-sm text-gray-600">Watch your party come together ✨</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div
+              className={`w-3 h-3 rounded-full ${isUpdating ? "bg-yellow-400 animate-pulse" : "bg-green-400"}`}
+            ></div>
+          </div>
+        </div>
+      </CardHeader>
 
+      <CardContent className="space-y-6">
+        {/* Budget Display */}
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-4xl font-bold text-primary-600">£{totalSpent}</span>
+            <span className="text-gray-600 text-lg">of £{tempBudget}</span>
+          </div>
+          <div className="text-lg font-semibold text-green-600 flex items-center justify-center gap-2">
+            <Gift className="w-5 h-5" />£{Math.max(0, tempBudget - totalSpent)} left for more fun!
+          </div>
+        </div>
+
+        {/* Animated Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="font-medium">Party Progress</span>
+            <span className="font-bold">{budgetPercentage}% planned!</span>
+          </div>
+          <div className="relative">
+            <Progress value={budgetPercentage} className="h-4 bg-gray-200" />
+            <div
+              className="absolute inset-0 bg-primary-500 rounded-full opacity-90"
+              style={{ width: `${budgetPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Budget Slider */}
+        <div className={`${theme.colors.light} rounded-xl p-4 border-2 border-dashed ${theme.colors.border}`}>
+          <div className="flex justify-between items-center mb-4">
+            <span className="font-medium text-gray-700">Adjust Your Magic Budget</span>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                £{tempBudget}
+              </span>
+              <Badge className={`${theme.colors.accent} text-white shadow-lg`}>
+                {getBudgetCategory(tempBudget)} ✨
+              </Badge>
+            </div>
+          </div>
+
+          <Slider
+            value={[tempBudget]}
+            onValueChange={(value) => setTempBudget(value[0])}
+            max={1000}
+            min={300}
+            step={50}
+            className="w-full"
+            disabled={isUpdating}
+          />
+
+          <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <span>£300 - Basic Fun</span>
+            <span>£1000+ - Ultimate Party!</span>
+          </div>
+
+          {isUpdating && (
+            <div className="mt-4 text-center">
+              <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border">
+                <RefreshCw className="w-4 h-4 animate-spin text-purple-500" />
+                <span className="text-sm font-medium">Updating your magical party...</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   const handleAddSupplier = () => {
     navigateWithContext('/browse', 'dashboard');
@@ -948,12 +1100,54 @@ if (type === "einvites") {
           ) : (
             <>
               <div className="absolute top-[-24px] left-0 w-full h-full">
-                <Image
+                 <svg
+                                    width="0"
+                                    height="0"
+                                    style={{
+                                      position: "absolute",
+                                      overflow: "hidden",
+                                      top: "-9999px",
+                                      left: "-9999px",
+                                    }}
+                                    aria-hidden="true"
+                                  >
+                                    <defs>
+                                      <clipPath id={`funCloudClip-${supplier.id}`} clipPathUnits="objectBoundingBox">
+                                        <circle cx="0.5" cy="0.5" r="0.35" />
+                                        <circle cx="0.5" cy="0.2" r="0.2" />
+                                        <circle cx="0.75" cy="0.35" r="0.22" />
+                                        <circle cx="0.7" cy="0.65" r="0.2" />
+                                        <circle cx="0.5" cy="0.8" r="0.22" />
+                                        <circle cx="0.25" cy="0.65" r="0.2" />
+                                        <circle cx="0.3" cy="0.35" r="0.22" />
+                                      </clipPath>
+                                    </defs>
+                                  </svg> 
+                          
+                                  {/* Image container with clip path */}
+                                   <div className="relative w-[100%] md:w-full h-90 md:h-full mx-auto mb-4 -mt-px group-hover:scale-105 transition-transform duration-300 ">
+                                    <div
+                                      className="absolute inset-10 h-full"
+                                      style={{
+                                        clipPath: `url(#funCloudClip-${supplier.id})`,
+                                        WebkitClipPath: `url(#funCloudClip-${supplier.id})`,
+                                      }}
+                                    >
+                                      <Image
+                                        src={supplier.image || supplier.imageUrl || `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`}
+                                        alt={supplier.name}
+                                        fill
+                                        className="object-cover group-hover:brightness-110 transition-all duration-300"
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                      />
+                                    </div>
+                                  </div>
+                {/* <Image
                   src={supplier.image || "/placeholder.svg"}
                   alt={supplier.name}
                   fill
                   className="object-cover"
-                />
+                /> */}
               </div>
               
               {/* Category badge */}
@@ -1221,20 +1415,25 @@ useEffect(() => {
 
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
        
-
-        {/* Party Header */}
+      
         
         <PartyHeader theme={partyTheme} partyDetails={getPartyDetails()} />
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           {/* Main Content */}
           <main className="lg:col-span-2 space-y-8">
-          <div className="hidden md:flex justify-end mb-4">
+          <div className="hidden md:flex justify-between mb-4">
+          <div>
+                  <h2 className="text-3xl font-bold text-primary-700">Your Party Team! 🎉</h2>
+                  <p className="text-gray-600 mt-1">Amazing suppliers to make your day perfect</p>
+                </div>
   <button 
     onClick={handleAddSupplier} 
     className="bg-primary-500 px-4 py-3 text-white hover:bg-[hsl(var(--primary-700))] rounded"
   >
     Add New Supplier
   </button>
+
+
 </div>
 
             {/* Party Categories Grid */}
@@ -1433,42 +1632,27 @@ useEffect(() => {
             <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
               <BudgetControls {...budgetControlProps} />
             </Card>
-            <InviteProgressIndicator partyDate="June 14, 2025" invitesSent={0} totalGuests={15} />
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-medium">Upcoming Tasks</CardTitle>
-                <ListChecks className="w-5 h-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-center">
-                    <ChevronRight className="w-4 h-4 mr-2 text-primary" />
-                    Confirm guest list
-                  </li>
-                  <li className="flex items-center">
-                    <ChevronRight className="w-4 h-4 mr-2 text-primary-500" />
-                    Plan party games
-                  </li>
-                  <li className="flex items-center">
-                    <ChevronRight className="w-4 h-4 mr-2 text-gray-400" />
-                    Buy decorations (Optional)
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-medium">Quick Links</CardTitle>
-                <LinkIcon className="w-5 h-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="#">View Guest List</Link>
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" asChild>
-                    <Link href="#">Message Suppliers</Link>
-                  </Button>
+            {/* <InviteProgressIndicator partyDate="June 14, 2025" invitesSent={0} totalGuests={15} /> */}
+            <CountdownWidget />
+
+            {/* Party Excitement Meter */}
+            <Card className="bg-primary-50 border-2 border-primary-200 shadow-lg">
+              <CardContent className="p-6 text-center">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="w-6 h-6 text-primary-500" />
+                    <h3 className="text-lg font-bold text-gray-900">Excitement Level!</h3>
+                  </div>
+
+                  <div className="relative">
+                    <div className="w-24 h-24 mx-auto bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                      <span className="text-2xl font-bold text-white">95%</span>
+                    </div>
+                    <div className="absolute -top-2 -right-2 text-2xl">🎉</div>
+                    <div className="absolute -bottom-2 -left-2 text-2xl">✨</div>
+                  </div>
+
+                  <p className="text-sm font-medium text-gray-700">Your party is going to be AMAZING! 🌟</p>
                 </div>
               </CardContent>
             </Card>
