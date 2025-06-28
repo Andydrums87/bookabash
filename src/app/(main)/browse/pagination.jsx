@@ -146,6 +146,7 @@ const LoadMoreSuppliersSection = ({
                 }} className="p-0 relative">
           {/* Image Section */}
           <div className="relative w-full h-48 md:h-40 lg:h-48 overflow-hidden">
+            
             <img 
               src={supplier?.image || "/placeholder.svg"} 
               alt={supplier.name} 

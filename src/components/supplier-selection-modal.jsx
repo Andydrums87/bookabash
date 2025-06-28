@@ -418,26 +418,7 @@ suppliers.slice(0, 3).forEach(supplier => {
             </div>
           </div>
 
-          {/* Show selected date info */}
-          {selectedDate && (
-            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                <span className="text-blue-800 font-medium">
-                  Party Date: {selectedDate.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </span>
-              </div>
-              {availableOnly && (
-                <div className="mt-1 text-xs text-blue-700">
-                  ✅ Showing only suppliers available on this date
-                </div>
-              )}
-            </div>
-          )}
+      
 
           {/* Active Filters Pills - Mobile */}
           {activeFiltersCount > 0 && (
@@ -715,50 +696,37 @@ suppliers.slice(0, 3).forEach(supplier => {
     const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
     
     return (
-      <Card className="border-2 border-gray-100 shadow-sm overflow-hidden rounded-lg flex flex-col">
-        <div className="relative w-full h-60 md:h-60">
-           <svg
-                    width="0"
-                    height="0"
-                    style={{
-                      position: "absolute",
-                      overflow: "hidden",
-                      top: "-9999px",
-                      left: "-9999px",
-                    }}
-                    aria-hidden="true"
-                  >
-                    <defs>
-                      <clipPath id={`funCloudClip-${supplier.id}`} clipPathUnits="objectBoundingBox">
-                        <circle cx="0.5" cy="0.5" r="0.35" />
-                        <circle cx="0.5" cy="0.2" r="0.2" />
-                        <circle cx="0.75" cy="0.35" r="0.22" />
-                        <circle cx="0.7" cy="0.65" r="0.2" />
-                        <circle cx="0.5" cy="0.8" r="0.22" />
-                        <circle cx="0.25" cy="0.65" r="0.2" />
-                        <circle cx="0.3" cy="0.35" r="0.22" />
-                      </clipPath>
-                    </defs>
-                  </svg> 
+      <Card className="border border-[hsl(var(--primary-200))] shadow-sm overflow-hidden rounded-lg flex flex-col">
+        <div className="relative w-full h-60 md:h-60 ">
+        <div
+  className="relative w-64 h-64 mask-image mx-auto mt-5"
+  style={{
+    WebkitMaskImage: 'url("/image.svg")',
+    WebkitMaskRepeat: 'no-repeat',
+    WebkitMaskSize: 'contain',
+    WebkitMaskPosition: 'center',
+    maskImage: 'url("/image.svg")',
+    maskRepeat: 'no-repeat',
+    maskSize: 'contain',
+    maskPosition: 'center',
+  }}
+>
+  <Image
+    src={
+      supplier.image ||
+      supplier.imageUrl ||
+      `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`
+    }
+    alt={supplier.name}
+    fill
+    className="object-cover group-hover:brightness-110 transition-all duration-300 "
+    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+  />
+</div>
+   
           
                   {/* Image container with clip path */}
-                   <div className="relative w-[100%] md:w-full h-90 md:h-90 mx-auto mb-4 -mt-px group-hover:scale-105 transition-transform duration-300 ">
-                    <div
-                      className="absolute inset-5 mb-20"
-                      style={{
-                        clipPath: `url(#funCloudClip-${supplier.id})`,
-                        WebkitClipPath: `url(#funCloudClip-${supplier.id})`,
-                      }}
-                    >
-                      <Image
-                        src={supplier.image || supplier.imageUrl || `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`}
-                        alt={supplier.name}
-                        fill
-                        className="object-cover group-hover:brightness-110 transition-all duration-300"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                    </div>
-                  </div>
+                
           {/* <Image
             src={supplier.image || "https://placehold.co/600x200?text=Event+Banner"}
             alt={`${supplier.name} banner`}

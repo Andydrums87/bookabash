@@ -423,24 +423,44 @@ const MobileSupplierTabs = ({
 
     // Regular supplier card - EXACT COPY
     return (
-      <Card className={`overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-all duration-300 ${
+      <Card className={`overflow-hidden rounded-lg border border-[hsl(var(--primary-200))]  shadow-sm transition-all duration-300 ${
         isDeleting ? 'opacity-50 scale-95' : ''
       }`}>
-        <div className="relative aspect-[3/2] w-full">
+        <div className="relative aspect-[2/2] w-full">
           {isLoading ? (
             <Skeleton className="w-full h-full" />
           ) : (
             <>
-              <div className="absolute top-[-24px] left-0 w-full h-full">
-                <img
-                  src={supplier.image || "/placeholder.svg"}
+              <div className="absolute top-[-10px] left-0 w-full h-full">
+               <div
+                className="relative w-[90%] h-[100%] mask-image mx-auto mt-10"
+                style={{
+                  WebkitMaskImage: 'url("/image.svg")',
+                  WebkitMaskRepeat: 'no-repeat',
+                  WebkitMaskSize: 'contain',
+                  WebkitMaskPosition: 'center',
+                  maskImage: 'url("/image.svg")',
+                  maskRepeat: 'no-repeat',
+                  maskSize: 'contain',
+                  maskPosition: 'center',
+                }}
+              >
+                <Image
+                  src={
+                    supplier.image ||
+                    supplier.imageUrl ||
+                    `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`
+                  }
                   alt={supplier.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
+              </div>
               </div>
               
               {/* Category badge */}
-              <div className="absolute px-4 py-2 top-0 bg-primary-500 rounded-full left-3 flex items-center space-x-2 text-white text-xs z-10">
+              <div className="absolute px-4 py-2 top-3 bg-primary-500 rounded-full left-3 flex items-center space-x-2 text-white text-xs z-10">
                 <span className="font-medium">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
               </div>
               
@@ -1100,48 +1120,35 @@ if (type === "einvites") {
           ) : (
             <>
               <div className="absolute top-[-24px] left-0 w-full h-full">
-                 <svg
-                                    width="0"
-                                    height="0"
-                                    style={{
-                                      position: "absolute",
-                                      overflow: "hidden",
-                                      top: "-9999px",
-                                      left: "-9999px",
-                                    }}
-                                    aria-hidden="true"
-                                  >
-                                    <defs>
-                                      <clipPath id={`funCloudClip-${supplier.id}`} clipPathUnits="objectBoundingBox">
-                                        <circle cx="0.5" cy="0.5" r="0.35" />
-                                        <circle cx="0.5" cy="0.2" r="0.2" />
-                                        <circle cx="0.75" cy="0.35" r="0.22" />
-                                        <circle cx="0.7" cy="0.65" r="0.2" />
-                                        <circle cx="0.5" cy="0.8" r="0.22" />
-                                        <circle cx="0.25" cy="0.65" r="0.2" />
-                                        <circle cx="0.3" cy="0.35" r="0.22" />
-                                      </clipPath>
-                                    </defs>
-                                  </svg> 
+         <div
+          className="relative w-[100%] h-[100%] mask-image mx-auto mt-10"
+          style={{
+            WebkitMaskImage: 'url("/image.svg")',
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskSize: 'contain',
+            WebkitMaskPosition: 'center',
+            maskImage: 'url("/image.svg")',
+            maskRepeat: 'no-repeat',
+            maskSize: 'contain',
+            maskPosition: 'center',
+          }}
+        >
+          <Image
+            src={
+              supplier.image ||
+              supplier.imageUrl ||
+              `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`
+            }
+            alt={supplier.name}
+            fill
+            className="object-cover group-hover:brightness-110 transition-all duration-300 "
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        </div>
                           
-                                  {/* Image container with clip path */}
-                                   <div className="relative w-[100%] md:w-full h-90 md:h-full mx-auto mb-4 -mt-px group-hover:scale-105 transition-transform duration-300 ">
-                                    <div
-                                      className="absolute inset-10 h-full"
-                                      style={{
-                                        clipPath: `url(#funCloudClip-${supplier.id})`,
-                                        WebkitClipPath: `url(#funCloudClip-${supplier.id})`,
-                                      }}
-                                    >
-                                      <Image
-                                        src={supplier.image || supplier.imageUrl || `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`}
-                                        alt={supplier.name}
-                                        fill
-                                        className="object-cover group-hover:brightness-110 transition-all duration-300"
-                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                      />
-                                    </div>
-                                  </div>
+                            
+                                  
+                                 
                 {/* <Image
                   src={supplier.image || "/placeholder.svg"}
                   alt={supplier.name}
@@ -1437,7 +1444,7 @@ useEffect(() => {
 </div>
 
             {/* Party Categories Grid */}
-            <div className="hidden md:grid md:grid-cols-2 gap-6">
+            <div className="hidden md:grid md:grid-cols-3 gap-6">
   <SupplierCard type="venue" supplier={suppliers.venue} />
   <SupplierCard type="entertainment" supplier={suppliers.entertainment} />
   <SupplierCard type="catering" supplier={suppliers.catering} />

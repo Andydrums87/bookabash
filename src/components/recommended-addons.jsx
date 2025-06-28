@@ -316,13 +316,33 @@ export default function RecommendedAddons({
                 >
                   <CardContent className="p-0 flex flex-col h-full">
                     {/* Shorter image on mobile */}
-                    <div className="relative h-32 sm:h-40 md:h-48 overflow-hidden">
-                      <Image
-                        src={supplier.image || "/placeholder.svg"}
-                        alt={supplier.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                    <div className="relative h-40 sm:h-45 md:h-48 overflow-hidden">
+                      
+                       <div
+                                      className="relative w-[100%] h-[100%] mask-image mx-auto"
+                                      style={{
+                                        WebkitMaskImage: 'url("/image.svg")',
+                                        WebkitMaskRepeat: 'no-repeat',
+                                        WebkitMaskSize: 'contain',
+                                        WebkitMaskPosition: 'center',
+                                        maskImage: 'url("/image.svg")',
+                                        maskRepeat: 'no-repeat',
+                                        maskSize: 'contain',
+                                        maskPosition: 'center',
+                                      }}
+                                    >
+                                      <Image
+                                        src={
+                                          supplier.image ||
+                                          supplier.imageUrl ||
+                                          `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`
+                                        }
+                                        alt={supplier.name}
+                                        fill
+                                        className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                      />
+                                    </div>
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {isPopular && (
                           <Badge className="bg-primary-500 text-white text-xs px-1.5 py-0.5">
