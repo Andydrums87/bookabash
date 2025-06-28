@@ -107,49 +107,31 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
-        {/* SVG Clip Path defined locally for this card */}
-        <svg
-          width="0"
-          height="0"
-          style={{
-            position: "absolute",
-            overflow: "hidden",
-            top: "-9999px",
-            left: "-9999px",
-          }}
-          aria-hidden="true"
-        >
-          <defs>
-            <clipPath id={`funCloudClip-${pkg.id}`} clipPathUnits="objectBoundingBox">
-              <circle cx="0.5" cy="0.5" r="0.35" />
-              <circle cx="0.5" cy="0.2" r="0.2" />
-              <circle cx="0.75" cy="0.35" r="0.22" />
-              <circle cx="0.7" cy="0.65" r="0.2" />
-              <circle cx="0.5" cy="0.8" r="0.22" />
-              <circle cx="0.25" cy="0.65" r="0.2" />
-              <circle cx="0.3" cy="0.35" r="0.22" />
-            </clipPath>
-          </defs>
-        </svg>
 
-        {/* Image container with clip path */}
-        <div className="relative w-full h-56 md:h-70 mx-auto mb-4 -mt-px group-hover:scale-105 transition-transform duration-300">
-          <div
-            className="absolute inset-5"
-            style={{
-              clipPath: `url(#funCloudClip-${pkg.id})`,
-              WebkitClipPath: `url(#funCloudClip-${pkg.id})`,
-            }}
-          >
-            <Image
-              src={pkg.image || pkg.imageUrl || `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`}
-              alt={pkg.name}
-              fill
-              className="object-cover group-hover:brightness-110 transition-all duration-300"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-          </div>
-        </div>
+                    <div
+                          className="relative w-70 h-70 md:h-full md:w-full mask-image mx-auto mt-5 mb-2"
+                          style={{
+                            WebkitMaskImage: 'url("/image.svg")',
+                            WebkitMaskRepeat: 'no-repeat',
+                            WebkitMaskSize: 'contain',
+                            WebkitMaskPosition: 'center',
+                            maskImage: 'url("/image.svg")',
+                            maskRepeat: 'no-repeat',
+                            maskSize: 'contain',
+                            maskPosition: 'center',
+                          }}
+                        >
+                          <Image
+                            src={
+                              pkg.image || pkg.imageUrl || "/placeholder.jpg"
+                            }
+                            alt={pkg.name || "package image"}
+                            fill
+                            className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                        </div>
+       
         
         <h3 className="font-bold text-xl text-gray-800 truncate mb-1 px-2 group-hover:text-gray-900 transition-colors duration-200">{pkg.name}</h3>
         

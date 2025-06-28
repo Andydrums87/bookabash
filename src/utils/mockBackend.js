@@ -19,7 +19,7 @@ const mockSuppliers = [
     location: "W3 7QD",
     priceFrom: 250,
     priceUnit: "per event",
-    description: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events",
+    description: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical",
     badges: ["Packages Available"],
     availability: "Contact for availability",
     themes: ["general"],

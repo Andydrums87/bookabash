@@ -16,13 +16,30 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow overflow-hidden">
       {imageUrl ? (
         <div className="relative w-full h-48">
-          <Image
-            src={imageUrl || "/placeholder.jpg"}
-            alt={name || "Package image"}
-            layout="fill"
-            objectFit="cover"
-            className="bg-muted"
-          />
+         
+          <div
+                          className="relative w-[90%] h-[100%] mask-image mx-auto mt-10"
+                          style={{
+                            WebkitMaskImage: 'url("/image.svg")',
+                            WebkitMaskRepeat: 'no-repeat',
+                            WebkitMaskSize: 'contain',
+                            WebkitMaskPosition: 'center',
+                            maskImage: 'url("/image.svg")',
+                            maskRepeat: 'no-repeat',
+                            maskSize: 'contain',
+                            maskPosition: 'center',
+                          }}
+                        >
+                          <Image
+                            src={
+                              imageUrl || "/placeholder.jpg"
+                            }
+                            alt={name || "Package image"}
+                            fill
+                            className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                        </div>
         </div>
       ) : (
         <div className="w-full h-48 bg-muted flex items-center justify-center">
