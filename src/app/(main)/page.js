@@ -471,7 +471,7 @@ const validateAndFormatPostcode = (postcode) => {
 
   {/* Header - Restored from previous version */}
   {/* Hero Section */}
-  <section className=" md:pt-15 pb-8 md:pb-12">
+  <section className="md:pt-15 pb-8 md:pb-12">
     <div className="container mx-auto">
       
       {/* Desktop Layout - Original */}
@@ -683,7 +683,7 @@ const validateAndFormatPostcode = (postcode) => {
         className="object-cover scale-110 -translate-y-12"
       />
       {/* Lighter overlay - let the image breathe more */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50"></div>
+      <div className="absolute h-screen inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50"></div>
     </div>
      
     {/* Content overlay */}
