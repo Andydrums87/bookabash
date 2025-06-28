@@ -423,7 +423,7 @@ const MobileSupplierTabs = ({
 
     // Regular supplier card - EXACT COPY
     return (
-      <Card className={`overflow-hidden rounded-lg border border-[hsl(var(--primary-200))]  shadow-sm transition-all duration-300 ${
+      <Card className={`overflow-hidden rounded-lg border border-[hsl(var(--primary-200))] shadow-sm transition-all duration-300 ${
         isDeleting ? 'opacity-50 scale-95' : ''
       }`}>
         <div className="relative aspect-[2/2] w-full">

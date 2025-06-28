@@ -811,7 +811,7 @@ suppliers.slice(0, 3).forEach(supplier => {
           {/* <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">{supplier.description}</p> */}
 
           <div className="mt-auto pt-4 border-t border-gray-100">
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex md:flex-col sm:flex-row gap-2">
               <Button size="lg" variant="outline" className="flex-1 py-2 rounded-full bg-primary-100 border-none text-primary-900" asChild>
                 <Link href={`/supplier/${supplier.id}`}>View Details</Link>
               </Button>
