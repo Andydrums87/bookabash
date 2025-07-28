@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
-import EnquirySuccessBanner from '@/components/EnquirySuccessBanner'
+import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
 import PartyHeader from "./PartyHeader"
 import CountdownWidget from "./CountdownWidget"
 import PartyExcitementMeter from "./PartyExcitementMeter"
@@ -23,7 +23,7 @@ import SupplierCard from "./SupplierCard"
 import MobileSupplierTabs from "./MobileSupplierTabs"
 import AddonsSection from "./AddonsSection"
 import SnappysPresentParty from "./SnappysPresentParty"
-import RealTimeNotifications from "./RealTimeNotifications"
+import RealTimeNotifications from "./realTimeNotifications"
 import AutoReplacementFlow from "./AutoReplacementFlow"
 
 // Existing Components

@@ -13,7 +13,7 @@ import { RefreshCw, ChevronRight } from "lucide-react"
 
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
-import EnquirySuccessBanner from '@/components/EnquirySuccessBanner'
+import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
 import PartyHeader from "./PartyHeader"
 import CountdownWidget from "./CountdownWidget"
 import PartyExcitementMeter from "./PartyExcitementMeter"
