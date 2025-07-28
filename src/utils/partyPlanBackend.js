@@ -468,6 +468,8 @@ export function usePartyPlan() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  
+
   useEffect(() => {
     if (isClient) {
       loadPartyPlan();
@@ -489,7 +491,7 @@ export function usePartyPlan() {
       const data = partyPlanBackend.getPartyPlan();
       setPartyPlan(data);
       setError(null);
-      console.log('📊 Loaded party plan:', data);
+
     } catch (err) {
       setError(err.message);
     } finally {

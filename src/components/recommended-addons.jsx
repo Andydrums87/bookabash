@@ -48,9 +48,6 @@ export default function RecommendedAddons({
     if (!suppliers || suppliers.length === 0) return []
     
     let filtered = [...suppliers]
-
-    // CLEAN APPROACH: Only show truly different service categories as add-ons
-    // Remove all Entertainment overlap - keep add-ons for different service types
     
     const addOnCategories = [
       'Photography',      // Party photographers
@@ -66,29 +63,25 @@ export default function RecommendedAddons({
       'balloon-magic',        // Decorations
     ]
 
-    console.log('🎯 Clean add-ons approach - only different service types')
-    console.log('📂 Add-on categories:', addOnCategories)
-    console.log('🎪 Specific add-ons:', specificAddOns)
-
     // Filter based on context
     switch (context) {
       case "dashboard":
         filtered = filtered.filter(supplier => {
-          console.log(`🔍 Checking supplier: ${supplier.id} (${supplier.category})`)
+
           
           // Include if it's from an add-on category
           if (addOnCategories.includes(supplier.category)) {
-            console.log(`✅ Including ${supplier.id} - add-on category (${supplier.category})`)
+ 
             return true
           }
           
           // Include if it's a specific add-on
           if (specificAddOns.includes(supplier.id)) {
-            console.log(`✅ Including ${supplier.id} - specific add-on`)
+
             return true
           }
           
-          console.log(`🚫 Excluding ${supplier.id} - not an add-on type`)
+
           return false
         })
         break
@@ -116,7 +109,7 @@ export default function RecommendedAddons({
         break
     }
 
-    console.log('🎯 Final clean add-ons:', filtered.map(s => `${s.id} (${s.category})`))
+  
 
     // Sort by popularity and rating
     filtered.sort((a, b) => {

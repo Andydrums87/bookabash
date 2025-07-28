@@ -35,7 +35,7 @@ export default function SupplierHeader({
 
   const headerGalleryImages = portfolioImages || []
   const mainDisplayImage = headerGalleryImages[0] || {
-    image: supplier.coverPhoto || supplier.image || "/placeholder.jpg",
+    image: supplier.coverPhoto || supplier.image || "/placeholder.png",
     alt: supplier.name || "Supplier main image",
   }
   const smallImage1 = headerGalleryImages[1] // Will be top-right
@@ -59,7 +59,7 @@ export default function SupplierHeader({
             onClick={() => setShowGallerySheet(true)}
           >
             <Image
-              src={mainDisplayImage.image || "/placeholder.svg"}
+              src={mainDisplayImage.image || "/placeholder.png"}
               alt={mainDisplayImage.alt}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -77,7 +77,7 @@ export default function SupplierHeader({
             >
               {smallImage1 ? (
                 <Image
-                  src={smallImage1.image || "/placeholder.jpg"}
+                  src={smallImage1.image || "/placeholder.png"}
                   alt={smallImage1.alt || "Portfolio image 2"}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -96,7 +96,7 @@ export default function SupplierHeader({
             >
               {smallImage2 ? (
                 <Image
-                  src={smallImage2.image || "/placeholder.jpg"}
+                  src={smallImage2.image || "/placeholder.png"}
                   alt={smallImage2.alt || "Portfolio image 3"}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -121,7 +121,7 @@ export default function SupplierHeader({
         {/* Mobile Header Image - Full width */}
         <div className="md:hidden relative h-75 sm:h-80">
           <Image
-            src={mainDisplayImage.image || "/placeholder.svg"}
+            src={mainDisplayImage.image || "/placeholder.png"}
             alt={mainDisplayImage.alt}
             fill
             className="object-cover rounded-b-3xl"
@@ -146,7 +146,7 @@ export default function SupplierHeader({
           <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6 w-full">
             <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-lg -mt-16 md:-mt-20 flex-shrink-0 z-10 rounded-3xl">
               <AvatarImage
-                src={supplier.avatar || "/placeholder.svg?height=128&width=128&query=avatar+fun"}
+                src={supplier.avatar || "/placeholder.png"}
                 alt={supplier.name}
                 className="rounded-2xl"
               />
@@ -238,7 +238,7 @@ export default function SupplierHeader({
                   className="relative aspect-square bg-gray-200 rounded-2xl overflow-hidden cursor-pointer group"
                 >
                   <Image
-                    src={item.image || "/placeholder.svg"}
+                    src={item.image || "/placeholder.png"}
                     alt={item.alt || item.title || `Image ${index + 1}`}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform"

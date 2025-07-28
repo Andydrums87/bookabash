@@ -4,11 +4,13 @@ import { useState, useMemo, useEffect, use } from "react"
 import { Button } from "@/components/ui/button"
 import { useContextualNavigation } from "@/hooks/useContextualNavigation"
 import { useSupplier } from "@/utils/mockBackend"
-import { usePartyPlan } from "@/utils/partyPlanBackend"
+
 import { Shield, Award, CheckCircle, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+import { usePartyPlan } from '@/utils/partyPlanBackend'
 
+import AddonSelectionModal from "@/components/supplier/addon-selection-modal"
 import SupplierHeader from "@/components/supplier/supplier-header"
 import SupplierPackages from "@/components/supplier/supplier-packages"
 import SupplierReviews from "@/components/supplier/supplier-reviews"
@@ -25,6 +27,8 @@ import SupplierCredentials from "@/components/supplier/supplier-credentials"
 import SupplierQuickStats from "@/components/supplier/supplier-quick-stats"
 import SupplierAvailabilityCalendar from "@/components/supplier/supplier-availability-calendar"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
+import AboutMeComponent from "@/components/supplier/about-me"
+
 
 export default function SupplierProfilePage({ params }) {
   const router = useRouter()
@@ -39,13 +43,17 @@ export default function SupplierProfilePage({ params }) {
   const [selectedDate, setSelectedDate] = useState(null)
   const [notification, setNotification] = useState(null)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [showAddonModal, setShowAddonModal] = useState(false)
+const [selectedAddons, setSelectedAddons] = useState([])
+const [finalPackageData, setFinalPackageData] = useState(null)
+
+  const [progress, setProgress] = useState(0)
 
   const id = useMemo(() => resolvedParams.id, [resolvedParams.id])
 
   const { supplier: backendSupplier, loading: supplierLoading, error: supplierError, refetch } = useSupplier(id)
   const { partyPlan, addSupplier, addAddon, removeAddon, hasAddon } = usePartyPlan()
   const { navigateWithContext, navigationContext } = useContextualNavigation()
-
 
 
 
@@ -66,8 +74,7 @@ export default function SupplierProfilePage({ params }) {
       fastResponder: backendSupplier.fastResponder || true,
       responseTime: backendSupplier.responseTime || "Within 2 hours",
       phone: backendSupplier.phone || "+44 7123 456 789",
-      email:
-        backendSupplier.email || "hello@" + backendSupplier.name?.toLowerCase().replace(/[^a-z0-9]/g, "") + ".co.uk",
+      email: backendSupplier.email || "hello@" + backendSupplier.name?.toLowerCase().replace(/[^a-z0-9]/g, "") + ".co.uk",
       image: backendSupplier.image || "/placeholder.jpg",
       category: backendSupplier.category,
       priceFrom: backendSupplier.priceFrom,
@@ -87,6 +94,8 @@ export default function SupplierProfilePage({ params }) {
       serviceDetails: backendSupplier?.serviceDetails,
       stats: backendSupplier?.stats,
       ownerName: backendSupplier?.ownerName,
+      // ✅ ADD THIS LINE:
+      owner: backendSupplier?.owner,
     }
   }, [backendSupplier])
 
@@ -302,72 +311,121 @@ export default function SupplierProfilePage({ params }) {
     return { inParty: false, currentPackage: null, supplierType: null }
   }
 
-  const handleAddToPlan = async () => {
+  const handleAddToPlan = async (skipAddonModal = false, addonData = null) => {
     if (!supplier || !selectedPackageId) {
       setNotification({ type: "error", message: "Please select a package first." })
       setTimeout(() => setNotification(null), 3000)
       return
     }
+  
+    const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
+    if (!selectedPkg) {
+      setNotification({ type: "error", message: "Selected package not found." })
+      return
+    }
+  
+    // Check if supplier is an entertainer and has add-ons
+    const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
+    const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
+  
+    // If entertainer has add-ons and we haven't shown the modal yet, show it first
+    if (isEntertainer && hasAddons && !skipAddonModal) {
+      setShowAddonModal(true)
+      return
+    }
+  
     const partyDetails = getSupplierInPartyDetails()
     setIsAddingToPlan(true)
     setLoadingStep(0)
-
+    setProgress(10)
+  
     try {
-      const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
-      if (!selectedPkg) {
-        throw new Error("Selected package not found.")
+      // Use addon data if provided, otherwise use regular package
+      const packageToAdd = addonData || selectedPkg
+      const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
+      
+      // Update the package with addon information if present
+      const enhancedPackage = {
+        ...packageToAdd.package || selectedPkg,
+        addons: addonData?.addons || [],
+        originalPrice: selectedPkg.price,
+        totalPrice: finalPrice,
+        addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0
       }
+  
       await new Promise((resolve) => setTimeout(resolve, 800))
       setLoadingStep(1)
+      setProgress(30)
+  
       await new Promise((resolve) => setTimeout(resolve, 800))
       setLoadingStep(2)
-
+      setProgress(55)
+  
       let result
       if (partyDetails.inParty) {
-        if (partyDetails.currentPackage === selectedPackageId) {
-          console.log("uviuho")
+        if (partyDetails.currentPackage === selectedPackageId && !addonData) {
           setNotification({
             type: "info",
             message: `${supplier.name} with ${selectedPkg?.name || "this package"} is already in your dashboard!`,
           })
-    
           setIsAddingToPlan(false)
+          setProgress(0)
           setTimeout(() => setNotification(null), 3000)
           return
         }
+  
         if (partyDetails.supplierType === "addon") {
           await removeAddon(supplier.id)
-          const addonData = {
+          const addonDataToAdd = {
             ...supplier,
-            price: selectedPkg?.price || supplier.priceFrom,
-            packageId: selectedPkg?.id || null,
+            price: finalPrice,
+            packageId: enhancedPackage.id,
+            selectedAddons: enhancedPackage.addons,
+            packageData: enhancedPackage
           }
-          result = await addAddon(addonData)
+          result = await addAddon(addonDataToAdd)
         } else {
-          result = await addSupplier(backendSupplier, selectedPkg)
+          result = await addSupplier(backendSupplier, enhancedPackage)
         }
-        if (result.success)
-          setNotification({ type: "success", message: `Package updated to ${selectedPkg?.name || "new package"}!` })
+  
+        if (result.success) {
+          const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
+          setNotification({ 
+            type: "success", 
+            message: `Package updated to ${selectedPkg?.name || "new package"}${addonMessage}!` 
+          })
+        }
       } else {
         const mainCategories = ["Venues", "Catering", "Party Bags", "Face Painting", "Activities", "Entertainment"]
         if (mainCategories.includes(supplier.category || "")) {
-          result = await addSupplier(backendSupplier, selectedPkg)
+          result = await addSupplier(backendSupplier, enhancedPackage)
         } else {
-          const addonData = {
+          const addonDataToAdd = {
             ...supplier,
-            price: selectedPkg?.price || supplier.priceFrom,
-            packageId: selectedPkg?.id || null,
+            price: finalPrice,
+            packageId: enhancedPackage.id,
+            selectedAddons: enhancedPackage.addons,
+            packageData: enhancedPackage
           }
-          result = await addAddon(addonData)
+          result = await addAddon(addonDataToAdd)
         }
-        if (result.success)
-          setNotification({ type: "success", message: `${supplier.name} has been added to your party plan!` })
+  
+        if (result.success) {
+          const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} exciting add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
+          setNotification({ 
+            type: "success", 
+            message: `${supplier.name} has been added to your party plan${addonMessage}!` 
+          })
+        }
       }
-
+  
       setLoadingStep(3)
+      setProgress(80)
       await new Promise((resolve) => setTimeout(resolve, 800))
+  
       setLoadingStep(4)
-
+      setProgress(100)
+  
       if (result.success) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         if (navigationContext === "dashboard") {
@@ -384,7 +442,39 @@ export default function SupplierProfilePage({ params }) {
       setTimeout(() => setNotification(null), 3000)
     } finally {
       setIsAddingToPlan(false)
+      setProgress(0)
+      // Reset addon modal state
+      setShowAddonModal(false)
+      setSelectedAddons([])
+      setFinalPackageData(null)
     }
+  }
+
+  const handleAddonConfirm = (addonData) => {
+    setSelectedAddons(addonData.addons)
+    setFinalPackageData(addonData)
+    setShowAddonModal(false)
+
+    addonData.addons.forEach(addon => {
+      const enhancedAddon = {
+        ...addon,
+        supplierId: supplier?.id,
+        supplierName: supplier?.name,
+        packageId: addonData.package?.id,
+        addedAt: new Date().toISOString()
+      }
+      addAddon(enhancedAddon)
+    })
+    
+    // Now proceed with adding to plan with the addon data
+    handleAddToPlan(true, addonData) // Skip addon modal since we just handled it
+  }
+  
+  // Add this new function to handle addon modal close
+  const handleAddonModalClose = () => {
+    setShowAddonModal(false)
+    setSelectedAddons([])
+    setFinalPackageData(null)
   }
 
   const getAddToPartyButtonState = (packageIdToCompare) => {
@@ -489,11 +579,16 @@ export default function SupplierProfilePage({ params }) {
         
             />
             <SupplierServiceDetails supplier={supplier} />
-            <SupplierPortfolioGallery portfolioImages={portfolioImages} />
+            <SupplierPortfolioGallery 
+  portfolioImages={supplier?.portfolioImages || []} 
+  portfolioVideos={supplier?.portfolioVideos || []}
+/>
             <SupplierCredentials credentials={credentials} />
+           
             <SupplierReviews reviews={reviews} />
             <SupplierBadges supplier={supplier} />
             <SupplierQuickStats supplier={supplier} />
+            <AboutMeComponent supplier={supplier} />
           </main>
           <aside className="hidden md:block lg:col-span-1">
  
@@ -519,10 +614,20 @@ export default function SupplierProfilePage({ params }) {
         handleAddToPlan={handleAddToPlan}
       />
 
+<AddonSelectionModal
+  isOpen={showAddonModal}
+  onClose={handleAddonModalClose}
+  onConfirm={handleAddonConfirm}
+  supplier={supplier}
+  selectedPackage={packages.find(pkg => pkg.id === selectedPackageId)}
+  isEntertainer={supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"}
+/>
+
       <AddingToPlanModal
         isAddingToPlan={isAddingToPlan}
         loadingStep={loadingStep}
         theme={partyPlan?.theme || "default"}
+        progress={progress}
       />
       
       <MobileBookingBar 

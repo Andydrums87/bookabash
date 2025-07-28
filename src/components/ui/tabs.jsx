@@ -43,7 +43,7 @@ function TabsTrigger({
         "text-[hsl(var(--muted-foreground)",
         "hover:bg-muted hover:text-foreground",
         "data-[state=active]:bg-white data-[state=active]:text-[hsl(var(--foreground))]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer",
         className
       )}
       {...props} />
@@ -57,7 +57,7 @@ function TabsContent({
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn("flex-1 outline-none", className)}
+      className={cn("flex-1 cursor-pointer outline-none", className)}
       {...props} />
   );
 }

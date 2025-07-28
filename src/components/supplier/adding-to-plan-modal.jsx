@@ -1,18 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Check } from "lucide-react"
 import Image from "next/image"
 
-export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme = "default" }) {
-  const [visibleImages, setVisibleImages] = useState([])
+export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme = "default", progress }) {
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
-
-  const partyImages = [
-    { src: "/placeholder.svg?height=150&width=150", alt: "Kids enjoying party games" },
-    { src: "/placeholder.svg?height=150&width=150", alt: "Children celebrating at party" },
-    { src: "/placeholder.svg?height=150&width=150", alt: "Fun party activities" },
-  ]
+  const videoRef = useRef(null)
 
   const themeEmojis = {
     spiderman: "🕷️",
@@ -33,150 +27,150 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
     "🎉 Successfully added to your plan! 🎉",
   ]
 
+ 
   const currentEmoji = themeEmojis[theme] || themeEmojis["default"]
-  const progress = Math.min((loadingStep + 1) * 25, 100)
 
   useEffect(() => {
-    if (!isAddingToPlan) {
-      setVisibleImages([])
-      return
-    }
-    const addRandomImage = () => {
-      const randomImage = partyImages[Math.floor(Math.random() * partyImages.length)]
-      let top, left
-      const placement = Math.random()
-      if (placement < 0.4) {
-        top = Math.random() * 20 + 5
-        left = Math.random() * 80 + 10
-      } else if (placement < 0.8) {
-        top = Math.random() * 20 + 75
-        left = Math.random() * 80 + 10
-      } else {
-        top = Math.random() * 60 + 20
-        left = Math.random() < 0.5 ? Math.random() * 15 + 2 : Math.random() * 15 + 83
+    if (!isAddingToPlan) return
+    const video = videoRef.current
+    if (video) {
+      const handleLoaded = () => {
+        video.currentTime = 1
+        video.play()
       }
-      const randomPosition = {
-        top,
-        left,
-        size: Math.random() * 100 + 120,
-        rotation: Math.random() * 20 - 10,
-        id: Date.now() + Math.random(),
-      }
-      setVisibleImages((prev) => [...prev, { ...randomImage, ...randomPosition }])
-      setTimeout(() => setVisibleImages((prev) => prev.filter((img) => img.id !== randomPosition.id)), 4000)
+      video.addEventListener("loadedmetadata", handleLoaded)
+      return () => video.removeEventListener("loadedmetadata", handleLoaded)
     }
-    setTimeout(addRandomImage, 200)
-    const interval = setInterval(addRandomImage, 1500)
-    return () => clearInterval(interval)
   }, [isAddingToPlan])
 
   useEffect(() => {
     setCurrentMessageIndex(loadingStep < stepMessages.length - 1 ? loadingStep : stepMessages.length - 1)
-  }, [loadingStep, stepMessages.length])
+  }, [loadingStep])
 
   if (!isAddingToPlan) return null
 
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center z-50 overflow-hidden">
-      {visibleImages.map((image) => (
-        <div
-          key={image.id}
-          className="absolute pointer-events-none animate-bounce-in-scale z-30"
-          style={{
-            top: `${image.top}%`,
-            left: `${image.left}%`,
-            transform: `rotate(${image.rotation}deg)`,
-            animationDuration: "0.6s",
-            animationFillMode: "forwards",
-          }}
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#FFF5E6] to-white flex flex-col items-center justify-center overflow-auto px-4 text-center">
+      {/* Video Animation */}
+      <div className="relative w-full max-w-md mb-6 animate-fade-in-up">
+        {/* <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="rounded-xl shadow-lg w-full"
+          poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753111435/ChatGPT_Image_Jul_21_2025_04_23_41_PM_jv4v89.png"
         >
-          <div
-            className="rounded-2xl shadow-2xl border-4 border-white overflow-hidden opacity-85 hover:opacity-100 transition-opacity duration-500"
-            style={{ width: `${image.size}px`, height: `${image.size}px` }}
-          >
-            <Image
-              src={image.src || "/placeholder.svg"}
-              alt={image.alt}
-              width={image.size}
-              height={image.size}
-              className="w-full h-full object-cover"
-              style={{ objectPosition: "center" }}
-            />
-          </div>
-        </div>
-      ))}
-      <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-12 max-w-lg mx-4 text-center relative z-20">
-        <div className="mb-8">
-          <div className="text-6xl mb-4 animate-bounce">{loadingStep >= 4 ? "🎉" : currentEmoji}</div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            {loadingStep >= 4 ? "Added to Plan!" : "Adding to Your Plan"}
-          </h1>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            {loadingStep >= 4
-              ? "Your party selection has been successfully added!"
-              : "Securing your perfect party addition..."}
-          </p>
-        </div>
-        <div className="mb-8">
-          <div className="bg-gray-100 rounded-full h-3 mb-4 overflow-hidden">
+          <source
+            src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753111543/output-4--unscreen_yl6to1.gif"
+            type="video/mp4"
+          />
+          Your browser does not support the video tag.
+        </video> */}
+        <img
+  src="/output-4-.gif"
+  alt="Celebration"
+  className="w-full rounded-xl mx-auto"
+/>
+      </div>
+
+      {/* Main Content */}
+      <h1 className="text-3xl font-black text-gray-800 mb-2">
+        {loadingStep >= 4 ? "Added to Plan!" : "Adding to Your Plan"}
+      </h1>
+      <p className="text-lg text-gray-600 max-w-md mb-6">
+        {loadingStep >= 4
+          ? "Your party selection has been successfully added!"
+          : stepMessages[currentMessageIndex]}
+      </p>
+
+       {/* Progress Bar */}
+       <div style={{  height: '20px'}} className="rounded-full bg-gray-200 md:w-[40%] w-[80%]">
+  <div style={{ width: `${progress}%`, height: '100%' }} className="rounded-full bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]" />
+</div> 
+
+
+
+
+
+      {/* Steps (icons) */}
+      {/* <div className="w-full max-w-md space-y-3 mb-8">
+        {["Checking availability", "Confirming details", "Updating plan", "Finalizing"].map((step, index) => (
+          <div key={index} className="flex items-center gap-3">
             <div
-              className="bg-gradient-to-r from-[#FF6B4A] to-[#FF8A70] h-full rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="text-2xl font-bold text-[#FF6B4A] mb-6">{Math.round(progress)}%</div>
-        </div>
-        <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-6">
-          <p className="text-base text-gray-700 font-medium leading-relaxed animate-pulse">
-            {stepMessages[currentMessageIndex]}
-          </p>
-        </div>
-        <div className="w-full space-y-3 mb-8">
-          {["Checking availability", "Confirming details", "Updating plan", "Finalizing"].map((step, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${index < loadingStep ? "bg-green-500 shadow-lg" : index === loadingStep ? "bg-[#FF6B4A] animate-pulse shadow-lg" : "bg-gray-200"}`}
-              >
-                {index < loadingStep ? (
-                  <Check className="w-4 h-4 text-white" />
-                ) : (
-                  <div
-                    className={`w-3 h-3 rounded-full ${index === loadingStep ? "bg-white animate-pulse" : "bg-gray-400"}`}
-                  />
-                )}
-              </div>
-              <span
-                className={`text-sm font-medium transition-colors duration-300 ${index < loadingStep ? "text-green-600" : index === loadingStep ? "text-[#FF6B4A]" : "text-gray-400"}`}
-              >
-                {step}
-              </span>
+              className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                index < loadingStep
+                  ? "bg-green-500 shadow-lg"
+                  : index === loadingStep
+                  ? "bg-[#FF6B4A] animate-pulse shadow-lg"
+                  : "bg-gray-200"
+              }`}
+            >
+              {index < loadingStep ? (
+                <Check className="w-4 h-4 text-white" />
+              ) : (
+                <div
+                  className={`w-3 h-3 rounded-full ${
+                    index === loadingStep ? "bg-white animate-pulse" : "bg-gray-400"
+                  }`}
+                />
+              )}
             </div>
+            <span
+              className={`text-sm font-medium transition-colors duration-300 ${
+                index < loadingStep
+                  ? "text-green-600"
+                  : index === loadingStep
+                  ? "text-[#FF6B4A]"
+                  : "text-gray-400"
+              }`}
+            >
+              {step}
+            </span>
+          </div>
+        ))}
+      </div> */}
+
+      {/* Success Box */}
+      {loadingStep >= 4 && (
+        <div className="p-4 bg-green-50 border-2 border-green-200 rounded-2xl w-full max-w-md">
+          <div className="flex items-center justify-center gap-2 text-green-800 mb-2">
+            <Check className="w-6 h-6" />
+            <span className="font-bold text-lg">Success!</span>
+          </div>
+          <p className="text-sm text-green-600 font-medium">Redirecting to your dashboard...</p>
+        </div>
+      )}
+
+      {/* Bouncing Dots Animation */}
+      {loadingStep < 4 && (
+        <div className="flex justify-center items-center mt-6 space-x-2">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="w-3 h-3 bg-[#FF6B4A] rounded-full animate-bounce"
+              style={{ animationDelay: `${i * 0.3}s` }}
+            />
           ))}
         </div>
-        {loadingStep >= 4 && (
-          <div className="p-4 bg-green-50 border-2 border-green-200 rounded-2xl w-full">
-            <div className="flex items-center justify-center gap-2 text-green-800 mb-2">
-              <Check className="w-6 h-6" />
-              <span className="font-bold text-lg">Success!</span>
-            </div>
-            <p className="text-sm text-green-600 font-medium">Redirecting to your dashboard...</p>
-          </div>
-        )}
-        {loadingStep < 4 && (
-          <div className="flex justify-center items-center mt-6 space-x-2">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="w-3 h-3 bg-[#FF6B4A] rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.3}s` }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
+
+      {/* Animations */}
       <style jsx>{`
-        @keyframes bounce-in-scale { 0% { transform: scale(0) rotate(${Math.random() * 360}deg); opacity: 0; } 50% { transform: scale(1.1) rotate(${Math.random() * 20 - 10}deg); opacity: 0.9; } 100% { transform: scale(1) rotate(var(--final-rotation, 0deg)); opacity: 0.85; } }
-        .animate-bounce-in-scale { animation: bounce-in-scale 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out;
+        }
       `}</style>
     </div>
   )

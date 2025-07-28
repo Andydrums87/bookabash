@@ -143,10 +143,16 @@ html {
   scroll-behavior: smooth;
 }
 
+body {
+  font-family: 'Poppins' !important;
+  overflow-x: hidden;
+}
+
 .hero-padding {
   padding-top: 2rem;
   padding-bottom: 2rem;
 }
+
 
 @media (min-width: 640px) {
   .hero-padding {
@@ -167,7 +173,7 @@ html {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background;
   }
 
   }
@@ -194,6 +200,9 @@ html {
     .btn-primary {
       @apply inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 font-medium hover:bg-primary/90 transition;
     }
+  }
+  .animate-bounce-slow {
+    animation: bounce-slow 3s infinite ease-in-out;
   }
   @layer utilities {
     .bg-primary { background-color: hsl(var(--primary)); }
@@ -377,4 +386,13 @@ html {
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }

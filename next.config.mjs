@@ -30,6 +30,21 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'media.istockphoto.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+        pathname: '/vi/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vumbnail.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
       
     ],
   },

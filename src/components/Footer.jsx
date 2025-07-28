@@ -20,8 +20,8 @@ const Footer = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/f_auto,q_auto/v1748440622/logo-darker_jhviti.png"
-                alt="BookABash Logo"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578794/Transparent_With_Text_1_nfb1pi.png"
+                alt="PartySnap Logo"
                 width={160} // Adjust as needed
                 height={160} // Maintain aspect ratio accordingly
                 priority
@@ -193,7 +193,7 @@ const Footer = () => {
                   </svg>
                 </a>
               </div>
-              <p className="text-gray-400">© 2023 BookABash. All rights reserved.</p>
+              <p className="text-gray-400">© 2023 PartySnap. All rights reserved.</p>
             </div>
           </div>
         </div>

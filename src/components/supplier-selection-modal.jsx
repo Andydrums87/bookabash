@@ -65,7 +65,7 @@ export default function SupplierSelectionModal({
         // Add any other fields your dashboard needs
       });
       
-      console.log(`✅ Added ${supplier.name} to party plan`);
+    
       
       // Optional: Close modal after successful add
       onClose();
@@ -253,19 +253,9 @@ export default function SupplierSelectionModal({
 
   // ENHANCED FILTERING WITH DATE AVAILABILITY - MOVE THIS UP
   const filteredSuppliers = useMemo(() => {
-    console.log(`🔍 Filtering suppliers for category: ${category}, date: ${selectedDate?.toDateString()}, availableOnly: ${availableOnly}`);
-    console.log('🔍 Sample supplier data:', suppliers[0]);
-console.log('🔍 Checking what availability fields exist:');
+
 suppliers.slice(0, 3).forEach(supplier => {
-  console.log(`${supplier.name}:`, {
-    hasWorkingHours: !!supplier.workingHours,
-    workingHours: supplier.workingHours,
-    hasUnavailableDates: !!supplier.unavailableDates,
-    unavailableDates: supplier.unavailableDates,
-    hasBusyDates: !!supplier.busyDates,
-    advanceBookingDays: supplier.advanceBookingDays,
-    maxBookingDays: supplier.maxBookingDays
-  });
+
 });
     const filtered = suppliers.filter((supplier) => {
       // Filter by category
@@ -288,7 +278,7 @@ suppliers.slice(0, 3).forEach(supplier => {
     });
     
     if (!matchesCategory) {
-      console.log(`❌ ${supplier.name}: Category "${supplier.category}" doesn't match "${targetCategories.join(', ')}"`);
+
       return false;
     }
     
@@ -337,7 +327,7 @@ suppliers.slice(0, 3).forEach(supplier => {
       return true
     });
 
-    console.log(`📊 Filtered results: ${filtered.length}/${suppliers.length} suppliers available`);
+
     return filtered;
   }, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping]);
 
@@ -715,7 +705,7 @@ suppliers.slice(0, 3).forEach(supplier => {
     src={
       supplier.image ||
       supplier.imageUrl ||
-      `/placeholder.svg?height=256&width=256&query=${pkg.name.replace(/\s+/g, "+")}+package`
+      `/placeholder.png`
     }
     alt={supplier.name}
     fill

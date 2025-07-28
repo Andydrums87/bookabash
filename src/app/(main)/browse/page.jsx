@@ -192,7 +192,7 @@ export default function BrowseSuppliersPage() {
       if (supplier.category.toLowerCase().includes(searchTerm)) return true;
       
       // Search in subcategory
-      if (supplier.subcategory.toLowerCase().includes(searchTerm)) return true;
+      if (supplier?.subcategory?.toLowerCase().includes(searchTerm)) return true;
       
       // Search in themes (if exists)
       if (supplier.themes && supplier.themes.some(theme => 
@@ -259,11 +259,7 @@ export default function BrowseSuppliersPage() {
 
   // Apply search to filtered suppliers
   const searchedSuppliers = searchSuppliers(filteredSuppliers, searchQuery);
-  console.log("🔍 About to render with:", {
-    backendSuppliers: backendSuppliers?.length,
-    filteredSuppliers: filteredSuppliers?.length,
-    isLoading: isLoading
-  });
+
   const toggleFavorite = supplierId => {
     setFavorites(prev =>
       prev.includes(supplierId)
@@ -402,25 +398,25 @@ export default function BrowseSuppliersPage() {
   };
 
   return (
-<div className="min-h-screen bg-gray-100">
+<div className="min-h-screen bg-[#fef7f7]">
       <ContextualBreadcrumb currentPage="browse"/>
  
       {/* Hero Section - Mobile Optimized Heights */}
       <div 
         className="relative w-full h-[36vh] md:h-[42vh] lg:h-[43vh] overflow-hidden"
       >
-     <div className="w-full h-full absolute">
+     <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
     <Image
-      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1751015347/iStock-614872550_gke6eh.jpg"
+      src="/magician.png"
       alt="People celebrating at a party"
       fill
-      className="object-cover"
+      className="object-cover "
     />
     {/* Optional overlay for text contrast */}
-    <div className="absolute inset-0 bg-black/20" />
+    {/* <div className="absolute inset-0 bg-black/10" /> */}
   </div>
         {/* Strong dark overlay */}
-        <div className="absolute inset-0 bg-black/8"></div>
+        <div className="absolute inset-0 bg-black/1"></div>
         
         {/* Hero Content Overlay */}
         <div className="relative h-full flex justify-center px-4">

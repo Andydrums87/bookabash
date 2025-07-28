@@ -8,6 +8,8 @@ import { useState } from "react"
 const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   if (!isOpen) return null;
 
+  console.log(pkg)
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
@@ -43,7 +45,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h3>
             <div className="flex flex-wrap gap-2">
-              {pkg.whatsIncluded?.map((item, i) => (
+              {pkg.features?.map((item, i) => (
                 <span key={i} className="bg-[#fff0ee] text-gray-900 text-sm font-medium px-3 py-1.5 rounded-full">
                   {item}
                 </span>
@@ -71,7 +73,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
             <div className="bg-purple-50 rounded-xl p-4 text-center">
               <Star className="w-6 h-6 text-purple-600 mx-auto mb-2" />
               <div className="text-sm text-gray-600">Price Type</div>
-              <div className="font-semibold text-gray-900 capitalize">{pkg.priceType?.replace('_', ' ')}</div>
+              <div className="font-semibold text-gray-900 capitalize">{pkg.priceType}</div>
             </div>
           </div>
         </div>
@@ -108,8 +110,9 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
         }}
       >
 
-                    <div
-                          className="relative w-70 h-70 md:h-full md:w-full mask-image mx-auto mt-5 mb-2"
+                   
+<div
+                          className="relative w-70 h-70 md:h-[300px] md:w-full mask-image mx-auto mt-5 mb-2"
                           style={{
                             WebkitMaskImage: 'url("/image.svg")',
                             WebkitMaskRepeat: 'no-repeat',
@@ -123,11 +126,11 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
                         >
                           <Image
                             src={
-                              pkg.image || pkg.imageUrl || "/placeholder.jpg"
+                              pkg.image || pkg.imageUrl || "/placeholder.png"
                             }
                             alt={pkg.name || "package image"}
                             fill
-                            className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                                className="object-cover group-hover:brightness-110 transition-all duration-300 "
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           />
                         </div>
@@ -148,11 +151,11 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
         </div>
 
         {/* Short description preview */}
-        <div className="mb-4 px-2 flex-1">
+        {/* <div className="mb-4 px-2 flex-1">
           <p className="text-sm text-gray-600 leading-relaxed">
             {pkg.description?.split('\n')[0]?.replace(/👑|📚|🎉|📸|🎂|⏰|✨/g, '').trim()}
           </p>
-        </div>
+        </div> */}
 
         {/* Enhanced features display */}
         <div className="flex flex-wrap justify-center items-center gap-2 mb-4 px-2">
@@ -283,7 +286,7 @@ export default function SupplierPackages({
     return null
   }
 
-  console.log('Raw packages data:', packages)
+
   
   // Check if supplier is already in party plan
   const partyDetails = getSupplierInPartyDetails()

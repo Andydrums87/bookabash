@@ -1,0 +1,15 @@
+<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Small star -->
+  <polygon points="5,10 7,13 10,13 8,15 9,18 5,16 2,18 3,15 1,13 4,13" fill="#FFF5E6" opacity="0.8"/>
+
+  <!-- Circle confetti -->
+  <circle cx="25" cy="20" r="2" fill="#FF8B70" opacity="0.6"/>
+  <circle cx="60" cy="15" r="1.5" fill="#FF6E4C" opacity="0.5"/>
+  <circle cx="40" cy="50" r="1.8" fill="#FFE2D1" opacity="0.5"/>
+
+  <!-- Curved streamer -->
+  <path d="M10 60 Q15 65 20 60 T30 60" stroke="#FFF0ED" stroke-width="1.2" fill="none" opacity="0.4"/>
+
+  <!-- Sparkle -->
+  <path d="M70 70 L72 73 L70 76 L68 73 Z" fill="#FFF0ED" opacity="0.5"/>
+</svg>

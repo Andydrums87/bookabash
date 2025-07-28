@@ -2,16 +2,8 @@ import { Geist, Geist_Mono, Poppins, Montserrat } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
+import NavigationTracker from "@/components/NavigationTracker";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 // Add this
 const poppins = Poppins({
@@ -20,30 +12,31 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700", "800", "900"], // Add more weights
 });
 
+// ✅ FIX 1: Only load the font you actually use, with only needed weights
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"], // ✅ Only load weights you actually use
+  display: 'swap', // ✅ Improve font loading performance
+  preload: true, // ✅ Preload the font
 });
 
+
+
 export const metadata = {
-  title: "BookABash",
+  title: "PartySnap",
+  description: "PartySnap - Your Ultimate Children's Party Planning Platform",
   icons: {
-    icon: "/icon-512-clear.png",  // Path from /public
-    shortcut: "/icon-512-clear.png",
-    apple: "/icon-512-clear.png" // Optional, for Apple devices
+    icon: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png",
   },
-  description: "BookABash - Your Ultimate Children's Party Planning Platform",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-     <body className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${montserrat.variable} font-montserrat antialiased`}>
-
-        {children}
-  
-      </body>
-    </html>
+    <html lang="en" className={montserrat.variable}>
+    <body className="font-montserrat antialiased">
+      {children}
+    </body>
+  </html>
   );
 }

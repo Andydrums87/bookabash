@@ -52,7 +52,7 @@ const MobileBookingBar = ({
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    console.log('Checking date status for:', date, 'Supplier data exists:', !!supplierData);
+
 
     if (date < today) return "past"
 
@@ -70,7 +70,7 @@ const MobileBookingBar = ({
     
     // If no working hours data, default to available
     if (!supplierData?.workingHours) {
-      console.log('No working hours data, defaulting to available');
+
       return "available"
     }
     

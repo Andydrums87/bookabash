@@ -1,15 +1,17 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, Mail } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 
 export default function SupplierOnboardingSuccessPage() {
+  const searchParams = useSearchParams()
+  const needsVerification = searchParams.get('verify') === 'true'
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col">
-
-      {/* Main Hero Section */}
       <main className="flex-grow flex py-30 bg-gray-50 dark:bg-slate-850">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -19,20 +21,38 @@ export default function SupplierOnboardingSuccessPage() {
                 <CheckCircle className="w-5 h-5" />
                 <span>Registration Complete</span>
               </div>
+              
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
                 Welcome Aboard!
               </h1>
-              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
-                Congratulations on joining the BookABash community! You've taken the first step towards more bookings,
-                less admin, and a thriving events business.
-              </p>
-              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
-                Your account is ready. Let's get you to your dashboard to start exploring.
-              </p>
+              
+              {needsVerification ? (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Check Your Email</p>
+                        <p className="text-sm text-blue-700">
+                          We've sent a verification link to your email address. Please click it to activate your account.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-lg text-gray-600 dark:text-gray-300">
+                    Once you've verified your email, use the sign-in page to access your supplier dashboard.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-lg text-gray-600 dark:text-gray-300">
+                  Your account has been created successfully! You can now sign in to access your supplier dashboard.
+                </p>
+              )}
 
               <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button size="lg" className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 text-lg" asChild>
-                  <Link href="/suppliers/dashboard">Go to Your Dashboard</Link>
+                  <Link href="/signin">Sign In to Dashboard</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="px-8 py-3 text-lg" asChild>
                   <Link href="/">Return to Homepage</Link>
@@ -43,7 +63,7 @@ export default function SupplierOnboardingSuccessPage() {
             {/* Right Side: Image */}
             <div>
               <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749462511/enis-yavuz-J5i9E-oAGgM-unsplash_r3n7yw.jpg"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749462511/enis-yavuz-J5i9E-oAGgM-unsplash_r3n7wy.jpg"
                 alt="A person celebrating a successful business launch or working efficiently"
                 width={600}
                 height={500}

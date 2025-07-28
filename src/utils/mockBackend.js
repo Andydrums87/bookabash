@@ -1,1332 +1,297 @@
-// utils/suppliersBackend.js
-// Simple backend for loading suppliers
+// utils/mockBackend.js
+// Clean version with proper async handling
 
-const mockSuppliers = [
-  {
-    id: "andys-entertainment-company",
-    name: "Andy's Entertainment Company",
-    owner: {
-      name: "Andrew Joseph",
-      email: "neon_4@hotmail.com",
-      phone: "07835444903"
-    },
-    category: "Entertainment",
-    subcategory: "Entertainment",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171099/zsvzr5lwitllaao0dhpo.jpg",
-    rating: 0,
-    reviewCount: 0,
-    bookingCount: 0,
-    location: "W3 7QD",
-    priceFrom: 250,
-    priceUnit: "per event",
-    description: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical",
-    badges: ["Packages Available"],
-    availability: "Contact for availability",
-    themes: ["general"],
-    serviceType: "Entertainment",
-    businessDescription: "",
-    packages: [
-      {
-        name: "Bronze Package",
-        description: "👑 One Princess Character of your choice\n\n📚 Storytime & Sing-Along with themed songs\n\n🎉 Interactive Games tailored for ages 3–7\n\n📸 Photo Opportunities with the princess\n\n🎂 Happy Birthday Song and cake ceremony assistance\n\n⏰ 30-Minute Visit – perfect for smaller gatherings\n\n✨ Royal Entrance & Farewell",
-        price: 250,
-        duration: "2 houts",
-        priceType: "per_hour",
-        whatsIncluded: ["Face Painting", "Princess Visit"],
-        imageUrl: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171112/lolt3lwfsefpayjtyohg.jpg",
-        id: "pkg1750170716562",
-        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171112/lolt3lwfsefpayjtyohg.jpg"
-      },
-      {
-        name: "Gold Package",
-        description: "👑 One Princess Character of your choice\n\n📚 Storytime & Sing-Along with themed songs\n\n🎉 Interactive Games tailored for ages 3–7\n\n📸 Photo Opportunities with the princess\n\n🎂 Happy Birthday Song and cake ceremony assistance\n\n⏰ 30-Minute Visit – perfect for smaller gatherings\n\n✨ Royal Entrance & Farewell",
-        price: 270,
-        duration: "2 hours",
-        priceType: "per_hour",
-        whatsIncluded: ["Face painting etc"],
-        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171118/uz0nvrjpqhi3sqmypx4c.jpg",
-        id: "pkg1750172553383",
-        imageUrl: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171118/uz0nvrjpqhi3sqmypx4c.jpg"
-      }
-    ],
-    portfolioImages: [
-      {
-        id: 1750171107817.9058,
-        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171106/wsennsprk7yat8ymf7ev.jpg",
-        alt: "Portfolio image 1",
-        title: "iStock 469207460",
-        description: "",
-        originalFileName: "iStock-469207460.jpg",
-        fileSize: 594340,
-        cloudinaryId: "wsennsprk7yat8ymf7ev"
-      },
-      {
-        id: 1750171113325.3438,
-        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171112/lolt3lwfsefpayjtyohg.jpg",
-        alt: "Portfolio image 2",
-        title: "iStock 1205509072",
-        description: "",
-        originalFileName: "iStock-1205509072.jpg",
-        fileSize: 368967,
-        cloudinaryId: "lolt3lwfsefpayjtyohg"
-      },
-      {
-        id: 1750171119084.7903,
-        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171118/uz0nvrjpqhi3sqmypx4c.jpg",
-        alt: "Portfolio image 3",
-        title: "iStock 1369813086",
-        description: "",
-        originalFileName: "iStock-1369813086.jpg",
-        fileSize: 616590,
-        cloudinaryId: "uz0nvrjpqhi3sqmypx4c"
-      },
-      {
-        id: 1750171127496.0366,
-        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171126/am8r9ikaskn1606hbe6q.jpg",
-        alt: "Portfolio image 4",
-        title: "iStock 1150515783",
-        description: "",
-        originalFileName: "iStock-1150515783.jpg",
-        fileSize: 556923,
-        cloudinaryId: "am8r9ikaskn1606hbe6q"
-      },
-      {
-        id: 1750171136697.3655,
-        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171135/b0mkhgyktwev4iomrbbf.jpg",
-        alt: "Portfolio image 5",
-        title: "iStock 1047163654",
-        description: "",
-        originalFileName: "iStock-1047163654.jpg",
-        fileSize: 538670,
-        cloudinaryId: "b0mkhgyktwev4iomrbbf"
-      },
-      {
-        id: 1750171150110.6064,
-        src: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171149/chvdxf5xt326jbrtm6b4.jpg",
-        alt: "Portfolio image 6",
-        title: "iStock 177828270",
-        description: "",
-        originalFileName: "iStock-177828270.jpg",
-        fileSize: 692073,
-        cloudinaryId: "chvdxf5xt326jbrtm6b4"
-      }
-    ],
-    themes: ["superhero", "magic", "entertainment"],
-    portfolioVideos: [],
-    isComplete: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events",
-    createdAt: "2025-06-17T14:29:07.847Z",
-    workingHours: {
-      Monday: { active: false, start: "09:00", end: "17:00" },
-      Tuesday: { active: false, start: "09:00", end: "17:00" },
-      Wednesday: { active: false, start: "09:00", end: "17:00" },
-      Thursday: { active: true, start: "09:00", end: "17:00" },
-      Friday: { active: true, start: "09:00", end: "17:00" },
-      Saturday: { active: true, start: "10:00", end: "16:00" },
-      Sunday: { active: false, start: "10:00", end: "16:00" }
-    },
-    unavailableDates: [
-      "2025-06-20T23:00:00.000Z",
-      "2025-06-27T23:00:00.000Z",
-      "2025-06-30T23:00:00.000Z",
-      "2025-07-01T23:00:00.000Z",
-      "2025-07-02T23:00:00.000Z",
-      "2025-07-03T23:00:00.000Z",
-      "2025-07-04T23:00:00.000Z"
-    ],
-    busyDates: [],
-    availabilityNotes: "",
-    advanceBookingDays: 0,
-    maxBookingDays: 365,
-    serviceDetails: {
-      aboutService: "Enchanted Moments Princess Parties brings fairy tale dreams to life with magical, character-led experiences for children’s parties and special events. Our professionally trained performers arrive as beloved princesses, ready to delight with storytelling, singing, games, and photo opportunities. Whether it’s a birthday, tea party, or community celebration, we create enchanting memories that children will cherish forever. With exquisite costumes, personalized interactions, and a commitment to high-quality entertainment, we turn every party into a royal celebration. Let us make your little one’s dream come true—because every child deserves a happily ever after.",
-      serviceHighlights: "Professional Performers – Talented, trained actors with singing and storytelling experience.\n\nAuthentic Costumes – High-quality, screen-accurate princess gowns for a truly magical experience.\n\nInteractive Entertainment – Activities include games, sing-alongs, dancing, face painting, and photo ops.\n\nCustomizable Packages – Flexible party options to suit different budgets, themes, and group sizes.\n\nMobile Service – We bring the magic to your home, venue, or event location.\n\nSpecial Appearances – Available for birthdays, school visits, charity events, and more.\n\nMemorable Keepsakes – Add-ons available such as tiaras, certificates, and party favors.",
-      durationOptions: {
-        minHours: 1,
-        maxHours: 4,
-        availableOptions: ["1 hour", "1.5 hours", "2 hours", "2.5 hours", "3 hours", "4 hours"]
-      },
-      pricingInfo: {
-        pricingModel: "per-hour",
-        basePrice: 0,
-        priceDescription: "",
-        whatIncluded: []
-      },
-      serviceStandards: {
-        setupTime: 30,
-        equipmentProvided: true,
-        cleanupIncluded: false,
-        setupDescription: ""
-      },
-      serviceIncludes: {
-        performerGenders: [],
-        ageGroups: [],
-        teamSize: 1,
-        teamDescription: "",
-        actType: "",
-        travelRadius: "",
-        equipment: "",
-        performanceOptions: []
-      },
-      venueDetails: {
-        venueType: "",
-        capacity: "",
-        facilities: [],
-        accessibility: ""
-      },
-      requirements: {
-        spaceRequired: "",
-        powerNeeded: false,
-        indoorOutdoor: [],
-        specialRequirements: ""
-      },
-      certifications: {
-        dbsCertificate: false,
-        publicLiability: false,
-        firstAid: false,
-        otherCerts: []
-      },
-      personalBio: {
-        yearsExperience: 20,
-        inspiration: "My grandmother who was a trapeze artist",
-        favoriteEvent: "I performed at the London 2012 Olympics",
-        dreamCelebrity: "Brian Blessed - I'm a huge fan",
-        personalStory: "",
-        funFacts: []
-      }
-    },
-    coverPhoto: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750171099/zsvzr5lwitllaao0dhpo.jpg"
-  },
-  
-  {
-    id: "magic-moments",
-    name: "Magic Moments Entertainment",
-    owner: {
-      name: "Alex Johnson",
-      email: "hello@magicmoments.co.uk",
-      phone: "+44 7123 456 789",
-    },
-    category: "Entertainment",
-    subcategory: "Magicians",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750112354/evvqofjwxsxdhshwc7lt.jpg",
-    rating: 4.9,
-    reviewCount: 127,
-    bookingCount: 89,
-    location: "London, UK",
-    priceFrom: 150,
-    priceUnit: "per event",
-    description:
-      "Professional children's entertainers specializing in superhero-themed parties. We bring magic, laughter, and unforgettable memories to your special day.",
-    badges: ["Highly Rated", "Fast Responder", "Verified"],
-    themes: ["superhero", "magic", "entertainment"],
-    businessDescription:
-      "Professional children's entertainers specializing in superhero-themed parties. We bring magic, laughter, and unforgettable memories to your special day.",
-    serviceType: "entertainer",
-    packages: [
-      {
-        id: "basic",
-        name: "Basic Magic Show",
-        description: "A fun and engaging magic show.",
-        price: 150,
-        priceType: "flat",
-        duration: "1 hour",
-        whatsIncluded: ["30-min magic show", "Balloon animals for 10 kids"],
-      },
-      {
-        id: "premium",
-        name: "Premium Party Package",
-        description: "The ultimate party experience.",
-        price: 250,
-        priceType: "flat",
-        duration: "2 hours",
-        whatsIncluded: ["1-hour interactive show", "Games & activities", "Face painting for 15 kids"],
-        popular: true,
-      },
-    ],
-    portfolioImages: [
-      { id: "img1", image: "/superhero.webp", title: "Superhero Fun" },
-      { id: "img2", image: "/superhero.webp", title: "Balloon Twisting" },
-      { id: "img3", image: "/superhero.webp", title: "Happy Faces" },
-      { id: "img4", image: "/placeholder.jpg", title: "Party Games" },
-    ],
-    portfolioVideos: [],
-    isComplete: true,
-    workingHours: {
-      Sunday: { active: true, start: "10:00", end: "18:00" },
-      Monday: { active: false, start: "09:00", end: "17:00" },
-      Tuesday: { active: false, start: "09:00", end: "17:00" },
-      Wednesday: { active: true, start: "14:00", end: "20:00" },
-      Thursday: { active: false, start: "09:00", end: "17:00" },
-      Friday: { active: true, start: "14:00", end: "20:00" },
-      Saturday: { active: true, start: "09:00", end: "20:00" },
-    },
-    unavailableDates: ["2025-12-25", "2026-01-01"],
-    busyDates: [],
-    availabilityNotes: "",
-    advanceBookingDays: 7,
-    maxBookingDays: 90,
-    serviceDetails: {
-      aboutService:
-        "We provide top-notch entertainment for children's parties. Our experienced performers know how to keep kids engaged and thrilled.",
-      serviceHighlights:
-        "Interactive Magic Shows\nProfessional Face Painting\nExciting Party Games\nCustomizable Themes",
-      serviceIncludes: {
-        actType: "Magician, Face Painter, Balloon Modeler",
-        travelRadius: 30,
-        equipment: "All necessary props, small sound system, face paints, balloons.",
-        performanceOptions: ["Indoor", "Outdoor (weather permitting)"],
-        ageGroups: ["3-5 years", "6-8 years", "9-12 years"],
-      },
-      durationOptions: { minHours: 1, maxHours: 3 },
-      pricingInfo: {
-        pricingModel: "per-event",
-        priceDescription: "Packages are fixed price. Custom quotes available for longer events or special requests.",
-      },
-      serviceStandards: {
-        setupTime: 30,
-        equipmentProvided: true,
-        cleanupIncluded: false,
-        setupDescription: "We arrive 30 minutes prior to the start time for setup.",
-      },
-      certifications: { dbsCertificate: true, publicLiability: true, firstAid: true },
-      personalBio: {
-        yearsExperience: 5,
-        inspiration: "Bringing joy to children!",
-        personalStory: "Started as a hobby, now a passion to create magical memories.",
-      },
-    },
-    stats: {
-      partiesCompleted: "200+",
-      repeatCustomerRate: 90,
-      yearsExperience: 5,
-    },
-    ownerName: "Alex Johnson",
-  },
-  {
-    id: "magic-mike",
-    name: "Magic Mike's Superhero Show",
-    owner: {
-      name: "Mike Johnson",
-      email: "mike@magicmike.com",
-      phone: "07123456789",
-    },
-    category: "Entertainment",
-    subcategory: "Magicians",
-    portfolioImages: [
-      { id: "img1", image: "/superhero.webp", title: "Superhero Fun" },
-      { id: "img2", image: "/superhero.webp", title: "Balloon Twisting" },
-      { id: "img3", image: "/superhero.webp", title: "Happy Faces" },
-      { id: "img4", image: "/placeholder.jpg", title: "Party Games" },
-    ],
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749460635/edson-junior-YlgnX_ISPLo-unsplash_wlsz60.jpg",
-    rating: 4.9,
-    reviewCount: 127,
-    bookingCount: 89,
-    location: "London & Surrounding Areas",
-    priceFrom: 150,
-    priceUnit: "per show",
-    description: "Professional superhero magic show with audience participation",
-    badges: ["DBS Checked", "Highly Rated"],
-    themes: ["superhero", "magic", "entertainment"],
-    businessDescription: "Professional superhero magic show with audience participation",
-    serviceType: "entertainer",
-    packages: [
-      {
-        id: "magic-basic",
-        name: "Basic Magic Show",
-        description: "45-minute magic show with superhero theme",
-        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750112354/evvqofjwxsxdhshwc7lt.jpg",
-        price: 150,
-        priceType: "flat",
-        duration: "45 minutes",
-        whatsIncluded: ["Magic Show", "Superhero Theme", "Audience Participation"],
-      },
-    ],
-    isComplete: true,
-    workingHours: {
-      Sunday: { active: true, start: "10:00", end: "18:00" },
-      Monday: { active: false, start: "09:00", end: "17:00" },
-      Tuesday: { active: false, start: "09:00", end: "17:00" },
-      Wednesday: { active: true, start: "14:00", end: "20:00" },
-      Thursday: { active: false, start: "09:00", end: "17:00" },
-      Friday: { active: true, start: "14:00", end: "20:00" },
-      Saturday: { active: true, start: "09:00", end: "20:00" },
-    },
-    unavailableDates: ["2025-12-25", "2026-01-01"],
-    busyDates: ["2025-07-20", "2025-08-15"],
-    availabilityNotes: "Peak season bookings require 2 weeks notice.",
-    advanceBookingDays: 7,
-    maxBookingDays: 90,
-    serviceDetails: {
-      aboutService:
-        "Magic Mike brings the wow factor to any party! Specializing in superhero themes, Mike's shows are packed with amazing tricks, audience participation, and lots of laughter. Perfect for ages 4-10.",
-      serviceHighlights: "Interactive Magic\nSuperhero Theming\nBalloon Animals\nProfessional & Reliable",
-      serviceIncludes: {
-        actType: "Magician, Children's Entertainer",
-        travelRadius: 50,
-        equipment: "All props, small PA system if needed.",
-        performanceOptions: ["Indoor", "Outdoor (weather permitting)"],
-        ageGroups: ["4-6 years", "7-10 years"],
-      },
-      durationOptions: { minHours: 0.75, maxHours: 2 },
-      pricingInfo: {
-        pricingModel: "per-event",
-        priceDescription:
-          "Basic package is for a 45-minute show. Longer shows and additional services available. Travel fees may apply outside a 20-mile radius.",
-      },
-      serviceStandards: {
-        setupTime: 20,
-        equipmentProvided: true,
-        cleanupIncluded: false,
-        setupDescription: "Arrives 20 minutes before showtime for setup. Requires a small clear area.",
-      },
-      certifications: {
-        dbsCertificate: true,
-        publicLiability: true,
-        firstAid: false,
-      },
-      personalBio: {
-        yearsExperience: 8,
-        inspiration: "Seeing the joy and wonder on children's faces!",
-        personalStory:
-          "Mike started learning magic at age 10 and has been performing professionally for 8 years. He loves superheroes as much as the kids do!",
-      },
-    },
-    stats: {
-      partiesCompleted: "500+",
-      repeatCustomerRate: 75,
-      yearsExperience: 8,
-    },
-    ownerName: "Mike Johnson",
-  },
-  {
-    id: "spiderman-live-show",
-    name: "Amazing Spider-Man Live Show",
-    category: "Entertainment",
-    subcategory: "Character Visits",
-    themes: ["spiderman", "superhero", "marvel", "princess", "dinosaur"],
-    image: "https://images.unsplash.com/photo-1521714161819-15534968fc5f?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3BpZGVybWFufGVufDB8MHwwfHx8MA%3D%3D",
-    rating: 4.9,
-    reviewCount: 156,
-    bookingCount: 89,
-    location: "London & Surrounding Areas",
-    priceFrom: 180,
-    priceUnit: "per hour",
-    description: "Professional Spider-Man character with web-slinging stunts and interactive superhero training",
-    badges: ["DBS Checked", "Authentic Costume", "Interactive Show"],
-    availability: "Available this weekend",
-  },
-  {
-    id: "web-slinger-magic",
-    name: "Web-Slinger Magic & Illusions",
-    category: "Entertainment",
-    subcategory: "Magic Shows",
-    themes: ["spiderman", "superhero", "magic"],
-    image: "https://images.unsplash.com/photo-1725465447900-a2b5164b6a43?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3BpZGVybWFuJTIwa2lkc3xlbnwwfHwwfHx8MA%3D%3D",
-    rating: 4.8,
-    reviewCount: 134,
-    bookingCount: 67,
-    location: "Greater London",
-    priceFrom: 160,
-    priceUnit: "per 45 minutes",
-    description: "Spider-Man themed magic show with web tricks and superhero illusions",
-    badges: ["Professional Magician", "Spider-Man Licensed"],
-    availability: "Book 1 week ahead",
-  },
+import { supabase } from '@/lib/supabase'
+import { create } from 'canvas-confetti';
+import { useState, useEffect } from 'react';
 
-  // === TAYLOR SWIFT THEMED ===
-  {
-    id: "swiftie-popstar-party",
-    name: "Swiftie Pop Star Experience",
-    category: "Entertainment", 
-    subcategory: "Pop Star Shows",
-    themes: ["taylor-swift", "pop-star", "music", "concert"],
-    image: "https://images.unsplash.com/photo-1709037805316-2d31b6003d22?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8cG9wJTIwc3RhciUyMGtpZHMlMjBwYXJ0eXxlbnwwfHwwfHx8MA%3D%3D",
-    rating: 4.9,
-    reviewCount: 203,
-    bookingCount: 145,
-    location: "London Wide",
-    priceFrom: 220,
-    priceUnit: "per 1.5 hours",
-    description: "Taylor Swift tribute performer with karaoke, dance lessons, and friendship bracelet making",
-    badges: ["Professional Performer", "Costume Changes", "Interactive"],
-    availability: "Book 2 weeks ahead",
-  },
-  {
-    id: "eras-tour-dj",
-    name: "Eras Tour DJ Experience",
-    category: "Entertainment",
-    subcategory: "DJ Services", 
-    themes: ["taylor-swift", "music", "pop", "dance", "princess"],
-    image: "https://images.unsplash.com/photo-1692796226663-dd49d738f43c?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dGF5bG9yJTIwc3dpZnR8ZW58MHx8MHx8fDA%3D",
-    rating: 4.7,
-    reviewCount: 178,
-    bookingCount: 98,
-    location: "UK Wide",
-    priceFrom: 180,
-    priceUnit: "per 3 hours",
-    description: "Complete Taylor Swift DJ set covering all eras with dance party and sing-alongs",
-    badges: ["Professional Sound System", "All Eras Covered"],
-    availability: "Available most weekends",
-  },
+const generateBusinessSlug = (businessName) => {
+  const baseSlug = businessName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
 
-  // === PRINCESS THEMED ===
-  {
-    id: "royal-princess-party",
-    name: "Royal Princess Character Visit",
-    category: "Entertainment",
-    subcategory: "Character Visits",
-    themes: ["princess", "fairy-tale", "royal", "disney"],
-    image: "https://images.unsplash.com/photo-1607196337528-2f4adcaff98c?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8cHJpbmNlc3MlMjBwYXJ0eSUyMGtpZHN8ZW58MHx8MHx8fDA%3D",
-    rating: 4.9,
-    reviewCount: 289,
-    bookingCount: 234,
-    location: "London & Home Counties",
-    priceFrom: 150,
-    priceUnit: "per hour",
-    description: "Beautiful princess character with storytelling, singing, and royal etiquette lessons",
-    badges: ["Professional Actress", "Multiple Princesses", "Songs Included"],
-    availability: "Available this weekend",
-  },
-  {
-    id: "enchanted-princess-show",
-    name: "Enchanted Princess Magic Show",
-    category: "Entertainment",
-    subcategory: "Magic Shows",
-    themes: ["princess", "magic", "fairy-tale", "enchanted"],
-    image: "https://images.unsplash.com/photo-1740150265606-d1c6f66e7472?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8ZW5jaGFudGVkJTIwcHJpbmNlc3MlMjBzaG93fGVufDB8fDB8fHww",
-    rating: 4.8,
-    reviewCount: 167,
-    bookingCount: 112,
-    location: "Greater London",
-    priceFrom: 170,
-    priceUnit: "per 45 minutes",
-    description: "Magical princess show with fairy tale illusions and enchanted storytelling",
-    badges: ["Professional Magic", "Interactive Story"],
-    availability: "Book 1 week ahead",
-  },
-
-  // === DINOSAUR THEMED ===
-  {
-    id: "dino-discovery-show",
-    name: "Dinosaur Discovery Educational Show",
-    category: "Entertainment",
-    subcategory: "Educational Shows",
-    themes: ["dinosaur", "prehistoric", "science", "educational"],
-    image: "https://images.unsplash.com/photo-1685971703748-28509a092f38?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTF8fGRpbm9zYXVyJTIwcGFydHklMjBjaGlsZHJlbnxlbnwwfDB8MHx8fDA%3D",
-    rating: 4.8,
-    reviewCount: 145,
-    bookingCount: 89,
-    location: "London & Surrounding Areas",
-    priceFrom: 140,
-    priceUnit: "per hour",
-    description: "Interactive dinosaur show with fossils, facts, and prehistoric adventures",
-    badges: ["Educational Content", "Real Fossils", "Interactive"],
-    availability: "Available weekdays and weekends",
-  },
-  {
-    id: "jurassic-adventure",
-    name: "Jurassic Adventure Experience",
-    category: "Entertainment",
-    subcategory: "Adventure Shows",
-    themes: ["dinosaur", "jurassic", "adventure", "prehistoric"],
-    image: "https://images.unsplash.com/photo-1712677673681-7768f31c3974?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8anVyYXNzaWMlMjBwYXJrfGVufDB8MHwwfHx8MA%3D%3D",
-    rating: 4.7,
-    reviewCount: 198,
-    bookingCount: 156,
-    location: "Greater London",
-    priceFrom: 160,
-    priceUnit: "per 1.5 hours",
-    description: "Thrilling dinosaur adventure with costumes, games, and paleontologist activities",
-    badges: ["Costume Included", "Adventure Games"],
-    availability: "Available most weekends",
-  },
-
-  // === UNICORN THEMED ===
-  {
-    id: "magical-unicorn-party",
-    name: "Magical Unicorn Fantasy Show",
-    category: "Entertainment",
-    subcategory: "Fantasy Shows",
-    themes: ["unicorn", "magic", "rainbow", "fantasy"],
-    image: "https://images.unsplash.com/photo-1607653150149-526b2744ca60?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8dW5pY29ybiUyMHBhcnR5fGVufDB8MHwwfHx8MA%3D%3D",
-    rating: 4.9,
-    reviewCount: 234,
-    bookingCount: 178,
-    location: "London Wide",
-    priceFrom: 165,
-    priceUnit: "per hour",
-    description: "Enchanting unicorn show with rainbow magic, sparkles, and unicorn character",
-    badges: ["Magical Effects", "Unicorn Costume", "Interactive"],
-    availability: "Book 1 week ahead",
-  },
-  {
-    id: "rainbow-unicorn-magic",
-    name: "Rainbow Unicorn Magic Workshop",
-    category: "Entertainment",
-    subcategory: "Magic Shows",
-    themes: ["unicorn", "rainbow", "magic", "crafts"],
-    image: "https://images.unsplash.com/photo-1538577270539-a358155d66b8?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fHVuaWNvcm4lMjBwYXJ0eXxlbnwwfDB8MHx8fDA%3D",
-    rating: 4.8,
-    reviewCount: 156,
-    bookingCount: 123,
-    location: "UK Wide",
-    priceFrom: 145,
-    priceUnit: "per 1.5 hours",
-    description: "Magical unicorn workshop with rainbow crafts, glitter, and unicorn magic tricks",
-    badges: ["Crafts Included", "Take-Home Items"],
-    availability: "Available most days",
-  },
-
-  // === SCIENCE THEMED ===
-  {
-    id: "mad-scientist-show",
-    name: "Mad Scientist Laboratory Show",
-    category: "Entertainment",
-    subcategory: "Science Shows",
-    themes: ["science", "laboratory", "experiments", "educational"],
-    image: "https://plus.unsplash.com/premium_photo-1663100782154-0f89208bf732?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzN8fG1hZCUyMHNjaWVudGlzdCUyMHNob3d8ZW58MHwwfDB8fHww",
-    rating: 4.9,
-    reviewCount: 167,
-    bookingCount: 134,
-    location: "London & Home Counties",
-    priceFrom: 175,
-    priceUnit: "per hour",
-    description: "Explosive science show with safe experiments, slime making, and laboratory fun",
-    badges: ["Safe Experiments", "Educational", "Hands-On"],
-    availability: "Available weekends",
-  },
-  {
-    id: "chemistry-kids-lab",
-    name: "Chemistry Kids Mobile Lab",
-    category: "Entertainment",
-    subcategory: "Educational Shows",
-    themes: ["science", "chemistry", "experiments", "stem"],
-    image: "https://plus.unsplash.com/premium_photo-1664298632492-c8be02c3db5c?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjV8fGNoZW1pb3N0cnklMjBsYWIlMjBraWRzfGVufDB8MHwwfHx8MA%3D%3D",
-    rating: 4.8,
-    reviewCount: 189,
-    bookingCount: 145,
-    location: "Greater London",
-    priceFrom: 160,
-    priceUnit: "per 1.5 hours",
-    description: "Mobile chemistry lab with safe experiments, volcano eruptions, and STEM learning",
-    badges: ["Mobile Lab", "STEM Focused", "Age Appropriate"],
-    availability: "Book 2 weeks ahead",
-  },
-
-  // === EXISTING GENERIC SUPPLIERS (keep some for fallback) ===
- 
-
- 
-
- 
-  {
-    id: "party-photographer",
-    name: "Little Heroes Photography",
-    category: "Photography",
-    subcategory: "Party Photographers",
-    themes: ["general", "professional", "memories"],
-    image: "https://images.unsplash.com/photo-1576977756135-551a320dbd91?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fHBhcnR5JTIwcGhvdG9ncm9waGVyfGVufDB8fDB8fHww",
-    rating: 4.9,
-    reviewCount: 54,
-    bookingCount: 43,
-    location: "London & Home Counties",
-    priceFrom: 180,
-    priceUnit: "per 2 hours",
-    description: "Professional party photography with instant prints",
-    badges: ["Digital Gallery", "Same Day Edits"],
-    availability: "2 bookings available this month",
-  },
-  {
-    id: "bouncy-castle",
-    name: "Super Bounce Castle Hire",
-    category: "Activities",
-    subcategory: "Bouncy Castles",
-    themes: ["general", "active", "outdoor"],
-    image: "https://images.unsplash.com/photo-1663797184266-20c14bfee71a?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym91bmN5JTIwY2FzdGxlfGVufDB8fDB8fHww",
-    rating: 4.7,
-    reviewCount: 198,
-    bookingCount: 234,
-    location: "Greater London",
-    priceFrom: 95,
-    priceUnit: "per day",
-    description: "Themed bouncy castle with safety mats",
-    badges: ["Safety Certified", "Free Delivery"],
-    availability: "Available weekends",
-  },
-  {
-    id: "face-painting",
-    name: "Face Painting Artists",
-    category: "Face Painting",
-    subcategory: "Face Painting",
-    themes: ["general", "artistic", "creative"],
-    image: "https://plus.unsplash.com/premium_photo-1664298802117-6e125c5093a2?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZmFjZSUyMHBhaW50aW5nfGVufDB8fDB8fHww",
-    rating: 4.9,
-    reviewCount: 127,
-    bookingCount: 89,
-    location: "London Wide",
-    priceFrom: 150,
-    priceUnit: "per 2 hours",
-    description: "Professional themed face painting for all children",
-    badges: ["DBS Checked", "Highly Rated"],
-    availability: "Available this weekend",
-  },
-  {
-    id: "budget-venue",
-    name: "Community Hall Party Space",
-    category: "Venues", 
-    subcategory: "Community Halls",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482037/rosario-fernandes-Nnb1f3KBqnU-unsplash_pulk59.jpg",
-    rating: 4.3,
-    reviewCount: 78,
-    bookingCount: 123,
-    location: "North London", 
-    priceFrom: 80,
-    priceUnit: "per 3 hours",
-    description: "Affordable community space perfect for children's parties",
-    badges: ["Parking Available", "Kitchen Access"],
-    availability: "Most weekends available",
-  },
-  {
-    id: "adventure-center",
-    name: "Adventure Play Centre",
-    category: "Venues",
-    subcategory: "Play Centers",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482037/rosario-fernandes-Nnb1f3KBqnU-unsplash_pulk59.jpg",
-    rating: 4.7,
-    reviewCount: 203,
-    bookingCount: 156,
-    location: "Central London",
-    priceFrom: 200, // Reduced from 700 to make it more accessible
-    priceUnit: "per 2 hours",
-    description: "Indoor playground perfect for superhero themed parties",
-    badges: ["Parking Available", "Wheelchair Accessible"],
-    availability: "3 slots available today",
-  },
-  {
-    id: "premium-venue",
-    name: "Luxury Party Venue",
-    category: "Venues",
-    subcategory: "Premium Venues",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482037/rosario-fernandes-Nnb1f3KBqnU-unsplash_pulk59.jpg",
-    rating: 4.9,
-    reviewCount: 85,
-    bookingCount: 45,
-    location: "Central London",
-    priceFrom: 350,
-    priceUnit: "per 3 hours",
-    description: "Premium party venue with full service and decorations included",
-    badges: ["Full Service", "Decorations Included", "Catering Kitchen"],
-    availability: "Limited availability",
-  },
-  {
-    id: "budget-entertainment",
-    name: "Party Games Coordinator", 
-    category: "Entertainment",
-    subcategory: "Games",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749460635/edson-junior-YlgnX_ISPLo-unsplash_wlsz60.jpg",
-    rating: 4.2,
-    reviewCount: 45,
-    bookingCount: 67,
-    location: "London Wide",
-    priceFrom: 80,
-    priceUnit: "per 2 hours", 
-    description: "Fun party games and activities coordinator for kids",
-    badges: ["Interactive Games", "Age Appropriate"],
-    availability: "Available most weekends",
-  },
-  {
-    id: "character-visit",
-    name: "Amazing Superhero Characters",
-    category: "Entertainment",
-    subcategory: "Character Visits",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482223/ChatGPT_Image_Jun_9_2025_04_16_54_PM_qshvx8.png",
-    rating: 4.8,
-    reviewCount: 167,
-    bookingCount: 145,
-    location: "London Wide",
-    priceFrom: 180,
-    priceUnit: "per hour",
-    description: "Professional superhero character appearances and meet & greets",
-    badges: ["Authentic Costumes", "Interactive Shows"],
-    availability: "Book 2 weeks ahead",
-  },
-  {
-    id: "premium-entertainment",
-    name: "Deluxe Magic & Character Show",
-    category: "Entertainment", 
-    subcategory: "Premium Shows",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749460635/edson-junior-YlgnX_ISPLo-unsplash_wlsz60.jpg",
-    rating: 5.0,
-    reviewCount: 89,
-    bookingCount: 34,
-    location: "London & Surrounding Areas",
-    priceFrom: 300,
-    priceUnit: "per show",
-    description: "Premium magic show with multiple characters and interactive experiences", 
-    badges: ["DBS Checked", "Premium Package", "Multiple Characters"],
-    availability: "Book 3 weeks ahead",
-  },
-  {
-    id: "budget-catering",
-    name: "Simple Party Food Package",
-    category: "Catering",
-    subcategory: "Basic Packages", 
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482064/phil-hearing-sdVA2f8rTiw-unsplash_ydqz9d.jpg",
-    rating: 4.1,
-    reviewCount: 56,
-    bookingCount: 89,
-    location: "UK Wide Delivery",
-    priceFrom: 25,
-    priceUnit: "per child",
-    description: "Basic party food package with sandwiches and snacks",
-    badges: ["Simple Setup", "Budget Friendly"],
-    availability: "Available daily",
-  },
-  {
-    id: "superhero-cakes",
-    name: "Superhero Celebration Cakes",
-    category: "Catering",
-    subcategory: "Birthday Cakes",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482064/phil-hearing-sdVA2f8rTiw-unsplash_ydqz9d.jpg",
-    rating: 4.8,
-    reviewCount: 89,
-    bookingCount: 67,
-    location: "UK Wide Delivery",
-    priceFrom: 60,
-    priceUnit: "per cake",
-    description: "Custom superhero themed birthday cakes",
-    badges: ["Allergen Free Options", "Same Day Delivery"],
-    availability: "Order by 2pm for next day",
-  },
-  {
-    id: "premium-catering",
-    name: "Gourmet Kids Party Catering",
-    category: "Catering",
-    subcategory: "Premium Catering",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482064/phil-hearing-sdVA2f8rTiw-unsplash_ydqz9d.jpg",
-    rating: 4.9,
-    reviewCount: 67,
-    bookingCount: 34,
-    location: "London Wide",
-    priceFrom: 120,
-    priceUnit: "per child",
-    description: "Premium catering with gourmet kids menu and custom cake",
-    badges: ["Gourmet Menu", "Custom Cake", "Full Service"],
-    availability: "Book 1 week ahead",
-  },
-  {
-    id: "balloon-magic",
-    name: "Balloon Magic Decorations",
-    category: "Decorations",
-    subcategory: "Balloon Displays",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482096/helena-lopes-tdKwqYuawZQ-unsplash_1_mmmoku.jpg",
-    rating: 4.6,
-    reviewCount: 145,
-    bookingCount: 98,
-    location: "South London",
-    priceFrom: 85,
-    priceUnit: "per setup",
-    description: "Stunning superhero balloon arches and displays",
-    badges: ["Setup Included", "Eco-Friendly"],
-    availability: "Available next week",
-  },
-  {
-    id: "hero-bags",
-    name: "Hero Party Bags",
-    category: "Party Bags",
-    subcategory: "Themed Bags",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482131/daniel-alvasd-QJlg2KSl0fU-unsplash_vm4acf.jpg",
-    rating: 4.5,
-    reviewCount: 76,
-    bookingCount: 123,
-    location: "UK Wide",
-    priceFrom: 4.5,
-    priceUnit: "per bag",
-    description: "Superhero themed party bags with toys and treats",
-    badges: ["Age Appropriate", "Bulk Discounts"],
-    availability: "In stock - ships today",
-  },
-  {
-    id: "party-photographer",
-    name: "Little Heroes Photography",
-    category: "Photography",
-    subcategory: "Party Photographers",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749473689/iStock-1369813086_osxnjy.jpg",
-    rating: 4.9,
-    reviewCount: 54,
-    bookingCount: 43,
-    location: "London & Home Counties",
-    priceFrom: 180,
-    priceUnit: "per 2 hours",
-    description: "Professional party photography with instant prints",
-    badges: ["Digital Gallery", "Same Day Edits"],
-    availability: "2 bookings available this month",
-  },
-  {
-    id: "bouncy-castle",
-    name: "Super Bounce Castle Hire",
-    category: "Activities",
-    subcategory: "Bouncy Castles",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png",
-    rating: 4.7,
-    reviewCount: 198,
-    bookingCount: 234,
-    location: "Greater London",
-    priceFrom: 95,
-    priceUnit: "per day",
-    description: "Superhero themed bouncy castle with safety mats",
-    badges: ["Safety Certified", "Free Delivery"],
-    availability: "Available weekends",
-  },
-  {
-    id: "face-painting",
-    name: "Face Painting Artists",
-    category: "Face Painting",
-    subcategory: "Face Painting",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594938/face-painter_kdiqia.png",
-    rating: 4.9,
-    reviewCount: 127,
-    bookingCount: 89,
-    location: "London Wide",
-    priceFrom: 150,
-    priceUnit: "per 2 hours",
-    description: "Professional superhero face painting for all children",
-    badges: ["DBS Checked", "Highly Rated"],
-    availability: "Available this weekend",
-  },
-  
-  // Balloon Artist
-  {
-    id: "balloon-artist",
-    name: "Balloon Sculpture Artists",
-    category: "Entertainment",
-    subcategory: "Balloon Art",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749476395/iStock-1716501930_vlyarc.jpg",
-    rating: 4.8,
-    reviewCount: 89,
-    bookingCount: 67,
-    location: "London & Surrounding Areas",
-    priceFrom: 120,
-    priceUnit: "per 1.5 hours",
-    description: "Amazing balloon sculptures and superhero creations",
-    badges: ["Interactive Entertainment", "Age Appropriate"],
-    availability: "Available most weekends",
-  },
-  
-  // Photo Booth
-  {
-    id: "photo-booth",
-    name: "Superhero Photo Booth",
-    category: "Photography",
-    subcategory: "Photo Booth",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749476535/iStock-1186660222_uhbwam.jpg",
-    rating: 4.9,
-    reviewCount: 156,
-    bookingCount: 78,
-    location: "Greater London",
-    priceFrom: 200,
-    priceUnit: "per 3 hours",
-    description: "Superhero-themed photo booth with props and instant prints",
-    badges: ["Props Included", "Instant Prints"],
-    availability: "Limited availability",
-  },
-  
-  // Candy Cart
-  {
-    id: "candy-cart",
-    name: "Vintage Candy Cart",
-    category: "Catering",
-    subcategory: "Specialty Treats",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749476912/aronskaya-KeURaM_9W9c-unsplash_vq2vwe.jpg",
-    rating: 4.7,
-    reviewCount: 203,
-    bookingCount: 145,
-    location: "London Wide",
-    priceFrom: 180,
-    priceUnit: "per event",
-    description: "Vintage candy cart with superhero-themed treats",
-    badges: ["Themed Treats", "Victorian Style"],
-    availability: "Available next week",
-  },
-  
-  // Magic Show (Additional)
-  {
-    id: "magic-show-premium",
-    name: "Premium Magic & Illusion Show",
-    category: "Entertainment",
-    subcategory: "Magic Shows",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749460635/edson-junior-YlgnX_ISPLo-unsplash_wlsz60.jpg",
-    rating: 4.9,
-    reviewCount: 98,
-    bookingCount: 45,
-    location: "London & Home Counties",
-    priceFrom: 175,
-    priceUnit: "per 45 minutes",
-    description: "Interactive superhero magic show with audience participation",
-    badges: ["Highly Rated", "Interactive Show"],
-    availability: "Book 2 weeks ahead",
-  },
-  
-  // DJ Services
-  {
-    id: "dj-services",
-    name: "Kids Party DJ & Music",
-    category: "Entertainment",
-    subcategory: "DJ Services",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749477304/ChatGPT_Image_Jun_9_2025_02_54_56_PM_eoqvmc.png",
-    rating: 4.6,
-    reviewCount: 134,
-    bookingCount: 89,
-    location: "London Wide",
-    priceFrom: 160,
-    priceUnit: "per 3 hours",
-    description: "Professional DJ with superhero soundtrack and party games",
-    badges: ["Sound System Included", "Interactive Games"],
-    availability: "Available most weekends",
-  },
-  
-  // Superhero Training
-  {
-    id: "superhero-training",
-    name: "Superhero Training Academy",
-    category: "Activities",
-    subcategory: "Training Courses",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749480381/iStock-540366448_ygq4my.jpg",
-    rating: 4.7,
-    reviewCount: 112,
-    bookingCount: 67,
-    location: "London & Surrounding Areas",
-    priceFrom: 140,
-    priceUnit: "per hour",
-    description: "Obstacle course and superhero training activities",
-    badges: ["Safety Certified", "Age Appropriate"],
-    availability: "Available weekends",
-  },
-  
-  // Additional Decorations
-  {
-    id: "superhero-decorations",
-    name: "Complete Superhero Decorations",
-    category: "Decorations",
-    subcategory: "Theme Packages",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482096/helena-lopes-tdKwqYuawZQ-unsplash_1_mmmoku.jpg",
-    rating: 4.5,
-    reviewCount: 87,
-    bookingCount: 123,
-    location: "UK Wide Delivery",
-    priceFrom: 75,
-    priceUnit: "per package",
-    description: "Complete superhero decoration package with banners, balloons, and table settings",
-    badges: ["Setup Included", "Theme Complete"],
-    availability: "Available next day",
-  },
-  {
-    id: "super-bounce-castle",
-    name: "Super Bounce Castle Hire",
-    category: "Activities",
-    subcategory: "Bouncy Castles",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png",
-    rating: 4.7,
-    reviewCount: 198,
-    bookingCount: 234,
-    location: "Greater London",
-    priceFrom: 95,
-    priceUnit: "per day",
-    description: "Superhero themed bouncy castle with safety mats and supervision",
-    badges: ["Safety Certified", "Free Delivery"],
-    availability: "Available weekends",
-  },
-  
-  {
-    id: "premium-bouncy-fun",
-    name: "Premium Bouncy Fun",
-    category: "Activities",
-    subcategory: "Bouncy Castles",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png",
-    rating: 4.9,
-    reviewCount: 156,
-    bookingCount: 89,
-    location: "London Wide",
-    priceFrom: 150,
-    priceUnit: "per day",
-    description: "Large superhero bouncy castle with slide and obstacle course",
-    badges: ["Premium Quality", "Highly Rated", "Setup Included"],
-    availability: "Available most days",
-  },
-  
-  {
-    id: "budget-bounce-hire",
-    name: "Budget Bounce Hire",
-    category: "Activities",
-    subcategory: "Bouncy Castles",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png",
-    rating: 4.3,
-    reviewCount: 87,
-    bookingCount: 145,
-    location: "South London",
-    priceFrom: 75,
-    priceUnit: "per day",
-    description: "Affordable bouncy castle hire with basic superhero theme",
-    badges: ["Budget Friendly", "Local Delivery"],
-    availability: "Good availability",
-  },
-  
-  // Soft Play Suppliers
-  {
-    id: "adventure-soft-play",
-    name: "Adventure Soft Play Hire",
-    category: "Activities",
-    subcategory: "Soft Play",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749480381/iStock-540366448_ygq4my.jpg",
-    rating: 4.8,
-    reviewCount: 134,
-    bookingCount: 78,
-    location: "London & Home Counties",
-    priceFrom: 120,
-    priceUnit: "per day",
-    description: "Complete soft play equipment hire with superhero themed mats and obstacles",
-    badges: ["Safety Certified", "Age Appropriate", "Setup Included"],
-    availability: "Available weekdays and weekends",
-  },
-  
-  {
-    id: "little-heroes-soft-play",
-    name: "Little Heroes Soft Play",
-    category: "Activities",
-    subcategory: "Soft Play",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749480381/iStock-540366448_ygq4my.jpg",
-    rating: 4.6,
-    reviewCount: 92,
-    bookingCount: 67,
-    location: "North London",
-    priceFrom: 100,
-    priceUnit: "per day",
-    description: "Superhero themed soft play equipment perfect for indoor parties",
-    badges: ["Indoor Suitable", "Easy Setup"],
-    availability: "Available most weekends",
-  },
-  
-  // Combined Activity Suppliers
-  {
-    id: "mega-party-activities",
-    name: "Mega Party Activities",
-    category: "Activities",
-    subcategory: "Activity Packages",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749480381/iStock-540366448_ygq4my.jpg",
-    rating: 4.9,
-    reviewCount: 167,
-    bookingCount: 89,
-    location: "London Wide",
-    priceFrom: 200,
-    priceUnit: "per day",
-    description: "Complete activity package with bouncy castle, soft play, and superhero training course",
-    badges: ["Highly Rated", "Complete Package", "DBS Checked"],
-    availability: "Book 1 week ahead",
-  },
-  
-  {
-    id: "superhero-adventure-zone",
-    name: "Superhero Adventure Zone",
-    category: "Activities",
-    subcategory: "Obstacle Courses",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749480381/iStock-540366448_ygq4my.jpg",
-    rating: 4.7,
-    reviewCount: 112,
-    bookingCount: 56,
-    location: "Greater London",
-    priceFrom: 175,
-    priceUnit: "per day",
-    description: "Superhero themed obstacle course and training zone for active parties",
-    badges: ["Physical Activity", "Team Building", "Age 4-12"],
-    availability: "Available weekends",
-  }
-];
-
-// Function to add a new supplier from onboarding form
-const addSupplierFromOnboarding = (formData) => {
-
-  const getThemesFromServiceType = (serviceType) => {
-    const themeMapping = {
-      'magician': ['magic', 'superhero', 'general'],
-      'clown': ['circus', 'comedy', 'general'],
-      'entertainer': ['general', 'superhero', 'princess'],
-      'dj': ['music', 'dance', 'general'],
-      'musician': ['music', 'taylor-swift', 'general'],
-      'face-painting': ['general', 'superhero', 'princess'],
-      'decorations': ['general'],
-      'venue': ['general'],
-      'catering': ['general']
-    };
-    
-    return themeMapping[serviceType] || ['general'];
-  };
-  const newSupplier = {
-    id: `supplier-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    name: formData.businessName,
-    owner: {
-      name: formData.yourName, // From the onboarding form
-      email: formData.email,
-      phone: formData.phone
-    },
-    category: formData.supplierType, // Default until they complete profile
-    subcategory: formData.supplierType,
-    image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(formData.businessName),
-    rating: 0, // New supplier, no rating yet
-    reviewCount: 0,
-    bookingCount: 0,
-    location: formData.postcode || "Location TBD",
-    priceFrom: 0, // They haven't set packages yet
-    priceUnit: "per event",
-    description: "New supplier - profile setup in progress",
-    badges: ["New Provider"],
-    availability: "Contact for availability",
-    themes: getThemesFromServiceType(formData.supplierType), // Add this
-  serviceType: formData.supplierType,
-    businessDescription: "",
-    serviceType: formData.supplierType,
-    packages: [],
-    portfolioImages: formData.portfolioImages || [],  // ✅ CORRECT
-  portfolioVideos: formData.portfolioVideos || [],  // ✅ CORRECT
-    isComplete: false, // They still need to complete their profile
-    createdAt: new Date().toISOString(),
-    workingHours: {
-      Monday: { active: true, start: "09:00", end: "17:00" },
-      Tuesday: { active: true, start: "09:00", end: "17:00" },
-      Wednesday: { active: true, start: "09:00", end: "17:00" },
-      Thursday: { active: true, start: "09:00", end: "17:00" },
-      Friday: { active: true, start: "09:00", end: "17:00" },
-      Saturday: { active: true, start: "10:00", end: "16:00" },
-      Sunday: { active: false, start: "10:00", end: "16:00" },
-    },
-    unavailableDates: [],
-    busyDates: [],
-    availabilityNotes: "",
-    advanceBookingDays: 7,
-    maxBookingDays: 365,
-  };
-
-  return newSupplier;
-};
-
-// Save to localStorage
-const saveSuppliers = (suppliers) => {
-  try {
-    localStorage.setItem('allSuppliers', JSON.stringify(suppliers));
-    return true;
-  } catch (error) {
-    console.error('Error saving suppliers:', error);
-    return false;
-  }
-};
-
-// Get all suppliers from localStorage, or return mock data
-const getAllSuppliers = () => {
-  try {
-    const stored = localStorage.getItem('allSuppliers');
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    return mockSuppliers;
-  } catch (error) {
-    console.error('Error loading suppliers:', error);
-    return mockSuppliers;
-  }
-};
-
-
-
-// Hook for the dashboard to manage the current supplier
-export function useSupplierDashboard() {
-  const [currentSupplier, setCurrentSupplier] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-
-  
-
-  // Load the current supplier when component mounts
-  useEffect(() => {
-    const loadCurrentSupplier = async () => {
-      try {
-        setLoading(true);
-        
-        // Get the supplier ID that was stored during onboarding
-        const supplierId = localStorage.getItem('currentSupplierId');
-        
-        if (supplierId) {
-          const supplier = await suppliersAPI.getSupplierById(supplierId);
-          if (supplier) {
-            setCurrentSupplier(supplier);
-            console.log('📥 Loaded current supplier for dashboard:', supplier);
-          } else {
-            setError('Supplier not found');
-          }
-        } else {
-          setError('No supplier ID found - user may not be signed up');
-        }
-      } catch (err) {
-        setError(err.message);
-        console.error('Error loading current supplier:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCurrentSupplier();
-  }, []);
-
-  // Function to update the supplier profile
-  const updateProfile = async (profileData, packages = []) => {
-    if (!currentSupplier) {
-      return { success: false, error: 'No current supplier loaded' };
-    }
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      const result = await suppliersAPI.updateSupplierProfile(currentSupplier.id, profileData, packages);
-      
-      if (result.success) {
-        setCurrentSupplier(result.supplier);
-        console.log('🎉 Supplier profile updated successfully!');
-      }
-      
-      return result;
-    } catch (error) {
-      setError(error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return {
-    currentSupplier,
-    loading,
-    saving,
-    error,
-    updateProfile
-  };
+  const timestamp = Date.now().toString().slice(-6)
+  return `${baseSlug}-${timestamp}`
 }
 
+// Helper function for themes (keep your existing logic)
+const getThemesFromServiceType = (serviceType) => {
+  const themeMapping = {
+    'magician': ['magic', 'superhero', 'general'],
+    'clown': ['circus', 'comedy', 'general'],
+    'entertainer': ['general', 'superhero', 'princess'],
+    'dj': ['music', 'dance', 'general'],
+    'musician': ['music', 'taylor-swift', 'general'],
+    'face-painting': ['general', 'superhero', 'princess'],
+    'decorations': ['general'],
+    'venue': ['general'],
+    'catering': ['general']
+  }
+  return themeMapping[serviceType] || ['general']
+}
+
+const createThemedBusiness = async (primaryBusinessId, themedBusinessData) => {
+  try {
+    console.log('🎭 Creating themed business for parent:', primaryBusinessId)
+
+    const generateBusinessSlug = (businessName) => {
+      const baseSlug = businessName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+      const timestamp = Date.now().toString().slice(-6)
+      return `${baseSlug}-${timestamp}`
+    }
+
+    // Get the primary business to inherit data
+    const { data: primaryBusiness, error: fetchError } = await supabase
+      .from('suppliers')
+      .select('*')
+      .eq('id', primaryBusinessId)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    const inheritedData = primaryBusiness.data
+    const businessSlug = generateBusinessSlug(themedBusinessData.name)
+
+    // Create themed business data (inherits from primary)
+const themedData = {
+  // ✅ INHERITED SETTINGS (Shared across businesses)
+  workingHours: inheritedData.workingHours,
+  unavailableDates: inheritedData.unavailableDates,
+  busyDates: inheritedData.busyDates,
+  availabilityNotes: inheritedData.availabilityNotes,
+  advanceBookingDays: inheritedData.advanceBookingDays,
+  maxBookingDays: inheritedData.maxBookingDays,
+  packages: inheritedData.packages,
+  addOnServices: inheritedData.addOnServices || [],
+  serviceDetails: {
+    ...inheritedData.serviceDetails,
+    // Keep most service details but allow theme-specific overrides
+    performerType: inheritedData.serviceDetails?.performerType,
+    ageGroups: inheritedData.serviceDetails?.ageGroups,
+    equipment: inheritedData.serviceDetails?.equipment,
+    travelRadius: inheritedData.serviceDetails?.travelRadius,
+  },
+  owner: inheritedData.owner, // Contact info stays the same
+  location: inheritedData.location, // Service area
+  
+  // ✅ BUSINESS-SPECIFIC (Unique per business)
+  name: themedBusinessData.name,
+  description: themedBusinessData.description || `Professional ${themedBusinessData.serviceType} services specializing in ${themedBusinessData.theme} themes.`,
+  serviceType: themedBusinessData.serviceType,
+  themes: [themedBusinessData.theme],
+  
+  // Reset business-specific content
+  coverPhoto: null, // Each business gets its own cover photo
+  image: null,
+  portfolioImages: [], // Each business gets its own portfolio
+  portfolioVideos: [],
+  
+  // Reset metrics
+  rating: 0,
+  reviewCount: 0,
+  bookingCount: 0,
+  isComplete: false,
+  
+  // Timestamps
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+}
+
+    // Insert themed business
+    const { data: newThemedBusiness, error: insertError } = await supabase
+      .from('suppliers')
+      .insert({
+        auth_user_id: primaryBusiness.auth_user_id,
+        business_name: themedBusinessData.name,
+        business_type: 'themed',
+        is_primary: false,
+        parent_business_id: primaryBusinessId,
+        created_from_theme: themedBusinessData.theme,
+        business_slug: businessSlug,
+        data: themedData
+      })
+      .select()
+      .single()
+
+    if (insertError) throw insertError
+
+    console.log('✅ Themed business created:', newThemedBusiness.id)
+
+    return {
+      success: true,
+      business: newThemedBusiness,
+      message: 'Themed business created successfully'
+    }
+
+  } catch (error) {
+    console.error('❌ Error creating themed business:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to create themed business'
+    }
+  }
+}
+
+
+// Get all suppliers from Supabase
+// const getAllSuppliers = async () => {
+//   try {
+//     console.log('🔍 Fetching suppliers from Supabase...')
+    
+//     const { data, error } = await supabase
+//       .from('suppliers')
+//       .select('*')
+//       .order('created_at', { ascending: false })
+    
+//     if (error) {
+//       console.error('Supabase error:', error)
+//       throw error
+//     }
+    
+//     if (!data || data.length === 0) {
+//       console.warn('No suppliers found in Supabase, returning empty array')
+//       return []
+//     }
+    
+//     // Transform the data from Supabase format to your existing format
+//     const transformedSuppliers = data.map(supplier => {
+//       try {
+//         return {
+//           ...supplier.data, // Spread the JSON data which contains all your original supplier fields
+//           id: supplier.legacy_id || supplier.id // Use legacy_id for consistency
+//         }
+//       } catch (transformError) {
+//         console.error('Error transforming supplier:', supplier.id, transformError)
+//         return null
+//       }
+//     }).filter(Boolean) // Remove any null entries
+    
+//     console.log(`✅ Successfully loaded ${transformedSuppliers.length} suppliers from Supabase`)
+//     return transformedSuppliers
+    
+//   } catch (error) {
+//     console.error('💥 Error loading suppliers from Supabase:', error)
+    
+//     // Return empty array instead of mock data to avoid confusion
+//     console.warn('Returning empty array due to Supabase error')
+//     return []
+//   }
+// }
+const getAllSuppliers = async () => {
+  try {
+
+    
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select(`
+        id,
+        business_name,
+        business_type,
+        is_primary,
+        business_slug,
+        data,
+        created_at
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+    
+    if (!data || data.length === 0) {
+      console.warn('No suppliers found in Supabase, returning empty array')
+      return []
+    }
+    
+    // Transform the data from Supabase format to your existing format
+    const transformedSuppliers = data.map(supplier => {
+      try {
+        return {
+          ...supplier.data, // Spread the JSON data which contains all your original supplier fields
+          id: supplier.id, // Use the real UUID (not legacy_id anymore)
+          businessSlug: supplier.business_slug, // Add business slug for URLs
+          isPrimary: supplier.is_primary, // Add primary business flag
+          businessType: supplier.business_type // Add business type
+        }
+      } catch (transformError) {
+        console.error('Error transforming supplier:', supplier.id, transformError)
+        return null
+      }
+    }).filter(Boolean) // Remove any null entries
+    
+   
+    return transformedSuppliers
+    
+  } catch (error) {
+    console.error('💥 Error loading suppliers from Supabase:', error)
+    console.warn('Returning empty array due to Supabase error')
+    return []
+  }
+}
+
+
+function isValidUUID(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)
+}
 // API functions
 export const suppliersAPI = {
+  createThemedBusiness,
   // Get all suppliers
   getAllSuppliers: async () => {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    return getAllSuppliers();
+    await new Promise(resolve => setTimeout(resolve, 600)) // Keep UX delay
+    return await getAllSuppliers()
   },
 
+  getSupplierById: async (id) => {
+    try {
+      let query
+      if (isValidUUID(id)) {
+        query = supabase.from('suppliers').select('*').eq('id', id).limit(1)
+      } else {
+        query = supabase.from('suppliers').select('*').eq('legacy_id', id).limit(1)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error("❌ Supabase error:", error)
+        return null
+      }
+
+      if (!data || data.length === 0) {
+        console.warn(`⚠️ No supplier found with id or legacy_id: ${id}`)
+        return null
+      }
+
+      return {
+        id: data[0].id,
+        legacyId: data[0].legacy_id,
+        ...data[0].data ?? data[0], // Adjust for your schema
+      }
+    } catch (err) {
+      console.error("💥 Exception in getSupplierById:", err)
+      return null
+    }
+  },
+  
+  
+  // Theme filtering functions
   getEntertainmentByTheme: async (theme) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     try {
-      const allSuppliers = getAllSuppliers();
+      const allSuppliers = await getAllSuppliers()
       
-      // Filter for entertainment suppliers that match the theme
       const entertainmentSuppliers = allSuppliers.filter(supplier => {
-        // Check if supplier is entertainment
         const isEntertainment = supplier.category === 'Entertainment' || 
                                supplier.serviceType === 'entertainer' ||
                                supplier.serviceType === 'magician' ||
@@ -1336,15 +301,11 @@ export const suppliersAPI = {
         
         if (!isEntertainment) return false;
         
-        // Check theme matching
         const matchesTheme = 
-          // Direct theme match
           supplier.themes?.includes(theme) ||
           supplier.serviceType === theme ||
-          // Name/description contains theme keywords
           supplier.name.toLowerCase().includes(theme.toLowerCase()) ||
           supplier.description?.toLowerCase().includes(theme.toLowerCase()) ||
-          // Handle specific theme mappings
           (theme === 'spiderman' && (
             supplier.themes?.includes('superhero') ||
             supplier.name.toLowerCase().includes('spider') ||
@@ -1359,9 +320,8 @@ export const suppliersAPI = {
             supplier.serviceType === 'musician' ||
             supplier.serviceType === 'dj' ||
             supplier.themes?.includes('music')
-          ));
+          )) ||
           (theme === 'pokemon' && (
-            supplier.serviceType === 'pokemon' ||
             supplier.serviceType === 'pokemon' ||
             supplier.themes?.includes('pokemon')
           ));
@@ -1379,10 +339,10 @@ export const suppliersAPI = {
   },
 
   getVenuesByTheme: async (theme) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     try {
-      const allSuppliers = getAllSuppliers();
+      const allSuppliers = await getAllSuppliers()
       
       const venueSuppliers = allSuppliers.filter(supplier => {
         const isVenue = supplier.category === 'Venues' || 
@@ -1407,10 +367,10 @@ export const suppliersAPI = {
   },
 
   getCateringByTheme: async (theme) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     try {
-      const allSuppliers = getAllSuppliers();
+      const allSuppliers = await getAllSuppliers()
       
       const cateringSuppliers = allSuppliers.filter(supplier => {
         const isCatering = supplier.category === 'Catering' || 
@@ -1434,211 +394,468 @@ export const suppliersAPI = {
     }
   },
 
-
-updateSupplierProfile: async (supplierId, updatedData, packages = []) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  try {
-    const allSuppliers = getAllSuppliers();
-    const supplierIndex = allSuppliers.findIndex(s => s.id === supplierId);
-    
-    if (supplierIndex === -1) {
-      return { success: false, error: 'Supplier not found' };
-    }
-
-    // Update the supplier with new data
-    const updatedSupplier = {
-      ...allSuppliers[supplierIndex],
-      name: updatedData.businessName,
-      description: updatedData.businessDescription || "Professional service provider",
-      location: updatedData.postcode || allSuppliers[supplierIndex].location,
-      serviceType: updatedData.serviceType,
-      packages: packages,
-
-      portfolioImages: updatedData.portfolioImages || allSuppliers[supplierIndex].portfolioImages || [],
-      portfolioVideos: updatedData.portfolioVideos || allSuppliers[supplierIndex].portfolioVideos || [],
-
-      serviceDetails: updatedData.serviceDetails || allSuppliers[supplierIndex].serviceDetails,
-
-      coverPhoto: updatedData.coverPhoto || allSuppliers[supplierIndex].coverPhoto,
-      image: updatedData.coverPhoto || allSuppliers[supplierIndex].image,
-
-      workingHours: updatedData.workingHours || allSuppliers[supplierIndex].workingHours,
-      unavailableDates: updatedData.unavailableDates || allSuppliers[supplierIndex].unavailableDates || [],
-      busyDates: updatedData.busyDates || allSuppliers[supplierIndex].busyDates || [],
-      availabilityNotes: updatedData.availabilityNotes || allSuppliers[supplierIndex].availabilityNotes || "",
-      advanceBookingDays: updatedData.advanceBookingDays || allSuppliers[supplierIndex].advanceBookingDays || 7,
-      maxBookingDays: updatedData.maxBookingDays || allSuppliers[supplierIndex].maxBookingDays || 365,
-      
-      // Update pricing based on packages
-      priceFrom: packages.length > 0 ? Math.min(...packages.map(p => p.price)) : 0,
-      priceUnit: packages.length > 0 && packages[0]?.priceType === 'hourly' ? 'per hour' : 'per event',
-      
-      // Update completion status
-      isComplete: packages.length > 0 && updatedData.businessDescription, // Complete if they have packages and description
-      
-      // Update badges
-      badges: [
-        ...(packages.length > 0 ? ['Packages Available'] : ['New Provider']),
-        ...(allSuppliers[supplierIndex].badges || []).filter(b => !['New Provider', 'Packages Available'].includes(b))
-      ],
-      
-      // Update the owner info too
-      owner: {
-        ...allSuppliers[supplierIndex].owner,
-        name: updatedData.contactName || allSuppliers[supplierIndex].owner.name,
-        email: updatedData.email || allSuppliers[supplierIndex].owner.email,
-        phone: updatedData.phone || allSuppliers[supplierIndex].owner.phone
-      }
-    };
-
-    allSuppliers[supplierIndex] = updatedSupplier;
-    const success = saveSuppliers(allSuppliers);
-    
-    if (success) {
-      console.log('✅ Supplier profile updated:', updatedSupplier);
-      return { success: true, supplier: updatedSupplier };
-    } else {
-      return { success: false, error: 'Failed to save updates' };
-    }
-  } catch (error) {
-    console.error('Error updating supplier:', error);
-    return { success: false, error: error.message };
-  }
-},
-
-
-  // Add new supplier from onboarding
-  addSupplierFromOnboarding: async (formData) => {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-    
-    try {
-      const currentSuppliers = getAllSuppliers();
-      const newSupplier = addSupplierFromOnboarding(formData);
-      
-      const updatedSuppliers = [...currentSuppliers, newSupplier];
-      const success = saveSuppliers(updatedSuppliers);
-      
-      if (success) {
-        console.log('✅ New supplier added:', newSupplier);
-        return { success: true, supplier: newSupplier };
-      } else {
-        return { success: false, error: 'Failed to save supplier' };
-      }
-    } catch (error) {
-      console.error('Error adding supplier:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Get supplier by ID
-  getSupplierById: async (id) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const allSuppliers = getAllSuppliers();
-    return allSuppliers.find(supplier => supplier.id === id) || null;
-  },
-
-  // Check if user owns a supplier (for redirecting to dashboard)
   getSupplierByOwnerEmail: async (email) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const allSuppliers = getAllSuppliers();
-    return allSuppliers.find(supplier => supplier.owner.email === email) || null;
-  }
-};
-
-// Hook for adding supplier from onboarding
-export function useSupplierOnboarding() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const addSupplier = async (formData) => {
-    setLoading(true);
-    setError(null);
-
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
     try {
-      const result = await suppliersAPI.addSupplierFromOnboarding(formData);
-      return result;
+      const allSuppliers = await getAllSuppliers()
+      return allSuppliers.find(supplier => supplier.owner?.email === email) || null
     } catch (error) {
-      setError(error.message);
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
+      console.error('Error getting supplier by email:', error)
+      return null
     }
-  };
+  },
 
-  return {
-    loading,
-    error,
-    addSupplier
-  };
+  addSupplierFromOnboarding: async (formData, authUserId = null) => {
+    try {
+      console.log('🚀 Creating PRIMARY business for new supplier:', formData)
+  
+      // Helper function for themes (keep your existing logic)
+      const getThemesFromServiceType = (serviceType) => {
+        const themeMapping = {
+          'magician': ['magic', 'superhero', 'general'],
+          'clown': ['circus', 'comedy', 'general'],
+          'entertainer': ['general', 'superhero', 'princess'],
+          'dj': ['music', 'dance', 'general'],
+          'musician': ['music', 'taylor-swift', 'general'],
+          'face-painting': ['general', 'superhero', 'princess'],
+          'decorations': ['general'],
+          'venue': ['general'],
+          'catering': ['general']
+        }
+        return themeMapping[serviceType] || ['general']
+      }
+  
+      // Helper function for business slug
+      const generateBusinessSlug = (businessName) => {
+        const baseSlug = businessName
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+        const timestamp = Date.now().toString().slice(-6)
+        return `${baseSlug}-${timestamp}`
+      }
+  
+      // Get current authenticated user
+      const { data: authUser, error: authError } = await supabase.auth.getUser()
+      if (authError) throw authError
+  
+      const userId = authUser?.user?.id
+      if (!userId) throw new Error("No authenticated user")
+  
+      // Create business slug
+      const businessSlug = generateBusinessSlug(formData.businessName || formData.name)
+  
+      // Create the supplier data (EXACTLY the same format as before)
+      const supplierData = {
+        name: formData.businessName || formData.name,
+        owner: {
+          name: formData.yourName || formData.ownerName,
+          email: formData.email,
+          phone: formData.phone
+        },
+        category: formData.supplierType || formData.serviceType,
+        subcategory: formData.supplierType || formData.serviceType,
+        serviceType: formData.supplierType || formData.serviceType,
+        image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(formData.businessName || formData.name),
+        rating: 0,
+        reviewCount: 0,
+        bookingCount: 0,
+        location: formData.postcode || "Location TBD",
+        priceFrom: 0,
+        priceUnit: "per event",
+        description: "New supplier - profile setup in progress",
+        badges: ["New Provider"],
+        availability: "Contact for availability",
+        themes: getThemesFromServiceType(formData.supplierType || formData.serviceType),
+        businessDescription: "",
+        packages: [],
+        portfolioImages: formData.portfolioImages || [],
+        portfolioVideos: formData.portfolioVideos || [],
+        isComplete: false,
+        createdAt: new Date().toISOString(),
+        workingHours: {
+          Monday: { active: true, start: "09:00", end: "17:00" },
+          Tuesday: { active: true, start: "09:00", end: "17:00" },
+          Wednesday: { active: true, start: "09:00", end: "17:00" },
+          Thursday: { active: true, start: "09:00", end: "17:00" },
+          Friday: { active: true, start: "09:00", end: "17:00" },
+          Saturday: { active: true, start: "10:00", end: "16:00" },
+          Sunday: { active: false, start: "10:00", end: "16:00" },
+        },
+        unavailableDates: [],
+        busyDates: [],
+        availabilityNotes: "",
+        advanceBookingDays: 7,
+        maxBookingDays: 365
+      }
+  
+      // Insert using NEW multi-business structure
+      const { data: newBusiness, error: insertError } = await supabase
+        .from("suppliers")
+        .insert({
+          auth_user_id: userId,
+          business_name: supplierData.name,
+          business_type: 'primary',
+          is_primary: true,
+          parent_business_id: null,
+          business_slug: businessSlug,
+          data: supplierData
+        })
+        .select()
+        .single()
+  
+      if (insertError) {
+        console.error('❌ Supabase insert error:', insertError)
+        throw insertError
+      }
+  
+      // Save the real UUID for future queries
+      localStorage.setItem('currentSupplierId', newBusiness.id)
+  
+      console.log('✅ New supplier added to Supabase with id:', newBusiness.id)
+  
+      return {
+        success: true,
+        supplier: {
+          id: newBusiness.id,         // Supabase UUID
+          ...newBusiness.data         // Flattened profile (same format as before)
+        }
+      }
+  
+    } catch (error) {
+      console.error('💥 Error adding supplier to Supabase:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to create supplier account'
+      }
+    }
+  }, 
+  
+
+ 
+  // ✅ Update supplier using UUID `id`
+  updateSupplierProfile: async (supplierId, updatedData, packages = []) => {
+    try {
+
+      const { data: row, error: fetchError } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('id', supplierId)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      const current = row.data
+
+      const merged = {
+        ...current,
+        name: updatedData.name || current.name,
+        description: updatedData.businessDescription || current.description,
+        description: updatedData.description || current.description,
+        location: updatedData.postcode || current.location,
+        serviceType: updatedData.serviceType || current.serviceType,
+        packages,
+        portfolioImages: updatedData.portfolioImages || current.portfolioImages || [],
+        portfolioVideos: updatedData.portfolioVideos || current.portfolioVideos || [],
+        serviceDetails: updatedData.serviceDetails ? {
+  ...current.serviceDetails,
+  ...updatedData.serviceDetails,
+  // Ensure arrays are properly replaced, not merged
+  addOnServices: updatedData.serviceDetails.addOnServices || current.serviceDetails?.addOnServices || [],
+  ageGroups: updatedData.serviceDetails.ageGroups || current.serviceDetails?.ageGroups || [],
+  themes: updatedData.serviceDetails.themes || current.serviceDetails?.themes || []
+} : current.serviceDetails || {},
+        coverPhoto: updatedData.coverPhoto ?? current.coverPhoto,
+        image: updatedData.coverPhoto ?? current.image,
+        workingHours: updatedData.workingHours || current.workingHours,
+        unavailableDates: updatedData.unavailableDates || current.unavailableDates || [],
+        busyDates: updatedData.busyDates || current.busyDates || [],
+        availabilityNotes: updatedData.availabilityNotes || current.availabilityNotes || '',
+        advanceBookingDays: updatedData.advanceBookingDays || current.advanceBookingDays || 7,
+        maxBookingDays: updatedData.maxBookingDays || current.maxBookingDays || 365,
+        priceFrom: packages.length > 0 ? Math.min(...packages.map(p => p.price)) : current.priceFrom || 0,
+        priceUnit: packages[0]?.priceType === 'hourly' ? 'per hour' : 'per event',
+        isComplete: packages.length > 0 && !!updatedData.businessDescription,
+        badges: [
+          ...(packages.length > 0 ? ['Packages Available'] : ['New Provider']),
+          ...(current.badges || []).filter(b => !['New Provider', 'Packages Available'].includes(b))
+        ],
+        owner: {
+          ...current.owner,
+          name: updatedData.contactName || current.owner?.name,
+          email: updatedData.email || current.owner?.email,
+          phone: updatedData.phone || current.owner?.phone,
+          profilePhoto: updatedData.owner?.profilePhoto || current.owner?.profilePhoto,
+          firstName: updatedData.owner?.firstName || current.owner?.firstName,
+          lastName: updatedData.owner?.lastName || current.owner?.lastName,
+          bio: updatedData.owner?.bio || current.owner?.bio,
+          dateOfBirth: updatedData.owner?.dateOfBirth || current.owner?.dateOfBirth,
+          address: updatedData.owner?.address || current.owner?.address
+        },
+        updatedAt: new Date().toISOString()
+      }
+      // In your updateSupplierProfile function, add logging before and after save
+      console.log("💾 About to save serviceDetails:", merged.serviceDetails)
+      console.log("🎁 AddOns being saved:", merged.serviceDetails?.addOnServices)
+      const { data: updated, error: updateError } = await supabase
+        .from('suppliers')
+        .update({ data: merged })
+        .eq('id', supplierId)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      console.log("✅ Saved data:", updated.data.serviceDetails)
+      console.log("🎁 AddOns after save:", updated.data.serviceDetails?.addOnServices)
+
+      return {
+        success: true,
+        supplier: updated
+      }
+
+
+
+    } catch (error) {
+      console.error('💥 Error updating supplier in Supabase:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to update supplier profile'
+      }
+    }
+  },
+
 }
 
-// Your existing hooks stay the same
-import { useState, useEffect } from 'react';
-
+// Hooks that your components use
 export function useSuppliers() {
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [suppliers, setSuppliers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const loadSuppliers = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await suppliersAPI.getAllSuppliers();
-      setSuppliers(data);
+      setLoading(true)
+      setError(null)
+      const data = await suppliersAPI.getAllSuppliers()
+      setSuppliers(data)
+
     } catch (err) {
-      setError(err.message);
-      console.error('Error loading suppliers:', err);
+      setError(err.message)
+      console.error('useSuppliers error:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    loadSuppliers();
-  }, []);
+    loadSuppliers()
+  }, [])
 
   return {
     suppliers,
     loading,
     error,
     refetch: loadSuppliers
-  };
+  }
 }
 
 export function useSupplier(supplierId) {
-  const [supplier, setSupplier] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [supplier, setSupplier] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const loadSupplier = async () => {
     if (!supplierId) {
-      setLoading(false);
-      return;
+      setLoading(false)
+      return
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      const data = await suppliersAPI.getSupplierById(supplierId);
-      setSupplier(data);
+      setLoading(true)
+      setError(null)
+  
+      const data = await suppliersAPI.getSupplierById(supplierId)
+      setSupplier(data)
+ 
     } catch (err) {
-      setError(err.message);
-      console.error('Error loading supplier:', err);
+      setError(err.message)
+      console.error('useSupplier error:', err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    loadSupplier();
-  }, [supplierId]);
+    loadSupplier()
+  }, [supplierId])
 
   return {
     supplier,
     loading,
     error,
     refetch: loadSupplier
-  };
+  }
+}
+
+
+export function useSupplierDashboard() {
+  const [currentSupplier, setCurrentSupplier] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const loadCurrentSupplier = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        console.log('📥 useSupplierDashboard loading current supplier...')
+        
+        // Get current authenticated user
+        const { data: userResult, error: userErr } = await supabase.auth.getUser()
+        if (userErr) {
+          console.error('❌ Auth error:', userErr)
+          throw userErr
+        }
+
+        const userId = userResult?.user?.id
+        if (!userId) {
+          console.error('❌ No user ID found')
+          throw new Error("No logged-in user")
+        }
+
+        console.log('👤 User ID:', userId)
+
+        // Load user's PRIMARY business (for dashboard compatibility)
+        const { data: primaryBusiness, error: primaryErr } = await supabase
+          .from("suppliers")
+          .select(`
+            id,
+            business_name,
+            business_type,
+            is_primary,
+            data,
+            auth_user_id
+          `)
+          .eq("auth_user_id", userId)
+          .eq("is_primary", true)
+          .maybeSingle()
+
+        if (primaryErr) {
+          console.error('❌ Database error:', primaryErr)
+          throw primaryErr
+        }
+
+        console.log('🔍 Primary business query result:', primaryBusiness)
+
+        if (!primaryBusiness) {
+          console.log('❌ No primary business found for user')
+          setError('No supplier account found - please complete onboarding first')
+          setCurrentSupplier(null)
+        } else {
+          // ✅ Enhanced validation and logging
+          console.log('📊 Primary business raw data:', {
+            id: primaryBusiness.id,
+            business_name: primaryBusiness.business_name,
+            has_data: !!primaryBusiness.data,
+            data_keys: primaryBusiness.data ? Object.keys(primaryBusiness.data) : 'No data object'
+          })
+
+          // Check if the data object exists and has essential fields
+          if (!primaryBusiness.data) {
+            console.warn('⚠️ Primary business has no data object')
+            setError('Incomplete supplier account - please complete setup')
+            setCurrentSupplier(null)
+            return
+          }
+
+          // Convert NEW database format to OLD dashboard format
+          const supplierForDashboard = {
+            id: primaryBusiness.id, // Use the real UUID
+            ...primaryBusiness.data // Spread all the business data
+          }
+          
+          console.log('✅ Supplier for dashboard:', {
+            id: supplierForDashboard.id,
+            name: supplierForDashboard.name,
+            owner: supplierForDashboard.owner,
+            serviceType: supplierForDashboard.serviceType
+          })
+          
+          setCurrentSupplier(supplierForDashboard)
+          console.log('✅ Loaded primary business for dashboard:', supplierForDashboard.name)
+        }
+      } catch (err) {
+        console.error('❌ Error loading current supplier:', err)
+        setError(err.message || 'Failed to load supplier data')
+        setCurrentSupplier(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadCurrentSupplier()
+  }, [])
+
+  // Function to update the supplier profile - UPDATED for new structure
+  const updateProfile = async (profileData, packages = [], specificBusinessId = null) => {
+    if (!currentSupplier) {
+      console.warn("⚠️ No currentSupplier in updateProfile")
+      return { success: false, error: 'No current supplier loaded' }
+    }
+
+    setSaving(true)
+    setError(null)
+
+    try {
+      // ✅ Use the specific business ID if provided, otherwise use current supplier ID
+      const businessIdToUpdate = specificBusinessId || currentSupplier.id;
+
+   
+console.log('🎯 updateProfile targeting business ID:', businessIdToUpdate)
+console.log('🎯 specificBusinessId param:', specificBusinessId)
+console.log('🎯 currentSupplier.id fallback:', currentSupplier.id)
+
+
+      // Use the UPDATED updateSupplierProfile function
+      const result = await suppliersAPI.updateSupplierProfile(
+        businessIdToUpdate,
+        profileData,
+        packages
+      )
+
+      console.log('📦 updateSupplierProfile result:', result)
+
+      if (result.success && result.supplier) {
+        // Convert updated supplier back to dashboard format
+        const updatedSupplierForDashboard = {
+          id: result.supplier.id,
+          ...result.supplier.data
+        }
+        setCurrentSupplier(updatedSupplierForDashboard)
+        console.log('🎉 Supplier profile updated successfully for business ID:', businessIdToUpdate)
+      }
+
+      return result
+    } catch (error) {
+      console.error("❌ updateProfile error:", error)
+      setError(error.message)
+      return { success: false, error: error.message }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return {
+    currentSupplier,
+    loading,
+    saving,
+    error,
+    updateProfile
+  }
 }

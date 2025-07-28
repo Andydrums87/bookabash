@@ -17,6 +17,7 @@ import {
   Palette, 
   Music 
 } from "lucide-react"
+import Image from 'next/image';
 
 // Theme configuration matching the filter modal
 const themeConfig = {
@@ -144,14 +145,16 @@ const LoadMoreSuppliersSection = ({
                   e.stopPropagation();
                   onSupplierClick?.(supplier.id);
                 }} className="p-0 relative">
-          {/* Image Section */}
-          <div className="relative w-full h-48 md:h-40 lg:h-48 overflow-hidden">
-            
-            <img 
-              src={supplier?.image || "/placeholder.svg"} 
-              alt={supplier.name} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+ <div className="relative w-full h-48 md:h-40 lg:h-48  bg-primary-50 flex items-center justify-center overflow-hidden">
+  <img 
+    src={supplier?.image || "/placeholder.png"} 
+    onError={(e) => {
+      e.currentTarget.onerror = null; // prevent infinite loop
+      e.currentTarget.src = "/placeholder.svg";
+    }}
+    alt={supplier.name} 
+    className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+  />
 
             {/* Favorite Button */}
             <button
@@ -322,26 +325,34 @@ const LoadMoreSuppliersSection = ({
         {/* Load More Button */}
         {!isInitialLoading && hasMoreSuppliers && (
           <div className="text-center mt-8">
-            <Button 
-              variant="outline" 
-              className="border-gray-200 text-gray-700 hover:bg-gray-50 min-w-[200px]"
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading More...
-                </>
-              ) : (
-                <>
-                  Load More Suppliers
-                  <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded-full">
-                    +{Math.min(SUPPLIERS_PER_PAGE, totalSuppliers - displayedSuppliers.length)}
-                  </span>
-                </>
-              )}
-            </Button>
+           <Button
+  variant="outline"
+  className="border-gray-200 rounded-full text-gray-700 hover:bg-gray-50 min-w-[220px] flex items-center justify-center space-x-2 mx-auto py-8"
+  onClick={handleLoadMore}
+  disabled={isLoadingMore}
+>
+  {isLoadingMore ? (
+    <>
+      <Loader2 className="w-4 h-4 animate-spin" />
+      <span>Snappy’s on it...</span>
+    </>
+  ) : (
+    <>
+      <Image
+        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753217700/h4j3wqioc81ybvri0wgy.png"
+        alt="Snappy icon"
+        width={60}
+        height={60}
+        className="inline-block"
+      />
+      <span className="text-black">Load More Fun!</span>
+      {/* <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded-full">
+        +{Math.min(SUPPLIERS_PER_PAGE, totalSuppliers - displayedSuppliers.length)}
+      </span> */}
+    </>
+  )}
+</Button>
+
             
             {/* Progress bar */}
             <div className="mt-4">

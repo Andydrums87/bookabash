@@ -1,24 +1,174 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Menu, X, Search, Star, MapPin } from "lucide-react"
+import { Menu, X, Search, Star, MapPin, User, LogOut, Settings, Calendar } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import MobileNav from "./mobile-nav"
 import { useSuppliers } from '@/utils/mockBackend'
+import { supabase } from "@/lib/supabase"
+import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
-// Main Navbar Component (add this to your main navbar/header)
+// User Menu Component
+function UserMenu({ user, onSignOut }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const getUserInitials = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name
+        .split(' ')
+        .map(name => name.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    return user?.email?.charAt(0).toUpperCase() || 'U'
+  }
+
+  const getUserDisplayName = () => {
+    return user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  }
+
+  return (
+    <div className="relative" ref={menuRef}>
+      {/* User Avatar Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+      >
+        <div className="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+          {getUserInitials()}
+        </div>
+        <span className="hidden md:block text-sm font-medium text-gray-700">
+          {getUserDisplayName()}
+        </span>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          {/* User Info Header */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-primary-500 text-white rounded-full flex items-center justify-center font-semibold">
+                {getUserInitials()}
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">{getUserDisplayName()}</p>
+                <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu Items */}
+          <div className="py-2">
+            <Link 
+              href="/dashboard" 
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setIsOpen(false)}
+            >
+              <Calendar className="w-4 h-4 mr-3" />
+              My Party Dashboard
+            </Link>
+            
+            <Link 
+              href="/profile" 
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setIsOpen(false)}
+            >
+              <Settings className="w-4 h-4 mr-3" />
+              Account Settings
+            </Link>
+          </div>
+
+          {/* Sign Out */}
+          <div className="border-t border-gray-100 pt-2">
+            <button 
+              onClick={() => {
+                setIsOpen(false)
+                onSignOut()
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4 mr-3" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Main Navbar Component
 export function Nav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   
   const { suppliers } = useSuppliers()
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (!error && user) {
+          setUser(user)
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user || null)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      router.push('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
 
   // Handle search
   useEffect(() => {
@@ -76,17 +226,17 @@ export function Nav() {
   return (
     <header className="bg-white border-b border-gray-200 relative z-50">
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-27">
         <div className="flex justify-between items-center h-15 md:h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/">
               <Image 
-                src="/logo-darker.png" 
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png" 
                 alt="BookABash" 
                 width={150} 
                 height={32} 
-                className="h-40 w-auto" 
+                className="md:h-10 h-8 w-auto" 
               />
             </Link>
           </div>
@@ -97,13 +247,13 @@ export function Nav() {
               Home
             </Link>
             <Link href="/browse" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              Browse Suppliers
+              Snap Suppliers
             </Link>
             <Link href="/dashboard" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              My Events
+              My Snapboard
             </Link>
             <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              Blog
+            Snapspiration
             </Link>
           </nav>
 
@@ -122,14 +272,25 @@ export function Nav() {
               </span>
             </Button>
 
-            {/* Desktop CTAs */}
+            {/* Desktop CTAs or User Menu */}
             <div className="hidden md:flex items-center space-x-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/signin">Sign In</Link>
-              </Button>
-              <Button size="sm" className="bg-primary-500 hover:bg-primary-600" asChild>
-                <Link href="/suppliers/onboarding">List with us</Link>
-              </Button>
+              {loading ? (
+                // Loading state
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+              ) : user ? (
+                // Signed in - show user menu
+                <UserMenu user={user} onSignOut={handleSignOut} />
+              ) : (
+                // Not signed in - show sign in/up buttons
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/signin">Sign In</Link>
+                  </Button>
+                  <Button size="sm" className="bg-primary-500 hover:bg-primary-600" asChild>
+                    <Link href="/suppliers/onboarding">List with us</Link>
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -233,8 +394,6 @@ export function Nav() {
     </header>
   )
 }
-
-
 
 export default Nav;
 //     <div className="relative z-50 dark:bg-[#2F2F2F]">

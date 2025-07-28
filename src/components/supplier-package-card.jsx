@@ -10,15 +10,15 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
     return null
   }
 
-  const { name, description, price, priceType, duration, whatsIncluded, imageUrl } = packageData
+  const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
 
   return (
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-      {imageUrl ? (
-        <div className="relative w-full h-48">
+      {image ? (
+        <div className="relative w-full ">
          
           <div
-                          className="relative w-[90%] h-[100%] mask-image mx-auto mt-10"
+                          className="relative w-[90%] h-[280px] mask-image mx-auto mt-2"
                           style={{
                             WebkitMaskImage: 'url("/image.svg")',
                             WebkitMaskRepeat: 'no-repeat',
@@ -32,7 +32,7 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
                         >
                           <Image
                             src={
-                              imageUrl || "/placeholder.jpg"
+                              image || "/placeholder.png"
                             }
                             alt={name || "Package image"}
                             fill
@@ -46,11 +46,11 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
           <ImageIcon className="h-16 w-16 text-gray-400" />
         </div>
       )}
-      <CardHeader className="pt-4">
-        <CardTitle className="text-lg">{name || "Unnamed Package"}</CardTitle>
-        {description && <CardDescription className="text-sm line-clamp-2 h-[3em]">{description}</CardDescription>}
+      <CardHeader className="">
+        <CardTitle className="text-2xl">{name || "Unnamed Package"}</CardTitle>
+        {description && <CardDescription className="text-sm line-clamp-2 h-auto">{description}</CardDescription>}
       </CardHeader>
-      <CardContent className="flex-grow space-y-3 py-0">
+      <CardContent className="flex-growspace-y-3">
         <div className="flex items-center text-sm text-muted-foreground">
           <DollarSign className="h-4 w-4 mr-2 text-primary flex-shrink-0" />
           <span>
@@ -81,8 +81,8 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-end gap-2 border-t pt-4 mt-4">
-        <Button variant="outline" size="sm" onClick={onEdit}>
+      <CardFooter className="flex justify-end gap-2 text-white pt-4 mt-4 mb-4">
+        <Button className="bg-primary-500 hover:bg-[hsl(var(--primary-600))]" variant="outline" size="sm" onClick={onEdit}>
           <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
         </Button>
         <Button variant="destructive" size="sm" onClick={onDelete}>

@@ -12,13 +12,7 @@ export default function SupplierAvailabilityCalendar({
   selectedDate,
   setSelectedDate,
 }) {
-  useEffect(() => {
-    console.log("SupplierAvailabilityCalendar - Supplier Prop:", supplier)
-    if (supplier) {
-      console.log("SupplierAvailabilityCalendar - Working Hours:", supplier.workingHours)
-      console.log("SupplierAvailabilityCalendar - Unavailable Dates:", supplier.unavailableDates)
-    }
-  }, [supplier])
+
 
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
   const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
