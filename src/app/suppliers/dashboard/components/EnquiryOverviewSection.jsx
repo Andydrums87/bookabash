@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Users, Loader2, AlertTriangle, Info } from "lucide-react"
+import { Users, Loader2, AlertTriangle, Info, Gift } from "lucide-react"
 import Link from "next/link"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import { useSupplier } from "@/hooks/useSupplier"
@@ -140,7 +140,7 @@ export default function EnquiryOverviewSection() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/20 border-b border-gray-200">
-                    <th className="text-left p-4 font-medium text-muted-foreground text-sm">Service name</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Service & Add-ons</th>
                     <th className="text-left p-4 font-medium text-muted-foreground text-sm">Lead name</th>
                     <th className="text-left p-4 font-medium text-muted-foreground text-sm">Date</th>
                     <th className="text-left p-4 font-medium text-muted-foreground text-sm">Status</th>
@@ -150,14 +150,50 @@ export default function EnquiryOverviewSection() {
                 <tbody>
                   {leads.map((lead) => (
                     <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-4 font-medium">
-                        <div className="flex items-center gap-2">
-                          {lead.service}
-                          {!lead.processed && (
-                            <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
-                          )}
-                        </div>
-                      </td>
+<td className="p-4 font-medium">
+  <div className="flex flex-col gap-1">
+    <div className="flex items-center gap-2">
+      {lead.service}
+      {!lead.processed && (
+        <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
+      )}
+    </div>
+    
+    {/* Show package name if available */}
+    {lead.package_id && (
+      <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+        📦 Package: {lead.package_name || lead.package_id}
+      </div>
+    )}
+    
+    {/* Show add-ons with names */}
+    {lead.addon_details && Array.isArray(lead.addon_details) && lead.addon_details.length > 0 && (
+      <div className="space-y-1">
+        <div className="flex items-center gap-1">
+          <Gift className="w-3 h-3 text-amber-500" />
+          <span className="text-xs text-amber-600 font-medium">
+            {lead.addon_details.length} Add-on{lead.addon_details.length !== 1 ? 's' : ''}:
+          </span>
+        </div>
+        <div className="pl-4 space-y-0.5">
+          {lead.addon_details.slice(0, 2).map((addon, index) => (
+            <div key={index} className="text-xs text-gray-600">
+              • {addon.name} (£{addon.price})
+            </div>
+          ))}
+          {lead.addon_details.length > 2 && (
+            <div className="text-xs text-gray-500">
+              ... and {lead.addon_details.length - 2} more
+            </div>
+          )}
+        </div>
+        <div className="text-xs text-amber-600 font-medium">
+          Total: £{lead.addon_details.reduce((sum, addon) => sum + (addon.price || 0), 0)}
+        </div>
+      </div>
+    )}
+  </div>
+</td>
                       <td className="p-4 text-muted-foreground">{lead.lead}</td>
                       <td className="p-4 text-muted-foreground">{lead.date}</td>
                       <td className="p-4">
@@ -205,12 +241,25 @@ export default function EnquiryOverviewSection() {
                 <div key={lead.id} className="p-4 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                     <div className="space-y-1">
-                      <h3 className="font-medium text-sm flex items-center gap-2">
-                        {lead.service}
-                        {!lead.processed && (
-                          <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
-                        )}
-                      </h3>
+                    <div className="space-y-1">
+  <h3 className="font-medium text-sm flex items-center gap-2">
+    {lead.service}
+    {!lead.processed && (
+      <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
+    )}
+  </h3>
+  {lead.addon_details && JSON.parse(lead.addon_details || '[]').length > 0 && (
+    <div className="flex items-center gap-1">
+      <Gift className="w-3 h-3 text-amber-500" />
+      <span className="text-xs text-amber-600 font-medium">
+        +{JSON.parse(lead.addon_details).length} add-on{JSON.parse(lead.addon_details).length !== 1 ? 's' : ''}
+      </span>
+      <span className="text-xs text-gray-500">
+        (£{JSON.parse(lead.addon_details).reduce((sum, addon) => sum + (addon.price || 0), 0)})
+      </span>
+    </div>
+  )}
+</div>
                       <p className="text-sm text-muted-foreground">{lead.lead}</p>
                       <p className="text-xs text-muted-foreground">{lead.date}</p>
                     </div>

@@ -49,6 +49,7 @@ export default function EnquiryDetailsPage() {
   useEffect(() => {
     if (enquiryId) {
       loadEnquiryDetails()
+    
     }
   }, [enquiryId])
 
@@ -61,6 +62,7 @@ export default function EnquiryDetailsPage() {
       
       if (result.success) {
         setEnquiry(result.enquiry)
+ 
         setFinalPrice(result.enquiry.quoted_price?.toString() || '')
       } else {
         setError(result.error)
@@ -71,6 +73,9 @@ export default function EnquiryDetailsPage() {
       setLoading(false)
     }
   }
+
+
+
 
   const handleResponse = async (responseType) => {
     setResponse(responseType)
@@ -309,6 +314,14 @@ export default function EnquiryDetailsPage() {
             </CardContent>
           </Card>
 
+          {/* {enquiry?.map((e, index) => (
+  <div key={index}>
+    <p>{e.addon_details|| 'Unnamed Addon'}</p>
+  </div>
+))}
+         */}
+
+
           {/* Service Request */}
           <Card>
             <CardHeader>
@@ -345,6 +358,21 @@ export default function EnquiryDetailsPage() {
               </div>
             </CardContent>
           </Card>
+
+{/* Simple test version first */}
+
+  <Card className="mt-6 bg-yellow-100 py-20">
+    <CardHeader>
+      <CardTitle>Debug Add-ons</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>addon_details exists: {enquiry.addon_details ? 'Yes' : 'No'}</p>
+      <p>Type: {typeof enquiry.addon_details}</p>
+      <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
+        {JSON.stringify(enquiry.addon_details, null, 2)}
+      </pre>
+    </CardContent>
+  </Card>
 
           {/* Customer Message */}
           {enquiry.message && (

@@ -273,7 +273,7 @@ export default function DatabaseDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50">
+    <div className="min-h-screen bg-primary-50  w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
 

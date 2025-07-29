@@ -3,8 +3,6 @@
 
 import { supabase } from '@/lib/supabase'
 
-
-
 class PartyDatabaseBackend {
 
   isValidUUID(str) {
@@ -91,7 +89,6 @@ class PartyDatabaseBackend {
     }
   }
 
-
   /**
    * Get current user profile
    */
@@ -130,7 +127,6 @@ class PartyDatabaseBackend {
       return { success: false, error: error.message }
     }
   }
-  
 
   // ================== PARTY MANAGEMENT ==================
 
@@ -160,6 +156,12 @@ class PartyDatabaseBackend {
         estimated_cost: this.calculatePartyPlanCost(partyPlan),
         status: 'draft'
       }
+
+      console.log('💾 Creating party with plan:', {
+        party_plan: partyPlan,
+        addons_count: partyPlan.addons?.length || 0,
+        estimated_cost: this.calculatePartyPlanCost(partyPlan)
+      })
 
       const { data: newParty, error } = await supabase
         .from('parties')
@@ -235,7 +237,6 @@ class PartyDatabaseBackend {
       return { success: false, error: error.message }
     }
   }
-
 
   async updatePartyPaymentStatus(partyId, paymentData) {
     try {
@@ -333,10 +334,12 @@ class PartyDatabaseBackend {
   }
 
   /**
-   * Add addon to party plan
+   * ENHANCED Add addon to party plan
    */
   async addAddonToParty(partyId, addon) {
     try {
+      console.log('🎁 Adding addon to database party:', { partyId, addonId: addon.id, addonName: addon.name })
+
       // Get current party
       const { data: party, error: fetchError } = await supabase
         .from('parties')
@@ -356,11 +359,7 @@ class PartyDatabaseBackend {
       // Check if addon already exists
       const existingAddonIndex = currentPlan.addons.findIndex(existing => existing.id === addon.id)
       
-      if (existingAddonIndex !== -1) {
-        return { success: false, error: 'Add-on already in party plan' }
-      }
-
-      // Create addon data
+      // Create enhanced addon data
       const addonData = {
         id: addon.id,
         name: addon.name,
@@ -375,18 +374,34 @@ class PartyDatabaseBackend {
         reviewCount: addon.reviewCount,
         popular: addon.popular || false,
         limitedTime: addon.limitedTime || false,
-        addedAt: new Date().toISOString(),
+        supplierId: addon.supplierId || null,        // NEW: Link to supplier
+        supplierName: addon.supplierName || null,    // NEW: Supplier name
+        selectedAddons: addon.selectedAddons || [],  // NEW: Sub-addons from modal
+        packageData: addon.packageData || null,      // NEW: Package info
         packageId: addon.packageId || null,
+        addedAt: new Date().toISOString(),
         type: 'addon'
       }
 
-      // Add to addons array
-      currentPlan.addons.push(addonData)
+      if (existingAddonIndex !== -1) {
+        console.log('⚠️ Addon already exists, updating instead')
+        // Update existing addon instead of returning error
+        currentPlan.addons[existingAddonIndex] = {
+          ...currentPlan.addons[existingAddonIndex],
+          ...addonData,
+          updatedAt: new Date().toISOString()
+        }
+      } else {
+        console.log('➕ Adding new addon to database')
+        // Add to addons array
+        currentPlan.addons.push(addonData)
+      }
 
       // Save updated plan
       const result = await this.updatePartyPlan(partyId, currentPlan)
       
       if (result.success) {
+        console.log('✅ Addon operation completed successfully')
         return { 
           success: true, 
           addon: addonData,
@@ -446,10 +461,12 @@ class PartyDatabaseBackend {
   }
 
   /**
-   * Remove addon from party plan
+   * ENHANCED Remove addon from party plan
    */
   async removeAddonFromParty(partyId, addonId) {
     try {
+      console.log('🗑️ Removing addon from database party:', { partyId, addonId })
+
       // Get current party
       const { data: party, error: fetchError } = await supabase
         .from('parties')
@@ -462,15 +479,18 @@ class PartyDatabaseBackend {
       const currentPlan = party.party_plan || {}
       
       if (!currentPlan.addons) {
+        console.log('⚠️ No addons found in party plan')
         return { success: false, error: 'No addons found in party plan' }
       }
 
       const addonIndex = currentPlan.addons.findIndex(addon => addon.id === addonId)
       
       if (addonIndex === -1) {
+        console.log('⚠️ Addon not found in party plan')
         return { success: false, error: 'Add-on not found in party plan' }
       }
       
+      console.log('✅ Addon found, removing from database')
       const removedAddon = currentPlan.addons[addonIndex]
       currentPlan.addons.splice(addonIndex, 1)
 
@@ -478,6 +498,7 @@ class PartyDatabaseBackend {
       const result = await this.updatePartyPlan(partyId, currentPlan)
       
       if (result.success) {
+        console.log('✅ Addon removal completed successfully')
         return { 
           success: true, 
           removedAddon,
@@ -493,139 +514,175 @@ class PartyDatabaseBackend {
     }
   }
 
+  /**
+   * Helper method to get all addons for a party
+   */
+  async getAddonsForParty(partyId) {
+    try {
+      const partyResult = await this.getCurrentParty()
+      if (!partyResult.success) {
+        return { success: false, error: 'Party not found', addons: [] }
+      }
+      
+      const addons = partyResult.party?.party_plan?.addons || []
+      return { success: true, addons }
+      
+    } catch (error) {
+      console.error('Error getting addons for party:', error)
+      return { success: false, error: error.message, addons: [] }
+    }
+  }
+
   // ================== ENQUIRY MANAGEMENT ==================
 
   /**
    * Send enquiries to suppliers for a party
    */
+  async sendEnquiriesToSuppliers(partyId, message = '', specialRequests = '') {
+    try {
+      // Get party with plan
+      const { data: party, error: fetchError } = await supabase
+        .from('parties')
+        .select('*')
+        .eq('id', partyId)
+        .single()
 
-  // Updated sendEnquiriesToSuppliers function that resolves actual suppliers
-async sendEnquiriesToSuppliers(partyId, message = '', specialRequests = '') {
-  try {
-    // Get party with plan
-    const { data: party, error: fetchError } = await supabase
-      .from('parties')
-      .select('*')
-      .eq('id', partyId)
-      .single()
+      if (fetchError) throw fetchError
 
-    if (fetchError) throw fetchError
+      const partyPlan = party.party_plan || {}
+      const enquiries = []
 
-    const partyPlan = party.party_plan || {}
-    const enquiries = []
+      // Categories to exclude from enquiries
+      const excludeCategories = ['einvites', 'addons']
 
-    // Categories to exclude from enquiries
-    const excludeCategories = ['einvites', 'addons']
+      console.log('🔍 Processing party plan for enquiries:', Object.keys(partyPlan))
 
-    console.log('🔍 Processing party plan for enquiries:', Object.keys(partyPlan))
-
-    // Create enquiries for each supplier in the party plan
-    for (const [category, supplierInfo] of Object.entries(partyPlan)) {
-      // Skip excluded categories
-      if (excludeCategories.includes(category)) {
-        console.log(`⏭️ Skipping ${category} (excluded category)`)
-        continue
-      }
-
-      // Skip if no supplier
-      if (!supplierInfo || !supplierInfo.name) {
-        console.log(`⏭️ Skipping ${category} (no supplier info)`)
-        continue
-      }
-
-      console.log(`🔍 Resolving supplier for ${category}: ${supplierInfo.name}`)
-
-      let actualSupplierId = null
-
-      // OPTION 1: If localStorage has a valid UUID, use it
-      if (supplierInfo.id && this.isValidUUID(supplierInfo.id)) {
-        actualSupplierId = supplierInfo.id
-        console.log(`✅ Using supplier ID from localStorage: ${actualSupplierId}`)
-      }
-      // OPTION 2: Search by business name
-      else if (supplierInfo.name) {
-        const { data: matchingSuppliers, error: searchError } = await supabase
-          .from('suppliers')
-          .select('id, data')
-          .ilike('data->businessName', `%${supplierInfo.name}%`)
-          .limit(1)
-
-        if (searchError) {
-          console.error(`❌ Error searching for supplier ${supplierInfo.name}:`, searchError)
+      // Create enquiries for each supplier in the party plan
+      for (const [category, supplierInfo] of Object.entries(partyPlan)) {
+        // Skip excluded categories
+        if (excludeCategories.includes(category)) {
+          console.log(`⏭️ Skipping ${category} (excluded category)`)
           continue
         }
 
-        if (matchingSuppliers && matchingSuppliers.length > 0) {
-          actualSupplierId = matchingSuppliers[0].id
-          console.log(`✅ Found supplier ${supplierInfo.name} with ID: ${actualSupplierId}`)
-        } else {
-          console.log(`⚠️ Could not find supplier ${supplierInfo.name} in database`)
+        // Skip if no supplier
+        if (!supplierInfo || !supplierInfo.name) {
+          console.log(`⏭️ Skipping ${category} (no supplier info)`)
           continue
         }
-      }
-      // OPTION 3: Use your business as fallback for testing
-      else {
-        actualSupplierId = 'e4520e35-b028-405e-a81f-f6d46a43f458'
-        console.log(`🔄 Using fallback supplier ID for ${category}: ${actualSupplierId}`)
-      }
 
-      console.log(`✅ Creating enquiry for ${category}: ${supplierInfo.name} → ${actualSupplierId}`)
-      
-      const enquiryData = {
-        party_id: partyId,
-        supplier_id: actualSupplierId, // Use resolved supplier ID
-        supplier_category: category,
-        package_id: supplierInfo.packageId || null,
-        addon_ids: null, // Handle addons separately if needed
-        message: message || null,
-        special_requests: specialRequests || null,
-        quoted_price: supplierInfo.price || 0,
-        status: 'pending'
-      }
+        console.log(`🔍 Resolving supplier for ${category}: ${supplierInfo.name}`)
 
-      enquiries.push(enquiryData)
-    }
+        let actualSupplierId = null
 
-    console.log(`📊 Prepared ${enquiries.length} enquiries for sending`)
+        // OPTION 1: If localStorage has a valid UUID, use it
+        if (supplierInfo.id && this.isValidUUID(supplierInfo.id)) {
+          actualSupplierId = supplierInfo.id
+          console.log(`✅ Using supplier ID from localStorage: ${actualSupplierId}`)
+        }
+        // OPTION 2: Search by business name
+        else if (supplierInfo.name) {
+          const { data: matchingSuppliers, error: searchError } = await supabase
+            .from('suppliers')
+            .select('id, data')
+            .ilike('data->businessName', `%${supplierInfo.name}%`)
+            .limit(1)
 
-    if (enquiries.length === 0) {
-      return { 
-        success: false, 
-        error: 'No valid suppliers found in party plan to send enquiries to.' 
-      }
-    }
+          if (searchError) {
+            console.error(`❌ Error searching for supplier ${supplierInfo.name}:`, searchError)
+            continue
+          }
 
-    // Insert all enquiries
-    console.log('📤 Inserting enquiries into database...')
-    const { data: newEnquiries, error: insertError } = await supabase
-      .from('enquiries')
-      .insert(enquiries)
-      .select()
+          if (matchingSuppliers && matchingSuppliers.length > 0) {
+            actualSupplierId = matchingSuppliers[0].id
+            console.log(`✅ Found supplier ${supplierInfo.name} with ID: ${actualSupplierId}`)
+          } else {
+            console.log(`⚠️ Could not find supplier ${supplierInfo.name} in database`)
+            continue
+          }
+        }
+        // OPTION 3: Use your business as fallback for testing
+        else {
+          actualSupplierId = 'e4520e35-b028-405e-a81f-f6d46a43f458'
+          console.log(`🔄 Using fallback supplier ID for ${category}: ${actualSupplierId}`)
+        }
 
-    if (insertError) {
-      console.error('❌ Database insert error:', insertError)
-      throw insertError
-    }
+        console.log(`✅ Creating enquiry for ${category}: ${supplierInfo.name} → ${actualSupplierId}`)
 
-    // Update party status
-    await supabase
-      .from('parties')
-      .update({ status: 'planned' })
-      .eq('id', partyId)
+        // Get add-ons for this supplier category or general add-ons
+const partyPlan = party.party_plan || {}
+const allAddons = partyPlan.addons || []
 
-    console.log(`✅ Successfully sent ${newEnquiries.length} enquiries for party ${partyId}`)
-    
-    return { 
-      success: true, 
-      enquiries: newEnquiries,
-      count: newEnquiries.length 
-    }
+console.log(`🔍 All addons in party plan:`, allAddons)
 
-  } catch (error) {
-    console.error('❌ Error sending enquiries:', error)
-    return { success: false, error: error.message }
-  }
+// Filter add-ons for this supplier (either linked to this supplier or general add-ons)
+const categoryAddons = allAddons.filter(addon => 
+  addon.supplierId === supplierInfo.id || 
+  addon.supplierName === supplierInfo.name ||
+  !addon.supplierId || // General add-ons
+  addon.supplierId === null
+)
+
+console.log(`📦 Addons for ${category} (${supplierInfo.name}):`, categoryAddons)
+
+       
+const enquiryData = {
+  party_id: partyId,
+  supplier_id: actualSupplierId,
+  supplier_category: category,
+  package_id: supplierInfo.packageId || null,
+  addon_ids: categoryAddons.length > 0 ? categoryAddons.map(a => a.id) : null,
+  addon_details: categoryAddons.length > 0 ? JSON.stringify(categoryAddons) : null, // Store full addon details
+  message: message || null,
+  special_requests: specialRequests || null,
+  quoted_price: (supplierInfo.price || 0) + categoryAddons.reduce((sum, addon) => sum + (addon.price || 0), 0),
+  status: 'pending'
 }
+console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_details)
+
+        enquiries.push(enquiryData)
+      }
+
+      console.log(`📊 Prepared ${enquiries.length} enquiries for sending`)
+
+      if (enquiries.length === 0) {
+        return { 
+          success: false, 
+          error: 'No valid suppliers found in party plan to send enquiries to.' 
+        }
+      }
+
+      // Insert all enquiries
+      console.log('📤 Inserting enquiries into database...')
+      const { data: newEnquiries, error: insertError } = await supabase
+        .from('enquiries')
+        .insert(enquiries)
+        .select()
+
+      if (insertError) {
+        console.error('❌ Database insert error:', insertError)
+        throw insertError
+      }
+
+      // Update party status
+      await supabase
+        .from('parties')
+        .update({ status: 'planned' })
+        .eq('id', partyId)
+
+      console.log(`✅ Successfully sent ${newEnquiries.length} enquiries for party ${partyId}`)
+      
+      return { 
+        success: true, 
+        enquiries: newEnquiries,
+        count: newEnquiries.length 
+      }
+
+    } catch (error) {
+      console.error('❌ Error sending enquiries:', error)
+      return { success: false, error: error.message }
+    }
+  }
 
   /**
    * Get enquiries for a party

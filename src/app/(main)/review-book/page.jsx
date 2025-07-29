@@ -19,6 +19,7 @@ import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 export default function ReviewBookPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedAddons, setSelectedAddons] = useState([])
   const [isMigrating, setIsMigrating] = useState(false)
   // const [showAuthModal, setShowAuthModal] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -69,7 +70,7 @@ export default function ReviewBookPage() {
         age: details.childAge || "TBD",
         childName: details.childName || "Your Child"
       })
-
+  
       // Get selected suppliers from party plan
       const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
       const suppliers = []
@@ -96,9 +97,19 @@ export default function ReviewBookPage() {
         }
       })
       
+      // NEW: Get add-ons from party plan
+const addons = partyPlan.addons || []
+console.log('🔍 Debug: Raw party plan:', partyPlan)
+console.log('🔍 Debug: Extracted addons:', addons)
+setSelectedAddons(addons)
+      
       setSelectedSuppliers(suppliers)
       
-      console.log('📋 Loaded party data from localStorage:', { details, suppliers: suppliers.length })
+      console.log('📋 Loaded party data from localStorage:', { 
+        details, 
+        suppliers: suppliers.length,
+        addons: addons.length 
+      })
     } catch (error) {
       console.error('❌ Error loading party data:', error)
     }
@@ -229,7 +240,8 @@ export default function ReviewBookPage() {
 
       console.log('🎉 Creating party with data:', partyData)
 
-      const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS)
+      console.log('🎁 Add-ons being migrated:', partyPlanLS.addons?.length || 0)
+const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS)
 
       if (!createResult.success) {
         throw new Error(`Failed to create party: ${createResult.error}`)
@@ -471,7 +483,78 @@ export default function ReviewBookPage() {
               )}
             </CardContent>
           </Card>
+{/* Selected Add-ons */}
+{selectedAddons.length > 0 && (
+  <Card className="border border-gray-200 shadow-sm">
+    <CardContent className="p-4 md:p-6">
+      <div className="flex items-center space-x-2 mb-4">
+        <Palette className="w-5 h-5 text-primary-500" />
+        <h2 className="text-lg font-semibold text-gray-900">Selected Add-ons ({selectedAddons.length})</h2>
+        <span className="text-sm bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+          £{selectedAddons.reduce((total, addon) => total + (addon.price || 0), 0)} total
+        </span>
+      </div>
 
+      {/* Mobile view */}
+      <div className="md:hidden space-y-3">
+        {selectedAddons.map((addon) => (
+          <div
+            key={addon.id}
+            className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg border border-amber-100"
+          >
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Palette className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-gray-900 text-sm truncate">{addon.name}</h3>
+              <p className="text-xs text-gray-600">{addon.description}</p>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-sm font-bold text-amber-600">£{addon.price}</span>
+                {addon.supplierName && (
+                  <span className="text-xs text-gray-500">via {addon.supplierName}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop view */}
+      <div className="hidden md:grid md:grid-cols-2 gap-4">
+        {selectedAddons.map((addon) => (
+          <div
+            key={addon.id}
+            className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100"
+          >
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Palette className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-gray-900">{addon.name}</h3>
+              <p className="text-sm text-gray-600">{addon.description}</p>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-lg font-bold text-amber-600">£{addon.price}</span>
+                {addon.supplierName && (
+                  <span className="text-xs text-gray-500">Added with {addon.supplierName}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add-ons summary */}
+      <div className="mt-4 pt-4 border-t border-amber-100">
+        <div className="flex justify-between items-center text-sm">
+          <span className="font-medium text-gray-700">Total Add-ons Cost:</span>
+          <span className="text-xl font-bold text-amber-600">
+            £{selectedAddons.reduce((total, addon) => total + (addon.price || 0), 0)}
+          </span>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)}
           {/* Contact Information - ✅ UPDATED: Optional when not signed in */}
           <Card className="border border-gray-200 shadow-sm">
             <CardContent className="p-4 md:p-6">
@@ -660,7 +743,7 @@ export default function ReviewBookPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">What happens next?</h3>
                   <ul className="space-y-1 text-sm text-gray-600">
-                    <li>• Your enquiry will be sent to all {selectedSuppliers.length} selected suppliers</li>
+                  <li>• Your enquiry will be sent to all {selectedSuppliers.length} selected suppliers{selectedAddons.length > 0 ? ` with ${selectedAddons.length} add-ons` : ''}</li>
                     <li>• Suppliers will contact you directly within 24 hours</li>
                     <li>• Compare quotes and availability before making your final decision</li>
                     <li>• BookABash remains free for parents - no booking fees</li>

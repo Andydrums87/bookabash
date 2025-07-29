@@ -22,6 +22,7 @@ import MobileBudgetBar from "./MobileBudgetBar"
 import SupplierCard from "./SupplierCard"
 import MobileSupplierTabs from "./MobileSupplierTabs"
 import AddonsSection from "./AddonsSection"
+import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from './AddonProviderWrapper'
 
 // Existing Components
 import BudgetControls from "@/components/budget-controls"
@@ -191,10 +192,15 @@ export default function LocalStorageDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50">
+    <div className="min-h-screen bg-primary-50 w-[20%]">
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
-      
+      <AddonProvider
+      addAddon={handleAddAddon}
+      removeAddon={handleRemoveAddon}
+      hasAddon={hasAddon}
+      addons={addons}
+    >
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
         <PartyHeader 
           theme={partyTheme} 
@@ -260,20 +266,16 @@ export default function LocalStorageDashboard() {
               />
             </div>
 
-            {/* Add-ons Section */}
-            <AddonsSection 
-              addons={addons}
-              handleRemoveAddon={handleRemoveAddon}
-            />
+           {/* Add-ons Section */}
+<AddonsSectionWrapper />
 
-            {/* Recommended Add-ons */}
-            <div className="w-screen pr-6 md:pr-20">
-              <RecommendedAddons 
-                context="dashboard" 
-                maxItems={4} 
-                onAddToCart={handleAddAddon}
-              />
-            </div>
+{/* Recommended Add-ons */}
+<div className="w-screen pr-6 md:pr-20">
+  <RecommendedAddonsWrapper 
+    context="dashboard" 
+    maxItems={4}
+  />
+</div>
 
             {/* Action Section */}
             <div className="flex flex-col sm:flex-row gap-4">
@@ -308,7 +310,7 @@ export default function LocalStorageDashboard() {
           </aside>
         </div>
       </div>
-
+      </AddonProvider>
       {/* Mobile Budget Bar */}
       <MobileBudgetBar 
         totalSpent={totalCost}
@@ -349,5 +351,6 @@ export default function LocalStorageDashboard() {
         onCancel={cancelDeleteSupplier}
       />
     </div>
+
   )
 }
