@@ -29,7 +29,7 @@ export function useBudgetManager(totalCost = 0, isUpdating, setIsUpdating) {
     setLastProcessedBudget(storedBudget) // Mark initial budget as processed
     setHasInitialized(true)
     
-    console.log('💰 Budget initialized:', storedBudget)
+
   }, [hasInitialized])
 
   // Handle budget slider changes with debouncing

@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Building, Music, Utensils, Palette, Gift } from "lucide-react"
-import MobileSupplierCard from "./MobileSupplierCard" // CHANGED: Import MobileSupplierCard instead of SupplierCard
+import { Building, Music, Utensils, Palette, Gift, Sparkles } from "lucide-react"
+import MobileSupplierCard from "./MobileSupplierCard"
 
-export default function MobileSupplierTabs({ 
-  suppliers, 
+export default function MobileSupplierTabs({
+  suppliers,
   loadingCards = [],
   suppliersToDelete = [],
   openSupplierModal,
@@ -17,7 +17,7 @@ export default function MobileSupplierTabs({
   getEnquiryStatus,
   isSignedIn = false,
   isPaymentConfirmed = false,
-  enquiries = []
+  enquiries = [],
 }) {
   const [activeTab, setActiveTab] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
@@ -26,35 +26,35 @@ export default function MobileSupplierTabs({
 
   const tabs = [
     {
-      id: 'essentials',
-      name: 'Party Essentials',
+      id: "essentials",
+      name: "Party Essentials",
       icon: <Building className="w-5 h-5" />,
-      types: ['venue', 'entertainment']
+      types: ["venue", "entertainment"],
     },
     {
-      id: 'activities', 
-      name: 'Fun Activities',
+      id: "activities",
+      name: "Fun Activities",
       icon: <Music className="w-5 h-5" />,
-      types: ['facePainting', 'activities']
+      types: ["facePainting", "activities"],
     },
     {
-      id: 'treats',
-      name: 'Yummy Treats', 
+      id: "treats",
+      name: "Yummy Treats",
       icon: <Utensils className="w-5 h-5" />,
-      types: ['catering', 'partyBags']
+      types: ["catering", "partyBags"],
     },
     {
-      id: 'decorations',
-      name: 'Pretty Decorations',
+      id: "decorations",
+      name: "Pretty Decorations",
       icon: <Palette className="w-5 h-5" />,
-      types: ['decorations', 'balloons']
+      types: ["decorations", "balloons"],
     },
     {
-      id: 'invites',
-      name: 'Magic Invites',
+      id: "invites",
+      name: "Magic Invites",
       icon: <Gift className="w-5 h-5" />,
-      types: ['einvites']
-    }
+      types: ["einvites"],
+    },
   ]
 
   // Swipe detection
@@ -71,7 +71,6 @@ export default function MobileSupplierTabs({
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return
-    
     const distance = touchStart - touchEnd
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
@@ -88,10 +87,10 @@ export default function MobileSupplierTabs({
   useEffect(() => {
     if (tabsRef.current) {
       const tabWidth = 120 // Approximate width of each tab
-      const scrollPosition = activeTab * tabWidth - (tabsRef.current.clientWidth / 2) + (tabWidth / 2)
+      const scrollPosition = activeTab * tabWidth - tabsRef.current.clientWidth / 2 + tabWidth / 2
       tabsRef.current.scrollTo({
         left: scrollPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       })
     }
   }, [activeTab])
@@ -102,12 +101,12 @@ export default function MobileSupplierTabs({
 
   const currentTabTypes = tabs[activeTab]?.types || []
   const currentSuppliers = currentTabTypes
-    .map(type => ({
+    .map((type) => ({
       type,
-      supplier: suppliers[type]
+      supplier: suppliers[type],
     }))
     // Filter out empty suppliers if payment is confirmed
-    .filter(({supplier}) => {
+    .filter(({ supplier }) => {
       if (isPaymentConfirmed) {
         return supplier !== null && supplier !== undefined
       }
@@ -115,48 +114,58 @@ export default function MobileSupplierTabs({
     })
 
   return (
-    <div className="w-full">
-      {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-100 mb-6">
-        <div className="px-4 py-4">
+    <div className="w-full relative">
+      {/* Enhanced Tab Navigation */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] border-b-2 border-[hsl(var(--primary-200))] mb-6 shadow-lg">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-2 left-8 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
+          <div className="absolute top-4 right-12 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
+          <div className="absolute bottom-2 left-16 w-1 h-1 bg-[hsl(var(--primary-300))] rounded-full opacity-70"></div>
+          <Sparkles className="absolute top-3 right-20 w-3 h-3 text-[hsl(var(--primary-300))] opacity-40" />
+        </div>
+
+        <div className="px-4 py-4 relative z-10">
           <div className="overflow-x-auto scrollbar-hide" ref={tabsRef}>
-            <div className="flex space-x-0 min-w-max pr-8">
+            <div className="flex space-x-2 min-w-max pr-8">
               {tabs.map((tab, index) => {
                 const isActive = activeTab === index
                 // Check if tab has suppliers (considering payment confirmation state)
-                const hasSuppliers = tab.types.some(type => suppliers[type])
+                const hasSuppliers = tab.types.some((type) => suppliers[type])
                 // Hide tabs that have no suppliers after payment confirmation
                 const shouldShowTab = isPaymentConfirmed ? hasSuppliers : true
-                
+
                 // Don't render tabs with no suppliers after payment
                 if (isPaymentConfirmed && !hasSuppliers) {
                   return null
                 }
-                
+
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleTabSelect(index)}
-                    className={`flex flex-col items-center space-y-2 px-2 py-3 rounded-xl min-w-[70px] transition-all ${
+                    className={`flex flex-col items-center space-y-2 px-3 py-3 rounded-2xl min-w-[80px] transition-all duration-300 shadow-sm ${
                       isActive
-                        ? "bg-primary-100 text-primary-700 shadow-sm"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] text-[hsl(var(--primary-700))] shadow-lg border-2 border-[hsl(var(--primary-300))] scale-90"
+                        : "text-gray-600 hover:bg-gradient-to-br hover:from-[hsl(var(--primary-50))] hover:to-white border-2 border-transparent hover:border-[hsl(var(--primary-200))] bg-white/50 scale-90"
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg relative ${
-                        isActive ? "bg-primary-200" : "bg-gray-100"
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl relative transition-all duration-300 shadow-sm ${
+                        isActive
+                          ? "bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] text-white shadow-lg"
+                          : "bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 hover:from-[hsl(var(--primary-100))] hover:to-[hsl(var(--primary-200))] hover:text-[hsl(var(--primary-600))]"
                       }`}
                     >
                       {tab.icon}
-                      {/* Supplier indicator dot */}
+                      {/* Enhanced supplier indicator dot */}
                       {hasSuppliers && (
-                        <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary-500 rounded-full border border-white" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg">
+                          <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-full animate-pulse"></div>
+                        </div>
                       )}
                     </div>
-                    <span className="text-xs font-medium text-center leading-tight">
-                      {tab.name}
-                    </span>
+                    <span className="text-xs font-semibold text-center leading-tight">{tab.name}</span>
                   </button>
                 )
               })}
@@ -165,13 +174,8 @@ export default function MobileSupplierTabs({
         </div>
       </div>
 
-      {/* Tab Content - Show suppliers for active tab */}
-      <div 
-        className="space-y-6 px-4"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
+      {/* Enhanced Tab Content */}
+      <div className="space-y-6 px-4" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         {currentSuppliers.map(({ type, supplier }) => (
           <MobileSupplierCard
             key={type}
@@ -193,26 +197,36 @@ export default function MobileSupplierTabs({
         ))}
       </div>
 
-        {/* Only show progress indicator if there are suppliers to show */}
-        {currentSuppliers.length > 0 && (
-          <div className="mt-6 text-center px-4">
-            <p className="text-xs text-gray-500">
-              {currentSuppliers.filter(({supplier}) => supplier).length} of {currentSuppliers.length} {isPaymentConfirmed ? 'confirmed' : 'selected'} in {tabs[activeTab].name}
+      {/* Enhanced Progress Section */}
+      {currentSuppliers.length > 0 && (
+        <div className="mt-8 text-center px-4">
+          <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-2xl p-4 border-2 border-[hsl(var(--primary-200))] shadow-lg relative overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute top-2 left-4 w-1 h-1 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
+            <div className="absolute bottom-2 right-4 w-1.5 h-1.5 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
+            <Sparkles className="absolute top-2 right-6 w-3 h-3 text-[hsl(var(--primary-300))] opacity-40" />
+
+            <p className="text-sm font-semibold text-gray-700 mb-3 relative z-10">
+              {currentSuppliers.filter(({ supplier }) => supplier).length} of {currentSuppliers.length}{" "}
+              {isPaymentConfirmed ? "confirmed" : "selected"} in {tabs[activeTab].name}
             </p>
-            
-            {/* Tab dots indicator - only show if there are multiple tabs with suppliers */}
-            {tabs.filter(tab => isPaymentConfirmed ? tab.types.some(type => suppliers[type]) : true).length > 1 && (
-              <div className="flex justify-center space-x-1 mt-2">
+
+            {/* Enhanced Tab dots indicator */}
+            {tabs.filter((tab) => (isPaymentConfirmed ? tab.types.some((type) => suppliers[type]) : true)).length >
+              1 && (
+              <div className="flex justify-center space-x-2 relative z-10">
                 {tabs.map((_, index) => {
-                  const tabHasSuppliers = tabs[index].types.some(type => suppliers[type])
+                  const tabHasSuppliers = tabs[index].types.some((type) => suppliers[type])
                   if (isPaymentConfirmed && !tabHasSuppliers) return null
-                  
+
                   return (
                     <button
                       key={index}
                       onClick={() => setActiveTab(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === activeTab ? 'bg-primary-500' : 'bg-gray-300'
+                      className={`w-3 h-3 rounded-full transition-all duration-300 shadow-sm ${
+                        index === activeTab
+                          ? "bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] shadow-lg scale-125"
+                          : "bg-gradient-to-br from-gray-300 to-gray-400 hover:from-[hsl(var(--primary-300))] hover:to-[hsl(var(--primary-400))] hover:scale-110"
                       }`}
                     />
                   )
@@ -220,7 +234,8 @@ export default function MobileSupplierTabs({
               </div>
             )}
           </div>
-        )}
+        </div>
+      )}
     </div>
   )
 }

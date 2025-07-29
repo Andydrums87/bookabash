@@ -19,24 +19,38 @@ export default function HomePage() {
   // Form state
   const [formData, setFormData] = useState({
     date: "2025-08-16",
-    theme: "princess",
+    theme: "princess", 
     guestCount: "15",
     postcode: "",
     childName: "",
     childAge: 6,
+    
+    // NEW: Add these time slot fields for Hero form
+    timeSlot: "afternoon", // Default to afternoon
+    duration: "2", // Default to 2 hours (as string for select component)
   })
-
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPartyLoader, setShowPartyLoader] = useState(false)
   const [buildingProgress, setBuildingProgress] = useState(0)
   const [postcodeValid, setPostcodeValid] = useState(true)
 
   const handleFieldChange = (field, value) => {
-    console.log("🔄 handleFieldChange called with:", { field, value })
-    if (field === "postcode") {
-      console.log("🚨 POSTCODE field update detected!")
-    }
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-update legacy time field when timeSlot changes
+      // This ensures backwards compatibility
+      if (field === 'timeSlot') {
+        const timeSlotDefaults = {
+          morning: '11:00',
+          afternoon: '14:00'
+        };
+        updated.time = timeSlotDefaults[value] || '14:00';
+      }
+      
+      return updated;
+    });
   }
 
   const mapThemeValue = (formTheme) => {
@@ -85,6 +99,7 @@ export default function HomePage() {
     return postcodeMap[postcode] || "London"
   }
 
+
   const validateAndFormatPostcode = (postcode) => {
     if (!postcode) return { isValid: true, formatted: "" }
     const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i
@@ -99,61 +114,94 @@ export default function HomePage() {
     }
     return { isValid, formatted }
   }
+  
+  // 1. Updated Hero Form Handler (handleSearch)
+const handleSearch = async (e) => {
+  e.preventDefault()
+  if (isSubmitting) return
 
-  const handleSearch = async (e) => {
-    e.preventDefault()
-    if (isSubmitting) return
+  try {
+    setIsSubmitting(true)
+    setTimeout(() => {
+      setShowPartyLoader(true)
+      setBuildingProgress(0)
+    }, 200)
 
-    try {
-      setIsSubmitting(true)
-      setTimeout(() => {
-        setShowPartyLoader(true)
-        setBuildingProgress(0)
-      }, 200)
-
-      const partyDetails = {
-        date: formData.date,
-        theme: mapThemeValue(formData.theme),
-        guestCount: Number.parseInt(formData.guestCount),
-        location: mapPostcodeToLocation(formData.postcode), // Keep this as "London" 
-        postcode: formData.postcode, // ← ADD THIS - save the actual postcode
-        childName: formData.childName || "Your Child",
-        childAge: formData.childAge,
-        budget: 500,
+    // Updated to include new time slot fields
+    const partyDetails = {
+      date: formData.date,
+      theme: mapThemeValue(formData.theme),
+      guestCount: Number.parseInt(formData.guestCount),
+      location: mapPostcodeToLocation(formData.postcode), // Keep this as "London" 
+      postcode: formData.postcode, // Save the actual postcode
+      childName: formData.childName || "Your Child",
+      childAge: formData.childAge,
+      budget: 500,
+      
+      // NEW: Time slot fields
+      timeSlot: formData.timeSlot || "afternoon", // "morning" or "afternoon"
+      duration: parseFloat(formData.duration) || 2, // Duration in hours
+      
+      // Legacy support - convert timeSlot to time for backwards compatibility
+      time: convertTimeSlotToLegacyTime(formData.timeSlot || "afternoon"),
+      
+      // Additional metadata for backend processing
+      timePreference: {
+        type: 'flexible', // Hero form always uses flexible timing
+        slot: formData.timeSlot || "afternoon",
+        duration: parseFloat(formData.duration) || 2,
+        specificTime: null // Hero form doesn't collect specific times
       }
+    }
 
-      console.log("🎪 Submitting party with theme:", partyDetails.theme)
+    console.log("🎪 Submitting party with theme:", partyDetails.theme)
+    console.log("⏰ Time slot:", partyDetails.timeSlot, "Duration:", partyDetails.duration)
 
-      setBuildingProgress(15)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setBuildingProgress(30)
-      await new Promise((resolve) => setTimeout(resolve, 600))
-      setBuildingProgress(50)
+    setBuildingProgress(15)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    setBuildingProgress(30)
+    await new Promise((resolve) => setTimeout(resolve, 600))
+    setBuildingProgress(50)
 
-      const result = await buildParty(partyDetails)
-      setBuildingProgress(75)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setBuildingProgress(90)
-      await new Promise((resolve) => setTimeout(resolve, 600))
+    const result = await buildParty(partyDetails)
+    setBuildingProgress(75)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    setBuildingProgress(90)
+    await new Promise((resolve) => setTimeout(resolve, 600))
 
-      if (result.success) {
-        setBuildingProgress(100)
-        console.log("✅ Party built successfully with themed entertainment!")
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        router.push("/dashboard?show_welcome=true")
-      } else {
-        console.error("Failed to build party:", result.error)
-        setIsSubmitting(false)
-        setShowPartyLoader(false)
-        setBuildingProgress(0)
-      }
-    } catch (error) {
-      console.error("Error during party building:", error)
+    if (result.success) {
+      setBuildingProgress(100)
+      console.log("✅ Party built successfully with time slot information!")
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      router.push("/dashboard?show_welcome=true")
+    } else {
+      console.error("Failed to build party:", result.error)
       setIsSubmitting(false)
       setShowPartyLoader(false)
       setBuildingProgress(0)
     }
+  } catch (error) {
+    console.error("Error during party building:", error)
+    setIsSubmitting(false)
+    setShowPartyLoader(false)
+    setBuildingProgress(0)
   }
+}
+
+// Helper function to convert time slot to legacy time format
+const convertTimeSlotToLegacyTime = (timeSlot) => {
+  const timeSlotDefaults = {
+    morning: '11:00',
+    afternoon: '14:00'
+  };
+  return timeSlotDefaults[timeSlot] || '14:00';
+}
+
+
+
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">

@@ -100,7 +100,7 @@ class PartyDatabaseBackend {
       const userId = authUser?.user?.id
       if (!userId) return { success: false, error: 'No authenticated user' }
   
-      console.log('🔍 Looking for customer profile with auth_user_id:', userId)
+
   
       // FIXED: Properly filter by auth_user_id
       const { data: user, error } = await supabase
@@ -119,7 +119,7 @@ class PartyDatabaseBackend {
         return { success: false, error: 'No customer profile found' }
       }
   
-      console.log('✅ Found correct customer profile:', user)
+
       return { success: true, user }
       
     } catch (error) {

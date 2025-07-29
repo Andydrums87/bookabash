@@ -9,6 +9,7 @@ import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
 // UI Components
 import { Button } from "@/components/ui/button"
+import { Clock, ArrowRight } from "lucide-react"
 
 
 // Custom Components
@@ -25,12 +26,14 @@ import AddonsSection from "./AddonsSection"
 import SnappysPresentParty from "./SnappysPresentParty"
 import RealTimeNotifications from "./realTimeNotifications"
 import AutoReplacementFlow from "./AutoReplacementFlow"
+import EInvitesBanner from "./EInvitesBanner"
 
 // Existing Components
 import BudgetControls from "@/components/budget-controls"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import RecommendedAddons from "@/components/recommended-addons"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
+import StickerBookProgress from "./StickerBookProgress"
 
 // Hooks
 import { useEnquiryStatus } from "../hooks/useEnquiryStatus"
@@ -260,6 +263,36 @@ export default function DatabaseDashboard() {
     }
   }, [searchParams, router])
 
+  // Add this logic to your dashboard component
+
+// Calculate if we're in confirmation phase
+const hasEnquiriesPending = enquiries.length > 0 && !allConfirmed && !isPaymentConfirmed;
+const suppliersWithEnquiries = Object.keys(suppliers).filter(key => 
+  suppliers[key] && getEnquiryStatus(key) === 'pending'
+);
+
+// Filter suppliers based on phase
+const getVisibleSuppliers = () => {
+  if (hasEnquiriesPending) {
+    // Only show suppliers with enquiries sent + einvites
+    return Object.fromEntries(
+      Object.entries(suppliers).filter(([type, supplier]) => 
+        supplier && (getEnquiryStatus(type) !== null || type === 'einvites')
+      )
+    );
+  }
+  
+  // Show all suppliers (normal state)
+  return suppliers;
+};
+
+const visibleSuppliers = getVisibleSuppliers();
+
+const handleCreateInvites = () => {
+  // Navigate to e-invites page
+  window.location.href = "/e-invites"
+}
+
   // Loading state
   if (!themeLoaded || loading) {
     return (
@@ -273,9 +306,10 @@ export default function DatabaseDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50  w-screen overflow-hidden">
+    <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
+      <EInvitesBanner hasCreatedInvites={false} isBookingPending={true} onCreateInvites={handleCreateInvites} />
 
       {/* Real-time notifications */}
       <RealTimeNotifications 
@@ -303,18 +337,18 @@ export default function DatabaseDashboard() {
           </div>
         )}
 
-        {/* Enquiries sent but not paid yet */}
-        {enquiriesSent && !isPaymentConfirmed && (
-          <div className="mb-8">
-            <SnappysPresentParty
-              suppliers={suppliers}
-              enquiries={enquiries}
-              timeRemaining={timeRemaining}
-              onPaymentReady={handlePaymentReady}
-              showPaymentCTA={allConfirmed}
-            />
-          </div>
-        )}
+
+{enquiriesSent && !isPaymentConfirmed && (
+  <div className="mb-8">
+    <SnappysPresentParty
+      suppliers={suppliers}
+      enquiries={enquiries}
+      timeRemaining={timeRemaining}
+      onPaymentReady={handlePaymentReady}
+      showPaymentCTA={allConfirmed}
+    />
+  </div>
+)}
 
         {/* Auto-replacement notifications */}
         {replacements.length > 0 && (
@@ -333,51 +367,141 @@ export default function DatabaseDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           {/* Main Content */}
           <main className="lg:col-span-2 space-y-8">
-            {/* Desktop Header */}
-            <div className="hidden md:flex justify-between mb-4">
-              <div>
-                <h2 className="text-3xl font-bold text-primary-700">
-                  {isPaymentConfirmed ? 'Your Confirmed Party Team! 🎉' : 'Your Party Team! 🎉'}
-                </h2>
-                <p className="text-gray-600 mt-1">
-                  {isPaymentConfirmed 
-                    ? 'All suppliers confirmed and ready for your party'
-                    : 'Amazing suppliers to make your day perfect'
-                  }
-                </p>
-              </div>
-              {!isPaymentConfirmed && (
-                <button 
-                  onClick={handleAddSupplier} 
-                  className="bg-primary-500 px-4 py-3 text-white hover:bg-[hsl(var(--primary-700))] rounded"
-                >
-                  Add New Supplier
-                </button>
-              )}
-            </div>
 
-            {/* Desktop Supplier Grid */}
-            <div className="hidden md:grid md:grid-cols-3 gap-6">
-              {Object.entries(suppliers).map(([type, supplier]) => (
-                <SupplierCard 
-                  key={type}
-                  type={type} 
-                  supplier={supplier}
-                  loadingCards={loadingCards}
-                  suppliersToDelete={suppliersToDelete}
-                  openSupplierModal={openSupplierModal}
-                  handleDeleteSupplier={handleDeleteSupplier}
-                  getSupplierDisplayName={getSupplierDisplayName}
-                  addons={addons}
-                  handleRemoveAddon={handleRemoveAddon}
-                  enquiryStatus={getEnquiryStatus(type)}
-                  isSignedIn={true} // Always signed in for database dashboard
-                  isPaymentConfirmed={isPaymentConfirmed}
-                  enquiries={enquiries}
-                />
-              ))}
-            </div>
+<div className="hidden md:flex justify-between mb-4">
+  <div>
+    {/* <h2 className="text-3xl font-bold text-primary-700">
+      {isPaymentConfirmed 
+        ? 'Your Confirmed Party Team! 🎉' 
+        : hasEnquiriesPending 
+          ? 'Suppliers Contacted! ⏱️'
+          : 'Your Party Team! 🎉'
+      }
+    </h2> */}
+    {/* <p className="text-gray-600 mt-1">
+      {isPaymentConfirmed 
+        ? 'All suppliers confirmed and ready for your party'
+        : hasEnquiriesPending 
+          ? `Waiting for ${suppliersWithEnquiries.length} supplier${suppliersWithEnquiries.length === 1 ? '' : 's'} to respond`
+          : 'Amazing suppliers to make your day perfect'
+      }
+    </p> */}
+  </div>
+  {/* Only show "Add Supplier" button when NOT in confirmation phase */}
+  {!isPaymentConfirmed && !hasEnquiriesPending && (
+    <button 
+      onClick={handleAddSupplier} 
+      className="bg-primary-500 px-4 py-3 text-white hover:bg-[hsl(var(--primary-700))] rounded"
+    >
+      Add New Supplier
+    </button>
+  )}
+</div>
 
+
+             {/* Desktop Supplier Grid */}
+<div className={`hidden md:grid gap-6 ${
+  hasEnquiriesPending 
+    ? 'md:grid-cols-1 h-[40%] lg:grid-cols-3 max-w-4xl mx-auto' // Focused layout
+    : 'md:grid-cols-3' // Normal layout
+}`}>
+  {Object.entries(visibleSuppliers).map(([type, supplier]) => (
+    <SupplierCard 
+      key={type}
+      type={type} 
+      supplier={supplier}
+      loadingCards={loadingCards}
+      suppliersToDelete={suppliersToDelete}
+      openSupplierModal={openSupplierModal}
+      handleDeleteSupplier={handleDeleteSupplier}
+      getSupplierDisplayName={getSupplierDisplayName}
+      addons={addons}
+      handleRemoveAddon={handleRemoveAddon}
+      enquiryStatus={getEnquiryStatus(type)}
+      isSignedIn={true}
+      isPaymentConfirmed={isPaymentConfirmed}
+      enquiries={enquiries}
+    />
+  ))}
+            </div>
+   
+{hasEnquiriesPending && (
+  <div className="bg-blue-50 borde mt-30 border-blue-200 rounded-xl p-6 mb-8">
+    <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+      <ArrowRight className="w-5 h-5 mr-2" />
+      What happens next?
+    </h3>
+    
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className="space-y-3">
+        <div className="flex items-start space-x-3">
+          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-bold text-blue-600">1</span>
+          </div>
+          <div>
+            <h4 className="font-medium text-blue-900">Suppliers Review</h4>
+            <p className="text-sm text-blue-700">They'll check availability and prepare quotes</p>
+          </div>
+        </div>
+        
+        <div className="flex items-start space-x-3">
+          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-bold text-blue-600">2</span>
+          </div>
+          <div>
+            <h4 className="font-medium text-blue-900">You Get Notified</h4>
+            <p className="text-sm text-blue-700">Real-time updates as each supplier responds</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="flex items-start space-x-3">
+          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-bold text-blue-600">3</span>
+          </div>
+          <div>
+            <h4 className="font-medium text-blue-900">Complete Party Team</h4>
+            <p className="text-sm text-blue-700">Add more suppliers once these confirm</p>
+          </div>
+        </div>
+        
+        <div className="flex items-start space-x-3">
+          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-bold text-blue-600">4</span>
+          </div>
+          <div>
+            <h4 className="font-medium text-blue-900">Secure Booking</h4>
+            <p className="text-sm text-blue-700">Pay deposit to guarantee your party date</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {/* Quick actions */}
+    <div className="mt-6 pt-4 border-t border-blue-200">
+      <div className="flex flex-wrap gap-3">
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="border-blue-200 text-blue-700 hover:bg-blue-100"
+          asChild
+        >
+          <Link href="/party-summary">
+            View Party Summary
+          </Link>
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="border-blue-200 text-blue-700 hover:bg-blue-100"
+        >
+          Modify Party Details
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
             {/* Mobile Supplier Tabs */}
             <div className="md:hidden">
               <MobileSupplierTabs
@@ -412,7 +536,7 @@ export default function DatabaseDashboard() {
             </div>
 
             {/* Action Section */}
-            {!isPaymentConfirmed && (
+            {/* {!isPaymentConfirmed && (
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   className="flex-1 bg-primary hover:bg-primary-light text-primary-foreground py-3 text-base font-semibold"
@@ -427,18 +551,18 @@ export default function DatabaseDashboard() {
                   Get Help
                 </Button>
               </div>
-            )}
+            )} */}
           </main>
 
           {/* Sidebar */}
           <aside className="hidden lg:block space-y-6">
-            {!isPaymentConfirmed && (
+            {/* {!isPaymentConfirmed && (
               <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
                 <BudgetControls {...budgetControlProps} />
               </Card>
-            )}
+            )} */}
             
-            <CountdownWidget partyDate="2025-06-14T14:00:00" />
+            <CountdownWidget partyDate={partyDetails.date} />
             
             <PartyExcitementMeter 
               suppliers={suppliers}

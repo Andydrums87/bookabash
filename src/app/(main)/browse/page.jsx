@@ -277,14 +277,16 @@ export default function BrowseSuppliersPage() {
   
   const { navigateWithContext, navigationContext } = useContextualNavigation();
 
-  // Simulate loading time
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
 
-    return () => clearTimeout(timer);
-  }, []);
+
+  // // Simulate loading time
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     setIsLoading(false);
+  //   }, 800);
+
+  //   return () => clearTimeout(timer);
+  // }, []);
   const handleSupplierClick = (supplierId) => {
     // Change this line to go to test page:
     navigateWithContext(`/supplier/${supplierId}`, navigationContext || 'browse');
@@ -541,13 +543,14 @@ export default function BrowseSuppliersPage() {
 
       {/* Results Section - Streamlined for Mobile */}
       <div className="max-w-screen mx-auto px-2 md:px-3 py-3 md:py-8">
-        <LoadMoreSuppliersSection
-          allSuppliers={searchedSuppliers}
-          isInitialLoading={isLoading}
-          onSupplierClick={handleSupplierClick}
-          favorites={favorites}
-          toggleFavorite={toggleFavorite}
-        />
+     
+<LoadMoreSuppliersSection
+  allSuppliers={searchedSuppliers}
+  isInitialLoading={suppliersLoading} // Use real loading state
+  onSupplierClick={handleSupplierClick}
+  favorites={favorites}
+  toggleFavorite={toggleFavorite}
+/>
       </div>
 
       {/* Search Modal - Mobile Optimized */}

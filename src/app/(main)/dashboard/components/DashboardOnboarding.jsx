@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Calendar, MapPin, Sparkles, Search, Users, Clock, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, MapPin, Sparkles, Search, Users, Clock, ChevronLeft, ChevronRight, Sun, Sunset } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -12,11 +12,14 @@ import PartyBuilderLoader from "@/components/Home/PartyBuildingLoader"
 export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false }) {
   const [formData, setFormData] = useState({
     date: "",
-    time: "",
+    timeSlot: "", // Changed from 'time' to 'timeSlot'
+    duration: 2,
     guestCount: "",
     location: "",
     budget: 300,
     theme: "",
+    specificTime: "", // For when user chooses specific time
+    needsSpecificTime: false, // Toggle for specific time option
   })
 
   const [selectedTheme, setSelectedTheme] = useState("")
@@ -57,14 +60,23 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
         })
       }, 200)
 
-      // Convert the form data to match what your onboarding handler expects
+      // Convert the form data to new backend format
       const submitData = {
         date: formData.date,
+        timeSlot: formData.timeSlot, // "morning" or "afternoon"
+        duration: formData.duration, // hours as number
+        specificTime: formData.needsSpecificTime ? formData.specificTime : null,
         theme: selectedTheme,
         guestCount: formData.guestCount,
-        postcode: formData.location, // Map location to postcode
-        time: formData.time,
+        postcode: formData.location,
         budget: formData.budget,
+        // Additional metadata for backend
+        timePreference: {
+          type: formData.needsSpecificTime ? 'specific' : 'flexible',
+          slot: formData.timeSlot,
+          duration: formData.duration,
+          specificTime: formData.specificTime || null
+        }
       }
 
       await onFormSubmit(submitData)
@@ -93,26 +105,6 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     }
   }
 
-  const timeOptions = [
-    { value: "10:00", label: "10:00 AM" },
-    { value: "10:30", label: "10:30 AM" },
-    { value: "11:00", label: "11:00 AM" },
-    { value: "11:30", label: "11:30 AM" },
-    { value: "12:00", label: "12:00 PM" },
-    { value: "12:30", label: "12:30 PM" },
-    { value: "13:00", label: "1:00 PM" },
-    { value: "13:30", label: "1:30 PM" },
-    { value: "14:00", label: "2:00 PM" },
-    { value: "14:30", label: "2:30 PM" },
-    { value: "15:00", label: "3:00 PM" },
-    { value: "15:30", label: "3:30 PM" },
-    { value: "16:00", label: "4:00 PM" },
-    { value: "16:30", label: "4:30 PM" },
-    { value: "17:00", label: "5:00 PM" },
-    { value: "17:30", label: "5:30 PM" },
-    { value: "18:00", label: "6:00 PM" },
-  ]
-
   const guestOptions = [
     { value: "5", label: "5 guests" },
     { value: "10", label: "10 guests" },
@@ -120,6 +112,15 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     { value: "20", label: "20 guests" },
     { value: "25", label: "25 guests" },
     { value: "30", label: "30+ guests" },
+  ]
+
+  const durationOptions = [
+    { value: 1.5, label: "1½ hours" },
+    { value: 2, label: "2 hours", popular: true },
+    { value: 2.5, label: "2½ hours" },
+    { value: 3, label: "3 hours", popular: true },
+    { value: 3.5, label: "3½ hours" },
+    { value: 4, label: "4 hours" },
   ]
 
   const trendingThemes = [
@@ -234,7 +235,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
       <PartyBuilderLoader
         isVisible={showLoader}
         theme={selectedTheme}
-        childName="your child" // You can make this dynamic based on form data
+        childName="your child"
         progress={loaderProgress}
       />
 
@@ -286,11 +287,10 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               </p>
             </div>
 
-            {/* Form Fields - Mobile First Layout */}
-            <div className="space-y-4 sm:space-y-6">
-              {/* Mobile: Stack all fields vertically, Desktop: Grid layout */}
+            {/* Form Fields - Updated Layout */}
+            <div className="space-y-6 sm:space-y-8">
+              {/* Date Field */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                {/* Date */}
                 <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100">
                   <label className="block text-sm sm:text-md font-bold text-white mb-2">Date</label>
                   <div className="relative">
@@ -302,26 +302,6 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                       placeholder="21 Jan 2024"
                     />
                     <Calendar className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
-
-                {/* Time */}
-                <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100">
-                  <label className="block text-sm sm:text-md font-bold text-white mb-2">Time</label>
-                  <div className="relative">
-                    <Select value={formData.time} onValueChange={(value) => handleFieldChange("time", value)}>
-                      <SelectTrigger className="w-full border-0 bg-white focus:ring-0 focus:outline-none px-2 h-10 sm:h-auto">
-                        <SelectValue placeholder="Select time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((time) => (
-                          <SelectItem key={time.value} value={time.value}>
-                            {time.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Clock className="absolute right-8 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
 
@@ -349,7 +329,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                 </div>
 
                 {/* Location */}
-                <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
+                <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-2">
                   <label className="block text-sm sm:text-md font-bold text-white mb-2">Location</label>
                   <div className="relative">
                     <Input
@@ -363,9 +343,139 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                   </div>
                 </div>
               </div>
+
+              {/* NEW: Time Slot Selection */}
+              <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[hsl(var(--primary-400))]">
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">When works best?</h3>
+                    <p className="text-gray-600">Choose a time that works for your family</p>
+                  </div>
+
+                  {/* Time Slot Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                    {/* Morning Slot */}
+                    <div
+                      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        formData.timeSlot === "morning"
+                          ? "border-primary-500 bg-primary-50 shadow-lg"
+                          : "border-gray-200 hover:border-primary-300 hover:bg-primary-25"
+                      }`}
+                      onClick={() => handleFieldChange("timeSlot", "morning")}
+                    >
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className={`p-2 rounded-full ${formData.timeSlot === "morning" ? "bg-primary-500" : "bg-gray-200"}`}>
+                          <Sun className={`w-5 h-5 ${formData.timeSlot === "morning" ? "text-white" : "text-gray-600"}`} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">Morning Party</h4>
+                          <p className="text-gray-600 text-sm">10am - 1pm window</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-sm">Perfect for younger children, leaves afternoon free</p>
+                      {formData.timeSlot === "morning" && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Afternoon Slot */} 
+                    <div
+                      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        formData.timeSlot === "afternoon"
+                          ? "border-primary-500 bg-primary-50 shadow-lg"
+                          : "border-gray-200 hover:border-primary-300 hover:bg-primary-25"
+                      }`}
+                      onClick={() => handleFieldChange("timeSlot", "afternoon")}
+                    >
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className={`p-2 rounded-full ${formData.timeSlot === "afternoon" ? "bg-primary-500" : "bg-gray-200"}`}>
+                          <Sunset className={`w-5 h-5 ${formData.timeSlot === "afternoon" ? "text-white" : "text-gray-600"}`} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">Afternoon Party</h4>
+                          <p className="text-gray-600 text-sm">1pm - 4pm window</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-gray-600 text-sm">After lunch, good for all ages</p>
+                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full font-medium">
+                          Most Popular
+                        </span>
+                      </div>
+                      {formData.timeSlot === "afternoon" && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Duration Selection */}
+                  <div className="max-w-lg mx-auto">
+                    <label className="block text-lg font-medium text-gray-700 mb-4 text-center">
+                      How long should the party be?
+                    </label>
+                    <Select
+                      value={formData.duration.toString()}
+                      onValueChange={(value) => handleFieldChange("duration", parseFloat(value))}
+                    >
+                      <SelectTrigger className="w-full bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-12 text-base">
+                        <SelectValue placeholder="Choose duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {durationOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            <div className="flex items-center justify-between w-full">
+                              <span>{option.label}</span>
+                              {option.popular && (
+                                <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
+                                  Popular
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Specific Time Option */}
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-gray-600 hover:text-gray-800 text-sm"
+                      onClick={() => handleFieldChange("needsSpecificTime", !formData.needsSpecificTime)}
+                    >
+                      {formData.needsSpecificTime ? "Use flexible timing instead" : "I need a specific time"}
+                    </Button>
+                  </div>
+
+                  {/* Specific Time Input (when needed) */}
+                  {formData.needsSpecificTime && (
+                    <div className="max-w-lg mx-auto p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                      <div className="text-center mb-4">
+                        <p className="text-sm text-yellow-800 font-medium">⚠️ Specific times may limit supplier options</p>
+                        <p className="text-xs text-yellow-700 mt-1">We'll try our best, but you might need to be flexible</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-5 h-5 text-yellow-600" />
+                        <Input
+                          type="time"
+                          value={formData.specificTime}
+                          onChange={(e) => handleFieldChange("specificTime", e.target.value)}
+                          className="flex-1 border-yellow-300 focus:border-yellow-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Budget - Mobile Optimized */}
+            {/* Budget Section - Keep existing */}
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[hsl(var(--primary-400))]">
               <label className="block text-lg font-medium text-gray-700 mb-4 sm:mb-6 text-center">
                 What's your budget?
@@ -446,7 +556,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               </div>
             </div>
 
-            {/* Theme Section - Mobile Optimized */}
+            {/* Theme Section - Keep existing but shortened for space */}
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Theme</h2>
@@ -681,7 +791,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               </div>
             </div>
 
-            {/* Bottom Actions - Mobile Optimized */}
+            {/* Bottom Actions - Updated validation */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-6 sm:pt-8">
               <Button
                 type="button"
@@ -695,10 +805,11 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                 disabled={
                   isSubmitting ||
                   !formData.date ||
-                  !formData.time ||
+                  !formData.timeSlot ||
                   !formData.guestCount ||
                   !formData.location ||
-                  !selectedTheme
+                  !selectedTheme ||
+                  (formData.needsSpecificTime && !formData.specificTime)
                 }
                 className="bg-primary-400 w-full sm:w-[48%] text-white px-6 sm:px-12 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold disabled:opacity-50 shadow-lg h-12 sm:h-auto"
               >

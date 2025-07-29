@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Clock, ArrowRight } from "lucide-react"
+import { Clock, ArrowRight, Sparkles } from "lucide-react"
 
 export default function SnappysPresentParty({
   suppliers = {},
@@ -47,54 +46,22 @@ export default function SnappysPresentParty({
     return `${h}h ${m}m`
   }
 
-  const getSupplierColor = (type) => {
-    const colors = {
-      venue: "hsl(11, 100%, 76%)",
-      entertainment: "hsl(12, 100%, 68%)",
-      catering: "hsl(14, 100%, 64%)",
-      activities: "hsl(14, 100%, 56%)",
-      facePainting: "hsl(11, 80%, 49%)",
-      partyBags: "hsl(10, 80%, 42%)",
-      decorations: "hsl(9, 84%, 35%)",
-      balloons: "hsl(8, 85%, 30%)",
-    }
-    return colors[type] || "hsl(10, 100%, 85%)"
-  }
-
-  const getSupplierIcon = (type) => {
-    const icons = {
-      venue: "🏰",
-      entertainment: "🎭",
-      catering: "🍰",
-      activities: "🎮",
-      facePainting: "🎨",
-      partyBags: "🎁",
-      decorations: "🎀",
-      balloons: "🎈",
-    }
-    return icons[type] || "🎉"
-  }
-
-  const getPresentState = (status) => {
-    switch (status) {
-      case "accepted":
-        return "unwrapped"
-      case "pending":
-        return "wrapped"
-      case "declined":
-        return "replacing"
-      default:
-        return "wrapped"
-    }
-  }
+  const progressPercentage = totalSuppliers > 0 ? (confirmedCount / totalSuppliers) * 100 : 0
 
   return (
-    <Card className="border border-[hsl(var(--primary-900))] shadow-sm">
-      <CardContent className="p-6">
-        {/* Header with Snappy */}
-        <div className="flex items-start gap-4 mb-6">
+    <div className="relative w-full bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] border border-[hsl(var(--primary-200))] rounded-xl shadow-sm overflow-hidden">
+      {/* Subtle decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-2 left-8 w-1 h-1 bg-[hsl(var(--primary-300))] rounded-full opacity-40"></div>
+        <div className="absolute top-3 right-12 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-50"></div>
+        <Sparkles className="absolute top-2 right-20 w-3 h-3 text-[hsl(var(--primary-300))] opacity-30" />
+      </div>
+
+      <div className="relative z-10 px-6 py-4">
+        <div className="flex items-center gap-6">
+          {/* Snappy - Compact */}
           <div className="flex-shrink-0">
-            <div className="w-20 h-20 border border-gray-200 rounded-lg flex items-center justify-center bg-gray-50">
+            <div className="w-12 h-12 bg-gradient-to-br from-white to-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-lg flex items-center justify-center shadow-sm">
               <img
                 src={
                   snappyExpression === "celebrating"
@@ -103,8 +70,8 @@ export default function SnappysPresentParty({
                       ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291833/ctcf51iyrrhfv6y481dl.jpg"
                       : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
                 }
-                alt="Snappy the Crocodile"
-                className="w-full h-full object-contain"
+                alt="Snappy"
+                className="w-full h-full object-contain rounded-lg"
                 onError={(e) => {
                   e.target.style.display = "none"
                   e.target.nextSibling.style.display = "block"
@@ -113,109 +80,65 @@ export default function SnappysPresentParty({
                   e.target.nextSibling.style.display = "none"
                 }}
               />
-              <div className="text-4xl" style={{ display: "none" }}>
+              <div className="text-2xl" style={{ display: "none" }}>
                 {snappyExpression === "celebrating" ? "🐊🎉" : snappyExpression === "excited" ? "🐊😊" : "🐊😴"}
               </div>
             </div>
           </div>
 
+          {/* Progress Section - Takes up most space */}
           <div className="flex-1">
-            <h3 className="text-xl font-semibold text-gray-900 mb-1">
-              {allConfirmed ? "All suppliers confirmed!" : "Supplier confirmations"}
-            </h3>
-            <p className="text-gray-600 text-sm mb-2">
-              {allConfirmed
-                ? "Your party team is ready"
-                : `${totalSuppliers - confirmedCount} of ${totalSuppliers} suppliers still pending`}
-            </p>
-            {!allConfirmed && timeRemaining > 0 && (
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <Clock className="w-3 h-3" />
-                <span>{formatTime(timeRemaining)} remaining</span>
-              </div>
-            )}
-          </div>
-        </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-800">
+                {allConfirmed ? "All suppliers confirmed! 🎉" : "Supplier confirmations"}
+              </span>
+              <span className="text-sm font-medium text-[hsl(var(--primary-700))]">
+                {confirmedCount}/{totalSuppliers} confirmed
+              </span>
+            </div>
 
-        {/* Progress bar */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              {confirmedCount}/{totalSuppliers} confirmed
-            </span>
-            <span className="text-xs text-gray-500">
-              {totalSuppliers > 0 ? Math.round((confirmedCount / totalSuppliers) * 100) : 0}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${totalSuppliers > 0 ? (confirmedCount / totalSuppliers) * 100 : 0}%`,
-                backgroundColor: allConfirmed ? "#FF8B70" : "#FF8B70",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Supplier list */}
-        <div className="space-y-3 mb-6">
-          {supplierStates.map((supplier) => {
-            const presentState = getPresentState(supplier.status)
-            const icon = getSupplierIcon(supplier.type)
-
-            return (
-              <div key={supplier.type} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            {/* Horizontal Progress Bar */}
+            <div className="relative">
+              <div className="w-full bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-full h-3 shadow-inner border border-[hsl(var(--primary-200))]">
                 <div
-                  className="w-8 h-8 rounded flex items-center justify-center text-sm"
+                  className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
                   style={{
-                    backgroundColor:
-                      presentState === "unwrapped" ? "#FF8B70" : getSupplierColor(supplier.type),
-                    color: "white",
+                    width: `${progressPercentage}%`,
+                    background: allConfirmed
+                      ? "linear-gradient(90deg, hsl(var(--primary-500)), hsl(var(--primary-600)))"
+                      : "linear-gradient(90deg, hsl(var(--primary-500)), hsl(var(--primary-600)))",
                   }}
                 >
-                  {presentState === "unwrapped" ? "✓" : icon}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 capitalize">
-                    {supplier.type.replace(/([A-Z])/g, " $1").trim()}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {presentState === "unwrapped"
-                    ? "Confirmed"
-                    : presentState === "replacing"
-                      ? "Finding replacement"
-                      : "Pending"}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
                 </div>
               </div>
-            )
-          })}
-        </div>
-
-        {/* Action section */}
-        {allConfirmed && showPaymentCTA && (
-          <div className="border-t pt-4">
-            <div className="text-center mb-4">
-              <p className="text-sm text-gray-600 mb-3">All suppliers have confirmed. Ready to secure your party!</p>
             </div>
-            <Button
-              onClick={onPaymentReady}
-              className="w-full text-white py-3 bg-primary-500"
-            
-            >
-              Pay £180 to secure party
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
           </div>
-        )}
 
-        {!allConfirmed && (
-          <div className="border-t pt-4">
-            <p className="text-center text-sm text-gray-500">Waiting for remaining suppliers to confirm...</p>
+          {/* Status/Time - Compact */}
+          <div className="flex-shrink-0 text-right">
+            {!allConfirmed && timeRemaining > 0 && (
+              <div className="flex items-center gap-2 text-sm text-[hsl(var(--primary-700))] bg-white/80 px-3 py-1 rounded-full border border-[hsl(var(--primary-300))] shadow-sm mb-2">
+                <Clock className="w-3 h-3" />
+                <span className="font-medium">{formatTime(timeRemaining)}</span>
+              </div>
+            )}
+
+            {allConfirmed && showPaymentCTA && (
+              <Button
+                onClick={onPaymentReady}
+                size="sm"
+                className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white rounded-lg shadow-sm"
+              >
+                Secure Party
+                <ArrowRight className="ml-1 w-3 h-3" />
+              </Button>
+            )}
+
+            {!allConfirmed && <div className="text-xs text-gray-600">{Math.round(progressPercentage)}% complete</div>}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -64,7 +64,7 @@ function UserMenu({ user, onSignOut }) {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute w-fit right-0 mt-2  bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
           {/* User Info Header */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center space-x-3">
@@ -294,7 +294,7 @@ export function Nav() {
             </div>
 
             {/* Mobile menu button */}
-            <MobileNav />
+            <MobileNav user={user} onSignOut={handleSignOut} loading={loading} />
           </div>
         </div>
       </div>

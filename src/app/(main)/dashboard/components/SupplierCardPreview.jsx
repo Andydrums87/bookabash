@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Mail, Gift, X, Clock, Sparkles } from "lucide-react"
-import SupplierCardPreview from "./SupplierCardPreview"
 
 export default function SupplierCard({
   type,
@@ -54,7 +53,6 @@ export default function SupplierCard({
 
   const supplierState = getSupplierState()
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
-  const isAwaitingResponse = supplierState === "awaiting_response"
 
   // Get contact details from enquiries for payment confirmed state
   const getContactDetails = () => {
@@ -255,42 +253,10 @@ export default function SupplierCard({
       case "awaiting_response":
         return {
           borderClass: "border-amber-300 bg-gradient-to-br from-amber-50 to-white",
-          overlayContent: (
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-50/90 to-amber-100/90 backdrop-blur-sm z-30 flex items-center justify-center rounded-2xl">
-              <div className="text-center p-6">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Clock className="w-8 h-8 text-amber-600" />
-                </div>
-                <h3 className="text-lg font-bold text-amber-800 mb-2">Awaiting Response</h3>
-                <p className="text-sm text-amber-700 mb-4">We've sent your enquiry to {supplier.name}</p>
-                <div className="flex items-center justify-center space-x-2 text-xs text-amber-600 mb-6">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                    <div
-                      className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
-                  </div>
-                  <span className="font-medium">Response expected within 24 hours</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDeleteSupplier(type)}
-                  className="border-amber-300 text-amber-700 hover:bg-amber-100 bg-white/50"
-                >
-                  Cancel Request
-                </Button>
-              </div>
-            </div>
-          ),
+          overlayContent: null, // No overlay - just clear visual state
           badgeClass: "text-amber-700 border-amber-300 bg-amber-50",
           badgeText: "Enquiry Sent",
-          imageOpacity: "opacity-40 grayscale",
+          imageOpacity: "opacity-70", // Less faded so it's still visible
           canEdit: false,
           canRemoveAddons: false,
         }
@@ -339,246 +305,269 @@ export default function SupplierCard({
 
   const stateConfig = getStateConfig(supplierState)
 
-  // Wrap the card with preview functionality if awaiting response
-  const CardWrapper = ({ children }) => {
-    if (isAwaitingResponse) {
-      return (
-        <SupplierCardPreview supplier={supplier} type={type} isAwaitingResponse={isAwaitingResponse}>
-          {children}
-        </SupplierCardPreview>
-      )
-    }
-    return children
-  }
-
   // Regular supplier card with state-aware styling
   return (
-    <CardWrapper>
-      <Card
-        className={`overflow-hidden rounded-2xl border-2 shadow-lg transition-all duration-300 relative ${stateConfig.borderClass} ${isDeleting ? "opacity-50 scale-95" : ""}`}
-      >
-        {/* Decorative elements */}
-        <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
-        <div className="absolute bottom-4 left-4 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
-        {supplierState === "selected" && (
-          <Sparkles className="absolute top-4 left-4 w-3 h-3 text-[hsl(var(--primary-300))] opacity-50" />
-        )}
+    <Card
+      className={`overflow-hidden rounded-2xl border-2 shadow-lg transition-all duration-300 relative ${stateConfig.borderClass} ${isDeleting ? "opacity-50 scale-95" : ""}`}
+    >
+      {/* Decorative elements */}
+      <div className="absolute top-3 right-3 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
+      <div className="absolute bottom-4 left-4 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
+      {supplierState === "selected" && (
+        <Sparkles className="absolute top-4 left-4 w-3 h-3 text-[hsl(var(--primary-300))] opacity-50" />
+      )}
 
-        {/* State Overlay */}
-        {stateConfig.overlayContent}
+      {/* State Overlay */}
+      {stateConfig.overlayContent}
 
-        <div className="relative aspect-[3/2] w-full">
-          {isLoading ? (
-            <Skeleton className="w-full h-full" />
-          ) : (
-            <>
-              <div className="absolute top-[-24px] left-0 w-full h-full">
-                <div
-                  className={`relative w-[100%] h-[100%] mask-image mx-auto mt-10 transition-all duration-300 ${stateConfig.imageOpacity}`}
-                  style={{
-                    WebkitMaskImage: 'url("/image.svg")',
-                    WebkitMaskRepeat: "no-repeat",
-                    WebkitMaskSize: "contain",
-                    WebkitMaskPosition: "center",
-                    maskImage: 'url("/image.svg")',
-                    maskRepeat: "no-repeat",
-                    maskSize: "contain",
-                    maskPosition: "center",
-                  }}
+      <div className="relative aspect-[3/2] w-full">
+        {isLoading ? (
+          <Skeleton className="w-full h-full" />
+        ) : (
+          <>
+            <div className="absolute top-[-24px] left-0 w-full h-full">
+              <div
+                className={`relative w-[100%] h-[100%] mask-image mx-auto mt-10 transition-all duration-300 ${stateConfig.imageOpacity}`}
+                style={{
+                  WebkitMaskImage: 'url("/image.svg")',
+                  WebkitMaskRepeat: "no-repeat",
+                  WebkitMaskSize: "contain",
+                  WebkitMaskPosition: "center",
+                  maskImage: 'url("/image.svg")',
+                  maskRepeat: "no-repeat",
+                  maskSize: "contain",
+                  maskPosition: "center",
+                }}
+              >
+                <Image
+                  src={supplier.image || supplier.imageUrl || `/placeholder.png`}
+                  alt={supplier.name}
+                  fill
+                  className="object-contain group-hover:brightness-110 transition-all duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              </div>
+            </div>
+
+            {/* Enhanced Category badge */}
+            <div
+              className={`absolute px-4 py-2 top-3 rounded-full left-3 flex items-center space-x-2 text-white text-sm font-semibold z-10 shadow-lg ${
+                supplierState === "payment_confirmed"
+                  ? "bg-gradient-to-r from-emerald-500 to-green-500"
+                  : supplierState === "awaiting_response"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                    : supplierState === "confirmed"
+                      ? "bg-gradient-to-r from-emerald-500 to-green-500"
+                      : supplierState === "declined"
+                        ? "bg-gradient-to-r from-red-500 to-rose-500"
+                        : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]"
+              }`}
+            >
+              <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+            </div>
+
+            {/* Status indicator and Remove button */}
+            {stateConfig.canEdit && (
+              <div className="absolute top-3 right-3 z-20 flex items-center space-x-2">
+                <button
+                  onClick={() => handleDeleteSupplier(type)}
+                  className="px-3 py-1 bg-white/90 hover:bg-white rounded-lg text-xs text-gray-600 hover:text-gray-800 font-medium border border-[hsl(var(--primary-200))] shadow-sm transition-colors"
+                  title={`Remove ${type} supplier`}
                 >
-                  <Image
-                    src={supplier.image || supplier.imageUrl || `/placeholder.png`}
-                    alt={supplier.name}
-                    fill
-                    className="object-contain group-hover:brightness-110 transition-all duration-300"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
+                  Remove
+                </button>
+                <span
+                  className={`inline-block w-3 h-3 rounded-full shadow-sm ${
+                    supplierState === "payment_confirmed"
+                      ? "bg-emerald-400"
+                      : supplierState === "confirmed"
+                        ? "bg-emerald-400"
+                        : supplierState === "awaiting_response"
+                          ? "bg-amber-400"
+                          : supplierState === "declined"
+                            ? "bg-red-400"
+                            : "bg-blue-400"
+                  }`}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <CardContent className={`px-6 pb-6 transition-all duration-300`}>
+        {isLoading ? (
+          <>
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-full mb-4" />
+            <div className="flex items-center justify-between mb-4">
+              <Skeleton className="h-6 w-16" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{supplier.name}</h3>
+            <p className="text-sm text-gray-600 mb-4">{supplier.description}</p>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xl font-bold text-gray-900">£{supplier.price}</span>
+              <Badge variant="outline" className={`${stateConfig.badgeClass} font-semibold`}>
+                {stateConfig.badgeText}
+              </Badge>
+            </div>
+
+            {/* Enhanced awaiting response info */}
+            {supplierState === "awaiting_response" && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                  <div>
+                    <h4 className="font-semibold text-amber-800">Awaiting Response</h4>
+                    <p className="text-sm text-amber-700">We've sent your enquiry to {supplier.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-sm text-amber-600">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                      <div
+                        className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+                        style={{ animationDelay: "0.4s" }}
+                      ></div>
+                    </div>
+                    <span className="font-medium">Response expected within 24 hours</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteSupplier(type)}
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100 bg-white/50 text-xs px-3 py-1"
+                  >
+                    Cancel Request
+                  </Button>
                 </div>
               </div>
+            )}
 
-              {/* Enhanced Category badge */}
+            {/* Add-ons Section */}
+            {supplierAddons.length > 0 && (
               <div
-                className={`absolute px-4 py-2 top-3 rounded-full left-3 flex items-center space-x-2 text-white text-sm font-semibold z-10 shadow-lg ${
-                  supplierState === "payment_confirmed"
-                    ? "bg-gradient-to-r from-emerald-500 to-green-500"
-                    : supplierState === "awaiting_response"
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500"
-                      : supplierState === "confirmed"
-                        ? "bg-gradient-to-r from-emerald-500 to-green-500"
-                        : supplierState === "declined"
-                          ? "bg-gradient-to-r from-red-500 to-rose-500"
-                          : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]"
+                className={`mt-4 pt-4 border-t border-[hsl(var(--primary-100))] ${
+                  !stateConfig.canRemoveAddons ? "pointer-events-none" : ""
                 }`}
               >
-                <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-              </div>
-
-              {/* Status indicator and Remove button */}
-              {stateConfig.canEdit && (
-                <div className="absolute top-3 right-3 z-20 flex items-center space-x-2">
-                  <button
-                    onClick={() => handleDeleteSupplier(type)}
-                    className="px-3 py-1 bg-white/90 hover:bg-white rounded-lg text-xs text-gray-600 hover:text-gray-800 font-medium border border-[hsl(var(--primary-200))] shadow-sm transition-colors"
-                    title={`Remove ${type} supplier`}
-                  >
-                    Remove
-                  </button>
-                  <span
-                    className={`inline-block w-3 h-3 rounded-full shadow-sm ${
-                      supplierState === "payment_confirmed"
-                        ? "bg-emerald-400"
-                        : supplierState === "confirmed"
-                          ? "bg-emerald-400"
-                          : supplierState === "awaiting_response"
-                            ? "bg-amber-400"
-                            : supplierState === "declined"
-                              ? "bg-red-400"
-                              : "bg-blue-400"
-                    }`}
-                  />
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <Gift className="w-4 h-4" />
+                    Selected Add-ons
+                  </h4>
+                  <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                    {supplierAddons.length} added
+                  </Badge>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <CardContent className={`px-6 pb-6 transition-all duration-300`}>
-          {isLoading ? (
-            <>
-              <Skeleton className="h-6 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-full mb-4" />
-              <div className="flex items-center justify-between mb-4">
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-6 w-24" />
-              </div>
-            </>
-          ) : (
-            <>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{supplier.name}</h3>
-              <p className="text-sm text-gray-600 mb-4">{supplier.description}</p>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xl font-bold text-gray-900">£{supplier.price}</span>
-                <Badge variant="outline" className={`${stateConfig.badgeClass} font-semibold`}>
-                  {stateConfig.badgeText}
-                </Badge>
-              </div>
-
-              {/* Add-ons Section */}
-              {supplierAddons.length > 0 && (
-                <div
-                  className={`mt-4 pt-4 border-t border-[hsl(var(--primary-100))] ${
-                    !stateConfig.canRemoveAddons ? "pointer-events-none" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                      <Gift className="w-4 h-4" />
-                      Selected Add-ons
-                    </h4>
-                    <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
-                      {supplierAddons.length} added
-                    </Badge>
-                  </div>
-                  <div className="space-y-2">
-                    {supplierAddons.map((addon) => (
-                      <div
-                        key={addon.id}
-                        className="flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))]"
-                      >
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-800">{addon.name}</p>
-                          <p className="text-xs text-gray-600">{addon.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-[hsl(var(--primary-600))]">£{addon.price}</span>
-                          {stateConfig.canRemoveAddons && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRemoveAddon(addon.id)
-                              }}
-                              className="w-6 h-6 text-gray-400 hover:text-red-500 transition-colors"
-                              title="Remove add-on"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                <div className="space-y-2">
+                  {supplierAddons.map((addon) => (
+                    <div
+                      key={addon.id}
+                      className="flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))]"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-800">{addon.name}</p>
+                        <p className="text-xs text-gray-600">{addon.description}</p>
                       </div>
-                    ))}
-                  </div>
-                  {/* Total for this supplier's add-ons */}
-                  {supplierAddons.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-[hsl(var(--primary-200))]">
-                      <div className="flex justify-between items-center text-sm bg-gradient-to-r from-[hsl(var(--primary-50))] to-white p-2 rounded-lg">
-                        <span className="font-semibold text-gray-700">Add-ons Total:</span>
-                        <span className="font-bold text-[hsl(var(--primary-600))]">
-                          £{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[hsl(var(--primary-600))]">£{addon.price}</span>
+                        {stateConfig.canRemoveAddons && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveAddon(addon.id)
+                            }}
+                            className="w-6 h-6 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Remove add-on"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              )}
+                {/* Total for this supplier's add-ons */}
+                {supplierAddons.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-[hsl(var(--primary-200))]">
+                    <div className="flex justify-between items-center text-sm bg-gradient-to-r from-[hsl(var(--primary-50))] to-white p-2 rounded-lg">
+                      <span className="font-semibold text-gray-700">Add-ons Total:</span>
+                      <span className="font-bold text-[hsl(var(--primary-600))]">
+                        £{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-              {isPaymentConfirmed && (
-                <div className="space-y-3 mt-4">
-                  {contactDetails ? (
-                    <>
-                      {/* Show supplier name */}
-                      {contactDetails.name && (
-                        <p className="text-sm font-semibold text-emerald-800 text-center bg-emerald-50 py-2 rounded-lg">
-                          Contact: {contactDetails.name}
-                        </p>
-                      )}
-                      <div className="flex space-x-2">
-                        {contactDetails.phone && (
-                          <Button
-                            asChild
-                            className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
-                          >
-                            <a href={`tel:${contactDetails.phone}`}>📞 Call</a>
-                          </Button>
-                        )}
-                        {contactDetails.email && (
-                          <Button
-                            asChild
-                            variant="outline"
-                            className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-transparent"
-                          >
-                            <a href={`mailto:${contactDetails.email}`}>📧 Email</a>
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-xs text-emerald-600 text-center">Contact directly for party arrangements</p>
-                    </>
-                  ) : (
-                    <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl">
-                      <p className="text-xs text-amber-800 text-center">
-                        Contact details will be available once payment is confirmed
+            {isPaymentConfirmed && (
+              <div className="space-y-3 mt-4">
+                {contactDetails ? (
+                  <>
+                    {/* Show supplier name */}
+                    {contactDetails.name && (
+                      <p className="text-sm font-semibold text-emerald-800 text-center bg-emerald-50 py-2 rounded-lg">
+                        Contact: {contactDetails.name}
                       </p>
+                    )}
+                    <div className="flex space-x-2">
+                      {contactDetails.phone && (
+                        <Button
+                          asChild
+                          className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                        >
+                          <a href={`tel:${contactDetails.phone}`}>📞 Call</a>
+                        </Button>
+                      )}
+                      {contactDetails.email && (
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-transparent"
+                        >
+                          <a href={`mailto:${contactDetails.email}`}>📧 Email</a>
+                        </Button>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+                    <p className="text-xs text-emerald-600 text-center">Contact directly for party arrangements</p>
+                  </>
+                ) : (
+                  <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl">
+                    <p className="text-xs text-amber-800 text-center">
+                      Contact details will be available once payment is confirmed
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
 
-          {/* Change Supplier Button for Selected State */}
-          {!isPaymentConfirmed && stateConfig.canEdit && (
-            <div className="mt-4 pt-4 border-t border-[hsl(var(--primary-100))]">
-              <Button
-                variant="outline"
-                className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] border-none text-white hover:text-white hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] rounded-xl"
-                onClick={() => openSupplierModal(type)}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "Removing..." : `Change ${getSupplierDisplayName(type)}`}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </CardWrapper>
+        {/* Change Supplier Button for Selected State */}
+        {!isPaymentConfirmed && stateConfig.canEdit && (
+          <div className="mt-4 pt-4 border-t border-[hsl(var(--primary-100))]">
+            <Button
+              variant="outline"
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] border-none text-white hover:text-white hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] rounded-xl"
+              onClick={() => openSupplierModal(type)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Removing..." : `Change ${getSupplierDisplayName(type)}`}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

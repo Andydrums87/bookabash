@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 
 // UI Components
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 // Icons
-import { RefreshCw, ChevronRight } from "lucide-react"
+import { RefreshCw, ChevronRight, Plus } from "lucide-react"
 
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -192,7 +193,7 @@ export default function LocalStorageDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50 w-[20%]">
+    <div className="min-h-screen bg-primary-50 overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
       <AddonProvider
@@ -212,19 +213,33 @@ export default function LocalStorageDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           {/* Main Content */}
           <main className="lg:col-span-2 space-y-8">
-            {/* Desktop Header */}
-            <div className="hidden md:flex justify-between mb-4">
-              <div>
-                <h2 className="text-3xl font-bold text-primary-700">Your Party Team! 🎉</h2>
-                <p className="text-gray-600 mt-1">Amazing suppliers to make your day perfect</p>
-              </div>
-              <button 
-                onClick={handleAddSupplier} 
-                className="bg-primary-500 px-4 py-3 text-white hover:bg-[hsl(var(--primary-700))] rounded"
-              >
-                Add New Supplier
-              </button>
-            </div>
+          <div className="hidden md:flex justify-between mb-4 items-start">
+  {/* Left: Snappy + Heading */}
+  <div className="flex justfy-center">
+    <Image
+      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png" // make sure this is a cute waving/snappy-talking image
+      alt="Snappy the Alligator"
+      width={80}
+      height={80}
+      className="mt-1"
+    />
+    <div>
+      <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
+        Meet Your Party Team!
+      </h2>
+      <p className="text-sm md:text-base text-gray-600 mt-1">
+        Snappy's picked the best suppliers for your big day 
+      </p>
+    </div>
+  </div>
+
+  {/* Right: Add Supplier Button */}
+  <Button onClick={handleAddSupplier} variant="outline" className="gap-2 text-primary border-primary hover:bg-primary/10">
+    <Plus className="w-4 h-4" />
+    Add Supplier
+  </Button>
+</div>
+
 
             {/* Desktop Supplier Grid */}
             <div className="hidden md:grid md:grid-cols-3 gap-6">
@@ -268,7 +283,6 @@ export default function LocalStorageDashboard() {
 
            {/* Add-ons Section */}
 <AddonsSectionWrapper />
-
 {/* Recommended Add-ons */}
 <div className="w-screen pr-6 md:pr-20">
   <RecommendedAddonsWrapper 
@@ -280,14 +294,12 @@ export default function LocalStorageDashboard() {
             {/* Action Section */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                className="flex-1 bg-primary hover:bg-primary-light text-primary-foreground py-3 text-base font-semibold"
+                className="flex-3 bg-primary rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-6 text-base font-semibold"
                 asChild
               >
-                <Link href="/party-summary">Continue to Review & Book</Link>
+                <Link href="/review-book">Continue to Review & Book</Link>
               </Button>
-              <Button variant="outline" className="sm:w-auto">
-                Modify Party Details
-              </Button>
+            
               <Button variant="ghost" className="sm:w-auto">
                 Get Help
               </Button>
@@ -300,7 +312,7 @@ export default function LocalStorageDashboard() {
               <BudgetControls {...budgetControlProps} />
             </Card>
             
-            <CountdownWidget partyDate="2025-06-14T14:00:00" />
+            <CountdownWidget partyDate={partyDetails.date} />
             
             <PartyExcitementMeter 
               suppliers={suppliers}

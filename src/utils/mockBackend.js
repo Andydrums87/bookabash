@@ -329,7 +329,6 @@ export const suppliersAPI = {
         return matchesTheme;
       });
       
-      console.log(`🎭 Found ${entertainmentSuppliers.length} entertainment suppliers for theme: ${theme}`);
       return entertainmentSuppliers;
       
     } catch (error) {

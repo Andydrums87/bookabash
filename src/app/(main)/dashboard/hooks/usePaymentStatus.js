@@ -58,14 +58,6 @@ export function usePaymentStatus(partyId, isSignedIn) {
   const isPaymentPending = paymentStatus === 'pending'
   const isPaymentFailed = paymentStatus === 'failed'
 
-  // Add this right before the return statement:
-console.log('🔍 Final Payment Status Values:', {
-  paymentStatus,
-  isPaymentConfirmed,
-  isSignedIn,
-  partyId
-});
-
   return {
     paymentStatus,
     paymentDetails,

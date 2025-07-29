@@ -13,6 +13,21 @@ import { useRobustEnquiryData } from "@/utils/enquiryDataProcessor"
 
 export default function EnquiryOverviewSection() {
   // Use the same pattern as portfolio page - useSupplier hook
+
+  const parseAddonDetails = (addonDetailsString) => {
+    if (!addonDetailsString) return []
+    
+    try {
+      const parsed = typeof addonDetailsString === 'string' 
+        ? JSON.parse(addonDetailsString) 
+        : addonDetailsString
+      
+      return Array.isArray(parsed) ? parsed : []
+    } catch (error) {
+      console.error('Error parsing addon details:', error)
+      return []
+    }
+  }
   const { supplier, supplierData, loading, error, currentBusiness } = useSupplier()
   
   // Force re-render when business changes
@@ -35,6 +50,8 @@ export default function EnquiryOverviewSection() {
   // Use the existing hook with current business ID
   const { enquiries, loading: enquiriesLoading, error: enquiriesError } = useSupplierEnquiries(null, businessIdToUse, forceRefresh)
   const { leads, errors, summary } = useRobustEnquiryData(enquiries)
+
+
 
   if (loading || enquiriesLoading) {
     return (
@@ -166,32 +183,37 @@ export default function EnquiryOverviewSection() {
       </div>
     )}
     
-    {/* Show add-ons with names */}
-    {lead.addon_details && Array.isArray(lead.addon_details) && lead.addon_details.length > 0 && (
-      <div className="space-y-1">
-        <div className="flex items-center gap-1">
-          <Gift className="w-3 h-3 text-amber-500" />
-          <span className="text-xs text-amber-600 font-medium">
-            {lead.addon_details.length} Add-on{lead.addon_details.length !== 1 ? 's' : ''}:
-          </span>
-        </div>
-        <div className="pl-4 space-y-0.5">
-          {lead.addon_details.slice(0, 2).map((addon, index) => (
-            <div key={index} className="text-xs text-gray-600">
-              • {addon.name} (£{addon.price})
-            </div>
-          ))}
-          {lead.addon_details.length > 2 && (
-            <div className="text-xs text-gray-500">
-              ... and {lead.addon_details.length - 2} more
-            </div>
-          )}
-        </div>
-        <div className="text-xs text-amber-600 font-medium">
-          Total: £{lead.addon_details.reduce((sum, addon) => sum + (addon.price || 0), 0)}
-        </div>
+    {(() => {
+  const addons = parseAddonDetails(lead.addon_details)
+  return addons.length > 0 && (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1">
+        <Gift className="w-3 h-3 text-amber-500" />
+        <span className="text-xs text-amber-600 font-medium">
+          {addons.length} Add-on{addons.length !== 1 ? 's' : ''}:
+        </span>
       </div>
-    )}
+      <div className="pl-4 space-y-0.5">
+        {addons.slice(0, 2).map((addon, index) => (
+          <div key={addon.id || index} className="text-xs text-gray-600">
+            • {addon.name} (£{addon.price})
+            {addon.description && (
+              <span className="text-gray-400 ml-1">- {addon.description}</span>
+            )}
+          </div>
+        ))}
+        {addons.length > 2 && (
+          <div className="text-xs text-gray-500">
+            ... and {addons.length - 2} more
+          </div>
+        )}
+      </div>
+      <div className="text-xs text-amber-600 font-medium">
+        Total: £{addons.reduce((sum, addon) => sum + (addon.price || 0), 0)}
+      </div>
+    </div>
+  )
+})()}
   </div>
 </td>
                       <td className="p-4 text-muted-foreground">{lead.lead}</td>

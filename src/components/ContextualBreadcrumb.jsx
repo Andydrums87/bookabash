@@ -1,113 +1,120 @@
-// components/ContextualBreadcrumb.js
-'use client';
+"use client"
 
-import { useContextualNavigation } from '../hooks/useContextualNavigation';
-import { ChevronLeft, AlertCircle } from 'lucide-react';
+import { useContextualNavigation } from "../hooks/useContextualNavigation"
+import { ChevronLeft, AlertCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-export function ContextualBreadcrumb({ 
-  currentPage, 
-  customBack, 
+export function ContextualBreadcrumb({
+  currentPage,
+  customBack,
   className = "",
   hasUnsavedChanges = false,
-  unsavedMessage = "Unsaved changes"
+  unsavedMessage = "Unsaved changes",
 }) {
-  const { navigationContext, goBack } = useContextualNavigation();
+  const { navigationContext, goBack } = useContextualNavigation()
+  const router = useRouter()
 
   const getBreadcrumbConfig = () => {
     switch (currentPage) {
-      case 'browse':
-        if (navigationContext === 'dashboard') {
+      case "browse":
+        if (navigationContext === "dashboard") {
           return {
             show: true,
-            backText: 'Dashboard',
-            currentText: 'Browse Suppliers',
+            backText: "Dashboard",
+            currentText: "Browse Suppliers",
             action: () => {
-              sessionStorage.removeItem('navigationContext');
-              goBack();
-            }
-          };
+              sessionStorage.removeItem("navigationContext")
+              goBack()
+            },
+          }
         }
-        return { 
-          show: true, 
-          backText: 'Home', 
-          currentText: 'Browse Suppliers',
-          action: () => goBack()
-        };
+        return {
+          show: true,
+          backText: "Home",
+          currentText: "Browse Suppliers",
+          action: () => goBack(),
+        }
 
-        case 'supplier-detail':
-          return {
-            show: true,
-            backText: navigationContext === 'dashboard' ? 'Dashboard' : 'Browse Suppliers',
-            currentText: 'Supplier Details',
-            action: () => {
-              if (navigationContext === 'dashboard') {
-                router.push('/dashboard');
-              } else {
-                router.push('/browse'); // Explicitly go to browse instead of history.back()
-              }
+      case "supplier-detail":
+        return {
+          show: true,
+          backText: navigationContext === "dashboard" ? "Dashboard" : "Browse Suppliers",
+          currentText: "Supplier Details",
+          action: () => {
+            if (navigationContext === "dashboard") {
+              router.push("/dashboard")
+            } else {
+              router.push("/browse")
             }
-          };
+          },
+        }
 
-      case 'add-supplier':
+      case "add-supplier":
         return {
           show: true,
-          backText: 'Supplier Details',
-          currentText: 'Add Supplier',
-          action: goBack
-        };
+          backText: "Supplier Details",
+          currentText: "Add Supplier",
+          action: goBack,
+        }
 
-      case 'e-invites':
+      case "e-invites":
         return {
           show: true,
-          backText: 'Dashboard',
-          currentText: 'E-Invites',
-          action: goBack
-        };
+          backText: "Dashboard",
+          currentText: "E-Invites",
+          action: goBack,
+        }
 
-      case 'party-summary':
+      case "review-book":
         return {
           show: true,
-          backText: 'Dashboard', 
-          currentText: 'Party Summary',
-          action: goBack
-        };
+          backText: "Dashboard",
+          currentText: "Review & Book",
+          action: () => router.push("/dashboard"),
+        }
 
       default:
-        return { show: false };
+        return { show: false }
     }
-  };
-
-  const breadcrumbConfig = getBreadcrumbConfig();
-
-  if (!breadcrumbConfig.show && !customBack) {
-    return null;
   }
 
-  const handleClick = customBack?.action || breadcrumbConfig.action;
-  const backText = customBack?.backText || breadcrumbConfig.backText;
-  const currentText = customBack?.currentText || breadcrumbConfig.currentText;
+  const breadcrumbConfig = getBreadcrumbConfig()
+
+  if (!breadcrumbConfig.show && !customBack) {
+    return null
+  }
+
+  const handleClick = customBack?.action || breadcrumbConfig.action
+  const backText = customBack?.backText || breadcrumbConfig.backText
+  const currentText = customBack?.currentText || breadcrumbConfig.currentText
 
   return (
-    <div className={`bg-white border-b border-gray-200 px-4 py-3 ${className}`}>
+    <div className={`bg-white border-b border-[hsl(var(--primary-100))] px-4 py-2 ${className}`}>
       <div className="max-w-7xl mx-auto">
-        <nav className="flex items-center space-x-2 text-xs">
-          <button
-            onClick={handleClick}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            {backText}
-          </button>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-900 font-medium">{currentText}</span>
+        <nav className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleClick}
+              className="cursor-pointer flex items-center space-x-1 text-primary-600 hover:text-primary-700 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">{backText}</span>
+            </button>
+
+            <span className="text-primary-300">/</span>
+
+            <span className="text-sm font-medium cursor-pointer hover:text-[hsl(var(--primary-600))] text-gray-900">{currentText}</span>
+          </div>
+
           {hasUnsavedChanges && (
-            <div className="flex items-center ml-4 text-orange-600">
-              <AlertCircle className="w-4 h-4 mr-1" />
-              <span className="text-xs font-medium">{unsavedMessage}</span>
+            <div className="flex items-center space-x-2 text-amber-600">
+              <AlertCircle className="w-4 h-4" />
+              <span className="hidden sm:inline text-sm font-medium">{unsavedMessage}</span>
+              <span className="sm:hidden text-sm font-medium">Unsaved</span>
             </div>
           )}
         </nav>
       </div>
     </div>
-  );
+  )
 }

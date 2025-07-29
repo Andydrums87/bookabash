@@ -67,6 +67,7 @@ export default function BookingProgressTracker({
         ? 'border-green-400 bg-green-50 shadow-lg' 
         : 'border-blue-200 bg-blue-50'
     }`}>
+ 
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -87,7 +88,7 @@ export default function BookingProgressTracker({
             </div>
           )}
         </div>
-
+     
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -171,7 +172,10 @@ export default function BookingProgressTracker({
             </div>
           </div>
         )}
+
+
       </CardContent>
+  
     </Card>
   )
 }

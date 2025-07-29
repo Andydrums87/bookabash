@@ -1,7 +1,4 @@
-// ===================================================================
-// 1. MAIN ROUTER COMPONENT - Clean routing logic with onboarding
-// ===================================================================
-// pages/dashboard/page.jsx
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -33,7 +30,7 @@ export default function DashboardPage() {
           
           if (partyResult.success && partyResult.party) {
             // Has database party - use database dashboard
-            console.log('🎯 Router: Found database party, showing DatabaseDashboard')
+ 
             setUserType('database')
           } else {
             // Signed in but no database party - check localStorage
@@ -98,10 +95,7 @@ export default function DashboardPage() {
           const localPlan = localStorage.getItem('party_plan')
           const localDetails = localStorage.getItem('party_details')
           
-          console.log('👤 Router: User not signed in, checking localStorage:', { 
-            localPlan: !!localPlan, 
-            localDetails: !!localDetails 
-          })
+      
           
           // Parse and check localStorage data more thoroughly
           let hasValidPartyPlan = false
@@ -135,19 +129,18 @@ export default function DashboardPage() {
                 parsedDetails.guestCount ||
                 parsedDetails.postcode
               )
-              console.log('📋 Router: Party details validity (unsigned):', hasValidPartyDetails, parsedDetails)
+       
             } catch (e) {
               console.log('⚠️ Router: Failed to parse party_details (unsigned)')
             }
           }
           
           if (hasValidPartyPlan || hasValidPartyDetails) {
-            // Has meaningful party data - use localStorage dashboard
-            console.log('🎯 Router: Found valid localStorage data (unsigned), showing LocalStorageDashboard')
+  
+ 
             setUserType('localStorage')
           } else {
-            // First time user with no data - show onboarding
-            console.log('🎯 Router: No valid data found (unsigned), showing onboarding')
+            
             setUserType('onboarding')
           }
         }
@@ -163,147 +156,142 @@ export default function DashboardPage() {
     determineUserType()
   }, [refreshKey]) // Add refreshKey as dependency
 
-  useEffect(() => {
-    const determineUserType = async () => {
-      try {
-        // Check if user is signed in
-        const userResult = await partyDatabaseBackend.getCurrentUser()
+  // useEffect(() => {
+  //   const determineUserType = async () => {
+  //     try {
+  //       // Check if user is signed in
+  //       const userResult = await partyDatabaseBackend.getCurrentUser()
         
-        if (userResult.success) {
-          // User is signed in - check for database party
-          const partyResult = await partyDatabaseBackend.getCurrentParty()
+  //       if (userResult.success) {
+  //         // User is signed in - check for database party
+  //         const partyResult = await partyDatabaseBackend.getCurrentParty()
           
-          if (partyResult.success && partyResult.party) {
-            // Has database party - use database dashboard
-            console.log('🎯 Router: Found database party, showing DatabaseDashboard')
-            setUserType('database')
-          } else {
-            // Signed in but no database party - check localStorage
-            const localPlan = localStorage.getItem('party_plan')
-            const localDetails = localStorage.getItem('party_details')
-            
-            console.log('🔍 Router: Checking localStorage data:', { 
-              localPlan: !!localPlan, 
-              localDetails: !!localDetails 
-            })
-            
-            // Parse and check localStorage data more thoroughly
-            let hasValidPartyPlan = false
-            let hasValidPartyDetails = false
-            
-            if (localPlan) {
-              try {
-                const parsedPlan = JSON.parse(localPlan)
-                // Check if party plan has actual suppliers or meaningful data
-                hasValidPartyPlan = parsedPlan && (
-                  Object.keys(parsedPlan).some(key => 
-                    parsedPlan[key] && 
-                    typeof parsedPlan[key] === 'object' && 
-                    parsedPlan[key].name // Has supplier with name
-                  )
-                )
-                console.log('📦 Router: Party plan validity:', hasValidPartyPlan, parsedPlan)
-              } catch (e) {
-                console.log('⚠️ Router: Failed to parse party_plan')
-              }
-            }
-            
-            if (localDetails) {
-              try {
-                const parsedDetails = JSON.parse(localDetails)
-                // Check if party details has meaningful data (not just defaults)
-                hasValidPartyDetails = parsedDetails && (
-                  parsedDetails.theme || 
-                  parsedDetails.date || 
-                  (parsedDetails.childName && parsedDetails.childName !== 'Emma') ||
-                  parsedDetails.guestCount ||
-                  parsedDetails.postcode
-                )
-                console.log('📋 Router: Party details validity:', hasValidPartyDetails, parsedDetails)
-              } catch (e) {
-                console.log('⚠️ Router: Failed to parse party_details')
-              }
-            }
-            
-            if (hasValidPartyPlan || hasValidPartyDetails) {
-              // Has meaningful party data - use localStorage dashboard
-              console.log('🎯 Router: Found valid localStorage data, showing LocalStorageDashboard')
-              setUserType('localStorage')
-            } else {
-              // No meaningful data - show onboarding
-              console.log('🎯 Router: No valid data found, showing onboarding')
-              setUserType('onboarding')
-            }
-          }
-        } else {
-          // Not signed in - check for localStorage data
-          const localPlan = localStorage.getItem('party_plan')
-          const localDetails = localStorage.getItem('party_details')
-          
-          console.log('👤 Router: User not signed in, checking localStorage:', { 
-            localPlan: !!localPlan, 
-            localDetails: !!localDetails 
-          })
-          
-          // Parse and check localStorage data more thoroughly
-          let hasValidPartyPlan = false
-          let hasValidPartyDetails = false
-          
-          if (localPlan) {
-            try {
-              const parsedPlan = JSON.parse(localPlan)
-              // Check if party plan has actual suppliers
-              hasValidPartyPlan = parsedPlan && (
-                Object.keys(parsedPlan).some(key => 
-                  parsedPlan[key] && 
-                  typeof parsedPlan[key] === 'object' && 
-                  parsedPlan[key].name // Has supplier with name
-                )
-              )
-              console.log('📦 Router: Party plan validity (unsigned):', hasValidPartyPlan, parsedPlan)
-            } catch (e) {
-              console.log('⚠️ Router: Failed to parse party_plan (unsigned)')
-            }
-          }
-          
-          if (localDetails) {
-            try {
-              const parsedDetails = JSON.parse(localDetails)
-              // Check if party details has meaningful data
-              hasValidPartyDetails = parsedDetails && (
-                parsedDetails.theme || 
-                parsedDetails.date || 
-                (parsedDetails.childName && parsedDetails.childName !== 'Emma') ||
-                parsedDetails.guestCount ||
-                parsedDetails.postcode
-              )
-              console.log('📋 Router: Party details validity (unsigned):', hasValidPartyDetails, parsedDetails)
-            } catch (e) {
-              console.log('⚠️ Router: Failed to parse party_details (unsigned)')
-            }
-          }
-          
-          if (hasValidPartyPlan || hasValidPartyDetails) {
-            // Has meaningful party data - use localStorage dashboard
-            console.log('🎯 Router: Found valid localStorage data (unsigned), showing LocalStorageDashboard')
-            setUserType('localStorage')
-          } else {
-            // First time user with no data - show onboarding
-            console.log('🎯 Router: No valid data found (unsigned), showing onboarding')
-            setUserType('onboarding')
-          }
-        }
-      } catch (error) {
-        console.error('❌ Router: Error determining user type:', error)
-        // On error, default to localStorage to avoid blocking users
-        setUserType('localStorage')
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  //         if (partyResult.success && partyResult.party) {
+  //           // Has database party - use database dashboard
 
-    determineUserType()
-  }, [])
+  //           setUserType('database')
+  //         } else {
+  //           // Signed in but no database party - check localStorage
+  //           const localPlan = localStorage.getItem('party_plan')
+  //           const localDetails = localStorage.getItem('party_details')
+            
+  //           console.log('🔍 Router: Checking localStorage data:', { 
+  //             localPlan: !!localPlan, 
+  //             localDetails: !!localDetails 
+  //           })
+            
+  //           // Parse and check localStorage data more thoroughly
+  //           let hasValidPartyPlan = false
+  //           let hasValidPartyDetails = false
+            
+  //           if (localPlan) {
+  //             try {
+  //               const parsedPlan = JSON.parse(localPlan)
+  //               // Check if party plan has actual suppliers or meaningful data
+  //               hasValidPartyPlan = parsedPlan && (
+  //                 Object.keys(parsedPlan).some(key => 
+  //                   parsedPlan[key] && 
+  //                   typeof parsedPlan[key] === 'object' && 
+  //                   parsedPlan[key].name // Has supplier with name
+  //                 )
+  //               )
+  //               console.log('📦 Router: Party plan validity:', hasValidPartyPlan, parsedPlan)
+  //             } catch (e) {
+  //               console.log('⚠️ Router: Failed to parse party_plan')
+  //             }
+  //           }
+            
+  //           if (localDetails) {
+  //             try {
+  //               const parsedDetails = JSON.parse(localDetails)
+  //               // Check if party details has meaningful data (not just defaults)
+  //               hasValidPartyDetails = parsedDetails && (
+  //                 parsedDetails.theme || 
+  //                 parsedDetails.date || 
+  //                 (parsedDetails.childName && parsedDetails.childName !== 'Emma') ||
+  //                 parsedDetails.guestCount ||
+  //                 parsedDetails.postcode
+  //               )
+  //               console.log('📋 Router: Party details validity:', hasValidPartyDetails, parsedDetails)
+  //             } catch (e) {
+  //               console.log('⚠️ Router: Failed to parse party_details')
+  //             }
+  //           }
+            
+  //           if (hasValidPartyPlan || hasValidPartyDetails) {
+  //             // Has meaningful party data - use localStorage dashboard
+  //             console.log('🎯 Router: Found valid localStorage data, showing LocalStorageDashboard')
+  //             setUserType('localStorage')
+  //           } else {
+  //             // No meaningful data - show onboarding
+  //             console.log('🎯 Router: No valid data found, showing onboarding')
+  //             setUserType('onboarding')
+  //           }
+  //         }
+  //       } else {
+  //         // Not signed in - check for localStorage data
+  //         const localPlan = localStorage.getItem('party_plan')
+  //         const localDetails = localStorage.getItem('party_details')
+          
+          
+  //         // Parse and check localStorage data more thoroughly
+  //         let hasValidPartyPlan = false
+  //         let hasValidPartyDetails = false
+          
+  //         if (localPlan) {
+  //           try {
+  //             const parsedPlan = JSON.parse(localPlan)
+  //             // Check if party plan has actual suppliers
+  //             hasValidPartyPlan = parsedPlan && (
+  //               Object.keys(parsedPlan).some(key => 
+  //                 parsedPlan[key] && 
+  //                 typeof parsedPlan[key] === 'object' && 
+  //                 parsedPlan[key].name // Has supplier with name
+  //               )
+  //             )
+  //             console.log('📦 Router: Party plan validity (unsigned):', hasValidPartyPlan, parsedPlan)
+  //           } catch (e) {
+  //             console.log('⚠️ Router: Failed to parse party_plan (unsigned)')
+  //           }
+  //         }
+          
+  //         if (localDetails) {
+  //           try {
+  //             const parsedDetails = JSON.parse(localDetails)
+  //             // Check if party details has meaningful data
+  //             hasValidPartyDetails = parsedDetails && (
+  //               parsedDetails.theme || 
+  //               parsedDetails.date || 
+  //               (parsedDetails.childName && parsedDetails.childName !== 'Emma') ||
+  //               parsedDetails.guestCount ||
+  //               parsedDetails.postcode
+  //             )
+
+  //           } catch (e) {
+  //             console.log('⚠️ Router: Failed to parse party_details (unsigned)')
+  //           }
+  //         }
+          
+  //         if (hasValidPartyPlan || hasValidPartyDetails) {
+  //           // Has meaningful party data - use localStorage dashboard
+   
+  //           setUserType('localStorage')
+  //         } else {
+        
+  //           setUserType('onboarding')
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error('❌ Router: Error determining user type:', error)
+  //       // On error, default to localStorage to avoid blocking users
+  //       setUserType('localStorage')
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   }
+
+  //   determineUserType()
+  // }, [])
 
   // Helper functions for onboarding (same as your existing logic)
   const mapThemeValue = (formTheme) => {
@@ -352,34 +340,55 @@ export default function DashboardPage() {
     return postcodeMap[postcode] || "London"
   }
 
-  // Handle onboarding form submission
+
   const handleOnboardingSubmit = async (formData) => {
-    console.log('🎉 Creating party plan from dashboard onboarding:', formData)
-    
     if (isBuilding) return
     
     try {
       setIsBuilding(true)
       
-      // Use the same data structure as your home page
       const partyDetails = {
         date: formData.date,
         theme: mapThemeValue(formData.theme),
         guestCount: Number.parseInt(formData.guestCount),
         location: mapPostcodeToLocation(formData.postcode),
         postcode: formData.postcode,
-        childName: "Emma", // Default - will be updated via welcome popup
-        childAge: 6, // Default - will be updated via welcome popup
-        budget: formData.budget || 500, // Use their selected budget
+        childName: "Emma", 
+        childAge: 6, 
+        budget: formData.budget || 500,
+        
+        // NEW: Time slot fields from onboarding form
+        timeSlot: formData.timeSlot || "afternoon",
+        duration: formData.duration || 2,
+        
+        // Handle specific time if user chose it
+        specificTime: formData.needsSpecificTime ? formData.specificTime : null,
+        
+        // Legacy support
+        time: formData.needsSpecificTime ? 
+          formData.specificTime : 
+          convertTimeSlotToLegacyTime(formData.timeSlot || "afternoon"),
+        
+        // Time preference metadata
+        timePreference: formData.timePreference || {
+          type: formData.needsSpecificTime ? 'specific' : 'flexible',
+          slot: formData.timeSlot || "afternoon",
+          duration: formData.duration || 2,
+          specificTime: formData.needsSpecificTime ? formData.specificTime : null
+        }
       }
 
-      console.log("🎪 Building party from dashboard onboarding with theme:", partyDetails.theme)
-
+  
       // Call the buildParty function
       const result = await buildParty(partyDetails)
-
+  
       if (result.success) {
         console.log("✅ Party built successfully from dashboard onboarding!")
+        console.log("⏰ Time slot information:", {
+          timeSlot: result.timeSlot,
+          duration: result.duration,
+          timeWindow: result.timeWindow
+        })
         
         // Give a small delay to ensure localStorage is updated
         setTimeout(() => {
@@ -404,6 +413,15 @@ export default function DashboardPage() {
     } finally {
       setIsBuilding(false)
     }
+  }
+  
+  // 3. Helper function to use in both handlers
+  const convertTimeSlotToLegacyTime = (timeSlot) => {
+    const timeSlotDefaults = {
+      morning: '11:00',
+      afternoon: '14:00'
+    };
+    return timeSlotDefaults[timeSlot] || '14:00';
   }
 
   if (isLoading) {

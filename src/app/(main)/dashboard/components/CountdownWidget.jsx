@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { PartyPopper, Clock, Sparkles } from "lucide-react"
+import { PartyPopper, Clock, Sparkles, Calendar } from "lucide-react"
 
 export default function CountdownWidget({ partyDate = "2025-06-14T14:00:00" }) {
-  const [timeUntilParty, setTimeUntilParty] = useState({ days: 0, hours: 0, minutes: 0 })
+  const [timeUntilParty, setTimeUntilParty] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const [isPartyTime, setIsPartyTime] = useState(false)
 
   useEffect(() => {
     const calculateTimeUntilParty = () => {
@@ -17,49 +18,113 @@ export default function CountdownWidget({ partyDate = "2025-06-14T14:00:00" }) {
         const days = Math.floor(difference / (1000 * 60 * 60 * 24))
         const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000)
 
-        setTimeUntilParty({ days, hours, minutes })
+        setTimeUntilParty({ days, hours, minutes, seconds })
+        setIsPartyTime(false)
       } else {
-        setTimeUntilParty({ days: 0, hours: 0, minutes: 0 })
+        setTimeUntilParty({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+        setIsPartyTime(true)
       }
     }
 
     calculateTimeUntilParty()
-    const interval = setInterval(calculateTimeUntilParty, 60000) // Update every minute
+    const interval = setInterval(calculateTimeUntilParty, 1000)
 
     return () => clearInterval(interval)
   }, [partyDate])
 
+  if (isPartyTime) {
+    return (
+      <Card className="bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] border-2 border-[hsl(var(--primary-300))] shadow-lg">
+        <CardContent className="p-8">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <PartyPopper className="w-10 h-10 text-primary-600 animate-bounce" />
+              <h3 className="text-2xl font-bold text-primary-800">🎉 PARTY TIME! 🎉</h3>
+              <PartyPopper className="w-10 h-10 text-primary-600 animate-bounce" style={{ animationDelay: "0.5s" }} />
+            </div>
+            <p className="text-lg text-primary-700 font-medium">The magical day has arrived!</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card className="bg-[#fef7f7] border-2 border-primary-200 shadow-lg hover:shadow-xl transition-all duration-300">
-      <CardContent className="p-6">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <PartyPopper className="w-8 h-8 text-orange-500 animate-bounce" />
-            <h3 className="text-xl font-bold text-gray-900">Party Countdown!</h3>
-            <PartyPopper className="w-8 h-8 text-orange-500 animate-bounce" style={{ animationDelay: "0.5s" }} />
+    <Card className="bg-gradient-to-br from-[hsl(var(--primary-50))] to-white border-2 border-[hsl(var(--primary-200))] shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <CardContent className="p-8">
+        <div className="text-center space-y-6">
+          {/* Header */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-3">
+       
+              <h3 className="text-xl font-bold text-gray-900">Party Countdown</h3>
+
+            </div>
+
+            {/* <div className="flex items-center justify-center gap-2 text-primary-600">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {new Date(partyDate).toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div> */}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-3 shadow-sm border-2 border-primary-200">
+          {/* Countdown Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Days */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-200))] hover:border-[hsl(var(--primary-300))] transition-colors">
               <div className="text-3xl font-bold text-primary-600">{timeUntilParty.days}</div>
               <div className="text-sm text-gray-600 font-medium">Days</div>
             </div>
-            <div className="bg-white rounded-xl p-3 shadow-sm border-2 border-primary-300">
+
+            {/* Hours */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] transition-colors">
               <div className="text-3xl font-bold text-primary-700">{timeUntilParty.hours}</div>
               <div className="text-sm text-gray-600 font-medium">Hours</div>
             </div>
-            <div className="bg-white rounded-xl p-3 shadow-sm border-2 border-primary-400">
+
+            {/* Minutes */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-400))] hover:border-[hsl(var(--primary-500))] transition-colors">
               <div className="text-3xl font-bold text-primary-800">{timeUntilParty.minutes}</div>
               <div className="text-sm text-gray-600 font-medium">Minutes</div>
             </div>
+
+            {/* Seconds */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-500))] hover:border-[hsl(var(--primary-600))] transition-colors">
+              <div className="text-3xl font-bold text-primary-900">{timeUntilParty.seconds}</div>
+              <div className="text-sm text-gray-600 font-medium">Seconds</div>
+            </div>
           </div>
 
-          <p className="text-sm text-gray-700 font-medium flex items-center justify-center gap-2">
+          {/* Footer Message */}
+          {/* <div className="flex items-center justify-center gap-2 text-primary-700">
             <Clock className="w-4 h-4" />
-            Until the magical day arrives!
+            <span className="text-base font-medium">Until the magical day arrives!</span>
             <Sparkles className="w-4 h-4 animate-pulse" />
-          </p>
+          </div> */}
+
+          {/* Simple Progress Bar */}
+          {/* <div className="space-y-2">
+            <div className="w-full h-2 bg-primary-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] rounded-full transition-all duration-1000"
+                style={{
+                  width: `${Math.max(10, Math.min(90, 100 - timeUntilParty.days * 2))}%`,
+                }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-primary-600 font-medium">
+              <span>Planning</span>
+              <span>Party Time!</span>
+            </div>
+          </div> */}
         </div>
       </CardContent>
     </Card>
