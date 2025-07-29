@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Mail, Gift, X, Sparkles } from "lucide-react"
+import { Mail, Gift, X, Sparkles, Clock } from "lucide-react"
 
 export default function SupplierCard({
   type,
@@ -273,10 +273,42 @@ export default function SupplierCard({
       case "awaiting_response":
         return {
           borderClass: "border-amber-300 bg-gradient-to-br from-amber-50 to-white",
-          overlayContent: null, // No overlay - just clear visual state
+          overlayContent: (
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-50/90 to-amber-100/90 backdrop-blur-sm z-30 flex items-center justify-center rounded-2xl">
+              <div className="text-center p-6">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Clock className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-bold text-amber-800 mb-2">Awaiting Response</h3>
+                <p className="text-sm text-amber-700 mb-6">We've sent your enquiry to {supplier.name}</p>
+                <div className="flex items-center justify-center space-x-1 text-xs text-amber-600 mb-4">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                    <div
+                      className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.4s" }}
+                    ></div>
+                  </div>
+                  <span className="font-medium ml-2">Response expected within 24 hours</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteSupplier(type)}
+                  className="border-amber-300 text-amber-700 hover:bg-amber-100 bg-white/50"
+                >
+                  Cancel Request
+                </Button>
+              </div>
+            </div>
+          ),
           badgeClass: "text-amber-700 border-amber-300 bg-amber-50",
           badgeText: "Enquiry Sent",
-          imageOpacity: "opacity-70", // Less faded so it's still visible
+          imageOpacity: "opacity-40 grayscale",
           canEdit: false,
           canRemoveAddons: false,
         }
@@ -436,34 +468,6 @@ export default function SupplierCard({
               </Badge>
             </div>
 
-            {/* Minimal awaiting response info */}
-            {supplierState === "awaiting_response" && (
-              <div className="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="flex space-x-1">
-                    <div className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"></div>
-                    <div
-                      className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
-                  </div>
-                  <span className="text-amber-700 font-medium">Awaiting response</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteSupplier(type)}
-                  className="text-amber-600 hover:text-amber-800 hover:bg-amber-100 text-xs px-2 py-1 h-5"
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
-
             {/* Add-ons Section */}
             {supplierAddons.length > 0 && (
               <div
@@ -566,7 +570,7 @@ export default function SupplierCard({
         )}
 
         {/* Change Supplier Button for Selected State */}
-        {!isPaymentConfirmed && stateConfig.canEdit && supplierState !== "awaiting_response" && (
+        {!isPaymentConfirmed && stateConfig.canEdit && (
           <div className="mt-4 pt-4 border-t border-[hsl(var(--primary-100))]">
             <Button
               variant="outline"
