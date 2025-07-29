@@ -18,7 +18,7 @@ function PaymentSuccessLoading() {
 export default function PaymentSuccessPage() {
   return (
     <Suspense fallback={<PaymentSuccessLoading />}>
-      <PaymentSuccessContent />
+     <PaymentSuccessPage />
     </Suspense>
   )
 }

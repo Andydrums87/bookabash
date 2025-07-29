@@ -402,7 +402,7 @@ const handleCreateInvites = () => {
              {/* Desktop Supplier Grid */}
 <div className={`hidden md:grid gap-6 ${
   hasEnquiriesPending 
-    ? 'md:grid-cols-1 h-[40%] lg:grid-cols-3 max-w-4xl mx-auto' // Focused layout
+    ? 'md:grid-cols-2 md:h-[30%] lg:grid-cols-2 xl:grid-cols-3 max-w-4xl mx-auto' // Focused layout
     : 'md:grid-cols-3' // Normal layout
 }`}>
   {Object.entries(visibleSuppliers).map(([type, supplier]) => (
