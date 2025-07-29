@@ -27,6 +27,26 @@ export default function SupplierCard({
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
 
+  // Add this helper function if getSupplierDisplayName is not provided
+  const getDisplayName = (supplierType) => {
+    if (getSupplierDisplayName) {
+      return getSupplierDisplayName(supplierType)
+    }
+    // Fallback display names
+    const displayNames = {
+      venue: "Venue",
+      entertainment: "Entertainment",
+      catering: "Catering",
+      facePainting: "Face Painting",
+      activities: "Activities",
+      decorations: "Decorations",
+      balloons: "Balloons",
+      partyBags: "Party Bags",
+      einvites: "E-Invites",
+    }
+    return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
+  }
+
   // Determine the actual state to show
   const getSupplierState = () => {
     if (!supplier) return "empty"
@@ -416,39 +436,38 @@ export default function SupplierCard({
               </Badge>
             </div>
 
-            {/* Enhanced awaiting response info */}
+            {/* Compact awaiting response info */}
             {supplierState === "awaiting_response" && (
-              <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
-                <div className="flex items-center gap-3 mb-3">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                  <div>
-                    <h4 className="font-semibold text-amber-800">Awaiting Response</h4>
-                    <p className="text-sm text-amber-700">We've sent your enquiry to {supplier.name}</p>
-                  </div>
-                </div>
+              <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-sm text-amber-600">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <div>
+                      <h4 className="text-sm font-semibold text-amber-800">Enquiry Sent</h4>
+                      <p className="text-xs text-amber-700">Response within 24 hours</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                      <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
                       <div
-                        className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+                        className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"
                         style={{ animationDelay: "0.2s" }}
                       ></div>
                       <div
-                        className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
+                        className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"
                         style={{ animationDelay: "0.4s" }}
                       ></div>
                     </div>
-                    <span className="font-medium">Response expected within 24 hours</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteSupplier(type)}
+                      className="border-amber-300 text-amber-700 hover:bg-amber-100 bg-white/50 text-xs px-2 py-1 h-6"
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteSupplier(type)}
-                    className="border-amber-300 text-amber-700 hover:bg-amber-100 bg-white/50 text-xs px-3 py-1"
-                  >
-                    Cancel Request
-                  </Button>
                 </div>
               </div>
             )}
@@ -563,7 +582,7 @@ export default function SupplierCard({
               onClick={() => openSupplierModal(type)}
               disabled={isDeleting}
             >
-              {isDeleting ? "Removing..." : `Change ${getSupplierDisplayName(type)}`}
+              {isDeleting ? "Removing..." : `Change ${getDisplayName(type)}`}
             </Button>
           </div>
         )}
