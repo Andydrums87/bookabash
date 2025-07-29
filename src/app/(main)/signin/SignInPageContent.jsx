@@ -13,7 +13,7 @@ import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
-export default function SignInPage() {
+export default function SignInPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   

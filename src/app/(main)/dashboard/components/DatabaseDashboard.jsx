@@ -505,7 +505,7 @@ const handleCreateInvites = () => {
             {/* Mobile Supplier Tabs */}
             <div className="md:hidden">
               <MobileSupplierTabs
-                suppliers={suppliers}
+                   suppliers={visibleSuppliers} 
                 loadingCards={loadingCards}
                 suppliersToDelete={suppliersToDelete}
                 openSupplierModal={openSupplierModal}
