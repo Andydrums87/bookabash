@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from 'react'
-import PaymentSuccessPage from './PaymentSuccessContent'
+import PaymentSuccessContent from './PaymentSuccessContent'
 
 // Loading component for the suspense fallback
 function PaymentSuccessLoading() {
@@ -18,7 +18,7 @@ function PaymentSuccessLoading() {
 export default function PaymentSuccessPage() {
   return (
     <Suspense fallback={<PaymentSuccessLoading />}>
-     <PaymentSuccessPage />
+      <PaymentSuccessContent />
     </Suspense>
   )
 }

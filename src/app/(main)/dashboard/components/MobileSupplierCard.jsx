@@ -377,20 +377,19 @@ export default function MobileSupplierCard({
             <Skeleton className="w-full h-full" />
           ) : (
             <>
-        
-        <div className="relative w-full h-48 bg-gradient-to-br from-white to-[hsl(var(--primary-50))] mt-8">
-          <div
-            className="absolute bg-[hsl(var(--primary-100))] inset-0 mask-image"
-            style={{
-              WebkitMaskImage: 'url("/image.svg")',
-              WebkitMaskRepeat: "no-repeat",
-              WebkitMaskSize: "contain",
-              WebkitMaskPosition: "center",
-              maskImage: 'url("/image.svg")',
-              maskRepeat: "no-repeat",
-              maskSize: "contain",
-              maskPosition: "center",
-            }}
+              <div className="absolute top-[-8px] left-0 w-full h-full">
+                <div
+                  className={`relative w-[85%] h-[100%] mask-image mx-auto mt-6 transition-all duration-300 ${stateConfig.imageOpacity}`}
+                  style={{
+                    WebkitMaskImage: 'url("/image.svg")',
+                    WebkitMaskRepeat: "no-repeat",
+                    WebkitMaskSize: "contain",
+                    WebkitMaskPosition: "center",
+                    maskImage: 'url("/image.svg")',
+                    maskRepeat: "no-repeat",
+                    maskSize: "contain",
+                    maskPosition: "center",
+                  }}
                 >
                   <Image
                     src={
@@ -453,7 +452,7 @@ export default function MobileSupplierCard({
         </div>
 
         {/* Smaller content section */}
-        <CardContent className="px-3 mt-20 pt-3 pb-4 bg-gradient-to-b from-white to-[hsl(var(--primary-50))]">
+        <CardContent className="px-3 pt-3 pb-4 bg-gradient-to-b from-white to-[hsl(var(--primary-50))]">
           {isLoading ? (
             <>
               <Skeleton className="h-5 w-3/4 mb-2" />
