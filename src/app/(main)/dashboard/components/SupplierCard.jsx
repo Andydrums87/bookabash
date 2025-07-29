@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Mail, Gift, X, Clock, Sparkles } from "lucide-react"
+import { Mail, Gift, X, Sparkles } from "lucide-react"
 
 export default function SupplierCard({
   type,
@@ -436,40 +436,31 @@ export default function SupplierCard({
               </Badge>
             </div>
 
-            {/* Enhanced awaiting response info */}
+            {/* Minimal awaiting response info */}
             {supplierState === "awaiting_response" && (
-              <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
-                <div className="flex items-center gap-3 mb-3">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                  <div>
-                    <h4 className="font-semibold text-amber-800">Awaiting Response</h4>
-                    <p className="text-sm text-amber-700">We've sent your enquiry to {supplier.name}</p>
+              <div className="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="flex space-x-1">
+                    <div className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"></div>
+                    <div
+                      className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
+                    <div
+                      className="w-1 h-1 bg-amber-500 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.4s" }}
+                    ></div>
                   </div>
+                  <span className="text-amber-700 font-medium">Awaiting response</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-sm text-amber-600">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                      <div
-                        className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
-                    </div>
-                    <span className="font-medium">Response expected within 24 hours</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteSupplier(type)}
-                    className="border-amber-300 text-amber-700 hover:bg-amber-100 bg-white/50 text-xs px-3 py-1"
-                  >
-                    Cancel Request
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteSupplier(type)}
+                  className="text-amber-600 hover:text-amber-800 hover:bg-amber-100 text-xs px-2 py-1 h-5"
+                >
+                  Cancel
+                </Button>
               </div>
             )}
 
@@ -575,7 +566,7 @@ export default function SupplierCard({
         )}
 
         {/* Change Supplier Button for Selected State */}
-        {!isPaymentConfirmed && stateConfig.canEdit && (
+        {!isPaymentConfirmed && stateConfig.canEdit && supplierState !== "awaiting_response" && (
           <div className="mt-4 pt-4 border-t border-[hsl(var(--primary-100))]">
             <Button
               variant="outline"
