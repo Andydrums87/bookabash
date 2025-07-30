@@ -10,6 +10,7 @@ export function ContextualBreadcrumb({
   className = "",
   hasUnsavedChanges = false,
   unsavedMessage = "Unsaved changes",
+  id,
 }) {
   const { navigationContext, goBack } = useContextualNavigation()
   const router = useRouter()
@@ -72,6 +73,27 @@ export function ContextualBreadcrumb({
           currentText: "Review & Book",
           action: () => router.push("/dashboard"),
         }
+        case "Build Party":
+          return {
+            show: true,
+            backText: "Home",
+            currentText: "Build Party",
+            action: () => router.push("/"),
+          }
+          case "Browse Gifts":
+            return {
+              show: true,
+              backText: "Dashboard",
+              currentText: "Gift Registry",
+              action: () => router.push("/dashboard"),
+            }
+            case "Gift Registry Preview":
+            return {
+              show: true,
+              backText: "Browse Gifts",
+              currentText: "Gift Registry",
+              action: () => router.push(`/gift-registry/${id}/create`),
+            }
 
       default:
         return { show: false }

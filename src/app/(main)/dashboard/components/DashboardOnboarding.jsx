@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useRef } from "react"
 import { Calendar, MapPin, Sparkles, Search, Users, Clock, ChevronLeft, ChevronRight, Sun, Sunset } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -12,14 +11,14 @@ import PartyBuilderLoader from "@/components/Home/PartyBuildingLoader"
 export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false }) {
   const [formData, setFormData] = useState({
     date: "",
-    timeSlot: "", // Changed from 'time' to 'timeSlot'
+    timeSlot: "",
     duration: 2,
     guestCount: "",
     location: "",
     budget: 300,
     theme: "",
-    specificTime: "", // For when user chooses specific time
-    needsSpecificTime: false, // Toggle for specific time option
+    specificTime: "",
+    needsSpecificTime: false,
   })
 
   const [selectedTheme, setSelectedTheme] = useState("")
@@ -45,11 +44,9 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Show loader
       setShowLoader(true)
       setLoaderProgress(0)
 
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setLoaderProgress((prev) => {
           if (prev >= 90) {
@@ -60,28 +57,24 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
         })
       }, 200)
 
-      // Convert the form data to new backend format
       const submitData = {
         date: formData.date,
-        timeSlot: formData.timeSlot, // "morning" or "afternoon"
-        duration: formData.duration, // hours as number
+        timeSlot: formData.timeSlot,
+        duration: formData.duration,
         specificTime: formData.needsSpecificTime ? formData.specificTime : null,
         theme: selectedTheme,
         guestCount: formData.guestCount,
         postcode: formData.location,
         budget: formData.budget,
-        // Additional metadata for backend
         timePreference: {
-          type: formData.needsSpecificTime ? 'specific' : 'flexible',
+          type: formData.needsSpecificTime ? "specific" : "flexible",
           slot: formData.timeSlot,
           duration: formData.duration,
-          specificTime: formData.specificTime || null
-        }
+          specificTime: formData.specificTime || null,
+        },
       }
 
       await onFormSubmit(submitData)
-
-      // Complete progress
       setLoaderProgress(100)
       setTimeout(() => {
         setShowLoader(false)
@@ -231,7 +224,6 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
 
   return (
     <>
-      {/* Party Builder Loader */}
       <PartyBuilderLoader
         isVisible={showLoader}
         theme={selectedTheme}
@@ -239,600 +231,577 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
         progress={loaderProgress}
       />
 
-      <div className="min-h-screen bg-primary-50">
-        <ContextualBreadcrumb currentPage="browse" />
+      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
+        <ContextualBreadcrumb currentPage="Build Party" />
 
-        <div className="mx-auto">
-          {/* Hero Section - Mobile Optimized */}
-          <div className="relative w-full h-[30vh] sm:h-[36vh] md:h-[42vh] lg:h-[43vh] overflow-hidden">
-            <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]">
+        <div className="mx-auto max-w-screen">
+          {/* Enhanced Hero Section */}
+          {/* <div className="relative w-full h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden rounded-b-3xl shadow-2xl">
+            <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]">
               <Image
                 src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752832989/iStock-1149320278_srn8ti-removebg_efzwtu.png"
                 alt="People celebrating at a party"
                 fill
-                className="object-cover"
+                className="object-cover opacity-20"
               />
             </div>
 
-            {/* Strong dark overlay */}
-            <div className="absolute inset-0 bg-black/10"></div>
 
-            {/* Hero Content Overlay - Mobile Optimized */}
-            <div className="relative h-full flex justify-center px-4 sm:px-6">
-              <div className="max-w-4xl mx-auto text-center text-white flex flex-col justify-center">
-                <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold mb-2 sm:mb-3 md:mb-6 drop-shadow-2xl text-shadow-lg leading-tight">
-                  Let's Plan Your Dream
-                  <span className="text-white block drop-shadow-2xl">
-                    <span className="text-primary drop-shadow-xl">Party!</span>
-                  </span>
-                </h1>
-                <p className="text-sm sm:text-base md:text-lg lg:text-2xl mb-4 md:mb-8 md:w-[70%] mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md px-4">
-                  Create magical moments. Everything you need for the perfect party, all in one place.
-                </p>
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-10 left-10 w-4 h-4 bg-white/20 rounded-full animate-pulse"></div>
+              <div className="absolute top-20 right-16 w-2 h-2 bg-white/30 rounded-full animate-pulse delay-300"></div>
+              <div className="absolute bottom-16 left-20 w-3 h-3 bg-white/25 rounded-full animate-pulse delay-700"></div>
+              <Sparkles className="absolute top-16 right-10 w-6 h-6 text-white/30 animate-pulse delay-500" />
+            </div>
+
+  
+            <div className="relative h-full flex justify-center items-center px-6 sm:px-8">
+              <div className="max-w-4xl mx-auto text-center text-white">
+                <div className="mb-6">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-tight">
+                    Let's Plan Your
+                    <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent drop-shadow-lg">
+                      Dream Party!
+                    </span>
+                  </h1>
+                  <p className="text-lg sm:text-xl md:text-2xl font-medium opacity-90 max-w-2xl mx-auto leading-relaxed">
+                    Create magical moments with everything you need for the perfect celebration
+                  </p>
+                </div>
+
+  
+                <div className="flex justify-center space-x-4 opacity-80">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium">
+                    🎈 Trusted by 10,000+ families
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium hidden sm:block">
+                    ⭐ 4.9/5 rating
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Bottom fade for smooth transition */}
-            <div className="absolute bottom-0 left-0 right-0 h-6 md:h-12 bg-gradient-to-t from-white to-transparent" />
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12 px-4 sm:px-6 lg:px-10 mt-6 sm:mt-10">
-            {/* Form Heading - Mobile Optimized */}
-            <div className="mb-6 sm:mb-8 text-center sm:text-left">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
+          </div> */}
+
+          <form onSubmit={handleSubmit} className="space-y-12 px-6 sm:px-8 lg:px-12 py-12">
+            {/* Form Header */}
+            <div className="text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Tell us about your party
               </h2>
-              <p className="text-base sm:text-lg text-gray-600">
-                Just a few details to get started with your perfect celebration
+              <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
+                Just a few details to create your perfect celebration
               </p>
             </div>
 
-            {/* Form Fields - Updated Layout */}
-            <div className="space-y-6 sm:space-y-8">
-              {/* Date Field */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100">
-                  <label className="block text-sm sm:text-md font-bold text-white mb-2">Date</label>
-                  <div className="relative">
-                    <Input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => handleFieldChange("date", e.target.value)}
-                      className="w-full border-0 bg-white text-base focus:ring-0 focus:outline-none px-2 h-10 sm:h-auto"
-                      placeholder="21 Jan 2024"
-                    />
-                    <Calendar className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+            {/* Enhanced Form Fields */}
+            <div className="space-y-10">
+              {/* Basic Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Date Field */}
+                <div className="group">
+                  <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <label className="block text-lg font-bold text-white mb-3 flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Date
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => handleFieldChange("date", e.target.value)}
+                        className="w-full border-0 bg-white/95 backdrop-blur-sm text-base focus:ring-2 focus:ring-white/50 focus:outline-none px-4 py-3 rounded-xl font-medium"
+                        placeholder="Select date"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Guests */}
-                <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100">
-                  <label className="block text-sm sm:text-md font-bold text-white mb-2">Guests</label>
-                  <div className="relative">
-                    <Select
-                      value={formData.guestCount}
-                      onValueChange={(value) => handleFieldChange("guestCount", value)}
-                    >
-                      <SelectTrigger className="w-full border-0 bg-white focus:ring-0 focus:outline-none px-2 h-10 sm:h-auto">
-                        <SelectValue placeholder="How many?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {guestOptions.map((guest) => (
-                          <SelectItem key={guest.value} value={guest.value}>
-                            {guest.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Users className="absolute right-8 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+                {/* Guests Field */}
+                <div className="group">
+                  <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <label className="block text-lg font-bold text-white mb-3 flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Guests
+                    </label>
+                    <div className="relative">
+                      <Select
+                        value={formData.guestCount}
+                        onValueChange={(value) => handleFieldChange("guestCount", value)}
+                      >
+                        <SelectTrigger className="w-full border-0 bg-white/95 backdrop-blur-sm focus:ring-2 focus:ring-white/50 focus:outline-none px-4 py-3 rounded-xl font-medium">
+                          <SelectValue placeholder="How many?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {guestOptions.map((guest) => (
+                            <SelectItem key={guest.value} value={guest.value}>
+                              {guest.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
-                {/* Location */}
-                <div className="bg-primary-400 rounded-2xl p-4 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-2">
-                  <label className="block text-sm sm:text-md font-bold text-white mb-2">Location</label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => handleFieldChange("location", e.target.value)}
-                      className="w-full border-0 bg-white text-base focus:ring-0 focus:outline-none px-2 h-10 sm:h-auto"
-                      placeholder="Enter postcode"
-                    />
-                    <MapPin className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+                {/* Location Field */}
+                <div className="group sm:col-span-2">
+                  <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <label className="block text-lg font-bold text-white mb-3 flex items-center gap-2">
+                      <MapPin className="w-5 h-5" />
+                      Location
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => handleFieldChange("location", e.target.value)}
+                        className="w-full border-0 bg-white/95 backdrop-blur-sm text-base focus:ring-2 focus:ring-white/50 focus:outline-none px-4 py-3 rounded-xl font-medium"
+                        placeholder="Enter your postcode"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* NEW: Time Slot Selection */}
-              <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[hsl(var(--primary-400))]">
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">When works best?</h3>
-                    <p className="text-gray-600">Choose a time that works for your family</p>
-                  </div>
+              {/* Enhanced Time Selection */}
+              <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-gray-100">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">When works best?</h3>
+                  <p className="text-lg text-gray-600">Choose a time that works for your family</p>
+                </div>
 
-                  {/* Time Slot Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                    {/* Morning Slot */}
-                    <div
-                      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        formData.timeSlot === "morning"
-                          ? "border-primary-500 bg-primary-50 shadow-lg"
-                          : "border-gray-200 hover:border-primary-300 hover:bg-primary-25"
-                      }`}
-                      onClick={() => handleFieldChange("timeSlot", "morning")}
-                    >
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className={`p-2 rounded-full ${formData.timeSlot === "morning" ? "bg-primary-500" : "bg-gray-200"}`}>
-                          <Sun className={`w-5 h-5 ${formData.timeSlot === "morning" ? "text-white" : "text-gray-600"}`} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg text-gray-900">Morning Party</h4>
-                          <p className="text-gray-600 text-sm">10am - 1pm window</p>
-                        </div>
-                      </div>
-                      <p className="text-gray-600 text-sm">Perfect for younger children, leaves afternoon free</p>
-                      {formData.timeSlot === "morning" && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Afternoon Slot */} 
-                    <div
-                      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        formData.timeSlot === "afternoon"
-                          ? "border-primary-500 bg-primary-50 shadow-lg"
-                          : "border-gray-200 hover:border-primary-300 hover:bg-primary-25"
-                      }`}
-                      onClick={() => handleFieldChange("timeSlot", "afternoon")}
-                    >
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className={`p-2 rounded-full ${formData.timeSlot === "afternoon" ? "bg-primary-500" : "bg-gray-200"}`}>
-                          <Sunset className={`w-5 h-5 ${formData.timeSlot === "afternoon" ? "text-white" : "text-gray-600"}`} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg text-gray-900">Afternoon Party</h4>
-                          <p className="text-gray-600 text-sm">1pm - 4pm window</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-gray-600 text-sm">After lunch, good for all ages</p>
-                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full font-medium">
-                          Most Popular
-                        </span>
-                      </div>
-                      {formData.timeSlot === "afternoon" && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Duration Selection */}
-                  <div className="max-w-lg mx-auto">
-                    <label className="block text-lg font-medium text-gray-700 mb-4 text-center">
-                      How long should the party be?
-                    </label>
-                    <Select
-                      value={formData.duration.toString()}
-                      onValueChange={(value) => handleFieldChange("duration", parseFloat(value))}
-                    >
-                      <SelectTrigger className="w-full bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-12 text-base">
-                        <SelectValue placeholder="Choose duration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {durationOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value.toString()}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{option.label}</span>
-                              {option.popular && (
-                                <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">
-                                  Popular
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Specific Time Option */}
-                  <div className="text-center">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-gray-600 hover:text-gray-800 text-sm"
-                      onClick={() => handleFieldChange("needsSpecificTime", !formData.needsSpecificTime)}
-                    >
-                      {formData.needsSpecificTime ? "Use flexible timing instead" : "I need a specific time"}
-                    </Button>
-                  </div>
-
-                  {/* Specific Time Input (when needed) */}
-                  {formData.needsSpecificTime && (
-                    <div className="max-w-lg mx-auto p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                      <div className="text-center mb-4">
-                        <p className="text-sm text-yellow-800 font-medium">⚠️ Specific times may limit supplier options</p>
-                        <p className="text-xs text-yellow-700 mt-1">We'll try our best, but you might need to be flexible</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-5 h-5 text-yellow-600" />
-                        <Input
-                          type="time"
-                          value={formData.specificTime}
-                          onChange={(e) => handleFieldChange("specificTime", e.target.value)}
-                          className="flex-1 border-yellow-300 focus:border-yellow-500"
+                {/* Time Slot Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto mb-8">
+                  {/* Morning Slot */}
+                  <div
+                    className={`relative p-8 rounded-2xl border-3 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                      formData.timeSlot === "morning"
+                        ? "border-[hsl(var(--primary-500))] bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] shadow-xl"
+                        : "border-gray-200 hover:border-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-50))] shadow-lg hover:shadow-xl"
+                    }`}
+                    onClick={() => handleFieldChange("timeSlot", "morning")}
+                  >
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div
+                        className={`p-3 rounded-full transition-all duration-300 ${
+                          formData.timeSlot === "morning" ? "bg-primary-500 shadow-lg" : "bg-gray-200"
+                        }`}
+                      >
+                        <Sun
+                          className={`w-6 h-6 ${formData.timeSlot === "morning" ? "text-white" : "text-gray-600"}`}
                         />
                       </div>
+                      <div>
+                        <h4 className="font-bold text-xl text-gray-900">Morning Party</h4>
+                        <p className="text-gray-600">10am - 1pm window</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Budget Section - Keep existing */}
-            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[hsl(var(--primary-400))]">
-              <label className="block text-lg font-medium text-gray-700 mb-4 sm:mb-6 text-center">
-                What's your budget?
-              </label>
-              <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
-                <div className="flex justify-between text-xs sm:text-sm text-gray-500 px-2">
-                  <span>£100</span>
-                  <span className="hidden sm:inline">£200</span>
-                  <span>£300</span>
-                  <span className="hidden sm:inline">£400</span>
-                  <span>£500</span>
-                </div>
-
-                <div className="relative py-4 sm:py-6">
-                  {/* Custom slider track */}
-                  <div className="w-full h-2 sm:h-3 bg-gray-200 rounded-lg relative">
-                    <div
-                      className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg transition-all duration-300"
-                      style={{
-                        width: `${((formData.budget - 100) / 400) * 100}%`,
-                      }}
-                    />
+                    <p className="text-gray-600">Perfect for younger children, leaves afternoon free</p>
+                    {formData.timeSlot === "morning" && (
+                      <div className="absolute top-4 right-4 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                        <div className="w-3 h-3 bg-white rounded-full" />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Hidden native slider for functionality */}
-                  <input
-                    type="range"
-                    min="100"
-                    max="500"
-                    step="50"
-                    value={formData.budget}
-                    onChange={(e) => handleFieldChange("budget", Number.parseInt(e.target.value))}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-
-                  {/* Snappy as the slider thumb - Mobile Optimized */}
+                  {/* Afternoon Slot */}
                   <div
-                    className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 transition-all duration-300 z-20 pointer-events-none"
-                    style={{
-                      left: `${((formData.budget - 100) / 400) * 100}%`,
-                    }}
+                    className={`relative p-8 rounded-2xl border-3 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                      formData.timeSlot === "afternoon"
+                        ? "border-[hsl(var(--primary-500))] bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] shadow-xl"
+                        : "border-gray-200 hover:border-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-50))] shadow-lg hover:shadow-xl"
+                    }`}
+                    onClick={() => handleFieldChange("timeSlot", "afternoon")}
                   >
-                    <div className="relative">
-                      {/* Snappy image - Smaller on mobile */}
-                      <img
-                        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
-                        alt="Snappy the Crocodile"
-                        className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain drop-shadow-lg hover:scale-110 transition-transform duration-200"
-                        onError={(e) => {
-                          // Fallback to emoji if image fails to load
-                          e.target.style.display = "none"
-                          e.target.nextSibling.style.display = "block"
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div
+                        className={`p-3 rounded-full transition-all duration-300 ${
+                          formData.timeSlot === "afternoon" ? "bg-primary-500 shadow-lg" : "bg-gray-200"
+                        }`}
+                      >
+                        <Sunset
+                          className={`w-6 h-6 ${formData.timeSlot === "afternoon" ? "text-white" : "text-gray-600"}`}
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xl text-gray-900">Afternoon Party</h4>
+                        <p className="text-gray-600">1pm - 4pm window</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-gray-600">After lunch, good for all ages</p>
+                      <span className="text-xs bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1 rounded-full font-bold shadow-md">
+                        Most Popular
+                      </span>
+                    </div>
+                    {formData.timeSlot === "afternoon" && (
+                      <div className="absolute top-4 right-4 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                        <div className="w-3 h-3 bg-white rounded-full" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Duration Selection */}
+                <div className="max-w-lg mx-auto mb-6">
+                  <label className="block text-xl font-bold text-gray-700 mb-4 text-center">
+                    How long should the party be?
+                  </label>
+                  <Select
+                    value={formData.duration.toString()}
+                    onValueChange={(value) => handleFieldChange("duration", Number.parseFloat(value))}
+                  >
+                    <SelectTrigger className="w-full py-5 bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl px-5 h-14 text-lg font-medium shadow-md">
+                      <SelectValue placeholder="Choose duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {durationOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium">{option.label}</span>
+                            {option.popular && (
+                              <span className="ml-3 text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full font-bold">
+                                Popular
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Specific Time Option */}
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-gray-600 hover:text-gray-800 font-medium"
+                    onClick={() => handleFieldChange("needsSpecificTime", !formData.needsSpecificTime)}
+                  >
+                    {formData.needsSpecificTime ? "Use flexible timing instead" : "I need a specific time"}
+                  </Button>
+                </div>
+
+                {/* Specific Time Input */}
+                {formData.needsSpecificTime && (
+                  <div className="max-w-lg mx-auto mt-6 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl shadow-lg">
+                    <div className="text-center mb-4">
+                      <p className="text-sm text-yellow-800 font-bold">⚠️ Specific times may limit supplier options</p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        We'll try our best, but you might need to be flexible
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      <Input
+                        type="time"
+                        value={formData.specificTime}
+                        onChange={(e) => handleFieldChange("specificTime", e.target.value)}
+                        className="flex-1 border-yellow-300 focus:border-yellow-500 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Enhanced Budget Section */}
+              <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-gray-100">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">What's your budget?</h3>
+                  <p className="text-lg text-gray-600">Drag Snappy to set your perfect budget! 🐊</p>
+                </div>
+
+                <div className="max-w-3xl mx-auto space-y-8">
+                  <div className="flex justify-between text-sm font-medium text-gray-500 px-4">
+                    <span>£100</span>
+                    <span className="hidden sm:inline">£200</span>
+                    <span>£300</span>
+                    <span className="hidden sm:inline">£400</span>
+                    <span>£500</span>
+                  </div>
+
+                  <div className="relative py-8">
+                    {/* Enhanced slider track */}
+                    <div className="w-full h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full relative shadow-inner">
+                      <div
+                        className="h-full bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-full transition-all duration-300 shadow-lg"
+                        style={{
+                          width: `${((formData.budget - 100) / 400) * 100}%`,
                         }}
                       />
-                      {/* Fallback emoji */}
-                      <div
-                        className="w-8 h-8 sm:w-12 sm:h-12 text-xl sm:text-2xl flex items-center justify-center"
-                        style={{ display: "none" }}
-                      >
-                        🐊
-                      </div>
+                    </div>
 
-                      {/* Speech bubble with budget - Mobile Optimized */}
-                      <div className="absolute -top-8 sm:-top-12 left-1/2 transform -translate-x-1/2">
-                        <div className="bg-white px-2 sm:px-3 py-1 rounded-lg shadow-lg border-2 border-orange-300 relative">
-                          <span className="text-xs sm:text-sm font-bold text-orange-600">£{formData.budget}</span>
-                          {/* Speech bubble tail */}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 sm:border-l-4 sm:border-r-4 sm:border-t-4 border-l-transparent border-r-transparent border-t-orange-300"></div>
+                    {/* Hidden native slider */}
+                    <input
+                      type="range"
+                      min="100"
+                      max="500"
+                      step="50"
+                      value={formData.budget}
+                      onChange={(e) => handleFieldChange("budget", Number.parseInt(e.target.value))}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+
+                    {/* Enhanced Snappy thumb */}
+                    <div
+                      className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 transition-all duration-300 z-20 pointer-events-none"
+                      style={{
+                        left: `${((formData.budget - 100) / 400) * 100}%`,
+                      }}
+                    >
+                      <div className="relative">
+                        <img
+                          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
+                          alt="Snappy the Crocodile"
+                          className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain drop-shadow-2xl hover:scale-110 transition-transform duration-200 filter brightness-110"
+                          onError={(e) => {
+                            e.target.style.display = "none"
+                            e.target.nextSibling.style.display = "block"
+                          }}
+                        />
+                        <div
+                          className="w-12 h-12 sm:w-16 sm:h-16 text-2xl sm:text-3xl flex items-center justify-center"
+                          style={{ display: "none" }}
+                        >
+                          🐊
+                        </div>
+
+                        {/* Enhanced speech bubble */}
+                        <div className="absolute -top-12 sm:-top-16 left-1/2 transform -translate-x-1/2">
+                          <div className="bg-gradient-to-r from-orange-400 to-orange-500 px-4 py-2 rounded-xl shadow-xl border-2 border-orange-300 relative">
+                            <span className="text-sm sm:text-base font-black text-white">£{formData.budget}</span>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-orange-400"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="text-center">
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Drag Snappy to set your budget! 🐊</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Theme Section - Keep existing but shortened for space */}
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Theme</h2>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex items-center justify-center gap-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] hover:bg-primary-50 bg-transparent text-sm sm:text-base h-10 sm:h-auto"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    AI suggested theme
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex items-center justify-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50 bg-transparent text-sm sm:text-base h-10 sm:h-auto"
-                  >
-                    <Search className="w-4 h-4" />
-                    Search
-                  </Button>
-                </div>
               </div>
 
-              {/* Trending 2025 - Mobile Optimized */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Trending 2025</h3>
-                  <div className="flex gap-1 sm:gap-2">
+              {/* Enhanced Theme Section */}
+              <div className="space-y-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Choose Your Theme</h2>
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="p-1.5 sm:p-2 hover:bg-gray-100 h-8 w-8 sm:h-auto sm:w-auto"
-                      onClick={() => scrollThemes(trendingScrollRef, "left")}
+                      variant="outline"
+                      className="flex items-center justify-center gap-2 border-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] hover:bg-primary-50 bg-white font-medium px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                     >
-                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
+                      <Sparkles className="w-5 h-5" />
+                      AI Suggested Theme
                     </Button>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="p-1.5 sm:p-2 hover:bg-gray-100 h-8 w-8 sm:h-auto sm:w-auto"
-                      onClick={() => scrollThemes(trendingScrollRef, "right")}
+                      variant="outline"
+                      className="flex items-center justify-center gap-2 border-2 border-gray-300 text-gray-600 hover:bg-gray-50 bg-white font-medium px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                     >
-                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
+                      <Search className="w-5 h-5" />
+                      Search Themes
                     </Button>
                   </div>
                 </div>
 
-                <div
-                  ref={trendingScrollRef}
-                  className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                >
-                  {trendingThemes.map((theme) => (
-                    <div
-                      key={theme.id}
-                      className={`flex-shrink-0 w-24 sm:w-32 cursor-pointer transition-all duration-200 ${
-                        selectedTheme === theme.id ? "transform scale-105" : "hover:transform hover:scale-102"
-                      }`}
-                      onClick={() => handleThemeSelect(theme.id)}
-                    >
-                      <div className="relative">
-                        <div
-                          className={`w-full aspect-[4/3] overflow-hidden transition-all duration-200 ${
-                            selectedTheme === theme.id ? "shadow-lg" : "shadow-md hover:shadow-lg"
-                          }`}
-                          style={{
-                            clipPath: "ellipse(50% 40% at 50% 50%)",
-                            border: selectedTheme === theme.id ? "3px solid hsl(var(--primary-500))" : "none",
-                          }}
-                        >
-                          <img
-                            src={theme.image || "/placeholder.svg"}
-                            alt={theme.name}
-                            className="w-full h-full object-cover"
+                {/* Trending Themes */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                      🔥 Trending 2025
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-3 hover:bg-gray-100 rounded-full shadow-md"
+                        onClick={() => scrollThemes(trendingScrollRef, "left")}
+                      >
+                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-3 hover:bg-gray-100 rounded-full shadow-md"
+                        onClick={() => scrollThemes(trendingScrollRef, "right")}
+                      >
+                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={trendingScrollRef}
+                    className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  >
+                    {trendingThemes.map((theme) => (
+                      <div
+                        key={theme.id}
+                        className={`flex-shrink-0 w-32 sm:w-40 cursor-pointer transition-all duration-300 ${
+                          selectedTheme === theme.id ? "transform scale-110" : "hover:transform hover:scale-105"
+                        }`}
+                        onClick={() => handleThemeSelect(theme.id)}
+                      >
+                        <div className="relative">
+                          <div
+                            className={`w-full aspect-[4/3] overflow-hidden rounded-2xl transition-all duration-300 ${
+                              selectedTheme === theme.id
+                                ? "shadow-2xl ring-4 ring-primary-500"
+                                : "shadow-lg hover:shadow-xl"
+                            }`}
                             style={{
                               clipPath: "ellipse(50% 40% at 50% 50%)",
                             }}
-                          />
-                        </div>
-                        {selectedTheme === theme.id && (
-                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-[hsl(var(--primary-500))] rounded-full flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
+                          >
+                            <img
+                              src={theme.image || "/placeholder.svg"}
+                              alt={theme.name}
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                              style={{
+                                clipPath: "ellipse(50% 40% at 50% 50%)",
+                              }}
+                            />
                           </div>
-                        )}
+                          {selectedTheme === theme.id && (
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                              <div className="w-3 h-3 bg-white rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-center mt-3 text-sm font-bold text-gray-900 leading-tight">{theme.name}</p>
                       </div>
-                      <p className="text-center mt-2 sm:mt-3 text-xs sm:text-sm font-medium text-gray-900 leading-tight">
-                        {theme.name}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Most Popular - Mobile Optimized */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Most popular</h3>
-                  <div className="flex gap-1 sm:gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="p-1.5 sm:p-2 hover:bg-gray-100 h-8 w-8 sm:h-auto sm:w-auto"
-                      onClick={() => scrollThemes(popularScrollRef, "left")}
-                    >
-                      <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="p-1.5 sm:p-2 hover:bg-gray-100 h-8 w-8 sm:h-auto sm:w-auto"
-                      onClick={() => scrollThemes(popularScrollRef, "right")}
-                    >
-                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
-                    </Button>
+                    ))}
                   </div>
                 </div>
 
-                <div
-                  ref={popularScrollRef}
-                  className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                >
-                  {popularThemes.map((theme) => (
-                    <div
-                      key={theme.id}
-                      className={`flex-shrink-0 w-24 sm:w-32 cursor-pointer transition-all duration-200 ${
-                        selectedTheme === theme.id ? "transform scale-105" : "hover:transform hover:scale-102"
-                      }`}
-                      onClick={() => handleThemeSelect(theme.id)}
-                    >
-                      <div className="relative">
-                        <div
-                          className={`w-full aspect-square overflow-hidden transition-all duration-200 ${
-                            selectedTheme === theme.id ? "shadow-lg" : "shadow-md hover:shadow-lg"
-                          }`}
-                          style={{
-                            clipPath: `polygon(
-                              50% 0%,
-                              60% 5%,
-                              70% 2%,
-                              80% 8%,
-                              90% 5%,
-                              95% 15%,
-                              98% 25%,
-                              95% 35%,
-                              98% 45%,
-                              95% 55%,
-                              98% 65%,
-                              95% 75%,
-                              90% 85%,
-                              80% 88%,
-                              70% 92%,
-                              60% 88%,
-                              50% 95%,
-                              40% 88%,
-                              30% 92%,
-                              20% 88%,
-                              10% 85%,
-                              5% 75%,
-                              2% 65%,
-                              5% 55%,
-                              2% 45%,
-                              5% 35%,
-                              2% 25%,
-                              5% 15%,
-                              10% 5%,
-                              20% 8%,
-                              30% 2%,
-                              40% 5%
-                            )`,
-                            border: selectedTheme === theme.id ? "3px solid hsl(var(--primary-500))" : "none",
-                          }}
-                        >
-                          <img
-                            src={theme.image || "/placeholder.svg"}
-                            alt={theme.name}
-                            className="w-full h-full object-cover"
+                {/* Popular Themes */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                      ⭐ Most Popular
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-3 hover:bg-gray-100 rounded-full shadow-md"
+                        onClick={() => scrollThemes(popularScrollRef, "left")}
+                      >
+                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-3 hover:bg-gray-100 rounded-full shadow-md"
+                        onClick={() => scrollThemes(popularScrollRef, "right")}
+                      >
+                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div
+                    ref={popularScrollRef}
+                    className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  >
+                    {popularThemes.map((theme) => (
+                      <div
+                        key={theme.id}
+                        className={`flex-shrink-0 w-32 sm:w-40 cursor-pointer transition-all duration-300 ${
+                          selectedTheme === theme.id ? "transform scale-110" : "hover:transform hover:scale-105"
+                        }`}
+                        onClick={() => handleThemeSelect(theme.id)}
+                      >
+                        <div className="relative">
+                          <div
+                            className={`w-full aspect-square overflow-hidden rounded-2xl transition-all duration-300 ${
+                              selectedTheme === theme.id
+                                ? "shadow-2xl ring-4 ring-primary-500"
+                                : "shadow-lg hover:shadow-xl"
+                            }`}
                             style={{
                               clipPath: `polygon(
-                                50% 0%,
-                                60% 5%,
-                                70% 2%,
-                                80% 8%,
-                                90% 5%,
-                                95% 15%,
-                                98% 25%,
-                                95% 35%,
-                                98% 45%,
-                                95% 55%,
-                                98% 65%,
-                                95% 75%,
-                                90% 85%,
-                                80% 88%,
-                                70% 92%,
-                                60% 88%,
-                                50% 95%,
-                                40% 88%,
-                                30% 92%,
-                                20% 88%,
-                                10% 85%,
-                                5% 75%,
-                                2% 65%,
-                                5% 55%,
-                                2% 45%,
-                                5% 35%,
-                                2% 25%,
-                                5% 15%,
-                                10% 5%,
-                                20% 8%,
-                                30% 2%,
-                                40% 5%
+                                50% 0%, 60% 5%, 70% 2%, 80% 8%, 90% 5%, 95% 15%, 98% 25%, 95% 35%, 98% 45%, 95% 55%, 98% 65%, 95% 75%, 90% 85%, 80% 88%, 70% 92%, 60% 88%, 50% 95%, 40% 88%, 30% 92%, 20% 88%, 10% 85%, 5% 75%, 2% 65%, 5% 55%, 2% 45%, 5% 35%, 2% 25%, 5% 15%, 10% 5%, 20% 8%, 30% 2%, 40% 5%
                               )`,
                             }}
-                          />
-                        </div>
-                        {selectedTheme === theme.id && (
-                          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 bg-[hsl(var(--primary-500))] rounded-full flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full" />
+                          >
+                            <img
+                              src={theme.image || "/placeholder.svg"}
+                              alt={theme.name}
+                              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                              style={{
+                                clipPath: `polygon(
+                                  50% 0%, 60% 5%, 70% 2%, 80% 8%, 90% 5%, 95% 15%, 98% 25%, 95% 35%, 98% 45%, 95% 55%, 98% 65%, 95% 75%, 90% 85%, 80% 88%, 70% 92%, 60% 88%, 50% 95%, 40% 88%, 30% 92%, 20% 88%, 10% 85%, 5% 75%, 2% 65%, 5% 55%, 2% 45%, 5% 35%, 2% 25%, 5% 15%, 10% 5%, 20% 8%, 30% 2%, 40% 5%
+                                )`,
+                              }}
+                            />
                           </div>
-                        )}
+                          {selectedTheme === theme.id && (
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center shadow-lg">
+                              <div className="w-3 h-3 bg-white rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-center mt-3 text-sm font-bold text-gray-900 leading-tight">{theme.name}</p>
                       </div>
-                      <p className="text-center mt-2 sm:mt-3 text-xs sm:text-sm font-medium text-gray-900 leading-tight">
-                        {theme.name}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Actions - Updated validation */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-6 sm:pt-8">
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-gray-600 w-full sm:w-[48%] bg-white rounded-full hover:text-gray-800 h-12 sm:h-auto text-base sm:text-lg"
-              >
-                Skip for now
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  isSubmitting ||
-                  !formData.date ||
-                  !formData.timeSlot ||
-                  !formData.guestCount ||
-                  !formData.location ||
-                  !selectedTheme ||
-                  (formData.needsSpecificTime && !formData.specificTime)
-                }
-                className="bg-primary-400 w-full sm:w-[48%] text-white px-6 sm:px-12 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold disabled:opacity-50 shadow-lg h-12 sm:h-auto"
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center justify-center">
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Building Your Party...
-                  </div>
-                ) : (
-                  "Continue"
-                )}
-              </Button>
-            </div>
+              {/* Enhanced Bottom Actions */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-800 font-medium text-lg px-8 py-4 rounded-full border-2 border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 transition-all duration-300 w-full sm:w-auto"
+                >
+                  Skip for now
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    !formData.date ||
+                    !formData.timeSlot ||
+                    !formData.guestCount ||
+                    !formData.location ||
+                    !selectedTheme ||
+                    (formData.needsSpecificTime && !formData.specificTime)
+                  }
+                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-500))] hover:via-[hsl(var(--primary600))] hover:to-[hsl(var(--primary-700))] text-white px-12 py-4 rounded-full text-lg font-bold disabled:opacity-50 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-full sm:w-auto"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                      Building Your Party...
+                    </div>
+                  ) : (
+                    "Continue to Magic ✨"
+                  )}
+                </Button>
+              </div>
 
-            {/* Disclaimer */}
-            <p className="text-center text-xs sm:text-sm text-gray-500 pt-4 px-4">
-              *Your preferences are only used to personalise your experience
-            </p>
+              {/* Enhanced Disclaimer */}
+              <div className="text-center pt-6">
+                <p className="text-sm text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                  🔒 Your preferences are only used to personalise your experience and create the perfect party for you
+                </p>
+              </div>
+            </div>
           </form>
         </div>
 
         <style jsx>{`
-          /* Hide default slider thumb since we're using custom Snappy thumb */
           input[type="range"]::-webkit-slider-thumb {
             appearance: none;
             width: 0;
@@ -844,23 +813,15 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
             border: none;
             background: transparent;
           }
-          /* Ensure the slider track is properly styled */
           input[type="range"] {
             background: transparent;
           }
-          /* Hide scrollbars for theme sections */
           .scrollbar-hide::-webkit-scrollbar {
             display: none;
           }
           .scrollbar-hide {
             -ms-overflow-style: none;
             scrollbar-width: none;
-          }
-          /* Improve touch targets on mobile */
-          @media (max-width: 640px) {
-            .scrollbar-hide {
-              padding-bottom: 8px;
-            }
           }
         `}</style>
       </div>

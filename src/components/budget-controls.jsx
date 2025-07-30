@@ -85,8 +85,8 @@ export default function BudgetControls({
         <div className="space-y-6">
           <div className="flex items-baseline justify-between bg-gradient-to-r from-white to-[hsl(var(--primary-50))] p-4 rounded-xl border border-[hsl(var(--primary-100))]">
             <div className="flex items-baseline gap-2">
-              <PoundSterling className="w-6 h-6 text-[hsl(var(--primary-600))] mb-1" />
-              <span className="text-3xl font-bold text-[hsl(var(--primary-600))]">{safeDisplayValues.totalSpent}</span>
+              <PoundSterling className="w-6 h-6 text-gray-900 mb-1" />
+              <span className="text-3xl font-bold text-gray-900">{safeDisplayValues.totalSpent}</span>
               <span className="text-gray-600 font-medium">of £{tempBudget}</span>
             </div>
             <div className="text-right">

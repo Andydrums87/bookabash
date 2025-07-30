@@ -25,8 +25,8 @@
     </span>
   </h1>
   
-  <h2 className="text-2xl  text-gray-700 max-w-lg leading-relaxed">
-    We took everything parents hate about kids party planning and built the opposite
+  <h2 className="text-2xl  text-gray-700 max-w-xl leading-relaxed">
+  Let Snappy handle the theme, the crew, and snacks too — just one click and a snap, and it’s done for you!
   </h2>
 </div>
 
@@ -220,7 +220,7 @@
           </span>
         </h1>
         <p className="text-lg text-gray-600 max-w-4xl leading-relaxed">
-          Choose your theme, we'll handle everything else. Your dream party in just a click.
+        Let Snappy handle the theme, the crew, and snacks too — just one click and a snap, and it’s done for you!
         </p>
       </div>
     </div>

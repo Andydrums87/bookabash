@@ -22,8 +22,10 @@ import DeleteConfirmDialog from "./DeleteConfirmDialog"
 import MobileBudgetBar from "./MobileBudgetBar"
 import SupplierCard from "./SupplierCard"
 import MobileSupplierTabs from "./MobileSupplierTabs"
+import MobileSingleScrollSuppliers from "./MobileSingleScrollSuppliers"
 import AddonsSection from "./AddonsSection"
 import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from './AddonProviderWrapper'
+import AddonDetailsModal from "@/components/AddOnDetailsModal"
 
 // Existing Components
 import BudgetControls from "@/components/budget-controls"
@@ -50,6 +52,28 @@ export default function LocalStorageDashboard() {
   // State
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [selectedAddon, setSelectedAddon] = useState(null)
+  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
+
+
+
+   // Add handler for addon clicks
+   const handleAddonClick = (addon) => {
+    console.log('🎯 Addon clicked:', addon)
+    setSelectedAddon(addon)
+    setIsAddonModalOpen(true)
+  }
+
+  const handleAddonModalClose = () => {
+    setIsAddonModalOpen(false)
+    setSelectedAddon(null)
+  }
+
+  const handleAddAddonFromModal = async (addon) => {
+    await handleAddAddon(addon)
+    // Modal will close itself after showing success state
+  }
+
 
   // Use your existing party plan hook
   const {
@@ -62,6 +86,7 @@ export default function LocalStorageDashboard() {
     addAddon,
     removeAddon,
     hasAddon
+    
   } = usePartyPlan()
 
   // Other hooks
@@ -193,7 +218,7 @@ export default function LocalStorageDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50 overflow-hidden">
+    <div className={`${showWelcomePopup ? "blur-sm opacity-50" : "" }min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
       <AddonProvider
@@ -208,6 +233,10 @@ export default function LocalStorageDashboard() {
           partyDetails={partyDetails}
           onPartyDetailsChange={handlePartyDetailsUpdate}
           isPaymentConfirmed={false} // Never confirmed for localStorage users
+          budgetControlProps={{
+            ...budgetControlProps,
+            getBudgetCategory // Make sure this is included
+          }}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
@@ -234,7 +263,7 @@ export default function LocalStorageDashboard() {
   </div>
 
   {/* Right: Add Supplier Button */}
-  <Button onClick={handleAddSupplier} variant="outline" className="gap-2 text-primary border-primary hover:bg-primary/10">
+  <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
     <Plus className="w-4 h-4" />
     Add Supplier
   </Button>
@@ -265,21 +294,22 @@ export default function LocalStorageDashboard() {
 
             {/* Mobile Supplier Tabs */}
             <div className="md:hidden">
-              <MobileSupplierTabs
-                suppliers={suppliers}
-                loadingCards={loadingCards}
-                suppliersToDelete={suppliersToDelete}
-                openSupplierModal={openSupplierModal}
-                handleDeleteSupplier={handleDeleteSupplier}
-                getSupplierDisplayName={getSupplierDisplayName}
-                addons={addons}
-                handleRemoveAddon={handleRemoveAddon}
-                getEnquiryStatus={() => null} // No enquiry status for localStorage
-                isSignedIn={false}
-                isPaymentConfirmed={false}
-                enquiries={[]}
-              />
-            </div>
+  <MobileSingleScrollSuppliers
+    suppliers={suppliers}
+    loadingCards={loadingCards}
+    suppliersToDelete={suppliersToDelete}
+    openSupplierModal={openSupplierModal}
+    handleDeleteSupplier={handleDeleteSupplier}
+    getSupplierDisplayName={getSupplierDisplayName}
+    addons={addons}
+    handleRemoveAddon={handleRemoveAddon}
+    getEnquiryStatus={() => null} // No enquiry status for localStorage
+    isSignedIn={false}
+    isPaymentConfirmed={false}
+    enquiries={[]}
+    handleAddSupplier={handleAddSupplier}
+  />
+</div>
 
            {/* Add-ons Section */}
 <AddonsSectionWrapper />
@@ -288,6 +318,7 @@ export default function LocalStorageDashboard() {
   <RecommendedAddonsWrapper 
     context="dashboard" 
     maxItems={4}
+    onAddonClick={handleAddonClick} // Add this prop
   />
 </div>
 
@@ -323,12 +354,7 @@ export default function LocalStorageDashboard() {
         </div>
       </div>
       </AddonProvider>
-      {/* Mobile Budget Bar */}
-      <MobileBudgetBar 
-        totalSpent={totalCost}
-        tempBudget={tempBudget}
-        budgetControlProps={budgetControlProps}
-      />
+    
 
       {/* Loading Overlay */}
       {isUpdating && (
@@ -361,6 +387,14 @@ export default function LocalStorageDashboard() {
         supplierType={showDeleteConfirm}
         onConfirm={confirmDeleteSupplier}
         onCancel={cancelDeleteSupplier}
+      />
+         {/* Add the new Addon Details Modal */}
+      <AddonDetailsModal
+        isOpen={isAddonModalOpen}
+        onClose={handleAddonModalClose}
+        addon={selectedAddon}
+        onAddToParty={handleAddAddonFromModal}
+        isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
       />
     </div>
 

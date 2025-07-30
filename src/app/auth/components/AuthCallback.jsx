@@ -89,6 +89,7 @@ export default function AuthCallback() {
         const urlParams = new URLSearchParams(window.location.search)
         const hasOAuthParams = urlParams.has("code") || urlParams.has("access_token") || urlParams.has("error")
         const hasTypeParam = urlParams.has("type") // Our custom parameter
+        const returnTo = searchParams.get("return_to")
 
         // If no OAuth params and no type param, this might be a direct visit
         if (!hasOAuthParams && !hasTypeParam) {
@@ -141,7 +142,7 @@ export default function AuthCallback() {
             await new Promise((resolve) => setTimeout(resolve, 500))
             setStatus("success")
             setTimeout(() => {
-              router.push("/dashboard")
+             router.push(decodeURIComponent(returnTo))
             }, 2000)
           }
         }
@@ -290,6 +291,29 @@ export default function AuthCallback() {
     const handleRegularSignIn = async (user) => {
       try {
         setCurrentStep(1)
+
+            // ✅ Check URL parameter first - this overrides user metadata
+    const urlUserType = searchParams.get("user_type")
+
+    if (urlUserType === "customer") {
+      console.log("🎯 Customer sign-in flow (from URL parameter)")
+      // Skip supplier checks and go straight to customer dashboard
+      setProgress(100)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setStatus("success")
+      
+      const returnTo = searchParams.get("return_to")
+      setTimeout(() => {
+        if (returnTo) {
+          router.push(decodeURIComponent(returnTo))
+        } else {
+          router.push("/dashboard")
+        }
+      }, 2000)
+      return
+    }
+
+
         const { data: supplierData, error: supplierError } = await supabase
           .from("suppliers")
           .select("*")

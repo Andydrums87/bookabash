@@ -69,7 +69,9 @@ async buildParty(partyDetails) {
       location,
       budget = 500,
       childAge = 6,
-      childName = "Your Child",
+      childName = "Snappy The Crocodile",
+      firstName ="Snappy",
+      lastName = "The Crocodile",
       // NEW: Time slot fields
       timeSlot,      // "morning" or "afternoon" 
       duration = 2,  // Duration in hours
@@ -79,17 +81,21 @@ async buildParty(partyDetails) {
       specificTime
     } = partyDetails;
 
-    console.log("🎪 Building party with details:", {
-      theme,
-      timeSlot,
-      duration,
-      guestCount,
-      budget
-    });
+   
 
     // Handle backwards compatibility for existing data
     let processedTimeSlot = timeSlot;
     let processedDuration = duration;
+    let processedFirstName = firstName;
+    let processedLastName = lastName;
+
+    if (!firstName && !lastName && childName) {
+      // Split childName into firstName and lastName if it contains spaces
+      const nameParts = childName.split(' ');
+      processedFirstName = nameParts[0] || "Snappy";
+      processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
+      console.log(`🔄 Converted legacy childName "${childName}" to firstName: "${processedFirstName}", lastName: "${processedLastName}"`);
+    }
 
     // If no timeSlot provided but time exists (legacy data), convert it
     if (!timeSlot && time) {
@@ -171,6 +177,9 @@ async buildParty(partyDetails) {
       ...partyDetails,
       timeSlot: processedTimeSlot,
       duration: processedDuration,
+      firstName: processedFirstName, // NEW: Separate firstName
+      lastName: processedLastName, // NEW: Separate lastName
+      childName: `${processedFirstName} ${processedLastName}`.trim(),
       // Keep legacy time field for backwards compatibility
       time: time || this.convertTimeSlotToTime(processedTimeSlot),
       // Add computed fields for display

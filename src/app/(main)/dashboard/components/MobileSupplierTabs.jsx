@@ -146,8 +146,8 @@ export default function MobileSupplierTabs({
                     onClick={() => handleTabSelect(index)}
                     className={`flex flex-col items-center space-y-2 px-3 py-3 rounded-2xl min-w-[80px] transition-all duration-300 shadow-sm ${
                       isActive
-                        ? "bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] text-[hsl(var(--primary-700))] shadow-lg border-2 border-[hsl(var(--primary-300))] scale-90"
-                        : "text-gray-600 hover:bg-gradient-to-br hover:from-[hsl(var(--primary-50))] hover:to-white border-2 border-transparent hover:border-[hsl(var(--primary-200))] bg-white/50 scale-90"
+                        ? "bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] text-[hsl(var(--primary-700))] shadow-lg border-2 border-[hsl(var(--primary-300))] scale-105"
+                        : "text-gray-600 hover:bg-gradient-to-br hover:from-[hsl(var(--primary-50))] hover:to-white border-2 border-transparent hover:border-[hsl(var(--primary-200))] bg-white/50"
                     }`}
                   >
                     <div

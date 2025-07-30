@@ -159,16 +159,22 @@ export function Nav() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Handle sign out
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut()
-      setUser(null)
-      router.push('/')
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
+// Handle sign out
+const handleSignOut = async () => {
+  try {
+    await supabase.auth.signOut()
+    
+    // Clear party-related localStorage data
+    localStorage.removeItem("party_details")
+    localStorage.removeItem("user_party_plan")
+    localStorage.removeItem("party_plan") // Add this one too
+    
+    setUser(null)
+    router.push('/')
+  } catch (error) {
+    console.error('Error signing out:', error)
   }
+}
 
   // Handle search
   useEffect(() => {

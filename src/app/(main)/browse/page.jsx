@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb';
@@ -401,12 +401,12 @@ export default function BrowseSuppliersPage() {
 
   return (
 <div className="min-h-screen bg-[#fef7f7]">
-      <ContextualBreadcrumb currentPage="browse"/>
+
  
       {/* Hero Section - Mobile Optimized Heights */}
       <div 
         className="relative w-full h-[36vh] md:h-[42vh] lg:h-[43vh] overflow-hidden"
-      >
+      >      
      <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
     <Image
       src="/magician.png"
@@ -419,7 +419,7 @@ export default function BrowseSuppliersPage() {
   </div>
         {/* Strong dark overlay */}
         <div className="absolute inset-0 bg-black/1"></div>
-        
+
         {/* Hero Content Overlay */}
         <div className="relative h-full flex justify-center px-4">
           <div className="max-w-4xl mx-auto text-center text-white">

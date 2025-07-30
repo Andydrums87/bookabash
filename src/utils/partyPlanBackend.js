@@ -478,26 +478,75 @@ export function usePartyPlan() {
         console.log('🔄 Real-time update received:', updatedPlan);
         setPartyPlan(updatedPlan);
       });
+
+       // NEW: Add storage event listener for cross-component sync
+       const handleStorageChange = (e) => {
+        if (e.key === 'party_plan' || e.key === 'user_party_plan') {
+          console.log('🔄 usePartyPlan: Storage changed, reloading...', e.key);
+          loadPartyPlan();
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
       
-      return unsubscribe;
+      return () => {
+        unsubscribe();
+        window.removeEventListener('storage', handleStorageChange);
+      };
     } else {
       setLoading(false);
     }
   }, []);
 
-  const loadPartyPlan = () => {
-    try {
-      setLoading(true);
-      const data = partyPlanBackend.getPartyPlan();
-      setPartyPlan(data);
-      setError(null);
-
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+// UPDATE: Enhanced loadPartyPlan function
+const loadPartyPlan = () => {
+  try {
+    setLoading(true);
+    
+    // Get the main plan
+    let data = partyPlanBackend.getPartyPlan();
+    
+    // Check if there are addons in the alternative 'party_plan' key
+    const alternativeData = localStorage.getItem('party_plan');
+    if (alternativeData) {
+      try {
+        const altPlan = JSON.parse(alternativeData);
+        if (altPlan.addons && altPlan.addons.length > 0) {
+          console.log('🔄 Found addons in party_plan, merging...');
+          
+          // Merge addons (avoid duplicates)
+          const currentAddons = data.addons || [];
+          const newAddons = altPlan.addons || [];
+          
+          const merged = [...currentAddons];
+          newAddons.forEach(newAddon => {
+            if (!merged.some(existing => existing.id === newAddon.id)) {
+              merged.push(newAddon);
+            }
+          });
+          
+          data = { ...data, addons: merged };
+          
+          // Save merged data to main storage and clear alternative
+          partyPlanBackend.savePartyPlan(data);
+          localStorage.removeItem('party_plan');
+          
+          console.log('✅ Merged and cleaned up storage');
+        }
+      } catch (e) {
+        console.error('Error merging storage:', e);
+      }
     }
-  };
+    
+    setPartyPlan(data);
+    setError(null);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const addSupplier = async (supplier, selectedPackage = null) => {
     if (!isClient) {

@@ -2,6 +2,7 @@
 // Database backend to replace localStorage party management
 
 import { supabase } from '@/lib/supabase'
+import { getEnhancedGiftSuggestions } from './rapidAPIProducts'
 
 class PartyDatabaseBackend {
 
@@ -781,7 +782,474 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
       return { success: false, error: error.message }
     }
   }
+  async createGiftRegistry(partyId, registryData = {}) {
+    try {
+      const { data, error } = await supabase
+        .from('party_gift_registries')
+        .insert({
+          party_id: partyId,
+          name: registryData.name || 'Gift Registry',
+          description: registryData.description || ''
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return { success: true, registry: data }
+    } catch (error) {
+      console.error('❌ Error creating gift registry:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Get gift suggestions based on theme and age
+   */
+// In your PartyDatabaseBackend class, UPDATE the existing getGiftSuggestions method:
+
+// Option 1: Simple fallback - just disable for now
+// In your PartyDatabaseBackend class, replace getGiftSuggestions with:
+async getGiftSuggestions(theme, age, category = null, limit = 20) {
+  const useRealProducts = true; // Safe to turn on now!
+  
+  try {
+    if (useRealProducts) {
+      // Get both curated and real products via API
+      const curatedLimit = Math.ceil(limit / 2);
+      const realLimit = Math.ceil(limit / 2);
+      
+      const [curatedResult, realProductsResponse] = await Promise.allSettled([
+        this.getCuratedGiftSuggestions(theme, age, category, curatedLimit),
+        fetch('/api/products/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme, age, category, limit: realLimit })
+        })
+      ]);
+
+      const curated = curatedResult.status === 'fulfilled' && curatedResult.value.success 
+        ? curatedResult.value.suggestions 
+        : [];
+
+      let real = [];
+      if (realProductsResponse.status === 'fulfilled') {
+        const realData = await realProductsResponse.value.json();
+        real = realData.success ? realData.products : [];
+      }
+
+      // Interleave curated and real products
+      const combined = [];
+      const maxLength = Math.max(curated.length, real.length);
+      
+      for (let i = 0; i < maxLength; i++) {
+        if (curated[i]) combined.push({ ...curated[i], source: 'curated' });
+        if (real[i]) combined.push({ ...real[i], source: 'amazon' });
+      }
+
+      console.log('📊 Enhanced suggestions:', { curated: curated.length, real: real.length });
+      return { success: true, suggestions: combined.slice(0, limit) };
+    } else {
+      return this.getCuratedGiftSuggestions(theme, age, category, limit);
+    }
+  } catch (error) {
+    console.error('❌ Error getting enhanced suggestions:', error);
+    return this.getCuratedGiftSuggestions(theme, age, category, limit);
+  }
 }
+
+// Rename your existing method to this (if you haven't already):
+async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
+  try {
+    let query = supabase
+      .from('gift_items')
+      .select('*')
+      .eq('is_active', true)
+      .lte('age_min', age)
+      .gte('age_max', age)
+      .order('popularity', { ascending: false })
+
+    if (theme) {
+      query = query.contains('themes', [theme])
+    }
+
+    if (category) {
+      query = query.eq('category', category)
+    }
+
+    const { data, error } = await query.limit(limit)
+    
+    if (error) throw error
+    return { success: true, suggestions: data || [] }
+  } catch (error) {
+    console.error('❌ Error getting curated gift suggestions:', error)
+    return { success: false, error: error.message }
+  }
+}
+ 
+  async getGiftCategories() {
+    try {
+      const { data, error } = await supabase
+        .from('gift_items')
+        .select('category, subcategory')
+        .eq('is_active', true)
+      
+      if (error) throw error
+      
+      // Group by category
+      const categories = data.reduce((acc, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = new Set()
+        }
+        if (item.subcategory) {
+          acc[item.category].add(item.subcategory)
+        }
+        return acc
+      }, {})
+
+      // Convert Sets to Arrays
+      const formattedCategories = Object.entries(categories).map(([category, subcategories]) => ({
+        category,
+        subcategories: Array.from(subcategories)
+      }))
+
+      return { success: true, categories: formattedCategories }
+    } catch (error) {
+      console.error('❌ Error getting gift categories:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Add item to registry (from curated list)
+   */
+  async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
+    try {
+      const { data, error } = await supabase
+        .from('registry_items')
+        .insert({
+          registry_id: registryId,
+          gift_item_id: giftItemId,
+          notes: itemData.notes || null,
+          priority: itemData.priority || 'medium',
+          quantity: itemData.quantity || 1
+        })
+        .select(`
+          *,
+          gift_items(*)
+        `)
+        .single()
+      
+      if (error) throw error
+      return { success: true, registryItem: data }
+    } catch (error) {
+      console.error('❌ Error adding curated item to registry:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Add custom item to registry
+   */
+  async addCustomItemToRegistry(registryId, itemData) {
+    try {
+      const { data, error } = await supabase
+        .from('registry_items')
+        .insert({
+          registry_id: registryId,
+          gift_item_id: null, // Custom item
+          custom_name: itemData.name,
+          custom_price: itemData.price,
+          custom_description: itemData.description,
+          notes: itemData.notes || null,
+          priority: itemData.priority || 'medium',
+          quantity: itemData.quantity || 1
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      return { success: true, registryItem: data }
+    } catch (error) {
+      console.error('❌ Error adding custom item to registry:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Get party's gift registry with items
+   */
+  async getPartyGiftRegistry(partyId) {
+    try {
+      // First get the registry
+      const { data: registry, error: registryError } = await supabase
+        .from('party_gift_registries')
+        .select('*')
+        .eq('party_id', partyId)
+        .eq('is_active', true)
+        .single()
+
+      if (registryError && registryError.code !== 'PGRST116') {
+        throw registryError
+      }
+
+      if (!registry) {
+        return { success: true, registry: null, items: [] }
+      }
+
+      // Then get the items
+      const { data: items, error: itemsError } = await supabase
+        .from('registry_items')
+        .select(`
+          *,
+          gift_items(*)
+        `)
+        .eq('registry_id', registry.id)
+        .order('created_at', { ascending: true })
+
+      if (itemsError) throw itemsError
+
+      return { success: true, registry, items: items || [] }
+    } catch (error) {
+      console.error('❌ Error getting party gift registry:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Get registry by ID (for guest access)
+   */
+  async getRegistryById(registryId) {
+    try {
+      const { data: registry, error: registryError } = await supabase
+        .from('party_gift_registries')
+        .select(`
+          *,
+          parties(*)
+        `)
+        .eq('id', registryId)
+        .eq('is_active', true)
+        .single()
+
+      if (registryError) throw registryError
+
+      const { data: items, error: itemsError } = await supabase
+        .from('registry_items')
+        .select(`
+          *,
+          gift_items(*)
+        `)
+        .eq('registry_id', registryId)
+        .order('created_at', { ascending: true })
+
+      if (itemsError) throw itemsError
+
+      return { success: true, registry, items: items || [] }
+    } catch (error) {
+      console.error('❌ Error getting registry by ID:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Remove item from registry
+   */
+  async removeItemFromRegistry(registryItemId) {
+    try {
+      const { error } = await supabase
+        .from('registry_items')
+        .delete()
+        .eq('id', registryItemId)
+      
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      console.error('❌ Error removing item from registry:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Update registry item (notes, priority, etc.)
+   */
+  async updateRegistryItem(registryItemId, updates) {
+    try {
+      const { data, error } = await supabase
+        .from('registry_items')
+        .update(updates)
+        .eq('id', registryItemId)
+        .select(`
+          *,
+          gift_items(*)
+        `)
+        .single()
+      
+      if (error) throw error
+      return { success: true, registryItem: data }
+    } catch (error) {
+      console.error('❌ Error updating registry item:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Claim item (for guests)
+   */
+  async claimRegistryItem(registryItemId, guestName, guestEmail = null) {
+    try {
+      const { data, error } = await supabase
+        .from('registry_items')
+        .update({
+          is_claimed: true,
+          claimed_by: guestName,
+          claimed_email: guestEmail,
+          claimed_at: new Date().toISOString()
+        })
+        .eq('id', registryItemId)
+        .eq('is_claimed', false) // Only allow claiming if not already claimed
+        .select(`
+          *,
+          gift_items(*)
+        `)
+        .single()
+      
+      if (error) throw error
+      return { success: true, registryItem: data }
+    } catch (error) {
+      console.error('❌ Error claiming registry item:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Unclaim item (for guests who change their mind)
+   */
+  async unclaimRegistryItem(registryItemId, guestEmail) {
+    try {
+      const { data, error } = await supabase
+        .from('registry_items')
+        .update({
+          is_claimed: false,
+          claimed_by: null,
+          claimed_email: null,
+          claimed_at: null
+        })
+        .eq('id', registryItemId)
+        .eq('claimed_email', guestEmail) // Only allow unclaiming if they claimed it
+        .select(`
+          *,
+          gift_items(*)
+        `)
+        .single()
+      
+      if (error) throw error
+      return { success: true, registryItem: data }
+    } catch (error) {
+      console.error('❌ Error unclaiming registry item:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Search gifts by name/tags
+   */
+  async searchGifts(searchTerm, age = null, category = null, limit = 20) {
+    try {
+      let query = supabase
+        .from('gift_items')
+        .select('*')
+        .eq('is_active', true)
+
+      // Text search in name, description, and tags
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`)
+      }
+
+      // Age filter
+      if (age) {
+        query = query.lte('age_min', age).gte('age_max', age)
+      }
+
+      // Category filter
+      if (category) {
+        query = query.eq('category', category)
+      }
+
+      const { data, error } = await query
+        .order('popularity', { ascending: false })
+        .limit(limit)
+      
+      if (error) throw error
+      return { success: true, gifts: data || [] }
+    } catch (error) {
+      console.error('❌ Error searching gifts:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Get registry analytics for parents
+   */
+  async getRegistryAnalytics(registryId) {
+    try {
+      const { data: items, error } = await supabase
+        .from('registry_items')
+        .select('*')
+        .eq('registry_id', registryId)
+
+      if (error) throw error
+
+      const analytics = {
+        totalItems: items.length,
+        claimedItems: items.filter(item => item.is_claimed).length,
+        unclaimedItems: items.filter(item => !item.is_claimed).length,
+        claimPercentage: items.length > 0 ? Math.round((items.filter(item => item.is_claimed).length / items.length) * 100) : 0,
+        recentClaims: items
+          .filter(item => item.is_claimed)
+          .sort((a, b) => new Date(b.claimed_at) - new Date(a.claimed_at))
+          .slice(0, 5)
+      }
+
+      return { success: true, analytics }
+    } catch (error) {
+      console.error('❌ Error getting registry analytics:', error)
+      return { success: false, error: error.message }
+    }
+  }
+  // Add this new method to your PartyDatabaseBackend class:
+// Add this to your PartyDatabaseBackend class:
+async addRealProductToRegistry(registryId, productData, itemData = {}) {
+  try {
+    console.log('🛒 Adding real product to registry:', productData.name);
+    
+    const { data, error } = await supabase
+      .from('registry_items')
+      .insert({
+        registry_id: registryId,
+        gift_item_id: null,
+        external_product_id: productData.external_id || productData.id,
+        external_source: productData.source || 'amazon',
+        custom_name: productData.name,
+        custom_price: productData.price ? `£${productData.price}` : productData.price_range,
+        custom_description: productData.description,
+        external_image_url: productData.image_url,
+        external_buy_url: productData.buy_url,
+        notes: itemData.notes || null,
+        priority: itemData.priority || 'medium',
+        quantity: itemData.quantity || 1
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return { success: true, registryItem: data };
+  } catch (error) {
+    console.error('❌ Error adding real product to registry:', error);
+    return { success: false, error: error.message };
+  }
+}
+}
+
+
 
 // Create singleton instance
 export const partyDatabaseBackend = new PartyDatabaseBackend()

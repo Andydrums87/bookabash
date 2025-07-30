@@ -15,6 +15,7 @@ import { Clock, ArrowRight } from "lucide-react"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
+import GiftRegistryCard from '@/components/GiftRegistryCard'
 import PartyHeader from "./PartyHeader"
 import CountdownWidget from "./CountdownWidget"
 import PartyExcitementMeter from "./PartyExcitementMeter"
@@ -27,6 +28,8 @@ import SnappysPresentParty from "./SnappysPresentParty"
 import RealTimeNotifications from "./realTimeNotifications"
 import AutoReplacementFlow from "./AutoReplacementFlow"
 import EInvitesBanner from "./EInvitesBanner"
+import AwaitingResponseSupplierCard from "./AwaitingRepsonseSupplierCard"
+import WhilstYouWaitSection from "./WhilstYouWait"
 
 // Existing Components
 import BudgetControls from "@/components/budget-controls"
@@ -34,10 +37,12 @@ import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import RecommendedAddons from "@/components/recommended-addons"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import StickerBookProgress from "./StickerBookProgress"
+import MobileSingleScrollSuppliers from "./MobileSingleScrollSuppliers"
 
 // Hooks
 import { useEnquiryStatus } from "../hooks/useEnquiryStatus"
 import { usePaymentStatus } from '../hooks/usePaymentStatus'
+import { useGiftRegistry } from '@/hooks/useGiftRegistry'
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import { usePartyDetails } from '../hooks/usePartyDetails'
 import { useSupplierManager } from '../hooks/useSupplierManager'
@@ -66,14 +71,46 @@ export default function DatabaseDashboard() {
   const [addons, setAddons] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Load database party data
-  useEffect(() => {
-    const loadPartyData = async () => {
-      setLoading(true)
+    // ADD THESE NEW STATE VARIABLES FOR USER AND PARTY
+    const [user, setUser] = useState(null)
+    const [currentParty, setCurrentParty] = useState(null)
+
+    const refreshPartyData = async () => {
       try {
         const partyResult = await partyDatabaseBackend.getCurrentParty()
         if (partyResult.success && partyResult.party) {
           const party = partyResult.party
+          console.log('🔄 Refreshing party data:', party)
+          
+          setCurrentParty(party) // This will trigger usePartyDetails to refresh
+          setPartyData(party.party_plan || {})
+          setPartyId(party.id)
+          setTotalCost(party.estimated_cost || 0)
+          setAddons(party.party_plan?.addons || [])
+        }
+      } catch (error) {
+        console.error('Error refreshing party data:', error)
+      }
+    }
+  
+
+
+  // Load database party data (existing function - keep as is)
+  useEffect(() => {
+    const loadPartyData = async () => {
+      setLoading(true)
+      try {
+        // First get the current user
+        const userResult = await partyDatabaseBackend.getCurrentUser()
+        if (userResult.success) {
+          setUser(userResult.user)
+        }
+
+        // Then get the party data
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+        if (partyResult.success && partyResult.party) {
+          const party = partyResult.party
+          setCurrentParty(party)
           setPartyData(party.party_plan || {})
           setPartyId(party.id)
           setTotalCost(party.estimated_cost || 0)
@@ -113,14 +150,28 @@ export default function DatabaseDashboard() {
     getEnquiryStatus(type) === 'accepted'
   )
 
-  // Other hooks
+  // // Other hooks
+  // const {
+  //   partyDetails,
+  //   partyTheme,
+  //   themeLoaded,
+  //   handleNameSubmit,
+  //   handlePartyDetailsUpdate
+  // } = usePartyDetails()
+
   const {
     partyDetails,
     partyTheme,
     themeLoaded,
     handleNameSubmit,
-    handlePartyDetailsUpdate
-  } = usePartyDetails()
+    handlePartyDetailsUpdate: originalHandlePartyDetailsUpdate
+  } = usePartyDetails(user, currentParty)
+
+  const handlePartyDetailsUpdate = async (updatedDetails) => {
+    await originalHandlePartyDetailsUpdate(updatedDetails)
+    // Refresh the party data after update to ensure everything is in sync
+    await refreshPartyData()
+  }
 
   const {
     tempBudget,
@@ -169,6 +220,15 @@ export default function DatabaseDashboard() {
     showAdvancedControls,
     setShowAdvancedControls,
   }
+
+  const {
+    registry,
+    registryItems,
+    loading: registryLoading,
+    createRegistry,
+    addCuratedItem,
+    removeItem: removeRegistryItem
+  } = useGiftRegistry(partyId);
 
   // Database-specific addon handlers
   const addAddon = async (addon) => {
@@ -323,6 +383,9 @@ const handleCreateInvites = () => {
           partyDetails={partyDetails}
           onPartyDetailsChange={handlePartyDetailsUpdate}
           isPaymentConfirmed={isPaymentConfirmed}
+          enquiries={enquiries}
+          isSignedIn={true}
+     
         />
 
         {/* Payment confirmed state */}
@@ -405,7 +468,17 @@ const handleCreateInvites = () => {
     ? 'md:grid-cols-2 md:h-[30%] lg:grid-cols-2 xl:grid-cols-3 max-w-4xl mx-auto' // Focused layout
     : 'md:grid-cols-3' // Normal layout
 }`}>
-  {Object.entries(visibleSuppliers).map(([type, supplier]) => (
+{Object.entries(visibleSuppliers).map(([type, supplier]) => (
+  getEnquiryStatus(type) === 'pending' ? (
+    <AwaitingResponseSupplierCard
+      key={type}
+      type={type}
+      supplier={supplier}
+      handleDeleteSupplier={handleDeleteSupplier}
+      addons={addons}
+      isDeleting={suppliersToDelete.includes(type)}
+    />
+  ) : (
     <SupplierCard 
       key={type}
       type={type} 
@@ -422,11 +495,44 @@ const handleCreateInvites = () => {
       isPaymentConfirmed={isPaymentConfirmed}
       enquiries={enquiries}
     />
-  ))}
+  )
+))}
             </div>
    
-{hasEnquiriesPending && (
-  <div className="bg-blue-50 borde mt-30 border-blue-200 rounded-xl p-6 mb-8">
+
+            {/* Mobile Supplier Tabs */}
+            <div className="md:hidden">
+            <MobileSingleScrollSuppliers
+    suppliers={visibleSuppliers} 
+    loadingCards={loadingCards}
+    suppliersToDelete={suppliersToDelete}
+    openSupplierModal={openSupplierModal}
+    handleDeleteSupplier={handleDeleteSupplier}
+    getSupplierDisplayName={getSupplierDisplayName}
+    addons={addons}
+    handleRemoveAddon={handleRemoveAddon}
+    getEnquiryStatus={getEnquiryStatus}
+    isSignedIn={true}
+    isPaymentConfirmed={isPaymentConfirmed}
+    enquiries={enquiries}
+  />
+            </div>
+
+            {hasEnquiriesPending && (
+              <>
+   
+   <WhilstYouWaitSection 
+  registry={registry}
+  registryItems={registryItems}
+  partyTheme={partyTheme?.name?.toLowerCase()}
+  childAge={partyDetails?.childAge || 6}
+  onCreateRegistry={() => router.push(`/gift-registry/${partyId}/create`)}
+  onAddItem={addCuratedItem}
+  registryLoading={registryLoading}
+  hasCreatedInvites={false} // or true if they've created invites
+  onCreateInvites={handleCreateInvites}
+/>
+  <div className="bg-blue-50 borde md:mt-[380px] border-blue-200 rounded-xl p-6 mb-8">
     <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
       <ArrowRight className="w-5 h-5 mr-2" />
       What happens next?
@@ -501,24 +607,8 @@ const handleCreateInvites = () => {
       </div>
     </div>
   </div>
+  </>
 )}
-            {/* Mobile Supplier Tabs */}
-            <div className="md:hidden">
-              <MobileSupplierTabs
-                   suppliers={visibleSuppliers} 
-                loadingCards={loadingCards}
-                suppliersToDelete={suppliersToDelete}
-                openSupplierModal={openSupplierModal}
-                handleDeleteSupplier={handleDeleteSupplier}
-                getSupplierDisplayName={getSupplierDisplayName}
-                addons={addons}
-                handleRemoveAddon={handleRemoveAddon}
-                getEnquiryStatus={getEnquiryStatus}
-                isSignedIn={true}
-                isPaymentConfirmed={isPaymentConfirmed}
-                enquiries={enquiries}
-              />
-            </div>
 
             {/* Add-ons Section */}
             <AddonsSection 

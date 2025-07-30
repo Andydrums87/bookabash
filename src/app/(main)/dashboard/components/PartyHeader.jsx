@@ -3,10 +3,12 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset } from "lucide-react"
+import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset, ChevronDown, ChevronUp } from "lucide-react"
 import EditPartyModal from "./EditPartyModal"
+import BudgetControls from "@/components/budget-controls"
+import { useToast } from '@/components/ui/toast'
 
-// Utility functions for consistent date formatting
+// ... (keep all the utility functions the same)
 const formatDateForDisplay = (dateInput) => {
   if (!dateInput) return null;
   
@@ -54,14 +56,12 @@ const getDaySuffix = (day) => {
 };
 
 const formatTimeSlotForDisplay = (timeSlot, confirmedStartTime = null, duration = 2) => {
-  // If we have confirmed exact times, show those
   if (confirmedStartTime) {
     const startTime = formatTimeForDisplay(confirmedStartTime);
     const endTime = calculateEndTime(confirmedStartTime, duration);
     return `${startTime} - ${endTime}`;
   }
   
-  // Otherwise show the time slot window
   const timeSlotDisplays = {
     morning: "Morning Party",
     afternoon: "Afternoon Party"
@@ -145,93 +145,146 @@ const getTimeSlotIcon = (timeSlot) => {
   }
 };
 
-// Updated party details functions
-const savePartyDetails = (details) => {
-  try {
-    const existingDetails = JSON.parse(localStorage.getItem("party_details") || "{}")
-    
-    const processedDetails = {
-      ...existingDetails,
-      ...details,
-    };
-    
-    // Format display values
-    if (details.date) {
-      processedDetails.displayDate = formatDateForDisplay(details.date);
+export default function PartyHeader({ 
+  theme, 
+  partyDetails, 
+  onPartyDetailsChange, 
+  // Budget props for mobile integration
+  totalSpent = 0,
+  tempBudget = 600,
+  budgetControlProps = {},
+  isPaymentConfirmed,
+  enquiries = [],
+  isSignedIn = false,
+}) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isBudgetExpanded, setIsBudgetExpanded] = useState(false)
+  const [showEditBlockedAlert, setShowEditBlockedAlert] = useState(false)
+  const currentTheme = theme
+  const hasEnquiriesPending = enquiries.length > 0 && isSignedIn && !isPaymentConfirmed;
+ 
+
+  const { toast } = useToast()
+  
+  const handleEditClick = () => {
+    if (hasEnquiriesPending) {
+      toast.warning("Cannot edit party details while awaiting supplier responses", {
+        title: "Party Details Locked",
+        duration: 4000
+      })
+    } else {
+      setIsEditModalOpen(true)
     }
-    
-    if (details.timeSlot || details.confirmedStartTime) {
-      processedDetails.displayTimeSlot = formatTimeSlotForDisplay(
-        details.timeSlot, 
-        details.confirmedStartTime, 
-        details.duration
-      );
-    }
-    
-    if (details.duration) {
-      processedDetails.displayDuration = formatDurationForDisplay(details.duration);
-    }
-    
-    processedDetails.postcode = details.postcode ||
-      (details.location?.match(/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i) ? details.location : existingDetails.postcode);
-    
-    localStorage.setItem("party_details", JSON.stringify(processedDetails));
-    
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: "party_details",
-        newValue: JSON.stringify(processedDetails),
-      }),
-    );
-    
-    return processedDetails;
-  } catch (error) {
-    console.error("Error saving party details:", error);
-    return details;
   }
+
+  // Helper functions for mobile vs desktop names - FIXED VERSION
+const getFirstName = () => {
+  // First try to get firstName directly
+  if (partyDetails?.firstName) {
+    return partyDetails.firstName;
+  }
+  
+  // Then try to extract from childName (which comes from database as child_name)
+  if (partyDetails?.childName) {
+    const nameParts = partyDetails.childName.split(' ');
+    return nameParts[0];
+  }
+  
+  return "Emma"; // fallback
 };
 
-export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange }) {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const currentTheme = theme
+const getFullName = () => {
+  // First try to construct from firstName + lastName
+  if (partyDetails?.firstName || partyDetails?.lastName) {
+    return `${partyDetails?.firstName || ''} ${partyDetails?.lastName || ''}`.trim();
+  }
+  
+  // Then use childName directly (this comes from database)
+  if (partyDetails?.childName) {
+    return partyDetails.childName;
+  }
+  
+  return "Emma"; // fallback
+};
+  const savePartyDetails = (details) => {
+    try {
+      const existingDetails = JSON.parse(localStorage.getItem("party_details") || "{}")
+      
+      const processedDetails = {
+        ...existingDetails,
+        ...details,
+      };
+      
+      if (details.date) {
+        processedDetails.displayDate = formatDateForDisplay(details.date);
+      }
+      
+      if (details.timeSlot || details.confirmedStartTime) {
+        processedDetails.displayTimeSlot = formatTimeSlotForDisplay(
+          details.timeSlot, 
+          details.confirmedStartTime, 
+          details.duration
+        );
+      }
+      
+      if (details.duration) {
+        processedDetails.displayDuration = formatDurationForDisplay(details.duration);
+      }
+      
+      processedDetails.postcode = details.postcode ||
+        (details.location?.match(/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i) ? details.location : existingDetails.postcode);
+      
+      localStorage.setItem("party_details", JSON.stringify(processedDetails));
+      
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "party_details",
+          newValue: JSON.stringify(processedDetails),
+        }),
+      );
+      
+      return processedDetails;
+    } catch (error) {
+      console.error("Error saving party details:", error);
+      return details;
+    }
+  };
 
   const handleSavePartyDetails = (updatedDetails) => {
-    console.log("💾 Saving party details:", updatedDetails);
-    
     const savedDetails = savePartyDetails(updatedDetails);
     
     if (onPartyDetailsChange) {
       onPartyDetailsChange(savedDetails);
     }
-    
-    console.log("✅ Party details updated:", savedDetails);
   };
 
-  const handleEditClick = () => {
-    setIsEditModalOpen(true);
-  };
 
   const getModalPartyDetails = () => {
     const details = { ...partyDetails };
+
+    let firstName = details.firstName || "Snappy";
+    let lastName = details.lastName || "";
     
-    // Safely handle date parsing
-    let parsedDate = new Date(); // Default to today
+    if (!details.firstName && !details.lastName && details.childName) {
+      const nameParts = details.childName.split(' ');
+      firstName = nameParts[0] || "Snappy";
+      lastName = nameParts.slice(1).join(' ') || "";
+    }
+
+    let parsedDate = new Date();
     
     if (details.date) {
       try {
         if (details.date instanceof Date && !isNaN(details.date.getTime())) {
-          // Already a valid Date object
           parsedDate = details.date;
         } else if (typeof details.date === 'string') {
           if (details.date.includes('th ') || details.date.includes('st ') || details.date.includes('nd ') || details.date.includes('rd ')) {
-            // Handle display format like "12th July, 2025"
             const dateStr = details.date.replace(/(\d+)(st|nd|rd|th)\s/, '$1 ');
             const testDate = new Date(dateStr);
             if (!isNaN(testDate.getTime())) {
               parsedDate = testDate;
             }
           } else {
-            // Handle other string formats
             const testDate = new Date(details.date);
             if (!isNaN(testDate.getTime())) {
               parsedDate = testDate;
@@ -239,13 +292,14 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
           }
         }
       } catch (error) {
-        console.log("Could not parse date:", error, "Using today as fallback");
         parsedDate = new Date();
       }
     }
     
     return {
-      childName: details.childName || "Emma",
+      firstName,
+      lastName, 
+      childName: `${firstName} ${lastName}`.trim(),
       childAge: details.childAge || 6,
       theme: details.theme || "princess",
       date: parsedDate,
@@ -266,7 +320,7 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
     return `${count} guests`;
   };
 
-  // Get display values with new time slot system
+  // Get display values
   const displayDate = partyDetails?.displayDate || formatDateForDisplay(partyDetails?.date) || "14th June, 2025";
   const displayTimeSlot = partyDetails?.displayTimeSlot || formatTimeSlotForDisplay(
     partyDetails?.timeSlot, 
@@ -275,17 +329,16 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
   ) || "Afternoon (1pm-4pm)";
   const displayDuration = partyDetails?.displayDuration || formatDurationForDisplay(partyDetails?.duration);
   
-  // Get the appropriate icon for the time slot
   const TimeSlotIcon = getTimeSlotIcon(partyDetails?.timeSlot);
 
   return (
     <>
       <div style={{
-  backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-  backgroundRepeat: 'repeat',
-  backgroundSize: '100px, cover',
-  backgroundPosition: 'center',
-}}className="relative md:h-auto md:pt-0 pt-6 h-[400px] rounded-2xl shadow-2xl overflow-hidden mb-8 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
+        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '100px, cover',
+        backgroundPosition: 'center',
+      }} className="relative md:h-auto md:pt-0 pt-6 h-auto rounded-2xl shadow-2xl overflow-hidden mb-8 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
         
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
@@ -308,9 +361,9 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10"></div>
 
         {/* Content */}
-        <div className="relative px-4 md:p-10  text-white min-h-[180px] md:min-h-[320px] flex flex-col justify-center">
-          <div className="space-y-3 md:space-y-6">
-            {/* Theme Badge and Edit Button */}
+        <div className="relative px-4 md:p-10 text-white">
+          <div className="space-y-3 md:space-y-6 ">
+            {/* Theme Badge and Edit Button + Mobile Budget */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 md:gap-3">
                 <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-yellow-300 animate-pulse" />
@@ -318,56 +371,240 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
                   {currentTheme?.name || currentTheme} Party
                 </Badge>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEditClick}
-                className="p-2 md:p-3 h-auto text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 hover:scale-110 group backdrop-blur-sm border border-white/20"
-                title="Edit party details"
-              >
-                <Edit className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-12 transition-transform duration-300" />
-              </Button>
+              
+              <div className="flex items-center gap-2">
+                {/* Mobile Budget Ring - only visible on mobile */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => setIsBudgetExpanded(!isBudgetExpanded)}
+                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-2 hover:bg-white/20 transition-all duration-300"
+                  >
+                    <div className="relative w-6 h-6">
+                      {/* Budget progress ring */}
+                      <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          fill="none"
+                          stroke="rgba(255,255,255,0.3)"
+                          strokeWidth="2"
+                        />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="2"
+                          strokeDasharray={`${(totalSpent / tempBudget) * 62.83} 62.83`}
+                          className="transition-all duration-500"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-xs">
+                      <div className="text-white/70 font-medium">Budget</div>
+                      <div className="font-semibold">£{totalSpent}/£{tempBudget}</div>
+                    </div>
+                    {isBudgetExpanded ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
+
+                <Button
+  variant="ghost"
+  size="sm"
+  onClick={handleEditClick}  // Keep this the same
+  className="p-2 md:p-3 h-auto text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 hover:scale-110 group backdrop-blur-sm border border-white/20"
+  title="Edit party details"
+>
+  <Edit className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-12 transition-transform duration-300" />
+</Button>
+              </div>
             </div>
+
+            {/* Mobile Budget Dropdown - only visible when expanded */}
+            {isBudgetExpanded && (
+              <div className="md:hidden relative z-50 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                <div className="text-center">
+                  <h3 className="font-semibold mb-1 text-white">Adjust Your Budget</h3>
+                  <p className="text-xs opacity-80 text-white">Tap outside to close</p>
+                </div>
+                
+                {/* Simplified Budget Controls for Header */}
+                <div className="space-y-4">
+                  {/* Current Budget Display */}
+                  <div className="flex justify-between items-center text-white">
+                    <span className="text-sm">Current Budget</span>
+                    <span className="text-lg font-bold">£{tempBudget}</span>
+                  </div>
+                  
+                  {/* Budget Slider */}
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="300"
+                      max="1000"
+                      step="50"
+                      value={tempBudget}
+                      onChange={(e) => budgetControlProps.setTempBudget(Number(e.target.value))}
+                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+                      style={{
+                        background: `linear-gradient(to right, white 0%, white ${((tempBudget - 300) / (1000 - 300)) * 100}%, rgba(255,255,255,0.2) ${((tempBudget - 300) / (1000 - 300)) * 100}%, rgba(255,255,255,0.2) 100%)`
+                      }}
+                    />
+                    <div className="flex justify-between text-xs text-white/80">
+                      <span>£300</span>
+                      <span>£1000+</span>
+                    </div>
+                  </div>
+                  
+                  {/* Budget Status */}
+                  <div className="flex justify-between items-center text-white">
+                    <span className="text-sm">Spent</span>
+                    <span className="text-sm">£{totalSpent} / £{tempBudget}</span>
+                  </div>
+                  
+                  {budgetControlProps.isUpdating && (
+                    <div className="text-center text-xs text-white/80">
+                      Updating suppliers...
+                    </div>
+                  )}
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-white/10 border-white/30 text-white hover:bg-white/20"
+                  onClick={() => setIsBudgetExpanded(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            )}
 
             {/* Party Title */}
             <div className="space-y-1 md:space-y-2">
               <h1
                 suppressHydrationWarning={true}
-                className="text-[2.8rem]  md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
+                className="text-5xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
                 style={{
                   textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
                 }}
               >
-            {partyDetails?.childName || "Emma"}’s <br className="md:hidden" /> Big Day!
+                <span className="md:hidden">{getFirstName()}'s</span>
+                <span className="hidden md:inline">{getFullName()}'s</span>
+                <span className="md:hidden"> Big Day!</span>
+                <span className="hidden md:inline"><br />Big Day!</span>
               </h1>
-              <p className="text-lg mt-3 md:text-2xl text-white/95 drop-shadow-lg font-medium">
+              <p className="text-base md:text-2xl text-white/95 drop-shadow-lg font-medium">
                 {currentTheme?.description || `An amazing ${currentTheme} celebration`}
               </p>
             </div>
 
-            {/* Party Details - Updated with time slots */}
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5 md:gap-4 pt-2 md:pt-4 ">
-              {/* Date */}
-              <div className="flex flex-col space-y-0.5 md:space-y-2 bg-white/10 backdrop-blur-sm rounded-md md:rounded-xl h-25 md:p-4 border border-white/20">
-                <div className="flex items-center space-x-1 md:space-x-2">
-                  <div className="p-0.5 md:p-2 bg-white/20 rounded-full">
-                    <Calendar className="w-2.5 h-2.5 md:w-5 md:h-5" />
+            {/* Mobile: Horizontal Scrolling Cards */}
+            <div className="md:hidden">
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+                {/* Date Card */}
+                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1 bg-white/20 rounded-full">
+                      <Calendar className="w-3 h-3" />
+                    </div>
+                    <p className="text-xs opacity-90 font-medium">Date</p>
                   </div>
-                  <p className="text-[10px] md:text-sm opacity-90 font-medium">Date</p>
-                </div>
-                <div className="space-y-0.5">
-                  <p suppressHydrationWarning={true} className="font-bold text-[10px] md:text-base leading-tight">
+                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
                     {displayDate}
                   </p>
-                  {/* Show time slot on mobile */}
-                  <p suppressHydrationWarning={true} className="font-medium text-[9px] md:hidden opacity-80">
+                </div>
+
+                {/* Time Card */}
+                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1 bg-white/20 rounded-full">
+                      <TimeSlotIcon className="w-3 h-3" />
+                    </div>
+                    <p className="text-xs opacity-90 font-medium">Time</p>
+                  </div>
+                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
                     {partyDetails?.timeSlot === 'morning' ? 'Morning' : 'Afternoon'}
+                  </p>
+                  <p suppressHydrationWarning={true} className="font-medium text-xs opacity-80">
+                    {displayDuration}
+                  </p>
+                </div>
+
+                {/* Age Card */}
+                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1 bg-white/20 rounded-full">
+                      <Users className="w-3 h-3" />
+                    </div>
+                    <p className="text-xs opacity-90 font-medium">Age</p>
+                  </div>
+                  <p suppressHydrationWarning={true} className="font-bold text-sm">
+                    {partyDetails?.childAge || 6} years
+                  </p>
+                </div>
+
+                {/* Guests Card */}
+                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1 bg-white/20 rounded-full">
+                      <Users className="w-3 h-3" />
+                    </div>
+                    <p className="text-xs opacity-90 font-medium">Guests</p>
+                  </div>
+                  <p suppressHydrationWarning={true} className="font-bold text-sm">
+                    {partyDetails?.guestCount || "10"}
+                  </p>
+                </div>
+
+                {/* Location Card */}
+                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1 bg-white/20 rounded-full">
+                      <MapPin className="w-3 h-3" />
+                    </div>
+                    <p className="text-xs opacity-90 font-medium">Where</p>
+                  </div>
+                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
+                    {partyDetails?.location || "W1A 1AA"}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Scroll indicator dots */}
+              <div className="flex justify-center gap-1 mt-3">
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+              </div>
+            </div>
+
+            {/* Desktop: Original Grid Layout */}
+            <div className="hidden md:grid md:grid-cols-5 gap-4">
+              {/* Date */}
+              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-white/20 rounded-full">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm opacity-90 font-medium">Date</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p suppressHydrationWarning={true} className="font-bold text-base leading-tight">
+                    {displayDate}
                   </p>
                 </div>
               </div>
 
-              {/* Time Slot - Desktop Only */}
-              <div className="hidden md:flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Time Slot */}
+              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <TimeSlotIcon className="w-5 h-5" />
@@ -384,26 +621,21 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
                 </div>
               </div>
 
-              {/* Age & Guests Combined on Mobile */}
-              <div className="flex flex-col space-y-0.5 md:space-y-2 bg-white/10 backdrop-blur-sm rounded-md md:rounded-xl p-1.5 md:p-4 border border-white/20">
-                <div className="flex items-center space-x-1 md:space-x-2">
-                  <div className="p-0.5 md:p-2 bg-white/20 rounded-full">
-                    <Users className="w-2.5 h-2.5 md:w-5 md:h-5" />
+              {/* Age */}
+              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-white/20 rounded-full">
+                    <Users className="w-5 h-5" />
                   </div>
-                  <p className="text-[10px] md:text-sm opacity-90 font-medium">Age</p>
+                  <p className="text-sm opacity-90 font-medium">Age</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p suppressHydrationWarning={true} className="font-bold text-[10px] md:text-base">
-                    {partyDetails?.childAge || 6} years
-                  </p>
-                  <p suppressHydrationWarning={true} className="font-medium text-[9px] md:hidden opacity-80">
-                    {partyDetails?.guestCount || "10"} guests
-                  </p>
-                </div>
+                <p suppressHydrationWarning={true} className="font-bold text-base">
+                  {partyDetails?.childAge || 6} years
+                </p>
               </div>
 
-              {/* Guests - Desktop Only */}
-              <div className="hidden md:flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Guests */}
+              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <Users className="w-5 h-5" />
@@ -416,14 +648,14 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
               </div>
 
               {/* Location */}
-              <div className="flex flex-col space-y-0.5 md:space-y-2 bg-white/10 backdrop-blur-sm rounded-md md:rounded-xl p-1.5 md:p-4 border border-white/20">
-                <div className="flex items-center space-x-1 md:space-x-2">
-                  <div className="p-0.5 md:p-2 bg-white/20 rounded-full">
-                    <MapPin className="w-2.5 h-2.5 md:w-5 md:h-5" />
+              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-white/20 rounded-full">
+                    <MapPin className="w-5 h-5" />
                   </div>
-                  <p className="text-[10px] md:text-sm opacity-90 font-medium">Where</p>
+                  <p className="text-sm opacity-90 font-medium">Where</p>
                 </div>
-                <p suppressHydrationWarning={true} className="font-bold text-[10px] md:text-base truncate">
+                <p suppressHydrationWarning={true} className="font-bold text-base truncate">
                   {partyDetails?.location || "W1A 1AA"}
                 </p>
               </div>
@@ -434,6 +666,14 @@ export default function PartyHeader({ theme, partyDetails, onPartyDetailsChange 
         {/* Bottom accent line */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-300 to-secondary"></div>
       </div>
+
+      {/* Backdrop when budget is expanded - only on mobile */}
+      {isBudgetExpanded && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          onClick={() => setIsBudgetExpanded(false)}
+        />
+      )}
 
       {/* Edit Modal */}
       <EditPartyModal
