@@ -295,7 +295,7 @@ export default function AuthCallback() {
             // ✅ Check URL parameter first - this overrides user metadata
     const urlUserType = searchParams.get("user_type")
 
-    if (urlUserType === "customer") {
+        if (urlUserType === "customer") {
       console.log("🎯 Customer sign-in flow (from URL parameter)")
       // Skip supplier checks and go straight to customer dashboard
       setProgress(100)
@@ -459,21 +459,21 @@ export default function AuthCallback() {
       <div className="fixed inset-0 z-50 bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex flex-col items-center justify-center px-4 text-center">
         {/* Large Snappy Video Animation */}
         <div className="relative w-full max-w-2xl aspect-video mb-8 animate-fade-in-up">
-          <video
-            ref={videoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="rounded-2xl shadow-2xl w-full h-full object-cover"
-            poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752832989/iStock-1149320278_srn8ti-removebg_efzwtu.png"
-          >
-            <source
-              src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753781655/output-6-_hzoojo.mp4"
-              type="video/mp4"
-            />
-            Your browser does not support the video tag.
-          </video>
+        <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="rounded-xl shadow-lg w-full"
+        poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753083738/ChatGPT_Image_Jul_21_2025_08_42_11_AM_tznmag.png"
+      >
+        <source
+          src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753083603/wQEAljVs5VrDNI1dyE8t8_output_nowo6h.mp4"
+          type="video/mp4"
+        />
+        Your browser does not support the video tag.
+      </video>
 
           {/* Video overlay with subtle gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl pointer-events-none"></div>
@@ -493,7 +493,7 @@ export default function AuthCallback() {
         {/* Text Content */}
         <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-800 mb-4 animate-fade-in-up">
-            Welcome to BookABash! 🎉
+            Welcome to PartySnap! 🎉
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-600 mb-8 animate-pulse leading-relaxed">
@@ -560,7 +560,7 @@ export default function AuthCallback() {
             <CheckCircle className="w-16 h-16 text-green-600" />
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-800 mb-6">Welcome to BookABash! 🎊</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-800 mb-6">Welcome to PartySnap! 🎊</h2>
 
           <p className="text-lg sm:text-xl text-gray-600 mb-4 leading-relaxed">
             Snappy's got everything set up for you!

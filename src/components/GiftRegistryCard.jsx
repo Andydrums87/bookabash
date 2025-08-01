@@ -1,37 +1,55 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Gift, Plus, Sparkles, Heart, Loader2, Eye, Share2, ShoppingCart, TrendingUp, Users, X } from "lucide-react"
 import Link from "next/link"
-import { useGiftSuggestions } from "@/hooks/useGiftRegistry"
+import { useGiftRegistry } from "@/hooks/useGiftRegistry"
 
-const GiftRegistryCard = ({ registry, registryItems, partyTheme, childAge, onCreateRegistry, onAddItem, loading }) => {
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [addingItem, setAddingItem] = useState(null)
-
-  // Load theme-based suggestions
-  const { suggestions, loading: suggestionsLoading } = useGiftSuggestions(partyTheme, childAge, null)
-
-  const handleAddSuggestion = async (suggestion) => {
-    setAddingItem(suggestion.id)
-    try {
-      await onAddItem(suggestion.id, {
-        priority: "medium",
-      })
-    } finally {
-      setAddingItem(null)
-    }
-  }
-
+const GiftRegistryCard = ({ registry, registryItems, partyTheme, childAge, partyId, partyDetails, loading: externalLoading }) => {
+  const router = useRouter()
+  const [isCreating, setIsCreating] = useState(false)
+  
+  // Get the createRegistry function from the hook
+  const { createRegistry } = useGiftRegistry(partyId)
+  
   const hasItems = registryItems && registryItems.length > 0
-  const topSuggestions = suggestions.slice(0, 3)
   const claimedItems = registryItems?.filter((item) => item.is_claimed).length || 0
   const completionRate = hasItems ? Math.round((claimedItems / registryItems.length) * 100) : 0
 
-  if (loading) {
+  const handleCreateRegistry = async () => {
+    setIsCreating(true)
+    try {
+      console.log('🎯 Creating registry for party:', partyId)
+      
+      const result = await createRegistry({
+        title: `${partyDetails?.childName || 'Birthday'} Party Gift Registry`,
+        description: `Gift registry for ${partyDetails?.childName}'s ${partyTheme || 'themed'} party`,
+        theme: partyTheme?.toLowerCase(),
+        child_age: childAge || 6
+      })
+      
+      console.log('📝 Create registry result:', result)
+      
+      if (result.success && result.registry) {
+        console.log('✅ Navigating to:', `/gift-registry/${result.registry.id}/create`)
+        router.push(`/gift-registry/${result.registry.id}/create`)
+      } else {
+        console.error('❌ Failed to create registry:', result.error)
+        alert('Failed to create gift registry. Please try again.')
+      }
+    } catch (error) {
+      console.error('💥 Error:', error)
+      alert('Failed to create gift registry. Please try again.')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  if (externalLoading) {
     return (
       <Card className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
         <div className="aspect-[4/3] bg-gray-200 animate-pulse"></div>
@@ -49,16 +67,16 @@ const GiftRegistryCard = ({ registry, registryItems, partyTheme, childAge, onCre
   return (
     <Card className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-md transition-all duration-200">
       {/* Top Image Section */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]">
         <img 
-          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753218318/rom7mfgtgwoey4zu6xoj.jpg"
+          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970180/iStock-2000435412-removebg_ewfzxs.png"
           alt="Gift Registry"
           className="w-full h-full object-cover"
         />
         
         {/* Status Badges */}
         <div className="absolute top-4 left-4 flex gap-2">
-          <Badge className="bg-purple-500 text-white border-0">
+          <Badge className="bg-primary-500 text-white border-0">
             Gift Registry
           </Badge>
           {hasItems && (
@@ -80,40 +98,35 @@ const GiftRegistryCard = ({ registry, registryItems, partyTheme, childAge, onCre
             <div className="text-white/80 text-xs">Complete</div>
           </div>
         )}
-
-        {/* Close/X Button (matching your supplier cards) */}
-        {registry && (
-          <button className="absolute top-4 right-4 w-8 h-8 bg-black/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/30 transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        )}
       </div>
 
       <CardContent className="p-6">
-        {!registry ? (
-          // No registry created yet
+        {!registry || !hasItems ? (
+          // No registry or no items - simple create/add flow
           <>
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Gift Registry</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {!registry ? "Create Gift Registry" : "Add Gift Ideas"}
+              </h3>
               <p className="text-gray-600">Help guests know what to bring!</p>
             </div>
 
             <div className="mb-6">
               <div className="flex items-center space-x-2 mb-3">
-                <Gift className="w-5 h-5 text-purple-500" />
-                <span className="font-semibold text-gray-900">Perfect Timing!</span>
+                <Gift className="w-5 h-5 text-primary-600" />
+                <span className="font-semibold text-gray-900">Why create a registry?</span>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
-                While suppliers prepare quotes, create your gift registry. When you send invites, guests will know exactly what to bring! 🎁
+                While suppliers confirm, set up your gift registry. When you send invites, guests will know exactly what to bring!
               </p>
             </div>
 
             <Button
-              onClick={onCreateRegistry}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl"
+              onClick={handleCreateRegistry}
+              disabled={isCreating}
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl"
             >
-              {loading ? (
+              {isCreating ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Creating...
@@ -121,120 +134,26 @@ const GiftRegistryCard = ({ registry, registryItems, partyTheme, childAge, onCre
               ) : (
                 <>
                   <Gift className="w-5 h-5 mr-2" />
-                  Create Gift Registry
+                  {!registry ? "Create Gift Registry" : "Add Gift Ideas"}
                 </>
               )}
             </Button>
           </>
-        ) : !hasItems ? (
-          // Registry created but no items
-          <>
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Gift Registry Created! 🎉</h3>
-              <p className="text-gray-600">Now add some gift ideas to help your guests</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <Button className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl" asChild>
-                <Link href={`/gift-registry/${registry.id}/create`}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Gift Ideas
-                </Link>
-              </Button>
-
-              {topSuggestions.length > 0 && (
-                <Button
-                  variant="outline"
-                  className="border-purple-300 text-purple-600 hover:bg-purple-50 rounded-xl"
-                  onClick={() => setShowSuggestions(!showSuggestions)}
-                  disabled={suggestionsLoading}
-                >
-                  {suggestionsLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Quick Add
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Quick suggestions */}
-            {showSuggestions && topSuggestions.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold text-gray-900 text-sm">Perfect for {partyTheme}:</span>
-                  <button
-                    onClick={() => setShowSuggestions(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {topSuggestions.map((suggestion) => (
-                    <div
-                      key={suggestion.id}
-                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">{suggestion.name}</p>
-                        <p className="text-purple-600 font-bold text-sm">
-                          {suggestion.price ? `£${suggestion.price}` : suggestion.price_range}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAddSuggestion(suggestion)}
-                        disabled={addingItem === suggestion.id}
-                        className="bg-purple-500 hover:bg-purple-600 text-white"
-                      >
-                        {addingItem === suggestion.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Plus className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
         ) : (
-          // Registry with items
+          // Registry with items - simple management
           <>
             <div className="mb-4">
               <h3 className="text-xl font-bold text-gray-900 mb-2">Gift Registry Ready! 🎉</h3>
               <p className="text-gray-600">
-                {registryItems.length} gift{registryItems.length > 1 ? "s" : ""} added • Ready to share with guests
+                {registryItems.length} gift{registryItems.length > 1 ? "s" : ""} added • Ready to share
               </p>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mb-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Guest Claims Progress</span>
-                <span>{completionRate}% claimed</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${completionRate}%` }}
-                ></div>
-              </div>
-            </div>
-
-           
-
-            {/* Action buttons matching supplier card style */}
+            {/* Action buttons */}
             <div className="grid grid-cols-3 gap-3">
               <Button
                 size="sm"
-                className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-xs"
+                className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl text-xs"
                 asChild
               >
                 <Link href={`/gift-registry/${registry.id}/create`}>

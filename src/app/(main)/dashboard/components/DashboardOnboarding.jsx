@@ -1,6 +1,18 @@
 "use client"
 import { useState, useRef } from "react"
-import { Calendar, MapPin, Sparkles, Search, Users, Clock, ChevronLeft, ChevronRight, Sun, Sunset } from "lucide-react"
+import {
+  Calendar,
+  MapPin,
+  Sparkles,
+  Search,
+  Users,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Sun,
+  Sunset,
+  X,
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -41,6 +53,11 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     handleFieldChange("theme", theme)
   }
 
+  const handleNoTheme = () => {
+    setSelectedTheme("no-theme")
+    handleFieldChange("theme", "no-theme")
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -62,7 +79,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
         timeSlot: formData.timeSlot,
         duration: formData.duration,
         specificTime: formData.needsSpecificTime ? formData.specificTime : null,
-        theme: selectedTheme,
+        theme: selectedTheme === "no-theme" ? null : selectedTheme,
         guestCount: formData.guestCount,
         postcode: formData.location,
         budget: formData.budget,
@@ -235,18 +252,18 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
         <ContextualBreadcrumb currentPage="Build Party" />
 
         <div className="mx-auto max-w-screen">
-          {/* Enhanced Hero Section */}
-          {/* <div className="relative w-full h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden rounded-b-3xl shadow-2xl">
-            <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]">
+          {/* Enhanced Hero Section - Full Width */}
+          <div className="relative  h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden rounded-b-3xl shadow-2xl">
+            <div className="w-full h-full absolute  bg-primary-400">
               <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752832989/iStock-1149320278_srn8ti-removebg_efzwtu.png"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970651/iStock-2184188129_taimuh.jpg"
                 alt="People celebrating at a party"
                 fill
-                className="object-cover opacity-20"
+                className="object-cover opacity-60"
               />
             </div>
 
-
+            {/* Decorative elements */}
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute top-10 left-10 w-4 h-4 bg-white/20 rounded-full animate-pulse"></div>
               <div className="absolute top-20 right-16 w-2 h-2 bg-white/30 rounded-full animate-pulse delay-300"></div>
@@ -254,22 +271,21 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               <Sparkles className="absolute top-16 right-10 w-6 h-6 text-white/30 animate-pulse delay-500" />
             </div>
 
-  
+            {/* Hero Content - Full Width */}
             <div className="relative h-full flex justify-center items-center px-6 sm:px-8">
-              <div className="max-w-4xl mx-auto text-center text-white">
+              <div className="w-full max-w-6xl mx-auto text-center text-white">
                 <div className="mb-6">
                   <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-tight">
-                    Let's Plan Your
-                    <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent drop-shadow-lg">
-                      Dream Party!
+                    <span className="bg-white bg-clip-text text-transparent drop-shadow-lg">
+                      Let's Create Magic Together! 
                     </span>
                   </h1>
-                  <p className="text-lg sm:text-xl md:text-2xl font-medium opacity-90 max-w-2xl mx-auto leading-relaxed">
-                    Create magical moments with everything you need for the perfect celebration
+                  <p className="text-lg sm:text-xl md:text-2xl font-medium opacity-90 max-w-4xl mx-auto leading-relaxed">
+                    🎉 Just a few quick details to plan your <span className="font-bold">AMAZING</span> celebration! 🎈
                   </p>
                 </div>
 
-  
+                {/* Floating elements */}
                 <div className="flex justify-center space-x-4 opacity-80">
                   <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium">
                     🎈 Trusted by 10,000+ families
@@ -281,30 +297,20 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               </div>
             </div>
 
-
+            {/* Smooth transition */}
             <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
-          </div> */}
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-12 px-6 sm:px-8 lg:px-12 py-12">
-            {/* Form Header */}
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                Tell us about your party
-              </h2>
-              <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
-                Just a few details to create your perfect celebration
-              </p>
-            </div>
-
+          <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12 px-6 lg:px-12 py-8 sm:py-12">
             {/* Enhanced Form Fields */}
-            <div className="space-y-10">
-              {/* Basic Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-6">
+              {/* Basic Details Grid - Improved Layout */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Date Field */}
                 <div className="group">
-                  <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <label className="block text-lg font-bold text-white mb-3 flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
+                  <div className="bg-primary-400 rounded-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <label className="block text-base sm:text-lg font-bold text-white mb-2 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 " />
                       Date
                     </label>
                     <div className="relative">
@@ -312,7 +318,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                         type="date"
                         value={formData.date}
                         onChange={(e) => handleFieldChange("date", e.target.value)}
-                        className="w-full border-0 bg-white/95 backdrop-blur-sm text-base focus:ring-2 focus:ring-white/50 focus:outline-none px-4 py-3 rounded-xl font-medium"
+                        className="w-full border-0 placeholder:text-black bg-white/95 backdrop-blur-sm text-sm sm:text-base focus:ring-2 focus:ring-white/50 focus:outline-none px-1 py-2 sm:py-3 rounded-lg font-medium"
                         placeholder="Select date"
                       />
                     </div>
@@ -321,9 +327,9 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
 
                 {/* Guests Field */}
                 <div className="group">
-                  <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <label className="block text-lg font-bold text-white mb-3 flex items-center gap-2">
-                      <Users className="w-5 h-5" />
+                  <div className="bg-primary-400 rounded-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <label className="block text-base sm:text-lg font-bold text-white mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                       Guests
                     </label>
                     <div className="relative">
@@ -331,7 +337,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                         value={formData.guestCount}
                         onValueChange={(value) => handleFieldChange("guestCount", value)}
                       >
-                        <SelectTrigger className="w-full border-0 bg-white/95 backdrop-blur-sm focus:ring-2 focus:ring-white/50 focus:outline-none px-4 py-3 rounded-xl font-medium">
+                        <SelectTrigger className="w-full border-0 bg-white/95 backdrop-blur-sm focus:ring-2 focus:ring-white/50 focus:outline-none px-3 py-2 sm:py-3 rounded-lg font-medium text-sm sm:text-base">
                           <SelectValue placeholder="How many?" />
                         </SelectTrigger>
                         <SelectContent>
@@ -346,11 +352,11 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                   </div>
                 </div>
 
-                {/* Location Field */}
+                {/* Location Field - Now spans 2 columns but more compact */}
                 <div className="group sm:col-span-2">
-                  <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <label className="block text-lg font-bold text-white mb-3 flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
+                  <div className="bg-primary-400 rounded-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <label className="block text-base sm:text-lg font-bold text-white mb-2 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
                       Location
                     </label>
                     <div className="relative">
@@ -358,8 +364,8 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                         type="text"
                         value={formData.location}
                         onChange={(e) => handleFieldChange("location", e.target.value)}
-                        className="w-full border-0 bg-white/95 backdrop-blur-sm text-base focus:ring-2 focus:ring-white/50 focus:outline-none px-4 py-3 rounded-xl font-medium"
-                        placeholder="Enter your postcode"
+                        className="w-full border-0 bg-white/95 backdrop-blur-sm text-sm sm:text-base focus:ring-2 focus:ring-white/50 focus:outline-none px-3 py-2 sm:py-3 rounded-lg font-medium"
+                        placeholder="Enter your postcode (e.g. SW1A 1AA)"
                       />
                     </div>
                   </div>
@@ -367,10 +373,12 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               </div>
 
               {/* Enhanced Time Selection */}
-              <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-gray-100">
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">When works best?</h3>
-                  <p className="text-lg text-gray-600">Choose a time that works for your family</p>
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-gray-100">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
+                    When works best?
+                  </h3>
+                  <p className="text-base sm:text-lg text-gray-600">Choose a time that works for your family</p>
                 </div>
 
                 {/* Time Slot Cards */}
@@ -454,7 +462,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                     value={formData.duration.toString()}
                     onValueChange={(value) => handleFieldChange("duration", Number.parseFloat(value))}
                   >
-                    <SelectTrigger className="w-full py-5 bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl px-5 h-14 text-lg font-medium shadow-md">
+                    <SelectTrigger className="w-full bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-14 text-lg font-medium shadow-md">
                       <SelectValue placeholder="Choose duration" />
                     </SelectTrigger>
                     <SelectContent>
@@ -509,10 +517,12 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               </div>
 
               {/* Enhanced Budget Section */}
-              <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-gray-100">
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">What's your budget?</h3>
-                  <p className="text-lg text-gray-600">Drag Snappy to set your perfect budget! 🐊</p>
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-gray-100">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
+                    What's your budget?
+                  </h3>
+                  <p className="text-base sm:text-lg text-gray-600">Drag Snappy to set your perfect budget! 🐊</p>
                 </div>
 
                 <div className="max-w-3xl mx-auto space-y-8">
@@ -586,7 +596,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
               {/* Enhanced Theme Section */}
               <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Choose Your Theme</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Choose Your Theme (Optional)</h2>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       type="button"
@@ -605,6 +615,23 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                       Search Themes
                     </Button>
                   </div>
+                </div>
+
+                {/* No Theme Option */}
+                <div className="flex justify-center mb-6">
+                  <Button
+                    type="button"
+                    variant={selectedTheme === "no-theme" ? "default" : "outline"}
+                    onClick={handleNoTheme}
+                    className={`flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold transition-all duration-300 ${
+                      selectedTheme === "no-theme"
+                        ? "bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg"
+                        : "border-2 border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md hover:shadow-lg"
+                    }`}
+                  >
+                    <X className="w-5 h-5" />
+                    No Theme - Keep it Simple
+                  </Button>
                 </div>
 
                 {/* Trending Themes */}
@@ -760,13 +787,13 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
 
               {/* Enhanced Bottom Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
-                <Button
+                {/* <Button
                   type="button"
                   variant="ghost"
                   className="text-gray-600 hover:text-gray-800 font-medium text-lg px-8 py-4 rounded-full border-2 border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 transition-all duration-300 w-full sm:w-auto"
                 >
                   Skip for now
-                </Button>
+                </Button> */}
                 <Button
                   type="submit"
                   disabled={
@@ -775,10 +802,9 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
                     !formData.timeSlot ||
                     !formData.guestCount ||
                     !formData.location ||
-                    !selectedTheme ||
                     (formData.needsSpecificTime && !formData.specificTime)
                   }
-                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-500))] hover:via-[hsl(var(--primary600))] hover:to-[hsl(var(--primary-700))] text-white px-12 py-4 rounded-full text-lg font-bold disabled:opacity-50 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-full sm:w-auto"
+                  className="bg-primary-400  hover:from-[hsl(var(--primary-500))] hover:via-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-22 py-8 rounded-full text-lg font-bold disabled:opacity-50 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-full sm:w-auto"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center justify-center">

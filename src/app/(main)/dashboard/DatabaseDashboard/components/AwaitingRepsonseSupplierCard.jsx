@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Gift, X, Clock } from "lucide-react"
+import SupplierResponseTimer from "../components/SupplierResponseTime"
 
 export default function AwaitingResponseSupplierCard({
   type,
@@ -13,8 +14,10 @@ export default function AwaitingResponseSupplierCard({
   handleDeleteSupplier,
   addons = [],
   isDeleting = false,
+  enquirySentAt = null,
 }) {
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
+  console.log('🕐 enquirySentAt prop:', enquirySentAt)
 
   return (
     <Card className={`gap-0 overflow-hidden rounded-2xl shadow-xl transition-all duration-300 relative min-h-[480px] ${isDeleting ? "opacity-50 scale-95" : ""}`}>
@@ -70,8 +73,19 @@ export default function AwaitingResponseSupplierCard({
             <Badge className="bg-amber-500 text-white">Awaiting Response</Badge>
           </div>
 
+          {enquirySentAt && (
+            <div className="mb-4">
+              <SupplierResponseTimer 
+                enquirySentAt={enquirySentAt}
+                supplierName={supplier.name}
+                responseTimeHours={24}
+                supplier={supplier}
+              />
+            </div>
+          )}
+
           {/* Status message */}
-          <div className="text-center mb-5">
+          {/* <div className="text-center mb-5">
             <p className="text-sm text-amber-800 font-medium mb-3">
               Enquiry sent to <span className="font-bold">{supplier.name}</span>
             </p>
@@ -81,7 +95,7 @@ export default function AwaitingResponseSupplierCard({
               <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
             </div>
             <p className="text-xs text-amber-700">Response within 24 hours</p>
-          </div>
+          </div> */}
 
           {/* Add-ons if present */}
           {supplierAddons.length > 0 && (

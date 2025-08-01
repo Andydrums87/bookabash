@@ -32,6 +32,7 @@ export const useGiftRegistry = (partyId) => {
 
   const createRegistry = async (registryData = {}) => {
     if (!partyId) return { success: false, error: 'No party ID' };
+    console.log("hello")
     
     try {
       const result = await partyDatabaseBackend.createGiftRegistry(partyId, registryData);
@@ -195,7 +196,8 @@ export const useGiftRegistry = (partyId) => {
   };
 };
 
-// Hook for gift suggestions
+// Update your useGiftSuggestions hook in hooks/useGiftRegistry.js
+
 export const useGiftSuggestions = (theme, age, category = null) => {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -203,7 +205,15 @@ export const useGiftSuggestions = (theme, age, category = null) => {
 
   useEffect(() => {
     const loadSuggestions = async () => {
-      if (!theme && !age) return;
+      // Don't load if theme or age is null/undefined
+      if (!theme || !age || theme === 'undefined') {
+        console.log('🚫 Skipping suggestions load - missing theme or age:', { theme, age });
+        setSuggestions([]);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🎯 Loading suggestions for:', { theme, age, category });
       
       setLoading(true);
       setError(null);
@@ -228,7 +238,6 @@ export const useGiftSuggestions = (theme, age, category = null) => {
 
   return { suggestions, loading, error };
 };
-
 // Enhanced hook for gift search with debouncing and caching
 export const useGiftSearch = () => {
   const [searchResults, setSearchResults] = useState([]);

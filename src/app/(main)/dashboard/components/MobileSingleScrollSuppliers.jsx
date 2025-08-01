@@ -1,3 +1,5 @@
+// Updated MobileSingleScrollSuppliers component with e-invites section removed
+
 "use client"
 
 import { useState } from "react"
@@ -5,8 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Plus, Sparkles } from "lucide-react"
 import Image from "next/image"
-import MobileSupplierCard from "./MobileSupplierCard"
+import MobileSupplierCard from "../components/Cards/MobileSupplierCard"
 
+// Remove the e-invites section from supplierSections
 const supplierSections = [
   {
     id: "essentials",
@@ -40,14 +43,7 @@ const supplierSections = [
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
     types: ["decorations", "balloons"],
   },
-  {
-    id: "invites",
-    title: "Party Invites",
-    subtitle: "Get everyone excited",
-    emoji: "💌",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869777/ChatGPT_Image_Jul_30_2025_11_02_50_AM_vfmxd5.png",
-    types: ["einvites"],
-  }
+  // Removed the e-invites section entirely
 ]
 
 function SectionHeader({ section }) {
@@ -85,30 +81,33 @@ export default function MobileSingleScrollSuppliers({
   isSignedIn = false,
   isPaymentConfirmed = false,
   enquiries = [],
-  handleAddSupplier
+  handleAddSupplier,
+  getEnquiryTimestamp
 }) {
   const [activeSection, setActiveSection] = useState(0);
 
   // Check if we're in awaiting response phase
   const hasEnquiriesPending = enquiries.length > 0 && isSignedIn;
 
-  // Filter suppliers based on phase (same logic as desktop)
+  // Filter suppliers based on phase (exclude einvites from main suppliers)
   const getVisibleSuppliers = () => {
+    // Filter out einvites from all suppliers
+    const filteredSuppliers = Object.fromEntries(
+      Object.entries(suppliers).filter(([type]) => type !== 'einvites')
+    );
+
     if (hasEnquiriesPending) {
-      // Only show suppliers with enquiries sent + einvites
+      // Only show suppliers with enquiries sent (einvites already excluded)
       return Object.fromEntries(
-        Object.entries(suppliers).filter(([type, supplier]) => {
-          // Always include einvites
-          if (type === 'einvites') return supplier;
-          
+        Object.entries(filteredSuppliers).filter(([type, supplier]) => {
           // Only include suppliers that have both a supplier AND an enquiry status of 'pending'
           return supplier && getEnquiryStatus && getEnquiryStatus(type) === 'pending';
         })
       );
     }
     
-    // Show all suppliers (normal state)
-    return suppliers;
+    // Show all suppliers except einvites (normal state)
+    return filteredSuppliers;
   };
 
   const visibleSuppliers = getVisibleSuppliers();
@@ -266,6 +265,7 @@ export default function MobileSingleScrollSuppliers({
                       addons={addons}
                       handleRemoveAddon={handleRemoveAddon}
                       enquiryStatus={getEnquiryStatus ? getEnquiryStatus(type) : null}
+      enquirySentAt={getEnquiryTimestamp ? getEnquiryTimestamp(type) : null} 
                       isSignedIn={isSignedIn}
                       enquiries={enquiries}
                       isPaymentConfirmed={isPaymentConfirmed}

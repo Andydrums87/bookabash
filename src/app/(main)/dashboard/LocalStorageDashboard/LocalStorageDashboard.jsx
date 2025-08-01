@@ -15,17 +15,17 @@ import { RefreshCw, ChevronRight, Plus } from "lucide-react"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
-import PartyHeader from "./PartyHeader"
-import CountdownWidget from "./CountdownWidget"
-import PartyExcitementMeter from "./PartyExcitementMeter"
-import DeleteConfirmDialog from "./DeleteConfirmDialog"
-import MobileBudgetBar from "./MobileBudgetBar"
-import SupplierCard from "./SupplierCard"
-import MobileSupplierTabs from "./MobileSupplierTabs"
-import MobileSingleScrollSuppliers from "./MobileSingleScrollSuppliers"
-import AddonsSection from "./AddonsSection"
-import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from './AddonProviderWrapper'
-import AddonDetailsModal from "@/components/AddOnDetailsModal"
+import PartyHeader from "../components/ui/PartyHeader"
+import CountdownWidget from "../components/ui/CountdownWidget"
+import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
+import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
+import MobileBudgetBar from "../components/MobileBudgetBar"
+import SupplierCard from "../components/Cards/SupplierCard"
+import MobileSupplierTabs from "../components/MobileSupplierTabs"
+import MobileSingleScrollSuppliers from "../components/MobileSingleScrollSuppliers"
+import AddonsSection from "../components/AddonsSection"
+import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from '../components/AddonProviderWrapper'
+import AddonDetailsModal from "@/components/AddonDetailsModal"
 
 // Existing Components
 import BudgetControls from "@/components/budget-controls"
@@ -133,7 +133,7 @@ export default function LocalStorageDashboard() {
     partyBags: partyPlan.partyBags || null,
     decorations: partyPlan.decorations || null,
     balloons: partyPlan.balloons || null,
-    einvites: partyPlan.einvites || null
+
   }
 
   // Budget control props

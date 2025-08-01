@@ -3,8 +3,12 @@ import { NextResponse } from 'next/server';
 // Request tracking variables
 let requestCount = 0;
 let resetTime = Date.now() + (24 * 60 * 60 * 1000); // Reset daily
-const REQUEST_LIMIT = 50; // Limit to 50 requests per day for safety
+const REQUEST_LIMIT = 20; // Reduced to 20 requests per day
 const requestLog = [];
+
+// In-memory cache for theme suggestions (prevents repeated API calls)
+const themeCache = new Map();
+const THEME_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 class RapidAPIProductService {
   constructor() {
@@ -65,55 +69,47 @@ class RapidAPIProductService {
   }
 
   getFakeProducts(query, maxResults) {
-    const fakeProducts = [
-      {
-        asin: 'FAKE001',
-        product_title: `${query} - LEGO Batman Batcave Building Set`,
-        product_price: '£89.99',
-        product_photo: 'https://images.unsplash.com/photo-1558060370-7c5b72b6a2e1?w=300',
-        product_url: 'https://amazon.co.uk/dp/FAKE001',
-        product_star_rating: '4.8',
-        product_num_ratings: '1247'
-      },
-      {
-        asin: 'FAKE002', 
-        product_title: `${query} - Superhero Cape and Mask Set`,
-        product_price: '£16.99',
-        product_photo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300',
-        product_url: 'https://amazon.co.uk/dp/FAKE002',
-        product_star_rating: '4.3',
-        product_num_ratings: '856'
-      },
-      {
-        asin: 'FAKE003',
-        product_title: `${query} - Marvel Action Figures 6-Pack`,
-        product_price: '£34.99', 
-        product_photo: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=300',
-        product_url: 'https://amazon.co.uk/dp/FAKE003',
-        product_star_rating: '4.6',
-        product_num_ratings: '432'
-      },
-      {
-        asin: 'FAKE004',
-        product_title: `${query} - Educational Science Kit`,
-        product_price: '£24.99',
-        product_photo: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=300',
-        product_url: 'https://amazon.co.uk/dp/FAKE004',
-        product_star_rating: '4.7',
-        product_num_ratings: '623'
-      },
-      {
-        asin: 'FAKE005',
-        product_title: `${query} - Creative Art Set with Crayons`,
-        product_price: '£12.99',
-        product_photo: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300',
-        product_url: 'https://amazon.co.uk/dp/FAKE005',
-        product_star_rating: '4.4',
-        product_num_ratings: '341'
-      }
-    ];
+    // Enhanced fake products with more variety
+    const themes = {
+      superhero: [
+        { title: `${query} - LEGO Batman Batcave Building Set`, price: '£89.99', rating: '4.8', reviews: '1247' },
+        { title: `${query} - Superhero Cape and Mask Set`, price: '£16.99', rating: '4.3', reviews: '856' },
+        { title: `${query} - Marvel Action Figures 6-Pack`, price: '£34.99', rating: '4.6', reviews: '432' },
+        { title: `${query} - Spider-Man Web Shooter Toy`, price: '£24.99', rating: '4.4', reviews: '623' },
+        { title: `${query} - Batman Utility Belt Costume`, price: '£19.99', rating: '4.2', reviews: '341' }
+      ],
+      princess: [
+        { title: `${query} - Princess Dress Up Costume Set`, price: '£29.99', rating: '4.7', reviews: '892' },
+        { title: `${query} - Tiara and Jewelry Set`, price: '£14.99', rating: '4.5', reviews: '567' },
+        { title: `${query} - Princess Castle Playset`, price: '£45.99', rating: '4.6', reviews: '234' },
+        { title: `${query} - Magic Wand with Lights`, price: '£12.99', rating: '4.3', reviews: '445' },
+        { title: `${query} - Princess Tea Party Set`, price: '£22.99', rating: '4.4', reviews: '321' }
+      ],
+      default: [
+        { title: `${query} - Educational Science Kit`, price: '£24.99', rating: '4.7', reviews: '623' },
+        { title: `${query} - Creative Art Set with Crayons`, price: '£12.99', rating: '4.4', reviews: '341' },
+        { title: `${query} - Building Blocks Mega Set`, price: '£39.99', rating: '4.6', reviews: '789' },
+        { title: `${query} - Musical Keyboard Toy`, price: '£32.99', rating: '4.5', reviews: '456' },
+        { title: `${query} - Puzzle Adventure Game`, price: '£18.99', rating: '4.3', reviews: '234' }
+      ]
+    };
 
-    return this.formatRapidAPIResults(fakeProducts.slice(0, maxResults));
+    const themeKey = query.toLowerCase().includes('superhero') ? 'superhero' : 
+                     query.toLowerCase().includes('princess') ? 'princess' : 'default';
+    
+    const selectedTheme = themes[themeKey] || themes.default;
+    
+    const fakeProducts = selectedTheme.slice(0, maxResults).map((product, index) => ({
+      asin: `FAKE00${index + 1}`,
+      product_title: product.title,
+      product_price: product.price,
+      product_photo: `https://images.unsplash.com/photo-${1558060370 + index}?w=300`,
+      product_url: `https://amazon.co.uk/dp/FAKE00${index + 1}`,
+      product_star_rating: product.rating,
+      product_num_ratings: product.reviews
+    }));
+
+    return this.formatRapidAPIResults(fakeProducts);
   }
 
   formatRapidAPIResults(products) {
@@ -142,6 +138,15 @@ class RapidAPIProductService {
   }
 
   async getThemeBasedProducts(theme, age, limit = 10) {
+    // Check theme cache first
+    const cacheKey = `${theme}-${age}-${limit}`;
+    const cached = themeCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < THEME_CACHE_DURATION) {
+      console.log('💾 Using cached theme products for:', theme);
+      return cached.data;
+    }
+
     const themeQueries = {
       superhero: ['superhero toys kids', 'batman toys children'],
       princess: ['princess dress up girls', 'princess toys tiara'],
@@ -154,12 +159,21 @@ class RapidAPIProductService {
     };
 
     const queries = themeQueries[theme] || [theme + ' toys kids'];
-    // Use the first query for theme-based searches
-    const products = await this.searchAmazonProducts(queries[0], limit);
+    
+    // Use fake data for theme-based suggestions to preserve API quota
+    console.log('🎨 Using cached/fake theme products for:', theme);
+    const products = this.getFakeProducts(queries[0], limit);
+    
+    // Cache the results
+    themeCache.set(cacheKey, {
+      data: products,
+      timestamp: Date.now()
+    });
+    
     return products;
   }
 
-  // Helper methods
+  // Helper methods remain the same
   extractPrice(priceString) {
     if (!priceString) return null;
     const cleanPrice = priceString.replace(/[£$,]/g, '');
@@ -262,65 +276,64 @@ export async function POST(request) {
     requestCount = 0;
     resetTime = Date.now() + (24 * 60 * 60 * 1000);
     requestLog.length = 0;
-    console.log('🔄 Daily request counter reset');
-  }
-
-  // Check request limit
-  if (requestCount >= REQUEST_LIMIT) {
-    console.log(`🚫 Request limit exceeded: ${requestCount}/${REQUEST_LIMIT}`);
-    
-    try {
-      const { searchTerm } = await request.json();
-      return NextResponse.json({
-        success: true,
-        products: generateFallbackProducts(searchTerm || 'toys'),
-        usingFallback: true,
-        reason: 'Daily API limit exceeded',
-        requestCount,
-        limit: REQUEST_LIMIT,
-        remaining: 0
-      });
-    } catch (error) {
-      return NextResponse.json({
-        success: true,
-        products: generateFallbackProducts(),
-        usingFallback: true,
-        reason: 'Daily API limit exceeded',
-        requestCount,
-        limit: REQUEST_LIMIT,
-        remaining: 0
-      });
-    }
+    themeCache.clear(); // Clear theme cache on reset
+    console.log('🔄 Daily request counter and cache reset');
   }
 
   try {
     const { theme, age, category, limit = 10, searchTerm } = await request.json();
     
-    // Log the request
-    const logEntry = {
-      timestamp,
-      query: searchTerm || theme,
-      age,
-      requestNumber: requestCount + 1
-    };
-    requestLog.push(logEntry);
-    
-    console.log(`📊 Request ${requestCount + 1}/${REQUEST_LIMIT}: "${searchTerm || theme}" (age: ${age})`);
-    
-    // Increment counter before making API call
-    requestCount++;
+    // Validate inputs
+    if (!searchTerm && (!theme || theme === 'undefined' || !age)) {
+      console.log('🚫 Skipping request - invalid theme or age:', { theme, age, searchTerm });
+      return NextResponse.json({
+        success: true,
+        products: [],
+        count: 0,
+        requestCount,
+        limit: REQUEST_LIMIT,
+        remaining: REQUEST_LIMIT - requestCount,
+        usingFallback: false,
+        skipped: true,
+        reason: 'Invalid theme or age parameters'
+      });
+    }
     
     const productService = new RapidAPIProductService();
     
     let products;
+    let usingFallback = false;
+    
     if (searchTerm) {
-      // Search Amazon with the specific search term
-      console.log('🔍 Performing search for:', searchTerm);
-      products = await productService.searchAmazonProducts(searchTerm, limit);
+      // For actual search terms, check rate limit and make API calls
+      if (requestCount >= REQUEST_LIMIT) {
+        console.log(`🚫 Request limit exceeded: ${requestCount}/${REQUEST_LIMIT}`);
+        products = generateFallbackProducts(searchTerm);
+        usingFallback = true;
+      } else {
+        // Log the request
+        const logEntry = {
+          timestamp,
+          query: searchTerm,
+          age,
+          requestNumber: requestCount + 1,
+          type: 'search'
+        };
+        requestLog.push(logEntry);
+        
+        console.log(`📊 Search Request ${requestCount + 1}/${REQUEST_LIMIT}: "${searchTerm}" (age: ${age})`);
+        
+        // Increment counter for search requests
+        requestCount++;
+        
+        products = await productService.searchAmazonProducts(searchTerm, limit);
+        usingFallback = products.some(p => p.id.includes('FAKE'));
+      }
     } else {
-      // Get theme-based products
-      console.log('🎨 Getting theme-based products for:', theme);
+      // For theme-based products, use cached/fake data (no API calls)
+      console.log('🎨 Getting cached theme-based products for:', theme);
       products = await productService.getThemeBasedProducts(theme, age, limit);
+      usingFallback = true; // Theme products use fake data to preserve API quota
     }
     
     const duration = Date.now() - startTime;
@@ -333,15 +346,15 @@ export async function POST(request) {
       requestCount,
       limit: REQUEST_LIMIT,
       remaining: REQUEST_LIMIT - requestCount,
-      usingFallback: products.some(p => p.id.includes('FAKE'))
+      usingFallback,
+      cacheHit: !searchTerm // Theme requests are always cached
     });
     
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(`❌ Request failed after ${duration}ms:`, error.message);
     
-    // Still return fallback data on error, but don't count against limit on errors
-    requestCount--; // Rollback the increment since request failed
+    // Don't count failed requests against limit
     
     return NextResponse.json({
       success: true,

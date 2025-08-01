@@ -40,7 +40,7 @@ export function usePartyDetails(user = null, currentParty = null) {
     }
   };
 
-  // Get party details from database (for signed-in users)
+ 
  
 const getPartyDetailsFromDatabase = (party) => {
   if (!party) return getPartyDetailsFromLocalStorage();
@@ -69,7 +69,8 @@ const getPartyDetailsFromDatabase = (party) => {
     specialNotes: party.special_requirements || '',
     postcode: party.postcode || 'W1A 1AA',
     timeSlot: party.time_slot || 'afternoon',
-    duration: party.duration || 2
+    duration: party.duration || 2,
+    id: party.id 
   };
 
 };
@@ -82,6 +83,8 @@ const getPartyDetailsFromDatabase = (party) => {
       // Signed-in user with party data - use database
       console.log("👤 Loading party details from database")
       details = getPartyDetailsFromDatabase(currentParty);
+
+  
     } else {
       // Guest user - use localStorage
       console.log("👻 Loading party details from localStorage")
@@ -89,6 +92,7 @@ const getPartyDetailsFromDatabase = (party) => {
     }
     
     setPartyDetails(details);
+
     
     // Set theme
     if (details.theme) {
@@ -96,6 +100,7 @@ const getPartyDetailsFromDatabase = (party) => {
     }
     setThemeLoaded(true);
   }, [user, currentParty]);
+
 
   const savePartyDetails = async (details) => {
     try {

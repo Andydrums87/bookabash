@@ -29,7 +29,7 @@ import SelectedAddonsCard from "./components/SelectedAddonsCard"
 import ContactInformationForm from "./components/ContactInformationForm"
 import SpecialRequirementsForm from "./components/SpecialRequirementsForm"
 import AdditionalMessageForm from "./components/AdditionalMessageForm"
-import AddonDetailsModal from "@/components/AddOnDetailsModal"
+import AddonDetailsModal from "@/components/AddonDetailsModal"
 import SnappyEnquiryLoader from "./components/SnappyEnquiryLoader"
 
 // Import auth and database functions

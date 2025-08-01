@@ -1,5 +1,4 @@
-// Alternative Approach 1: Transform the entire card into an "awaiting response" state
-// This shows the supplier info but transforms the card styling to indicate waiting
+// Updated SupplierCard component with response timer integration
 
 "use client"
 
@@ -9,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Mail, Gift, X, Sparkles, Clock, Plus, CheckCircle2 } from "lucide-react"
+import { Gift, X, Sparkles, Clock, Plus, CheckCircle2 } from "lucide-react"
+
 
 export default function SupplierCard({
   type,
@@ -25,9 +25,15 @@ export default function SupplierCard({
   isSignedIn = false,
   enquiries = [],
   isPaymentConfirmed = false,
+  enquirySentAt = null, // Add this prop to pass the enquiry timestamp
 }) {
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
+
+  // Skip e-invites entirely - return null to hide them
+  if (type === "einvites") {
+    return null
+  }
 
   const getDisplayName = (supplierType) => {
     if (getSupplierDisplayName) {
@@ -42,7 +48,6 @@ export default function SupplierCard({
       decorations: "Decorations",
       balloons: "Balloons",
       partyBags: "Party Bags",
-      einvites: "E-Invites",
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
@@ -70,7 +75,7 @@ export default function SupplierCard({
   const supplierState = getSupplierState()
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
 
-  // Handle empty supplier slot - same as before
+  // Handle empty supplier slot
   if (supplierState === "empty") {
     if (isPaymentConfirmed) {
       return null
@@ -133,100 +138,7 @@ export default function SupplierCard({
     )
   }
 
-  // Special handling for einvites card - same as before
-  if (type === "einvites") {
-    const hasGeneratedInvite =
-      supplier?.image && supplier.image !== "/placeholder.jpg" && supplier?.status === "created"
-
-    return (
-      <Card className="border-2 border-[hsl(var(--primary-200))] shadow-lg overflow-hidden relative rounded-2xl bg-gradient-to-br from-white to-[hsl(var(--primary-50))]">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]"></div>
-        <div className="absolute top-4 right-4 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
-        <Sparkles className="absolute top-6 left-4 w-3 h-3 text-[hsl(var(--primary-300))] opacity-40" />
-
-        <CardContent className="p-0">
-          <div className="p-6 border-b border-[hsl(var(--primary-100))] flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] rounded-xl flex items-center justify-center">
-                <Mail className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-semibold text-gray-800">E-Invites</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              {hasGeneratedInvite && !isPaymentConfirmed && (
-                <button
-                  onClick={() => handleDeleteSupplier(type)}
-                  className="px-3 py-1 bg-white hover:bg-[hsl(var(--primary-50))] rounded-lg text-xs text-gray-600 hover:text-gray-800 font-medium border border-[hsl(var(--primary-200))] shadow-sm transition-colors"
-                  title="Remove custom invite"
-                >
-                  Remove
-                </button>
-              )}
-              <div className="w-3 h-3 bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] rounded-full"></div>
-            </div>
-          </div>
-
-          <div className="relative w-full h-[160px] overflow-hidden">
-            {hasGeneratedInvite ? (
-              <img
-                src={supplier.image || "/placeholder.svg"}
-                alt={supplier?.name || "Digital Invites"}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] flex items-center justify-center">
-                <div className="text-center">
-                  <Mail className="w-12 h-12 text-[hsl(var(--primary-600))] mx-auto mb-2" />
-                  <span className="text-[hsl(var(--primary-700))] font-semibold text-lg">
-                    Digital Invites
-                  </span>
-                </div>
-              </div>
-            )}
-            {hasGeneratedInvite && (
-              <div className="absolute top-3 right-3">
-                <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg border-0">
-                  ✨ Created
-                </Badge>
-              </div>
-            )}
-          </div>
-
-          <div className="p-6">
-            <h3 className="font-bold text-gray-900 mb-2">{supplier?.name || "Digital Invites"}</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {supplier?.description || "Themed e-invitations"}
-            </p>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xl font-bold text-gray-900">£{supplier?.price || 25}</span>
-              <Badge
-                className={
-                  hasGeneratedInvite
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-[hsl(var(--primary-50))] text-[hsl(var(--primary-700))] border-[hsl(var(--primary-200))]"
-                }
-              >
-                {hasGeneratedInvite ? "Ready to Send" : "Create Invites"}
-              </Badge>
-            </div>
-          </div>
-
-          {!isPaymentConfirmed && (
-            <div className="px-6 pb-6">
-              <Button
-                className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white rounded-xl"
-                asChild
-              >
-                <Link href="/e-invites">{hasGeneratedInvite ? "Edit & Send Invites" : "Create & Send Invites"}</Link>
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // NEW APPROACH: Keep original card structure but add awaiting response section below
+  // AWAITING RESPONSE state with timer
   if (supplierState === "awaiting_response") {
     return (
       <Card className={`overflow-hidden gap-0 rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
@@ -294,28 +206,32 @@ export default function SupplierCard({
           )}
         </div>
 
-        {/* Awaiting Response Section Below */}
+        {/* Awaiting Response Section Below with Timer */}
         <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-t-2 border-amber-400">
           <div className="p-4">
-            {/* Status header */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-amber-200 to-amber-300 rounded-lg flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-700" />
-              </div>
-              <Badge className="bg-amber-500 text-white text-sm">Awaiting Response</Badge>
-            </div>
-
-            {/* Status message */}
+            {/* Status header with timer */}
             <div className="text-center mb-4">
-              <p className="text-sm text-amber-800 font-medium mb-2">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-200 to-amber-300 rounded-lg flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-amber-700" />
+                </div>
+                <Badge className="bg-amber-500 text-white text-sm">Awaiting Response</Badge>
+              </div>
+              
+              {/* Supplier Response Timer */}
+              {enquirySentAt && (
+                <div className="mb-3">
+                  <SupplierResponseTimer 
+                    enquirySentAt={enquirySentAt}
+                    supplierName={supplier.name}
+                    responseTimeHours={24}
+                  />
+                </div>
+              )}
+              
+              <p className="text-sm text-amber-800 font-medium">
                 Enquiry sent to <span className="font-bold">{supplier.name}</span>
               </p>
-              <div className="flex items-center justify-center space-x-1 mb-2">
-                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse"></div>
-                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-              </div>
-              <p className="text-xs text-amber-700">Response within 24 hours</p>
             </div>
 
             {/* Add-ons if present */}
@@ -351,7 +267,7 @@ export default function SupplierCard({
     )
   }
 
-  // Regular card states (selected, confirmed, etc.) - same structure as before but cleaner
+  // Regular card states (selected, confirmed, etc.) - rest of the component unchanged
   const getStateConfig = (state) => {
     switch (state) {
       case "payment_confirmed":
@@ -393,7 +309,7 @@ export default function SupplierCard({
 
   const stateConfig = getStateConfig(supplierState)
 
-  // Regular card for all other states
+  // Regular card for all other states (rest unchanged)
   return (
     <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
       {/* Large background image with overlay */}
@@ -456,7 +372,7 @@ export default function SupplierCard({
         )}
       </div>
 
-      {/* Bottom section - same as before */}
+      {/* Bottom section */}
       <div className="p-6 bg-white">
         {/* Add-ons section */}
         {supplierAddons.length > 0 && (

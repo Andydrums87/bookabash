@@ -3,7 +3,7 @@ import { Star } from "lucide-react"
 
 export default function TrustIndicators() {
   return (
-    <section className="bg-white py-8 mt-40 border-b border-[hsl(var(--primary-100))]">
+    <section className="bg-white py-8  border-b border-[hsl(var(--primary-100))]">
       <div className="container mx-auto px-4">
         <div className="flex flex-wrap items-center justify-center gap-8 text-center">
           <div className="flex items-center space-x-3">

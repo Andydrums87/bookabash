@@ -1,4 +1,6 @@
-// SupplierCard.js - Fixed Awaiting Response Overlay
+// Alternative Approach 1: Transform the entire card into an "awaiting response" state
+// This shows the supplier info but transforms the card styling to indicate waiting
+
 "use client"
 
 import Link from "next/link"
@@ -7,7 +9,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Mail, Gift, X, Sparkles, Clock, Plus } from "lucide-react"
+import { Mail, Gift, X, Sparkles, Clock, Plus, CheckCircle2 } from "lucide-react"
+import SupplierResponseTimer from "../../DatabaseDashboard/components/SupplierResponseTime"
 
 export default function SupplierCard({
   type,
@@ -19,10 +22,12 @@ export default function SupplierCard({
   getSupplierDisplayName,
   addons = [],
   handleRemoveAddon,
-  enquiryStatus = null,
+
   isSignedIn = false,
   enquiries = [],
   isPaymentConfirmed = false,
+  enquiryStatus = null,
+  enquirySentAt = null,
 }) {
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
@@ -40,7 +45,7 @@ export default function SupplierCard({
       decorations: "Decorations",
       balloons: "Balloons",
       partyBags: "Party Bags",
-
+      einvites: "E-Invites",
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
@@ -68,26 +73,7 @@ export default function SupplierCard({
   const supplierState = getSupplierState()
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
 
-  const getContactDetails = () => {
-    if (!isPaymentConfirmed) return null
-    if (enquiries && enquiries.length > 0) {
-      const enquiry = enquiries.find((e) => e.supplier_category === type)
-      if (enquiry && enquiry.suppliers && enquiry.suppliers.data && enquiry.suppliers.data.owner) {
-        const owner = enquiry.suppliers.data.owner
-        const contactDetails = {
-          phone: owner.phone,
-          email: owner.email,
-          name: owner.name || `${owner.firstName} ${owner.lastName}`.trim(),
-        }
-        return contactDetails
-      }
-    }
-    return null
-  }
-
-  const contactDetails = getContactDetails()
-
-  // Handle empty supplier slot
+  // Handle empty supplier slot - same as before
   if (supplierState === "empty") {
     if (isPaymentConfirmed) {
       return null
@@ -150,7 +136,7 @@ export default function SupplierCard({
     )
   }
 
-  // Special handling for einvites card
+  // Special handling for einvites card - same as before
   if (type === "einvites") {
     const hasGeneratedInvite =
       supplier?.image && supplier.image !== "/placeholder.jpg" && supplier?.status === "created"
@@ -158,7 +144,6 @@ export default function SupplierCard({
     return (
       <Card className="border-2 border-[hsl(var(--primary-200))] shadow-lg overflow-hidden relative rounded-2xl bg-gradient-to-br from-white to-[hsl(var(--primary-50))]">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]"></div>
-
         <div className="absolute top-4 right-4 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
         <Sparkles className="absolute top-6 left-4 w-3 h-3 text-[hsl(var(--primary-300))] opacity-40" />
 
@@ -244,7 +229,143 @@ export default function SupplierCard({
     )
   }
 
-  // Get state-specific styling
+  // NEW APPROACH: Keep original card structure but add awaiting response section below
+  if (supplierState === "awaiting_response") {
+    return (
+      <Card className={`overflow-hidden gap-0 rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
+        {/* Original card structure - Large background image with overlay */}
+        <div className="relative h-64 w-full">
+          {isLoading ? (
+            <Skeleton className="w-full h-full" />
+          ) : (
+            <>
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <Image
+                  src={supplier.image || supplier.imageUrl || `/placeholder.svg`}
+                  alt={supplier.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 50vw, 33vw"
+                />
+              </div>
+
+              {/* Gradient Overlay for better text contrast */}
+              <div className="absolute inset-0 bg-gradient-to-b from-amber-900/80 via-amber-800/70 to-amber-900/80" />
+
+              {/* Top badges and controls */}
+              <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm">
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Badge>
+                  <Badge className="bg-amber-500 text-white border-amber-400 shadow-lg backdrop-blur-sm">
+                    Awaiting Response
+                  </Badge>
+                </div>
+                <button
+                  onClick={() => handleDeleteSupplier(type)}
+                  className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Bottom content overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                {/* Main content */}
+                <div className="text-white">
+                  <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
+                  <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
+                  
+                  {/* Price and add-ons row */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-3xl font-black text-white drop-shadow-lg">£{supplier.price}</span>
+                    {supplierAddons.length > 0 && (
+                      <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                        <span className="text-sm font-semibold text-white flex items-center gap-2">
+                          <Gift className="w-4 h-4" />
+                          {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
+                          <span className="ml-2">+£{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Awaiting Response Section Below */}
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-t-2 border-amber-400">
+          <div className="p-4">
+            {/* Status header */}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-amber-200 to-amber-300 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4 text-amber-700" />
+              </div>
+              <Badge className="bg-amber-500 text-white text-sm">Awaiting Response</Badge>
+            </div>
+ 
+          {/* Add timer here */}
+          {enquirySentAt && (
+            <div className="mb-4">
+              <SupplierResponseTimer 
+                enquirySentAt={enquirySentAt}
+                supplierName={supplier.name}
+                responseTimeHours={24}
+                compact={true} // Use compact version for mobile
+              />
+            </div>
+          )}
+            {/* Status message */}
+            <div className="text-center mb-4">
+              <p className="text-sm text-amber-800 font-medium mb-2">
+                Enquiry sent to <span className="font-bold">{supplier.name}</span>
+              </p>
+              <div className="flex items-center justify-center space-x-1 mb-2">
+                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse"></div>
+                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+                <div className="w-1.5 h-1.5 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
+              </div>
+              <p className="text-xs text-amber-700">Response within 24 hours</p>
+            </div>
+
+            {/* Add-ons if present */}
+            {supplierAddons.length > 0 && (
+              <div className="bg-white/60 rounded-lg p-3 mb-4">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2 text-center">Add-ons ({supplierAddons.length}):</h4>
+                <div className="space-y-1">
+                  {supplierAddons.slice(0, 2).map((addon) => (
+                    <div key={addon.id} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 truncate">{addon.name}</span>
+                      <span className="font-medium text-gray-900">£{addon.price}</span>
+                    </div>
+                  ))}
+                  {supplierAddons.length > 2 && (
+                    <p className="text-xs text-gray-500 text-center">+{supplierAddons.length - 2} more</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Cancel button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDeleteSupplier(type)}
+              className="w-full border-amber-300 text-amber-800 hover:bg-amber-200 bg-white/80 text-sm"
+            >
+              Cancel Request
+            </Button>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
+  // Regular card states (selected, confirmed, etc.) - same structure as before but cleaner
   const getStateConfig = (state) => {
     switch (state) {
       case "payment_confirmed":
@@ -262,14 +383,6 @@ export default function SupplierCard({
           badgeText: "Selected",
           canEdit: true,
           canRemoveAddons: true,
-        }
-      case "awaiting_response":
-        return {
-          overlayColor: "from-amber-900/80 via-amber-800/70 to-amber-900/80",
-          badgeClass: "bg-amber-500 text-white border-amber-400",
-          badgeText: "Awaiting Response",
-          canEdit: false,
-          canRemoveAddons: false,
         }
       case "confirmed":
         return {
@@ -294,16 +407,15 @@ export default function SupplierCard({
 
   const stateConfig = getStateConfig(supplierState)
 
-  // DESKTOP INSTAGRAM STORY STYLE CARD - Big background image with overlay text
+  // Regular card for all other states
   return (
     <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
-      {/* Large background image with overlay - Desktop sized */}
+      {/* Large background image with overlay */}
       <div className="relative h-64 w-full">
         {isLoading ? (
           <Skeleton className="w-full h-full" />
         ) : (
           <>
-            {/* Background Image */}
             <div className="absolute inset-0">
               <Image
                 src={supplier.image || supplier.imageUrl || `/placeholder.svg`}
@@ -314,10 +426,8 @@ export default function SupplierCard({
               />
             </div>
 
-            {/* Gradient Overlay for better text contrast */}
             <div className={`absolute inset-0 bg-gradient-to-b ${stateConfig.overlayColor}`} />
 
-            {/* Top badges and controls */}
             <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
               <div className="flex items-center gap-3">
                 <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm">
@@ -337,14 +447,11 @@ export default function SupplierCard({
               )}
             </div>
 
-            {/* Bottom content overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
-              {/* Main content */}
               <div className="text-white">
                 <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
                 <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
                 
-                {/* Price and add-ons row */}
                 <div className="flex items-center justify-between">
                   <span className="text-3xl font-black text-white drop-shadow-lg">£{supplier.price}</span>
                   {supplierAddons.length > 0 && (
@@ -363,9 +470,9 @@ export default function SupplierCard({
         )}
       </div>
 
-      {/* Bottom section with detailed info and actions */}
+      {/* Bottom section - same as before */}
       <div className="p-6 bg-white">
-        {/* Add-ons detailed section */}
+        {/* Add-ons section */}
         {supplierAddons.length > 0 && (
           <div className="mb-6">
             <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
@@ -396,39 +503,6 @@ export default function SupplierCard({
                 </div>
               ))}
             </div>
-            {/* Total for add-ons */}
-            <div className="mt-3 pt-3 border-t border-[hsl(var(--primary-200))]">
-              <div className="flex justify-between items-center text-sm bg-gradient-to-r from-[hsl(var(--primary-50))] to-white p-3 rounded-lg">
-                <span className="font-semibold text-gray-700">Add-ons Total:</span>
-                <span className="font-bold text-[hsl(var(--primary-600))]">
-                  £{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Contact details for payment confirmed */}
-        {isPaymentConfirmed && contactDetails && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-            {contactDetails.name && (
-              <p className="text-sm font-semibold text-emerald-800 mb-3 text-center">
-                📞 Contact: {contactDetails.name}
-              </p>
-            )}
-            <div className="flex space-x-3">
-              {contactDetails.phone && (
-                <Button asChild className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
-                  <a href={`tel:${contactDetails.phone}`}>Call Now</a>
-                </Button>
-              )}
-              {contactDetails.email && (
-                <Button asChild variant="outline" className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-100">
-                  <a href={`mailto:${contactDetails.email}`}>Send Email</a>
-                </Button>
-              )}
-            </div>
-            <p className="text-xs text-emerald-600 text-center mt-3">Contact directly for party arrangements</p>
           </div>
         )}
 
@@ -444,54 +518,6 @@ export default function SupplierCard({
           </Button>
         )}
       </div>
-
-      {/* IMPROVED Awaiting Response Overlay */}
-      {supplierState === "awaiting_response" && (
-        <div className="absolute inset-0 z-30">
-          {/* Semi-transparent background showing the card underneath */}
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/95 via-amber-100/90 to-amber-200/95 backdrop-blur-[2px] rounded-2xl"></div>
-          
-          {/* Centered content */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center px-6 py-8 max-w-xs">
-              {/* Icon */}
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-200 to-amber-300 rounded-2xl flex items-center justify-center shadow-lg border border-amber-300">
-                <Clock className="w-8 h-8 text-amber-700" />
-              </div>
-              
-              {/* Title */}
-              <h3 className="text-xl font-bold text-amber-900 mb-2">Awaiting Response</h3>
-              
-              {/* Supplier name */}
-              <p className="text-sm text-amber-800 mb-4 font-medium">
-                We've sent your enquiry to<br />
-                <span className="font-bold">{supplier.name}</span>
-              </p>
-              
-              {/* Loading dots and status */}
-              <div className="flex items-center justify-center space-x-1 mb-4">
-                <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-              </div>
-              
-              <p className="text-xs text-amber-700 mb-6 font-medium">
-                Response expected within 24 hours
-              </p>
-              
-              {/* Cancel button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDeleteSupplier(type)}
-                className="border-amber-400 text-amber-800 hover:bg-amber-200 bg-white/80 font-medium"
-              >
-                Cancel Request
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </Card>
   )
 }

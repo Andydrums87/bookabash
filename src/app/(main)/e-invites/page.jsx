@@ -8,10 +8,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Plus, X, Share2, Send, MessageCircle, Users, Mail, Link, Check, ChevronLeft, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { themes } from '@/lib/themes';
+import ReactDraggableInvite from './components/ReactDraggableInvite';
 
 const EInvitesPage = ({ onSaveSuccess }) => {
   const router = useRouter()
   const canvasRef = useRef(null);
+  
+  // State management
   const [selectedTheme, setSelectedTheme] = useState('princess');
   const [generatedImage, setGeneratedImage] = useState(null);
   const [guestList, setGuestList] = useState([]);
@@ -20,83 +24,220 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedState, setLastSavedState] = useState(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [useAIGeneration, setUseAIGeneration] = useState(false);
+  const [aiOptions, setAiOptions] = useState([]);
+  const [selectedAiOption, setSelectedAiOption] = useState(null);
+  const [showAiOptions, setShowAiOptions] = useState(false);
+  
   const [inviteData, setInviteData] = useState({
-    childName: "Emma",
-    age: "6",
-    date: "March 15, 2025",
-    time: "2:00 PM - 5:00 PM",
-    venue: "Community Center Hall",
-    message: "Join us for an amazing adventure!"
+    childName: "",
+    age: "",
+    date: "",
+    time: "",
+    venue: "",
+    message: "Join us for an amazing adventure!",
+    headline: "default"
   });
 
-  const themes = {
-    princess: {
-      name: "Princess Theme",
-      colors: {
-        primary: '#FF69B4',
-        secondary: '#FFB6C1',
-        accent: '#FFD700',
-        text: '#8B008B'
-      },
-      emoji: '👑',
-      background: 'linear-gradient(45deg, #FF69B4, #FFB6C1, #FFD700)',
-      decorations: ['✨', '💎', '🌟', '🦄']
-    },
-    spiderman: {
-      name: "Spider-Man Theme",
-      colors: {
-        primary: '#DC143C',
-        secondary: '#0047AB',
-        accent: '#FFFFFF',
-        text: '#000000'
-      },
-      emoji: '🕷️',
-      background: 'linear-gradient(45deg, #DC143C, #0047AB)',
-      decorations: ['💥', '🕸️', '⚡', '🦸‍♂️']
-    },
-    dinosaur: {
-      name: "Dinosaur Theme",
-      colors: {
-        primary: '#228B22',
-        secondary: '#FFA500',
-        accent: '#8B4513',
-        text: '#006400'
-      },
-      emoji: '🦕',
-      background: 'linear-gradient(45deg, #228B22, #FFA500, #8B4513)',
-      decorations: ['🌋', '🥚', '🦴', '🌿']
-    },
-    safari: {
-      name: "Jungle Safari Theme",
-      colors: {
-        primary: '#8B4513',
-        secondary: '#228B22',
-        accent: '#FFD700',
-        text: '#2F4F2F'
-      },
-      emoji: '🦁',
-      background: 'linear-gradient(45deg, #8B4513, #228B22, #FFD700)',
-      decorations: ['🐘', '🦒', '🌴', '🦎']
-    }
-  };
-
+  // HELPER FUNCTIONS - All properly organized inside component
+  
   // Track changes to determine if there are unsaved changes
   const getCurrentState = () => {
     return {
       selectedTheme,
       inviteData,
-      guestList: guestList.map(g => ({ ...g })), // Deep copy
-      generatedImage
+      guestList: guestList.map(g => ({ ...g })),
+      generatedImage,
+      useAIGeneration
     }
   }
 
   // Check if current state differs from last saved state
   const checkForUnsavedChanges = () => {
     if (!lastSavedState) return false
-    
     const currentState = getCurrentState()
     return JSON.stringify(currentState) !== JSON.stringify(lastSavedState)
   }
+
+  // Helper function to format date nicely
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+      let date;
+      
+      // Check if it's already in a nice format (contains letters)
+      if (/[a-zA-Z]/.test(dateString)) {
+        return dateString; // Already formatted nicely
+      }
+      
+      // Try different parsing approaches
+      if (dateString.includes('-')) {
+        const parts = dateString.split('-');
+        if (parts[0].length === 4) {
+          date = new Date(dateString); // YYYY-MM-DD format
+        } else {
+          date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // DD-MM-YYYY format
+        }
+      } else if (dateString.includes('/')) {
+        date = new Date(dateString);
+      } else {
+        date = new Date(dateString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original if can't parse
+      }
+      
+      // Format as "Sunday 27th August"
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      const dayName = dayNames[date.getDay()];
+      const day = date.getDate();
+      const monthName = monthNames[date.getMonth()];
+      
+      // Add ordinal suffix (st, nd, rd, th)
+      const getOrdinalSuffix = (day) => {
+        if (day > 3 && day < 21) return 'th';
+        switch (day % 10) {
+          case 1: return 'st';
+          case 2: return 'nd';
+          case 3: return 'rd';
+          default: return 'th';
+        }
+      };
+      
+      return `${dayName} ${day}${getOrdinalSuffix(day)} ${monthName}`;
+      
+    } catch (error) {
+      console.warn('Date formatting error:', error);
+      return dateString;
+    }
+  };
+
+  // Helper function to get headline styles for different options
+  const getHeadlineStyles = (headlineType, themeKey) => {
+    const baseStyles = {
+      position: 'absolute',
+      textAlign: 'center',
+      fontWeight: 'bold'
+    };
+
+    const headlineStyles = {
+      default: { fontSize: '38px', lineHeight: '1.2', fontWeight: '700' },
+      simple: { fontSize: '32px', lineHeight: '1.1', fontWeight: '600' },
+      invite: { fontSize: '30px', lineHeight: '1.3', fontWeight: '600' },
+      celebrate: { fontSize: '28px', lineHeight: '1.2', fontWeight: '700' },
+      theme: { fontSize: '34px', lineHeight: '1.1', fontWeight: '700', fontStyle: 'italic' },
+      custom: { fontSize: '32px', lineHeight: '1.2', fontWeight: '600' }
+    };
+
+    const themeAdjustments = {
+      'space_v2': {
+        default: { fontSize: '40px', fontFamily: "'Orbitron', sans-serif" },
+        simple: { fontSize: '36px', fontFamily: "'Orbitron', sans-serif" },
+        invite: { fontSize: '32px', fontFamily: "'Orbitron', sans-serif" },
+        celebrate: { fontSize: '30px', fontFamily: "'Orbitron', sans-serif" },
+        theme: { fontSize: '38px', fontFamily: "'Orbitron', sans-serif" },
+        custom: { fontSize: '34px', fontFamily: "'Orbitron', sans-serif" }
+      },
+      'rocket_space': {
+        default: { fontSize: '40px', fontFamily: "'Orbitron', sans-serif" },
+        simple: { fontSize: '36px', fontFamily: "'Orbitron', sans-serif" },
+        invite: { fontSize: '32px', fontFamily: "'Orbitron', sans-serif" },
+        celebrate: { fontSize: '30px', fontFamily: "'Orbitron', sans-serif" },
+        theme: { fontSize: '38px', fontFamily: "'Orbitron', sans-serif" },
+        custom: { fontSize: '34px', fontFamily: "'Orbitron', sans-serif" }
+      },
+      'dinosaur_v1': {
+        default: { fontSize: '80px', fontFamily: "'Fredoka', sans-serif", lineHeight: '0.8' },
+        simple: { fontSize: '72px', fontFamily: "'Fredoka', sans-serif", lineHeight: '0.8' },
+        invite: { fontSize: '68px', fontFamily: "'Fredoka', sans-serif", lineHeight: '0.9' },
+        celebrate: { fontSize: '64px', fontFamily: "'Fredoka', sans-serif", lineHeight: '0.8' },
+        theme: { fontSize: '76px', fontFamily: "'Fredoka', sans-serif", lineHeight: '0.8' },
+        custom: { fontSize: '70px', fontFamily: "'Fredoka', sans-serif", lineHeight: '0.8' }
+      }
+    };
+
+    const typeStyle = headlineStyles[headlineType] || headlineStyles.default;
+    const themeStyle = themeAdjustments[themeKey]?.[headlineType] || {};
+    
+    return { ...baseStyles, ...typeStyle, ...themeStyle };
+  };
+
+  // Helper function to get headline options
+  const getHeadlineOptions = (themeName, childName, age) => {
+    const baseOptions = [
+      { value: "default", label: "Default", text: `${childName}'s ${age}th Birthday` },
+      { value: "simple", label: "Simple", text: `${childName} is turning ${age}!` },
+      { value: "invite", label: "Invitation Style", text: `You're invited to ${childName}'s Birthday Party!` },
+      { value: "celebrate", label: "Celebration", text: `Let's Celebrate ${childName}'s ${age}th Birthday!` }
+    ];
+
+    const themeSpecific = {
+      'princess': { value: "theme", label: "Princess Theme", text: `Princess ${childName}'s Royal ${age}th Birthday!` },
+      'superhero_blue': { value: "theme", label: "Superhero Theme", text: `${childName} is turning ${age} - Super Hero Party!` },
+      'superhero_red': { value: "theme", label: "Superhero Theme", text: `${childName} is turning ${age} - Super Hero Party!` },
+      'dinosaur': { value: "theme", label: "Dinosaur Theme", text: `Roar! ${childName}'s ${age}th Dino-mite Birthday!` },
+      'safari': { value: "theme", label: "Safari Theme", text: `Join ${childName}'s Wild ${age}th Safari Adventure!` },
+      'space': { value: "theme", label: "Space Theme", text: `Blast off with ${childName} for his ${age}th Birthday!` },
+      'pirate': { value: "theme", label: "Pirate Theme", text: `Ahoy! ${childName} turns ${age} - Pirate Party!` }
+    };
+
+    if (themeSpecific[selectedTheme]) {
+      return [...baseOptions, themeSpecific[selectedTheme]];
+    }
+    return baseOptions;
+  };
+
+  // Get the actual headline text based on selection
+  const getHeadlineText = () => {
+    if (inviteData.headline === "custom") {
+      return inviteData.customHeadline || `${inviteData.childName}'s ${inviteData.age}th Birthday`;
+    }
+    
+    const options = getHeadlineOptions(selectedTheme, inviteData.childName, inviteData.age);
+    const selectedOption = options.find(opt => opt.value === inviteData.headline);
+    return selectedOption ? selectedOption.text : `${inviteData.childName}'s ${inviteData.age}th Birthday`;
+  };
+
+  // Get birthday color based on theme
+  const getBirthdayColor = () => {
+    const birthdayColors = {
+      'princess': '#FFD700', // Gold
+      'princess_v2': '#FF69B4', // Hot pink
+      'superhero_blue': '#00BFFF', // Deep sky blue
+      'superhero_red': '#FF4500', // Orange red
+      'dinosaur_v1': '#FFD700', // Yellow/Gold ✨
+      'safari': '#FFA500', // Orange
+      'space_v2': '#FFD700', // Gold
+      'rocket_space': '#FF6347', // Tomato
+      'pirate': '#DAA520' // Goldenrod
+    };
+    
+    return birthdayColors[selectedTheme] || '#FF69B4'; // Default hot pink
+  };
+
+  // Helper function to get theme-specific visual elements
+  const getThemeElements = (theme) => {
+    const themeElements = {
+      'princess': 'crowns, castles, magic wands, and sparkles',
+      'princess_v2': 'floral crowns, fairy tale elements, and magical sparkles',
+      'superhero_blue': 'city skylines, comic-style rays, and superhero symbols',
+      'superhero_red': 'action bursts, superhero emblems, and dynamic shapes',
+      'dinosaur': 'friendly dinosaurs, prehistoric plants, and volcano silhouettes',
+      'safari': 'jungle animals, safari hats, and tropical leaves',
+      'space': 'rockets, planets, stars, and astronauts',
+      'pirate': 'treasure chests, pirate ships, and tropical islands'
+    };
+    
+    return themeElements[theme] || 'colorful party decorations and balloons';
+  };
+
+  // END HELPER FUNCTIONS
 
   // Update unsaved changes status
   useEffect(() => {
@@ -104,9 +245,9 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     setHasUnsavedChanges(hasChanges)
     
     if (hasChanges && isSaved) {
-      setIsSaved(false) // Reset saved status when changes are made
+      setIsSaved(false)
     }
-  }, [selectedTheme, inviteData, guestList, generatedImage, lastSavedState])
+  }, [selectedTheme, inviteData, guestList, generatedImage, lastSavedState, useAIGeneration])
 
   // Breadcrumb component
   const Breadcrumb = () => (
@@ -133,229 +274,412 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     </div>
   )
 
-  const generateInvite = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const theme = themes[selectedTheme];
-    
-    // Set canvas size
-    canvas.width = 600;
-    canvas.height = 800;
-    
-    // Create gradient background
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    if (selectedTheme === 'princess') {
-      gradient.addColorStop(0, '#FF69B4');
-      gradient.addColorStop(0.5, '#FFB6C1');
-      gradient.addColorStop(1, '#FFD700');
-    } else if (selectedTheme === 'spiderman') {
-      gradient.addColorStop(0, '#DC143C');
-      gradient.addColorStop(1, '#0047AB');
-    } else if (selectedTheme === 'dinosaur') {
-      gradient.addColorStop(0, '#228B22');
-      gradient.addColorStop(0.5, '#FFA500');
-      gradient.addColorStop(1, '#8B4513');
-    } else if (selectedTheme === 'safari') {
-      gradient.addColorStop(0, '#8B4513');
-      gradient.addColorStop(0.5, '#228B22');
-      gradient.addColorStop(1, '#FFD700');
+  const generateInvite = async () => {
+    if (useAIGeneration) {
+      return; // AI generation handled separately
     }
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Add decorative border
-    ctx.strokeStyle = theme.colors.accent;
-    ctx.lineWidth = 8;
-    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-    
-    // Add inner border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-    
-    // Add theme emoji at top
-    ctx.font = '80px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(theme.emoji, canvas.width / 2, 120);
-    
-    // Add decorative elements
-    ctx.font = '40px Arial';
-    const decorations = theme.decorations;
-    decorations.forEach((emoji, index) => {
-      const x = 80 + (index * 120);
-      const y = 180;
-      ctx.fillText(emoji, x, y);
-    });
-    
-    // Title
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 48px Arial';
-    ctx.textAlign = 'center';
-    ctx.strokeStyle = theme.colors.text;
-    ctx.lineWidth = 2;
-    ctx.strokeText("You're Invited!", canvas.width / 2, 250);
-    ctx.fillText("You're Invited!", canvas.width / 2, 250);
-    
-    // Child's name and age
-    ctx.fillStyle = theme.colors.accent;
-    ctx.font = 'bold 36px Arial';
-    ctx.fillText(`${inviteData.childName}'s ${inviteData.age}th Birthday`, canvas.width / 2, 320);
-    
-    // Theme-specific subtitle
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '24px Arial';
-    let subtitle = '';
-    if (selectedTheme === 'princess') subtitle = '👑 Royal Princess Party 👑';
-    else if (selectedTheme === 'spiderman') subtitle = '🕷️ Superhero Adventure 🕷️';
-    else if (selectedTheme === 'dinosaur') subtitle = '🦕 Dino-mite Adventure 🦕';
-    else if (selectedTheme === 'safari') subtitle = '🦁 Wild Safari Adventure 🦁';
-    
-    ctx.fillText(subtitle, canvas.width / 2, 360);
-    
-    // Event details box
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillRect(50, 400, canvas.width - 100, 280);
-    
-    // Event details border
-    ctx.strokeStyle = theme.colors.primary;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(50, 400, canvas.width - 100, 280);
-    
-    // Event details text
-    ctx.fillStyle = theme.colors.text;
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'left';
-    
-    const details = [
-      `📅 Date: ${inviteData.date}`,
-      `🕐 Time: ${inviteData.time}`,
-      `📍 Venue: ${inviteData.venue}`,
-      '',
-      `💌 ${inviteData.message}`
-    ];
-    
-    details.forEach((detail, index) => {
-      if (detail === '') return;
-      const y = 440 + (index * 35);
-      if (index === 4) { // Message
-        ctx.font = '18px Arial';
-        const words = detail.split(' ');
-        let line = '';
-        let lineY = y;
-        
-        words.forEach((word, wordIndex) => {
-          const testLine = line + word + ' ';
-          const metrics = ctx.measureText(testLine);
-          
-          if (metrics.width > 480 && line !== '') {
-            ctx.fillText(line, 70, lineY);
-            line = word + ' ';
-            lineY += 25;
-          } else {
-            line = testLine;
-          }
-        });
-        ctx.fillText(line, 70, lineY);
-      } else {
-        ctx.fillText(detail, 70, y);
-      }
-    });
-    
-    // RSVP text
-    ctx.fillStyle = theme.colors.primary;
-    ctx.font = 'bold 18px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('RSVP: Click the link in your invitation!', canvas.width / 2, 730);
-    
-    // Footer
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.font = '14px Arial';
-    ctx.fillText('Created with ❤️ by BookABash', canvas.width / 2, 770);
-    
-    // Convert to image
-    const imageDataUrl = canvas.toDataURL('image/png');
-    setGeneratedImage(imageDataUrl);
-  };
   
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // No need to look for preview element - just generate the data
+      const theme = themes[selectedTheme];
+      const inviteDetails = {
+        type: 'template',
+        theme: selectedTheme,
+        backgroundUrl: theme.backgroundUrl,
+        inviteData,
+        timestamp: Date.now()
+      };
+      
+      setGeneratedImage(JSON.stringify(inviteDetails));
+      console.log('✅ Template invite generated successfully');
+      
+    } catch (error) {
+      console.error('Error generating invite:', error);
+    }
+  };
+
+  // Generate AI-powered invite
+  const generateAIInvite = async () => {
+    if (!inviteData.childName || !inviteData.date || !inviteData.time || !inviteData.venue) {
+      alert('Please fill in all party details before generating AI invite');
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    
+    try {
+      let partyTheme = 'colorful kids party';
+      let themeName = 'colorful kids party';
+      
+      try {
+        const { partyDatabaseBackend } = await import('@/utils/partyDatabaseBackend');
+        const partyResult = await partyDatabaseBackend.getCurrentParty();
+        
+        if (partyResult.success && partyResult.party) {
+          partyTheme = partyResult.party.theme || selectedTheme;
+          themeName = themes[partyTheme]?.name || partyTheme || 'colorful kids party';
+          console.log('🎯 Using party theme from database:', partyTheme, '-', themeName);
+        } else {
+          partyTheme = selectedTheme;
+          themeName = themes[selectedTheme]?.name || 'colorful kids party';
+          console.log('🔄 Using fallback theme:', partyTheme, '-', themeName);
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load party theme, using selected theme:', error);
+        partyTheme = selectedTheme;
+        themeName = themes[selectedTheme]?.name || 'colorful kids party';
+      }
+      
+      const prompt = `Create a complete, high-quality 2D digital birthday party invitation for a ${themeName.toLowerCase()} theme. 
+
+MAIN HEADING (large, prominent): "Join us for ${inviteData.childName}'s Birthday Party!"
+
+PARTY DETAILS (clear and readable):
+📅 Date: ${inviteData.date}
+🕐 Time: ${inviteData.time}  
+📍 Location: ${inviteData.venue}
+
+DESIGN REQUIREMENTS:
+- Use vibrant, playful colors perfect for kids
+- Include ${getThemeElements(partyTheme)} decorations throughout
+- Make ALL text clearly readable with good contrast
+- Portrait orientation (3:4 aspect ratio)
+- Professional invitation layout with proper text hierarchy
+- Leave some white space around text for clarity
+- Make it print-ready and visually appealing
+
+The invitation should look complete and ready to send, with all party information clearly displayed.`;
+
+      console.log('🎨 Generating AI invite with party theme:', partyTheme);
+
+      const response = await fetch('/api/generate-invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          childName: inviteData.childName,
+          date: inviteData.date,
+          time: inviteData.time,
+          venue: inviteData.venue,
+          message: inviteData.message,
+          theme: partyTheme,
+          themeName: themeName
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI generation failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.imageUrl) {
+        const aiInviteData = {
+          type: 'ai-generated',
+          imageUrl: result.imageUrl,
+          prompt: prompt,
+          theme: partyTheme,
+          themeName: themeName,
+          inviteData,
+          timestamp: Date.now()
+        };
+        
+        setGeneratedImage(JSON.stringify(aiInviteData));
+        setUseAIGeneration(true);
+        
+        console.log('✅ AI invite generated successfully with theme:', partyTheme);
+        alert(`🎉 AI invite generated successfully using ${themeName} theme!`);
+      } else {
+        throw new Error(result.error || 'Failed to generate AI invite');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error generating AI invite:', error);
+      alert(`Failed to generate AI invite: ${error.message}`);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  // Generate 5 AI-powered invite options
+  const generateAIOptions = async () => {
+    if (!inviteData.childName || !inviteData.date || !inviteData.time || !inviteData.venue) {
+      alert('Please fill in all party details before generating AI options');
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    setAiOptions([]);
+    setShowAiOptions(false);
+    
+    try {
+      let partyTheme = 'colorful kids party';
+      let themeName = 'colorful kids party';
+      
+      try {
+        const { partyDatabaseBackend } = await import('@/utils/partyDatabaseBackend');
+        const partyResult = await partyDatabaseBackend.getCurrentParty();
+        
+        if (partyResult.success && partyResult.party) {
+          partyTheme = partyResult.party.theme || selectedTheme;
+          themeName = themes[partyTheme]?.name || partyTheme || 'colorful kids party';
+          console.log('🎯 Using party theme from database:', partyTheme, '-', themeName);
+        } else {
+          partyTheme = selectedTheme;
+          themeName = themes[selectedTheme]?.name || 'colorful kids party';
+          console.log('🔄 Using fallback theme:', partyTheme, '-', themeName);
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load party theme, using selected theme:', error);
+        partyTheme = selectedTheme;
+        themeName = themes[selectedTheme]?.name || 'colorful kids party';
+      }
+      
+      const prompt = `Create a complete birthday party invitation for a ${themeName.toLowerCase()} theme with ALL text included:
+
+TITLE (large, festive font): "Join us for ${inviteData.childName}'s Birthday Party!"
+
+DETAILS (clear, readable):
+📅 ${inviteData.date}
+🕐 ${inviteData.time}
+📍 ${inviteData.venue}
+
+DESIGN: Vibrant ${themeName.toLowerCase()} theme with ${getThemeElements(partyTheme)}. Use bright, kid-friendly colors. Make all text bold and easy to read. Portrait layout perfect for printing or sharing digitally.`;
+
+      console.log('🎨 Generating 5 AI invite options for:', inviteData.childName);
+
+      const generatePromises = Array.from({ length: 5 }, (_, index) => 
+        fetch('/api/generate-invite', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            childName: inviteData.childName,
+            date: inviteData.date,
+            time: inviteData.time,
+            venue: inviteData.venue,
+            message: inviteData.message,
+            theme: partyTheme,
+            themeName: themeName,
+            optionIndex: index + 1
+          }),
+        }).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Option ${index + 1} failed: ${response.status}`);
+          }
+          const result = await response.json();
+          return {
+            id: `option-${index + 1}`,
+            index: index + 1,
+            imageUrl: result.imageUrl,
+            prompt: result.prompt,
+            metadata: result.metadata
+          };
+        }).catch(error => {
+          console.error(`❌ Option ${index + 1} failed:`, error);
+          return {
+            id: `option-${index + 1}`,
+            index: index + 1,
+            error: error.message,
+            imageUrl: null
+          };
+        })
+      );
+
+      const results = await Promise.all(generatePromises);
+      const successfulOptions = results.filter(option => option.imageUrl && !option.error);
+      
+      console.log(`✅ Generated ${successfulOptions.length}/5 AI invite options successfully`);
+      
+      if (successfulOptions.length > 0) {
+        setAiOptions(successfulOptions);
+        setShowAiOptions(true);
+        setUseAIGeneration(true);
+        alert(`🎉 Generated ${successfulOptions.length} AI invite options! Choose your favorite.`);
+      } else {
+        throw new Error('All AI generation attempts failed');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error generating AI options:', error);
+      alert(`Failed to generate AI invites: ${error.message}`);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  // Select an AI option directly (no inpainting)
+  const selectAiOption = async (option) => {
+    setSelectedAiOption(option);
+    
+    console.log(`✅ Selected AI option ${option.index} - no inpainting needed`);
+    
+    const aiInviteData = {
+      type: 'ai-generated',
+      imageUrl: option.imageUrl,
+      prompt: option.prompt,
+      theme: selectedTheme,
+      themeName: themes[selectedTheme]?.name,
+      inviteData,
+      timestamp: Date.now(),
+      selectedOption: option.index
+    };
+    
+    setGeneratedImage(JSON.stringify(aiInviteData));
+  };
+
   useEffect(() => {
-    generateInvite();
-  }, [selectedTheme, inviteData]);
+    if (!useAIGeneration) {
+      generateInvite();
+    }
+  }, [selectedTheme, inviteData, useAIGeneration]);
 
   // Load existing invite data on component mount
   useEffect(() => {
-    const loadExistingData = () => {
+    const loadExistingData = async () => {
       try {
-        const savedInvite = localStorage.getItem('party_einvites');
-        const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
+        console.log('🔍 Loading existing e-invite data...');
         
-        if (savedInvite) {
-          const data = JSON.parse(savedInvite);
-          setSelectedTheme(data.theme || 'princess');
-          setInviteData(data.inviteData || inviteData);
-          setGuestList(data.guestList || []);
-          setShareableLink(data.shareableLink || '');
-          if (data.generatedImage) {
-            setGeneratedImage(data.generatedImage);
-            setIsSaved(true);
-            setLastSavedState(getCurrentState()); // Set initial saved state
-          }
-        }
+        const { partyDatabaseBackend } = await import('@/utils/partyDatabaseBackend');
+        const partyResult = await partyDatabaseBackend.getCurrentParty();
         
-        if (partyPlan.einvites && partyPlan.einvites.image) {
-          setGeneratedImage(partyPlan.einvites.image);
-          setIsSaved(true);
-          if (partyPlan.einvites.theme) {
-            setSelectedTheme(partyPlan.einvites.theme);
+        console.log('📊 Party result:', partyResult);
+        
+        if (partyResult.success && partyResult.party) {
+          const party = partyResult.party;
+          const partyPlan = party.party_plan || {};
+          
+          console.log('🎉 Found party:', party.id, '-', party.child_name);
+          console.log('📋 Party plan keys:', Object.keys(partyPlan));
+          
+          if (partyPlan.einvites) {
+            const einvites = partyPlan.einvites;
+            console.log('✅ Found existing einvites:', einvites);
+            
+            const themeToUse = einvites.theme || party.theme || 'princess';
+            setSelectedTheme(themeToUse);
+            
+            const inviteDataToUse = einvites.inviteData || {
+              childName: party.child_name || "",
+              age: party.child_age?.toString() || "", 
+              date: party.party_date || "",
+              time: party.party_time || "",
+              venue: party.location || "",
+              message: "Join us for an amazing adventure!",
+              headline: "default"
+            };
+            
+            setInviteData(inviteDataToUse);
+            setGuestList(einvites.guestList || []);
+            setShareableLink(einvites.shareableLink || '');
+            
+            if (einvites.image && einvites.image !== '/placeholder.jpg') {
+              setGeneratedImage(einvites.image);
+              setIsSaved(true);
+              
+              try {
+                const parsedImage = JSON.parse(einvites.image);
+                if (parsedImage.type === 'ai-generated') {
+                  setUseAIGeneration(true);
+                }
+              } catch (e) {
+                // Not JSON, probably template-based
+              }
+            }
+            
+            console.log('✅ Loaded einvites data:', {
+              theme: themeToUse,
+              childName: inviteDataToUse.childName,
+              hasImage: !!einvites.image && einvites.image !== '/placeholder.jpg'
+            });
+          } else {
+            console.log('ℹ️ No einvites yet, populating with party details');
+            setInviteData({
+              childName: party.child_name || "",
+              age: party.child_age?.toString() || "",
+              date: party.party_date || "",
+              time: party.party_time || "",
+              venue: party.location || "",
+              message: "Join us for an amazing adventure!",
+              headline: "default"
+            });
+            
+            if (party.theme) {
+              setSelectedTheme(party.theme);
+            }
           }
-          if (partyPlan.einvites.inviteData) {
-            setInviteData(partyPlan.einvites.inviteData);
-          }
-          if (partyPlan.einvites.guestList) {
-            setGuestList(partyPlan.einvites.guestList);
-          }
-          // Set saved state after loading
+          
           setTimeout(() => {
             setLastSavedState(getCurrentState());
           }, 100);
+        } else {
+          console.log('⚠️ No current party found, using empty defaults');
+          setInviteData({
+            childName: "",
+            age: "",
+            date: "",
+            time: "",
+            venue: "",
+            message: "Join us for an amazing adventure!",
+            headline: "default"
+          });
         }
       } catch (error) {
-        console.error('Error loading existing invite data:', error);
+        console.error('❌ Error loading existing invite data:', error);
       }
     };
     
     loadExistingData();
   }, []);
   
-  // Save invite to your party plan backend system
+  // Save invite to database
   const saveInviteToPartyPlan = async () => {
     if (!generatedImage) {
       console.error('No invite image generated yet');
+      alert('Please wait for the invite to generate before saving.');
       return false;
     }
 
     try {
-      const currentPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
+      const { partyDatabaseBackend } = await import('@/utils/partyDatabaseBackend');
       
-      if (!currentPlan.einvites) {
-        currentPlan.einvites = {
-          id: "digital-invites",
-          name: "Digital Superhero Invites",
-          description: "Themed e-invitations with RSVP tracking",
-          price: 25,
-          status: "confirmed",
-          image: "/placeholder.jpg",
-          category: "Digital Services",
-          priceUnit: "per set",
-          addedAt: new Date().toISOString()
-        };
+      console.log('🔍 Getting current party...');
+      const partyResult = await partyDatabaseBackend.getCurrentParty();
+      
+      console.log('📊 Party result:', partyResult);
+      
+      if (!partyResult.success) {
+        console.error('❌ Failed to get current party:', partyResult.error);
+        alert(`No active party found. Please create a party first from the Party Builder.\n\nError: ${partyResult.error}`);
+        return false;
       }
+
+      if (!partyResult.party) {
+        console.error('❌ No party data returned');
+        alert('No active party found. Please create a party first from the Party Builder.');
+        return false;
+      }
+
+      const party = partyResult.party;
+      console.log('✅ Found party:', party.id, '-', party.child_name);
       
-      currentPlan.einvites = {
-        ...currentPlan.einvites,
+      const currentPlan = party.party_plan || {};
+      console.log('📋 Current party plan keys:', Object.keys(currentPlan));
+      
+      const themeForDisplay = useAIGeneration ? 'AI Generated' : themes[selectedTheme]?.name || selectedTheme;
+      
+      const einvitesData = {
         id: "digital-invites",
-        name: `${inviteData.childName}'s ${themes[selectedTheme].name} Invites`,
-        description: `Custom ${selectedTheme} themed digital invitations`,
+        name: `${inviteData.childName}'s ${themeForDisplay} Invites`,
+        description: useAIGeneration 
+          ? `Custom AI-generated digital invitations` 
+          : `Custom ${selectedTheme} themed digital invitations`,
         price: 25,
         status: "created",
         image: generatedImage,
@@ -365,52 +689,55 @@ const EInvitesPage = ({ onSaveSuccess }) => {
         inviteData: inviteData,
         guestList: guestList,
         shareableLink: shareableLink,
-        addedAt: currentPlan.einvites.addedAt || new Date().toISOString(),
+        generationType: useAIGeneration ? 'ai' : 'template',
+        addedAt: currentPlan.einvites?.addedAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
-      localStorage.setItem('user_party_plan', JSON.stringify(currentPlan));
-      
-      const inviteDetails = {
+      console.log('💾 Preparing to save einvites data:', {
+        partyId: party.id,
+        generationType: useAIGeneration ? 'AI' : 'Template',
         theme: selectedTheme,
-        inviteData,
-        guestList,
-        generatedImage,
-        shareableLink,
-        savedAt: new Date().toISOString()
-      };
-      localStorage.setItem('party_einvites', JSON.stringify(inviteDetails));
-      
-      setIsSaved(true);
-      setHasUnsavedChanges(false);
-      setLastSavedState(getCurrentState()); // Update saved state
-      
-      const event = new CustomEvent('partyPlanUpdated', { 
-        detail: currentPlan 
+        childName: inviteData.childName
       });
-      window.dispatchEvent(event);
       
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'user_party_plan',
-        newValue: JSON.stringify(currentPlan),
-        oldValue: null
-      }));
+      currentPlan.einvites = einvitesData;
       
-      console.log('✅ Invite saved to party plan');
+      console.log('📤 Calling updatePartyPlan...');
+      const updateResult = await partyDatabaseBackend.updatePartyPlan(party.id, currentPlan);
       
-      if (onSaveSuccess) {
-        onSaveSuccess(currentPlan.einvites);
+      console.log('📊 Update result:', updateResult);
+      
+      if (updateResult.success) {
+        setIsSaved(true);
+        setHasUnsavedChanges(false);
+        setLastSavedState(getCurrentState());
+        
+        console.log('✅ E-invite saved to database successfully!');
+        console.log('🔍 Saved to party ID:', party.id);
+        
+        alert(`✅ E-invite saved successfully!\n\nParty: ${party.child_name}'s Birthday\nType: ${useAIGeneration ? 'AI Generated' : themeForDisplay}\nParty ID: ${party.id}`);
+        
+        if (onSaveSuccess) {
+          onSaveSuccess(einvitesData);
+        }
+        
+        return true;
+      } else {
+        console.error('❌ Failed to update party plan:', updateResult.error);
+        alert(`Failed to save e-invite to database.\n\nError: ${updateResult.error}`);
+        return false;
       }
       
-      return true;
     } catch (error) {
-      console.error('❌ Error saving invite to party plan:', error);
+      console.error('❌ Error saving invite to database:', error);
+      alert(`Error saving e-invite: ${error.message}`);
       return false;
     }
   };
 
-  // Generate shareable link
-  const generateShareableLink = () => {
+  // Generate shareable link 
+  const generateShareableLink = async () => {
     const inviteId = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const link = `${window.location.origin}/party-invite/${inviteId}`;
     setShareableLink(link);
@@ -420,15 +747,17 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       theme: selectedTheme,
       inviteData,
       generatedImage,
+      generationType: useAIGeneration ? 'ai' : 'template',
       createdAt: new Date().toISOString()
     };
     
     localStorage.setItem(`public_invite_${inviteId}`, JSON.stringify(publicInvite));
+    console.log('✅ Public invite saved to localStorage');
     
     return link;
   };
 
-  // Add guest to list
+  // Guest management functions
   const addGuest = () => {
     if (newGuest.name.trim() && newGuest.contact.trim()) {
       const guest = {
@@ -445,14 +774,12 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     }
   };
 
-  // Remove guest from list
   const removeGuest = (guestId) => {
     setGuestList(prev => prev.filter(guest => guest.id !== guestId));
   };
 
-  // Send invites via WhatsApp
   const sendViaWhatsApp = (guest) => {
-    const message = `🎉 You're invited to ${inviteData.childName}'s ${themes[selectedTheme].name} Birthday Party!\n\n📅 ${inviteData.date}\n🕐 ${inviteData.time}\n📍 ${inviteData.venue}\n\n${inviteData.message}\n\nView your invitation: ${shareableLink || generateShareableLink()}\n\nRSVP by replying to this message!`;
+    const message = `🎉 You're invited to ${inviteData.childName}'s Birthday Party!\n\n📅 ${inviteData.date}\n🕐 ${inviteData.time}\n📍 ${inviteData.venue}\n\n${inviteData.message}\n\nView your invitation: ${shareableLink || generateShareableLink()}\n\nRSVP by replying to this message!`;
     
     const whatsappUrl = `https://wa.me/${guest.contact.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -462,7 +789,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     ));
   };
 
-  // Send invites via email
   const sendViaEmail = (guest) => {
     const subject = `You're invited to ${inviteData.childName}'s Birthday Party!`;
     const body = `View your invitation: ${shareableLink || generateShareableLink()}`;
@@ -475,7 +801,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     ));
   };
 
-  // Copy shareable link
   const copyShareableLink = async () => {
     const link = shareableLink || generateShareableLink();
     try {
@@ -541,7 +866,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Breadcrumb Navigation */}
       <Breadcrumb />
       
       {/* Hero Section */}
@@ -565,30 +889,177 @@ const EInvitesPage = ({ onSaveSuccess }) => {
 
       <div className="max-w-screen mx-auto p-4">
         <div className="grid lg:grid-cols-3 gap-8 md:p-6">
-          {/* Left Column - Theme Selection & Customization */}
+          {/* Left Column - Generation Options & Customization */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Theme Selection */}
+            {/* Generation Mode Toggle */}
             <Card>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Choose Your Theme</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Object.entries(themes).map(([key, theme]) => (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedTheme(key)}
-                      className={`p-4 rounded-lg border-2 text-center transition-all ${
-                        selectedTheme === key
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="text-3xl mb-2">{theme.emoji}</div>
-                      <div className="font-medium text-sm">{theme.name}</div>
-                    </button>
-                  ))}
+                <h2 className="text-xl font-semibold mb-4">Create Your Invite</h2>
+                <div className="flex gap-4 mb-6">
+                  <button
+                    onClick={() => {
+                      setUseAIGeneration(false);
+                      generateInvite();
+                    }}
+                    className={`flex-1 p-4 rounded-lg border-2 text-center transition-all ${
+                      !useAIGeneration
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">🎨</div>
+                    <div className="font-medium">Use Templates</div>
+                    <div className="text-sm text-gray-600">Choose from pre-made themes</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setUseAIGeneration(true)}
+                    className={`flex-1 p-4 rounded-lg border-2 text-center transition-all ${
+                      useAIGeneration
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">🤖</div>
+                    <div className="font-medium">AI Generator</div>
+                    <div className="text-sm text-gray-600">Create custom designs with AI</div>
+                  </button>
                 </div>
+                
+                {useAIGeneration && (
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h3 className="font-medium mb-2">AI Invite Generator</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Fill in your party details below, then click generate to create a custom invite with AI!
+                    </p>
+                    <Button 
+                      onClick={generateAIOptions}
+                      disabled={isGeneratingAI}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isGeneratingAI ? (
+                        <>
+                          <div className="animate-spin w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                          Generating 5 AI Options...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Generate 5 AI Options
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* Theme Selection - Only show for template mode */}
+            {!useAIGeneration && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Choose Your Theme</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Object.entries(themes).map(([key, theme]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSelectedTheme(key)}
+                        className={`relative p-2 rounded-lg border-2 text-center transition-all overflow-hidden ${
+                          selectedTheme === key
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="relative w-full h-24 mb-2 rounded overflow-hidden">
+                          <img
+                            src={theme.backgroundUrl}
+                            alt={theme.name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/20"></div>
+                        </div>
+                        <div className="font-medium text-xs text-center px-1">
+                          {theme.name}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* AI Options Selection - Show after generation */}
+            {showAiOptions && aiOptions.length > 0 && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Choose Your Favorite AI Design</h2>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Click on your favorite design below. The selected option will be used for your invitation.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {aiOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => selectAiOption(option)}
+                        className={`relative p-2 rounded-lg border-2 text-center transition-all overflow-hidden ${
+                          selectedAiOption?.id === option.id
+                            ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
+                            : 'border-gray-200 hover:border-green-300'
+                        }`}
+                      >
+                        <div className="relative w-full h-40 mb-2 rounded overflow-hidden">
+                          <img
+                            src={option.imageUrl}
+                            alt={`AI Option ${option.index}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/10"></div>
+                          
+                          {selectedAiOption?.id === option.id && (
+                            <div className="absolute top-2 right-2 bg-green-600 text-white rounded-full p-1">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="font-medium text-sm">
+                          Option {option.index}
+                        </div>
+                        
+                        {selectedAiOption?.id === option.id && (
+                          <div className="text-xs text-green-600 font-medium mt-1">
+                            ✨ Selected & Ready
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {selectedAiOption && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center text-green-700">
+                        <Check className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="text-sm font-medium">
+                          Option {selectedAiOption.index} selected! Your invitation is ready to save.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <Button 
+                      onClick={generateAIOptions}
+                      disabled={isGeneratingAI}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      🔄 Generate 5 New Options
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Party Details */}
             <Card>
@@ -611,13 +1082,72 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                       placeholder="Age"
                     />
                   </div>
+                  
+                  {/* Headline Options - Only show for template mode */}
+                  {!useAIGeneration && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-2">
+                        Invitation Headline
+                        <span className="text-xs text-gray-500 ml-2">Choose how you want to announce the party</span>
+                      </label>
+                      <div className="space-y-3">
+                        <select
+                          value={inviteData.headline}
+                          onChange={(e) => handleInputChange('headline', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {getHeadlineOptions(selectedTheme, inviteData.childName, inviteData.age).map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}: "{option.text}"
+                            </option>
+                          ))}
+                          <option value="custom">Custom headline</option>
+                        </select>
+                        
+                        {inviteData.headline === "custom" && (
+                          <Input
+                            value={inviteData.customHeadline || ''}
+                            onChange={(e) => handleInputChange('customHeadline', e.target.value)}
+                            placeholder="Enter your custom headline"
+                            className="mt-2"
+                          />
+                        )}
+                        
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                          <div className="text-sm text-gray-600 mb-2">Preview:</div>
+                          <div 
+                            style={{
+                              ...getHeadlineStyles(inviteData.headline, selectedTheme),
+                              position: 'relative',
+                              transform: 'none',
+                              color: '#333',
+                              textShadow: 'none'
+                            }}
+                          >
+                            "{getHeadlineText()}"
+                          </div>
+                          <div className="text-xs text-gray-500 mt-2">
+                            Style: {getHeadlineStyles(inviteData.headline, selectedTheme).fontSize} • 
+                            {getHeadlineStyles(inviteData.headline, selectedTheme).fontWeight} • 
+                            {getHeadlineStyles(inviteData.headline, selectedTheme).fontFamily || 'Default Font'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div>
                     <label className="block text-sm font-medium mb-2">Date</label>
                     <Input
                       value={inviteData.date}
                       onChange={(e) => handleInputChange('date', e.target.value)}
-                      placeholder="Party date"
+                      placeholder="Party date (e.g., 27/08/2025 or August 27, 2025)"
                     />
+                    {inviteData.date && (
+                      <div className="mt-1 text-xs text-gray-600">
+                        Will display as: <span className="font-medium">"{formatDateForDisplay(inviteData.date)}"</span>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Time</label>
@@ -732,7 +1262,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   </div>
                 )}
 
-                {/* Bulk Actions */}
                 {guestList.length > 0 && (
                   <div className="space-y-2 pt-4 border-t border-gray-200">
                     <Button 
@@ -771,20 +1300,54 @@ const EInvitesPage = ({ onSaveSuccess }) => {
 
           {/* Right Column - Preview & Actions */}
           <div className="space-y-6">
-            {/* Live Preview */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Live Preview</h2>
-                <div className="bg-gray-100 rounded-lg p-4 mb-4">
-                  {generatedImage ? (
-                    <img 
-                      src={generatedImage} 
-                      alt="Generated Invite" 
-                      className="w-full h-auto rounded-lg shadow-lg"
-                    />
+                
+                <div className="mb-4 flex justify-center">
+                  {useAIGeneration && selectedAiOption ? (
+                    <div className="relative w-[450px] h-[600px] rounded-xl overflow-hidden border shadow">
+                      <img
+                        src={selectedAiOption.imageUrl}
+                        alt="Selected AI Generated Invite"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">
+                        AI Option {selectedAiOption.index}
+                      </div>
+                    </div>
+                  ) : useAIGeneration && !selectedAiOption ? (
+                    <div className="w-[450px] h-[600px] rounded-xl border-2 border-dashed border-purple-300 flex items-center justify-center bg-purple-50">
+                      <div className="text-center text-purple-600">
+                        <div className="text-4xl mb-4">🤖</div>
+                        <div className="font-medium">AI Options Ready</div>
+                        <div className="text-sm">Choose your favorite design above</div>
+                      </div>
+                    </div>
+                  ) : !useAIGeneration ? (
+                    <div className="transform scale-75 origin-top">
+                    <ReactDraggableInvite
+  themeKey={selectedTheme}
+  inviteData={{
+    ...inviteData,
+    headlineText: getHeadlineText(),
+    formattedDate: formatDateForDisplay(inviteData.date),
+    headlineStyles: getHeadlineStyles(inviteData.headline, selectedTheme),
+    birthdayColor: getBirthdayColor()
+  }}
+  onLayoutSave={(customLayout) => {
+    console.log('Custom layout saved:', customLayout);
+    // Save to your database/state
+  }}
+/>
+                    </div>
                   ) : (
-                    <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-500">Generating preview...</span>
+                    <div className="w-[450px] h-[600px] rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                      <div className="text-center text-gray-500">
+                        <div className="text-4xl mb-4">🤖</div>
+                        <div className="font-medium">AI Invite Generator</div>
+                        <div className="text-sm">Fill in details and click generate</div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -815,19 +1378,33 @@ const EInvitesPage = ({ onSaveSuccess }) => {
               </CardContent>
             </Card>
 
-            {/* Theme Info */}
             <Card>
               <CardContent className="p-6">
-                <h3 className="font-semibold mb-2">Current Theme: {themes[selectedTheme].name}</h3>
-                <div className="flex items-center space-x-2 mb-4">
-                  <span className="text-2xl">{themes[selectedTheme].emoji}</span>
-                  <span className="text-sm text-gray-600">Perfect for a magical celebration!</span>
-                </div>
+                <h3 className="font-semibold mb-2">
+                  {useAIGeneration ? 'AI Generated Invite' : `Current Theme: ${themes[selectedTheme]?.name || selectedTheme}`}
+                </h3>
+                
+                {useAIGeneration ? (
+                  <div className="relative w-full h-24 mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-purple-400 to-pink-400">
+                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold">
+                      🤖 AI Generated
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative w-full h-24 mb-4 rounded-lg overflow-hidden">
+                    <img
+                      src={themes[selectedTheme]?.backgroundUrl || '/placeholder.jpg'}
+                      alt={themes[selectedTheme]?.name || selectedTheme}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/20"></div>
+                  </div>
+                )}
+                
                 <div className="text-xs text-gray-500">
                   Your invite will be automatically saved and can be used on your dashboard.
                 </div>
                 
-                {/* Unsaved Changes Warning */}
                 {hasUnsavedChanges && (
                   <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <div className="flex items-center text-orange-700">
@@ -843,7 +1420,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
           </div>
         </div>
 
-        {/* Hidden canvas for generation */}
         <canvas 
           ref={canvasRef} 
           style={{ display: 'none' }}

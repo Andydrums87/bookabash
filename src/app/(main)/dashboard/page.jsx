@@ -4,8 +4,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
-import LocalStorageDashboard from './components/LocalStorageDashboard'
-import DatabaseDashboard from './components/DatabaseDashboard'
+import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard'
+import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
 import DashboardOnboarding from './components/DashboardOnboarding'
 import { usePartyBuilder } from "@/utils/partyBuilderBackend"
 

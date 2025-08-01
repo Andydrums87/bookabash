@@ -156,7 +156,7 @@ const handleSignOut = () => {
 
           {/* Enhanced Navigation */}
           <nav className="flex-1 py-6 overflow-y-auto">
-            <div className="space-y-2 px-6">
+            <div className="space-y-2">
               {navItems.map((item, index) => (
                 <Link
                   key={item.href}
@@ -255,7 +255,7 @@ const handleSignOut = () => {
                     </Button>
 
                     <Button
-                      className="bg-primary-900 hover:from-orange-500 hover:to-orange-600 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                      className="bg-primary-400 hover:from-orange-500 hover:to-orange-600 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
                       asChild
                     >
                       <Link href="/suppliers/onboarding" onClick={closeMenu}>

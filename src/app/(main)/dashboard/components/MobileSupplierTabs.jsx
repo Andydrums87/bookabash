@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Building, Music, Utensils, Palette, Gift, Sparkles } from "lucide-react"
-import MobileSupplierCard from "./MobileSupplierCard"
+import MobileSupplierCard from "../components/Cards/MobileSupplierCard"
 
 export default function MobileSupplierTabs({
   suppliers,

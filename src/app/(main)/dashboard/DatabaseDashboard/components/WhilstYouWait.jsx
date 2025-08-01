@@ -10,11 +10,12 @@ import { Gift, Mail, Plus, Users, Send, Check, Clock } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import GiftRegistryCard from '@/components/GiftRegistryCard'
+import { usePartyDetails } from "../../hooks/usePartyDetails"
 
 // Section Header Component
 function SectionHeader({ section }) {
   return (
-    <div className="mb-6 mt-20 ml-7">
+    <div className="mb-6 mt-[300px]">
       <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3 mb-2">
         <div className="w-20 h-20 flex-shrink-0">
           <Image
@@ -41,14 +42,14 @@ function EInvitesCard({ hasCreatedInvites, onCreateInvites }) {
       {/* Top Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <img 
-          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869777/ChatGPT_Image_Jul_30_2025_11_02_50_AM_vfmxd5.png"
+          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970651/iStock-2184188129_taimuh.jpg"
           alt="Party Invites"
           className="w-full h-full object-cover"
         />
         
         {/* Status Badges */}
         <div className="absolute top-4 left-4 flex gap-2">
-          <Badge className="bg-pink-500 text-white border-0">
+          <Badge className="bg-primary-600 text-white border-0">
             Party Invites
           </Badge>
           {hasCreatedInvites ? (
@@ -82,7 +83,7 @@ function EInvitesCard({ hasCreatedInvites, onCreateInvites }) {
 
             <div className="mb-6">
               <div className="flex items-center space-x-2 mb-3">
-                <Mail className="w-5 h-5 text-pink-500" />
+                <Mail className="w-5 h-5 text-primary-600" />
                 <span className="font-semibold text-gray-900">Why create invites now?</span>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
@@ -92,7 +93,7 @@ function EInvitesCard({ hasCreatedInvites, onCreateInvites }) {
 
             <Button
               onClick={onCreateInvites}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-xl"
+              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl"
             >
               <Mail className="w-5 h-5 mr-2" />
               Create E-Invites
@@ -158,9 +159,21 @@ function WhilstYouWaitSection({
   onCreateRegistry, 
   onAddItem, 
   registryLoading,
+  partyId,
+  partyDetails,
   hasCreatedInvites,
   onCreateInvites
 }) {
+  console.log('🎯 WhilstYouWaitSection rendered with props:', {
+    registry,
+    registryItems,
+    partyTheme,
+    childAge,
+
+    registryLoading,
+    hasCreatedInvites
+  });
+
   const section = {
     id: "whilst-you-wait",
     title: "Whilst You Wait",
@@ -168,8 +181,14 @@ function WhilstYouWaitSection({
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869777/ChatGPT_Image_Jul_30_2025_11_02_50_AM_vfmxd5.png"
   }
 
+
+
+
+
   return (
-    <div className="mb-8 ml-7">
+    <div className="mb-8">
+ 
+      
       {/* Section Header */}
       <SectionHeader section={section} />
       
@@ -184,6 +203,7 @@ function WhilstYouWaitSection({
           onCreateRegistry={onCreateRegistry}
           onAddItem={onAddItem}
           loading={registryLoading}
+          partyId={partyId}
         />
         
         {/* E-Invites Card */}

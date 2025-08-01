@@ -1,11 +1,26 @@
 // hooks/useEnquiryStatus.js
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
 export function useEnquiryStatus(partyId, isSignedIn) {
   const [enquiries, setEnquiries] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  const refreshEnquiries = useCallback(async () => {
+    if (!partyId) return
+    
+    console.log('🔄 Manually refreshing enquiries...')
+    try {
+      const result = await partyDatabaseBackend.getEnquiriesForParty(partyId)
+      if (result.success) {
+        setEnquiries(result.enquiries)
+        console.log('✅ Enquiries refreshed:', result.enquiries.length)
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing enquiries:', error)
+    }
+  }, [partyId])
 
   useEffect(() => {
     // Only fetch enquiries if user is signed in and has a party ID
@@ -45,12 +60,19 @@ export function useEnquiryStatus(partyId, isSignedIn) {
     const enquiry = enquiries.find(e => e.supplier_category === supplierCategory)
     return enquiry?.status || null
   }
+  const getEnquiryTimestamp = (supplierType) => {
+    const enquiry = enquiries.find(e => e.supplier_category === supplierType) // 👈 Use supplier_category, not supplier_type
+    return enquiry?.created_at || null // 👈 Use created_at field
+  }
+
 
   return {
     enquiries,
     loading,
     error,
     getEnquiryStatus,
+    getEnquiryTimestamp,
+    refreshEnquiries,
     hasEnquiries: enquiries.length > 0
   }
 }

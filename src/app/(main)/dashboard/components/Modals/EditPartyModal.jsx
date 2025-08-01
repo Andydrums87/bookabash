@@ -199,7 +199,7 @@ const handleSave = () => {
         </div>
 
         {/* Enhanced Header */}
-        <DialogHeader className="relative z-10 p-4 sm:p-6 pb-4 flex-shrink-0 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white rounded-t-lg">
+        <DialogHeader className="relative z-10 p-4 sm:p-6 pb-4 flex-shrink-0 bg-primary-400 text-white rounded-t-lg">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
               <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
@@ -317,7 +317,7 @@ const handleSave = () => {
                     <Label htmlFor="timeSlot" className="text-sm font-semibold text-gray-700">
                       Time Slot
                     </Label>
-                    <Select value={timeSlot} onValueChange={setTimeSlot}>
+                    <Select  value={timeSlot} onValueChange={setTimeSlot}>
                       <SelectTrigger className="bg-white border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-2 focus:ring-[hsl(var(--primary-200))] rounded-xl h-12 text-base">
                         <SelectValue placeholder="Select time slot" />
                       </SelectTrigger>
@@ -518,7 +518,7 @@ const handleSave = () => {
             <Button
               type="submit"
               onClick={handleSave}
-              className="w-full sm:w-auto bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold h-12 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              className="w-full sm:w-auto bg-primary-400 hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold h-12 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
             >
               ✨ Save Changes
             </Button>

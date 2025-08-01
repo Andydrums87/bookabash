@@ -15,7 +15,8 @@ import {
   Save,
   Loader2,
   Badge,
-  Info
+  Info,
+  Sparkles
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,8 @@ import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { useSupplier } from "@/hooks/useSupplier"
+import DebugAIAssistant from "../DebugAIAssistant"
+
 
 
 
@@ -71,6 +74,7 @@ const CoverPhotoContent = ({ currentSupplier, supplierData, supplier, packages, 
   const [localSaving, setLocalSaving] = useState(false);
   const [localSaveSuccess, setLocalSaveSuccess] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false)
+  
 
 
   // ✅ Update cover photo when supplier data changes (business switching)
@@ -331,6 +335,90 @@ export default function SupplierProfilePage() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState("")
   const [packages, setPackages] = useState(initialPackages)
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+const [websiteUrl, setWebsiteUrl] = useState('');
+const [isAnalyzing, setIsAnalyzing] = useState(false);
+const [analysisComplete, setAnalysisComplete] = useState(false);
+const [aiSuggestions, setAiSuggestions] = useState(null);
+const [analysisError, setAnalysisError] = useState('');
+
+const handleAIAnalysis = async () => {
+  if (!websiteUrl) {
+    alert('Please enter your website URL first');
+    return;
+  }
+
+  setIsAnalyzing(true);
+  setAnalysisError('');
+  
+  try {
+    const response = await fetch('/api/ai-analyze-website', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: websiteUrl,
+        serviceType: 'entertainer'
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      setAiSuggestions(result.data);
+      setAnalysisComplete(true);
+      console.log('✅ AI Analysis successful:', result.data);
+    } else {
+      setAnalysisError(result.error || 'Analysis failed');
+    }
+  } catch (error) {
+    console.error('❌ Analysis request failed:', error);
+    setAnalysisError('Network error. Please check your connection and try again.');
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
+
+// Function to apply AI suggestions to your existing form
+const applyAISuggestions = () => {
+  if (!aiSuggestions) return;
+  
+  // Update your existing details state with AI suggestions
+  const newDetails = {
+    ...details,
+    performerType: aiSuggestions.performerType || details.performerType,
+    ageGroups: aiSuggestions.ageGroups || details.ageGroups,
+    performanceStyle: aiSuggestions.performanceStyle || details.performanceStyle,
+    equipment: aiSuggestions.equipment || details.equipment,
+    travelRadius: aiSuggestions.travelRadius || details.travelRadius,
+    setupTime: aiSuggestions.setupTime || details.setupTime,
+    specialSkills: aiSuggestions.specialSkills || details.specialSkills,
+    groupSizeMin: aiSuggestions.groupSizeMin || details.groupSizeMin,
+    groupSizeMax: aiSuggestions.groupSizeMax || details.groupSizeMax,
+    personalBio: {
+      ...details.personalBio,
+      ...aiSuggestions.personalBio
+    },
+    addOnServices: [
+      ...details.addOnServices,
+      ...aiSuggestions.addOnServices
+    ]
+  };
+  
+  setDetails(newDetails);
+  onUpdate(newDetails); // Call your existing onUpdate function
+  
+  // Close the AI assistant
+  setShowAIAssistant(false);
+  setAnalysisComplete(false);
+  setAiSuggestions(null);
+  
+  // Show success message
+  alert('✅ AI suggestions applied! Review and edit the fields below, then save your profile.');
+};
+
+
 
   // ✅ Reset form state when business switches
   useEffect(() => {
@@ -508,7 +596,9 @@ useEffect(() => {
   const isNewSupplier = supplierData && !supplierData.isComplete
 
   return (
-    <div className="min-h-screen bg-primary-50">
+    <div className="min-h-screen bg-primary-50 ">
+       {/* AI Assistant Trigger Card */}
+    
       <div className="max-w-7xl mx-auto">
         {/* Header with status - Mobile Optimized */}
         <div className="p-4 sm:p-6">
@@ -524,7 +614,8 @@ useEffect(() => {
                 </AlertDescription>
               </Alert>
             )}
-
+{/* Add debug modal here */}
+<DebugAIAssistant />
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
               <div className="flex-1 space-y-3 sm:space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -687,7 +778,15 @@ useEffect(() => {
               saving={saving}
             />
           </div>
-
+ 
+    {/* AI Assistant Modal */}
+    {showAIAssistant && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Modal content - see the previous artifact for full implementation */}
+        </div>
+      </div>
+    )}
           {/* Verification Documents - Mobile Optimized */}
           <div className="mt-6">
             <VerificationDocumentsTabContent />

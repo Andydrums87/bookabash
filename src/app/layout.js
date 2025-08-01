@@ -1,9 +1,8 @@
-import { Geist, Geist_Mono, Poppins, Montserrat } from "next/font/google";
+import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
 import NavigationTracker from "@/components/NavigationTracker";
-
 
 // Add this
 const poppins = Poppins({
@@ -21,7 +20,17 @@ const montserrat = Montserrat({
   preload: true, // ✅ Preload the font
 });
 
+const fredoka = Fredoka({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-fredoka'
+});
 
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-orbitron'
+});
 
 export const metadata = {
   title: "PartySnap",
@@ -33,10 +42,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={montserrat.variable}>
-    <body className="font-montserrat antialiased">
-      {children}
-    </body>
-  </html>
+    <html lang="en" className={`${montserrat.variable} ${poppins.variable}  ${orbitron.variable} ${fredoka.variable}`}>
+      <body className={`${montserrat.className} antialiased`}>
+        {children}
+      </body>
+    </html>
   );
 }

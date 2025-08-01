@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset, ChevronDown, ChevronUp } from "lucide-react"
-import EditPartyModal from "./EditPartyModal"
+import EditPartyModal from "../Modals/EditPartyModal"
 import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
 
@@ -156,6 +156,7 @@ export default function PartyHeader({
   isPaymentConfirmed,
   enquiries = [],
   isSignedIn = false,
+
 }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isBudgetExpanded, setIsBudgetExpanded] = useState(false)
@@ -166,16 +167,16 @@ export default function PartyHeader({
 
   const { toast } = useToast()
   
-  const handleEditClick = () => {
-    if (hasEnquiriesPending) {
-      toast.warning("Cannot edit party details while awaiting supplier responses", {
-        title: "Party Details Locked",
-        duration: 4000
-      })
-    } else {
-      setIsEditModalOpen(true)
-    }
+const handleEditClick = () => {
+  if (hasEnquiriesPending) {
+    toast.warning("Cannot edit party details while awaiting supplier responses", {
+      title: "Party Details Locked",
+      duration: 4000
+    })
+  } else {
+    setIsEditModalOpen(true)
   }
+}
 
   // Helper functions for mobile vs desktop names - FIXED VERSION
 const getFirstName = () => {
