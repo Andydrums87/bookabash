@@ -215,7 +215,7 @@ export default function GiftRegistryShop() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center">
+      <div className="min-h-screen  bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-[hsl(var(--primary-500))] border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600">Loading gift shop...</p>
@@ -242,7 +242,7 @@ export default function GiftRegistryShop() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50]">
         <ContextualBreadcrumb currentPage="Browse Gifts" />
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -277,7 +277,7 @@ export default function GiftRegistryShop() {
           </div>
 
           {/* Search Bar */}
-          <div className="flex space-x-4">
+          <div className="flex space-x-4 ">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
@@ -350,10 +350,10 @@ export default function GiftRegistryShop() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 ]">
         <div className="flex gap-6">
           {/* Sidebar Filters */}
-          <div className="w-64 flex-shrink-0 hidden lg:block">
+          <div className="w-64 flex-shrink-0 hidden lg:block ">
             <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-24">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Filters</h3>
 
@@ -410,7 +410,7 @@ export default function GiftRegistryShop() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 max-w-screen">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6 bg-white rounded-xl border border-gray-200 p-4">
               <div className="flex items-center space-x-4">
@@ -421,7 +421,7 @@ export default function GiftRegistryShop() {
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="md:flex items-center space-x-4">
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-48">
@@ -461,7 +461,7 @@ export default function GiftRegistryShop() {
             {/* Products Grid */}
             {suggestionsLoading ? (
               <div
-                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"}`}
+                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-2"}`}
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                   <ProductCardSkeleton key={i} viewMode={viewMode} />
@@ -469,7 +469,7 @@ export default function GiftRegistryShop() {
               </div>
             ) : sortedProducts.length > 0 ? (
               <div
-                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"}`}
+                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-2"}`}
               >
                 {sortedProducts.map((product) => (
                   <ProductCard

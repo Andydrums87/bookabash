@@ -15,32 +15,32 @@ const supplierSections = [
     id: "essentials",
     title: "Party Essentials",
     subtitle: "The must-haves for your party",
-    emoji: "🎪",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753868085/ChatGPT_Image_Jul_30_2025_10_34_38_AM_ue973s.png",
+    emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753868085/ChatGPT_Image_Jul_30_2025_10_34_38_AM_ue973s.png",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg",
     types: ["venue", "entertainment"],
   },
   {
     id: "activities", 
     title: "Fun Activities",
     subtitle: "Keep the kids entertained",
-    emoji: "🎨",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869132/ChatGPT_Image_Jul_30__2025__10_50_40_AM-removebg_orq8w2.png",
+    emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869132/ChatGPT_Image_Jul_30__2025__10_50_40_AM-removebg_orq8w2.png",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
     types: ["facePainting", "activities"],
   },
   {
     id: "treats",
     title: "Yummy Treats", 
     subtitle: "Food and party bags",
-    emoji: "🍰",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753870206/ChatGPT_Image_Jul_30_2025_11_09_59_AM_rx1pgs.png",
+    emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753870206/ChatGPT_Image_Jul_30_2025_11_09_59_AM_rx1pgs.png",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg",
     types: ["catering", "partyBags"],
   },
   {
     id: "finishing",
     title: "Finishing Touches",
     subtitle: "Make it picture perfect", 
-    emoji: "✨",
-    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
+    emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
     types: ["decorations", "balloons"],
   },
   // Removed the e-invites section entirely
@@ -52,7 +52,7 @@ function SectionHeader({ section }) {
       <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3 mb-2">
         <div className="w-20 h-20 flex-shrink-0">
           <Image
-            src={section.image}
+            src={section.emoji}
             alt={section.title}
             width={50}
             height={50}

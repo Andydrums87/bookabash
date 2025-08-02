@@ -866,7 +866,7 @@ DESIGN: Vibrant ${themeName.toLowerCase()} theme with ${getThemeElements(partyTh
   const saveButtonState = getSaveButtonState()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       <Breadcrumb />
       
       {/* Hero Section */}
@@ -891,7 +891,7 @@ DESIGN: Vibrant ${themeName.toLowerCase()} theme with ${getThemeElements(partyTh
       <div className="max-w-screen mx-auto p-4">
         <div className="grid lg:grid-cols-3 gap-8 md:p-6">
           {/* Left Column - Generation Options & Customization */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 max-w-screen">
             {/* Generation Mode Toggle */}
             <Card>
               <CardContent className="p-6">
@@ -1300,7 +1300,7 @@ DESIGN: Vibrant ${themeName.toLowerCase()} theme with ${getThemeElements(partyTh
           </div>
 
           {/* Right Column - Preview & Actions */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-screen">
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Live Preview</h2>
