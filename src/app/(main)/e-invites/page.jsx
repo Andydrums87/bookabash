@@ -123,7 +123,8 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     const baseStyles = {
       position: 'absolute',
       textAlign: 'center',
-      fontWeight: 'bold'
+      fontWeight: 'bold',
+      width: '10px'
     };
 
     const headlineStyles = {
