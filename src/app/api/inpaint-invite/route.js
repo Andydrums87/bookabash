@@ -167,7 +167,7 @@ Keep all existing colors, decorations, and style. Just overlay the text with goo
         weight: '90', 
         prompt: `Keep this background design exactly as is. Add prominent, readable party details:
 
-"Join us for ${childName}'s Birthday Party!"
+"Join us for ${childName}'s Birthday  Party!"
 
 Date: ${date}
 Time: ${time}
