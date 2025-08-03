@@ -16,6 +16,8 @@ export default function SupplierSidebar({
   selectedDate,
   setSelectedDate,
   credentials,
+  isFromDashboard = false,
+  partyDate = null,
 }) {
   const selectedPkgDetails = packages?.find((pkg) => pkg.id === selectedPackageId)
 
@@ -58,6 +60,9 @@ export default function SupplierSidebar({
           setCurrentMonth={setCurrentMonth}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
+          isFromDashboard={isFromDashboard}
+          partyDate={partyDate}
+          readOnly={isFromDashboard}
         />
       )}
 

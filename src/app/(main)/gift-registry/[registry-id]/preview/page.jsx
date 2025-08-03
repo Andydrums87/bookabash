@@ -208,7 +208,7 @@ export default function GiftRegistryPreview() {
   }
 
   const getItemImage = (item) => {
-    return item.external_image_url || item.gift_items?.image_url || "/placeholder.png"
+    return item.external_image_url || item.gift_items?.image_url || "/placeholder.svg?height=300&width=300"
   }
 
   const getBuyUrl = (item) => {
@@ -222,7 +222,7 @@ export default function GiftRegistryPreview() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--secondary-50))] to-[hsl(var(--primary-100))] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg font-medium">Loading the magical gift list... ✨</p>
@@ -233,7 +233,7 @@ export default function GiftRegistryPreview() {
 
   if (!registryData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--secondary-50))] to-[hsl(var(--primary-100))] flex items-center justify-center">
         <div className="text-center">
           <Gift className="w-20 h-20 mx-auto mb-6 text-gray-400" />
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Oops! Gift List Not Found 🎁</h1>
@@ -248,29 +248,35 @@ export default function GiftRegistryPreview() {
   const partyDetails = registryData.parties
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--secondary-50))] to-[hsl(var(--primary-100))] relative overflow-hidden">
       {/* Floating decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-8 h-8 text-pink-300 animate-bounce" style={{ animationDelay: "0s" }}>
+        <div
+          className="absolute top-20 left-10 w-8 h-8 text-[hsl(var(--primary-300))] animate-bounce"
+          style={{ animationDelay: "0s" }}
+        >
           🎈
         </div>
         <div
-          className="absolute top-40 right-20 w-6 h-6 text-purple-300 animate-bounce"
+          className="absolute top-40 right-20 w-6 h-6 text-[hsl(var(--primary-300))] animate-bounce"
           style={{ animationDelay: "1s" }}
         >
           ⭐
         </div>
-        <div className="absolute top-60 left-1/4 w-7 h-7 text-blue-300 animate-bounce" style={{ animationDelay: "2s" }}>
+        <div
+          className="absolute top-60 left-1/4 w-7 h-7 text-[hsl(var(--primary-300))] animate-bounce"
+          style={{ animationDelay: "2s" }}
+        >
           🎉
         </div>
         <div
-          className="absolute bottom-40 right-1/3 w-6 h-6 text-yellow-300 animate-bounce"
+          className="absolute bottom-40 right-1/3 w-6 h-6 text-[hsl(var(--primary-300))] animate-bounce"
           style={{ animationDelay: "0.5s" }}
         >
           ✨
         </div>
         <div
-          className="absolute bottom-60 left-16 w-8 h-8 text-green-300 animate-bounce"
+          className="absolute bottom-60 left-16 w-8 h-8 text-[hsl(var(--primary-300))] animate-bounce"
           style={{ animationDelay: "1.5s" }}
         >
           🎁
@@ -278,7 +284,7 @@ export default function GiftRegistryPreview() {
       </div>
 
       {/* Magical Hero Header */}
-      <div className="relative bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 overflow-hidden">
+      <div className="relative bg-gradient-to-r from-[hsl(var(--primary-500))] via-[hsl(var(--secondary-500))] to-[hsl(var(--primary-600))] overflow-hidden">
         {/* Animated background pattern */}
         <div className="absolute inset-0 opacity-20">
           <div
@@ -321,14 +327,14 @@ export default function GiftRegistryPreview() {
               <div className="absolute -top-2 -right-2 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center animate-spin">
                 <Sparkles className="w-6 h-6 text-yellow-800" />
               </div>
-              <div className="absolute -bottom-2 -left-2 w-10 h-10 bg-pink-400 rounded-full flex items-center justify-center animate-bounce">
-                <PartyPopper className="w-5 h-5 text-pink-800" />
+              <div className="absolute -bottom-2 -left-2 w-10 h-10 bg-[hsl(var(--primary-400))] rounded-full flex items-center justify-center animate-bounce">
+                <PartyPopper className="w-5 h-5 text-[hsl(var(--primary-800))]" />
               </div>
             </div>
 
             {/* Big exciting title */}
             <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 bg-clip-text text-transparent drop-shadow-2xl animate-pulse">
+              <span className="bg-gradient-to-r from-yellow-300 via-[hsl(var(--primary-300))] to-[hsl(var(--primary-300))] bg-clip-text text-transparent drop-shadow-2xl animate-pulse">
                 {partyDetails?.child_name}'s
               </span>
               <br />
@@ -369,7 +375,7 @@ export default function GiftRegistryPreview() {
                 <Button
                   onClick={handleShare}
                   size="lg"
-                  className="bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-white font-bold text-lg px-8 py-4 rounded-full shadow-2xl transform hover:scale-105 transition-all duration-200"
+                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--secondary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--secondary-500))] text-white font-bold text-lg px-8 py-4 rounded-full shadow-2xl transform hover:scale-105 transition-all duration-200"
                 >
                   <Share2 className="w-6 h-6 mr-3" />
                   Share This Magic! ✨
@@ -380,7 +386,7 @@ export default function GiftRegistryPreview() {
                   className={`${
                     copied
                       ? "bg-gradient-to-r from-green-400 to-emerald-400"
-                      : "bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
+                      : "bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--secondary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--secondary-500))]"
                   } text-white font-bold text-lg px-8 py-4 rounded-full shadow-2xl transform hover:scale-105 transition-all duration-200`}
                 >
                   {copied ? <Check className="w-6 h-6 mr-3" /> : <Copy className="w-6 h-6 mr-3" />}
@@ -421,61 +427,65 @@ export default function GiftRegistryPreview() {
           <div className="lg:col-span-1">
             <div className="space-y-6 lg:sticky lg:top-8">
               {/* Guest Info Card */}
-              <Card className="border-4 border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50 shadow-xl relative overflow-hidden">
+              <Card className="border-[hsl(var(--primary-200))] bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--secondary-50))] shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-16 h-16 opacity-10">
                   <div className="w-full h-full text-6xl">🎈</div>
                 </div>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-bold text-pink-800 flex items-center">
-                    <User className="w-6 h-6 mr-3 text-pink-600" />🌟 Join the Celebration! 🌟
+                  <CardTitle className="text-xl font-bold text-[hsl(var(--primary-800))] flex items-center">
+                    <User className="w-6 h-6 mr-3 text-[hsl(var(--primary-600))]" />🌟 Join the Celebration! 🌟
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-pink-700 mb-3">✨ Your Name ✨</label>
+                    <label className="block text-sm font-bold text-[hsl(var(--primary-700))] mb-3">
+                      ✨ Your Name ✨
+                    </label>
                     <Input
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
                       placeholder="Enter your magical name..."
-                      className="border-pink-300 focus:border-pink-500 bg-white text-lg font-medium rounded-xl h-12"
+                      className="border-[hsl(var(--primary-300))] focus:border-[hsl(var(--primary-500))] bg-white text-lg font-medium rounded-xl h-12"
                     />
-                    <p className="text-sm text-pink-600 mt-2 font-medium">🎁 Enter your name to claim amazing gifts!</p>
+                    <p className="text-sm text-[hsl(var(--primary-600))] mt-2 font-medium">
+                      🎁 Enter your name to claim amazing gifts!
+                    </p>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Registry Stats */}
-              <Card className="border-4 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50 shadow-xl">
+              <Card className="border-[hsl(var(--primary-200))] bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--secondary-50))] shadow-xl">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-bold text-purple-800 flex items-center">
-                    <ShoppingCart className="w-6 h-6 mr-3 text-purple-600" />🎯 Gift List Magic 🎯
+                  <CardTitle className="text-xl font-bold text-[hsl(var(--primary-800))] flex items-center">
+                    <ShoppingCart className="w-6 h-6 mr-3 text-[hsl(var(--primary-600))]" />🎯 Gift List Magic 🎯
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 gap-4">
-                    <div className="text-center p-6 bg-gradient-to-br from-pink-100 to-pink-200 rounded-2xl border-2 border-pink-300">
-                      <div className="text-4xl font-black text-pink-600 mb-2">{totalItems}</div>
-                      <div className="text-sm font-bold text-pink-800">🎁 Amazing Gifts</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-2xl border-2 border-[hsl(var(--primary-300))]">
+                      <div className="text-4xl font-black text-[hsl(var(--primary-600))] mb-2">{totalItems}</div>
+                      <div className="text-sm font-bold text-[hsl(var(--primary-800))]">🎁 Amazing Gifts</div>
                     </div>
                     <div className="text-center p-6 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl border-2 border-green-300">
                       <div className="text-4xl font-black text-green-600 mb-2">{claimedItems}</div>
                       <div className="text-sm font-bold text-green-800">💝 Already Claimed</div>
                     </div>
-                    <div className="text-center p-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl border-2 border-blue-300">
-                      <div className="text-4xl font-black text-blue-600 mb-2">{availableItems}</div>
-                      <div className="text-sm font-bold text-blue-800">✨ Still Available</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-2xl border-2 border-[hsl(var(--primary-300))]">
+                      <div className="text-4xl font-black text-[hsl(var(--primary-600))] mb-2">{availableItems}</div>
+                      <div className="text-sm font-bold text-[hsl(var(--primary-800))]">✨ Still Available</div>
                     </div>
                   </div>
 
                   {/* Magical Progress Bar */}
                   <div className="pt-4">
-                    <div className="flex justify-between text-sm font-bold text-purple-700 mb-3">
+                    <div className="flex justify-between text-sm font-bold text-[hsl(var(--primary-700))] mb-3">
                       <span>🌟 Party Progress</span>
                       <span>{totalItems > 0 ? Math.round((claimedItems / totalItems) * 100) : 0}% Complete!</span>
                     </div>
-                    <div className="w-full bg-purple-200 rounded-full h-4 border-2 border-purple-300">
+                    <div className="w-full bg-[hsl(var(--primary-200))] rounded-full h-4 border-2 border-[hsl(var(--primary-300))]">
                       <div
-                        className="bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 h-full rounded-full transition-all duration-500 relative overflow-hidden"
+                        className="bg-gradient-to-r from-[hsl(var(--primary-400))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-400))] h-full rounded-full transition-all duration-500 relative overflow-hidden"
                         style={{ width: `${totalItems > 0 ? (claimedItems / totalItems) * 100 : 0}%` }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
@@ -486,32 +496,36 @@ export default function GiftRegistryPreview() {
               </Card>
 
               {/* Filters */}
-              <Card className="border-4 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-xl">
+              <Card className="border-[hsl(var(--primary-200))] bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--secondary-50))] shadow-xl">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-bold text-blue-800 flex items-center">
-                    <Filter className="w-6 h-6 mr-3 text-blue-600" />🔍 Find Perfect Gifts 🔍
+                  <CardTitle className="text-xl font-bold text-[hsl(var(--primary-800))] flex items-center">
+                    <Filter className="w-6 h-6 mr-3 text-[hsl(var(--primary-600))]" />🔍 Find Perfect Gifts 🔍
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Search */}
                   <div>
-                    <label className="block text-sm font-bold text-blue-700 mb-2">🔎 Search Magic</label>
+                    <label className="block text-sm font-bold text-[hsl(var(--primary-700))] mb-2">
+                      🔎 Search Magic
+                    </label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[hsl(var(--primary-400))]" />
                       <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search for amazing gifts..."
-                        className="pl-12 border-blue-300 focus:border-blue-500 rounded-xl h-12"
+                        className="pl-12 border-[hsl(var(--primary-300))] focus:border-[hsl(var(--primary-500))] rounded-xl h-12"
                       />
                     </div>
                   </div>
 
                   {/* Status Filter */}
                   <div>
-                    <label className="block text-sm font-bold text-blue-700 mb-2">🎯 Gift Status</label>
+                    <label className="block text-sm font-bold text-[hsl(var(--primary-700))] mb-2">
+                      🎯 Gift Status
+                    </label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="border-blue-300 focus:border-blue-500 rounded-xl h-12">
+                      <SelectTrigger className="border-[hsl(var(--primary-300))] focus:border-[hsl(var(--primary-500))] rounded-xl h-12">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -524,7 +538,7 @@ export default function GiftRegistryPreview() {
 
                   {/* Price Range */}
                   <div>
-                    <label className="block text-sm font-bold text-blue-700 mb-2">
+                    <label className="block text-sm font-bold text-[hsl(var(--primary-700))] mb-2">
                       💰 Price Range: £{priceRange[0]} - £{priceRange[1]}
                     </label>
                     <Slider value={priceRange} onValueChange={setPriceRange} max={500} step={10} className="w-full" />
@@ -568,10 +582,10 @@ export default function GiftRegistryPreview() {
             )}
 
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-6 bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl border-4 border-pink-200 shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-6 bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-100))] rounded-2xl border-4 border-[hsl(var(--primary-200))] shadow-xl">
               <div className="flex items-center space-x-4">
-                <h2 className="text-3xl font-black text-pink-800">🎁 GIFT IDEAS 🎁</h2>
-                <Badge className="bg-gradient-to-r from-pink-400 to-purple-400 text-white text-lg px-4 py-2 font-bold">
+                <h2 className="text-3xl font-black text-[hsl(var(--primary-800))]">🎁 GIFT IDEAS 🎁</h2>
+                <Badge className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--secondary-400))] text-white text-lg px-4 py-2 font-bold">
                   {filteredItems.length} of {totalItems} gifts
                 </Badge>
               </div>
@@ -579,7 +593,7 @@ export default function GiftRegistryPreview() {
               <div className="flex items-center space-x-3">
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48 border-pink-300 focus:border-pink-500 rounded-xl h-12">
+                  <SelectTrigger className="w-48 border-[hsl(var(--primary-300))] focus:border-[hsl(var(--primary-500))] rounded-xl h-12">
                     <SlidersHorizontal className="w-5 h-5 mr-2" />
                     <SelectValue />
                   </SelectTrigger>
@@ -592,7 +606,7 @@ export default function GiftRegistryPreview() {
                 </Select>
 
                 {/* View Mode */}
-                <div className="flex border-4 border-pink-300 rounded-xl bg-white">
+                <div className="flex border-4 border-[hsl(var(--primary-300))] rounded-xl bg-white">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
                     size="sm"
@@ -732,14 +746,14 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
         className={`border-4 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 ${
           item.is_claimed
             ? "border-green-300 bg-gradient-to-r from-green-50 to-emerald-50"
-            : "border-pink-300 hover:border-purple-400 bg-gradient-to-r from-pink-50 to-purple-50"
+            : "border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--secondary-50)))]"
         }`}
       >
         <CardContent className="p-6">
           <div className="flex items-center space-x-6">
             {/* Image */}
             <div
-              className="w-28 h-28 bg-gradient-to-br from-pink-100 to-purple-100 rounded-2xl relative overflow-hidden cursor-pointer group flex-shrink-0 border-4 border-pink-200"
+              className="w-28 h-28 bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-100))] rounded-2xl relative overflow-hidden cursor-pointer group flex-shrink-0 border-4 border-[hsl(var(--primary-200))]"
               onClick={onViewDetails}
             >
               <img
@@ -762,7 +776,7 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <h3
-                    className="font-black text-xl text-purple-800 mb-2 cursor-pointer hover:text-pink-600 transition-colors truncate"
+                    className="font-black text-xl text-[hsl(var(--primary-800))] mb-2 cursor-pointer hover:text-[hsl(var(--primary-600))] transition-colors truncate"
                     onClick={onViewDetails}
                   >
                     {getItemName()}
@@ -783,11 +797,13 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
                     </div>
                   )}
 
-                  <div className="text-2xl font-black text-pink-600 mb-3">{getItemPrice()}</div>
+                  <div className="text-2xl font-black text-[hsl(var(--primary-600))] mb-3">{getItemPrice()}</div>
 
                   {/* Notes */}
                   {item.notes && (
-                    <p className="text-sm text-purple-700 mb-3 line-clamp-2 font-medium">💭 {item.notes}</p>
+                    <p className="text-sm text-[hsl(var(--primary-700))] mb-3 line-clamp-2 font-medium">
+                      💭 {item.notes}
+                    </p>
                   )}
                 </div>
 
@@ -810,7 +826,7 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
                     <Button
                       onClick={onClaim}
                       disabled={isClaimingDisabled || isClaiming}
-                      className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold text-lg px-6 py-3 rounded-full shadow-xl transform hover:scale-105 transition-all duration-200"
+                      className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-500))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-600))] text-white font-bold text-lg px-6 py-3 rounded-full shadow-xl transform hover:scale-105 transition-all duration-200"
                       size="lg"
                     >
                       {isClaiming ? (
@@ -832,7 +848,7 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-2 border-purple-300 text-purple-700 hover:bg-purple-50 bg-white font-bold"
+                      className="border-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-700))] hover:bg-[hsl(var(--primary-50))] bg-white font-bold"
                       asChild
                     >
                       <a href={getBuyUrl()} target="_blank" rel="noopener noreferrer" className="flex items-center">
@@ -856,13 +872,13 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
       className={`border-4 transition-all duration-300 hover:shadow-2xl transform hover:scale-105 ${
         item.is_claimed
           ? "border-green-300 bg-gradient-to-br from-green-50 to-emerald-50"
-          : "border-pink-300 hover:border-purple-400 bg-gradient-to-br from-pink-50 to-purple-50"
+          : "border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--secondary-50)))]"
       }`}
     >
       <CardContent className="p-0">
         {/* Image */}
         <div
-          className="aspect-square bg-gradient-to-br from-pink-100 to-purple-100 rounded-t-2xl relative overflow-hidden cursor-pointer group"
+          className="aspect-square bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-100))] rounded-t-2xl relative overflow-hidden cursor-pointer group"
           onClick={onViewDetails}
         >
           <img
@@ -904,7 +920,7 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
         {/* Content */}
         <div className="p-6">
           <h3
-            className="font-black text-xl text-purple-800 mb-3 line-clamp-2 cursor-pointer hover:text-pink-600 transition-colors"
+            className="font-black text-xl text-[hsl(var(--primary-800))] mb-3 line-clamp-2 cursor-pointer hover:text-[hsl(var(--primary-600))] transition-colors"
             onClick={onViewDetails}
           >
             {getItemName()}
@@ -924,12 +940,12 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
           )}
 
           {/* Price */}
-          <div className="text-2xl font-black text-pink-600 mb-4">{getItemPrice()}</div>
+          <div className="text-2xl font-black text-[hsl(var(--primary-600))] mb-4">{getItemPrice()}</div>
 
           {/* Notes */}
           {item.notes && (
-            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-4 mb-4 border-2 border-purple-200">
-              <p className="text-sm text-purple-800 font-medium">
+            <div className="bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-100))] rounded-xl p-4 mb-4 border-2 border-[hsl(var(--primary-200))]">
+              <p className="text-sm text-[hsl(var(--primary-800))] font-medium">
                 <span className="font-bold">💭 Special Note: </span>
                 {item.notes}
               </p>
@@ -947,7 +963,7 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
               <Button
                 onClick={onClaim}
                 disabled={isClaimingDisabled || isClaiming}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold text-lg py-4 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-200"
+                className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-500))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-600))] text-white font-bold text-lg py-4 rounded-xl shadow-xl transform hover:scale-105 transition-all duration-200"
                 size="lg"
               >
                 {isClaiming ? (
@@ -969,7 +985,7 @@ function GiftCard({ item, onViewDetails, onClaim, guestName, isClaimingDisabled,
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full border-2 border-purple-300 text-purple-700 hover:bg-purple-50 bg-white font-bold py-3 rounded-xl"
+                className="w-full border-2 border-[hsl(var(--primary-300))] text-[hsl(var(--primary-700))] hover:bg-[hsl(var(--primary-50))] bg-white font-bold py-3 rounded-xl"
                 asChild
               >
                 <a

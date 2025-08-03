@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, Plus, X, Clock, Users, Star } from "lucide-react"
 import { useState } from "react"
 
+
+
 const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   if (!isOpen) return null;
 

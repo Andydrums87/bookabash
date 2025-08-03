@@ -11,14 +11,16 @@ import {
 
 const MobileBookingBar = ({ 
   selectedPackage = null, 
-  supplier = null,  // Add supplier prop for availability data
+  supplier = null,
   onAddToPlan = () => {}, 
-  onSaveForLater = () => {} 
+  onSaveForLater = () => {},
+  addToPlanButtonState = null, // NEW: Get button state from parent
+  selectedDate = null, // NEW: Get selected date from parent calendar
+  currentMonth = new Date(), // NEW: Get current month from parent
+  setSelectedDate = () => {}, // NEW: Function to update parent's selected date
+  setCurrentMonth = () => {} // NEW: Function to update parent's current month
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
 
   // Default package if none provided
   const packageInfo = selectedPackage || {
@@ -29,7 +31,7 @@ const MobileBookingBar = ({
     features: []
   };
 
-  // Real availability logic from your desktop calendar
+  // Use the exact same availability logic from desktop calendar
   const isDateUnavailable = (date, supplierData) => {
     if (!supplierData?.unavailableDates) return false
     return supplierData.unavailableDates.some(
@@ -44,15 +46,12 @@ const MobileBookingBar = ({
 
   const isDayAvailable = (date, supplierData) => {
     const dayName = date.toLocaleDateString("en-US", { weekday: "long" })
-    console.log('Checking day availability:', dayName, supplierData?.workingHours?.[dayName]);
     return supplierData?.workingHours?.[dayName]?.active || false
   }
 
   const getDateStatus = (date, supplierData) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-
-
 
     if (date < today) return "past"
 
@@ -68,17 +67,13 @@ const MobileBookingBar = ({
     if (isDateUnavailable(date, supplierData)) return "unavailable"
     if (isDateBusy(date, supplierData)) return "busy"
     
-    // If no working hours data, default to available
-    if (!supplierData?.workingHours) {
-
-      return "available"
-    }
+    if (!supplierData?.workingHours) return "available"
     
     if (!isDayAvailable(date, supplierData)) return "closed"
     return "available"
   }
 
-  // Calendar generation with real availability logic
+  // Calendar generation with exact same logic as desktop
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -94,9 +89,8 @@ const MobileBookingBar = ({
       
       const isCurrentMonth = date.getMonth() === month;
       const isToday = date.toDateString() === new Date().toDateString();
-      const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+      const isSelected = selectedDate && date.getDate() === selectedDate && isCurrentMonth;
       
-      // Use real availability logic
       const status = getDateStatus(date, supplier);
       
       days.push({
@@ -124,36 +118,78 @@ const MobileBookingBar = ({
   };
 
   const getDayStyle = (day) => {
-    if (!day.isCurrentMonth) return 'text-gray-400';
-    if (day.isSelected) return 'bg-primary text-white';
+    if (!day.isCurrentMonth) return 'text-gray-400 cursor-not-allowed';
+    if (day.isSelected) return 'bg-primary-500 text-white border-primary-500';
     
     switch (day.status) {
       case "available":
-        return 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer';
+        return 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-green-300';
       case "unavailable":
-        return 'bg-red-100 text-red-800 cursor-not-allowed line-through';
+        return 'bg-red-100 text-red-800 cursor-not-allowed line-through border-red-300';
       case "busy":
-        return 'bg-yellow-100 text-yellow-800 cursor-not-allowed';
+        return 'bg-yellow-100 text-yellow-800 cursor-not-allowed border-yellow-300';
       case "closed":
-        return 'bg-gray-200 text-gray-500 cursor-not-allowed';
+        return 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300';
       case "past":
-        return 'text-gray-300 cursor-not-allowed line-through';
+        return 'text-gray-300 cursor-not-allowed line-through border-gray-200';
       case "outside-window":
-        return 'text-gray-400 cursor-not-allowed opacity-70';
+        return 'text-gray-400 cursor-not-allowed opacity-70 border-gray-200';
       default:
-        return 'text-gray-400 cursor-not-allowed';
+        return 'text-gray-400 cursor-not-allowed border-gray-200';
     }
   };
 
   const handleDateClick = (day) => {
-    if (day.status !== 'available') return;
-    setSelectedDate(day.date);
+    if (day.status !== 'available' || !day.isCurrentMonth) return;
+    setSelectedDate(day.day); // Update parent's selected date
+  };
+
+  // NEW: Use the same button logic as desktop
+  const getButtonState = () => {
+    if (addToPlanButtonState) return addToPlanButtonState;
+    
+    // Fallback logic if no button state provided
+    if (!selectedPackage?.price) {
+      return {
+        disabled: true,
+        className: "bg-gray-300 text-gray-500 cursor-not-allowed",
+        text: "Select a Package"
+      };
+    }
+    
+    if (!selectedDate) {
+      return {
+        disabled: false,
+        className: "bg-orange-500 hover:bg-orange-600 text-white transition-colors",
+        text: "Pick a Date First",
+        requiresDate: true
+      };
+    }
+    
+    return {
+      disabled: false,
+      className: "bg-primary-500 hover:bg-primary-600 text-white",
+      text: "Add to Plan"
+    };
+  };
+
+  const buttonState = getButtonState();
+
+  const handleMainButtonClick = () => {
+    if (buttonState.requiresDate || !selectedDate) {
+      // Open modal to pick date
+      setIsModalOpen(true);
+      return;
+    }
+    
+    // Proceed with adding to plan
+    handleAddToPlan();
   };
 
   const handleAddToPlan = () => {
     onAddToPlan({ 
       package: packageInfo, 
-      selectedDate,
+      selectedDate: selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null,
       timestamp: new Date() 
     });
     setIsModalOpen(false);
@@ -162,10 +198,17 @@ const MobileBookingBar = ({
   const handleSaveForLater = () => {
     onSaveForLater({ 
       package: packageInfo, 
-      selectedDate,
+      selectedDate: selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null,
       timestamp: new Date() 
     });
     setIsModalOpen(false);
+  };
+
+  // Format selected date for display
+  const getSelectedDateDisplay = () => {
+    if (!selectedDate) return null;
+    const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate);
+    return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -178,23 +221,41 @@ const MobileBookingBar = ({
               <p className="font-semibold text-gray-900 text-xs">{packageInfo.name}</p>
               <p className="text-sm text-gray-600 text-xs">
                 {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
+                {selectedDate && (
+                  <span className="ml-2 text-green-600">
+                    • {getSelectedDateDisplay()}
+                  </span>
+                )}
               </p>
             </div>
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="bg-gray-100 hover:bg-gray-200 text-xs text-gray-700 font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center gap-2"
+              className={`text-xs font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center gap-2 ${
+                selectedDate 
+                  ? 'bg-green-100 hover:bg-green-200 text-green-700' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
             >
               <Calendar className="w-4 h-4" />
-              Check Dates
+              {selectedDate ? 'Change Date' : 'Check Dates'}
             </button>
           </div>
           <button 
-            onClick={() => selectedDate ? handleAddToPlan() : setIsModalOpen(true)}
-            className="w-full bg-primary hover:bg-[hsl(var(--primary-600))] text-white font-semibold md:py-3 py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
-            disabled={!packageInfo.price}
+            onClick={handleMainButtonClick}
+            className={`w-full font-semibold py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 ${buttonState.className}`}
+            disabled={buttonState.disabled}
           >
-            <Plus className="w-5 h-5" />
-            {selectedDate ? `Add to Plan (${selectedDate.toLocaleDateString()})` : 'Add to Plan'}
+            {buttonState.requiresDate ? (
+              <>
+                <Calendar className="w-5 h-5" />
+                {buttonState.text}
+              </>
+            ) : (
+              <>
+                <Plus className="w-5 h-5" />
+                {selectedDate ? `${buttonState.text} (${getSelectedDateDisplay()})` : buttonState.text}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -205,7 +266,9 @@ const MobileBookingBar = ({
           <div className="bg-white w-full max-h-[90vh] rounded-t-3xl overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Check Availability</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedDate ? 'Change Date' : 'Pick Your Party Date'}
+              </h2>
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -246,8 +309,8 @@ const MobileBookingBar = ({
                   <button
                     key={index}
                     onClick={() => handleDateClick(day)}
-                    className={`text-center p-3 rounded-lg text-sm font-medium transition-colors ${getDayStyle(day)}`}
-                    disabled={day.status !== 'available'}
+                    className={`text-center p-3 rounded-lg text-sm font-medium transition-colors border ${getDayStyle(day)}`}
+                    disabled={day.status !== 'available' || !day.isCurrentMonth}
                     title={day.status.replace("-", " ")}
                   >
                     {day.day}
@@ -280,24 +343,24 @@ const MobileBookingBar = ({
 
               {/* Selected Date Info */}
               {selectedDate && (
-                <div className="bg-primary-50 rounded-xl p-4 mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-2">Selected Date</h4>
-                  <p className="text-gray-700">
-                    {selectedDate.toLocaleDateString('en-US', { 
+                <div className="bg-green-50 rounded-xl p-4 mb-6 border border-green-200">
+                  <h4 className="font-semibold text-green-900 mb-2">Selected Date</h4>
+                  <p className="text-green-800">
+                    {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate).toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       year: 'numeric', 
                       month: 'long', 
                       day: 'numeric' 
                     })}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">Available for booking</p>
+                  <p className="text-sm text-green-700 mt-1">✅ Available for booking</p>
                 </div>
               )}
 
               {/* Package Summary */}
               <div className="bg-gradient-to-r from-primary-100 to-primary-200 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
                     <Star className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -323,11 +386,11 @@ const MobileBookingBar = ({
               <div className="space-y-3">
                 <button 
                   onClick={handleAddToPlan}
-                  className="w-full bg-primary hover:bg-[hsl(var(--primary-600))] text-white font-semibold py-4 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-4 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
                   disabled={!selectedDate}
                 >
                   <Plus className="w-5 h-5" />
-                  Add to Plan {selectedDate && `(${selectedDate.toLocaleDateString()})`}
+                  Add to Plan {selectedDate && `(${getSelectedDateDisplay()})`}
                 </button>
                 <button 
                   onClick={handleSaveForLater}

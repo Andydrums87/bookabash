@@ -163,6 +163,7 @@ export default function PartyHeader({
   const [showEditBlockedAlert, setShowEditBlockedAlert] = useState(false)
   const currentTheme = theme
   const hasEnquiriesPending = enquiries.length > 0 && isSignedIn && !isPaymentConfirmed;
+
  
 
   const { toast } = useToast()
@@ -177,6 +178,19 @@ const handleEditClick = () => {
     setIsEditModalOpen(true)
   }
 }
+const isAlaCarteUser = () => {
+  try {
+    const partyDetails = localStorage.getItem('party_details')
+    if (partyDetails) {
+      const parsed = JSON.parse(partyDetails)
+      return parsed.source === 'a_la_carte'
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 
   // Helper functions for mobile vs desktop names - FIXED VERSION
 const getFirstName = () => {

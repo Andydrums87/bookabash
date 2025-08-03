@@ -13,8 +13,27 @@ import confetti from "canvas-confetti"
 export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit }) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
+  const [isAlaCarteUser, setIsAlaCarteUser] = useState(false)
   const [childAge, setChildAge] = useState("")
   const [step, setStep] = useState(1) // 1 = name collection, 2 = welcome message
+
+  useEffect(() => {
+    const checkAlaCarteContext = () => {
+      try {
+        const partyDetails = localStorage.getItem('party_details')
+        if (partyDetails) {
+          const parsed = JSON.parse(partyDetails)
+          setIsAlaCarteUser(parsed.source === 'a_la_carte')
+        }
+      } catch (error) {
+        console.log('Error checking a la carte context:', error)
+      }
+    }
+    
+    if (isOpen) {
+      checkAlaCarteContext()
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isOpen && step === 2) {
@@ -170,69 +189,89 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
         ) : (
           // Step 2: Welcome Message (Updated with first name)
           <>
-           <DialogHeader className="text-center pb-2">
-  <DialogTitle className="text-lg sm:text-2xl font-black text-primary-600 leading-tight">
-    🎉 {firstName}'s Party Plan is Ready!
-  </DialogTitle>
-</DialogHeader>
+    <DialogHeader className="text-center pb-2">
+      <DialogTitle className="text-lg sm:text-2xl font-black text-primary-600 leading-tight">
+        🎉 {firstName}'s Party {isAlaCarteUser ? 'Started' : 'Plan is Ready'}!
+      </DialogTitle>
+    </DialogHeader>
 
-{/* Smaller Snappy image on mobile */}
-<div className="flex justify-center py-2 sm:py-4">
-  <div className="relative">
-    <Image
-      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
-      alt="Snappy smiling"
-      width={120}
-      height={120}
-      className="sm:w-[180px] sm:h-[180px]"
-    />
-    {/* Smaller animated elements on mobile */}
-    <div className="absolute -top-1 -right-1 text-lg sm:text-2xl animate-bounce">🎈</div>
-    <div className="absolute -bottom-1 -left-1 text-sm sm:text-xl animate-pulse">✨</div>
-  </div>
-</div>
-
-{/* Compact copy for mobile */}
-<div className="text-sm text-gray-700 space-y-2 sm:space-y-4 dark:text-gray-300 px-2">
-  <div className="bg-gradient-to-r from-primary-50 to-rose-50 rounded-lg sm:rounded-xl p-2 sm:p-4 border border-primary-100">
-    <p className="text-center font-medium text-primary-800 text-sm sm:text-base">
-      Welcome to <strong>{firstName}'s PartySnap</strong> dashboard! 🎊
-    </p>
-  </div>
-  
-  {/* Condensed features list for mobile */}
-  <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border-2 border-gray-100">
-    <p className="font-semibold text-gray-800 text-center text-sm sm:text-base mb-2">You can now:</p>
-    {/* Single column on mobile, grid on desktop */}
-    <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 text-xs sm:text-sm">
-      <div className="flex items-center space-x-2">
-        <span className="text-primary-500">💰</span>
-        <span>Adjust budget & swap suppliers</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-primary-500">💌</span>
-        <span>Customize {firstName}'s invites</span>
-      </div>
-      <div className="flex items-center space-x-2 sm:col-span-2 sm:justify-center">
-        <span className="text-primary-500">✨</span>
-        <span>Add extras & make it magical!</span>
+    <div className="flex justify-center py-2 sm:py-4">
+      <div className="relative">
+        <Image
+          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
+          alt="Snappy smiling"
+          width={120}
+          height={120}
+          className="sm:w-[180px] sm:h-[180px]"
+        />
+        <div className="absolute -top-1 -right-1 text-lg sm:text-2xl animate-bounce">🎈</div>
+        <div className="absolute -bottom-1 -left-1 text-sm sm:text-xl animate-pulse">✨</div>
       </div>
     </div>
-  </div>
-</div>
 
+    <div className="text-sm text-gray-700 space-y-2 sm:space-y-4 px-2">
+      <div className="bg-gradient-to-r from-primary-50 to-rose-50 rounded-lg p-2 sm:p-4 border border-primary-100">
+        <p className="text-center font-medium text-primary-800 text-sm sm:text-base">
+          {isAlaCarteUser ? (
+            <>Great! You've added your first supplier to <strong>{firstName}'s party</strong> 🎊</>
+          ) : (
+            <>Welcome to <strong>{firstName}'s PartySnap</strong> dashboard! 🎊</>
+          )}
+        </p>
+      </div>
+      
+      <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-gray-100">
+        <p className="font-semibold text-gray-800 text-center text-sm sm:text-base mb-2">
+          {isAlaCarteUser ? "What's next:" : "You can now:"}
+        </p>
+        <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 text-xs sm:text-sm">
+          {isAlaCarteUser ? (
+            <>
+              <div className="flex items-center space-x-2">
+                <span className="text-primary-500">✨</span>
+                <span>Browse & add more suppliers if needed</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-primary-500">💰</span>
+                <span>Set your budget (optional)</span>
+              </div>
+              <div className="flex items-center space-x-2 sm:col-span-2 sm:justify-center">
+                <span className="text-primary-500">📧</span>
+                <span>Send enquiry when ready to book!</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center space-x-2">
+                <span className="text-primary-500">💰</span>
+                <span>Adjust budget & swap suppliers</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-primary-500">💌</span>
+                <span>Customize {firstName}'s invites</span>
+              </div>
+              <div className="flex items-center space-x-2 sm:col-span-2 sm:justify-center">
+                <span className="text-primary-500">✨</span>
+                <span>Add extras & make it magical!</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
 
-            <DialogFooter className="pt-6">
-              <DialogClose asChild>
-                <Button 
-                  type="button" 
-                  className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-primary-600 hover:to-primary-700 text-white font-bold text-base rounded-full h-12 transition-all duration-200 transform hover:scale-[1.02]"
-                  onClick={handleClose}
-                >
-                  Got it — Let's Get Snapping! 📸
-                </Button>
-              </DialogClose>
-            </DialogFooter>
+    <DialogFooter className="pt-6">
+      <DialogClose asChild>
+        <Button 
+          type="button" 
+          className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-primary-600 hover:to-primary-700 text-white font-bold text-base rounded-full h-12 transition-all duration-200 transform hover:scale-[1.02]"
+          onClick={handleClose}
+        >
+          {isAlaCarteUser ? "Got it — Let's Add More! 🎉" : "Got it — Let's Get Snapping! 📸"}
+        </Button>
+      </DialogClose>
+    </DialogFooter>
+
           </>
         )}
       </DialogContent>
