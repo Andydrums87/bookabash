@@ -4,7 +4,7 @@
 import { useParams, useRouter } from "next/navigation"
 import RSVPManagementPage from "./RSVPManagementPage"
 
-export default function RSVPPage() {
+export default function RSVPMain() {
   const params = useParams()
   const router = useRouter()
   const partyId = params["party-id"]

@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from 'react'
-import RSVPPage from '../components/RSVPPage'
+import RSVPMain from '../components/RSVPMain'
 import { Loader2 } from "lucide-react"
 
 // Loading component for Suspense fallback
@@ -22,7 +22,7 @@ function RSVPLoading() {
 export default function RSVPPage() {
   return (
     <Suspense fallback={<RSVPLoading />}>
-      <RSVPPage />
+      <RSVPMain />
     </Suspense>
   )
 }
