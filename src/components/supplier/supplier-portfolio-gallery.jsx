@@ -352,7 +352,7 @@ export default function SupplierPortfolioGallery({ portfolioImages = [], portfol
             onClick={closeMediaModal}
           >
             <div 
-              className="relative bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full flex flex-col"
+              className="relative bg-white rounded-lg shadow-xl max-w-4xl md:h-[90vh] h-[50vh] w-full flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}

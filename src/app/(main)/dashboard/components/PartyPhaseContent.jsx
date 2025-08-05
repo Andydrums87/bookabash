@@ -1,4 +1,7 @@
 // components/PartyPhaseContent.jsx - Phase-specific content and messaging
+"use client"
+
+import { useEffect } from "react"
 import { ArrowRight, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,6 +28,8 @@ export default function PartyPhaseContent({
   hasCreatedInvites,
   partyDetails
 }) {
+
+
   
   // Payment confirmed phase
   if (phase === 'payment_confirmed') {

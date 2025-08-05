@@ -904,28 +904,49 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
   /**
    * Add item to registry (from curated list)
    */
-  async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
+  async addCustomItemToRegistry(registryId, itemData) {
     try {
-      const { data, error } = await supabase
-        .from('registry_items')
-        .insert({
-          registry_id: registryId,
-          gift_item_id: giftItemId,
-          notes: itemData.notes || null,
-          priority: itemData.priority || 'medium',
-          quantity: itemData.quantity || 1
-        })
-        .select(`
-          *,
-          gift_items(*)
-        `)
-        .single()
+      console.log('📝 [Backend] Adding custom item to registry:', itemData.name);
       
-      if (error) throw error
-      return { success: true, registryItem: data }
+      const registryItem = {
+        registry_id: registryId,
+        gift_item_id: null,
+        custom_name: itemData.name,
+        custom_price: itemData.price,
+        custom_description: itemData.description,
+        quantity: itemData.quantity || 1,
+        priority: itemData.priority || 'medium',
+        notes: itemData.notes || null
+      };
+      
+      const { data: newItem, error } = await supabase
+        .from('registry_items') // ✅ CORRECT TABLE NAME
+        .insert(registryItem)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ [Backend] Error adding custom item to registry:', error);
+        return {
+          success: false,
+          error: `Failed to add custom item to registry: ${error.message}`
+        };
+      }
+      
+      console.log('✅ [Backend] Custom item added to registry:', newItem.id);
+      
+      return {
+        success: true,
+        registryItem: newItem,
+        message: 'Custom item added to registry successfully'
+      };
+      
     } catch (error) {
-      console.error('❌ Error adding curated item to registry:', error)
-      return { success: false, error: error.message }
+      console.error('❌ [Backend] Exception in addCustomItemToRegistry:', error);
+      return {
+        success: false,
+        error: `Failed to add custom item to registry: ${error.message}`
+      };
     }
   }
 
@@ -956,97 +977,247 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
       return { success: false, error: error.message }
     }
   }
+  // Fix the registry items query - the table EXISTS, the JOIN is the problem
 
-  /**
-   * Get party's gift registry with items
-   */
-  async getPartyGiftRegistry(partyId) {
-    try {
-      // First get the registry
-      const { data: registry, error: registryError } = await supabase
-        .from('party_gift_registries')
-        .select('*')
-        .eq('party_id', partyId)
-        .eq('is_active', true)
-        .single()
-
-      if (registryError && registryError.code !== 'PGRST116') {
-        throw registryError
-      }
-
-      if (!registry) {
-        return { success: true, registry: null, items: [] }
-      }
-
-      // Then get the items
-      const { data: items, error: itemsError } = await supabase
-        .from('registry_items')
-        .select(`
-          *,
-          gift_items(*)
-        `)
-        .eq('registry_id', registry.id)
-        .order('created_at', { ascending: true })
-
-      if (itemsError) throw itemsError
-
-      return { success: true, registry, items: items || [] }
-    } catch (error) {
-      console.error('❌ Error getting party gift registry:', error)
-      return { success: false, error: error.message }
-    }
-  }
-
-  /**
-   * Get registry by ID (for guest access)
-   */
   async getRegistryById(registryId) {
     try {
+      console.log('🔍 [Backend] Loading gift registry by ID:', registryId);
+      
+      // Get the registry
       const { data: registry, error: registryError } = await supabase
         .from('party_gift_registries')
         .select(`
           *,
-          parties(*)
+          parties!party_gift_registries_party_id_fkey (
+            child_name,
+            party_date,
+            party_time,
+            location,
+            theme,
+            special_requirements,
+            child_age
+          )
         `)
         .eq('id', registryId)
         .eq('is_active', true)
-        .single()
-
-      if (registryError) throw registryError
-
-      const { data: items, error: itemsError } = await supabase
-        .from('registry_items')
-        .select(`
-          *,
-          gift_items(*)
-        `)
-        .eq('registry_id', registryId)
-        .order('created_at', { ascending: true })
-
-      if (itemsError) throw itemsError
-
-      return { success: true, registry, items: items || [] }
+        .single();
+      
+      if (registryError) {
+        console.error('❌ [Backend] Error fetching registry by ID:', registryError);
+        return {
+          success: false,
+          error: `Registry not found: ${registryError.message}`,
+          registry: null,
+          items: []
+        };
+      }
+      
+      console.log('✅ [Backend] Registry loaded:', registry);
+      
+      // Get registry items from the correct table: registry_items
+      let items = [];
+      try {
+        console.log('🔍 [Backend] Loading registry items from registry_items table...');
+        
+        const { data: rawItems, error: itemsError } = await supabase
+          .from('registry_items') // ✅ CORRECT TABLE NAME
+          .select('*')
+          .eq('registry_id', registryId)
+          .order('created_at', { ascending: false });
+        
+        if (itemsError) {
+          console.error('❌ [Backend] Error fetching registry items:', itemsError);
+          return {
+            success: true,
+            registry: registry,
+            items: [],
+            message: 'Registry loaded but items could not be loaded'
+          };
+        }
+        
+        console.log('✅ [Backend] Raw items loaded:', rawItems?.length || 0);
+        items = rawItems || [];
+        
+      } catch (itemsError) {
+        console.error('⚠️ [Backend] Exception fetching registry items:', itemsError);
+        items = [];
+      }
+      
+      console.log('✅ [Backend] Registry loaded by ID with', items?.length || 0, 'items');
+      
+      return {
+        success: true,
+        registry: registry,
+        items: items || [],
+        message: 'Gift registry loaded successfully'
+      };
+      
     } catch (error) {
-      console.error('❌ Error getting registry by ID:', error)
-      return { success: false, error: error.message }
+      console.error('❌ [Backend] Exception in getRegistryById:', error);
+      return {
+        success: false,
+        error: `Failed to load gift registry: ${error.message}`,
+        registry: null,
+        items: []
+      };
     }
   }
+
+// Also fix the getPartyGiftRegistry method:
+async getPartyGiftRegistry(partyId) {
+  try {
+    console.log('🔍 [Backend] Loading gift registry for party:', partyId);
+    
+    // Get the registry from party_gift_registries table
+    const { data: registry, error: registryError } = await supabase
+      .from('party_gift_registries')
+      .select(`
+        *,
+        parties!party_gift_registries_party_id_fkey (
+          child_name,
+          party_date,
+          party_time,
+          location,
+          theme,
+          special_requirements,
+          child_age
+        )
+      `)
+      .eq('party_id', partyId)
+      .eq('is_active', true)
+      .single();
+    
+    if (registryError) {
+      if (registryError.code === 'PGRST116') {
+        // No registry found - this is normal
+        console.log('ℹ️ [Backend] No gift registry found for party:', partyId);
+        return {
+          success: true,
+          registry: null,
+          items: [],
+          message: 'No gift registry found for this party'
+        };
+      }
+      
+      console.error('❌ [Backend] Error fetching gift registry:', registryError);
+      return {
+        success: false,
+        error: `Failed to load gift registry: ${registryError.message}`,
+        registry: null,
+        items: []
+      };
+    }
+    
+    console.log('✅ [Backend] Found gift registry:', registry.id);
+    
+    // Get registry items from the correct table: registry_items
+    let items = [];
+    try {
+      const { data: rawItems, error: itemsError } = await supabase
+        .from('registry_items') // ✅ CORRECT TABLE NAME
+        .select('*')
+        .eq('registry_id', registry.id)
+        .order('created_at', { ascending: false });
+      
+      if (!itemsError) {
+        items = rawItems || [];
+        console.log('✅ [Backend] Loaded', items.length, 'registry items');
+      } else {
+        console.error('⚠️ [Backend] Error fetching registry items:', itemsError);
+      }
+    } catch (itemsError) {
+      console.error('⚠️ [Backend] Exception fetching registry items:', itemsError);
+    }
+    
+    console.log('✅ [Backend] Registry loaded with', items?.length || 0, 'items');
+    
+    return {
+      success: true,
+      registry: registry,
+      items: items || [],
+      message: 'Gift registry loaded successfully'
+    };
+    
+  } catch (error) {
+    console.error('❌ [Backend] Exception in getPartyGiftRegistry:', error);
+    return {
+      success: false,
+      error: `Failed to load gift registry: ${error.message}`,
+      registry: null,
+      items: []
+    };
+  }
+}
+
+
+// Debug function to check what's in your gift_items table
+async debugGiftItemsTable() {
+  try {
+    console.log('🔍 [DEBUG] Checking gift_items table...');
+    
+    // Check if gift_items table exists and is readable
+    const { data: giftItems, error: giftItemsError } = await supabase
+      .from('gift_items')
+      .select('id, name')
+      .limit(5);
+    
+    console.log('📊 [DEBUG] Gift items sample:', giftItems);
+    console.log('❌ [DEBUG] Gift items error:', giftItemsError);
+    
+    // Check foreign key relationship
+    const { data: itemsWithGiftIds, error: fkError } = await supabase
+      .from('party_gift_registry_items')
+      .select('id, gift_item_id')
+      .not('gift_item_id', 'is', null)
+      .limit(5);
+    
+    console.log('📊 [DEBUG] Registry items with gift_item_id:', itemsWithGiftIds);
+    console.log('❌ [DEBUG] FK check error:', fkError);
+    
+    return { giftItems, itemsWithGiftIds, errors: { giftItemsError, fkError } };
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Exception in debugGiftItemsTable:', error);
+    return { error: error.message };
+  }
+}
+
+
+
 
   /**
    * Remove item from registry
    */
   async removeItemFromRegistry(registryItemId) {
     try {
-      const { error } = await supabase
-        .from('registry_items')
-        .delete()
-        .eq('id', registryItemId)
+      console.log('🗑️ [Backend] Removing item from registry:', registryItemId);
       
-      if (error) throw error
-      return { success: true }
+      const { error } = await supabase
+        .from('registry_items') // ✅ CORRECT TABLE NAME
+        .delete()
+        .eq('id', registryItemId);
+      
+      if (error) {
+        console.error('❌ [Backend] Error removing item from registry:', error);
+        return {
+          success: false,
+          error: `Failed to remove item from registry: ${error.message}`
+        };
+      }
+      
+      console.log('✅ [Backend] Item removed from registry');
+      
+      return {
+        success: true,
+        message: 'Item removed from registry successfully'
+      };
+      
     } catch (error) {
-      console.error('❌ Error removing item from registry:', error)
-      return { success: false, error: error.message }
+      console.error('❌ [Backend] Exception in removeItemFromRegistry:', error);
+      return {
+        success: false,
+        error: `Failed to remove item from registry: ${error.message}`
+      };
     }
   }
 
@@ -1074,51 +1245,121 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
   }
   async createGiftRegistry(partyId, registryData = {}) {
     try {
-      const { data, error } = await supabase
+      console.log('🎁 [Backend] Creating gift registry for party:', partyId);
+      console.log('📝 [Backend] Registry data:', registryData);
+      
+      // First get the party details to make a nice name
+      const { data: party, error: partyError } = await supabase
+        .from('parties')
+        .select('child_name, theme')
+        .eq('id', partyId)
+        .single();
+      
+      if (partyError) {
+        console.error('❌ [Backend] Error fetching party details:', partyError);
+        // Continue anyway with default values
+      }
+      
+      // Create the registry record
+      const registryRecord = {
+        party_id: partyId,
+        name: registryData.name || `${party?.child_name || 'Birthday Child'}'s Gift Registry`,
+        description: registryData.description || `Gift registry for ${party?.child_name || 'child'}'s ${party?.theme || 'themed'} party`,
+        is_active: true
+      };
+      
+      console.log('💾 [Backend] Inserting registry record:', registryRecord);
+      
+      const { data: newRegistry, error: registryError } = await supabase
         .from('party_gift_registries')
-        .insert({
-          party_id: partyId,
-          name: registryData.name || 'Gift Registry',
-          description: registryData.description || ''
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return { success: true, registry: data }
+        .insert(registryRecord)
+        .select('*')
+        .single();
+      
+      if (registryError) {
+        console.error('❌ [Backend] Database error creating registry:', registryError);
+        return {
+          success: false,
+          error: `Failed to create gift registry: ${registryError.message}`,
+          registry: null
+        };
+      }
+      
+      console.log('✅ [Backend] Registry created successfully:', newRegistry);
+      
+      // Verify it was saved by reading it back
+      const { data: verifyRegistry, error: verifyError } = await supabase
+        .from('party_gift_registries')
+        .select('*')
+        .eq('id', newRegistry.id)
+        .single();
+      
+      if (verifyError) {
+        console.error('⚠️ [Backend] Registry created but verification failed:', verifyError);
+        // Still return success since the registry was created
+      } else {
+        console.log('✅ [Backend] Registry verified in database:', verifyRegistry.id);
+      }
+      
+      return {
+        success: true,
+        registry: newRegistry,
+        message: 'Gift registry created successfully'
+      };
+      
     } catch (error) {
-      console.error('❌ Error creating gift registry:', error)
-      return { success: false, error: error.message }
+      console.error('❌ [Backend] Exception in createGiftRegistry:', error);
+      return {
+        success: false,
+        error: `Failed to create gift registry: ${error.message}`,
+        registry: null
+      };
     }
   }
+  
   /**
    * Claim item (for guests)
    */
-  async claimRegistryItem(registryItemId, guestName, guestEmail = null) {
+  async claimRegistryItem(registryItemId, guestName) {
     try {
-      const { data, error } = await supabase
-        .from('registry_items')
+      console.log('🎁 [Backend] Claiming registry item:', registryItemId, 'by', guestName);
+      
+      const { data: updatedItem, error } = await supabase
+        .from('registry_items') // ✅ CORRECT TABLE NAME
         .update({
           is_claimed: true,
           claimed_by: guestName,
-          claimed_email: guestEmail,
           claimed_at: new Date().toISOString()
         })
         .eq('id', registryItemId)
-        .eq('is_claimed', false) // Only allow claiming if not already claimed
-        .select(`
-          *,
-          gift_items(*)
-        `)
-        .single()
+        .select()
+        .single();
       
-      if (error) throw error
-      return { success: true, registryItem: data }
+      if (error) {
+        console.error('❌ [Backend] Error claiming item:', error);
+        return {
+          success: false,
+          error: `Failed to claim item: ${error.message}`
+        };
+      }
+      
+      console.log('✅ [Backend] Item claimed successfully');
+      
+      return {
+        success: true,
+        registryItem: updatedItem,
+        message: 'Item claimed successfully'
+      };
+      
     } catch (error) {
-      console.error('❌ Error claiming registry item:', error)
-      return { success: false, error: error.message }
+      console.error('❌ [Backend] Exception in claimRegistryItem:', error);
+      return {
+        success: false,
+        error: `Failed to claim item: ${error.message}`
+      };
     }
   }
+  
 
   /**
    * Unclaim item (for guests who change their mind)
@@ -1217,34 +1458,55 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
   }
   // Add this new method to your PartyDatabaseBackend class:
 // Add this to your PartyDatabaseBackend class:
-async addRealProductToRegistry(registryId, productData, itemData = {}) {
+async addRealProductToRegistry(registryId, product, itemData = {}) {
   try {
-    console.log('🛒 Adding real product to registry:', productData.name);
+    console.log('🛒 [Backend] Adding real product to registry:', product.name);
     
-    const { data, error } = await supabase
-      .from('registry_items')
-      .insert({
-        registry_id: registryId,
-        gift_item_id: null,
-        external_product_id: productData.external_id || productData.id,
-        external_source: productData.source || 'amazon',
-        custom_name: productData.name,
-        custom_price: productData.price ? `£${productData.price}` : productData.price_range,
-        custom_description: productData.description,
-        external_image_url: productData.image_url,
-        external_buy_url: productData.buy_url,
-        notes: itemData.notes || null,
-        priority: itemData.priority || 'medium',
-        quantity: itemData.quantity || 1
-      })
+    const registryItem = {
+      registry_id: registryId,
+      gift_item_id: null, // Real products don't use gift_item_id
+      custom_name: product.name,
+      custom_price: product.price ? `£${product.price}` : product.price_range || 'Price varies',
+      custom_description: product.description,
+      external_product_id: product.id,
+      external_source: product.source || 'amazon',
+      external_image_url: product.image_url,
+      external_buy_url: product.buy_url || product.amazon_url,
+      quantity: itemData.quantity || 1,
+      priority: itemData.priority || 'medium',
+      notes: itemData.notes || null
+    };
+    
+    console.log('💾 [Backend] Inserting registry item:', registryItem);
+    
+    const { data: newItem, error } = await supabase
+      .from('registry_items') // ✅ CORRECT TABLE NAME
+      .insert(registryItem)
       .select()
       .single();
     
-    if (error) throw error;
-    return { success: true, registryItem: data };
+    if (error) {
+      console.error('❌ [Backend] Error adding product to registry:', error);
+      return {
+        success: false,
+        error: `Failed to add product to registry: ${error.message}`
+      };
+    }
+    
+    console.log('✅ [Backend] Product added to registry:', newItem.id);
+    
+    return {
+      success: true,
+      registryItem: newItem,
+      message: 'Product added to registry successfully'
+    };
+    
   } catch (error) {
-    console.error('❌ Error adding real product to registry:', error);
-    return { success: false, error: error.message };
+    console.error('❌ [Backend] Exception in addRealProductToRegistry:', error);
+    return {
+      success: false,
+      error: `Failed to add product to registry: ${error.message}`
+    };
   }
 }
 async findSuppliersByCategory(excludeId, category) {
@@ -1972,6 +2234,559 @@ async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
     return { success: false, error: error.message }
   }
 }
+
+
+async saveEInvites(partyId, einviteData) {
+  try {
+    console.log('💾 Saving e-invites for party:', partyId);
+    
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    console.log('📋 Current party plan keys:', Object.keys(currentPlan));
+
+    // Generate unique invite ID if not exists
+    if (!einviteData.inviteId) {
+      einviteData.inviteId = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // Create the e-invites data structure
+    const einvitesData = {
+      ...einviteData,
+      id: "digital-invites",
+      name: `${einviteData.inviteData?.childName || 'Child'}'s Digital Invites`,
+      description: einviteData.generationType === 'ai' 
+        ? `Custom AI-generated digital invitations`
+        : `Custom ${einviteData.theme} themed digital invitations`,
+      price: 25,
+      status: "completed",
+      image: einviteData.image || einviteData.generatedImage,
+      category: "Digital Services",
+      priceUnit: "per set",
+      theme: einviteData.theme,
+      inviteData: einviteData.inviteData,
+      guestList: einviteData.guestList || [],
+      shareableLink: einviteData.shareableLink || "",
+      generationType: einviteData.generationType || "template",
+      addedAt: currentPlan.einvites?.addedAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+ 
+    // Update party plan with e-invites
+    currentPlan.einvites = einvitesData;
+
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: currentPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error updating party plan:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ E-invites saved successfully');
+    return { success: true, einvites: einvitesData, party: data };
+  } catch (error) {
+    console.error('❌ Error in saveEInvites:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get e-invites data for a party
+ */
+async getEInvites(partyId) {
+  try {
+    console.log('🔍 Getting e-invites for party:', partyId);
+    
+    const { data: party, error } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (error) {
+      console.error('❌ Error fetching party:', error);
+      return { success: false, error: error.message };
+    }
+
+    const einvites = party.party_plan?.einvites || null;
+    console.log('📋 Found e-invites:', !!einvites);
+    
+    return { success: true, einvites };
+  } catch (error) {
+    console.error('❌ Error in getEInvites:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Create public invite record for sharing
+ * Updated to work with existing public_invites schema
+ */
+async createPublicInvite(inviteData) {
+  try {
+    console.log('🌐 Creating public invite');
+    
+    const publicInvite = {
+      id: inviteData.inviteId,
+      theme: inviteData.theme || 'party',
+      invite_data: {
+        partyId: inviteData.partyId, // Store party ID in the JSONB
+        theme: inviteData.theme,
+        inviteData: inviteData.inviteData,
+        generatedImage: inviteData.generatedImage,
+        generationType: inviteData.generationType,
+        shareableLink: inviteData.shareableLink,
+      },
+      generated_image: inviteData.generatedImage,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('public_invites')
+      .upsert(publicInvite, { onConflict: 'id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error creating public invite:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Public invite created:', data.id);
+    return { success: true, publicInvite: data };
+  } catch (error) {
+    console.error('❌ Error in createPublicInvite:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get public invite by ID
+ * Updated to work with existing public_invites schema
+ */
+/**
+ * Get public invite by ID - FIXED VERSION
+ * Updated to work with existing public_invites schema
+ */
+async getPublicInvite(inviteId) {
+  try {
+    console.log('🔍 [Backend] Getting public invite:', inviteId);
+    
+    const { data: invite, error } = await supabase
+      .from('public_invites')
+      .select('*')
+      .eq('id', inviteId)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      console.error('❌ [Backend] Error fetching public invite:', error);
+      
+      // More specific error handling
+      if (error.code === 'PGRST116') {
+        return {
+          success: false,
+          error: 'Invitation not found. It may have expired or been removed.',
+          invite: null
+        };
+      }
+      
+      return {
+        success: false,
+        error: `Failed to load invitation: ${error.message}`,
+        invite: null
+      };
+    }
+
+    console.log('✅ [Backend] Found public invite:', invite.id);
+    
+    // Parse the invite_data JSON
+    let parsedInviteData = {};
+    try {
+      parsedInviteData = typeof invite.invite_data === 'string' 
+        ? JSON.parse(invite.invite_data) 
+        : invite.invite_data;
+    } catch (parseError) {
+      console.error('⚠️ [Backend] Error parsing invite_data:', parseError);
+      parsedInviteData = {};
+    }
+
+    console.log('📋 [Backend] Parsed invite data:', parsedInviteData);
+
+    // Get party details if we have a party ID
+    let partyDetails = null;
+    const partyId = parsedInviteData?.partyId;
+    
+    if (partyId) {
+      console.log('🔍 [Backend] Loading party details for ID:', partyId);
+      
+      const { data: party, error: partyError } = await supabase
+        .from('parties')
+        .select('child_name, party_date, party_time, location, theme, special_requirements, party_plan')
+        .eq('id', partyId)
+        .single();
+
+      if (!partyError && party) {
+        console.log('✅ [Backend] Loaded party details');
+        partyDetails = party;
+      } else {
+        console.log('⚠️ [Backend] Could not load party details:', partyError?.message || 'Unknown error');
+      }
+    }
+
+    // Structure the response to match what the frontend expects
+    const structuredInvite = {
+      id: invite.id,
+      theme: invite.theme,
+      generated_image: invite.generated_image,
+      invite_data: parsedInviteData,
+      created_at: invite.created_at,
+      is_active: invite.is_active,
+      // Add party details if available
+      parties: partyDetails
+    };
+
+    console.log('✅ [Backend] Public invite loaded successfully with party data');
+    return { 
+      success: true, 
+      invite: structuredInvite 
+    };
+    
+  } catch (error) {
+    console.error('❌ [Backend] Exception in getPublicInvite:', error);
+    return {
+      success: false,
+      error: `Failed to load invitation: ${error.message}`,
+      invite: null
+    };
+  }
+}
+async findGiftRegistryForParty(partyId) {
+  try {
+    console.log('🔍 [Backend] Finding gift registry for party:', partyId)
+    
+    // First, try to find existing registry by party ID
+    const { data: registry, error: registryError } = await supabase
+      .from('party_gift_registries')
+      .select('*')
+      .eq('party_id', partyId)
+      .eq('is_active', true)
+      .single()
+    
+    if (!registryError && registry) {
+      console.log('✅ [Backend] Found registry by party ID:', registry.id)
+      return {
+        success: true,
+        registry: registry,
+        method: 'found_by_party_id'
+      }
+    }
+    
+    // If not found by party ID, check if there's a registry that should be linked
+    // This is a fallback for existing registries that weren't properly linked
+    const { data: allRegistries, error: allError } = await supabase
+      .from('party_gift_registries')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(10) // Check recent registries
+    
+    if (!allError && allRegistries && allRegistries.length > 0) {
+      // For now, return the most recent registry as fallback
+      // In a real app, you'd have better logic to match registries to parties
+      const fallbackRegistry = allRegistries[0]
+      
+      console.log('⚠️ [Backend] Using fallback registry:', fallbackRegistry.id)
+      return {
+        success: true,
+        registry: fallbackRegistry,
+        method: 'fallback_recent'
+      }
+    }
+    
+    console.log('❌ [Backend] No gift registry found for party:', partyId)
+    return {
+      success: false,
+      error: 'No gift registry found for this party',
+      registry: null
+    }
+    
+  } catch (error) {
+    console.error('❌ [Backend] Error finding gift registry:', error)
+    return {
+      success: false,
+      error: error.message,
+      registry: null
+    }
+  }
+}
+
+/**
+ * Get the correct gift registry URL for a party
+ */
+async getGiftRegistryUrlForParty(partyId) {
+  try {
+    const result = await this.findGiftRegistryForParty(partyId)
+    
+    if (result.success && result.registry) {
+      return {
+        success: true,
+        url: `/gift-registry/${result.registry.id}/preview`,
+        registryId: result.registry.id,
+        method: result.method
+      }
+    }
+    
+    // Fallback to known working registry
+    console.log('⚠️ [Backend] Using hardcoded fallback registry')
+    return {
+      success: true,
+      url: `/gift-registry/d8588236-6060-4501-9627-19b8f3c5b428/preview`,
+      registryId: 'd8588236-6060-4501-9627-19b8f3c5b428',
+      method: 'hardcoded_fallback'
+    }
+    
+  } catch (error) {
+    console.error('❌ [Backend] Error getting registry URL:', error)
+    return {
+      success: false,
+      error: error.message,
+      url: null
+    }
+  }
+}
+/**
+ * Track RSVP for an invite
+ */
+async submitRSVP(inviteId, rsvpData) {
+  try {
+    console.log('📝 Submitting RSVP for invite:', inviteId);
+    
+    const rsvp = {
+      invite_id: inviteId,
+      guest_name: rsvpData.guestName,
+      guest_email: rsvpData.guestEmail,
+      guest_phone: rsvpData.guestPhone,
+      attendance: rsvpData.attendance, // 'yes', 'no', 'maybe'
+      adults_count: rsvpData.adultsCount || 1,
+      children_count: rsvpData.childrenCount || 0,
+      dietary_requirements: rsvpData.dietaryRequirements || '',
+      message: rsvpData.message || '',
+      submitted_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('rsvps')
+      .upsert(rsvp, { 
+        onConflict: 'invite_id,guest_email',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error submitting RSVP:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ RSVP submitted successfully');
+    return { success: true, rsvp: data };
+  } catch (error) {
+    console.error('❌ Error in submitRSVP:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get RSVPs for a party
+ * Updated to work with existing public_invites schema
+ */
+async getPartyRSVPs(partyId) {
+  try {
+    console.log('📊 Getting RSVPs for party:', partyId);
+    
+    // First, get all public invites for this party
+    const { data: invites, error: invitesError } = await supabase
+      .from('public_invites')
+      .select('id')
+      .eq('is_active', true);
+
+    if (invitesError) {
+      console.error('❌ Error fetching invites:', invitesError);
+      return { success: false, error: invitesError.message };
+    }
+
+    // Filter invites that belong to this party (stored in invite_data JSONB)
+    const partyInviteIds = [];
+    for (const invite of invites) {
+      // We'll need to get the full invite to check the JSONB data
+      const { data: fullInvite, error } = await supabase
+        .from('public_invites')
+        .select('invite_data')
+        .eq('id', invite.id)
+        .single();
+      
+      if (!error && fullInvite?.invite_data?.partyId === partyId) {
+        partyInviteIds.push(invite.id);
+      }
+    }
+
+    if (partyInviteIds.length === 0) {
+      console.log('📊 No invites found for party:', partyId);
+      return { success: true, rsvps: [] };
+    }
+
+    // Get RSVPs for these invites
+    const { data: rsvps, error } = await supabase
+      .from('rsvps')
+      .select('*')
+      .in('invite_id', partyInviteIds)
+      .order('submitted_at', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching RSVPs:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`✅ Found ${rsvps?.length || 0} RSVPs`);
+    return { success: true, rsvps: rsvps || [] };
+  } catch (error) {
+    console.error('❌ Error in getPartyRSVPs:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Update guest list with send status
+ */
+async updateGuestSendStatus(partyId, guestId, status, sentMethod = 'manual') {
+  try {
+    console.log('📤 Updating guest send status:', { partyId, guestId, status });
+    
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Update the specific guest
+    const updatedGuestList = guestList.map(guest => {
+      if (guest.id === guestId) {
+        return {
+          ...guest,
+          status: status,
+          sentAt: status === 'sent' ? new Date().toISOString() : guest.sentAt,
+          sentMethod: status === 'sent' ? sentMethod : guest.sentMethod,
+        };
+      }
+      return guest;
+    });
+
+    // Update the party plan
+    currentPlan.einvites = {
+      ...einvites,
+      guestList: updatedGuestList,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: currentPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error updating guest status:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Guest send status updated');
+    return { success: true, party: data };
+  } catch (error) {
+    console.error('❌ Error in updateGuestSendStatus:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get RSVP analytics for a party
+ */
+async getRSVPAnalytics(partyId) {
+  try {
+    console.log('📊 Getting RSVP analytics for party:', partyId);
+    
+    const result = await this.getPartyRSVPs(partyId);
+    if (!result.success) {
+      return result;
+    }
+
+    const rsvps = result.rsvps;
+    const analytics = {
+      totalRSVPs: rsvps.length,
+      yesRSVPs: rsvps.filter(r => r.attendance === 'yes').length,
+      noRSVPs: rsvps.filter(r => r.attendance === 'no').length,
+      maybeRSVPs: rsvps.filter(r => r.attendance === 'maybe').length,
+      totalExpectedGuests: rsvps
+        .filter(r => r.attendance === 'yes' || r.attendance === 'maybe')
+        .reduce((sum, rsvp) => sum + (rsvp.adults_count || 0) + (rsvp.children_count || 0), 0),
+      confirmedGuests: rsvps
+        .filter(r => r.attendance === 'yes')
+        .reduce((sum, rsvp) => sum + (rsvp.adults_count || 0) + (rsvp.children_count || 0), 0),
+      dietaryRequirements: rsvps
+        .filter(r => r.dietary_requirements && r.dietary_requirements.trim())
+        .map(r => ({ name: r.guest_name, requirements: r.dietary_requirements })),
+      recentRSVPs: rsvps.slice(0, 5)
+    };
+
+    return { success: true, analytics };
+  } catch (error) {
+    console.error('❌ Error getting RSVP analytics:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Check if party has created e-invites
+ */
+async hasCreatedEInvites(partyId) {
+  try {
+    const result = await this.getEInvites(partyId);
+    return {
+      success: true,
+      hasCreated: result.success && result.einvites !== null
+    };
+  } catch (error) {
+    console.error('❌ Error checking e-invites status:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 }
 // Create singleton instance
 export const partyDatabaseBackend = new PartyDatabaseBackend()

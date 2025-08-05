@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Heart, CheckCircle } from "lucide-react"
 import SupplierAvailabilityCalendar from "@/components/supplier/supplier-availability-calendar" // Import the calendar
+import { useFavorites } from "@/app/(main)/favorites/hooks/useFavoritesHook"
 
 export default function SupplierSidebar({
   supplier,
@@ -19,6 +20,16 @@ export default function SupplierSidebar({
   isFromDashboard = false,
   partyDate = null,
 }) {
+
+  const { toggleFavorite, isFavorite } = useFavorites()
+  const isSupplierFavorite = supplier ? isFavorite(supplier.id) : false
+
+  const handleToggleFavorite = () => {
+    if (supplier) {
+      toggleFavorite(supplier)
+    }
+  }
+
   const selectedPkgDetails = packages?.find((pkg) => pkg.id === selectedPackageId)
 
   const addToPlanButtonState = getAddToPartyButtonState(selectedPackageId)
@@ -87,11 +98,26 @@ export default function SupplierSidebar({
 
       {/* Add to Favorites Button */}
       <div className="bg-white p-6 rounded-2xl shadow-sm">
-        <Button variant="outline" className="w-full py-3 text-base border-gray-300">
-          <Heart className="w-5 h-5 mr-2" />
-          Add to favorites
+        <Button 
+          variant="outline" 
+          className={`w-full py-3 text-base transition-all duration-200 ${
+            isSupplierFavorite 
+              ? 'border-primary-300 bg-pink-50 text-primary-700 hover:bg-[hsl(var(--primary-50))]' 
+              : 'border-gray-300 hover:border-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-50))]'
+          }`}
+          onClick={handleToggleFavorite}
+        >
+          <Heart 
+            className={`w-5 h-5 mr-2 transition-all duration-200 ${
+              isSupplierFavorite 
+                ? 'fill-[hsl(vaR(--primary-500))] text-primary-500' 
+                : 'text-gray-500'
+            }`} 
+          />
+          {isSupplierFavorite ? 'Remove from favorites' : 'Add to favorites'}
         </Button>
       </div>
+    
     </div>
   )
 }

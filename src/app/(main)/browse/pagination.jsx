@@ -18,6 +18,7 @@ import {
   Music 
 } from "lucide-react"
 import Image from 'next/image';
+import { useFavorites } from '../favorites/hooks/useFavoritesHook';
 
 // Theme configuration matching the filter modal
 const themeConfig = {
@@ -39,10 +40,11 @@ const LoadMoreSuppliersSection = ({
   allSuppliers = [], // This comes from your filteredSuppliers 
   isInitialLoading = false, // This comes from your existing loading state
   onSupplierClick, // Your existing click handler
-  favorites = [],
-  toggleFavorite,
   selectedThemes = [] // For highlighting matching themes
 }) => {
+
+  const { toggleFavorite, isFavorite } = useFavorites()
+
   const [displayedSuppliers, setDisplayedSuppliers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -84,199 +86,211 @@ const LoadMoreSuppliersSection = ({
     setIsLoadingMore(false);
   };
 
-  // Skeleton card component
-  const SkeletonSupplierCard = () => (
-    <Card className="border border-gray-200 shadow-sm overflow-hidden rounded-lg">
-      <CardContent className="p-0 relative">
-        <div className="relative w-full h-48 md:h-40 lg:h-48">
-          <Skeleton className="w-full h-full" />
-          <div className="absolute top-3 left-3">
-            <Skeleton className="h-6 w-24 rounded-full" />
+// Updated SupplierCard component with title ACTUALLY below image
+const SupplierCard = ({ supplier }) => {
+  const isSupplierFavorite = isFavorite(supplier.id)
+  
+  // Get supplier themes with config
+  const supplierThemes = (supplier.themes || []).map(themeId => ({
+    id: themeId,
+    ...themeConfig[themeId]
+  })).filter(theme => theme.name);
+
+  // Determine how many themes to show
+  const maxVisibleThemes = 3;
+  const visibleThemes = supplierThemes.slice(0, maxVisibleThemes);
+  const remainingCount = Math.max(0, supplierThemes.length - maxVisibleThemes);
+
+  return (
+    <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative cursor-pointer group hover:shadow-2xl">
+      <CardContent 
+        onClick={(e) => {
+          e.stopPropagation();
+          onSupplierClick?.(supplier.id);
+        }} 
+        className="p-0 relative"
+      >
+        {/* Image section - NO supplier name here */}
+        <div className="relative w-full h-48">
+          <div className="absolute inset-0">
+            <img 
+              src={supplier?.image || "/placeholder.png"} 
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/placeholder.svg";
+              }}
+              alt={supplier.name} 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
           </div>
-          <div className="absolute top-3 right-3">
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
-          <div className="absolute bottom-3 left-3">
-            <Skeleton className="h-6 w-20 rounded-full" />
-          </div>
-        </div>
-        <div className="pt-4 px-3 pb-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-12" />
-          </div>
-          <div className="flex items-center space-x-1 mb-3">
-            <Skeleton className="h-4 w-4 rounded" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-          <Skeleton className="h-6 w-3/4 mb-2" />
-          <div className="flex flex-wrap gap-1 mb-4">
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-20 rounded-full" />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Skeleton className="h-6 w-16 mb-1" />
-              <Skeleton className="h-4 w-12" />
+
+          {/* Light gradient for badges only */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10" />
+
+          {/* Top badges only */}
+          <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10">
+            <div className="flex items-center gap-2">
+              {/* Category Badge */}
+              <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm text-xs">
+                {supplier.category}
+              </Badge>
+              
+              {/* Availability Badge */}
+              {supplier.availability && (
+                <Badge className="bg-green-500 text-white shadow-lg backdrop-blur-sm text-xs">
+                  {supplier.availability}
+                </Badge>
+              )}
             </div>
-            <Skeleton className="h-8 w-24 rounded" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // Individual supplier card component
-  const SupplierCard = ({ supplier }) => {
-    // Get supplier themes with config - FIXED: moved inside SupplierCard
-    const supplierThemes = (supplier.themes || []).map(themeId => ({
-      id: themeId,
-      ...themeConfig[themeId]
-    })).filter(theme => theme.name); // Only show themes we have config for
-
-    // Determine how many themes to show
-    const maxVisibleThemes = 4;
-    const visibleThemes = supplierThemes.slice(0, maxVisibleThemes);
-    const remainingCount = Math.max(0, supplierThemes.length - maxVisibleThemes);
-
-    return (
-      <Card  className="border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
-        <CardContent  onClick={(e) => {
-                  e.stopPropagation();
-                  onSupplierClick?.(supplier.id);
-                }} className="p-0 relative">
- <div className="relative w-full h-48 md:h-40 lg:h-48  bg-primary-50 flex items-center justify-center overflow-hidden">
-  <img 
-    src={supplier?.image || "/placeholder.png"} 
-    onError={(e) => {
-      e.currentTarget.onerror = null; // prevent infinite loop
-      e.currentTarget.src = "/placeholder.svg";
-    }}
-    alt={supplier.name} 
-    className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
-  />
-
+            
             {/* Favorite Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggleFavorite?.(supplier.id);
+                toggleFavorite(supplier);
               }}
-              className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
+              className="w-8 h-8 bg-white/95 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg"
             >
               <Heart
                 className={`w-4 h-4 ${
-                  favorites.includes(supplier.id) 
+                  isSupplierFavorite 
                     ? "fill-red-500 text-red-500" 
-                    : "text-gray-400 hover:text-red-400"
+                    : "text-gray-600 hover:text-red-500"
                 }`}
               />
             </button>
+          </div>
 
-            {/* Availability Badge */}
-            {supplier.availability && (
-              <div className="absolute top-3 left-3">
-                <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
-                  {supplier.availability}
-                </Badge>
+          {/* Price badge in bottom right corner only */}
+          <div className="absolute bottom-3 right-3 z-10">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-white/50">
+              <div className="text-right">
+                <span className="text-lg font-black text-gray-900">£{supplier.priceFrom}</span>
+                <div className="text-xs text-gray-600">{supplier.priceUnit}</div>
               </div>
-            )}
-
-            {/* Category Badge */}
-            <div className="absolute bottom-3 left-3">
-              <Badge variant="outline" className="bg-white/90 text-gray-700 border-gray-300">
-                {supplier.category}
-              </Badge>
             </div>
           </div>
 
-          {/* Content Section */}
-          <div className="pt-4 px-3 pb-4">
-            {/* Rating and Reviews */}
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="flex items-center space-x-1">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-gray-900">{supplier.rating}</span>
-                <span className="text-xs text-gray-600">({supplier.reviewCount})</span>
+          {/* REMOVED: Bottom overlay with supplier name - this was the problem! */}
+        </div>
+
+        {/* Content section below image - supplier name goes HERE */}
+        <div className="p-4 bg-white">
+          {/* Supplier Name - THE MAIN TITLE - BELOW THE IMAGE */}
+          <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-primary-600 transition-colors">
+            {supplier.name}
+          </h3>
+
+          {/* Rating and Location Row */}
+          <div className={`flex items-center justify-between ${supplierThemes.length > 0 || supplier.bookingCount ? 'mb-3' : 'mb-4'}`}>
+            <div className="flex items-center space-x-1">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-semibold text-gray-900 text-sm">{supplier.rating}</span>
+              <span className="text-xs text-gray-600">({supplier.reviewCount})</span>
+            </div>
+            <div className="flex items-center space-x-1 text-gray-600">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm truncate">{supplier.location}</span>
+            </div>
+          </div>
+
+          {/* Theme Badges Section - only show if themes exist */}
+          {supplierThemes.length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                Available Themes
               </div>
-              {supplier.bookingCount && (
-                <>
-                  <span className="text-xs text-gray-500">•</span>
-                  <span className="text-xs text-gray-600">{supplier.bookingCount} bookings</span>
-                </>
-              )}
-            </div>
-
-            {/* Location */}
-            <div className="flex items-center space-x-1 mb-3">
-              <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 truncate">{supplier.location}</span>
-            </div>
-
-            {/* Supplier Name */}
-            <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-primary-600 transition-colors">
-              {supplier.name}
-            </h3>
-
-            {/* Theme Badges Section */}
-            {supplierThemes.length > 0 && (
-              <div className="space-y-2 mb-4">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Available Themes
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {visibleThemes.map((theme) => {
-                    const isHighlighted = selectedThemes.includes(theme.id);
-                    return (
-                      <div
-                        key={theme.id}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all ${
-                          isHighlighted 
-                            ? 'bg-primary-100 text-primary-800 border border-primary-300 shadow-sm' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <div className={`w-3 h-3 ${theme.color} rounded-full flex items-center justify-center text-white text-[10px]`}>
-                          {typeof theme.icon === 'string' ? theme.icon : theme.icon}
-                        </div>
-                        <span>{theme.name}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {visibleThemes.map((theme) => {
+                  const isHighlighted = selectedThemes.includes(theme.id);
+                  return (
+                    <div
+                      key={theme.id}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all ${
+                        isHighlighted 
+                          ? 'bg-primary-100 text-primary-800 border border-primary-300 shadow-sm' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <div className={`w-3 h-3 ${theme.color} rounded-full flex items-center justify-center text-white text-[10px]`}>
+                        {typeof theme.icon === 'string' ? theme.icon : theme.icon}
                       </div>
-                    );
-                  })}
-                  
-                  {remainingCount > 0 && (
-                    <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                      +{remainingCount} more
+                      <span>{theme.name}</span>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
+                
+                {remainingCount > 0 && (
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    +{remainingCount} more
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Price and Action */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-bold text-gray-900">
-                  from £{supplier.priceFrom}
-                </div>
-                <div className="text-sm text-gray-600">{supplier.priceUnit}</div>
-              </div>
-              <Button 
-                size="sm"
-                className="bg-primary-500 hover:bg-primary-600 text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSupplierClick?.(supplier.id);
-                }}
-              >
-                View Details
-              </Button>
             </div>
+          )}
+
+          {/* Booking Count if available */}
+          {supplier.bookingCount && (
+            <div className="flex items-center justify-center mb-4">
+              <div className="flex items-center gap-1 text-gray-600 text-sm">
+                <Calendar className="w-4 h-4" />
+                <span>{supplier.bookingCount} bookings</span>
+              </div>
+            </div>
+          )}
+
+          {/* Action Button - no conditional margin needed now */}
+          <Button 
+            className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white shadow-lg"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSupplierClick?.(supplier.id);
+            }}
+            size="lg"
+          >
+            View Details
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+// Updated skeleton with title below image
+const SkeletonSupplierCard = () => (
+  <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl">
+    <CardContent className="p-0 relative">
+      <div className="relative w-full h-48">
+        <Skeleton className="w-full h-full" />
+        <div className="absolute top-3 left-3 right-3 flex items-start justify-between z-10">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-14 rounded-full" />
           </div>
-        </CardContent>
-      </Card>
-    );
-  };
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+        <div className="absolute bottom-3 right-3 z-10">
+          <Skeleton className="h-12 w-16 rounded-lg" />
+        </div>
+      </div>
+      <div className="p-4">
+        <Skeleton className="h-6 w-3/4 mb-3" />
+        <div className="flex items-center justify-between mb-3">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="mb-4">
+          <Skeleton className="h-3 w-24 mb-2" />
+          <div className="flex gap-1">
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </div>
+        </div>
+        <Skeleton className="h-10 w-full rounded" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 
   // Handle empty state
   if (!isInitialLoading && totalSuppliers === 0) {
@@ -294,7 +308,6 @@ const LoadMoreSuppliersSection = ({
   return (
     <>
      
-
       {/* Supplier Cards Grid */}
       <div className="px-4 py-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">

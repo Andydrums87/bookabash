@@ -84,7 +84,7 @@ export function RecommendedAddonsWrapper({
 }
 
 // Updated Addons Section - Works with both dashboard types  
-export function AddonsSectionWrapper({ className = "" }) {
+export function AddonsSectionWrapper({ className = "", suppliers }) {
   const { addons, removeAddon: contextRemoveAddon } = useAddonContext()
   
   const handleRemoveAddon = async (addonId) => {
@@ -106,6 +106,7 @@ export function AddonsSectionWrapper({ className = "" }) {
     <AddonsSection 
       addons={addons}
       handleRemoveAddon={handleRemoveAddon}
+      suppliers={suppliers} // NEW: Pass suppliers here
       className={className}
     />
   )

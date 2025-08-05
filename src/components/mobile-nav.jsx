@@ -14,6 +14,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
     { href: "/browse", label: "Snap Suppliers" },
     { href: "/dashboard", label: "My Snapboard" },
     { href: "/blog", label: "Snapspiration" },
+    { href: "/favorites", label: "My Favorites" },
   ]
 
   useEffect(() => {

@@ -27,8 +27,7 @@ import MobileBudgetBar from "../components/MobileBudgetBar"
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
-import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
-import SupplierSelectionModal from "@/components/supplier-selection-modal"
+
 
 export default function DatabaseDashboard() {
   const router = useRouter()
@@ -36,8 +35,9 @@ export default function DatabaseDashboard() {
   const { navigateWithContext } = useContextualNavigation()
 
   const [isUpdating, setIsUpdating] = useState(false)
+  const [hasCreatedInvites, setHasCreatedInvites] = useState(false)
 
-  
+
 
  const {
   partyData,
@@ -55,6 +55,9 @@ export default function DatabaseDashboard() {
   handlePartyDetailsUpdate
 } = usePartyData()
 
+
+
+  // Budget management
 const {
   tempBudget,
   setTempBudget,
@@ -64,6 +67,8 @@ const {
   setShowAdvancedControls,
   updateSuppliersForBudget
 } = useBudgetManager(totalCost, isUpdating, setIsUpdating)
+
+console.log('🔍 DEBUG partyData.einvites:', JSON.stringify(partyData?.einvites, null, 2))
 
   const {     
     partyDetails,     
@@ -184,6 +189,7 @@ const {
               onPaymentReady={handlePaymentReady}
               onCreateInvites={handleCreateInvites}
               partyDetails={partyDetails}
+              hasCreatedInvites={partyData?.einvites?.status === 'completed'}
             />
 
             {/* Add-ons and Recommendations */}

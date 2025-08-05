@@ -1,11 +1,9 @@
 "use client"
-
+import { useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Plus, X, Clock, Users, Star } from "lucide-react"
 import { useState } from "react"
-
-
 
 const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -90,7 +88,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
   return (
     <>
       <div
-        className={`bg-white rounded-3xl p-4 pt-0 flex flex-col text-center shadow-lg transition-all duration-300 relative overflow-hidden group ${
+        className={`bg-white rounded-3xl p-3 sm:p-4 pt-0 flex flex-col text-center shadow-lg transition-all duration-300 relative overflow-hidden group ${
           isInPlanPackage 
             ? "ring-2 ring-green-500 transform scale-[1.02] cursor-pointer" 
             : isSelected 
@@ -111,39 +109,40 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
-
-                   
-<div
-                          className="relative w-70 h-70 md:h-[300px] md:w-full mask-image mx-auto mt-5 mb-2"
-                          style={{
-                            WebkitMaskImage: 'url("/image.svg")',
-                            WebkitMaskRepeat: 'no-repeat',
-                            WebkitMaskSize: 'contain',
-                            WebkitMaskPosition: 'center',
-                            maskImage: 'url("/image.svg")',
-                            maskRepeat: 'no-repeat',
-                            maskSize: 'contain',
-                            maskPosition: 'center',
-                          }}
-                        >
-                          <Image
-                            src={
-                              pkg.image || pkg.imageUrl || "/placeholder.png"
-                            }
-                            alt={pkg.name || "package image"}
-                            fill
-                                className="object-cover group-hover:brightness-110 transition-all duration-300 "
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          />
-                        </div>
+        {/* MOBILE OPTIMIZED IMAGE - Much smaller on mobile */}
+        <div
+          className="relative w-24 h-24 sm:w-32 sm:h-32 md:h-[200px] md:w-full mask-image mx-auto mt-3 sm:mt-5 mb-2 sm:mb-3"
+          style={{
+            WebkitMaskImage: 'url("/image.svg")',
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskSize: 'contain',
+            WebkitMaskPosition: 'center',
+            maskImage: 'url("/image.svg")',
+            maskRepeat: 'no-repeat',
+            maskSize: 'contain',
+            maskPosition: 'center',
+          }}
+        >
+          <Image
+            src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+            alt={pkg.name || "package image"}
+            fill
+            className="object-cover group-hover:brightness-110 transition-all duration-300"
+            sizes="(max-width: 640px) 96px, (max-width: 768px) 128px, 200px"
+          />
+        </div>
        
+        {/* MOBILE OPTIMIZED TITLE - Smaller font on mobile */}
+        <h3 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 truncate mb-1 px-1 sm:px-2 group-hover:text-gray-900 transition-colors duration-200">
+          {pkg.name}
+        </h3>
         
-        <h3 className="font-bold text-xl text-gray-800 truncate mb-1 px-2 group-hover:text-gray-900 transition-colors duration-200">{pkg.name}</h3>
-        
-        {/* Enhanced pricing and duration info */}
-        <div className="mb-4">
-          <p className="text-lg font-bold text-primary group-hover:text-primary transition-colors duration-200">£{pkg.price}</p>
-          <div className="flex items-center justify-center gap-3 text-sm text-gray-500 mt-1">
+        {/* MOBILE OPTIMIZED PRICING - Smaller on mobile */}
+        <div className="mb-2 sm:mb-4">
+          <p className="text-base sm:text-lg font-bold text-primary group-hover:text-primary transition-colors duration-200">
+            £{pkg.price}
+          </p>
+          <div className="flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 mt-1">
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               <span>{pkg.duration}</span>
@@ -152,39 +151,32 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
           </div>
         </div>
 
-        {/* Short description preview */}
-        {/* <div className="mb-4 px-2 flex-1">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            {pkg.description?.split('\n')[0]?.replace(/👑|📚|🎉|📸|🎂|⏰|✨/g, '').trim()}
-          </p>
-        </div> */}
-
-        {/* Enhanced features display */}
-        <div className="flex flex-wrap justify-center items-center gap-2 mb-4 px-2">
-          {pkg.whatsIncluded?.slice(0, 2).map((feature, i) => (
-            <span key={i} className="bg-[#fff0ee] text-gray-900 text-xs font-medium px-2.5 py-1 rounded-full group-hover:bg-[#ffebe8] group-hover:scale-105 transition-all duration-200">
-              {feature}
+        {/* MOBILE OPTIMIZED FEATURES - Fewer features shown on mobile */}
+        <div className="flex flex-wrap justify-center items-center gap-1 sm:gap-2 mb-2 sm:mb-4 px-1 sm:px-2">
+          {pkg.whatsIncluded?.slice(0, window.innerWidth < 640 ? 1 : 2).map((feature, i) => (
+            <span key={i} className="bg-[#fff0ee] text-gray-900 text-xs font-medium px-2 sm:px-2.5 py-1 rounded-full group-hover:bg-[#ffebe8] group-hover:scale-105 transition-all duration-200">
+              {feature.length > 15 && window.innerWidth < 640 ? `${feature.substring(0, 12)}...` : feature}
             </span>
           ))}
-          {pkg.whatsIncluded?.length > 2 && (
-            <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1 rounded-full">
-              +{pkg.whatsIncluded.length - 2} more
+          {pkg.whatsIncluded?.length > (window.innerWidth < 640 ? 1 : 2) && (
+            <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 sm:px-2.5 py-1 rounded-full">
+              +{pkg.whatsIncluded.length - (window.innerWidth < 640 ? 1 : 2)} more
             </span>
           )}
         </div>
         
-        {/* Updated button logic */}
+        {/* MOBILE OPTIMIZED BUTTONS - Smaller padding on mobile */}
         {isInPlanPackage ? (
-          <div className="mt-auto space-y-2">
+          <div className="mt-auto space-y-1 sm:space-y-2">
             <Button
-              className="w-full py-3 rounded-xl text-base font-semibold bg-green-500 hover:bg-green-500 text-white cursor-not-allowed"
+              className="w-full py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold bg-green-500 hover:bg-green-500 text-white cursor-not-allowed"
               disabled={true}
             >
-              <CheckCircle className="w-4 h-4 mr-2" />
+              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               In Plan
             </Button>
             <button 
-              className="w-full py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              className="w-full py-1 sm:py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 transition-colors"
               onClick={(e) => {
                 e.stopPropagation()
                 setShowModal(true)
@@ -194,9 +186,9 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
             </button>
           </div>
         ) : isSelected ? (
-          <div className="mt-auto space-y-2">
+          <div className="mt-auto space-y-1 sm:space-y-2">
             <Button
-              className={`w-full py-3 rounded-xl text-base font-semibold ${addToPlanButtonState.className}`}
+              className={`w-full py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold ${addToPlanButtonState.className}`}
               onClick={(e) => {
                 e.stopPropagation()
                 onAddToPlan()
@@ -206,7 +198,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
               {addToPlanButtonState.text}
             </Button>
             <button 
-              className="w-full py-2 text-sm text-gray-600 transition-colors cursor-pointer hover:text-[hsl(var(--primary-700))]"
+              className="w-full py-1 sm:py-2 text-xs sm:text-sm text-gray-600 transition-colors cursor-pointer hover:text-[hsl(var(--primary-700))]"
               onClick={(e) => {
                 e.stopPropagation()
                 setShowModal(true)
@@ -216,10 +208,10 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
             </button>
           </div>
         ) : (
-          <div className="mt-auto space-y-2">
+          <div className="mt-auto space-y-1 sm:space-y-2">
             <Button
               variant="default"
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-base font-semibold group-hover:bg-[hsl(var(--primary-500))] group-hover:text-white transform group-hover:scale-100 transition-all duration-300"
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold group-hover:bg-[hsl(var(--primary-500))] group-hover:text-white transform group-hover:scale-100 transition-all duration-300"
               onClick={(e) => {
                 e.stopPropagation()
                 onSelect(pkg.id)
@@ -228,7 +220,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
               Select Package
             </Button>
             <button 
-              className="w-full py-2 text-sm text-gray-600 hover:text-[hsl(var(--primary-500))] transition-colors"
+              className="w-full py-1 sm:py-2 text-xs sm:text-sm text-gray-600 hover:text-[hsl(var(--primary-500))] transition-colors"
               onClick={(e) => {
                 e.stopPropagation()
                 setShowModal(true)
@@ -239,28 +231,28 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
           </div>
         )}
         
-        {/* Checkmark for selected/in-plan packages */}
+        {/* MOBILE OPTIMIZED CHECKMARK - Smaller on mobile */}
         {(isSelected || isInPlanPackage) && (
-          <div className={`absolute top-3 right-3 rounded-full p-1.5 shadow-md ${
+          <div className={`absolute top-2 sm:top-3 right-2 sm:right-3 rounded-full p-1 sm:p-1.5 shadow-md ${
             isInPlanPackage ? 'bg-green-500' : 'bg-primary'
           } text-white transform transition-all duration-300 ${
             !isInPlanPackage ? 'group-hover:scale-110 group-hover:rotate-12' : ''
           }`}>
-            <CheckCircle size={18} />
+            <CheckCircle size={14} className="sm:w-[18px] sm:h-[18px]" />
           </div>
         )}
 
-        {/* Small X icon for deselecting - only show on selected (not in-plan) packages */}
+        {/* MOBILE OPTIMIZED X BUTTON - Smaller on mobile */}
         {isSelected && !isInPlanPackage && (
           <button
-            className="absolute top-3 left-3 bg-gray-500 hover:bg-red-500 text-white rounded-full p-1 shadow-md transition-all duration-200 opacity-80 hover:opacity-100 transform hover:scale-110"
+            className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-gray-500 hover:bg-red-500 text-white rounded-full p-1 shadow-md transition-all duration-200 opacity-80 hover:opacity-100 transform hover:scale-110"
             onClick={(e) => {
               e.stopPropagation()
               onSelect(null)
             }}
             title="Deselect package"
           >
-            <X size={14} />
+            <X size={12} className="sm:w-[14px] sm:h-[14px]" />
           </button>
         )}
       </div>
@@ -288,8 +280,6 @@ export default function SupplierPackages({
     return null
   }
 
-
-  
   // Check if supplier is already in party plan
   const partyDetails = getSupplierInPartyDetails()
   
@@ -298,8 +288,9 @@ export default function SupplierPackages({
 
   return (
     <div className="px-4 md:px-0">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose a Package</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-8">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Choose a Package</h2>
+      {/* MOBILE OPTIMIZED GRID - Smaller gap on mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
         {packagesData.map((pkg) => {
           const isInPlanPackage = partyDetails.inParty && partyDetails.currentPackage === pkg.id;
           const isSelected = pkg.id === selectedPackageId && !isInPlanPackage;

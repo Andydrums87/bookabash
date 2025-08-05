@@ -392,11 +392,11 @@ const getFullName = () => {
                 <div className="md:hidden">
                   <button
                     onClick={() => setIsBudgetExpanded(!isBudgetExpanded)}
-                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-2 hover:bg-white/20 transition-all duration-300"
+                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-1 py-1 hover:bg-white/20 transition-all duration-300"
                   >
-                    <div className="relative w-6 h-6">
+                    <div className="relative w-3 h-6">
                       {/* Budget progress ring */}
-                      <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
+                      {/* <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
                         <circle
                           cx="12"
                           cy="12"
@@ -415,10 +415,10 @@ const getFullName = () => {
                           strokeDasharray={`${(totalSpent / tempBudget) * 62.83} 62.83`}
                           className="transition-all duration-500"
                         />
-                      </svg>
+                      </svg> */}
                     </div>
-                    <div className="text-xs">
-                      <div className="text-white/70 font-medium">Budget</div>
+                    <div className="text-xs ">
+                      {/* <div className="text-white/70 font-medium">Budget</div> */}
                       <div className="font-semibold">£{totalSpent}/£{tempBudget}</div>
                     </div>
                     {isBudgetExpanded ? (

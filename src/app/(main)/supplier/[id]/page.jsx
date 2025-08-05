@@ -29,6 +29,9 @@ import SupplierQuickStats from "@/components/supplier/supplier-quick-stats"
 import SupplierAvailabilityCalendar from "@/components/supplier/supplier-availability-calendar"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import AboutMeComponent from "@/components/supplier/about-me"
+import PendingEnquiryModal from "@/components/supplier/PendingEnquiryModal"
+
+
 
 const SelectedDateBanner = ({ selectedDate, currentMonth, onClearDate }) => {
   if (!selectedDate || !currentMonth) return null
@@ -156,8 +159,10 @@ export default function SupplierProfilePage({ params }) {
   const [hasValidPlan, setHasValidPlan] = useState(false)
   const [finalPackageData, setFinalPackageData] = useState(null)
   const [progress, setProgress] = useState(0)
+  const [showPendingEnquiryModal, setShowPendingEnquiryModal] = useState(false)
 
   const id = useMemo(() => resolvedParams.id, [resolvedParams.id])
+
   
   // Hooks
   const { supplier: backendSupplier, loading: supplierLoading, error: supplierError } = useSupplier(id)
@@ -231,6 +236,49 @@ export default function SupplierProfilePage({ params }) {
       owner: backendSupplier?.owner,
     }
   }, [backendSupplier])
+
+
+  const hasEnquiriesPending = useCallback(() => {
+    try {
+      // Check localStorage for party plan data
+      const partyPlan = localStorage.getItem('user_party_plan')
+      if (!partyPlan) return false
+      
+      const parsed = JSON.parse(partyPlan)
+      
+      // Check if any suppliers have pending enquiries
+      // This assumes you store enquiry status in your party plan
+      // You might need to adjust this based on your data structure
+      const supplierCategories = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations']
+      
+      return supplierCategories.some(category => {
+        const supplier = parsed[category]
+        return supplier && supplier.status === 'pending'
+      })
+    } catch (error) {
+      console.error('Error checking pending enquiries:', error)
+      return false
+    }
+  }, [])
+
+  // Get count of pending enquiries for display
+const getPendingEnquiriesCount = useCallback(() => {
+  try {
+    const partyPlan = localStorage.getItem('user_party_plan')
+    if (!partyPlan) return 0
+    
+    const parsed = JSON.parse(partyPlan)
+    const supplierCategories = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations']
+    
+    return supplierCategories.filter(category => {
+      const supplier = parsed[category]
+      return supplier && supplier.status === 'pending'
+    }).length
+  } catch (error) {
+    return 0
+  }
+}, [])
+
 
   // Fix the party plan validation with stable reference
   useEffect(() => {
@@ -549,11 +597,18 @@ export default function SupplierProfilePage({ params }) {
     }
   }, [packages, selectedPackageId, supplier, router])
 
+
+
   // Other callback functions with proper dependencies
   const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
     if (!supplier || !selectedPackageId) {
       setNotification({ type: "error", message: "Please select a package first." })
       setTimeout(() => setNotification(null), 3000)
+      return
+    }
+
+    if (hasEnquiriesPending()) {
+      setShowPendingEnquiryModal(true)
       return
     }
 
@@ -715,7 +770,7 @@ export default function SupplierProfilePage({ params }) {
       setSelectedAddons([])
       setFinalPackageData(null)
     }
-  }, [supplier, selectedPackageId, hasValidPartyPlan, selectedDate, packages, getSupplierInPartyDetails, addSupplier, addAddon, removeAddon, backendSupplier, navigationContext, navigateWithContext, router])
+  }, [supplier, hasEnquiriesPending, selectedPackageId, hasValidPartyPlan, selectedDate, packages, getSupplierInPartyDetails, addSupplier, addAddon, removeAddon, backendSupplier, navigationContext, navigateWithContext, router])
 
   const handleAddonConfirm = useCallback((addonData) => {
     setSelectedAddons(addonData.addons)
@@ -867,6 +922,8 @@ export default function SupplierProfilePage({ params }) {
   const dashboardContext = isFromDashboard()
   const userPartyDate = getPartyDate()
 
+
+
   return (
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
       <NotificationPopup notification={notification} />
@@ -950,24 +1007,35 @@ export default function SupplierProfilePage({ params }) {
         theme={partyPlan?.theme || "default"}
         progress={progress}
       />
-      
-      <MobileBookingBar 
-  selectedPackage={packages.find(pkg => pkg.id === selectedPackageId)}
-  supplier={supplier} // Pass supplier data for availability logic
+// In your SupplierProfilePage component, update the MobileBookingBar usage:
+
+<MobileBookingBar 
+  selectedPackage={packages.find(pkg => pkg.id === selectedPackageId) || packages[0] || null}
+  supplier={supplier}
   onAddToPlan={handleAddToPlan}
-  addToPlanButtonState={getAddToPartyButtonState(selectedPackageId)} // Pass the same button state logic
-  selectedDate={selectedDate} // Share the same selected date state
-  currentMonth={currentMonth} // Share the same current month state
-  setSelectedDate={setSelectedDate} // Allow mobile to update the main selected date
-  setCurrentMonth={setCurrentMonth} // Allow mobile to update the main current month
+  addToPlanButtonState={getAddToPartyButtonState(selectedPackageId)}
+  selectedDate={selectedDate}
+  currentMonth={currentMonth}
+  setSelectedDate={setSelectedDate}
+  setCurrentMonth={setCurrentMonth}
+  hasValidPartyPlan={hasValidPartyPlan}
+  isFromDashboard={dashboardContext}
+  partyDate={userPartyDate}
   onSaveForLater={(data) => {
-    console.log('Saving for later:', data);
     setNotification({ 
       type: "success", 
       message: `${supplier.name} saved for later!` 
     });
     setTimeout(() => setNotification(null), 3000);
   }}
+  showAddonModal={showAddonModal}
+  setShowAddonModal={setShowAddonModal}
+  onAddonConfirm={handleAddonConfirm}
+  isAddingToPlan={isAddingToPlan}
+  // NEW: Add these props for pending enquiry functionality
+  hasEnquiriesPending={hasEnquiriesPending}
+  onShowPendingEnquiryModal={() => setShowPendingEnquiryModal(true)}
+  pendingCount={getPendingEnquiriesCount()}
 />
 
       {/* Only render modal when it should be open AND we have valid data */}
@@ -985,6 +1053,17 @@ export default function SupplierProfilePage({ params }) {
           preSelectedDate={getSelectedCalendarDate()} 
         />
       )}
+<PendingEnquiryModal
+  isOpen={showPendingEnquiryModal}
+  onClose={() => setShowPendingEnquiryModal(false)}
+  supplier={supplier} // Pass the full supplier object instead of just the name
+  pendingCount={getPendingEnquiriesCount()}
+  estimatedResponseTime="24 hours"
+  onViewDashboard={() => {
+    setShowPendingEnquiryModal(false)
+    router.push('/dashboard')
+  }}
+/>
     </div>
   )
 }

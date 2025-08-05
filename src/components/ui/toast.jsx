@@ -11,28 +11,28 @@ const ToastContext = createContext()
 const toastTypes = {
   success: {
     icon: CheckCircle,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]',
+    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]',
     borderColor: 'border-[hsl(var(--primary-300))]',
     iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-[hsl(var(--primary-700))]',
+    iconColor: 'text-primary-500',
     textColor: 'text-white',
     shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
   },
   error: {
     icon: AlertCircle,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]',
+    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]',
     borderColor: 'border-[hsl(var(--primary-300))]',
     iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-[hsl(var(--primary-700))]',
+    iconColor: 'text-primary-500',
     textColor: 'text-white',
     shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
   },
   warning: {
     icon: AlertTriangle,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]',
+    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]',
     borderColor: 'border-[hsl(var(--primary-300))]',
     iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-[hsl(var(--primary-700))]',
+    iconColor: 'text-primary-500',
     textColor: 'text-white',
     shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
   },
@@ -41,7 +41,7 @@ const toastTypes = {
     bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]',
     borderColor: 'border-[hsl(var(--primary-300))]',
     iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-[hsl(var(--primary-700))]',
+    iconColor: 'text-primary-500',
     textColor: 'text-white',
     shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
   }
@@ -61,7 +61,7 @@ function Toast({ toast, onRemove }) {
       backdrop-blur-sm max-w-sm min-w-[320px]
     `}>
       {/* Inner content with white background */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl p-4 flex items-start gap-3">
+      <div className="bg-primary-400 backdrop-blur-sm rounded-xl p-4 flex items-start gap-3">
         {/* Icon with colored background */}
         <div className={`${config.iconBg} p-2 rounded-lg flex-shrink-0 border border-${config.borderColor}`}>
           <Icon className={`w-5 h-5 ${config.iconColor}`} />
@@ -70,11 +70,11 @@ function Toast({ toast, onRemove }) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {toast.title && (
-            <h4 className="font-bold text-gray-900 text-sm mb-1 leading-tight">
+            <h4 className="font-bold text-gray-700 text-sm mb-1 leading-tight">
               {toast.title}
             </h4>
           )}
-          <p className={`text-sm text-gray-700 leading-relaxed ${toast.title ? '' : 'font-medium'}`}>
+          <p className={`text-sm text-white leading-relaxed ${toast.title ? '' : 'font-medium'}`}>
             {toast.message}
           </p>
         </div>
@@ -82,7 +82,7 @@ function Toast({ toast, onRemove }) {
         {/* Close button */}
         <button 
           onClick={() => onRemove(toast.id)}
-          className="text-gray-400 hover:text-gray-600 ml-2 flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          className="text-white cursor-pointer hover:text-gray-600 ml-2 flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

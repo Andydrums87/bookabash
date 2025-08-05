@@ -1,15 +1,15 @@
-// Updated MobileSingleScrollSuppliers component with e-invites section removed
+// Enhanced MobileSingleScrollSuppliers with Party Tasks Navigation
 
 "use client"
 
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Sparkles } from "lucide-react"
+import { Plus, Sparkles, Mail, Users, Gift } from "lucide-react"
 import Image from "next/image"
 import MobileSupplierCard from "../components/Cards/MobileSupplierCard"
 
-// Remove the e-invites section from supplierSections
+// Keep your existing supplier sections
 const supplierSections = [
   {
     id: "essentials",
@@ -43,7 +43,28 @@ const supplierSections = [
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
     types: ["decorations", "balloons"],
   },
-  // Removed the e-invites section entirely
+]
+
+// Party tasks that appear in the navigation
+const partyTasks = [
+  {
+    id: "einvites",
+    title: "E-Invites",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754405084/party-invites/m02effvlanaxupepzsza.png", // Using working supplier image as fallback
+    cardId: "einvites-card"
+  },
+  {
+    id: "rsvps", 
+    title: "RSVPs",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753986373/jwq8wmgxqqfue2zsophq.jpg",
+    cardId: "rsvp-card"
+  },
+  {
+    id: "gifts",
+    title: "Gifts",
+    image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/okpcftsuni04yokhex1l.jpg",
+    cardId: "gift-registry-card"
+  }
 ]
 
 function SectionHeader({ section }) {
@@ -61,7 +82,7 @@ function SectionHeader({ section }) {
         </div>
         <div className="flex flex-col">
           <p>{section.title}</p>    
-        <p className="text-gray-400 text-base mb-4">{section.subtitle}</p>
+          <p className="text-gray-400 text-base mb-4">{section.subtitle}</p>
         </div>
       </h2>
     </div>
@@ -82,7 +103,10 @@ export default function MobileSingleScrollSuppliers({
   isPaymentConfirmed = false,
   enquiries = [],
   handleAddSupplier,
-  getEnquiryTimestamp
+  getEnquiryTimestamp,
+  // New props for party tasks
+  partyTasksStatus = {},
+  showPartyTasks = true
 }) {
   const [activeSection, setActiveSection] = useState(0);
 
@@ -91,22 +115,18 @@ export default function MobileSingleScrollSuppliers({
 
   // Filter suppliers based on phase (exclude einvites from main suppliers)
   const getVisibleSuppliers = () => {
-    // Filter out einvites from all suppliers
     const filteredSuppliers = Object.fromEntries(
       Object.entries(suppliers).filter(([type]) => type !== 'einvites')
     );
 
     if (hasEnquiriesPending) {
-      // Only show suppliers with enquiries sent (einvites already excluded)
       return Object.fromEntries(
         Object.entries(filteredSuppliers).filter(([type, supplier]) => {
-          // Only include suppliers that have both a supplier AND an enquiry status of 'pending'
           return supplier && getEnquiryStatus && getEnquiryStatus(type) === 'pending';
         })
       );
     }
     
-    // Show all suppliers except einvites (normal state)
     return filteredSuppliers;
   };
 
@@ -120,13 +140,27 @@ export default function MobileSingleScrollSuppliers({
     }
   };
 
+  // Function to scroll to individual party task cards
+  const scrollToPartyTask = (cardId) => {
+    const element = document.getElementById(cardId);
+    if (element) {
+      const offset = 80; // Adjust for header height
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+      window.scrollTo({
+        top: elementPosition - offset,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div className="w-full">
-      {/* Improved horizontal navigation inspired by The Clubroom */}
+      {/* Enhanced horizontal navigation with party tasks */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-100 mb-6">
-        {/* Navigation container with proper scrolling */}
         <div className="px-3 py-5">
           <div className="flex gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+            
+            {/* Existing supplier sections */}
             {supplierSections.map((section, index) => {
               const sectionSuppliers = section.types.map(type => ({
                 type,
@@ -142,7 +176,6 @@ export default function MobileSingleScrollSuppliers({
                 return null;
               }
 
-              // Hide sections with no visible suppliers during awaiting response phase
               if (hasEnquiriesPending && sectionSuppliers.length === 0) {
                 return null;
               }
@@ -160,9 +193,7 @@ export default function MobileSingleScrollSuppliers({
                   }`}
                   style={{ minWidth: '70px' }}
                 >
-                  {/* Circular container */}
                   <div className="flex flex-col items-center">
-                    {/* Main circle with image */}
                     <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-hidden relative ${
                       isActive 
                         ? 'shadow-lg ring-2 ring-orange-300' 
@@ -177,13 +208,11 @@ export default function MobileSingleScrollSuppliers({
                           isActive ? 'opacity-90' : ''
                         }`}
                       />
-                      {/* Overlay for active state */}
                       {isActive && (
                         <div className="absolute inset-0 bg-gradient-to-br from-orange-400/30 to-pink-400/30 rounded-full"></div>
                       )}
                     </div>
                     
-                    {/* Title */}
                     <div className="text-center">
                       <p className={`text-xs font-semibold leading-tight ${
                         isActive ? 'text-orange-700' : 'text-gray-700'
@@ -195,28 +224,92 @@ export default function MobileSingleScrollSuppliers({
                     </div>
                   </div>
                   
-                  {/* Completion indicator */}
                   {isComplete && (
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
                       <span className="text-white text-xs">✓</span>
                     </div>
                   )}
                   
-                  {/* Active indicator line */}
                   {isActive && (
                     <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full"></div>
                   )}
                 </button>
               );
             })}
+
+            {/* Divider between suppliers and party tasks */}
+            {showPartyTasks && (
+              <div className="flex-shrink-0 flex items-center justify-center w-8">
+                <div className="w-px h-12 bg-gray-300"></div>
+              </div>
+            )}
+
+            {/* Party Tasks Navigation Items */}
+            {showPartyTasks && partyTasks.map((task) => {
+              const isCompleted = partyTasksStatus[task.id]?.completed;
+              const count = partyTasksStatus[task.id]?.count || 0;
+              const hasActivity = partyTasksStatus[task.id]?.hasActivity;
+
+              return (
+                <button
+                  key={task.id}
+                  onClick={() => scrollToPartyTask(task.cardId)}
+                  className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
+                  style={{ minWidth: '70px' }}
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-hidden relative shadow-sm hover:shadow-md bg-gray-100">
+                      
+                      <Image
+                        src={task.image}
+                        alt={task.title}
+                        width={56}
+                        height={56}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          console.log(`Failed to load image for ${task.title}:`, task.image);
+                          // Fallback to a solid color background with text
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      
+                    
+                      {/* Status indicators */}
+                      {isCompleted && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <span className="text-white text-[8px] font-bold">✓</span>
+                        </div>
+                      )}
+                      
+                      {count > 0 && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <span className="text-white text-[10px] font-bold">{count}</span>
+                        </div>
+                      )}
+                      
+                      {/* Activity pulse for new activity */}
+                      {hasActivity && (
+                        <div className="absolute inset-0 bg-blue-200 rounded-full animate-ping opacity-30"></div>
+                      )}
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-xs font-semibold leading-tight text-gray-700">
+                        {task.title}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
           </div>
         </div>
         
-        {/* Optional: Add fade effect for scrollable area */}
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
       </div>
 
-      {/* Supplier Sections */}
+      {/* Existing Supplier Sections - unchanged */}
       <div className="space-y-8 px-4">
         {supplierSections.map((section) => {
           const sectionSuppliers = section.types.map(type => ({
@@ -233,23 +326,18 @@ export default function MobileSingleScrollSuppliers({
             return null;
           }
 
-          // Hide sections with no visible suppliers during awaiting response phase
           if (hasEnquiriesPending && sectionSuppliers.length === 0) {
             return null;
           }
           
-          const completedCount = sectionSuppliers.filter(({supplier}) => supplier).length;
-          const totalCount = sectionSuppliers.length;
-
           return (
             <div key={section.id} id={section.id} className="relative">
               <SectionHeader section={section} />
               
               <div className="space-y-4 mb-8">
                 {sectionSuppliers.map(({ type, supplier }) => {
-                  // Skip empty suppliers during awaiting response phase
                   if (hasEnquiriesPending && !supplier) {
-                    return null;
+                    return null
                   }
 
                   return (
@@ -265,7 +353,7 @@ export default function MobileSingleScrollSuppliers({
                       addons={addons}
                       handleRemoveAddon={handleRemoveAddon}
                       enquiryStatus={getEnquiryStatus ? getEnquiryStatus(type) : null}
-      enquirySentAt={getEnquiryTimestamp ? getEnquiryTimestamp(type) : null} 
+                      enquirySentAt={getEnquiryTimestamp ? getEnquiryTimestamp(type) : null} 
                       isSignedIn={isSignedIn}
                       enquiries={enquiries}
                       isPaymentConfirmed={isPaymentConfirmed}

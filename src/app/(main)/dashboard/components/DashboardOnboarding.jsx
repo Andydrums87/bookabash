@@ -137,27 +137,27 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     {
       id: "princess",
       name: "Princess",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753255939/yng0yzjqdd8y2osdgeyt.webp",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381349/iStock-1059655678_mfuiu6.jpg",
     },
     {
       id: "superhero",
       name: "Superhero",
-      image: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829350/jng4z1rdtb9mik2n6mp6.jpg",
     },
     {
       id: "dinosaur",
       name: "Dinosaur",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380783/iStock-1646650260_douzyr.jpg",
     },
     {
       id: "unicorn",
       name: "Unicorn",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381224/iStock-1385363961_iltnu7.jpg",
     },
     {
       id: "science",
       name: "Science",
-      image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380880/iStock-1603218889_xq4kqi.jpg",
     },
     {
       id: "spiderman",
@@ -172,7 +172,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     {
       id: "mermaid",
       name: "Mermaid",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380937/iStock-2201784646_cdvevq.jpg",
     },
     {
       id: "cars",
@@ -205,17 +205,17 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     {
       id: "pirate",
       name: "Pirate",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380995/iStock-2176668301_cstncj.jpg",
     },
     {
       id: "space",
       name: "Space",
-      image: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381070/iStock-684090490_smtflw.jpg",
     },
     {
       id: "jungle",
       name: "Jungle",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381160/iStock-1564856102_abqkpd.jpg",
     },
     {
       id: "football",
@@ -230,7 +230,7 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
     {
       id: "circus",
       name: "Circus",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
     },
     {
       id: "beach",
@@ -301,7 +301,10 @@ export default function DashboardOnboarding({ onFormSubmit, isSubmitting = false
             <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
           </div>
 
+
+
           <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-12 px-6 lg:px-12 py-8 sm:py-12">
+  
             {/* Enhanced Form Fields */}
             <div className="space-y-6">
               {/* Basic Details Grid - Improved Layout */}

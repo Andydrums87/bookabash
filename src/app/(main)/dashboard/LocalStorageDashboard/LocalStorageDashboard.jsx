@@ -44,7 +44,7 @@ export default function LocalStorageDashboard() {
   // Router and search params
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { navigateWithContext } = useContextualNavigation()
+  const { navigateWithContext, getStoredModalState, clearModalState } = useContextualNavigation()
 
   // Refs
   const welcomePopupShownRef = useRef(false)
@@ -55,10 +55,17 @@ export default function LocalStorageDashboard() {
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
 
+  // NEW: Modal restoration state
+  const [showSupplierModal, setShowSupplierModal] = useState(false)
+  const [modalConfig, setModalConfig] = useState({
+    category: '',
+    theme: '',
+    date: null,
+    filters: {}
+  })
 
-
-   // Add handler for addon clicks
-   const handleAddonClick = (addon) => {
+  // Add handler for addon clicks
+  const handleAddonClick = (addon) => {
     console.log('🎯 Addon clicked:', addon)
     setSelectedAddon(addon)
     setIsAddonModalOpen(true)
@@ -74,7 +81,6 @@ export default function LocalStorageDashboard() {
     // Modal will close itself after showing success state
   }
 
-
   // Use your existing party plan hook
   const {
     partyPlan, 
@@ -86,7 +92,6 @@ export default function LocalStorageDashboard() {
     addAddon,
     removeAddon,
     hasAddon
-    
   } = usePartyPlan()
 
   // Other hooks
@@ -113,11 +118,11 @@ export default function LocalStorageDashboard() {
     setLoadingCards,
     suppliersToDelete,
     showDeleteConfirm,
-    selectedSupplierModal,
+    selectedSupplierModal, // This might be the old modal state
     getSupplierDisplayName,
-    openSupplierModal,
-    closeSupplierModal,
-    handleSupplierSelection,
+    openSupplierModal: originalOpenSupplierModal, // Rename to avoid conflict
+    closeSupplierModal: originalCloseSupplierModal,
+    handleSupplierSelection: originalHandleSupplierSelection,
     handleDeleteSupplier,
     confirmDeleteSupplier,
     cancelDeleteSupplier
@@ -133,8 +138,92 @@ export default function LocalStorageDashboard() {
     partyBags: partyPlan.partyBags || null,
     decorations: partyPlan.decorations || null,
     balloons: partyPlan.balloons || null,
-
   }
+
+  // NEW: Enhanced modal handlers
+  const openSupplierModal = (category, theme = 'superhero') => {
+    console.log('🔓 Opening supplier modal:', { category, theme })
+    
+    setModalConfig({
+      category,
+      theme,
+      date: partyDetails?.date,
+      filters: {}
+    })
+    setShowSupplierModal(true)
+  }
+
+  const closeSupplierModal = () => {
+    console.log('🔒 Closing supplier modal')
+    setShowSupplierModal(false)
+    clearModalState()
+  }
+
+  const handleSupplierSelection = (supplier) => {
+    console.log('✅ Supplier selected:', supplier)
+    // Handle the supplier selection logic here
+    closeSupplierModal()
+  }
+
+  // NEW: Modal restoration effect
+  useEffect(() => {
+    const shouldRestoreModal = searchParams.get('restoreModal')
+    
+    if (shouldRestoreModal) {
+      const storedState = getStoredModalState()
+      
+      if (storedState) {
+        console.log('🔄 Restoring modal state:', storedState)
+        
+        setModalConfig({
+          category: storedState.category,
+          theme: storedState.theme,
+          date: storedState.date,
+          filters: storedState.filters || {}
+        })
+        
+        setShowSupplierModal(true)
+        
+        setTimeout(() => {
+          if (storedState.scrollPosition) {
+            window.scrollTo(0, storedState.scrollPosition)
+          }
+        }, 100)
+        
+        clearModalState()
+        window.history.replaceState({}, '', '/dashboard')
+      }
+    }
+  }, [searchParams, getStoredModalState, clearModalState])
+
+  // NEW: Listen for custom modal restoration events
+  useEffect(() => {
+    const handleRestoreModal = (event) => {
+      const { detail: modalState } = event
+      
+      if (modalState) {
+        console.log('🎯 Restoring modal via custom event:', modalState)
+        
+        setModalConfig({
+          category: modalState.category,
+          theme: modalState.theme,
+          date: modalState.date,
+          filters: modalState.filters || {}
+        })
+        
+        setShowSupplierModal(true)
+        
+        setTimeout(() => {
+          if (modalState.scrollPosition) {
+            window.scrollTo(0, modalState.scrollPosition)
+          }
+        }, 100)
+      }
+    }
+
+    window.addEventListener('restoreModal', handleRestoreModal)
+    return () => window.removeEventListener('restoreModal', handleRestoreModal)
+  }, [])
 
   // Budget control props
   const budgetControlProps = {
@@ -222,139 +311,138 @@ export default function LocalStorageDashboard() {
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
       <AddonProvider
-      addAddon={handleAddAddon}
-      removeAddon={handleRemoveAddon}
-      hasAddon={hasAddon}
-      addons={addons}
-    >
-      <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
-        <PartyHeader 
-          theme={partyTheme} 
-          partyDetails={partyDetails}
-          onPartyDetailsChange={handlePartyDetailsUpdate}
-          isPaymentConfirmed={false} // Never confirmed for localStorage users
-          budgetControlProps={{
-            ...budgetControlProps,
-            getBudgetCategory // Make sure this is included
-          }}
-        />
+        addAddon={handleAddAddon}
+        removeAddon={handleRemoveAddon}
+        hasAddon={hasAddon}
+        addons={addons}
+      >
+        <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
+          <PartyHeader 
+            theme={partyTheme} 
+            partyDetails={partyDetails}
+            onPartyDetailsChange={handlePartyDetailsUpdate}
+            isPaymentConfirmed={false}
+            budgetControlProps={{
+              ...budgetControlProps,
+              getBudgetCategory
+            }}
+          />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
-          {/* Main Content */}
-          <main className="lg:col-span-2 space-y-8">
-          <div className="hidden md:flex justify-between mb-4 items-start">
-  {/* Left: Snappy + Heading */}
-  <div className="flex justfy-center">
-    <Image
-      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png" // make sure this is a cute waving/snappy-talking image
-      alt="Snappy the Alligator"
-      width={80}
-      height={80}
-      className="mt-1"
-    />
-    <div>
-      <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
-        Meet Your Party Team!
-      </h2>
-      <p className="text-sm md:text-base text-gray-600 mt-1">
-        Snappy's picked the best suppliers for your big day 
-      </p>
-    </div>
-  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
+            {/* Main Content */}
+            <main className="lg:col-span-2 space-y-8">
+              <div className="hidden md:flex justify-between mb-4 items-start">
+                {/* Left: Snappy + Heading */}
+                <div className="flex justfy-center">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
+                    alt="Snappy the Alligator"
+                    width={80}
+                    height={80}
+                    className="mt-1"
+                  />
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
+                      Meet Your Party Team!
+                    </h2>
+                    <p className="text-sm md:text-base text-gray-600 mt-1">
+                      Snappy's picked the best suppliers for your big day 
+                    </p>
+                  </div>
+                </div>
 
-  {/* Right: Add Supplier Button */}
-  <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
-    <Plus className="w-4 h-4" />
-    Add Supplier
-  </Button>
-</div>
+                {/* Right: Add Supplier Button */}
+                <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
+                  <Plus className="w-4 h-4" />
+                  Add Supplier
+                </Button>
+              </div>
 
+              {/* Desktop Supplier Grid */}
+              <div className="hidden md:grid md:grid-cols-3 gap-6">
+                {Object.entries(suppliers).map(([type, supplier]) => (
+                  <SupplierCard 
+                    key={type}
+                    type={type} 
+                    supplier={supplier}
+                    loadingCards={loadingCards}
+                    suppliersToDelete={suppliersToDelete}
+                    openSupplierModal={openSupplierModal} // Use the new enhanced function
+                    handleDeleteSupplier={handleDeleteSupplier}
+                    getSupplierDisplayName={getSupplierDisplayName}
+                    addons={addons}
+                    handleRemoveAddon={handleRemoveAddon}
+                    enquiryStatus={null}
+                    isSignedIn={false}
+                    isPaymentConfirmed={false}
+                    enquiries={[]}
+                  />
+                ))}
+              </div>
 
-            {/* Desktop Supplier Grid */}
-            <div className="hidden md:grid md:grid-cols-3 gap-6">
-              {Object.entries(suppliers).map(([type, supplier]) => (
-                <SupplierCard 
-                  key={type}
-                  type={type} 
-                  supplier={supplier}
+              {/* Mobile Supplier Tabs */}
+              <div className="md:hidden">
+                <MobileSingleScrollSuppliers
+                  suppliers={suppliers}
                   loadingCards={loadingCards}
                   suppliersToDelete={suppliersToDelete}
-                  openSupplierModal={openSupplierModal}
+                  openSupplierModal={openSupplierModal} // Use the new enhanced function
                   handleDeleteSupplier={handleDeleteSupplier}
                   getSupplierDisplayName={getSupplierDisplayName}
                   addons={addons}
                   handleRemoveAddon={handleRemoveAddon}
-                  enquiryStatus={null} // No enquiry status for localStorage users
-                  isSignedIn={false} // Never signed in for localStorage dashboard
+                  getEnquiryStatus={() => null}
+                  isSignedIn={false}
                   isPaymentConfirmed={false}
                   enquiries={[]}
+                  handleAddSupplier={handleAddSupplier}
                 />
-              ))}
-            </div>
+              </div>
 
-            {/* Mobile Supplier Tabs */}
-            <div className="md:hidden">
-  <MobileSingleScrollSuppliers
-    suppliers={suppliers}
-    loadingCards={loadingCards}
-    suppliersToDelete={suppliersToDelete}
-    openSupplierModal={openSupplierModal}
-    handleDeleteSupplier={handleDeleteSupplier}
-    getSupplierDisplayName={getSupplierDisplayName}
-    addons={addons}
-    handleRemoveAddon={handleRemoveAddon}
-    getEnquiryStatus={() => null} // No enquiry status for localStorage
-    isSignedIn={false}
-    isPaymentConfirmed={false}
-    enquiries={[]}
-    handleAddSupplier={handleAddSupplier}
-  />
-</div>
+              {/* Add-ons Section */}
+              <AddonsSectionWrapper suppliers={suppliers}  />
+              
+              {/* Recommended Add-ons */}
+              <div className="w-screen pr-6 md:pr-20">
+                <RecommendedAddonsWrapper 
+                  context="dashboard" 
+                  maxItems={4}
+                  onAddonClick={handleAddonClick}
+                />
+              </div>
 
-           {/* Add-ons Section */}
-<AddonsSectionWrapper />
-{/* Recommended Add-ons */}
-<div className="w-screen pr-6 md:pr-20">
-  <RecommendedAddonsWrapper 
-    context="dashboard" 
-    maxItems={4}
-    onAddonClick={handleAddonClick} // Add this prop
-  />
-</div>
+              {/* Action Section */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  className="flex-3 bg-primary rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-6 text-base font-semibold"
+                  asChild
+                >
+                  <Link href="/review-book">Continue to Review & Book</Link>
+                </Button>
+              
+                <Button variant="ghost" className="sm:w-auto">
+                  Get Help
+                </Button>
+              </div>
+            </main>
 
-            {/* Action Section */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button
-                className="flex-3 bg-primary rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-6 text-base font-semibold"
-                asChild
-              >
-                <Link href="/review-book">Continue to Review & Book</Link>
-              </Button>
-            
-              <Button variant="ghost" className="sm:w-auto">
-                Get Help
-              </Button>
-            </div>
-          </main>
-
-          {/* Sidebar */}
-          <aside className="hidden lg:block space-y-6">
-            <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-              <BudgetControls {...budgetControlProps} />
-            </Card>
-            
-            <CountdownWidget partyDate={partyDetails.date} />
-            
-            <PartyExcitementMeter 
-              suppliers={suppliers}
-              totalCost={totalCost}
-              budget={tempBudget}
-            />
-          </aside>
+            {/* Sidebar */}
+            <aside className="hidden lg:block space-y-6">
+              <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+                <BudgetControls {...budgetControlProps} />
+              </Card>
+              
+              <CountdownWidget partyDate={partyDetails.date} />
+              
+              <PartyExcitementMeter 
+                suppliers={suppliers}
+                totalCost={totalCost}
+                budget={tempBudget}
+              />
+            </aside>
+          </div>
         </div>
-      </div>
       </AddonProvider>
-    
 
       {/* Loading Overlay */}
       {isUpdating && (
@@ -366,13 +454,14 @@ export default function LocalStorageDashboard() {
         </div>
       )}
 
-      {/* Modals and Dialogs */}
+      {/* UPDATED: New Modal with Restoration Support */}
       <SupplierSelectionModal
-        isOpen={selectedSupplierModal?.isOpen}
+        isOpen={showSupplierModal}
         onClose={closeSupplierModal}
-        category={selectedSupplierModal?.category || "entertainment"}
-        theme="Superhero"
-        date={partyDetails?.date} 
+        category={modalConfig.category}
+        theme={modalConfig.theme}
+        date={modalConfig.date}
+        initialFilters={modalConfig.filters}
         onSelectSupplier={handleSupplierSelection}
       />
 
@@ -388,7 +477,8 @@ export default function LocalStorageDashboard() {
         onConfirm={confirmDeleteSupplier}
         onCancel={cancelDeleteSupplier}
       />
-         {/* Add the new Addon Details Modal */}
+
+      {/* Add the new Addon Details Modal */}
       <AddonDetailsModal
         isOpen={isAddonModalOpen}
         onClose={handleAddonModalClose}
@@ -397,6 +487,5 @@ export default function LocalStorageDashboard() {
         isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
       />
     </div>
-
   )
 }

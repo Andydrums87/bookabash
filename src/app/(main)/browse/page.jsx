@@ -78,14 +78,84 @@ export default function BrowseSuppliersPage() {
 
 
   const categories = [
-    { id: "all", name: "All", icon: <Sparkles className="w-5 h-5" /> },
-    { id: "entertainment", name: "Entertainment", icon: <Music className="w-5 h-5" /> },
-    { id: "venues", name: "Venues", icon: <Building className="w-5 h-5" /> },
-    { id: "catering", name: "Catering", icon: <Utensils className="w-5 h-5" /> },
-    { id: "decorations", name: "Decorations", icon: <Palette className="w-5 h-5" /> },
-    { id: "party-bags", name: "Party Bags", icon: <Gift className="w-5 h-5" /> },
-    { id: "photography", name: "Photography", icon: <Camera className="w-5 h-5" /> },
-    { id: "activities", name: "Activities", icon: <Gamepad2 className="w-5 h-5" /> },
+    { 
+      id: "all", 
+      name: "All", 
+      icon: <Sparkles className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg" // Party essentials image
+    },
+    { 
+      id: "entertainment", 
+      name: "Entertainment", 
+      icon: <Music className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png" // Activities image
+    },
+    { 
+      id: "venues", 
+      name: "Venues", 
+      icon: <Building className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg" // Venue image
+    },
+    { 
+      id: "catering", 
+      name: "Catering", 
+      icon: <Utensils className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg" // Food image
+    },
+    { 
+      id: "decorations", 
+      name: "Decorations", 
+      icon: <Palette className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png" // Decorations image
+    },
+    { 
+      id: "bouncy-castles", 
+      name: "Bouncy Castles", 
+      icon: <div className="text-sm">🏰</div>,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png" // Bouncy castle image
+    },
+    { 
+      id: "face-painting", 
+      name: "Face Painting", 
+      icon: <Palette className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170767/hlz6iinsgj7abeu0nndx.png" // Face painting image
+    },
+    { 
+      id: "party-bags", 
+      name: "Party Bags", 
+      icon: <Gift className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482131/daniel-alvasd-QJlg2KSl0fU-unsplash_vm4acf.jpg" // Party bags image
+    },
+    { 
+      id: "photography", 
+      name: "Photography", 
+      icon: <Camera className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png" // Photography image
+    },
+    { 
+      id: "magicians", 
+      name: "Magicians", 
+      icon: <div className="text-sm">🎩</div>,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753435484/zivotubsexikuudyl55r.jpg" // Magician image
+    },
+    { 
+      id: "balloon-artists", 
+      name: "Balloon Artists", 
+      icon: <div className="text-sm">🎈</div>,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170776/i8mfc16v3vk4inj0esvv.jpg" // Balloon artist image
+    },
+    { 
+      id: "character-visits", 
+      name: "Character Visits", 
+      icon: <div className="text-sm">🦸</div>,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854552/kfhncxpa58uyrtrjpq2z.jpg" // Character visits image
+    },
+    { 
+      id: "activities", 
+      name: "Activities", 
+      icon: <Gamepad2 className="w-5 h-5" />,
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png" // Activities image
+    },
   ]
 
   const subcategories = {
@@ -407,7 +477,7 @@ export default function BrowseSuppliersPage() {
       <div 
         className="relative w-full h-[36vh] md:h-[42vh] lg:h-[43vh] overflow-hidden"
       >      
-     <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
+     <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]">
     <Image
       src="/magician.png"
       alt="People celebrating at a party"
@@ -509,37 +579,76 @@ export default function BrowseSuppliersPage() {
         </div>
       </div>
 
-      {/* Category Tabs - Mobile Optimized */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex space-x-1 md:space-x-2 min-w-max">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category.id)}
-                  className={`flex flex-col items-center space-y-1 md:space-y-2 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl min-w-[70px] md:min-w-[90px] transition-all ${
-                    selectedCategory === category.id
-                      ? "bg-primary-100 text-primary-700 shadow-sm"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <div
-                    className={`w-7 h-7 md:w-10 md:h-10 flex items-center justify-center rounded-md md:rounded-lg ${
-                      selectedCategory === category.id ? "bg-primary-200" : "bg-gray-100"
+{/* Category Tabs - Updated with Circular Images */}
+<div className="bg-white border-b border-gray-100">
+  <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
+    {/* Navigation container with proper scrolling */}
+    <div className="relative">
+      <div className="flex gap-3 md:gap-10 overflow-x-auto overflow-y-hidden scrollbar-hide pb-2" 
+           style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+        {categories.map((category) => {
+          const isActive = selectedCategory === category.id;
+          
+          return (
+            <button
+              key={category.id}
+              onClick={() => handleCategorySelect(category.id)}
+              className={`flex-shrink-0 cursor-pointer relative transition-all duration-200 ${
+                isActive ? 'transform scale-105' : 'hover:transform hover:scale-105'
+              }`}
+              style={{ minWidth: '70px' }}
+            >
+              {/* Circular container */}
+              <div className="flex flex-col items-center">
+                {/* Main circle with image */}
+                <div className={`w-16 cursor-pointer h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-hidden relative ${
+                  isActive 
+                    ? 'shadow-lg ring-2 ring-[hsl(var(--primary-300))]' 
+                    : 'shadow-sm hover:shadow-md border border-gray-200'
+                }`}>
+                  <Image
+                    src={category.image}
+                    alt={category.name}
+                    width={64}
+                    height={64}
+                    className={`w-full h-full object-cover rounded-full ${
+                      isActive ? 'opacity-90' : ''
                     }`}
-                  >
-                    <div className="scale-75 md:scale-100">
-                      {category.icon}
-                    </div>
-                  </div>
-                  <span className="text-xs md:text-sm font-medium text-center leading-tight">{category.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+                  />
+                  {/* Overlay for active state */}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-400/30 to-primary-600/30 rounded-full"></div>
+                  )}
+
+                </div>
+                
+                {/* Title */}
+                <div className="text-center">
+                  <p className={`text-xs md:text-sm font-semibold leading-tight ${
+                    isActive ? 'text-primary-700' : 'text-gray-700'
+                  }`}>
+                    {category.name.split(' ').map((word, i) => (
+                      <span key={i} className="block">{word}</span>
+                    ))}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Active indicator line */}
+              {isActive && (
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full"></div>
+              )}
+            </button>
+          );
+        })}
       </div>
+      
+      {/* Optional: Add fade effect for scrollable area */}
+      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
+    </div>
+  </div>
+</div>
+
 
       {/* Results Section - Streamlined for Mobile */}
       <div className="max-w-screen mx-auto px-2 md:px-3 py-3 md:py-8">

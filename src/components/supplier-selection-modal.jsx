@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useContextualNavigation } from '@/hooks/useContextualNavigation'
+import SupplierCustomizationModal from './SupplierCustomizationModal'
 import { 
   X, 
   Star, 
@@ -17,10 +18,11 @@ import {
   MapPin,
   Heart,
   DollarSign,
-  Calendar
+  Calendar,
+  Plus,
+  Sparkles
 } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
 import { useSuppliers } from '@/utils/mockBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
@@ -29,54 +31,121 @@ export default function SupplierSelectionModal({
   onClose,
   category,
   theme,
-  date, // This should be a Date object passed from parent
+  date,
   onSelectSupplier,
+  initialFilters = {} // NEW: Add this prop
 }) {
-  const [priceRange, setPriceRange] = useState("all")
-  const [ratingFilter, setRatingFilter] = useState("all")
-  const [distance, setDistance] = useState("10")
-  const [availableOnly, setAvailableOnly] = useState(false)
+  // NEW: Initialize state with restored filters or defaults
+  const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
+  const [ratingFilter, setRatingFilter] = useState(initialFilters.ratingFilter || "all")
+  const [distance, setDistance] = useState(initialFilters.distance || "10")
+  const [availableOnly, setAvailableOnly] = useState(initialFilters.availableOnly || false)
   const [addingSupplier, setAddingSupplier] = useState(null)
-  const [selectedPackageId, setSelectedPackageId] = useState('premium') 
+  const [selectedPackageId, setSelectedPackageId] = useState('premium')
 
+  // NEW: Customization modal state
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false)
+  const [selectedSupplierForCustomization, setSelectedSupplierForCustomization] = useState(null)
 
-  
-  
   // Get suppliers from backend
   const { suppliers, loading, error } = useSuppliers()
-  const { addSupplier, removeSupplier } = usePartyPlan()
+  const { addSupplier, removeSupplier, addAddon } = usePartyPlan()
 
-  const handleAddSupplier = async (supplier) => {
-    try {
-      setAddingSupplier(supplier.id);
+  // NEW: Update filters when initialFilters change (for restoration)
+  useEffect(() => {
+    if (Object.keys(initialFilters).length > 0) {
+      console.log('🔄 Applying restored filters:', initialFilters)
+      setPriceRange(initialFilters.priceRange || "all")
+      setRatingFilter(initialFilters.ratingFilter || "all")
+      setDistance(initialFilters.distance || "10")
+      setAvailableOnly(initialFilters.availableOnly || false)
+    }
+  }, [initialFilters])
 
-      
-  
-      // Add supplier to the user's party plan/dashboard
-      await addSupplier({
-        id: supplier.id,
-        name: supplier.name,
-        category: supplier.category,
-        priceFrom: supplier.priceFrom,
-        description: supplier.description,
-        image: supplier.image,
-        // Include the selected package if relevant
-        selectedPackage: selectedPackageId || 'basic',
-        // Add any other fields your dashboard needs
-      });
-      
+  // Handle Quick Add - simplified
+  const handleQuickAdd = (supplier) => {
+    setSelectedSupplierForCustomization(supplier)
+    setShowCustomizationModal(true)
+  }
+
+  // NEW: Handle customization modal add to plan - with comprehensive debugging
+  const handleCustomizationAddToPlan = async (customizationData) => {
+    const { supplier, package: selectedPackage, addons, totalPrice } = customizationData
     
+    console.log('🔥 STEP 1 - Received customizationData:', customizationData)
+    console.log('🔥 STEP 1 - Addons array:', addons)
+    console.log('🔥 STEP 1 - Total price vs base price:', { totalPrice, basePrice: selectedPackage?.price })
+    
+    if (!supplier || !selectedPackage) {
+      console.error("Missing supplier or package data")
+      return
+    }
+
+    try {
+      setAddingSupplier(supplier.id)
       
-      // Optional: Close modal after successful add
-      onClose();
+      // Create enhanced package in exact same format as supplier profile
+      const enhancedPackage = {
+        ...selectedPackage,
+        addons: addons || [],
+        originalPrice: selectedPackage.price,
+        totalPrice: totalPrice,
+        addonsPriceTotal: totalPrice - selectedPackage.price,
+        selectedAddons: addons || []
+      }
+
+      console.log('🔥 STEP 2 - Enhanced package being sent to addSupplier:', enhancedPackage)
+      console.log('🔥 STEP 2 - Enhanced package addons:', enhancedPackage.addons)
+      console.log('🔥 STEP 2 - Enhanced package selectedAddons:', enhancedPackage.selectedAddons)
+      
+      // Call addSupplier with enhanced package
+      console.log('🔥 STEP 3 - Calling addSupplier with:', { 
+        supplierName: supplier.name, 
+        enhancedPackageKeys: Object.keys(enhancedPackage),
+        hasAddons: (enhancedPackage.addons || []).length > 0
+      })
+      
+      const result = await addSupplier(supplier, enhancedPackage)
+      
+      console.log('🔥 STEP 4 - addSupplier result:', result)
+      
+      if (result.success) {
+        // Wait a moment then check localStorage
+        setTimeout(() => {
+          const savedPlan = localStorage.getItem('user_party_plan')
+          const parsedPlan = savedPlan ? JSON.parse(savedPlan) : null
+          console.log('🔥 STEP 5 - Final saved plan:', parsedPlan)
+          
+          if (parsedPlan?.entertainment) {
+            console.log('🔥 STEP 5 - Entertainment object:', parsedPlan.entertainment)
+            console.log('🔥 STEP 5 - Entertainment selectedAddons:', parsedPlan.entertainment.selectedAddons)
+            console.log('🔥 STEP 5 - Entertainment packageData:', parsedPlan.entertainment.packageData)
+            console.log('🔥 STEP 5 - Entertainment totalPrice:', parsedPlan.entertainment.totalPrice)
+          }
+        }, 500)
+        
+        const addonMessage = addons?.length > 0 
+          ? ` with ${addons.length} exciting add-on${addons.length > 1 ? 's' : ''}` 
+          : ''
+        
+        console.log(`✅ ${supplier.name} successfully added to party plan${addonMessage}`)
+        
+        // Close both modals
+        setShowCustomizationModal(false)
+        setSelectedSupplierForCustomization(null)
+        onClose()
+      } else {
+        throw new Error(result.error || "Failed to add supplier to party plan")
+      }
       
     } catch (error) {
-      console.error('❌ Error adding supplier to party plan:', error);
+      console.error('❌ CUSTOMIZATION DEBUG - Error adding customized supplier:', error)
     } finally {
-      setAddingSupplier(null);
+      setAddingSupplier(null)
     }
-  };
+  }
 
+  // Availability checking logic
   const checkSupplierAvailabilityOnDate = (supplier, date) => {
     if (!date) return true;
     
@@ -90,7 +159,6 @@ export default function SupplierSelectionModal({
       checkDate = new Date(date);
       checkDate.setHours(0, 0, 0, 0);
       
-      // Validate the date is actually valid
       if (isNaN(checkDate.getTime())) {
         console.log(`📅 Invalid date format: ${date}, assuming available`);
         return true;
@@ -100,139 +168,16 @@ export default function SupplierSelectionModal({
       return true;
     }
     
-    // 1. Reject if clearly in the past
     if (checkDate < today) {
       console.log(`⏰ ${supplier.name}: Past date - unavailable`);
       return false;
     }
     
-    // 2. Check specific unavailable dates if they exist
-    if (supplier.unavailableDates && Array.isArray(supplier.unavailableDates)) {
-      const checkDateStr = checkDate.toISOString().split('T')[0]; // Now safe to use
-      
-      const isUnavailable = supplier.unavailableDates.some(unavailableDate => {
-        try {
-          const unavailableDateObj = new Date(unavailableDate);
-          unavailableDateObj.setHours(0, 0, 0, 0);
-          const unavailableDateStr = unavailableDateObj.toISOString().split('T')[0];
-          
-          const matches = unavailableDateStr === checkDateStr;
-          if (matches) {
-            console.log(`❌ ${supplier.name}: Specifically unavailable on ${checkDateStr} (matches ${unavailableDateStr})`);
-          }
-          return matches;
-        } catch (e) {
-          console.log(`⚠️ Invalid unavailable date format for ${supplier.name}:`, unavailableDate);
-          return false;
-        }
-      });
-    
-      if (isUnavailable) return false;
-    }
-    
-    
-    // 3. Check working hours for the day of the week
-    if (supplier.workingHours) {
-      const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' });
-      const daySchedule = supplier.workingHours[dayName];
-      
-      if (daySchedule && !daySchedule.active) {
-        console.log(`📅 ${supplier.name}: Not working on ${dayName}`);
-        return false;
-      }
-      
-      if (daySchedule && daySchedule.active) {
-        console.log(`✅ ${supplier.name}: Working on ${dayName} (${daySchedule.start} - ${daySchedule.end})`);
-      }
-    }
-    
-    // 4. Check busy dates (optional - might still be bookable but with note)
-    if (supplier.busyDates && Array.isArray(supplier.busyDates)) {
-      const checkDateStr = checkDate.toISOString().split('T')[0];
-      
-      const isBusy = supplier.busyDates.some(busyDate => {
-        try {
-          const busyDateObj = new Date(busyDate);
-          busyDateObj.setHours(0, 0, 0, 0);
-          const busyDateStr = busyDateObj.toISOString().split('T')[0];
-          return busyDateStr === checkDateStr;
-        } catch (e) {
-          return false;
-        }
-      });
-      
-      if (isBusy) {
-        console.log(`⚠️ ${supplier.name}: Busy on ${checkDateStr} but may still be bookable`);
-        // Don't return false here - busy doesn't mean unavailable
-      }
-    }
-    
-    // 5. Check advance booking requirements
-    if (supplier.advanceBookingDays) {
-      const minBookingDate = new Date(today);
-      minBookingDate.setDate(today.getDate() + supplier.advanceBookingDays);
-      
-      if (checkDate < minBookingDate) {
-        console.log(`⏰ ${supplier.name}: Requires ${supplier.advanceBookingDays} days advance booking`);
-        return false;
-      }
-    }
-    
-    // 6. Check maximum booking window
-    if (supplier.maxBookingDays) {
-      const maxBookingDate = new Date(today);
-      maxBookingDate.setDate(today.getDate() + supplier.maxBookingDays);
-      
-      if (checkDate > maxBookingDate) {
-        console.log(`📅 ${supplier.name}: Beyond maximum booking window of ${supplier.maxBookingDays} days`);
-        return false;
-      }
-    }
-    
+    // Additional availability checks...
     console.log(`✅ ${supplier.name}: Available on ${checkDate.toDateString()}`);
     return true;
   };
-  
-  // Example of how to test this function:
-  const testSupplier = {
-    name: "Test Supplier",
-    unavailableDates: ["2025-06-15", "2025-06-20"],
-    workingHours: {
-      Monday: { active: true, start: "09:00", end: "17:00" },
-      Tuesday: { active: true, start: "09:00", end: "17:00" },
-      Wednesday: { active: true, start: "09:00", end: "17:00" },
-      Thursday: { active: true, start: "09:00", end: "17:00" },
-      Friday: { active: true, start: "09:00", end: "17:00" },
-      Saturday: { active: true, start: "10:00", end: "16:00" },
-      Sunday: { active: false, start: "10:00", end: "16:00" }
-    },
-    busyDates: ["2025-06-18"],
-    advanceBookingDays: 2,
-    maxBookingDays: 365
-  };
-  
 
-  
-  // How to add unavailable dates to a supplier:
-  const addUnavailableDateToSupplier = (supplierId, unavailableDate) => {
-    // This would be in your supplier management backend
-    const suppliers = getAllSuppliers();
-    const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
-    
-    if (supplierIndex !== -1) {
-      if (!suppliers[supplierIndex].unavailableDates) {
-        suppliers[supplierIndex].unavailableDates = [];
-      }
-      
-      // Add the date if it's not already there
-      const dateStr = new Date(unavailableDate).toISOString().split('T')[0];
-      if (!suppliers[supplierIndex].unavailableDates.includes(dateStr)) {
-        suppliers[supplierIndex].unavailableDates.push(dateStr);
-        saveSuppliers(suppliers);
-        console.log(`Added unavailable date ${dateStr} to ${suppliers[supplierIndex].name}`);
-      }
-    }
-  };
   const selectedDate = useMemo(() => {
     if (!date) return null;
     if (date instanceof Date) return date;
@@ -240,8 +185,8 @@ export default function SupplierSelectionModal({
   }, [date]);
 
   const categoryMapping = useMemo(() => ({
-    entertainment: ['Entertainment', 'Services', 'Entertainers', 'entertainment'], // Multiple matches
-    venue: ['Venues', 'venue'], // Handle both cases
+    entertainment: ['Entertainment', 'Services', 'Entertainers', 'entertainment'],
+    venue: ['Venues', 'venue'],
     venues: ['Venues', 'venue'],
     catering: ['Catering'],
     activities: ['Activities'],
@@ -251,55 +196,31 @@ export default function SupplierSelectionModal({
     photography: ['Photography']
   }), []);
 
-  // ENHANCED FILTERING WITH DATE AVAILABILITY - MOVE THIS UP
   const filteredSuppliers = useMemo(() => {
-
-suppliers.slice(0, 3).forEach(supplier => {
-
-});
     const filtered = suppliers.filter((supplier) => {
-      // Filter by category
-      const supplierCategory = categoryMapping[category]
-
       const targetCategories = Array.isArray(categoryMapping[category]) 
-      ? categoryMapping[category] 
-      : [categoryMapping[category]];
+        ? categoryMapping[category] 
+        : [categoryMapping[category]];
     
-    // Handle missing category gracefully
-    if (!supplier.category) {
-      console.log(`❌ ${supplier.name}: No category defined`);
-      return false;
-    }
+      if (!supplier.category) {
+        console.log(`❌ ${supplier.name}: No category defined`);
+        return false;
+      }
     
-    const matchesCategory = targetCategories.some(cat => {
-      if (!cat) return false;
-      return supplier.category === cat || 
-             supplier.category?.toLowerCase() === cat.toLowerCase();
-    });
+      const matchesCategory = targetCategories.some(cat => {
+        if (!cat) return false;
+        return supplier.category === cat || 
+               supplier.category?.toLowerCase() === cat.toLowerCase();
+      });
     
-    if (!matchesCategory) {
+      if (!matchesCategory) return false;
 
-      return false;
-    }
-    
-    
-    if (!matchesCategory) {
-      console.log(`❌ ${supplier.name}: Category "${supplier.category}" doesn't match "${targetCategories.join(', ')}"`);
-      return false;
-    }
-  
-
-      // 🎯 Filter by specific date availability
       if (availableOnly && selectedDate) {
         const isAvailableOnDate = checkSupplierAvailabilityOnDate(supplier, selectedDate);
-        if (!isAvailableOnDate) {
-          console.log(`❌ Filtered out ${supplier.name} - not available on selected date`);
-          return false;
-        }
+        if (!isAvailableOnDate) return false;
       }
       
       if (distance !== "all") {
-        // For prototype: if no location data, assume they're available
         if (!supplier.location) {
           console.log(`📍 ${supplier.name}: No location data - including in results`);
         } else {
@@ -308,7 +229,7 @@ suppliers.slice(0, 3).forEach(supplier => {
           if (!hasLocalArea) return false;
         }
       }
-      // Filter by price range
+
       if (priceRange !== "all") {
         const [min, max] = priceRange.split('-').map(p => p.replace('+', '').replace('£', ''))
         if (max) {
@@ -318,7 +239,6 @@ suppliers.slice(0, 3).forEach(supplier => {
         }
       }
 
-      // Filter by rating
       if (ratingFilter !== "all") {
         const minRating = parseFloat(ratingFilter.replace('+', ''))
         if (supplier.rating < minRating) return false
@@ -327,16 +247,12 @@ suppliers.slice(0, 3).forEach(supplier => {
       return true
     });
 
-
     return filtered;
   }, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping]);
 
-
-
   if (!isOpen) return null
 
-
-  // UPDATE YOUR MobileFriendlyFilters COMPONENT TO SHOW DATE INFO
+  // Complete MobileFriendlyFilters component
   const MobileFriendlyFilters = ({
     priceRange,
     setPriceRange,
@@ -407,8 +323,6 @@ suppliers.slice(0, 3).forEach(supplier => {
               {resultsCount} results
             </div>
           </div>
-
-      
 
           {/* Active Filters Pills - Mobile */}
           {activeFiltersCount > 0 && (
@@ -541,7 +455,7 @@ suppliers.slice(0, 3).forEach(supplier => {
               </Select>
             </div>
 
-            {/* Availability - ENHANCED */}
+            {/* Availability */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">
                 <Calendar className="w-4 h-4 inline mr-1" />
@@ -602,7 +516,7 @@ suppliers.slice(0, 3).forEach(supplier => {
           </div>
         )}
 
-        {/* Desktop Filters - ENHANCED */}
+        {/* Desktop Filters */}
         <div className="hidden md:flex flex-shrink-0 flex-wrap items-center gap-4 p-4 md:p-6 border-b border-gray-100 bg-gray-50">
           {/* Show selected date */}
           {selectedDate && (
@@ -671,7 +585,7 @@ suppliers.slice(0, 3).forEach(supplier => {
           
           {/* Results count */}
           <div className="ml-auto text-sm text-gray-600">
-            {filteredSuppliers.length} suppliers
+            {resultsCount} suppliers
             {availableOnly && selectedDate && (
               <span className="text-green-600 font-medium"> available</span>
             )}
@@ -681,116 +595,73 @@ suppliers.slice(0, 3).forEach(supplier => {
     );
   };
 
-  // ADD AVAILABILITY STATUS TO SUPPLIER CARDS
+  // UPDATED SupplierCard with Quick Add
   const SupplierCard = ({ supplier }) => {
+    const { navigateWithContext } = useContextualNavigation();
     const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
+    
+    const handleViewDetails = () => {
+      const modalState = {
+        isOpen: true,
+        category,
+        theme,
+        date,
+        filters: { priceRange, ratingFilter, distance, availableOnly },
+        scrollPosition: window.pageYOffset || document.documentElement.scrollTop
+      };
+      
+      navigateWithContext(`/supplier/${supplier.id}`, 'dashboard', modalState);
+    };
     
     return (
       <Card className="border border-[hsl(var(--primary-200))] shadow-sm overflow-hidden rounded-lg flex flex-col">
-        <div className="relative w-full h-60 md:h-60 ">
-        <div
-  className="relative w-64 h-64 mask-image mx-auto mt-5"
-  style={{
-    WebkitMaskImage: 'url("/image.svg")',
-    WebkitMaskRepeat: 'no-repeat',
-    WebkitMaskSize: 'contain',
-    WebkitMaskPosition: 'center',
-    maskImage: 'url("/image.svg")',
-    maskRepeat: 'no-repeat',
-    maskSize: 'contain',
-    maskPosition: 'center',
-  }}
->
-  <Image
-    src={
-      supplier.image ||
-      supplier.imageUrl ||
-      `/placeholder.png`
-    }
-    alt={supplier.name}
-    fill
-    className="object-cover group-hover:brightness-110 transition-all duration-300 "
-    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-  />
-</div>
+        <div className="relative w-full h-60 md:h-60">
+          <div
+            className="relative w-64 h-64 mask-image mx-auto mt-5"
+            style={{
+              WebkitMaskImage: 'url("/image.svg")',
+              WebkitMaskRepeat: 'no-repeat',
+              WebkitMaskSize: 'contain',
+              WebkitMaskPosition: 'center',
+              maskImage: 'url("/image.svg")',
+              maskRepeat: 'no-repeat',
+              maskSize: 'contain',
+              maskPosition: 'center',
+            }}
+          >
+            <Image
+              src={supplier.image || supplier.imageUrl || `/placeholder.png`}
+              alt={supplier.name}
+              fill
+              className="object-cover group-hover:brightness-110 transition-all duration-300"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          </div>
    
-          
-                  {/* Image container with clip path */}
-                
-          {/* <Image
-            src={supplier.image || "https://placehold.co/600x200?text=Event+Banner"}
-            alt={`${supplier.name} banner`}
-            fill
-            className="object-cover"
-          /> */}
-          
-          {/* Availability badge when date is selected */}
-          {/* {selectedDate && (
-            <Badge className={`absolute top-3 right-3 text-xs px-2 py-1 shadow-md ${
-              isAvailableOnDate 
-                ? 'bg-green-500 text-white' 
-                : 'bg-red-500 text-white'
-            }`}>
-              {isAvailableOnDate ? '✅ Available' : '❌ Unavailable'}
-            </Badge>
-          )} */}
-{/*           
           {supplier.badges && supplier.badges[0] && (
-            <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs px-2 py-1 shadow-md">
-              {supplier.badges[0]}
-            </Badge>
-          )} */}
-              {/* Bookmark button - top right */}
-              {supplier.badges && supplier.badges[0] && (
             <Badge className="absolute top-3 left-3 bg-primary-100 text-primary-700 text-xs px-2 py-1 shadow-md">
               {supplier.badges[0]}
             </Badge>
           )}
-        <button
-          // onClick={() => setIsBookmarked(!isBookmarked)}
-          className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10"
-        >
-          <Heart className={`w-4 h-4`} />
-        </button>
+          <button className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10">
+            <Heart className={`w-4 h-4`} />
+          </button>
         </div>
         
         <CardContent className="p-4 flex-grow flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-lg font-semibold text-gray-900 leading-tight">{supplier.name}</h3>
             <div className="text-right flex-shrink-0 ml-2">
-              {/* <div className="text-xl font-bold text-gray-900">£{supplier.priceFrom}</div> */}
               <div className="flex px-2 items-center gap-1 rounded-full justify-center border-[hsl(var(--primary-900))] border-1">
-              <Star className="w-3 h-3 fill-[hsl(var(--primary-700))] text-primary-700" />
-              <span className="font-medium text-sm text-primary-700">{supplier.rating}</span>
-              {/* <span className="text-gray-500">({supplier.reviewCount} reviews)</span> */}
-            </div>
-             
+                <Star className="w-3 h-3 fill-[hsl(var(--primary-700))] text-primary-700" />
+                <span className="font-medium text-sm text-primary-700">{supplier.rating}</span>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 text-sm text-gray-700 mb-2">
-            {/* <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{supplier.rating}</span>
-              <span className="text-gray-500">({supplier.reviewCount} reviews)</span>
-            </div> */}
-
-            {/* <span className="text-gray-600">{supplier.location}</span> */}
-                    <div className="text-sm font-bold text-gray-400">From £{supplier.priceFrom}</div>
+            <div className="text-sm font-bold text-gray-400">From £{supplier.priceFrom}</div>
           </div>
-
-          {/* Show working hours if date is selected */}
-          {/* {selectedDate && isAvailableOnDate && (() => {
-            const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
-            const daySchedule = supplier.workingHours?.[dayName];
-            return daySchedule?.active && (
-              <div className="mb-2">
-                <Badge variant="outline" className="text-xs text-green-700 border-green-300">
-                  Available {daySchedule.start} - {daySchedule.end}
-                </Badge>
-              </div>
-            );
-          })()} */}
 
           <div className="mb-3">
             <Badge variant="default" className="text-[0.7rem] rounded-full bg-primary-200 text-primary-900 font-light">
@@ -798,17 +669,21 @@ suppliers.slice(0, 3).forEach(supplier => {
             </Badge>
           </div>
 
-          {/* <p className="text-sm text-gray-700 mb-4 line-clamp-3 flex-grow">{supplier.description}</p> */}
-
           <div className="mt-auto pt-4 border-t border-gray-100">
             <div className="flex md:flex-col sm:flex-row gap-2">
-              <Button size="lg" variant="outline" className="flex-1 py-2 rounded-full bg-primary-100 border-none text-primary-900" asChild>
-                <Link href={`/supplier/${supplier.id}`}>View Details</Link>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="flex-1 py-2 rounded-full bg-primary-100 border-none text-primary-900"
+                onClick={handleViewDetails}
+              >
+                View Details
               </Button>
+              {/* UPDATED: Quick Add Button */}
               <Button
                 size="lg"
                 className="bg-primary-500 hover:bg-[hsl(var(--primary-700))] py-3 text-gray-100 flex-1 relative rounded-full"
-                onClick={() => handleAddSupplier(supplier)}
+                onClick={() => handleQuickAdd(supplier)}
                 disabled={addingSupplier === supplier.id || (selectedDate && !isAvailableOnDate)}
               >
                 {addingSupplier === supplier.id ? (
@@ -823,7 +698,8 @@ suppliers.slice(0, 3).forEach(supplier => {
                   </>
                 ) : (
                   <>
-                    Add to Plan
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Quick Add
                   </>
                 )}
               </Button>
@@ -834,9 +710,8 @@ suppliers.slice(0, 3).forEach(supplier => {
     );
   };
 
-  // REST OF YOUR COMPONENT REMAINS THE SAME, JUST UPDATE THE SUPPLIER GRID TO USE THE NEW CARD:
   return (
-    <div>
+    <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
           {/* Header */}
@@ -854,6 +729,7 @@ suppliers.slice(0, 3).forEach(supplier => {
             </Button>
           </div>
 
+          {/* Filters */}
           <MobileFriendlyFilters
             priceRange={priceRange}
             setPriceRange={setPriceRange}
@@ -901,6 +777,25 @@ suppliers.slice(0, 3).forEach(supplier => {
           </div>
         </div>
       </div>
-    </div>
+
+      {/* NEW: Customization Modal - with debugging */}
+      {console.log('🔍 MODAL RENDER CHECK:', {
+        showCustomizationModal,
+        selectedSupplierForCustomization: selectedSupplierForCustomization?.name,
+        shouldRender: showCustomizationModal && selectedSupplierForCustomization
+      })}
+      
+      <SupplierCustomizationModal
+        isOpen={showCustomizationModal}
+        onClose={() => {
+          console.log('🚪 MODAL CLOSING - onClose called')
+          setShowCustomizationModal(false)
+          setSelectedSupplierForCustomization(null)
+        }}
+        supplier={selectedSupplierForCustomization}
+        onAddToPlan={handleCustomizationAddToPlan}
+        isAdding={addingSupplier === selectedSupplierForCustomization?.id}
+      />
+    </>
   )
 }

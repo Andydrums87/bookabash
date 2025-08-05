@@ -10,6 +10,7 @@ export function ContextualBreadcrumb({
   className = "",
   hasUnsavedChanges = false,
   unsavedMessage = "Unsaved changes",
+  inviteDetails,
   id,
 }) {
   const { navigationContext, goBack } = useContextualNavigation()
@@ -43,7 +44,8 @@ export function ContextualBreadcrumb({
           currentText: "Supplier Details",
           action: () => {
             if (navigationContext === "dashboard") {
-              router.push("/dashboard")
+              // NEW: Pass true to restore modal when going back to dashboard
+              goBack(true);
             } else {
               router.push("/browse")
             }
@@ -80,6 +82,13 @@ export function ContextualBreadcrumb({
             currentText: "Build Party",
             action: () => router.push("/"),
           }
+          case "e-invites":
+          return {
+            show: true,
+            backText: "Dashboard",
+            currentText: "E-Invites",
+            action: () => router.push("/dashboard"),
+          }
           case "Browse Gifts":
             return {
               show: true,
@@ -87,13 +96,83 @@ export function ContextualBreadcrumb({
               currentText: "Gift Registry",
               action: () => router.push("/dashboard"),
             }
-            case "Gift Registry Preview":
-            return {
-              show: true,
-              backText: "Browse Gifts",
-              currentText: "Gift Registry",
-              action: () => router.push(`/gift-registry/${id}/create`),
-            }
+       
+         // Add these cases to your existing getBreadcrumbConfig() function:
+
+case "rsvp":
+  return {
+    show: true,
+    backText: "Home", 
+    currentText: `${inviteDetails}'s Party`,
+    action: () => router.push("/"),
+  }
+
+  case "Gift Registry Preview":
+    // Check RSVP context FIRST
+    if (navigationContext === "rsvp") {
+      return {
+        show: true,
+        backText: "Back to Invitation",
+        currentText: "Gift Registry",
+        action: () => goBack(),
+      }
+    }
+    // Default case for other contexts
+    return {
+      show: true,
+      backText: "Browse Gifts", 
+      currentText: "Gift Registry",
+      action: () => router.push(`/gift-registry/${id}/create`),
+    }
+case "favorites":
+  if (navigationContext === "dashboard") {
+    return {
+      show: true,
+      backText: "Dashboard",
+      currentText: "My Favorites",
+      action: () => {
+        sessionStorage.removeItem("navigationContext")
+        goBack()
+      },
+    }
+  }
+  if (navigationContext === "browse") {
+    return {
+      show: true,
+      backText: "Browse Suppliers",
+      currentText: "My Favorites",
+      action: () => {
+        sessionStorage.removeItem("navigationContext")
+        goBack()
+      },
+    }
+  }
+  return {
+    show: true,
+    backText: "Home",
+    currentText: "My Favorites",
+    action: () => router.push("/"),
+  }
+
+// Also update the supplier-detail case to handle favorites context:
+case "supplier-detail":
+  let backText = "Browse Suppliers"; // default
+  let backAction = () => router.push("/browse");
+  
+  if (navigationContext === "dashboard") {
+    backText = "Dashboard";
+    backAction = () => goBack(true);
+  } else if (navigationContext === "favorites") {
+    backText = "My Favorites";
+    backAction = () => goBack();
+  }
+  
+  return {
+    show: true,
+    backText,
+    currentText: "Supplier Details",
+    action: backAction,
+  }
 
       default:
         return { show: false }

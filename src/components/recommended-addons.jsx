@@ -29,7 +29,27 @@ export default function RecommendedAddons({
   const { suppliers, loading, error } = useSuppliers()
   const { hasAddon } = usePartyPlan()
 
-// NEW: Updated handleCardClick to support modal approach
+// Convert supplier to addon format helper function
+const convertSupplierToAddon = (supplier) => {
+  return {
+    id: supplier.id,
+    name: supplier.name,
+    description: supplier.description,
+    price: supplier.priceFrom,
+    image: supplier.image || supplier.imageUrl,
+    category: supplier.category,
+    duration: supplier.priceUnit,
+    rating: supplier.rating,
+    reviewCount: supplier.reviewCount,
+    location: supplier.location,
+    popular: supplier.badges?.includes("Highly Rated") || supplier.rating >= 4.8,
+    limitedTime: supplier.availability?.includes("Limited") || supplier.availability?.includes("today"),
+    features: supplier.features || ["Professional service", "Includes setup", "Perfect for your party"],
+    type: supplier.category // Add type for modal display
+  }
+}
+
+// Handle card click (for navigation only)
 const handleCardClick = (supplier, event) => {
   // Don't navigate if clicking on interactive elements
   if (event.target.closest("button") || event.target.closest('[role="button"]')) {
@@ -37,37 +57,47 @@ const handleCardClick = (supplier, event) => {
     return
   }
   
-  // If onAddonClick is provided, use modal approach
+  // Only navigate if NOT using modal approach
+  if (!onAddonClick) {
+    console.log("🚀 Navigating to supplier:", supplier.id)
+    router.push(`/supplier/${supplier.id}`)
+  }
+}
+
+// UPDATED: Handle button click - separated from card click
+const handleButtonClick = async (supplier, event) => {
+  event.stopPropagation() // Prevent card navigation
+
+  const addonData = convertSupplierToAddon(supplier)
+
+  // If using modal approach, open the modal
   if (onAddonClick) {
     console.log("🎯 Opening addon modal for:", supplier.name)
-    
-    // Convert supplier to addon format
-    const addonData = {
-      id: supplier.id,
-      name: supplier.name,
-      description: supplier.description,
-      price: supplier.priceFrom,
-      image: supplier.image || supplier.imageUrl,
-      category: supplier.category,
-      duration: supplier.priceUnit,
-      rating: supplier.rating,
-      reviewCount: supplier.reviewCount,
-      location: supplier.location,
-      popular: supplier.badges?.includes("Highly Rated") || supplier.rating >= 4.8,
-      limitedTime: supplier.availability?.includes("Limited") || supplier.availability?.includes("today"),
-      features: supplier.features || ["Professional service", "Includes setup", "Perfect for your party"],
-      type: supplier.category // Add type for modal display
-    }
-    
     onAddonClick(addonData)
     return
   }
-  
-  // Otherwise, navigate to supplier page (legacy behavior)
-  console.log("🚀 Navigating to supplier:", supplier.id)
-  router.push(`/supplier/${supplier.id}`)
-}
 
+  // Legacy direct add behavior
+  if (hasAddon(supplier.id)) {
+    console.log("⚠️ Supplier already in party")
+    return
+  }
+
+  setAddingItems((prev) => [...prev, supplier.id])
+
+  try {
+    if (onAddToCart) {
+      await onAddToCart(addonData)
+    }
+    // Show success state for 2 seconds
+    setTimeout(() => {
+      setAddingItems((prev) => prev.filter((id) => id !== supplier.id))
+    }, 2000)
+  } catch (error) {
+    console.error("Error adding supplier:", error)
+    setAddingItems((prev) => prev.filter((id) => id !== supplier.id))
+  }
+}
 
   // Filter suppliers to show as add-ons
   const getContextualSuppliers = () => {
@@ -144,54 +174,6 @@ const handleCardClick = (supplier, event) => {
   const toggleFavorite = (supplierId) => {
     setFavorites((prev) => (prev.includes(supplierId) ? prev.filter((id) => id !== supplierId) : [...prev, supplierId]))
   }
-
-// UPDATED: handleAddToCart - only used when NOT using modal approach
-const handleAddToCart = async (supplier, event) => {
-  event.stopPropagation() // Prevent card navigation
-
-  // If using modal approach, don't handle direct add to cart
-  if (onAddonClick) {
-    // Just open the modal instead
-    handleCardClick(supplier, event)
-    return
-  }
-
-  // Convert supplier to addon format for party plan
-  const addonData = {
-    id: supplier.id,
-    name: supplier.name,
-    description: supplier.description,
-    price: supplier.priceFrom,
-    image: supplier.image || supplier.imageUrl,
-    category: supplier.category,
-    duration: supplier.priceUnit,
-    rating: supplier.rating,
-    reviewCount: supplier.reviewCount,
-    popular: supplier.badges?.includes("Highly Rated") || supplier.rating >= 4.8,
-    limitedTime: supplier.availability?.includes("Limited") || supplier.availability?.includes("today"),
-  }
-
-  // Check if already in party
-  if (hasAddon(supplier.id)) {
-    console.log("⚠️ Supplier already in party")
-    return
-  }
-
-  setAddingItems((prev) => [...prev, supplier.id])
-
-  try {
-    if (onAddToCart) {
-      await onAddToCart(addonData)
-    }
-    // Show success state for 2 seconds
-    setTimeout(() => {
-      setAddingItems((prev) => prev.filter((id) => id !== supplier.id))
-    }, 2000)
-  } catch (error) {
-    console.error("Error adding supplier:", error)
-    setAddingItems((prev) => prev.filter((id) => id !== supplier.id))
-  }
-}
 
 const getContextualCTA = () => {
   if (onAddonClick) {
@@ -478,9 +460,9 @@ const getContextualCTA = () => {
                             </span>
                           </div>
 
-                          {/* Enhanced button */}
+                          {/* Enhanced button - NOW uses handleButtonClick */}
                           <Button
-                            onClick={(e) => handleAddToCart(supplier, e)}
+                            onClick={(e) => handleButtonClick(supplier, e)}
                             disabled={buttonState.disabled}
                             className={`w-full text-xs md:text-sm py-2 ${buttonState.className} transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl mt-auto`}
                           >

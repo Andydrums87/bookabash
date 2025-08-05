@@ -158,19 +158,38 @@ class PartyPlanBackend {
         return { success: false, error: `Unknown supplier category: ${supplier.category}` };
       }
 
+      // ✅ FIXED: Enhanced supplier data that preserves add-ons
       const supplierData = {
         id: supplier.id,
         name: supplier.name,
         description: supplier.description,
-        price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
+        // ✅ Use total price (base + add-ons) instead of just base price
+        price: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
         status: "pending",
         image: supplier.image,
         category: supplier.category,
         priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
         addedAt: new Date().toISOString(),
         packageId: selectedPackage?.id || null,
-        originalSupplier: supplier
+        originalSupplier: supplier,
+        
+        // ✅ NEW: Store the complete package data with add-ons
+        packageData: selectedPackage || null,
+        selectedAddons: selectedPackage?.selectedAddons || selectedPackage?.addons || [],
+        totalPrice: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
+        originalPrice: selectedPackage?.originalPrice || selectedPackage?.price || supplier.priceFrom,
+        addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0
       };
+
+      // ✅ NEW: Debug logging to verify the data
+      console.log('🔍 BACKEND DEBUG - Storing supplier with data:', {
+        supplierName: supplier.name,
+        basePrice: selectedPackage?.price || supplier.priceFrom,
+        totalPrice: supplierData.totalPrice,
+        addonsCount: supplierData.addonsCount,
+        selectedAddons: supplierData.selectedAddons,
+        hasPackageData: !!supplierData.packageData
+      });
 
       plan[supplierType] = supplierData;
       

@@ -54,6 +54,7 @@ export default function ReviewBookPage() {
   const [loadingError, setLoadingError] = useState(null)
   const [supplierCount, setSupplierCount] = useState(0)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
+  const [fullSupplierData, setFullSupplierData] = useState({})
 
     // Handle addon clicks to open modal
     const handleAddonClick = (addon) => {
@@ -357,8 +358,8 @@ const handleRemoveAddon = async (addonId) => {
       // Get selected suppliers from party plan
       const partyPlan = JSON.parse(localStorage.getItem("user_party_plan") || "{}")
       const suppliers = []
+      const fullSupplierData = {} // NEW: Store full supplier objects
 
-      // Convert party plan to supplier list
       Object.entries(partyPlan).forEach(([key, supplier]) => {
         if (supplier && key !== "addons" && supplier.name) {
           const iconMap = {
@@ -372,17 +373,19 @@ const handleRemoveAddon = async (addonId) => {
             balloons: <Palette className="w-5 h-5" />,
             einvites: <Info className="w-5 h-5" />,
           }
-
+      
           suppliers.push({
             id: supplier.id || key,
             name: supplier.name,
             category: supplier.category || key.charAt(0).toUpperCase() + key.slice(1),
             icon: iconMap[key] || <Info className="w-5 h-5" />,
-            // Include image data from supplier
             image: supplier.image || supplier.imageUrl || supplier.originalSupplier?.image,
             price: supplier.price,
             description: supplier.description,
           })
+          
+          // NEW: Store full supplier object for add-ons extraction
+          fullSupplierData[key] = supplier
         }
       })
 
@@ -390,6 +393,7 @@ const handleRemoveAddon = async (addonId) => {
       const addons = partyPlan.addons || []
       setSelectedAddons(addons)
       setSelectedSuppliers(suppliers)
+      setFullSupplierData(fullSupplierData)
 
       console.log("📋 Loaded party data from localStorage:", {
         details,
@@ -772,6 +776,7 @@ const handleRemoveAddon = async (addonId) => {
           {/* Selected Add-ons */}
           <SelectedAddonsCard 
         selectedAddons={selectedAddons} 
+        suppliers={fullSupplierData}
         onRemoveAddon={handleRemoveAddon}
       />
 

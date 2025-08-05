@@ -1,14 +1,33 @@
+// components/InvitePreview.js
+
 import React from 'react';
 import { themes } from '@/lib/themes';
 
-const InvitePreview = ({ themeKey, inviteData }) => {
+const InvitePreview = ({ themeKey, inviteData, className = "" }) => {
   const theme = themes[themeKey];
+
+
+   // Add safety check
+   if (!theme) {
+    console.error('Theme not found:', themeKey, 'Available themes:', Object.keys(themes));
+    return (
+      <div className={`relative w-full aspect-[3/4] rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg ${className} flex items-center justify-center bg-gray-100`}>
+        <div className="text-center text-gray-500">
+          <div className="text-4xl mb-2">⚠️</div>
+          <div className="font-bold">Theme not found</div>
+          <div className="text-sm">Theme: {themeKey}</div>
+        </div>
+      </div>
+    );
+  }
+  
   const layout = theme.layoutConfig;
 
   return (
     <div
       id="invite-preview"
-      className="relative w-[600px] h-[800px] rounded-xl overflow-hidden border shadow"
+      data-invite-preview
+      className={`relative w-full aspect-[3/4] rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg ${className}`}
     >
       {/* Background */}
       <img
@@ -17,7 +36,7 @@ const InvitePreview = ({ themeKey, inviteData }) => {
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* Text overlays */}
+      {/* Text overlays with responsive scaling */}
       {Object.entries(layout).map(([key, style]) => {
         // Use custom headline styles if available and this is a headline
         const finalStyle = key === 'headline' && inviteData.headlineStyles 
@@ -27,7 +46,25 @@ const InvitePreview = ({ themeKey, inviteData }) => {
         return (
           <div
             key={key}
-            style={{ position: 'absolute', ...finalStyle }}
+            className="absolute text-center"
+            style={{
+              left: finalStyle.left || '50%',
+              top: finalStyle.top || '50%',
+              transform: finalStyle.transform || 'translateX(-50%)',
+              fontSize: getResponsiveFontSize(finalStyle.fontSize, key),
+              fontWeight: finalStyle.fontWeight || 'bold',
+              fontFamily: finalStyle.fontFamily || 'inherit',
+              color: finalStyle.color || '#000',
+              textShadow: finalStyle.textShadow || 'none',
+              fontStyle: finalStyle.fontStyle || 'normal',
+              lineHeight: finalStyle.lineHeight || '1.2',
+              whiteSpace: key === 'headline' ? 'normal' : 'nowrap',
+              wordWrap: 'break-word',
+              maxWidth: key === 'headline' ? '90%' : 'auto',
+              padding: '0', // Ensure no background padding
+              backgroundColor: 'transparent', // Ensure no background
+              border: 'none' // Ensure no borders
+            }}
           >
             {getTextContent(key, inviteData)}
           </div>
@@ -35,6 +72,22 @@ const InvitePreview = ({ themeKey, inviteData }) => {
       })}
     </div>
   );
+};
+
+// Get responsive font sizes based on container size
+const getResponsiveFontSize = (originalSize, key) => {
+  if (typeof originalSize !== 'string') return originalSize;
+
+  const size = parseInt(originalSize);
+  
+  // Scale down fonts for smaller preview (from 600px width to ~300-400px)
+  const scaleFactor = 0.5; // Adjust this to make text bigger or smaller
+  
+  if (key === 'headline') {
+    return `${Math.max(16, size * scaleFactor)}px`;
+  }
+  
+  return `${Math.max(10, size * scaleFactor)}px`;
 };
 
 const getTextContent = (key, data) => {

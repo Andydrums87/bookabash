@@ -261,6 +261,9 @@ const handleSignOut = async () => {
             <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
             Snapspiration
             </Link>
+            <Link href="/favorites" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
+  My Favorites
+</Link>
           </nav>
 
           {/* Right side - Search + CTA */}

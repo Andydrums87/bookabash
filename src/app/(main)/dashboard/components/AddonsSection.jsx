@@ -1,14 +1,49 @@
+// Enhanced AddonsSection to show both standalone addons AND supplier add-ons
 "use client"
 
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Gift, Star, CheckCircle, X, Sparkles } from "lucide-react"
+import { Gift, Star, CheckCircle, X, Sparkles, Package } from "lucide-react"
 
-export default function AddonsSection({ addons = [], handleRemoveAddon }) {
-  // Don't render if no addons
-  if (!addons || addons.length === 0) {
+export default function AddonsSection({ 
+  addons = [], 
+  suppliers = {}, // NEW: Pass suppliers to extract their add-ons
+  handleRemoveAddon 
+}) {
+  // NEW: Extract add-ons from suppliers
+  const supplierAddons = []
+  
+  Object.entries(suppliers).forEach(([supplierType, supplier]) => {
+    if (supplier?.selectedAddons && supplier.selectedAddons.length > 0) {
+      supplier.selectedAddons.forEach(addon => {
+        supplierAddons.push({
+          ...addon,
+          supplierName: supplier.name,
+          supplierType: supplierType,
+          attachedToSupplier: true,
+          // Create unique ID for supplier add-ons
+          displayId: `${supplier.id}-${addon.id}`
+        })
+      })
+    }
+  })
+  
+  // Combine standalone addons and supplier add-ons
+  const allAddons = [...addons, ...supplierAddons]
+  
+  // Don't render if no addons at all
+  if (allAddons.length === 0) {
     return null
+  }
+
+  const handleRemove = (addon) => {
+    if (addon.attachedToSupplier) {
+      // TODO: Handle removing add-ons from suppliers
+      console.log('Cannot remove supplier add-ons yet - need to implement')
+    } else {
+      handleRemoveAddon(addon.id)
+    }
   }
 
   return (
@@ -30,23 +65,45 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
               <Gift className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Your Add-ons</h2>
-              <p className="text-gray-700 mt-1">Extra services to make your party even more special</p>
+              <h2 className="text-2xl font-bold text-gray-900">Your Add-ons & Extras</h2>
+              <p className="text-gray-700 mt-1">
+                {supplierAddons.length > 0 && addons.length > 0 
+                  ? "Package add-ons and extra services for your party"
+                  : supplierAddons.length > 0 
+                  ? "Package add-ons from your selected suppliers"
+                  : "Extra services to make your party even more special"
+                }
+              </p>
             </div>
           </div>
-          <Badge className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white border-0 px-4 py-2 text-sm font-semibold shadow-lg">
-            {addons.length} {addons.length === 1 ? "Add-on" : "Add-ons"} Selected
-          </Badge>
+          <div className="flex gap-2">
+            {supplierAddons.length > 0 && (
+              <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 px-3 py-1 text-sm font-semibold shadow-lg">
+                <Package className="w-3 h-3 mr-1" />
+                {supplierAddons.length} Package
+              </Badge>
+            )}
+            {addons.length > 0 && (
+              <Badge className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white border-0 px-3 py-1 text-sm font-semibold shadow-lg">
+                <Gift className="w-3 h-3 mr-1" />
+                {addons.length} Extra
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Enhanced Add-ons Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {addons.map((addon) => (
+        {allAddons.map((addon) => (
           <Card
-            key={addon.id}
+            key={addon.displayId || addon.id}
             onClick={() => console.log("Addon clicked:", addon.name)}
-            className="group relative overflow-hidden bg-gradient-to-br from-white to-[hsl(var(--primary-50))] border-2 border-[hsl(var(--primary-200))] shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer rounded-2xl hover:scale-[1.02]"
+            className={`group relative overflow-hidden border-2 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer rounded-2xl hover:scale-[1.02] ${
+              addon.attachedToSupplier 
+                ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'
+                : 'bg-gradient-to-br from-white to-[hsl(var(--primary-50))] border-[hsl(var(--primary-200))]'
+            }`}
           >
             {/* Decorative elements */}
             <div className="absolute top-3 left-3 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
@@ -55,7 +112,11 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
 
             <CardContent className="p-0">
               {/* Enhanced Image Section */}
-              <div className="relative h-40 bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] overflow-hidden">
+              <div className={`relative h-40 overflow-hidden ${
+                addon.attachedToSupplier 
+                  ? 'bg-gradient-to-br from-blue-100 to-blue-200'
+                  : 'bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))]'
+              }`}>
                 <Image
                   src={addon.image || "/placeholder.svg"}
                   alt={addon.name}
@@ -68,6 +129,12 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
 
                 {/* Enhanced Status badges */}
                 <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                  {addon.attachedToSupplier && (
+                    <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-1 shadow-lg border-0">
+                      <Package className="w-3 h-3 mr-1" />
+                      Package Add-on
+                    </Badge>
+                  )}
                   {addon.popular && (
                     <Badge className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white text-xs px-3 py-1 shadow-lg border-0">
                       <Star className="w-3 h-3 mr-1 fill-current" />
@@ -84,11 +151,14 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
                 {/* Enhanced Remove button */}
                 <button
                   onClick={(e) => {
-                    e.stopPropagation() // Prevent card navigation
-                    handleRemoveAddon(addon.id)
+                    e.stopPropagation()
+                    handleRemove(addon)
                   }}
-                  className="no-navigate absolute top-3 right-3 w-9 h-9 bg-white/90 hover:bg-white rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group/remove hover:scale-110 z-10"
-                  title="Remove add-on"
+                  className={`no-navigate absolute top-3 right-3 w-9 h-9 bg-white/90 hover:bg-white rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group/remove hover:scale-110 z-10 ${
+                    addon.attachedToSupplier ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title={addon.attachedToSupplier ? "Package add-on cannot be removed separately" : "Remove add-on"}
+                  disabled={addon.attachedToSupplier}
                 >
                   <X className="w-4 h-4 text-gray-600 group-hover/remove:text-red-600 transition-colors" />
                 </button>
@@ -125,22 +195,34 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
 
                 {/* Enhanced Status and category */}
                 <div className="flex items-center justify-between pt-3 border-t border-[hsl(var(--primary-100))]">
-                  <Badge className="bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border-emerald-200 text-xs font-semibold">
+                  <Badge className={`text-xs font-semibold ${
+                    addon.attachedToSupplier 
+                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200'
+                      : 'bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border-emerald-200'
+                  }`}>
                     <CheckCircle className="w-3 h-3 mr-1" />
-                    Added to Party
+                    {addon.attachedToSupplier ? 'Package Add-on' : 'Added to Party'}
                   </Badge>
                   <span className="text-xs text-gray-600 bg-gradient-to-r from-gray-100 to-gray-50 px-3 py-1 rounded-full border border-gray-200 font-medium">
                     {addon.category || "Add-on"}
                   </span>
                 </div>
 
-                {/* Enhanced Supplier info if linked */}
+                {/* Enhanced Supplier info */}
                 {addon.supplierName && (
                   <div className="mt-3 pt-3 border-t border-[hsl(var(--primary-100))]">
-                    <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-white p-2 rounded-lg border border-[hsl(var(--primary-100))]">
+                    <div className={`p-2 rounded-lg border ${
+                      addon.attachedToSupplier 
+                        ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200'
+                        : 'bg-gradient-to-r from-[hsl(var(--primary-50))] to-white border-[hsl(var(--primary-100))]'
+                    }`}>
                       <p className="text-xs text-gray-600">
-                        Added with:{" "}
-                        <span className="font-semibold text-[hsl(var(--primary-700))]">{addon.supplierName}</span>
+                        {addon.attachedToSupplier ? 'Included with:' : 'Added with:'}{" "}
+                        <span className={`font-semibold ${
+                          addon.attachedToSupplier ? 'text-blue-700' : 'text-[hsl(var(--primary-700))]'
+                        }`}>
+                          {addon.supplierName}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -179,13 +261,18 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Add-ons Total</h3>
                 <p className="text-gray-700 font-medium">
-                  {addons.length} premium {addons.length === 1 ? "service" : "services"} selected
+                  {allAddons.length} premium {allAddons.length === 1 ? "service" : "services"} selected
+                  {supplierAddons.length > 0 && addons.length > 0 && (
+                    <span className="text-sm text-gray-600 block">
+                      ({supplierAddons.length} package + {addons.length} extra)
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-[hsl(var(--primary-700))] mb-1">
-                £{addons.reduce((sum, addon) => sum + addon.price, 0)}
+                £{allAddons.reduce((sum, addon) => sum + addon.price, 0)}
               </div>
               <div className="text-sm text-gray-600 bg-white/50 px-3 py-1 rounded-full border border-[hsl(var(--primary-200))]">
                 Total for add-ons
@@ -197,12 +284,12 @@ export default function AddonsSection({ addons = [], handleRemoveAddon }) {
           <div className="mt-6 pt-4 border-t border-[hsl(var(--primary-200))]">
             <div className="flex items-center justify-between text-sm text-gray-700 mb-2">
               <span className="font-medium">Services Added</span>
-              <span className="font-semibold">{addons.length} items</span>
+              <span className="font-semibold">{allAddons.length} items</span>
             </div>
             <div className="w-full bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-full h-2 shadow-inner border border-[hsl(var(--primary-200))]">
               <div
                 className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                style={{ width: `${Math.min((addons.length / 5) * 100, 100)}%` }}
+                style={{ width: `${Math.min((allAddons.length / 5) * 100, 100)}%` }}
               >
                 {/* Animated shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>

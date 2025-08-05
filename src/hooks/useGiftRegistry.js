@@ -15,6 +15,7 @@ export const useGiftRegistry = (partyId) => {
     setError(null);
     
     try {
+      partyDatabaseBackend.debugGiftItemsTable()
       const result = await partyDatabaseBackend.getPartyGiftRegistry(partyId);
       if (result.success) {
         setRegistry(result.registry);
