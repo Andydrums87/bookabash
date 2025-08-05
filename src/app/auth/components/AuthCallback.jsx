@@ -4,15 +4,23 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { CheckCircle, AlertCircle } from "lucide-react"
+import { getBaseUrl, buildUrl } from "@/utils/env" // or "@/lib/env" if that's where it is
 
 export default function AuthCallback() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const videoRef = useRef(null)
-  const [status, setStatus] = useState("processing") // 'processing', 'success', 'error'
+  const [status, setStatus] = useState("processing") // Always start with processing
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState("")
+  const [debugInfo, setDebugInfo] = useState([])
+
+  // Helper function to add debug info
+  const addDebugInfo = (message) => {
+    console.log(message)
+    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
+  }
 
   // Snappy's OAuth journey steps
   const oauthSteps = [
@@ -53,6 +61,7 @@ export default function AuthCallback() {
   // Animate through the steps
   useEffect(() => {
     if (status !== "processing") return
+    
     const stepInterval = setInterval(() => {
       setCurrentStep((prev) => {
         const nextStep = prev + 1
@@ -62,7 +71,8 @@ export default function AuthCallback() {
         }
         return prev
       })
-    }, 2000)
+    }, 2500) // Slightly longer intervals
+    
     return () => clearInterval(stepInterval)
   }, [status])
 
@@ -73,80 +83,98 @@ export default function AuthCallback() {
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev < targetProgress) {
-          return Math.min(prev + 2, targetProgress)
+          return Math.min(prev + 1, targetProgress)
         }
         return prev
       })
-    }, 50)
+    }, 100)
     return () => clearInterval(progressInterval)
   }, [currentStep, status])
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log("🔄 Processing OAuth callback...")
-        // Check if this is actually an OAuth callback by looking for typical OAuth URL params
+        addDebugInfo("🔄 Starting OAuth callback processing...")
+        
+        // Force loading screen to show for at least 2 seconds
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        
+        // Check URL parameters
         const urlParams = new URLSearchParams(window.location.search)
         const hasOAuthParams = urlParams.has("code") || urlParams.has("access_token") || urlParams.has("error")
-        const hasTypeParam = urlParams.has("type") // Our custom parameter
+        const hasTypeParam = urlParams.has("type")
         const returnTo = searchParams.get("return_to")
+        const type = searchParams.get("type")
+        const step = searchParams.get("step")
+        
+        addDebugInfo(`📋 URL params - type: ${type}, step: ${step}, hasOAuth: ${hasOAuthParams}`)
+        
+        // Check for OAuth errors first
+        const error = searchParams.get("error")
+        if (error) {
+          addDebugInfo(`❌ OAuth error from provider: ${error}`)
+          throw new Error(`OAuth error: ${error}`)
+        }
 
         // If no OAuth params and no type param, this might be a direct visit
         if (!hasOAuthParams && !hasTypeParam) {
-          console.log("❌ No OAuth parameters found, might be direct visit")
-          // But let's still try to get the session in case it's a valid callback
+          addDebugInfo("❌ No OAuth parameters found - direct visit or missing params")
+          throw new Error("Invalid callback - no authentication parameters found")
         }
 
-        // Small delay to show the first step
+        // Move to step 1
+        setCurrentStep(1)
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
-        const type = searchParams.get("type")
-        const step = searchParams.get("step")
-        console.log("📋 Callback params:", { type, step })
-
+        addDebugInfo("🔍 Getting user session...")
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        
         if (sessionError) {
-          console.error("❌ Session error:", sessionError)
-          throw new Error("Authentication failed")
+          addDebugInfo(`❌ Session error: ${sessionError.message}`)
+          throw new Error(`Authentication failed: ${sessionError.message}`)
         }
 
         const user = sessionData.session?.user
         if (!user) {
-          throw new Error("No user session found")
+          addDebugInfo("❌ No user session found")
+          throw new Error("No user session found - authentication may have failed")
         }
 
-       
+        addDebugInfo(`✅ User authenticated: ${user.email}`)
 
         // Move to step 2
-        setCurrentStep(1)
+        setCurrentStep(2)
         await new Promise((resolve) => setTimeout(resolve, 1500))
 
-        // Check what type of callback this is from URL params
+        // Route based on callback type
         if (type === "supplier" && step === "onboarding") {
-          console.log("🎯 Supplier onboarding flow")
+          addDebugInfo("🎯 Supplier onboarding flow")
           await handleSupplierOnboarding(user)
         } else if (type === "signin") {
-          console.log("🎯 Regular OAuth sign-in flow")
+          addDebugInfo("🎯 Regular OAuth sign-in flow")
           await handleRegularSignIn(user)
         } else {
           // No type specified - determine from user metadata
           const userType = user.user_metadata?.user_type
-          console.log("🔍 No type specified, checking user metadata:", userType)
+          addDebugInfo(`🔍 No type specified, checking user metadata: ${userType}`)
 
           if (userType === "supplier") {
-            console.log("🎯 User is supplier type, checking for profile...")
-            await handleRegularSignIn(user) // This will handle supplier routing
+            addDebugInfo("🎯 User is supplier type, checking for profile...")
+            await handleRegularSignIn(user)
           } else {
-            console.log("🎯 Regular user, going to customer dashboard")
+            addDebugInfo("🎯 Regular user, going to customer dashboard")
             setProgress(100)
             await new Promise((resolve) => setTimeout(resolve, 500))
             setStatus("success")
             setTimeout(() => {
-             router.push(decodeURIComponent(returnTo))
+              const redirectUrl = returnTo ? decodeURIComponent(returnTo) : buildUrl('/dashboard')
+              addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+              window.location.href = redirectUrl
             }, 2000)
           }
         }
       } catch (error) {
+        addDebugInfo(`💥 Auth callback error: ${error.message}`)
         console.error("💥 Auth callback error:", error)
         setStatus("error")
         setErrorMessage(error.message || "Authentication failed")
@@ -155,6 +183,8 @@ export default function AuthCallback() {
 
     const handleSupplierOnboarding = async (user) => {
       try {
+        addDebugInfo("🏗️ Starting supplier onboarding...")
+        
         // Move to step 3
         setCurrentStep(2)
         const businessDataStr = localStorage.getItem("pendingBusinessData")
@@ -163,10 +193,11 @@ export default function AuthCallback() {
         }
 
         const businessData = JSON.parse(businessDataStr)
-        console.log("📋 Retrieved business data:", businessData)
+        addDebugInfo(`📋 Retrieved business data for: ${businessData.businessName}`)
 
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
+        // Create or update onboarding draft
         const { data: draftResult, error: draftError } = await supabase
           .from("onboarding_drafts")
           .insert({
@@ -182,7 +213,7 @@ export default function AuthCallback() {
 
         if (draftError) {
           if (draftError.code === "23505") {
-            console.log("📝 Email exists in drafts, updating...")
+            addDebugInfo("📝 Email exists in drafts, updating...")
             const { error: updateError } = await supabase
               .from("onboarding_drafts")
               .update({
@@ -204,6 +235,7 @@ export default function AuthCallback() {
         setCurrentStep(3)
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
+        // Create supplier profile
         const supplierData = {
           name: businessData.businessName,
           businessName: businessData.businessName,
@@ -267,58 +299,62 @@ export default function AuthCallback() {
         const { error: supplierError } = await supabase.from("suppliers").insert(supplierRecord)
 
         if (supplierError) {
-          console.error("❌ Failed to create supplier:", supplierError)
+          addDebugInfo(`❌ Failed to create supplier: ${supplierError.message}`)
           throw new Error("Failed to create supplier profile")
         }
 
+        // Cleanup
         localStorage.removeItem("pendingBusinessData")
-
         await supabase.from("onboarding_drafts").delete().eq("email", user.email)
+
+        addDebugInfo("✅ Supplier profile created successfully")
 
         // Success!
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 800))
         setStatus("success")
         setTimeout(() => {
-          router.push("/suppliers/dashboard")
+          const redirectUrl = buildUrl('/suppliers/dashboard')
+          addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+          window.location.href = redirectUrl
         }, 2500)
       } catch (error) {
-        console.error("💥 Supplier onboarding error:", error)
+        addDebugInfo(`💥 Supplier onboarding error: ${error.message}`)
         throw error
       }
     }
 
     const handleRegularSignIn = async (user) => {
       try {
+        addDebugInfo("🔍 Processing regular sign-in...")
         setCurrentStep(1)
 
-            // ✅ Check URL parameter first - this overrides user metadata
-    const urlUserType = searchParams.get("user_type")
+        // Check URL parameter first - this overrides user metadata
+        const urlUserType = searchParams.get("user_type")
 
         if (urlUserType === "customer") {
-      console.log("🎯 Customer sign-in flow (from URL parameter)")
-      // Skip supplier checks and go straight to customer dashboard
-      setProgress(100)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setStatus("success")
-      
-      const returnTo = searchParams.get("return_to")
-      setTimeout(() => {
-        if (returnTo) {
-          router.push(decodeURIComponent(returnTo))
-        } else {
-          router.push("/dashboard")
+          addDebugInfo("🎯 Customer sign-in flow (from URL parameter)")
+          setProgress(100)
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          setStatus("success")
+          
+          const returnTo = searchParams.get("return_to")
+          setTimeout(() => {
+            const redirectUrl = returnTo 
+              ? decodeURIComponent(returnTo) 
+              : buildUrl('/dashboard')
+            addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+            window.location.href = redirectUrl
+          }, 2000)
+          return
         }
-      }, 2000)
-      return
-    }
 
-
+        // Check if user already has a supplier profile
         const { data: supplierData, error: supplierError } = await supabase
           .from("suppliers")
           .select("*")
           .eq("auth_user_id", user.id)
-          .eq("is_primary", true) // ✅ Only get primary business
+          .eq("is_primary", true)
           .maybeSingle()
 
         if (supplierError && supplierError.code !== "PGRST116") {
@@ -328,18 +364,26 @@ export default function AuthCallback() {
         await new Promise((resolve) => setTimeout(resolve, 1500))
 
         if (supplierData) {
+          addDebugInfo("✅ Existing supplier found, redirecting to dashboard")
           setProgress(100)
           await new Promise((resolve) => setTimeout(resolve, 500))
           setStatus("success")
           setTimeout(() => {
-            router.push("/suppliers/dashboard")
+            const redirectUrl = buildUrl('/suppliers/dashboard')
+            addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+            window.location.href = redirectUrl
           }, 2000)
           return
         }
 
+        // Check if user is a supplier type
         const userType = user.user_metadata?.user_type
+        addDebugInfo(`👤 User type from metadata: ${userType}`)
+        
         if (userType === "supplier") {
           setCurrentStep(2)
+          
+          // Check for existing onboarding draft
           const { data: draft, error: draftError } = await supabase
             .from("onboarding_drafts")
             .select("*")
@@ -347,38 +391,50 @@ export default function AuthCallback() {
             .maybeSingle()
 
           if (draft) {
+            addDebugInfo("📄 Found onboarding draft, creating supplier profile")
             await createSupplierFromDraft(user, draft)
             setProgress(100)
             await new Promise((resolve) => setTimeout(resolve, 500))
             setStatus("success")
             setTimeout(() => {
-              router.push("/suppliers/dashboard")
+              const redirectUrl = buildUrl('/suppliers/dashboard')
+              addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+              window.location.href = redirectUrl
             }, 2000)
             return
           }
 
+          addDebugInfo("🏗️ No draft found, redirecting to onboarding")
           setProgress(100)
           await new Promise((resolve) => setTimeout(resolve, 500))
           setStatus("success")
           setTimeout(() => {
-            router.push("/suppliers/onboarding")
+            const redirectUrl = buildUrl('/suppliers/onboarding')
+            addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+            window.location.href = redirectUrl
           }, 2000)
           return
         }
 
+        // Default to customer dashboard
+        addDebugInfo("🎯 Default to customer dashboard")
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 500))
         setStatus("success")
         setTimeout(() => {
-          router.push("/dashboard")
+          const redirectUrl = buildUrl('/dashboard')
+          addDebugInfo(`🚀 Redirecting to: ${redirectUrl}`)
+          window.location.href = redirectUrl
         }, 2000)
       } catch (error) {
-        console.error("💥 Regular sign-in error:", error)
+        addDebugInfo(`💥 Regular sign-in error: ${error.message}`)
         throw error
       }
     }
 
     const createSupplierFromDraft = async (user, draft) => {
+      addDebugInfo(`🏭 Creating supplier from draft for: ${draft.business_name}`)
+      
       const supplierData = {
         name: draft.business_name,
         businessName: draft.business_name,
@@ -442,38 +498,39 @@ export default function AuthCallback() {
       const { error: supplierError } = await supabase.from("suppliers").insert(supplierRecord)
 
       if (supplierError) {
-        console.error("❌ Failed to create supplier:", supplierError)
+        addDebugInfo(`❌ Failed to create supplier: ${supplierError.message}`)
         throw new Error("Failed to create supplier profile")
       }
 
       await supabase.from("onboarding_drafts").delete().eq("email", user.email)
-
-      console.log("✅ Supplier profile created from draft during sign-in")
+      addDebugInfo("✅ Supplier profile created from draft")
     }
 
+    // Always run the callback handler
     handleAuthCallback()
   }, [searchParams, router])
 
+  // Always show loading screen first
   if (status === "processing") {
     return (
       <div className="fixed inset-0 z-50 bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex flex-col items-center justify-center px-4 text-center">
         {/* Large Snappy Video Animation */}
         <div className="relative w-full max-w-2xl aspect-video mb-8 animate-fade-in-up">
-        <video
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="rounded-xl shadow-lg w-full"
-        poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753083738/ChatGPT_Image_Jul_21_2025_08_42_11_AM_tznmag.png"
-      >
-        <source
-          src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753083603/wQEAljVs5VrDNI1dyE8t8_output_nowo6h.mp4"
-          type="video/mp4"
-        />
-        Your browser does not support the video tag.
-      </video>
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="rounded-xl shadow-lg w-full"
+            poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753083738/ChatGPT_Image_Jul_21_2025_08_42_11_AM_tznmag.png"
+          >
+            <source
+              src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753083603/wQEAljVs5VrDNI1dyE8t8_output_nowo6h.mp4"
+              type="video/mp4"
+            />
+            Your browser does not support the video tag.
+          </video>
 
           {/* Video overlay with subtle gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl pointer-events-none"></div>
@@ -529,6 +586,17 @@ export default function AuthCallback() {
 
           {/* Fun message */}
           <p className="text-sm text-gray-500 italic">Snappy is working his magic... 🐊✨</p>
+          
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && debugInfo.length > 0 && (
+            <div className="mt-8 text-left bg-gray-900 text-green-400 p-4 rounded-lg max-h-40 overflow-y-auto">
+              <div className="text-xs font-mono space-y-1">
+                {debugInfo.map((info, index) => (
+                  <div key={index}>{info}</div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Animation styles */}
@@ -607,15 +675,26 @@ export default function AuthCallback() {
 
           <p className="text-red-600 mb-8 leading-relaxed">{errorMessage}</p>
 
+          {/* Show debug info in development */}
+          {process.env.NODE_ENV === 'development' && debugInfo.length > 0 && (
+            <div className="mb-8 text-left bg-gray-900 text-red-400 p-4 rounded-lg max-h-40 overflow-y-auto">
+              <div className="text-xs font-mono space-y-1">
+                {debugInfo.map((info, index) => (
+                  <div key={index}>{info}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             <button
-              onClick={() => router.push("/suppliers/onboarding")}
+              onClick={() => window.location.href = buildUrl('/suppliers/onboarding')}
               className="w-full bg-primary-600 text-white py-4 px-6 rounded-xl hover:bg-primary-700 transition-colors font-semibold text-lg shadow-lg"
             >
               Restart Onboarding
             </button>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => window.location.href = getBaseUrl()}
               className="w-full bg-gray-100 text-gray-700 py-4 px-6 rounded-xl hover:bg-gray-200 transition-colors font-medium"
             >
               Return Home

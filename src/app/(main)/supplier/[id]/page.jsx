@@ -160,6 +160,13 @@ export default function SupplierProfilePage({ params }) {
   const [finalPackageData, setFinalPackageData] = useState(null)
   const [progress, setProgress] = useState(0)
   const [showPendingEnquiryModal, setShowPendingEnquiryModal] = useState(false)
+  // NEW: Add enquiry status state
+const [enquiryStatus, setEnquiryStatus] = useState({
+  isAwaiting: false,
+  pendingCount: 0,
+  enquiries: [],
+  loading: false
+})
 
   const id = useMemo(() => resolvedParams.id, [resolvedParams.id])
 
@@ -238,46 +245,87 @@ export default function SupplierProfilePage({ params }) {
   }, [backendSupplier])
 
 
-  const hasEnquiriesPending = useCallback(() => {
-    try {
-      // Check localStorage for party plan data
-      const partyPlan = localStorage.getItem('user_party_plan')
-      if (!partyPlan) return false
-      
-      const parsed = JSON.parse(partyPlan)
-      
-      // Check if any suppliers have pending enquiries
-      // This assumes you store enquiry status in your party plan
-      // You might need to adjust this based on your data structure
-      const supplierCategories = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations']
-      
-      return supplierCategories.some(category => {
-        const supplier = parsed[category]
-        return supplier && supplier.status === 'pending'
-      })
-    } catch (error) {
-      console.error('Error checking pending enquiries:', error)
-      return false
-    }
-  }, [])
-
-  // Get count of pending enquiries for display
-const getPendingEnquiriesCount = useCallback(() => {
+// NEW: Database-based enquiry checking
+const checkEnquiryStatus = useCallback(async () => {
   try {
-    const partyPlan = localStorage.getItem('user_party_plan')
-    if (!partyPlan) return 0
+    setEnquiryStatus(prev => ({ ...prev, loading: true }))
     
-    const parsed = JSON.parse(partyPlan)
-    const supplierCategories = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations']
+    // Get current party ID from database
+    const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
     
-    return supplierCategories.filter(category => {
-      const supplier = parsed[category]
-      return supplier && supplier.status === 'pending'
-    }).length
+    if (!partyIdResult.success || !partyIdResult.partyId) {
+      console.log('ℹ️ No current party found - user can modify plan freely')
+      setEnquiryStatus({
+        isAwaiting: false,
+        pendingCount: 0,
+        enquiries: [],
+        loading: false
+      })
+      return { canModifyPlan: true, reason: 'no_current_party' }
+    }
+    
+    // Check if party is awaiting responses
+    const awaitingResult = await partyDatabaseBackend.isPartyAwaitingResponses(partyIdResult.partyId)
+    
+    if (awaitingResult.success) {
+      setEnquiryStatus({
+        isAwaiting: awaitingResult.isAwaiting,
+        pendingCount: awaitingResult.pendingCount || 0,
+        enquiries: awaitingResult.enquiries || [],
+        loading: false
+      })
+      
+      return {
+        canModifyPlan: !awaitingResult.isAwaiting,
+        reason: awaitingResult.isAwaiting ? 'awaiting_responses' : 'can_modify',
+        pendingCount: awaitingResult.pendingCount || 0
+      }
+    } else {
+      console.error('❌ Error checking enquiry status:', awaitingResult.error)
+      // Default to allowing modifications if there's an error
+      setEnquiryStatus({
+        isAwaiting: false,
+        pendingCount: 0,
+        enquiries: [],
+        loading: false
+      })
+      return { canModifyPlan: true, reason: 'error_default_allow' }
+    }
+    
   } catch (error) {
-    return 0
+    console.error('❌ Exception checking enquiry status:', error)
+    setEnquiryStatus({
+      isAwaiting: false,
+      pendingCount: 0,
+      enquiries: [],
+      loading: false
+    })
+    return { canModifyPlan: true, reason: 'exception_default_allow' }
   }
 }, [])
+
+// NEW: Effect to check enquiry status on component mount
+useEffect(() => {
+  if (hasValidPlan) {
+    checkEnquiryStatus()
+  }
+}, [hasValidPlan, checkEnquiryStatus])
+
+const hasEnquiriesPending = useCallback(() => {
+  return enquiryStatus.isAwaiting
+}, [enquiryStatus.isAwaiting])
+
+const getPendingEnquiriesCount = useCallback(() => {
+  return enquiryStatus.pendingCount
+}, [enquiryStatus.pendingCount])
+
+
+
+  // NEW: Function to check if user can modify the plan
+  const canModifyPartyPlan = useCallback(async () => {
+    const status = await checkEnquiryStatus()
+    return status.canModifyPlan
+  }, [checkEnquiryStatus])
 
 
   // Fix the party plan validation with stable reference
@@ -606,38 +654,43 @@ const getPendingEnquiriesCount = useCallback(() => {
       setTimeout(() => setNotification(null), 3000)
       return
     }
+    if (hasValidPartyPlan()) {
+      const canModify = await canModifyPartyPlan()
 
-    if (hasEnquiriesPending()) {
-      setShowPendingEnquiryModal(true)
+     
+      if (!canModify) {
+        console.log('🚫 Cannot modify plan - party is awaiting supplier responses')
+        setShowPendingEnquiryModal(true)
+        return
+      }
+    }
+
+     // Check if we need a date first (calendar-first flow)
+     if (!hasValidPartyPlan() && !selectedDate) {
+      // Scroll to calendar with smooth animation
+      const calendarElement = document.getElementById('availability-calendar')
+      if (calendarElement) {
+        calendarElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        })
+        
+        // Add a gentle highlight effect
+        calendarElement.classList.add('ring-4', 'ring-orange-300', 'ring-opacity-75', 'transition-all', 'duration-500')
+        setTimeout(() => {
+          calendarElement?.classList.remove('ring-4', 'ring-orange-300', 'ring-opacity-75')
+        }, 2500)
+      }
+      
+      setNotification({ 
+        type: "info", 
+        message: "📅 Please select an available date from the calendar below first!",
+        duration: 4000
+      })
+      setTimeout(() => setNotification(null), 4000)
       return
     }
-
-    // NEW: Check if we need a date first (calendar-first flow)
-  if (!hasValidPartyPlan() && !selectedDate) {
-    // Scroll to calendar with smooth animation
-    const calendarElement = document.getElementById('availability-calendar')
-    if (calendarElement) {
-      calendarElement.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center',
-        inline: 'nearest'
-      })
-      
-      // Add a gentle highlight effect
-      calendarElement.classList.add('ring-4', 'ring-orange-300', 'ring-opacity-75', 'transition-all', 'duration-500')
-      setTimeout(() => {
-        calendarElement?.classList.remove('ring-4', 'ring-orange-300', 'ring-opacity-75')
-      }, 2500)
-    }
-    
-    setNotification({ 
-      type: "info", 
-      message: "📅 Please select an available date from the calendar below first!",
-      duration: 4000
-    })
-    setTimeout(() => setNotification(null), 4000)
-    return
-  }
 
 
     if (!hasValidPartyPlan()) {
@@ -1007,7 +1060,7 @@ const getPendingEnquiriesCount = useCallback(() => {
         theme={partyPlan?.theme || "default"}
         progress={progress}
       />
-// In your SupplierProfilePage component, update the MobileBookingBar usage:
+
 
 <MobileBookingBar 
   selectedPackage={packages.find(pkg => pkg.id === selectedPackageId) || packages[0] || null}
@@ -1053,17 +1106,18 @@ const getPendingEnquiriesCount = useCallback(() => {
           preSelectedDate={getSelectedCalendarDate()} 
         />
       )}
-<PendingEnquiryModal
-  isOpen={showPendingEnquiryModal}
-  onClose={() => setShowPendingEnquiryModal(false)}
-  supplier={supplier} // Pass the full supplier object instead of just the name
-  pendingCount={getPendingEnquiriesCount()}
-  estimatedResponseTime="24 hours"
-  onViewDashboard={() => {
-    setShowPendingEnquiryModal(false)
-    router.push('/dashboard')
-  }}
-/>
+ <PendingEnquiryModal
+        isOpen={showPendingEnquiryModal}
+        onClose={() => setShowPendingEnquiryModal(false)}
+        supplier={supplier}
+        pendingCount={getPendingEnquiriesCount()}
+        enquiries={enquiryStatus.enquiries} // NEW: Pass actual enquiry data
+        estimatedResponseTime="24 hours"
+        onViewDashboard={() => {
+          setShowPendingEnquiryModal(false)
+          router.push('/dashboard')
+        }}
+      />
     </div>
   )
 }

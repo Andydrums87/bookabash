@@ -655,8 +655,8 @@ export default function AnimatedRSVPPage() {
         )}
       </div>
 
-      {/* RSVP Modal */}
-      {showRSVPModal && (
+   {/* RSVP Modal - Fixed for mobile */}
+   {showRSVPModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <Card className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardContent className="p-6">
@@ -718,32 +718,96 @@ export default function AnimatedRSVPPage() {
 
                 {rsvpData.status === 'yes' && (
                   <>
+                    {/* Improved number inputs with + - buttons for mobile */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           <Users className="w-4 h-4 inline mr-1" />
                           Total Guests
                         </label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={rsvpData.guestCount}
-                          onChange={(e) => setRsvpData(prev => ({ ...prev, guestCount: parseInt(e.target.value) || 1 }))}
-                          className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                        />
+                        <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
+                          <button
+                            type="button"
+                            onClick={() => setRsvpData(prev => ({ 
+                              ...prev, 
+                              guestCount: Math.max(1, prev.guestCount - 1) 
+                            }))}
+                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={rsvpData.guestCount}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 1;
+                              setRsvpData(prev => ({ ...prev, guestCount: Math.max(1, value) }));
+                            }}
+                            className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setRsvpData(prev => ({ 
+                              ...prev, 
+                              guestCount: Math.min(20, prev.guestCount + 1) 
+                            }))}
+                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           <Baby className="w-4 h-4 inline mr-1" />
                           Children
                         </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={rsvpData.childrenCount}
-                          onChange={(e) => setRsvpData(prev => ({ ...prev, childrenCount: parseInt(e.target.value) || 0 }))}
-                          className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                        />
+                        <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
+                          <button
+                            type="button"
+                            onClick={() => setRsvpData(prev => ({ 
+                              ...prev, 
+                              childrenCount: Math.max(0, prev.childrenCount - 1) 
+                            }))}
+                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            value={rsvpData.childrenCount}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              // Handle NaN case properly
+                              const finalValue = isNaN(value) ? 0 : Math.max(0, value);
+                              setRsvpData(prev => ({ ...prev, childrenCount: finalValue }));
+                            }}
+                            onBlur={(e) => {
+                              // Ensure valid value on blur
+                              const value = parseInt(e.target.value);
+                              if (isNaN(value) || value < 0) {
+                                setRsvpData(prev => ({ ...prev, childrenCount: 0 }));
+                              }
+                            }}
+                            className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setRsvpData(prev => ({ 
+                              ...prev, 
+                              childrenCount: Math.min(10, prev.childrenCount + 1) 
+                            }))}
+                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -773,6 +837,11 @@ export default function AnimatedRSVPPage() {
                     rows={3}
                     className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
                   />
+                </div>
+
+                {/* Debug info - remove this in production */}
+                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                  Debug: Guests: {rsvpData.guestCount}, Children: {rsvpData.childrenCount}, Name: "{rsvpData.guestName}"
                 </div>
 
                 <Button

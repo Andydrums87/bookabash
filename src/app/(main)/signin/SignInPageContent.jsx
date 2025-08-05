@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { getBaseUrl } from '@/utils/env' // Make sure this import is there
 
 export default function SignInPageContent() {
   const router = useRouter()
@@ -150,22 +151,29 @@ export default function SignInPageContent() {
     }
   }
 
-  // Handle OAuth sign in
+
+
   const handleOAuthSignIn = async (provider) => {
     setError("")
     setOauthLoading(provider)
-
+  
     try {
       console.log(`🔐 Starting ${provider} OAuth sign-in...`)
       
-      // Build redirect URL with return parameters
-      let redirectUrl = `${window.location.origin}/auth/callback?type=signin`
+      // ✅ Use getBaseUrl() instead of window.location.origin
+      let redirectUrl = `${getBaseUrl()}/auth/callback?type=signin`
+      
       if (returnTo) {
         redirectUrl += `&return_to=${encodeURIComponent(returnTo)}`
       }
       if (userType) {
         redirectUrl += `&user_type=${userType}`
       }
+      
+      // 🐛 DEBUG: Check what URL we're actually using
+      console.log('🎯 Redirect URL:', redirectUrl)
+      console.log('🏠 getBaseUrl():', getBaseUrl())
+      console.log('🌍 window.location.origin:', window.location.origin)
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider,

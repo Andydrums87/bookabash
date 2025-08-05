@@ -2786,7 +2786,116 @@ async hasCreatedEInvites(partyId) {
     return { success: false, error: error.message };
   }
 }
+async hasPartyPendingEnquiries(partyId) {
+  try {
+    console.log('🔍 Checking for pending enquiries for party:', partyId);
+    
+    const { data: enquiries, error } = await supabase
+      .from('enquiries')
+      .select('id, status, supplier_category, created_at')
+      .eq('party_id', partyId)
+      .eq('status', 'pending') // Only check for pending enquiries
+      .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('❌ Error checking pending enquiries:', error);
+      return { success: false, error: error.message, hasPending: false, count: 0 };
+    }
+
+    const hasPending = enquiries && enquiries.length > 0;
+    
+    console.log(`📊 Found ${enquiries?.length || 0} pending enquiries`);
+    
+    return {
+      success: true,
+      hasPending: hasPending,
+      count: enquiries?.length || 0,
+      enquiries: enquiries || []
+    };
+    
+  } catch (error) {
+    console.error('❌ Exception checking pending enquiries:', error);
+    return { success: false, error: error.message, hasPending: false, count: 0 };
+  }
+}
+
+/**
+ * Check if party is in awaiting response stage
+ */
+async isPartyAwaitingResponses(partyId) {
+  try {
+    console.log('🔍 Checking if party is awaiting responses:', partyId);
+    
+    // Get party status first
+    const { data: party, error: partyError } = await supabase
+      .from('parties')
+      .select('status')
+      .eq('id', partyId)
+      .single();
+
+    if (partyError) {
+      console.error('❌ Error fetching party status:', partyError);
+      return { success: false, error: partyError.message, isAwaiting: false };
+    }
+
+    // If party status is 'planned', it means enquiries have been sent
+    if (party.status === 'planned') {
+      const enquiryResult = await this.hasPartyPendingEnquiries(partyId);
+      
+      if (enquiryResult.success && enquiryResult.hasPending) {
+        console.log('✅ Party is awaiting supplier responses');
+        return {
+          success: true,
+          isAwaiting: true,
+          pendingCount: enquiryResult.count,
+          enquiries: enquiryResult.enquiries
+        };
+      }
+    }
+
+    console.log('✅ Party is not awaiting responses (can modify plan)');
+    return {
+      success: true,
+      isAwaiting: false,
+      pendingCount: 0,
+      enquiries: []
+    };
+    
+  } catch (error) {
+    console.error('❌ Exception checking if party is awaiting responses:', error);
+    return { success: false, error: error.message, isAwaiting: false };
+  }
+}
+
+/**
+ * Get current party ID from user session
+ */
+async getCurrentPartyId() {
+  try {
+    const partyResult = await this.getCurrentParty();
+    
+    if (partyResult.success && partyResult.party) {
+      return {
+        success: true,
+        partyId: partyResult.party.id
+      };
+    }
+    
+    return {
+      success: false,
+      error: 'No current party found',
+      partyId: null
+    };
+    
+  } catch (error) {
+    console.error('❌ Error getting current party ID:', error);
+    return {
+      success: false,
+      error: error.message,
+      partyId: null
+    };
+  }
+}
 }
 // Create singleton instance
 export const partyDatabaseBackend = new PartyDatabaseBackend()
