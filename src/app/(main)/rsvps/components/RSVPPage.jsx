@@ -2,7 +2,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import RSVPManagementPage from "../components/RSVPManagementPage"
+import RSVPManagementPage from "./RSVPManagementPage"
 
 export default function RSVPPage() {
   const params = useParams()

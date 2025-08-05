@@ -24,7 +24,7 @@ import { Slider } from "@/components/ui/slider"
 import Link from "next/link"
 import { useGiftSuggestions, useGiftSearch } from "@/hooks/useGiftRegistry"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
-import ProductDetailModal from "../components/ProductDetailModal"
+import ProductDetailModal from "./ProductDetailModal"
 
 export default function GiftRegistryShop() {
   const router = useRouter()

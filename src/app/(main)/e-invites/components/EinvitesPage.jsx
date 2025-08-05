@@ -5,27 +5,27 @@ import { useEffect, useRef } from "react"
 import { themes } from "@/lib/themes"
 
 // Import all components
-import HeroSection from "./components/HeroSection"
-import WizardProgress from "./components/WizardProgress"
-import WizardNavigation from "./components/WizardNavigation"
-import UnifiedThemeSelection from "./components/UnifiedThemeSelection"
-import AIOptionsSelection from "./components/AIOptionsSelection"
-import PartyDetailsForm from "./components/PartyDetailsForm"
-import GuestManagement from "./components/GuestManagement"
-import PreviewAndActions from "./components/PreviewAndActions"
+import HeroSection from "./HeroSection"
+import WizardProgress from "./WizardProgress"
+import WizardNavigation from "./WizardNavigation"
+import UnifiedThemeSelection from "./UnifiedThemeSelection"
+import AIOptionsSelection from "./AIOptionsSelection"
+import PartyDetailsForm from "./PartyDetailsForm"
+import GuestManagement from "./GuestManagement"
+import PreviewAndActions from "./PreviewAndActions"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 
 // Import custom hooks
-import { useInviteData } from "./hooks/useInviteData"
-import { useGuestManagement } from "./hooks/useGuestManagement"
-import { useAIGen } from "./hooks/useAIGen"
-import { useSaveState } from "./hooks/useSaveState"
-import { useWizardSteps, WIZARD_STEPS } from "./hooks/useWizardSteps"
+import { useInviteData } from "../hooks/useInviteData"
+import { useGuestManagement } from "../hooks/useGuestManagement"
+import { useAIGen } from "../hooks/useAIGen"
+import { useSaveState } from "../hooks/useSaveState"
+import { useWizardSteps, WIZARD_STEPS } from "../hooks/useWizardSteps"
 
 // Import utils
-import { formatDateForDisplay, getBirthdayColor } from "./utils/helperFunctions"
-import { getHeadlineText, getHeadlineStyles } from "./utils/headlineUtils"
-import { uploadFinalInvite } from "./utils/cloudinaryInviteUpload"
+import { formatDateForDisplay, getBirthdayColor } from "../utils/helperFunctions"
+import { getHeadlineText, getHeadlineStyles } from "../utils/headlineUtils"
+import { uploadFinalInvite } from "../utils/cloudinaryInviteUpload"
 
 const EInvitesPage = ({ onSaveSuccess }) => {
   const canvasRef = useRef(null)
