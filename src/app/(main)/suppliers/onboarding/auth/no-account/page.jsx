@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Building, ArrowRight, Home, LogIn } from "lucide-react"
 
 export default function NoBusinessAccountPage() {
-  const searchParams = useSearchParams()
+
   const [userEmail, setUserEmail] = useState("")
 
   useEffect(() => {
