@@ -281,53 +281,36 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
 
         <div className="mx-auto max-w-screen">
           {/* Enhanced Hero Section - Full Width */}
-          <div className="relative h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden rounded-b-3xl shadow-2xl">
-            <div className="w-full h-full absolute bg-primary-400">
-              <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753138477/d5kbrecfu7bihw3agbpk.png"
-                alt="People celebrating at a party"
-                fill
-                className="object-cover opacity-60"
-              />
-            </div>
+          <div className="relative w-full h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+      <div className="absolute inset-0 bg-black/10"></div>
 
-            {/* Decorative elements */}
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute top-10 left-10 w-4 h-4 bg-white/20 rounded-full animate-pulse"></div>
-              <div className="absolute top-20 right-16 w-2 h-2 bg-white/30 rounded-full animate-pulse delay-300"></div>
-              <div className="absolute bottom-16 left-20 w-3 h-3 bg-white/25 rounded-full animate-pulse delay-700"></div>
-              <Sparkles className="absolute top-16 right-10 w-6 h-6 text-white/30 animate-pulse delay-500" />
-            </div>
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-10 left-10 w-4 h-4 bg-white/20 rounded-full animate-pulse"></div>
+        <div className="absolute top-20 right-16 w-2 h-2 bg-white/30 rounded-full animate-pulse delay-300"></div>
+        <div className="absolute bottom-16 left-20 w-3 h-3 bg-white/25 rounded-full animate-pulse delay-700"></div>
+        <Sparkles className="absolute top-16 right-10 w-6 h-6 text-white/30 animate-pulse delay-500" />
+      </div>
 
-            {/* Hero Content - Full Width */}
-            <div className="relative h-full flex justify-center items-center px-6 sm:px-8">
-              <div className="w-full max-w-6xl mx-auto text-center text-white">
-                <div className="mb-6">
-                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 leading-tight">
-                    <span className="bg-white bg-clip-text text-transparent drop-shadow-lg">
-                      Let's Create Magic Together! 
-                    </span>
-                  </h1>
-                  <p className="text-lg sm:text-xl md:text-2xl font-medium opacity-90 max-w-4xl mx-auto leading-relaxed">
-                    🎉 Just a few quick details to plan your <span className="font-bold">AMAZING</span> celebration! 🎈
-                  </p>
-                </div>
+      <div className="relative h-full flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center text-white">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-6 drop-shadow-2xl leading-tight">
+          Let's Create
+            <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent drop-shadow-lg">
+            Magic Together!
+            </span>
+          </h1>
+          <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold">
+          🎉 Just a few quick details to plan your <span className="font-bold">AMAZING</span> celebration! 🎈
+          </p>
 
-                {/* Floating elements */}
-                <div className="flex justify-center space-x-4 opacity-80">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium">
-                    🎈 Trusted by 10,000+ families
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-medium hidden sm:block">
-                    ⭐ 4.9/5 rating
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Smooth transition */}
-            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
-          </div>
+        </div>
+      </div>
+
+      {/* Smooth transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
+    </div>
 
           {/* Progress Steps */}
           <div className="bg-white shadow-sm border-b border-[hsl(var(--primary-100))]">
