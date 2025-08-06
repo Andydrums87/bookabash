@@ -18,7 +18,7 @@ export default function HomePage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    date: "2025-08-16",
+    date: "yyyy/MM/dd",
     theme: "princess", 
     guestCount: "15",
     postcode: "",
@@ -100,6 +100,18 @@ export default function HomePage() {
   }
 
 
+// Add this validation function to your component
+const isFormValid = () => {
+  return (
+    formData.date && 
+    formData.theme && 
+    formData.guestCount && 
+    formData.postcode && 
+    postcodeValid // Make sure postcode is not just filled but also valid
+  );
+};
+
+
   const validateAndFormatPostcode = (postcode) => {
     if (!postcode) return { isValid: true, formatted: "" }
     const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i
@@ -119,6 +131,15 @@ export default function HomePage() {
 const handleSearch = async (e) => {
   e.preventDefault()
   if (isSubmitting) return
+
+   // Check if form is valid before submitting
+   if (!isFormValid()) {
+    // You could show a toast notification here or highlight invalid fields
+    console.log('Please fill in all required fields');
+    // Optionally scroll to first empty field or show an alert
+    alert('Please fill in all required fields before submitting.');
+    return;
+  }
 
   try {
     setIsSubmitting(true)

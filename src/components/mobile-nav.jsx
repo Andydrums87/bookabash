@@ -260,7 +260,7 @@ const handleSignOut = () => {
                       asChild
                     >
                       <Link href="/suppliers/onboarding" onClick={closeMenu}>
-                        List with us
+                        For Business
                       </Link>
                     </Button>
                   </div>

@@ -1,10 +1,13 @@
 "use client"
 
 import Image from "next/image"
-import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar, UsersIcon, MapPin } from "lucide-react"
+import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -86,38 +89,84 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
               
-              {/* Event Date */}
-              <div className="col-span-2 md:col-span-1 space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => handleFieldChange('date', e.target.value)}
-                    className="bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] !rounded-xl h-12 pl-10 w-full"
-                    placeholder="Date"
-                  />
-                </div>
-              </div>
+   {/* Event Date */}
+<div className="col-span-2 md:col-span-1 space-y-2">
+  <label className="block text-sm font-medium text-gray-700">
+    Event date <span className="text-red-500">*</span>
+  </label>
+  <div className="relative">
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={`
+            w-full justify-start text-left font-normal h-12 pl-10 pr-4
+            bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl
+            hover:bg-gray-50 hover:border-[hsl(var(--primary-300))] transition-colors
+            ${!formData.date && "text-gray-500"}
+            ${!formData.date ? 'border-red-300' : ''}
+          `}
+        >
+          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          {formData.date && !isNaN(new Date(formData.date)) ? (
+            format(new Date(formData.date), "EEEE, MMMM d, yyyy")
+          ) : (
+            <span className="ml-5">Select event date</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
+        align="start"
+        side="top"
+        sideOffset={8}
+      >
+        <Calendar
+          mode="single"
+          selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
+          onSelect={(date) => {
+            if (date) {
+              const formattedDate = format(date, "yyyy-MM-dd")
+              handleFieldChange('date', formattedDate)
+            }
+          }}
+          initialFocus
+          disabled={(date) => date < new Date()}
+          className="rounded-lg"
+         
+        />
+      </PopoverContent>
+    </Popover>
+    
+    {!formData.date && (
+      <div className="absolute top-full left-0 right-0 mt-1 z-10">
+        <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
+          <AlertCircle className="w-3 h-3" />
+          Event date is required
+        </p>
+      </div>
+    )}
+  </div>
+</div>
 
               {/* Event Type */}
               <div className="col-span-2 md:col-span-1 space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Event type</label>
+                <label className="block text-sm font-medium text-gray-700">Event type  <span className="text-red-500">*</span></label>
                 <SearchableEventTypeSelect 
                   value={formData.theme}
                   onValueChange={(value) => handleFieldChange('theme', value)}
                   defaultValue="princess" 
+                  required
                 />
               </div>
 
               {/* Guests */}
               <div className="col-span-1 md:col-span-1 space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Guests (up to)</label>
+                <label className="block text-sm font-medium text-gray-700">Guests (up to)  <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)}>
-                    <SelectTrigger className="bg-white py-6 px-22 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
+                  <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)} required>
+                    <SelectTrigger className="bg-white py-6 px-22 text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
                       <SelectValue placeholder="Guests" />
                     </SelectTrigger>
                     <SelectContent>
@@ -135,7 +184,7 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
               {/* Postcode - Desktop with validation (fixed layout) */}
               <div className="col-span-1 md:col-span-1 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Event postcode
+                  Event postcode  <span className="text-red-500">*</span>
                 </label>
                 
                 <div className="relative">
@@ -160,6 +209,7 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
                       bg-white py-6 px-12 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10 pr-10
                       ${!postcodeValid && formData.postcode ? 'border-red-300 focus:border-red-500' : ''}
                     `}
+                    required
                   />
                   
                   {/* Validation icon */}

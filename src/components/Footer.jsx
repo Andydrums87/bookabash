@@ -176,6 +176,20 @@ const Footer = () => {
                     Privacy Policy
                   </a>
                 </li>
+                <li>
+      <a href="/suppliers/onboarding/auth/signin" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 mr-2"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        Supplier Sign In
+      </a>
+    </li>
               </ul>
             </div>
   

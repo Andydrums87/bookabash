@@ -309,7 +309,7 @@ export default function MobileSingleScrollSuppliers({
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
       </div>
 
-      {/* Existing Supplier Sections - unchanged */}
+      {/* Supplier Sections with Fixed Empty State */}
       <div className="space-y-8 px-4">
         {supplierSections.map((section) => {
           const sectionSuppliers = section.types.map(type => ({
@@ -335,31 +335,52 @@ export default function MobileSingleScrollSuppliers({
               <SectionHeader section={section} />
               
               <div className="space-y-4 mb-8">
-                {sectionSuppliers.map(({ type, supplier }) => {
-                  if (hasEnquiriesPending && !supplier) {
-                    return null
+                {(() => {
+                  // Check if section has any suppliers when in enquiries pending mode
+                  const suppliersWithContent = sectionSuppliers.filter(({ supplier }) => 
+                    hasEnquiriesPending ? supplier : true
+                  );
+
+                  if (suppliersWithContent.length === 0 && hasEnquiriesPending) {
+                    // Show empty state once per section
+                    return (
+                      <div className="bg-white border-2 border-dashed border-gray-200 rounded-xl p-4 text-center">
+                        <div className="text-gray-400 text-2xl mb-2">📋</div>
+                        <p className="text-gray-500 font-medium text-sm mb-1">No suppliers in this section</p>
+                        <p className="text-gray-400 text-xs">
+                          You haven't added any suppliers to this category yet
+                        </p>
+                      </div>
+                    );
                   }
 
-                  return (
-                    <MobileSupplierCard
-                      key={type}
-                      supplier={supplier}
-                      type={type}
-                      loadingCards={loadingCards}
-                      suppliersToDelete={suppliersToDelete}
-                      openSupplierModal={openSupplierModal}
-                      handleDeleteSupplier={handleDeleteSupplier}
-                      getSupplierDisplayName={getSupplierDisplayName}
-                      addons={addons}
-                      handleRemoveAddon={handleRemoveAddon}
-                      enquiryStatus={getEnquiryStatus ? getEnquiryStatus(type) : null}
-                      enquirySentAt={getEnquiryTimestamp ? getEnquiryTimestamp(type) : null} 
-                      isSignedIn={isSignedIn}
-                      enquiries={enquiries}
-                      isPaymentConfirmed={isPaymentConfirmed}
-                    />
-                  );
-                })}
+                  // Render supplier cards
+                  return sectionSuppliers.map(({ type, supplier }) => {
+                    if (hasEnquiriesPending && !supplier) {
+                      return null
+                    }
+
+                    return (
+                      <MobileSupplierCard
+                        key={type}
+                        supplier={supplier}
+                        type={type}
+                        loadingCards={loadingCards}
+                        suppliersToDelete={suppliersToDelete}
+                        openSupplierModal={openSupplierModal}
+                        handleDeleteSupplier={handleDeleteSupplier}
+                        getSupplierDisplayName={getSupplierDisplayName}
+                        addons={addons}
+                        handleRemoveAddon={handleRemoveAddon}
+                        enquiryStatus={getEnquiryStatus ? getEnquiryStatus(type) : null}
+                        enquirySentAt={getEnquiryTimestamp ? getEnquiryTimestamp(type) : null} 
+                        isSignedIn={isSignedIn}
+                        enquiries={enquiries}
+                        isPaymentConfirmed={isPaymentConfirmed}
+                      />
+                    );
+                  });
+                })()}
               </div>
             </div>
           );

@@ -497,7 +497,7 @@ function EInvitesCard({
 // Section Header Component
 function SectionHeader({ section }) {
   return (
-    <div className="mb-6 mt-[300px]">
+    <div className="mb-6 md:mt-35 mt-0">
       <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3 mb-2">
         <div className="w-20 h-20 flex-shrink-0">
           <Image

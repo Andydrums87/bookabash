@@ -1,4 +1,3 @@
-// Updated Sign-In page with customer account creation
 "use client"
 
 import React from "react"
@@ -9,12 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react"
+import { Eye, EyeOff, LogIn, Loader2, Building } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
-import { getBaseUrl } from '@/utils/env' // Make sure this import is there
+import { getBaseUrl } from '@/utils/env'
 
-export default function SignInPageContent() {
+export default function SupplierSignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -25,9 +23,6 @@ export default function SignInPageContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(null)
 
-  // Get URL parameters
-  const returnTo = searchParams.get('return_to')
-
   const prefilledEmail = searchParams.get('email')
 
   useEffect(() => {
@@ -36,93 +31,26 @@ export default function SignInPageContent() {
     }
   }, [prefilledEmail])
 
- // Handle email/password sign in
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  setError("")
-  setIsLoading(true)
+  // Handle email/password sign in
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
-  try {
-    // Sign in user
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (authError) throw authError
-    
-    const user = authData.user
-    if (!user) throw new Error("No user returned")
-
-    console.log("🔐 Customer signed in:", user.id)
-
-    // Create or get customer profile
-    const userResult = await partyDatabaseBackend.createOrGetUser({
-      firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
-      lastName: user.user_metadata?.full_name?.split(' ')[1] || '',
-      email: user.email,
-      phone: user.user_metadata?.phone || '',
-      postcode: ''
-    })
-
-    if (!userResult.success) {
-      console.error('❌ Failed to create customer profile:', userResult.error)
-      throw new Error('Failed to create customer account')
-    }
-
-    console.log("✅ Customer profile ready:", userResult.user.id)
-
-    // Redirect back to where they came from or dashboard
-    if (returnTo) {
-      window.location.href = decodeURIComponent(returnTo)
-    } else {
-      router.push("/dashboard")
-    }
-
-  } catch (err) {
-    console.error("❌ Sign-in error:", err)
-    setError(err.message || "Sign-in failed.")
-  } finally {
-    setIsLoading(false)
-  }
-}
-  const handleCustomerFlow = async (user) => {
     try {
-      console.log("👤 Handling customer sign-in flow")
-      
-      // Create or get customer profile
-      const userResult = await partyDatabaseBackend.createOrGetUser({
-        firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
-        lastName: user.user_metadata?.full_name?.split(' ')[1] || '',
-        email: user.email,
-        phone: user.user_metadata?.phone || '',
-        postcode: ''
+      // Sign in user
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      if (!userResult.success) {
-        console.error('❌ Failed to create customer profile:', userResult.error)
-        throw new Error('Failed to create customer account')
-      }
-
-      console.log("✅ Customer profile ready:", userResult.user.id)
-
-      // Redirect back to where they came from or dashboard
-      if (returnTo) {
-        window.location.href = decodeURIComponent(returnTo)
-      } else {
-        router.push("/review-book")
-      }
-
-    } catch (error) {
-      console.error('❌ Customer flow error:', error)
-      throw error
-    }
-  }
-
-  const handleSupplierFlow = async (user) => {
-    try {
-      console.log("🏢 Handling supplier sign-in flow")
+      if (authError) throw authError
       
+      const user = authData.user
+      if (!user) throw new Error("No user returned")
+
+      console.log("🏢 Supplier signed in:", user.id)
+
       // Check for primary supplier record
       const { data: supplierData, error: supplierError } = await supabase
         .from("suppliers")
@@ -137,7 +65,7 @@ const handleSubmit = async (e) => {
       }
 
       if (supplierData) {
-        console.log("✅ Supplier profile exists:", supplierData.business_name)
+        console.log("✅ Supplier profile exists, redirecting to dashboard")
         router.push("/suppliers/dashboard")
         return
       }
@@ -160,29 +88,25 @@ const handleSubmit = async (e) => {
       console.log("⚠️ No supplier record found, redirecting to onboarding")
       router.push("/suppliers/onboarding")
 
-    } catch (error) {
-      console.error('❌ Supplier flow error:', error)
-      throw error
+    } catch (err) {
+      console.error("❌ Supplier sign-in error:", err)
+      setError(err.message || "Sign-in failed.")
+    } finally {
+      setIsLoading(false)
     }
   }
-
-
 
   const handleOAuthSignIn = async (provider) => {
     setError("")
     setOauthLoading(provider)
   
     try {
-      console.log(`🔐 Starting ${provider} OAuth customer sign-in...`)
+      console.log(`🔐 Starting ${provider} OAuth supplier sign-in...`)
       
-      // CLEAN: Direct to customer callback
-      let redirectUrl = `${getBaseUrl()}/auth/callback/customer`
+      // Direct to supplier callback
+      const redirectUrl = `${getBaseUrl()}/auth/callback/supplier`
       
-      if (returnTo) {
-        redirectUrl += `?return_to=${encodeURIComponent(returnTo)}`
-      }
-      
-      console.log('🎯 Customer OAuth redirect URL:', redirectUrl)
+      console.log('🎯 Supplier OAuth redirect URL:', redirectUrl)
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -207,113 +131,90 @@ const handleSubmit = async (e) => {
     }
   }
 
-  // // Helper function to create supplier from draft
-  // const createSupplierFromDraft = async (user, draft) => {
-  //   const supplierData = {
-  //     name: draft.business_name,
-  //     businessName: draft.business_name,
-  //     serviceType: draft.supplier_type,
-  //     category: draft.supplier_type,
-  //     location: draft.postcode,
-  //     owner: {
-  //       name: draft.your_name || user.user_metadata?.full_name,
-  //       email: user.email,
-  //       phone: draft.phone || user.user_metadata?.phone || ""
-  //     },
-  //     contactInfo: {
-  //       email: user.email,
-  //       phone: draft.phone || user.user_metadata?.phone || "",
-  //       postcode: draft.postcode
-  //     },
-  //     description: "New supplier - profile setup in progress",
-  //     businessDescription: "New supplier - profile setup in progress",
-  //     packages: [],
-  //     portfolioImages: [],
-  //     portfolioVideos: [],
-  //     workingHours: {
-  //       Monday: { start: "09:00", end: "17:00", active: true },
-  //       Tuesday: { start: "09:00", end: "17:00", active: true },
-  //       Wednesday: { start: "09:00", end: "17:00", active: true },
-  //       Thursday: { start: "09:00", end: "17:00", active: true },
-  //       Friday: { start: "09:00", end: "17:00", active: true },
-  //       Saturday: { start: "10:00", end: "16:00", active: true },
-  //       Sunday: { start: "10:00", end: "16:00", active: false }
-  //     },
-  //     unavailableDates: [],
-  //     busyDates: [],
-  //     rating: 0,
-  //     reviewCount: 0,
-  //     bookingCount: 0,
-  //     priceFrom: 0,
-  //     priceUnit: "per event",
-  //     badges: ["New Provider"],
-  //     themes: ["general"],
-  //     availability: "Contact for availability",
-  //     isComplete: "New supplier - profile setup in progress",
-  //     coverPhoto: "",
-  //     image: "",
-  //     advanceBookingDays: 7,
-  //     maxBookingDays: 365,
-  //     availabilityNotes: "",
-  //     serviceDetails: {},
-  //     createdAt: new Date().toISOString(),
-  //     updatedAt: new Date().toISOString(),
-  //     onboardingCompleted: true,
-  //     createdFrom: "draft_promotion"
-  //   }
+  // Helper function to create supplier from draft
+  const createSupplierFromDraft = async (user, draft) => {
+    // Same logic as your other createSupplierFromDraft functions
+    const supplierData = {
+      name: draft.business_name,
+      businessName: draft.business_name,
+      serviceType: draft.supplier_type,
+      category: draft.supplier_type,
+      location: draft.postcode,
+      owner: {
+        name: draft.your_name || user.user_metadata?.full_name,
+        email: user.email,
+        phone: draft.phone || user.user_metadata?.phone || ""
+      },
+      contactInfo: {
+        email: user.email,
+        phone: draft.phone || user.user_metadata?.phone || "",
+        postcode: draft.postcode
+      },
+      description: "New supplier - profile setup in progress",
+      businessDescription: "New supplier - profile setup in progress",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      onboardingCompleted: true,
+      createdFrom: "supplier_signin"
+    }
 
-  //   const supplierRecord = {
-  //     auth_user_id: user.id,
-  //     data: supplierData,
-  //     created_at: new Date().toISOString(),
-  //     updated_at: new Date().toISOString()
-  //   }
+    const supplierRecord = {
+      auth_user_id: user.id,
+      data: supplierData,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
 
-  //   const { error: insertError } = await supabase
-  //     .from("suppliers")
-  //     .insert(supplierRecord)
+    const { error: insertError } = await supabase
+      .from("suppliers")
+      .insert(supplierRecord)
 
-  //   if (insertError) {
-  //     console.error("❌ Failed to create supplier:", insertError)
-  //     throw new Error("Failed to create supplier profile. Please contact support.")
-  //   }
+    if (insertError) {
+      console.error("❌ Failed to create supplier:", insertError)
+      throw new Error("Failed to create supplier profile. Please contact support.")
+    }
 
-  //   // Clean up draft
-  //   await supabase
-  //     .from("onboarding_drafts")
-  //     .delete()
-  //     .eq("email", user.email)
+    // Clean up draft
+    await supabase
+      .from("onboarding_drafts")
+      .delete()
+      .eq("email", user.email)
 
-  //   console.log("✅ Supplier profile created from draft")
-  // }
+    console.log("✅ Supplier profile created from draft")
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-rose-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))]">
       <div className="flex flex-col items-center justify-start pt-12 sm:pt-16 pb-12 px-4">
         <Card className="w-full max-w-md shadow-xl border-gray-200">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary-700 pt-10">
-              Welcome Back
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-600))] to-[hsl(var(--primary-600))] rounded-full flex items-center justify-center">
+                <Building className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-bold text-gray-800">
+              Welcome Back!
             </CardTitle>
             <CardDescription className="text-gray-600">
-            Sign in to continue planning your perfect party
+              Sign in to your PartySnap Business account
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700">
-                  Email address
+                  Business Email
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="business@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading || oauthLoading}
-                  className="focus:ring-primary-500 focus:border-primary-500"
+                  className="focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -323,9 +224,7 @@ const handleSubmit = async (e) => {
                   </Label>
                   <Link
                     href="/forgot-password"
-                    className={`text-sm text-primary-600 hover:text-primary-700 hover:underline ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
-                    aria-disabled={isLoading || oauthLoading}
-                    tabIndex={isLoading || oauthLoading ? -1 : undefined}
+                    className={`text-sm text-primary-600 hover:text-[hsl(var((primary-700)))] hover:underline ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
                   >
                     Forgot password?
                   </Link>
@@ -339,7 +238,7 @@ const handleSubmit = async (e) => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-primary-500 focus:border-primary-500"
+                    className="focus:ring-blue-500 focus:border-blue-500"
                   />
                   <Button
                     type="button"
@@ -347,7 +246,6 @@ const handleSubmit = async (e) => {
                     size="sm"
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-gray-500 hover:text-gray-700"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
                     disabled={isLoading || oauthLoading}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -357,7 +255,7 @@ const handleSubmit = async (e) => {
               {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
               <Button
                 type="submit"
-                className="w-full bg-primary-500 hover:bg-[#FF5028] text-white py-3 text-base font-semibold"
+                className="w-full bg-gradient-to-br from-[hsl(var(--primary-500))] via-[hsl(var(--primary-600))] to-[hsl(var(--primary-700))] text-white py-3 text-base font-semibold"
                 disabled={isLoading || oauthLoading}
               >
                 {isLoading ? (
@@ -368,7 +266,7 @@ const handleSubmit = async (e) => {
                 ) : (
                   <>
                     <LogIn className="mr-2 h-5 w-5" />
-                    Sign In
+                    Sign In to Business
                   </>
                 )}
               </Button>
@@ -419,14 +317,12 @@ const handleSubmit = async (e) => {
               </Button>
             </div>
             <p className="mt-6 text-center text-sm text-gray-600 pb-10">
-              Don&apos;t have an account?{" "}
+              Don&apos;t have a business account?{" "}
               <Link
-                href={'/sign-up'}
-                className={`font-medium text-primary-600 hover:text-primary-700 hover:underline ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
-                aria-disabled={isLoading || oauthLoading}
-                tabIndex={isLoading || oauthLoading ? -1 : undefined}
+                href="/suppliers/onboarding"
+                className={`font-medium text-primary-600 hover:text-[hsl(var((--primary-700)))] hover:underline ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
               >
-                Sign Up
+                Get Listed
               </Link>
             </p>
           </CardFooter>

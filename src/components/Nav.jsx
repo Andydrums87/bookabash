@@ -296,8 +296,11 @@ const handleSignOut = async () => {
                     <Link href="/signin">Sign In</Link>
                   </Button>
                   <Button size="sm" className="bg-primary-500 hover:bg-primary-600" asChild>
-                    <Link href="/suppliers/onboarding">List with us</Link>
+                    <Link href="/suppliers/onboarding">For Business</Link>
+                    
                   </Button>
+                  
+                  
                 </>
               )}
             </div>

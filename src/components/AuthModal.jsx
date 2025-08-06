@@ -3,9 +3,10 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, LogIn, UserPlus, Loader2, X, Sparkles } from "lucide-react"
+import { Eye, EyeOff, LogIn, UserPlus, Loader2, X, Sparkles, CheckCircle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { useToast } from "@/components/ui/toast"
 
 export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, selectedSuppliersCount = 0 }) {
   const [isSignUp, setIsSignUp] = useState(true) // Default to sign-up since it's for new customers
@@ -15,6 +16,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false) // NEW: For success animation
+  const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false) // NEW: Track if email verification needed
+  const [isSuccessComplete, setIsSuccessComplete] = useState(false) // NEW: Track when success phase is complete
+  const { toast } = useToast() // Add toast hook
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -56,6 +61,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   const handleEmailAuth = async () => {
     setError("")
     setSuccess("")
+    setShowSuccessAnimation(false) // Reset animation
     setLoading(true)
 
     try {
@@ -101,20 +107,51 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
         console.log("✅ Customer profile created:", userResult.user.id)
 
+        // Show success animation
+        setShowSuccessAnimation(true)
+
         // Check if email confirmation is required
         if (authData.user && !authData.session) {
-          setSuccess("Account created! Please check your email to verify your account, then try signing in.")
-          setIsSignUp(false) // Switch to sign-in mode
+          // Email verification required
+          setIsEmailVerificationRequired(true)
+          setSuccess("🎉 Account created successfully! Please check your email to verify your account, then sign in below.")
+          setIsSuccessComplete(true) // Mark success as complete
+          
+          // Show toast notification
+          toast.success("Account created! Check your email to verify.", {
+            title: "Welcome to PartySnap!",
+            duration: 5000
+          })
+          
+          // Auto-switch to sign-in mode after showing success
+          setTimeout(() => {
+            setIsSignUp(false)
+            setShowSuccessAnimation(false)
+          }, 3000)
+          
         } else {
           // Auto sign-in successful - call onSuccess callback with user data
           console.log("✅ Account created and signed in automatically")
-          onSuccess(user, {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: user.user_metadata?.phone || "",
+          setSuccess("🎉 Account created and signed in successfully!")
+          setIsSuccessComplete(true) // Mark success as complete
+          
+          // Show success toast
+          toast.success(`Welcome ${formData.firstName}! Your account is ready.`, {
+            title: "Account Created Successfully",
+            duration: 4000
           })
+          
+          // Wait a moment to show success, then call onSuccess
+          setTimeout(() => {
+            onSuccess(user, {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email,
+              phone: user.user_metadata?.phone || "",
+            })
+          }, 1500)
         }
+        
       } else {
         // Sign In Flow
         console.log("🔐 Signing in existing user...")
@@ -141,6 +178,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
         console.log("🔐 Signed in user:", user.id)
 
+        // Show success animation
+        setShowSuccessAnimation(true)
+        setSuccess("🎉 Welcome back! Signing you in...")
+        setIsSuccessComplete(true) // Mark success as complete
+
+        // Show welcome back toast
+        toast.success("Successfully signed in!", {
+          title: "Welcome Back",
+          duration: 3000
+        })
+
         // Create or get customer profile
         const userResult = await partyDatabaseBackend.createOrGetUser({
           firstName: user.user_metadata?.full_name?.split(" ")[0] || "",
@@ -157,24 +205,51 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
         console.log("✅ Customer profile ready:", userResult.user.id)
 
-        // Success - call onSuccess callback with user data
-        onSuccess(user, {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: user.user_metadata?.phone || "",
-        })
+        // Wait a moment to show success, then call onSuccess
+        setTimeout(() => {
+          onSuccess(user, {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: user.user_metadata?.phone || "",
+          })
+        }, 1500)
       }
     } catch (err) {
       console.error("❌ Auth error:", err)
+      setShowSuccessAnimation(false) // Hide animation on error
+      setIsSuccessComplete(false) // Reset success state on error
+      
       if (err.message.includes("already registered")) {
         setError("An account with this email already exists. Try signing in instead.")
         setIsSignUp(false)
+        
+        // Show informative toast
+        toast.info("Account already exists. Please sign in instead.", {
+          title: "Account Found",
+          duration: 4000
+        })
+        
       } else {
-        setError(err.message || `${isSignUp ? "Sign-up" : "Sign-in"} failed. Please try again.`)
+        const errorMessage = err.message || `${isSignUp ? "Sign-up" : "Sign-in"} failed. Please try again.`
+        setError(errorMessage)
+        
+        // Show error toast
+        toast.error(errorMessage, {
+          title: isSignUp ? "Sign-up Failed" : "Sign-in Failed",
+          duration: 5000
+        })
       }
     } finally {
-      setLoading(false)
+      // Don't set loading to false immediately if we're showing success
+      if (!success) {
+        setLoading(false)
+      } else {
+        // Keep loading state for a moment during success animation
+        setTimeout(() => {
+          setLoading(false)
+        }, 1500)
+      }
     }
   }
 
@@ -204,13 +279,27 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
       if (error) {
         console.error(`❌ ${provider} OAuth error:`, error)
-        setError(`Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`)
+        const errorMessage = `Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`
+        setError(errorMessage)
         setOauthLoading(null)
+        
+        // Show error toast for OAuth failures
+        toast.error(errorMessage, {
+          title: `${provider} Authentication Failed`,
+          duration: 4000
+        })
       }
     } catch (err) {
       console.error(`❌ ${provider} OAuth error:`, err)
-      setError(`Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`)
+      const errorMessage = `Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`
+      setError(errorMessage)
       setOauthLoading(null)
+      
+      // Show error toast for OAuth exceptions
+      toast.error(errorMessage, {
+        title: `${provider} Error`,
+        duration: 4000
+      })
     }
   }
 
@@ -218,6 +307,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
     setIsSignUp(!isSignUp)
     setError("")
     setSuccess("")
+    setShowSuccessAnimation(false)
+    setIsEmailVerificationRequired(false)
+    setIsSuccessComplete(false) // Reset success complete state
     // Keep email but clear other fields
     setFormData((prev) => ({
       firstName: "",
@@ -232,7 +324,65 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-      <div className="bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] rounded-2xl w-[90%] sm:max-w-md max-h-[70vh] sm:max-h-[90vh] overflow-y-auto border-2 border-[hsl(var(--primary-200))] shadow-2xl">
+      <div className="bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] rounded-2xl w-[90%] sm:max-w-md max-h-[70vh] sm:max-h-[90vh] overflow-y-auto border-2 border-[hsl(var(--primary-200))] shadow-2xl relative">
+        
+        {/* Snappy Success Animation Overlay */}
+        {showSuccessAnimation && (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#FFF5E6] to-white rounded-2xl z-20 flex flex-col items-center justify-center p-6">
+            {/* Snappy Video */}
+            <div className="w-32 h-24 mb-4 animate-fade-in-up">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="rounded-xl shadow-lg w-full h-full object-cover"
+                poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753133136/ra6l3fe9lb45gejgvgms.png"
+                onLoadedMetadata={(e) => {
+                  e.target.currentTime = 1;
+                  e.target.play();
+                }}
+              >
+                <source
+                  src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753083603/wQEAljVs5VrDNI1dyE8t8_output_nowo6h.mp4"
+                  type="video/mp4"
+                />
+              </video>
+            </div>
+
+            {/* Success Text */}
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                {isEmailVerificationRequired ? "Account Created!" : isSignUp ? "Account Created!" : "Welcome Back!"}
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {isEmailVerificationRequired 
+                  ? "Check your email to verify your account" 
+                  : isSignUp 
+                    ? "Setting up your party profile..." 
+                    : "Getting you signed in..."}
+              </p>
+            </div>
+
+            {/* Add the animation styles */}
+            <style jsx>{`
+              @keyframes fade-in-up {
+                from {
+                  opacity: 0;
+                  transform: translateY(20px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+              .animate-fade-in-up {
+                animation: fade-in-up 0.6s ease-out;
+              }
+            `}</style>
+          </div>
+        )}
+
         {/* Decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
           <div className="absolute top-6 left-6 w-2 h-2 bg-[hsl(var(--primary-300))] rounded-full opacity-40 animate-pulse"></div>
@@ -394,7 +544,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               )}
             </div>
 
-            {/* Error/Success Messages */}
+            {/* Error Messages */}
             {error && (
               <div className="p-2.5 sm:p-3 bg-red-50 border-2 border-red-200 rounded-lg sm:rounded-xl">
                 <p className="text-xs sm:text-sm text-red-600">{error}</p>
@@ -410,23 +560,39 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               </div>
             )}
 
-            {success && (
+            {/* Success Messages */}
+            {success && !showSuccessAnimation && (
               <div className="p-2.5 sm:p-3 bg-green-50 border-2 border-green-200 rounded-lg sm:rounded-xl">
-                <p className="text-xs sm:text-sm text-green-600">{success}</p>
+                <div className="flex items-start space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs sm:text-sm text-green-600 font-medium">{success}</p>
+                    {isEmailVerificationRequired && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Switching to sign-in mode in a moment...
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Enhanced Submit Button */}
             <Button
               onClick={handleEmailAuth}
-              className="w-full my-5 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white py-2 sm:py-3 text-sm font-bold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              className="w-full my-5 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white py-2 sm:py-3 text-sm font-bold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               disabled={loading || oauthLoading}
             >
               {loading ? (
-                <>
+                <div className="flex items-center justify-center">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isSignUp ? "Creating..." : "Signing In..."}
-                </>
+                  <span>
+                    {isSuccessComplete 
+                      ? (isEmailVerificationRequired ? "Account Created!" : isSignUp ? "Account Created!" : "Signed In!") 
+                      : (isSignUp ? "Creating Account..." : "Signing In...")
+                    }
+                  </span>
+                </div>
               ) : (
                 <>
                   {isSignUp ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import { getBaseUrl } from "@/utils/env"
 
 const serviceTypes = [
   { id: "Entertainment", name: "Entertainment" },
@@ -22,6 +23,11 @@ const serviceTypes = [
 
 export function SupplierForm() {
   const router = useRouter()
+
+  useEffect(() => {
+    // This runs client-side only
+    console.log("OAuth redirect should go to:", `${window.location.origin}/auth/callback/supplier?step=onboarding`)
+  }, [])
   
   // Current step state
   const [currentStep, setCurrentStep] = useState(1)
@@ -215,11 +221,11 @@ export function SupplierForm() {
   const handleOAuthSignup = async (provider) => {
     setError("")
     setLoading(true)
-
+  
     try {
       console.log(`🔐 Starting ${provider} OAuth signup...`)
       
-      // Step 1: Save business data to localStorage (survives OAuth redirect)
+      // Just store business data - no draft creation
       const oauthBusinessData = {
         ...businessData,
         timestamp: Date.now(),
@@ -229,11 +235,13 @@ export function SupplierForm() {
       localStorage.setItem('pendingBusinessData', JSON.stringify(oauthBusinessData))
       console.log('💾 Stored business data for OAuth:', oauthBusinessData)
       
-      // Step 2: Start OAuth flow
+      // Start OAuth flow
+      const redirectUrl = `${getBaseUrl()}/auth/callback/supplier?step=onboarding`
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?type=supplier&step=onboarding`,
+          redirectTo: redirectUrl,
           queryParams: {
             user_type: 'supplier',
             onboarding: 'true'
@@ -246,8 +254,6 @@ export function SupplierForm() {
         setError(`Failed to sign up with ${provider}. Please try again.`)
         setLoading(false)
       }
-      // Note: If successful, user will be redirected to OAuth provider
-      // so we don't set loading to false here
       
     } catch (err) {
       console.error(`❌ ${provider} OAuth error:`, err)
@@ -259,6 +265,10 @@ export function SupplierForm() {
   const labelClasses = "text-gray-700 dark:text-gray-300 font-medium"
   const inputClasses = "p-6 mt-1 bg-white dark:bg-slate-700 border-slate-400 dark:border-slate-600 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] rounded-md shadow-sm"
   const requiredStar = <span className="text-primary-500">*</span>
+
+  if (typeof window !== 'undefined') {
+    console.log("OAuth redirect should go to:", `${window.location.origin}/auth/callback/supplier?step=onboarding`)
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">

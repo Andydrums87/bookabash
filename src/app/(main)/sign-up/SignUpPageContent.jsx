@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, UserPlus, Loader2 } from "lucide-react"
+import { Eye, EyeOff, UserPlus, Loader2, LogIn } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { getBaseUrl } from "@/utils/env"
 
 export default function SignUpPageContent() {
   const router = useRouter()
@@ -75,12 +76,12 @@ export default function SignUpPageContent() {
     setError("")
     setSuccess("")
     setIsLoading(true)
-
+  
     if (!validateForm()) {
       setIsLoading(false)
       return
     }
-
+  
     try {
       console.log("📝 Creating new customer account...")
       
@@ -95,14 +96,14 @@ export default function SignUpPageContent() {
           }
         }
       })
-
+  
       if (signUpError) throw signUpError
       
       const user = authData.user
       if (!user) throw new Error("No user created")
-
+  
       console.log("✅ New customer account created:", user.id)
-
+  
       // Create customer profile in your database
       const userResult = await partyDatabaseBackend.createOrGetUser({
         firstName: formData.firstName,
@@ -111,26 +112,27 @@ export default function SignUpPageContent() {
         phone: '',
         postcode: ''
       })
-
+  
       if (!userResult.success) {
         console.error('❌ Failed to create customer profile:', userResult.error)
         throw new Error('Failed to create customer profile')
       }
-
+  
       console.log("✅ Customer profile created:", userResult.user.id)
-
+  
       // Check if email confirmation is required
       if (authData.user && !authData.session) {
         setSuccess("Account created! Please check your email to verify your account, then sign in.")
       } else {
         // Auto sign-in successful, redirect
+        console.log("✅ Account created and signed in automatically")
         if (returnTo) {
           window.location.href = decodeURIComponent(returnTo)
         } else {
           router.push("/dashboard")
         }
       }
-
+  
     } catch (err) {
       console.error("❌ Sign-up error:", err)
       if (err.message.includes('already registered')) {
@@ -151,12 +153,12 @@ export default function SignUpPageContent() {
     try {
       console.log(`🔐 Starting ${provider} OAuth sign-up...`)
       
-      // Build redirect URL
-      let redirectUrl = `${window.location.origin}/auth/callback?type=signup`
-      if (returnTo) {
-        redirectUrl += `&return_to=${encodeURIComponent(returnTo)}`
-      }
-      redirectUrl += `&user_type=customer`
+       // CLEAN: Direct to customer callback
+    let redirectUrl = `${getBaseUrl()}/auth/callback/customer`
+    if (returnTo) {
+      redirectUrl += `?return_to=${encodeURIComponent(returnTo)}`
+    }
+    
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -310,24 +312,23 @@ export default function SignUpPageContent() {
                   <p className="text-sm text-green-600">{success}</p>
                 </div>
               )}
-              
-              <Button
-                type="submit"
-                className="w-full bg-primary-500 hover:bg-[#FF5028] text-white py-3 text-base font-semibold"
-                disabled={isLoading || oauthLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Creating Account...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Create Account
-                  </>
-                )}
-              </Button>
+             <Button
+  type="submit"
+  className="w-full bg-primary-500 hover:bg-[#FF5028] text-white py-3 text-base font-semibold"
+  disabled={isLoading}
+>
+  {isLoading ? (
+    <>
+      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+      Signing In...
+    </>
+  ) : (
+    <>
+      <LogIn className="mr-2 h-5 w-5" />
+      Sign In
+    </>
+  )}
+</Button>
             </form>
           </CardContent>
           <CardFooter className="flex flex-col items-center space-y-4 pt-4">

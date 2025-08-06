@@ -52,7 +52,7 @@ export default function SupplierOnboardingSuccessContent() {
 
               <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button size="lg" className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 text-lg" asChild>
-                  <Link href="/signin">Sign In to Dashboard</Link>
+                  <Link href="/suppliers/dashboard">Go to Dashboard</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="px-8 py-3 text-lg" asChild>
                   <Link href="/">Return to Homepage</Link>
@@ -63,7 +63,7 @@ export default function SupplierOnboardingSuccessContent() {
             {/* Right Side: Image */}
             <div>
               <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1749462511/enis-yavuz-J5i9E-oAGgM-unsplash_r3n7wy.jpg"
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753130521/jmnlvueoyqh3ihiv1swb.jpg"
                 alt="A person celebrating a successful business launch or working efficiently"
                 width={600}
                 height={500}
