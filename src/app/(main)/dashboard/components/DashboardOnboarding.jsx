@@ -281,7 +281,12 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
 
         <div className="mx-auto max-w-screen">
           {/* Enhanced Hero Section - Full Width */}
-          <div className="relative w-full h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+          <div  style={{
+        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '100px, cover',
+        backgroundPosition: 'center',
+      }} className="relative w-full h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
       <div className="absolute inset-0 bg-black/10"></div>
 
       {/* Decorative elements */}
@@ -301,9 +306,9 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
             </span>
           </h1>
           <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-2xl font-semibold">
-          🎉 Just a few quick details to plan your <span className="font-bold">AMAZING</span> celebration! 🎈
+          Just a few quick details to plan your <span className="font-bold">AMAZING</span> celebration! 
           </p>
-
+    
 
         </div>
       </div>
@@ -362,13 +367,13 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
               
               {/* Step 1: Party Basics */}
               {currentStep === 0 && (
-                <div className="p-6 sm:p-8">
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Party Basics</h2>
-                    <p className="text-gray-600">Let's start with the essentials</p>
+                <div className="sm:p-8 ">
+                  <div className="text-center mb-8 bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] p-6 rounded-t-2xl">
+                    <h2 className="text-3xl sm:text-3xl font-bold text-white mb-2">Party Basics</h2>
+                    <p className="text-white">Let's start with the essentials</p>
                   </div>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-6 px-4">
 {/* Date */}
 <div className="group">
   <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -447,14 +452,15 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                         Where's the party?
                       </label>
                       <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-primary-500 w-5 h-5" />
                         <Input
                           type="text"
                           value={formData.location}
                           onChange={(e) => handleFieldChange("location", e.target.value)}
-                          placeholder="Enter your postcode (e.g. SW1A 1AA)"
-                          className="w-full px-4 py-8 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-500))] focus:ring-0 text-lg font-medium transition-all duration-300"
+                          placeholder="Enter your postcode"
+                          className="w-full px-10 py-8 placeholder:text-gray-600 placeholder:text-base border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-500))] focus:ring-0 text-lg font-medium transition-all duration-300"
                         />
-                        <MapPin className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    
                       </div>
                     </div>
                   </div>
@@ -463,13 +469,13 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
 
               {/* Step 2: Timing */}
               {currentStep === 1 && (
-                <div className="p-6 sm:p-8">
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Perfect Timing</h2>
-                    <p className="text-gray-600">When works best for your family?</p>
+                <div className="">
+                  <div className="text-center mb-8 text-center mb-8 bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] p-6 rounded-t-2xl">
+                    <h2 className="text-3xl sm:text-3xl font-bold text-white mb-2">Perfect Timing</h2>
+                    <p className="text-white">When works best for your family?</p>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-8 px-4">
                     {/* Time Slots */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">Choose your time slot</h3>
@@ -594,13 +600,13 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
 
               {/* Step 3: Theme Selection */}
               {currentStep === 2 && (
-                <div className="p-6 sm:p-8">
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Choose Your Theme</h2>
-                    <p className="text-gray-600">What will make this party magical?</p>
+                <div className="">
+                  <div className="text-center mb-8 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] p-6 rounded-t-2xl">
+                    <h2 className="text-3xl sm:text-3xl font-bold text-white mb-2">Choose Your Theme</h2>
+                    <p className="text-white">What will make this party magical?</p>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-8 px-4">
                     {/* No Theme Option */}
                     <div className="flex justify-center">
                       <button

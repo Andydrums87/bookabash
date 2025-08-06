@@ -111,7 +111,7 @@ export function NavbarSearch() {
                     placeholder="Search suppliers, categories, locations..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4"
+                    className="pl-10 pr-4 placeholder:text-xs "
                     autoFocus
                   />
                 </div>

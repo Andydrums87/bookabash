@@ -323,7 +323,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 md:p-3 py-10">
       <div className="bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] rounded-2xl w-[90%] sm:max-w-md max-h-[70vh] sm:max-h-[90vh] overflow-y-auto border-2 border-[hsl(var(--primary-200))] shadow-2xl relative">
         
         {/* Snappy Success Animation Overlay */}
@@ -439,7 +439,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
                     disabled={loading || oauthLoading}
-                    className="bg-white border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-1 focus:ring-[hsl(var(--primary-200))] rounded-lg sm:rounded-xl h-9 sm:h-12 text-base transition-all duration-200"
+                    className="bg-white placeholder:text-xs border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-1 focus:ring-[hsl(var(--primary-200))] rounded-lg sm:rounded-xl h-9 sm:h-12 text-base transition-all duration-200"
                     required={isSignUp}
                   />
                 </div>
@@ -454,7 +454,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
                     disabled={loading || oauthLoading}
-                    className="bg-white border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-1 focus:ring-[hsl(var(--primary-200))] rounded-lg sm:rounded-xl h-9 sm:h-12 text-base transition-all duration-200"
+                    className="bg-white  placeholder:text-xs border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-1 focus:ring-[hsl(var(--primary-200))] rounded-lg sm:rounded-xl h-9 sm:h-12 text-base transition-all duration-200"
                   />
                 </div>
               </div>
@@ -471,7 +471,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 disabled={loading || oauthLoading}
-                className="bg-white border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-1 focus:ring-[hsl(var(--primary-200))] rounded-lg sm:rounded-xl h-9 sm:h-12 text-base transition-all duration-200"
+                className="bg-white border-2 placeholder:text-xs border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-1 focus:ring-[hsl(var(--primary-200))] rounded-lg sm:rounded-xl h-9 sm:h-12 text-base transition-all duration-200"
                 required
               />
             </div>
@@ -668,7 +668,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
           </div>
 
           {/* Switch Mode Link */}
-          <div className="text-center my-5 text-xs sm:text-sm text-gray-600">
+          <div className="text-center pb-10 text-xs sm:text-sm text-gray-600">
             {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               onClick={switchMode}

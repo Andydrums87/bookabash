@@ -9,23 +9,27 @@ export default function SuppliersLandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] text-gray-900 dark:text-white">
       
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-20">
+      <div className="container mx-auto px-4 py-10">
         <div className="max-w-6xl mx-auto">
           
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
             
             {/* Left Side - Text Content */}
             <div className="text-center lg:text-left">
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">PartySnap Business</span>
-              </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <h1 className="text-6xl w-full font-black text-gray-900 mb-4 leading-tight animate-fade-in">
+                  Join <span className="text-primary-500 relative">
+                    PartySnap <span className="text-gray-900">Business</span>
+                  </span>
+      
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                 Connect with thousands of families and grow your party business. Join the UK's leading party planning platform.
               </p>
 
+             
+
               {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="md:grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 flex">
                 <div className="text-center lg:text-left">
                   <div className="flex items-center justify-center lg:justify-start mb-2">
                     <Users className="w-6 h-6 text-primary-500 mr-2" />
@@ -177,7 +181,7 @@ export default function SuppliersLandingPage() {
                   asChild
                   size="lg"
                   variant="outline"
-                  className="border-2 border-white text-white hover:bg-white hover:text-primary-600 shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="border-2 border-white text-primary-900 hover:bg-white hover:text-primary-600 shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Link href="/suppliers/onboarding/auth/signin">
                     Sign In

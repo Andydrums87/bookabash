@@ -5,7 +5,7 @@ import { Calendar, Clock, MapPin, Users, Sparkles } from "lucide-react"
 
 export default function PartySummaryCard({ partyDetails = {} }) {
   return (
-    <Card className="border-2 border-primary-200 shadow-lg bg-gradient-to-br from-primary-50 to-white overflow-hidden">
+    <Card className="border-2 border-[hsl(var(--primary-200))] shadow-lg bg-gradient-to-br from-primary-50 to-white overflow-hidden">
       <CardContent className="p-0">
         {/* Header */}
         <div className="bg-primary-400 text-white p-4 sm:p-6">

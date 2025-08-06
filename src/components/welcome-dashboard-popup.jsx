@@ -6,16 +6,256 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { User, Cake } from "lucide-react"
+import { User, Cake, DollarSign, Mail, Sparkles, Heart, Plus, ArrowRight, Star } from "lucide-react"
 import Image from "next/image"
 import confetti from "canvas-confetti"
+
+// Choose your favorite variation - just uncomment the one you want to use:
+
+// VARIATION 1: Party Timeline
+function WelcomeVariation1({ firstName, isAlaCarteUser }) {
+  const steps = isAlaCarteUser ? [
+    { icon: Plus, title: "Add More Suppliers", desc: "Build your perfect team", color: "bg-primary-500" },
+    { icon: DollarSign, title: "Set Budget", desc: "Keep costs on track", color: "bg-primary-600" },
+    { icon: Mail, title: "Send Enquiries", desc: "Book when ready!", color: "bg-primary-700" }
+  ] : [
+    { icon: DollarSign, title: "Adjust Budget", desc: "Swap & customize", color: "bg-primary-500" },
+    { icon: Heart, title: "Customize Invites", desc: "Make them special", color: "bg-primary-600" },
+    { icon: Sparkles, title: "Add Magic", desc: "Extras & surprises", color: "bg-primary-700" }
+  ]
+
+  return (
+    <>
+      <div className="relative">
+        <div className="bg-primary-100 rounded-full p-4 inline-block mb-6">
+          <Image
+            src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
+            alt="Snappy celebrating"
+            width={80}
+            height={80}
+            className="w-20 h-20"
+          />
+        </div>
+        <div className="absolute -top-2 -right-2 text-2xl">🎉</div>
+      </div>
+      
+      <div className="mb-6">
+        <h3 className="text-2xl font-bold text-primary-600 mb-2">
+          {firstName}'s Party Journey Begins! 🚀
+        </h3>
+        <p className="text-gray-600">Here's your party planning roadmap:</p>
+      </div>
+
+      <div className="space-y-3">
+        {steps.map((step, index) => (
+          <div key={index} className="flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:shadow-sm transition-all duration-200">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 mr-4 text-sm font-bold">
+              {index + 1}
+            </div>
+            <div className={`p-2 rounded-lg ${step.color} mr-3`}>
+              <step.icon className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="font-semibold text-gray-800">{step.title}</div>
+              <div className="text-sm text-gray-600">{step.desc}</div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400" />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+// VARIATION 2: Celebration Cards
+function WelcomeVariation2({ firstName, isAlaCarteUser }) {
+  const cards = isAlaCarteUser ? [
+    { 
+      icon: "🛍️", 
+      title: "Keep Shopping", 
+      desc: "Add more amazing suppliers to make this party perfect!",
+      accent: "border-primary-200 bg-primary-50"
+    },
+    { 
+      icon: "💰", 
+      title: "Budget Buddy", 
+      desc: "Set your budget to see what fits perfectly",
+      accent: "border-blue-200 bg-blue-50"
+    },
+    { 
+      icon: "📧", 
+      title: "Ready to Book", 
+      desc: "Send enquiries when you're happy with your choices",
+      accent: "border-green-200 bg-green-50"
+    }
+  ] : [
+    { 
+      icon: "🎨", 
+      title: "Make It Yours", 
+      desc: "Swap suppliers and adjust your perfect party budget",
+      accent: "border-primary-200 bg-primary-50"
+    },
+    { 
+      icon: "💌", 
+      title: "Invite Magic", 
+      desc: "Create beautiful invitations that match your theme",
+      accent: "border-pink-200 bg-pink-50"
+    },
+    { 
+      icon: "✨", 
+      title: "Extra Special", 
+      desc: "Discover amazing add-ons to wow your guests",
+      accent: "border-purple-200 bg-purple-50"
+    }
+  ]
+
+  return (
+    <>
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div className="bg-primary-500 text-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 text-2xl">
+          🎊
+        </div>
+        <h3 className="text-2xl font-bold text-primary-600 mb-2">
+          Welcome to {firstName}'s Party Dashboard!
+        </h3>
+        <p className="text-gray-600">Your party planning command center is ready!</p>
+      </div>
+
+      {/* Cards */}
+      <div className="grid gap-4 mb-6">
+        {cards.map((card, index) => (
+          <div key={index} className={`p-4 rounded-xl border-2 ${card.accent} hover:scale-[1.02] transition-transform duration-200 cursor-pointer`}>
+            <div className="flex items-start space-x-3">
+              <div className="text-2xl">{card.icon}</div>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-800 mb-1">{card.title}</h4>
+                <p className="text-sm text-gray-600">{card.desc}</p>
+              </div>
+              <Star className="w-4 h-4 text-yellow-500" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Fun fact */}
+      <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl p-4 text-center">
+        <div className="text-lg font-bold mb-1">🎈 Fun Fact!</div>
+        <div className="text-sm opacity-90">
+          The average party takes 3-4 weeks to plan, but you're already ahead of the game!
+        </div>
+      </div>
+    </>
+  )
+}
+
+// VARIATION 3: Achievement Style
+function WelcomeVariation3({ firstName, isAlaCarteUser }) {
+  return (
+    <>
+      {/* Achievement Badge */}
+      <div className="relative text-center mb-6">
+        <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="bg-white rounded-full w-20 h-20 flex items-center justify-center">
+            <Image
+              src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
+              alt="Snappy celebrating"
+              width={60}
+              height={60}
+              className="w-15 h-15"
+            />
+          </div>
+        </div>
+        <div className="absolute -top-2 -left-2 text-3xl">⭐</div>
+        <div className="absolute -top-2 -right-2 text-2xl">🏆</div>
+        <div className="absolute -bottom-2 -right-2 text-2xl">🎉</div>
+      </div>
+
+      <div className="text-center mb-6">
+        <div className="bg-primary-100 text-primary-700 px-4 py-2 rounded-full text-sm font-bold mb-3 inline-block">
+          🎯 ACHIEVEMENT UNLOCKED!
+        </div>
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">
+          Party Planner Level: {isAlaCarteUser ? 'Explorer' : 'Master'}! 
+        </h3>
+        <p className="text-gray-600 mb-6">
+          {firstName}'s epic celebration is officially in motion! 🚀
+        </p>
+      </div>
+
+      {/* Progress Bar Style Next Steps */}
+      <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+        <h4 className="font-bold text-gray-800 text-lg mb-4">🎮 Your Next Quests:</h4>
+        
+        {isAlaCarteUser ? (
+          <div className="space-y-3">
+            <div className="flex items-center p-3 bg-white rounded-lg border border-primary-200">
+              <div className="bg-primary-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold">🛍️ Supplier Hunt</div>
+                <div className="text-sm text-gray-600">Find more amazing party suppliers</div>
+              </div>
+              <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">+50 XP</div>
+            </div>
+            <div className="flex items-center p-3 bg-white rounded-lg border border-blue-200">
+              <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold">💰 Budget Master</div>
+                <div className="text-sm text-gray-600">Set your party budget limits</div>
+              </div>
+              <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">+25 XP</div>
+            </div>
+            <div className="flex items-center p-3 bg-white rounded-lg border border-green-200">
+              <div className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold">📧 Party Launch</div>
+                <div className="text-sm text-gray-600">Send enquiries to book suppliers</div>
+              </div>
+              <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-bold">+100 XP</div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center p-3 bg-white rounded-lg border border-primary-200">
+              <div className="bg-primary-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold">🎨 Party Customizer</div>
+                <div className="text-sm text-gray-600">Adjust budget & swap suppliers</div>
+              </div>
+              <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">+75 XP</div>
+            </div>
+            <div className="flex items-center p-3 bg-white rounded-lg border border-pink-200">
+              <div className="bg-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold">💌 Invite Designer</div>
+                <div className="text-sm text-gray-600">Create {firstName}'s special invitations</div>
+              </div>
+              <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">+50 XP</div>
+            </div>
+            <div className="flex items-center p-3 bg-white rounded-lg border border-purple-200">
+              <div className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</div>
+              <div className="flex-1 text-left">
+                <div className="font-semibold">✨ Magic Maker</div>
+                <div className="text-sm text-gray-600">Add extras to wow your guests</div>
+              </div>
+              <div className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-bold">+125 XP</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
 
 export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit }) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [isAlaCarteUser, setIsAlaCarteUser] = useState(false)
   const [childAge, setChildAge] = useState("")
-  const [step, setStep] = useState(1) // 1 = name collection, 2 = welcome message
+  const [step, setStep] = useState(1)
+
+  // Choose which variation to use (1, 2, or 3)
+  const WELCOME_VARIATION = 2 // Change this number to switch variations!
 
   useEffect(() => {
     const checkAlaCarteContext = () => {
@@ -38,11 +278,23 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
   useEffect(() => {
     if (isOpen && step === 2) {
       const timeout = setTimeout(() => {
+        // More celebratory confetti for the simplified version
         confetti({
-          particleCount: 120,
-          spread: 90,
+          particleCount: 100,
+          spread: 70,
           origin: { y: 0.6 },
+          colors: ['#ff6b35', '#f7931e', '#ffd23f', '#06d6a0', '#118ab2', '#073b4c']
         })
+        
+        // Second burst after a delay
+        setTimeout(() => {
+          confetti({
+            particleCount: 80,
+            spread: 90,
+            origin: { y: 0.7 },
+            colors: ['#ff6b35', '#f7931e', '#ffd23f']
+          })
+        }, 300)
       }, 500)
       
       return () => clearTimeout(timeout)
@@ -51,22 +303,18 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
 
   const handleNameSubmit = () => {
     if (firstName.trim() && childAge) {
-      // Call the callback to save the child's name and age
-      // Make sure we're sending the right field names that match the database
       onNameSubmit?.({
-        childName: `${firstName.trim()} ${lastName.trim()}`.trim(), // This will map to child_name in database
-        childAge: parseInt(childAge), // This will map to child_age in database
-        
-        // Also send individual names for UI components that need them
+        childName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        childAge: parseInt(childAge),
         firstName: firstName.trim(),
         lastName: lastName.trim()
       })
-      setStep(2) // Move to welcome step
+      setStep(2)
     }
   }
 
   const handleClose = () => {
-    setStep(1) // Reset for next time
+    setStep(1)
     setFirstName("")
     setLastName("")
     setChildAge("")
@@ -79,14 +327,12 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
     }
   }
 
-  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg w-[80vw] max-w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         
         {step === 1 ? (
-          // Step 1: Collect Child's Name
+          // Step 1: Collect Child's Name (restored to original)
           <>
             <DialogHeader className="text-center">
               <DialogTitle className="text-xl sm:text-2xl font-black text-primary-600 leading-tight">
@@ -97,10 +343,9 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
             {/* Name and Age collection */}
             <div className="space-y-3">
               <div className="text-center text-gray-700 space-y-2">
- 
                 <p className="text-sm text-gray-600 px-2">
-  Who's celebrating? We'll make it extra special for them! 🎉
-</p>
+                  Who's celebrating? We'll make it extra special for them! 🎉
+                </p>
               </div>
 
               {/* Mobile-first responsive form */}
@@ -171,8 +416,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                     </Select>
                   </div>
                 </div>
-
-            
               </div>
             </div>
 
@@ -187,92 +430,59 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
             </DialogFooter>
           </>
         ) : (
-          // Step 2: Welcome Message (Updated with first name)
-          <>
-    <DialogHeader className="text-center pb-2">
-      <DialogTitle className="text-lg sm:text-2xl font-black text-primary-600 leading-tight">
-        🎉 {firstName}'s Party {isAlaCarteUser ? 'Started' : 'Plan is Ready'}!
-      </DialogTitle>
-    </DialogHeader>
+          // Step 2: Simple Celebration
+          <div className="relative  overflow-hidden">
+            <div className="absolute  inset-0 bg-gradient-to-br from-primary-50 to-primary-100"></div>
+            
+            <div className="relative z-10 p-6 text-center">
+              <DialogHeader className="text-center pb-6">
+                <DialogTitle className="text-3xl sm:text-4xl font-black text-primary-600 leading-tight mb-6">
+                  🎉 {firstName}'s Party Plan is Ready!
+                </DialogTitle>
+              </DialogHeader>
 
-    <div className="flex justify-center py-2 sm:py-4">
-      <div className="relative">
-        <Image
-          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
-          alt="Snappy smiling"
-          width={120}
-          height={120}
-          className="sm:w-[180px] sm:h-[180px]"
-        />
-        <div className="absolute -top-1 -right-1 text-lg sm:text-2xl animate-bounce">🎈</div>
-        <div className="absolute -bottom-1 -left-1 text-sm sm:text-xl animate-pulse">✨</div>
-      </div>
-    </div>
+              {/* Big Snappy with Confetti - smaller on mobile */}
+              <div className="flex justify-center py-4 sm:py-8 mb-4 sm:mb-8">
+                <div className="relative">
+                  <Image
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
+                    alt="Snappy celebrating"
+                    width={250}
+                    height={250}
+                    className="w-[150px] h-[150px] sm:w-[250px] sm:h-[250px] drop-shadow-2xl"
+                  />
+                  {/* Floating confetti around Snappy - smaller on mobile */}
+                  <div className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 text-2xl sm:text-3xl animate-bounce">🎊</div>
+                  <div className="absolute -top-1 -right-4 sm:-top-2 sm:-right-6 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎉</div>
+                  <div className="absolute top-6 -left-6 sm:top-8 sm:-left-8 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.4s' }}>✨</div>
+                  <div className="absolute top-3 -right-3 sm:top-4 sm:-right-4 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.6s' }}>🎈</div>
+                  <div className="absolute -bottom-1 -left-4 sm:-bottom-2 sm:-left-6 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.8s' }}>🎊</div>
+                  <div className="absolute -bottom-3 -right-1 sm:-bottom-4 sm:-right-2 text-2xl sm:text-3xl animate-bounce" style={{ animationDelay: '1s' }}>🎉</div>
+                  <div className="absolute top-1/2 -left-8 sm:-left-10 text-lg sm:text-xl animate-bounce" style={{ animationDelay: '1.2s' }}>⭐</div>
+                  <div className="absolute top-1/3 -right-6 sm:-right-8 text-lg sm:text-xl animate-bounce" style={{ animationDelay: '1.4s' }}>💫</div>
+                </div>
+              </div>
 
-    <div className="text-sm text-gray-700 space-y-2 sm:space-y-4 px-2">
-      <div className="bg-gradient-to-r from-primary-50 to-rose-50 rounded-lg p-2 sm:p-4 border border-primary-100">
-        <p className="text-center font-medium text-primary-800 text-sm sm:text-base">
-          {isAlaCarteUser ? (
-            <>Great! You've added your first supplier to <strong>{firstName}'s party</strong> 🎊</>
-          ) : (
-            <>Welcome to <strong>{firstName}'s PartySnap</strong> dashboard! 🎊</>
-          )}
-        </p>
-      </div>
-      
-      <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-gray-100">
-        <p className="font-semibold text-gray-800 text-center text-sm sm:text-base mb-2">
-          {isAlaCarteUser ? "What's next:" : "You can now:"}
-        </p>
-        <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 text-xs sm:text-sm">
-          {isAlaCarteUser ? (
-            <>
-              <div className="flex items-center space-x-2">
-                <span className="text-primary-500">✨</span>
-                <span>Browse & add more suppliers if needed</span>
+              {/* Simple Message - smaller text on mobile */}
+              <div className="mb-6 sm:mb-8">
+                <p className="text-lg sm:text-xl text-gray-700 font-medium leading-relaxed">
+                  Your party planning dashboard is loaded and ready to go!
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-primary-500">💰</span>
-                <span>Set your budget (optional)</span>
-              </div>
-              <div className="flex items-center space-x-2 sm:col-span-2 sm:justify-center">
-                <span className="text-primary-500">📧</span>
-                <span>Send enquiry when ready to book!</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center space-x-2">
-                <span className="text-primary-500">💰</span>
-                <span>Adjust budget & swap suppliers</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-primary-500">💌</span>
-                <span>Customize {firstName}'s invites</span>
-              </div>
-              <div className="flex items-center space-x-2 sm:col-span-2 sm:justify-center">
-                <span className="text-primary-500">✨</span>
-                <span>Add extras & make it magical!</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
 
-    <DialogFooter className="pt-6">
-      <DialogClose asChild>
-        <Button 
-          type="button" 
-          className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-primary-600 hover:to-primary-700 text-white font-bold text-base rounded-full h-12 transition-all duration-200 transform hover:scale-[1.02]"
-          onClick={handleClose}
-        >
-          {isAlaCarteUser ? "Got it — Let's Add More! 🎉" : "Got it — Let's Get Snapping! 📸"}
-        </Button>
-      </DialogClose>
-    </DialogFooter>
-
-          </>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button 
+                    type="button" 
+                    className="w-full bg-primary-500 hover:bg-primary-600 text-white font-bold  text-sm md:text-xl h-10 rounded-2xl md:h-16 transition-all duration-200 shadow-lg transform hover:scale-[1.02]"
+                    onClick={handleClose}
+                  >
+                    Got it — Let's Get Planning! 📸
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>

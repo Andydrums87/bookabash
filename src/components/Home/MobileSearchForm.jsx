@@ -45,25 +45,17 @@ export default function MobileSearchForm({
   };
 
   return (
-    <div className="md:hidden px-4 -mt-37 py-10 relative z-30" id="search-form">
-      <div className="">
-           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3 mb-2">
-             <div className="w-20 h-20 flex-shrink-0">
-               <Image
-                 src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753877863/ChatGPT_Image_Jul_30__2025__01_16_49_PM-removebg_kx7ped.png"
-                 alt="Snappy"
-                 width={50}
-                 height={50}
-                 className="w-full h-full object-contain"
-               />
-             </div>
-             <div className="flex flex-col">
-               <p>Quick Start</p>    
-               <p className="text-gray-400 text-base mb-4">See how easy it is to build you party in just one click</p>
-             </div>
-           </h2>
-         </div>
-         <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-6 shadow-2xl border border-primary-100/50">
+    <div className="md:hidden px-4 -mt-37 py-10 relative z-30 bg-primary-50" id="search-form">
+ <div className="text-center mb-16">
+          <h2 className="text-5xl font-black text-gray-900 mb-6">
+            Quick Start{" "}
+            <span className="relative text-primary-500">
+              Snap!!!!
+              <div className="absolute -bottom-2 left-0 w-full h-3 bg-primary-500 -skew-x-12"></div>
+            </span>
+          </h2>
+        </div>
+         <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-6 shadow-2xl border border-[hsl(var(--primary-200))]">
   <div className="space-y-6">
     
     {/* Event Date - STANDARDIZED */}

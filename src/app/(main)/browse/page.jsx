@@ -477,13 +477,20 @@ export default function BrowseSuppliersPage() {
       <div 
         className="relative w-full h-[36vh] md:h-[42vh] lg:h-[43vh] overflow-hidden"
       >      
-     <div className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]">
-    <Image
-      src="/magician.png"
+     <div  style={{
+        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '100px, cover',
+        backgroundPosition: 'center',
+      }} className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]">
+    {/* <Image
+      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1754515959/iStock-1716501930__1_-removebg_bn6x4d.png"
       alt="People celebrating at a party"
       fill
-      className="object-cover "
-    />
+      className="object-contain object-right "
+    /> */}
+
+
     {/* Optional overlay for text contrast */}
     {/* <div className="absolute inset-0 bg-black/10" /> */}
   </div>
@@ -493,9 +500,9 @@ export default function BrowseSuppliersPage() {
         {/* Hero Content Overlay */}
         <div className="relative h-full flex justify-center px-4">
           <div className="max-w-4xl mx-auto text-center text-white">
-            <h1 className="mt-10 md:text-6xl text-4xl font-extrabold mb-3 md:mb-6 drop-shadow-2xl text-shadow-lg">
+            <h1 className="mt-6 md:text-6xl text-4xl font-extrabold mb-3 md:mb-6 drop-shadow-2xl text-shadow-lg">
               Find trusted
-              <span className="text-white block drop-shadow-2xl"><span className="text-primary drop-shadow-xl">Party</span> Suppliers</span>
+              <span className="text-white block drop-shadow-2xl"><span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent drop-shadow-lg">Party</span> Suppliers</span>
             </h1>
             <p className="text-md py-5 sm:text-base md:text-lg lg:text-2xl mb-4 md:mb-8  md:w-[70%] mx-auto leading-relaxed drop-shadow-2xl font-semibold text-shadow-md">
               Create magical moments. Everything you need for the perfect party, all in one place.

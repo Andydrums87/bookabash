@@ -78,8 +78,8 @@ export default function SupplierOnboardingPage() {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 text-center lg:text-left">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
-                Transform your event business with{" "}
+              <h1 className="text-6xl md:w-full w-[90%] mx-auto md:text-5xl lg:text-6xl font-black tracking-tight text-gray-900 dark:text-white eading-tight animate-fade-in">
+                Transform your business with{" "}
                 <span className="text-primary-600 dark:text-primary-400">PartySnap</span>
               </h1>
               <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 max-w-xl mx-auto lg:mx-0">
@@ -92,19 +92,19 @@ export default function SupplierOnboardingPage() {
                 </Button>
               </div>
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 text-gray-600 dark:text-gray-400">
-                <div className="flex items-center">
+                {/* <div className="flex items-center">
                   <span className="font-semibold text-gray-800 dark:text-gray-200 mr-2">Excellent</span>
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-5 h-5 fill-green-500 text-green-500" />
                     ))}
                   </div>
-                </div>
-                <span className="text-sm">
+                </div> */}
+                {/* <span className="text-sm">
                   Based on <strong className="text-gray-800 dark:text-gray-200">1,200+ reviews</strong> on{" "}
                   <ShieldCheck className="inline w-4 h-4 text-green-500 mr-1" />
                   <span className="font-semibold text-gray-800 dark:text-gray-200">TrustPlatform</span>
-                </span>
+                </span> */}
               </div>
             </div>
             <div>

@@ -184,11 +184,11 @@ export default function SignUpPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-rose-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
       <div className="flex flex-col items-center justify-start pt-12 sm:pt-16 pb-12 px-4">
         <Card className="w-full max-w-md shadow-xl border-gray-200">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary-700 pt-6">
+            <CardTitle className="text-3xl font-bold text-primary-500 pt-6">
               Create Account
             </CardTitle>
             <CardDescription className="text-gray-600">

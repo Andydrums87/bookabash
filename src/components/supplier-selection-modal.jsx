@@ -285,16 +285,16 @@ export default function SupplierSelectionModal({
     return (
       <>
         {/* Mobile Filter Toggle Button */}
-        <div className="md:hidden flex-shrink-0 p-4 border-b border-gray-100 bg-white">
+        <div className="md:hidden flex-shrink-0 p-4 border-b border-[hsl(var(--primary-100))] bg-white">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2 h-10"
+                className="flex items-center space-x-2 h-10 border-[hsl(var(--primary-200))]"
               >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
+                <Filter className="w-4 h-4 text-primary-500" />
+                <span className="text-gray-700">Filters</span>
                 {activeFiltersCount > 0 && (
                   <Badge className="bg-primary-500 text-white text-xs px-2 py-0.5 min-w-[20px] h-5">
                     {activeFiltersCount}
@@ -404,7 +404,7 @@ export default function SupplierSelectionModal({
                 Price Range
               </label>
               <Select value={priceRange} onValueChange={setPriceRange}>
-                <SelectTrigger className="w-full h-11 bg-white">
+                <SelectTrigger className="w-full h-11 bg-white pl-3">
                   <SelectValue placeholder="Select price range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -424,7 +424,7 @@ export default function SupplierSelectionModal({
                 Minimum Rating
               </label>
               <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                <SelectTrigger className="w-full h-11 bg-white">
+                <SelectTrigger className="w-full h-11 bg-white pl-3">
                   <SelectValue placeholder="Select minimum rating" />
                 </SelectTrigger>
                 <SelectContent>
@@ -443,7 +443,7 @@ export default function SupplierSelectionModal({
                 Distance
               </label>
               <Select value={distance} onValueChange={setDistance}>
-                <SelectTrigger className="w-full h-11 bg-white">
+                <SelectTrigger className="w-full h-11 bg-white pl-3">
                   <SelectValue placeholder="Select distance" />
                 </SelectTrigger>
                 <SelectContent>
@@ -456,7 +456,7 @@ export default function SupplierSelectionModal({
             </div>
 
             {/* Availability */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Date Availability
@@ -494,7 +494,7 @@ export default function SupplierSelectionModal({
                   ⚠️ No specific date provided. Using general availability.
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Apply/Clear Actions */}
             <div className="flex space-x-3 pt-2">
@@ -715,17 +715,17 @@ export default function SupplierSelectionModal({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex-shrink-0 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] flex items-center justify-between p-6 border-b border-gray-200">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 capitalize">
+              <h2 className="text-2xl font-bold text-white capitalize">
                 {category === 'facePainting' ? 'Activities' : category} Providers
               </h2>
-              <p className="text-gray-600 capitalize">
+              <p className="text-white capitalize">
                 {theme} Theme • {selectedDate ? selectedDate.toLocaleDateString() : date}
               </p>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-white" />
             </Button>
           </div>
 

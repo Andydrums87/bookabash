@@ -214,7 +214,7 @@ export default function SupplierSignInPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading || oauthLoading}
-                  className="focus:ring-blue-500 focus:border-blue-500"
+                  className="focus:ring-[hsl(var(--primary-500))] placeholder:text-xs text-xs focus:border-[hsl(var(--primary-500))]"
                 />
               </div>
               <div className="space-y-2">
@@ -238,7 +238,7 @@ export default function SupplierSignInPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-blue-500 focus:border-blue-500"
+                    className="focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))]"
                   />
                   <Button
                     type="button"
