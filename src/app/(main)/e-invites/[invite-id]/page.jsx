@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import AnimatedRSVPPage from '../components/AnimatedRSVPPage'
 import { Loader2 } from "lucide-react"
 
+
 export async function generateMetadata({ params }) {
   try {
     const inviteId = params['invite-id']
@@ -29,14 +30,11 @@ export async function generateMetadata({ params }) {
       const description = `Join ${childName} for an amazing ${theme} birthday celebration${date ? ` on ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}${venue ? ` in ${venue}` : ''}! RSVP and see all the party details.`
       const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'}/e-invites/${inviteId}`
       
-      // Always use PartySnap logo for consistent branding
-      const partysnapLogo = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png"
+      // Use the new Open Graph image with PartySnap branding
+      const baseUrl = process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'
+      const socialImage = `${baseUrl}/api/og-partysnap?child=${encodeURIComponent(childName)}&theme=${encodeURIComponent(theme)}&date=${encodeURIComponent(date)}`
       
-      console.log('🎨 Using PartySnap logo for social preview:', {
-        title,
-        description: description.slice(0, 100) + '...',
-        image: partysnapLogo
-      })
+      console.log('🎨 Using branded OG image:', socialImage)
       
       return {
         title,
@@ -49,30 +47,33 @@ export async function generateMetadata({ params }) {
           siteName: 'PartySnap',
           images: [
             {
-              url: partysnapLogo,
-              width: 400,
-              height: 400,
-              alt: 'PartySnap - Children\'s Party Planning Platform',
+              url: socialImage,
+              width: 1200,
+              height: 630,
+              alt: `PartySnap - ${childName}'s ${theme} party invitation`,
               type: 'image/png',
             }
           ]
         },
         twitter: {
-          card: 'summary',
+          card: 'summary_large_image',
           title,
           description,
-          images: [partysnapLogo],
+          images: [socialImage],
         },
         other: {
-          'og:image:width': '400',
-          'og:image:height': '400', 
+          'og:image:width': '1200',
+          'og:image:height': '630',
           'og:image:type': 'image/png',
           'og:site_name': 'PartySnap',
         }
       }
     }
     
-    // Fallback metadata when invite not found
+    // Fallback metadata
+    const baseUrl = process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'
+    const fallbackImage = `${baseUrl}/api/og-partysnap`
+    
     return {
       title: '🎉 You\'re Invited to a Birthday Party!',
       description: 'Join us for a magical birthday celebration! RSVP and see all the party details.',
@@ -81,9 +82,9 @@ export async function generateMetadata({ params }) {
         description: 'Join us for a magical birthday celebration!',
         siteName: 'PartySnap',
         images: [{
-          url: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png",
-          width: 400,
-          height: 400,
+          url: fallbackImage,
+          width: 1200,
+          height: 630,
           alt: 'PartySnap - Children\'s Party Planning Platform'
         }],
       }
@@ -91,15 +92,18 @@ export async function generateMetadata({ params }) {
     
   } catch (error) {
     console.error('❌ Error generating metadata:', error)
+    const baseUrl = process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'
+    const fallbackImage = `${baseUrl}/api/og-partysnap`
+    
     return {
       title: 'Party Invitation - PartySnap',
       description: 'Join us for a special celebration!',
       openGraph: {
         siteName: 'PartySnap',
         images: [{
-          url: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png",
-          width: 400,
-          height: 400,
+          url: fallbackImage,
+          width: 1200,
+          height: 630,
           alt: 'PartySnap - Children\'s Party Planning Platform'
         }],
       }
