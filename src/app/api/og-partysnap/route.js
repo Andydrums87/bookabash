@@ -74,7 +74,7 @@ export async function GET(request) {
               marginBottom: '16px',
               lineHeight: 1.2,
             }}>
-              You're Invited to {childName}'s Party!
+              You&apos;re Invited to {childName}&apos;s Party!
             </div>
             
             {/* Subtitle */}
