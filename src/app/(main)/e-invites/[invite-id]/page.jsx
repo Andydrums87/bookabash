@@ -32,7 +32,7 @@ export async function generateMetadata({ params }) {
       const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'}/e-invites/${inviteId}`
       
       // USE YOUR STATIC CLOUDINARY IMAGE
-      const socialImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/w_1200,h_630/v1752616713/Head_Only_lsotd1.png"
+      const socialImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754592327/facebook-profile-A-retina_apbrss.png"
       
       console.log('🎨 Using static Cloudinary image:', socialImage)
       
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }) {
     }
     
     // Fallback metadata - ALSO use your static image
-    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/w_1200,h_630/v1752616713/Head_Only_lsotd1.png"
+    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754592327/facebook-profile-A-retina_apbrss.png"
     
     return {
       title: '🎉 You\'re Invited to a Birthday Party!',
@@ -91,7 +91,7 @@ export async function generateMetadata({ params }) {
     
   } catch (error) {
     console.error('❌ Error generating metadata:', error)
-    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/w_1200,h_630/v1752616713/Head_Only_lsotd1.png"
+    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754592327/facebook-profile-A-retina_apbrss.png"
     
     return {
       title: 'Party Invitation - PartySnap',
