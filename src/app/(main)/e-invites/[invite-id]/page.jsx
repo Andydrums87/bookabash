@@ -7,8 +7,7 @@ export async function generateMetadata({ params }) {
   try {
     const inviteId = params['invite-id']
     
-    // Fetch the actual invite data to get the image and party details
-    const { partyDatabaseBackend } = require('@/utils/partyDatabaseBackend')
+    const { partyDatabaseBackend } = await import('@/utils/partyDatabaseBackend')
     const result = await partyDatabaseBackend.getPublicInvite(inviteId)
     
     if (result.success && result.invite) {
@@ -26,19 +25,17 @@ export async function generateMetadata({ params }) {
       const venue = invite.parties?.location || 
                    invite.invite_data?.inviteData?.venue || ''
       
-      // Create rich social sharing content
       const title = `🎉 You're Invited to ${childName}'s ${theme.charAt(0).toUpperCase() + theme.slice(1)} Party!`
       const description = `Join ${childName} for an amazing ${theme} birthday celebration${date ? ` on ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}${venue ? ` in ${venue}` : ''}! RSVP and see all the party details.`
       const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'}/e-invites/${inviteId}`
       
-      // Use the AI-generated image for social sharing
-      const socialImage = invite.generated_image || '/api/og-default'
+      // Always use PartySnap logo for consistent branding
+      const partysnapLogo = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png"
       
-      console.log('📱 Social metadata:', {
+      console.log('🎨 Using PartySnap logo for social preview:', {
         title,
-        description,
-        socialImage,
-        currentUrl
+        description: description.slice(0, 100) + '...',
+        image: partysnapLogo
       })
       
       return {
@@ -52,53 +49,63 @@ export async function generateMetadata({ params }) {
           siteName: 'PartySnap',
           images: [
             {
-              url: socialImage,
-              width: 1200,
-              height: 630,
-              alt: `${childName}'s ${theme} party invitation`,
-              type: 'image/jpeg',
+              url: partysnapLogo,
+              width: 400,
+              height: 400,
+              alt: 'PartySnap - Children\'s Party Planning Platform',
+              type: 'image/png',
             }
           ]
         },
         twitter: {
-          card: 'summary_large_image',
+          card: 'summary',
           title,
           description,
-          images: [socialImage],
+          images: [partysnapLogo],
         },
-        // Additional meta tags for better WhatsApp support
         other: {
-          'og:image:width': '1200',
-          'og:image:height': '630',
-          'og:image:type': 'image/jpeg',
+          'og:image:width': '400',
+          'og:image:height': '400', 
+          'og:image:type': 'image/png',
           'og:site_name': 'PartySnap',
-          'og:type': 'website',
-          // WhatsApp specific
-          'whatsapp:image': socialImage,
         }
       }
     }
     
-    // Fallback metadata
+    // Fallback metadata when invite not found
     return {
       title: '🎉 You\'re Invited to a Birthday Party!',
       description: 'Join us for a magical birthday celebration! RSVP and see all the party details.',
       openGraph: {
         title: '🎉 You\'re Invited to a Birthday Party!',
         description: 'Join us for a magical birthday celebration!',
-        images: ['/api/og-default'],
+        siteName: 'PartySnap',
+        images: [{
+          url: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png",
+          width: 400,
+          height: 400,
+          alt: 'PartySnap - Children\'s Party Planning Platform'
+        }],
       }
     }
     
   } catch (error) {
-    console.error('Error generating social metadata:', error)
+    console.error('❌ Error generating metadata:', error)
     return {
       title: 'Party Invitation - PartySnap',
-      description: 'Join us for a special celebration!'
+      description: 'Join us for a special celebration!',
+      openGraph: {
+        siteName: 'PartySnap',
+        images: [{
+          url: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png",
+          width: 400,
+          height: 400,
+          alt: 'PartySnap - Children\'s Party Planning Platform'
+        }],
+      }
     }
   }
 }
-
 // Loading component for Suspense fallback
 function InvitePageLoading() {
   return (
