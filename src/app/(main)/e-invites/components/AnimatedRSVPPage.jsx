@@ -25,7 +25,9 @@ import {
   Mail,
   Phone,
   Info,
-  Loader2
+  Loader2,
+  Lock,
+  Home
 } from "lucide-react"
 
 export default function AnimatedRSVPPage() {
@@ -39,6 +41,7 @@ export default function AnimatedRSVPPage() {
   const [inviteDetails, setInviteDetails] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [hasSeenAnimation, setHasSeenAnimation] = useState(false)
   const { navigateWithContext } = useContextualNavigation()
   const [rsvpData, setRsvpData] = useState({
     status: '',
@@ -51,9 +54,11 @@ export default function AnimatedRSVPPage() {
     message: ''
   })
 
-  // Load invite data on mount
+  // Check animation and RSVP status on mount
   useEffect(() => {
     if (inviteId) {
+      checkAnimationStatus()
+      checkRSVPStatus()
       loadInviteData()
     } else {
       setError('No invite ID provided')
@@ -61,6 +66,33 @@ export default function AnimatedRSVPPage() {
     }
   }, [inviteId])
 
+  const checkAnimationStatus = () => {
+    const animationKey = `animation-seen-${inviteId}`
+    const hasSeenBefore = localStorage.getItem(animationKey)
+    if (hasSeenBefore) {
+      setHasSeenAnimation(true)
+      setAnimationPhase('final')
+    }
+  }
+
+  const checkRSVPStatus = () => {
+    const rsvpKey = `rsvp-confirmed-${inviteId}`
+    const existingRSVP = localStorage.getItem(rsvpKey)
+    if (existingRSVP) {
+      const rsvpData = JSON.parse(existingRSVP)
+      setRsvpConfirmed(true)
+      setConfirmedRsvpData(rsvpData)
+      setAnimationPhase('final')
+    }
+  }
+
+  const markAnimationAsSeen = () => {
+    const animationKey = `animation-seen-${inviteId}`
+    localStorage.setItem(animationKey, 'true')
+    setHasSeenAnimation(true)
+  }
+
+  // Load invite data on mount
   const loadInviteData = async () => {
     try {
       console.log('🔍 Loading invite data for ID:', inviteId)
@@ -116,17 +148,6 @@ export default function AnimatedRSVPPage() {
       })
 
       setInviteDetails(structuredInviteDetails)
-
-      // Check if user already RSVP'd
-      const rsvpKey = `rsvp-confirmed-${inviteId}`
-      const existingRSVP = localStorage.getItem(rsvpKey)
-      if (existingRSVP) {
-        const rsvpData = JSON.parse(existingRSVP)
-        setRsvpConfirmed(true)
-        setConfirmedRsvpData(rsvpData)
-        setAnimationPhase('final')
-      }
-
       setLoading(false)
 
     } catch (error) {
@@ -136,9 +157,9 @@ export default function AnimatedRSVPPage() {
     }
   }
 
-  // Animation sequence - only start after data is loaded
+  // Animation sequence - only start if animation hasn't been seen before
   useEffect(() => {
-    if (!loading && !error && inviteDetails && !rsvpConfirmed) {
+    if (!loading && !error && inviteDetails && !rsvpConfirmed && !hasSeenAnimation) {
       const sequence = [
         { phase: 'envelope', duration: 1000 },
         { phase: 'opening', duration: 1500 },
@@ -154,6 +175,11 @@ export default function AnimatedRSVPPage() {
           const currentStep = sequence[currentIndex]
           setAnimationPhase(currentStep.phase)
           
+          // Mark animation as seen when it completes
+          if (currentStep.phase === 'final') {
+            markAnimationAsSeen()
+          }
+          
           if (currentStep.duration > 0) {
             setTimeout(() => {
               currentIndex++
@@ -166,7 +192,7 @@ export default function AnimatedRSVPPage() {
       // Start after a brief delay
       setTimeout(runSequence, 500)
     }
-  }, [loading, error, inviteDetails, rsvpConfirmed])
+  }, [loading, error, inviteDetails, rsvpConfirmed, hasSeenAnimation])
 
   const handleRSVP = (status) => {
     setRsvpData(prev => ({ ...prev, status }))
@@ -396,114 +422,9 @@ export default function AnimatedRSVPPage() {
           </div>
         )}
 
-        {/* RSVP Success State */}
-        {rsvpConfirmed && confirmedRsvpData && (
-          <div className="transform transition-all duration-1000 ease-out w-full max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="text-6xl mb-4 animate-bounce">🎉</div>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                {confirmedRsvpData.status === 'yes' ? "You're All Set!" : "Thanks for Letting Us Know!"}
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                {confirmedRsvpData.status === 'yes' 
-                  ? `We can't wait to celebrate with you, ${confirmedRsvpData.guestName}!`
-                  : `Sorry you can't make it, ${confirmedRsvpData.guestName}. We'll miss you!`
-                }
-              </p>
-            </div>
-
-            {confirmedRsvpData.status === 'yes' ? (
-              <div className="space-y-8">
-                {/* Party Reminder Card */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-white/50">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-                    🗓️ Party Details Reminder
-                  </h2>
-                  <div className="grid md:grid-cols-3 gap-6 text-center">
-                    <div className="space-y-2">
-                      <Calendar className="w-8 h-8 mx-auto text-primary-500" />
-                      <div className="font-semibold text-gray-900">{inviteDetails?.inviteData?.date || 'TBD'}</div>
-                      <div className="text-gray-600">Date</div>
-                    </div>
-                    <div className="space-y-2">
-                      <Clock className="w-8 h-8 mx-auto text-primary-600" />
-                      <div className="font-semibold text-gray-900">{inviteDetails?.inviteData?.time || 'TBD'}</div>
-                      <div className="text-gray-600">Time</div>
-                    </div>
-                    <div className="space-y-2">
-                      <MapPin className="w-8 h-8 mx-auto text-primary-700" />
-                      <div className="font-semibold text-gray-900">{inviteDetails?.inviteData?.venue || 'TBD'}</div>
-                      <div className="text-gray-600">Location</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Gift Registry CTA */}
-                {inviteDetails?.partyId && (
-                  <div className="bg-gradient-to-br from-white/60 to-primary-50/60 backdrop-blur-sm rounded-3xl p-8 border border-primary-200/40 text-center">
-                    <div className="text-4xl mb-4">🎁</div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                      Want to Bring a Gift?
-                    </h3>
-                    <p className="text-gray-600 mb-6 text-lg">
-                      Check out {inviteDetails.inviteData?.childName || 'the birthday child'}'s wishlist and claim the perfect gift!
-                    </p>
-                    <Button 
-                      className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-medium px-8 py-4 rounded-full transition-all duration-300 transform hover:scale-105"
-                      onClick={async () => {
-                        // First try to find the actual gift registry for this party
-                        try {
-                          console.log('🔍 Looking for gift registry for party:', inviteDetails.partyId)
-                          const registryResult = await partyDatabaseBackend.getPartyGiftRegistry(inviteDetails.partyId)
-                          
-                          if (registryResult.success && registryResult.registry) {
-                            // Use the actual registry ID
-                            console.log('✅ Found registry:', registryResult.registry.id)
-                            navigateWithContext(`/gift-registry/${registryResult.registry.id}/preview`, 'rsvp')
-                          } else {
-                            // Fallback to the known working registry ID for now
-                            console.log('⚠️ Registry not found, using fallback')
-                            navigateWithContext(`/gift-registry/d8588236-6060-4501-9627-19b8f3c5b428/preview`, 'rsvp')
-                          }
-                        } catch (error) {
-                          console.error('❌ Error finding registry:', error)
-                          // Use the known working registry ID as fallback
-                          navigateWithContext(`/gift-registry/d8588236-6060-4501-9627-19b8f3c5b428/preview`, 'rsvp')
-                        }
-                      }}
-                    >
-                      <Gift className="w-5 h-5 mr-3" />
-                      View Gift Registry
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-white/50 text-center">
-                <div className="text-4xl mb-4">😢</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  We'll Miss You!
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Thank you for letting us know. We hope to celebrate with you next time!
-                </p>
-                {confirmedRsvpData.message && (
-                  <div className="bg-gray-50 rounded-2xl p-4 mt-4">
-                    <p className="text-gray-700 italic">"{confirmedRsvpData.message}"</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Final Layout - Only show in final phase */}
-        {animationPhase === 'final' && !rsvpConfirmed && inviteDetails && (
-          <div className={`transform transition-all duration-1000 ease-out w-full max-w-7xl mx-auto ${
-            animationPhase === 'final'
-              ? 'translate-y-0 opacity-100' 
-              : 'translate-y-20 opacity-0 pointer-events-none'
-          }`}>
+        {/* Main Layout - Always show when in final phase */}
+        {animationPhase === 'final' && inviteDetails && (
+          <div className="transform transition-all duration-1000 ease-out w-full max-w-7xl mx-auto translate-y-0 opacity-100">
             
             <div className="lg:flex lg:items-start lg:space-x-12 lg:min-h-screen lg:py-8">
               
@@ -541,30 +462,6 @@ export default function AnimatedRSVPPage() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Party Details Card */}
-                  {/* <Card className="bg-white/80 backdrop-blur-md shadow-xl border-0 rounded-2xl mt-6">
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-                        📋 Party Details
-                      </h3>
-                      
-                      <div className="space-y-4 text-gray-700">
-                        <div className="flex items-center space-x-3 p-3 bg-primary-50 rounded-xl">
-                          <Calendar className="w-5 h-5 text-primary-500 flex-shrink-0" />
-                          <span className="font-medium">{inviteDetails.inviteData?.date || 'Date TBD'}</span>
-                        </div>
-                        <div className="flex items-center space-x-3 p-3 bg-primary-100 rounded-xl">
-                          <Clock className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                          <span className="font-medium">{inviteDetails.inviteData?.time || 'Time TBD'}</span>
-                        </div>
-                        <div className="flex items-center space-x-3 p-3 bg-primary-200 rounded-xl">
-                          <MapPin className="w-5 h-5 text-primary-700 flex-shrink-0" />
-                          <span className="font-medium">{inviteDetails.inviteData?.venue || 'Venue TBD'}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card> */}
                 </div>
               </div>
 
@@ -572,36 +469,124 @@ export default function AnimatedRSVPPage() {
               <div className="lg:w-1/2 space-y-8 lg:pl-6 mt-8 lg:mt-0">
                 
                 {/* RSVP Section */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 lg:max-w-none max-w-md mx-auto border border-white/50">
-                  <h3 className="text-3xl font-bold text-gray-900 mb-3 text-center lg:text-left">
-                    Will you be joining us? 🎉
-                  </h3>
-                  
-                  <p className="text-gray-600 mb-8 text-center lg:text-left text-lg">
-                    We can't wait to celebrate with you! Let us know if you'll be there.
-                  </p>
+                <div className="bg-white/70 backdrop-blur-sm rounded-3xl  lg:max-w-none max-w-md mx-auto border border-white/50">
+                  {/* Check if user has already RSVP'd */}
+                  {rsvpConfirmed && confirmedRsvpData ? (
+                    /* Already RSVP'd - Show confirmation */
+                    <div className="text-center">
+                      <div className="text-4xl mb-4 mt-5">
+                        {confirmedRsvpData.status === 'yes' ? '🎉' : '😢'}
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                        {confirmedRsvpData.status === 'yes' 
+                          ? 'You\'re Already Confirmed!' 
+                          : 'Thanks for Your Response'
+                        }
+                      </h3>
+                      
+                      {confirmedRsvpData.status === 'yes' ? (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+                          <div className="flex items-center justify-center space-x-2 text-green-800 mb-2">
+                            <CheckCircle className="w-6 h-6" />
+                            <span className="font-bold text-lg">
+                              You're attending as {confirmedRsvpData.guestName}
+                            </span>
+                          </div>
+                          <p className="text-green-700">
+                            Party size: {confirmedRsvpData.guestCount} adults
+                            {confirmedRsvpData.childrenCount > 0 && `, ${confirmedRsvpData.childrenCount} children`}
+                          </p>
+                          <p className="text-green-600 text-sm mt-2">
+                            We can't wait to celebrate with you! 🎊
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+                          <div className="flex items-center justify-center space-x-2 text-amber-800 mb-2">
+                            <Info className="w-6 h-6" />
+                            <span className="font-bold text-lg">
+                              You won't be attending
+                            </span>
+                          </div>
+                          <p className="text-amber-700">
+                            Thanks for letting us know, {confirmedRsvpData.guestName}
+                          </p>
+                          <p className="text-amber-600 text-sm mt-2">
+                            We'll miss you at the celebration! 💛
+                          </p>
+                        </div>
+                      )}
 
-                  <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
-                    <Button
-                      onClick={() => handleRSVP('yes')}
-                      className="flex-1 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-5 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 text-lg"
-                    >
-                      <CheckCircle className="w-6 h-6 mr-3" />
-                      I'll be there! ✨
-                    </Button>
-                    
-                    <Button
-                      onClick={() => handleRSVP('no')}
-                      variant="outline"
-                      className="flex-1 border-2 border-[hsl(var(--primary-300))] text-gray-700 hover:bg-[hsl(var(--primary-50))] font-bold py-5 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 text-lg"
-                    >
-                      <XCircle className="w-6 h-6 mr-3" />
-                      Can't make it 😢
-                    </Button>
-                  </div>
+                      {confirmedRsvpData.message && (
+                        <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                          <p className="text-gray-700 italic text-sm">
+                            "{confirmedRsvpData.message}"
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-500 bg-gray-100 rounded-lg p-3">
+                        <Lock className="w-4 h-4 inline mr-1" />
+                        RSVP completed • Need changes? Contact the host directly
+                      </div>
+
+                      {/* Show party details reminder for attending guests */}
+                      {/* {confirmedRsvpData.status === 'yes' && (
+                        <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mt-6">
+                          <h4 className="text-lg font-bold text-gray-900 mb-4">
+                            🗓️ Party Details Reminder
+                          </h4>
+                          <div className="grid grid-cols-1 gap-3 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="w-4 h-4 text-primary-500" />
+                              <span><strong>Date:</strong> {inviteDetails?.inviteData?.date || 'TBD'}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4 text-primary-600" />
+                              <span><strong>Time:</strong> {inviteDetails?.inviteData?.time || 'TBD'}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <MapPin className="w-4 h-4 text-primary-700" />
+                              <span><strong>Location:</strong> {inviteDetails?.inviteData?.venue || 'TBD'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )} */}
+                    </div>
+                  ) : (
+                    /* No RSVP yet - Show buttons */
+                    <>
+                      <h3 className="text-3xl font-bold text-gray-900 mb-3 text-center lg:text-left">
+                        Will you be joining us? 🎉
+                      </h3>
+                      
+                      <p className="text-gray-600 mb-8 text-center lg:text-left text-lg">
+                        We can't wait to celebrate with you! Let us know if you'll be there.
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                        <Button
+                          onClick={() => handleRSVP('yes')}
+                          className="flex-1 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-5 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 text-lg"
+                        >
+                          <CheckCircle className="w-6 h-6 mr-3" />
+                          I'll be there! ✨
+                        </Button>
+                        
+                        <Button
+                          onClick={() => handleRSVP('no')}
+                          variant="outline"
+                          className="flex-1 border-2 border-[hsl(var(--primary-300))] text-gray-700 hover:bg-[hsl(var(--primary-50))] font-bold py-5 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 text-lg"
+                        >
+                          <XCircle className="w-6 h-6 mr-3" />
+                          Can't make it 😢
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Gift Registry */}
+                {/* Gift Registry - Always show */}
                 {inviteDetails?.partyId && (
                   <div className="bg-gradient-to-br from-white/60 to-primary-50/60 backdrop-blur-sm rounded-3xl p-8 lg:max-w-none max-w-md mx-auto border border-primary-200/40 mb-20 md:mb-0">
                     <div className="flex items-start space-x-5">
@@ -837,11 +822,6 @@ export default function AnimatedRSVPPage() {
                     rows={3}
                     className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
                   />
-                </div>
-
-                {/* Debug info - remove this in production */}
-                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                  Debug: Guests: {rsvpData.guestCount}, Children: {rsvpData.childrenCount}, Name: "{rsvpData.guestName}"
                 </div>
 
                 <Button

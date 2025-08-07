@@ -21,7 +21,7 @@ export default function EnquiryNotificationBanner() {
   }
 
   return (
-    <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg mb-6">
+    <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg mb-6 w-[90%]">
       <CardContent className="p-4 md:p-6">
         <div className="flex items-start space-x-4">
           {/* Notification Icon */}

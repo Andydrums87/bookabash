@@ -10,6 +10,7 @@ import {
   Info,
   Lock
 } from "lucide-react";
+import { set } from 'date-fns';
 
 const MobileBookingBar = ({ 
   selectedPackage = null, 
@@ -241,7 +242,7 @@ const MobileBookingBar = ({
     if (!hasPartyPlan && !selectedDate) {
       return {
         disabled: false,
-        className: "bg-orange-500 hover:bg-orange-600 text-white transition-colors",
+        className: "bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white transition-colors",
         text: "Pick a Date First",
         requiresDate: true
       };
@@ -341,17 +342,17 @@ const MobileBookingBar = ({
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="font-semibold text-gray-900 text-xs">{packageInfo.name}</p>
-                <p className="text-sm text-gray-600 text-xs">
+                <p className="text-sm text-gray-600">
                   {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
                   {selectedDate && (
-                    <span className="ml-2 text-green-600 font-medium">
-                      • ✅ {getSelectedDateDisplay()}
+                    <span className="ml-2 text-primary-500 font-medium">
+                      •  {getSelectedDateDisplay()}
                     </span>
                   )}
                   {/* NEW: Show party date if from dashboard */}
                   {isFromDashboard && partyDate && (
-                    <span className="ml-2 text-blue-600 font-medium">
-                      • 🎉 {partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    <span className="ml-2 text-primary-500 font-medium">
+                      • {partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   )}
                 </p>
@@ -360,7 +361,7 @@ const MobileBookingBar = ({
                 onClick={() => setIsModalOpen(true)}
                 className={`text-xs font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center gap-2 ${
                   selectedDate || (isFromDashboard && partyDate)
-                    ? 'bg-green-100 hover:bg-green-200 text-green-700' 
+                    ? 'bg-gray-100 hover:bg-[hsl(var(--primary-500))] hover:text-white text-primary-600' 
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
@@ -369,13 +370,13 @@ const MobileBookingBar = ({
               </button>
             </div>
             <button 
-              onClick={handleMainButtonClick}
+              onClick={() => buttonState.requiresDate ? setIsModalOpen(true) : handleMainButtonClick()}
               className={`w-full font-semibold py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 ${buttonState.className}`}
-              disabled={buttonState.disabled}
+      
             >
               {buttonState.requiresDate ? (
                 <>
-                  <Calendar className="w-5 h-5" />
+                  {/* <Calendar className="w-5 h-5" /> */}
                   {buttonState.text}
                 </>
               ) : (
@@ -410,7 +411,7 @@ const MobileBookingBar = ({
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 overflow-y-auto">
+            <div className="p-6 overflow-y-auto ">
               {/* NEW: Party date status banner (COPIED FROM DESKTOP) */}
               {isFromDashboard && partyDate && partyDateStatus && (
                 <div className={`mb-6 p-4 rounded-lg border-2 ${
@@ -551,7 +552,7 @@ const MobileBookingBar = ({
               </div>
 
               {/* Selected Date Info - only show for browse users */}
-              {!isFromDashboard && selectedDate && (
+              {/* {!isFromDashboard && selectedDate && (
                 <div className="bg-green-50 rounded-xl p-4 mb-6 border border-green-200">
                   <h4 className="font-semibold text-green-900 mb-2">Selected Date</h4>
                   <p className="text-green-800">
@@ -564,10 +565,10 @@ const MobileBookingBar = ({
                   </p>
                   <p className="text-sm text-green-700 mt-1">✅ Available for booking</p>
                 </div>
-              )}
+              )} */}
 
               {/* Package Summary */}
-              <div className="bg-gradient-to-r from-primary-100 to-primary-200 rounded-xl p-4 mb-6">
+              {/* <div className="bg-gradient-to-r from-primary-100 to-primary-200 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
                     <Star className="w-5 h-5 text-white" />
@@ -589,7 +590,7 @@ const MobileBookingBar = ({
                     ))}
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Action Buttons */}
               <div className="space-y-3">

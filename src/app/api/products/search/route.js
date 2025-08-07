@@ -16,17 +16,22 @@ class RapidAPIProductService {
     this.baseURL = 'https://amazon24.p.rapidapi.com';
   }
 
-  async searchAmazonProducts(query, maxResults = 10) {
+  async searchAmazonProducts(query, maxResults = 10, page = 1) {
     if (!this.apiKey) {
       console.log('⚠️ No API key found, using fake data for:', query);
-      return this.getFakeProducts(query, maxResults);
+      return {
+        products: this.getFakeProducts(query, maxResults, page),
+        hasMore: page < 10,  // INCREASED: Allow 10 pages of fake data
+        totalResults: 200,   // INCREASED: More realistic total
+        currentPage: page
+      };
     }
+    
 
     try {
-      console.log('🔍 Searching Amazon for:', query);
+      console.log('🔍 Searching Amazon for:', query, 'Page:', page);
       
-      // Use GB for UK Amazon marketplace
-      const url = `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=1&country=GB&sort_by=RELEVANCE&product_condition=ALL`;
+      const url = `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=${page}&country=GB&sort_by=RELEVANCE&product_condition=ALL`;
       console.log('📡 Making request to:', url);
       
       const options = {
@@ -47,64 +52,142 @@ class RapidAPIProductService {
       }
 
       const result = await response.text();
-      console.log('✅ API Success! Response length:', result.length);
-      
       const data = JSON.parse(result);
       
       if (data.status === 'OK' && data.data?.products) {
         console.log('✅ Found', data.data.products.length, 'real Amazon UK products');
-        return this.formatRapidAPIResults(data.data.products.slice(0, maxResults));
+        return {
+          products: this.formatRapidAPIResults(data.data.products.slice(0, maxResults)),
+          hasMore: data.data.products.length >= maxResults || page < 5,  // IMPROVED LOGIC
+          totalResults: data.data.total_products || Math.max(data.data.products.length * 3, 100),
+          currentPage: page
+        };
       } else if (data.products && Array.isArray(data.products)) {
-        console.log('✅ Found', data.products.length, 'real Amazon UK products (alternative format)');
-        return this.formatRapidAPIResults(data.products.slice(0, maxResults));
+        console.log('✅ Found', data.products.length, 'real Amazon UK products');
+        return {
+          products: this.formatRapidAPIResults(data.products.slice(0, maxResults)),
+          hasMore: data.products.length === maxResults,
+          totalResults: data.total_results || data.products.length,
+          currentPage: page
+        };
       } else {
-        console.log('⚠️ Unexpected response structure:', Object.keys(data));
         throw new Error('No products found in response');
       }
     } catch (error) {
       console.error('❌ RapidAPI search error:', error);
       console.log('🔄 Falling back to fake data...');
-      return this.getFakeProducts(query, maxResults);
+      return {
+        products: this.getFakeProducts(query, maxResults, page),
+        hasMore: page < 10,  // INCREASED: Allow 10 pages of fake data  
+        totalResults: 200,   // INCREASED: More realistic total
+        currentPage: page
+      };
     }
   }
+  async getTrendingProducts(childAge, limit = 20, page = 1) {
+    const trendingQueries = this.getTrendingQueriesForAge(childAge);
+    
+    // Randomly select a trending category to keep it fresh
+    const randomQuery = trendingQueries[Math.floor(Math.random() * trendingQueries.length)];
+    
+    console.log('🔥 Getting trending products for age', childAge, 'with query:', randomQuery);
+    
+    return await this.searchAmazonProducts(randomQuery, limit, page);
+  }
 
-  getFakeProducts(query, maxResults) {
-    // Enhanced fake products with more variety
-    const themes = {
-      superhero: [
-        { title: `${query} - LEGO Batman Batcave Building Set`, price: '£89.99', rating: '4.8', reviews: '1247' },
-        { title: `${query} - Superhero Cape and Mask Set`, price: '£16.99', rating: '4.3', reviews: '856' },
-        { title: `${query} - Marvel Action Figures 6-Pack`, price: '£34.99', rating: '4.6', reviews: '432' },
-        { title: `${query} - Spider-Man Web Shooter Toy`, price: '£24.99', rating: '4.4', reviews: '623' },
-        { title: `${query} - Batman Utility Belt Costume`, price: '£19.99', rating: '4.2', reviews: '341' }
-      ],
-      princess: [
-        { title: `${query} - Princess Dress Up Costume Set`, price: '£29.99', rating: '4.7', reviews: '892' },
-        { title: `${query} - Tiara and Jewelry Set`, price: '£14.99', rating: '4.5', reviews: '567' },
-        { title: `${query} - Princess Castle Playset`, price: '£45.99', rating: '4.6', reviews: '234' },
-        { title: `${query} - Magic Wand with Lights`, price: '£12.99', rating: '4.3', reviews: '445' },
-        { title: `${query} - Princess Tea Party Set`, price: '£22.99', rating: '4.4', reviews: '321' }
-      ],
-      default: [
-        { title: `${query} - Educational Science Kit`, price: '£24.99', rating: '4.7', reviews: '623' },
-        { title: `${query} - Creative Art Set with Crayons`, price: '£12.99', rating: '4.4', reviews: '341' },
-        { title: `${query} - Building Blocks Mega Set`, price: '£39.99', rating: '4.6', reviews: '789' },
-        { title: `${query} - Musical Keyboard Toy`, price: '£32.99', rating: '4.5', reviews: '456' },
-        { title: `${query} - Puzzle Adventure Game`, price: '£18.99', rating: '4.3', reviews: '234' }
-      ]
+  // NEW METHOD: Get age-appropriate trending search terms
+  getTrendingQueriesForAge(age) {
+    if (age <= 3) {
+      return [
+        'toddler educational toys',
+        'soft toys baby',
+        'wooden toys toddler',
+        'musical toys toddler',
+        'stacking toys',
+        'push pull toys'
+      ];
+    } else if (age <= 6) {
+      return [
+        'kids art supplies',
+        'preschool learning toys',
+        'building blocks kids',
+        'dress up costumes kids',
+        'puzzles children 4-6',
+        'outdoor toys kids'
+      ];
+    } else if (age <= 10) {
+      return [
+        'lego sets kids',
+        'science kits children',
+        'board games kids',
+        'craft kits kids',
+        'sports equipment kids',
+        'books children 7-10'
+      ];
+    } else {
+      return [
+        'teen gadgets',
+        'books young adult',
+        'art supplies teens',
+        'board games family',
+        'sports equipment teens',
+        'stem toys teens'
+      ];
+    }
+  }
+  async getBrowseProducts(category, childAge, limit = 20, page = 1) {
+    const categoryQueries = {
+      toys: ['popular toys kids', 'trending toys ' + new Date().getFullYear()],
+      books: ['popular children books', 'kids books age ' + childAge],
+      art: ['art supplies kids', 'craft kits children'],
+      games: ['board games kids', 'family games'],
+      sports: ['sports toys kids', 'outdoor games children'],
+      clothes: ['kids clothes age ' + childAge, 'children clothing']
     };
 
-    const themeKey = query.toLowerCase().includes('superhero') ? 'superhero' : 
-                     query.toLowerCase().includes('princess') ? 'princess' : 'default';
+    const queries = categoryQueries[category] || categoryQueries.toys;
+    const selectedQuery = queries[Math.floor(Math.random() * queries.length)];
     
-    const selectedTheme = themes[themeKey] || themes.default;
+    return await this.searchAmazonProducts(selectedQuery, limit, page);
+  }
+
+  getFakeProducts(query, maxResults, page = 1) {
+    // Generate different products for different pages
+    const baseProducts = [
+      { title: `LEGO Classic Creative Bricks Set`, price: '£29.99', rating: '4.8', reviews: '1247' },
+      { title: `Hot Wheels Track Builder Mega Set`, price: '£45.99', rating: '4.6', reviews: '856' },
+      { title: `Playmobil Adventure Playground`, price: '£34.99', rating: '4.7', reviews: '432' },
+      { title: `Nerf Elite Disruptor Blaster`, price: '£24.99', rating: '4.4', reviews: '623' },
+      { title: `Barbie Dreamhouse Adventures`, price: '£89.99', rating: '4.5', reviews: '341' },
+      { title: `PAW Patrol Ultimate Rescue Vehicle`, price: '£39.99', rating: '4.6', reviews: '567' },
+      { title: `Pokemon Trading Card Game Battle Academy`, price: '£19.99', rating: '4.3', reviews: '234' },
+      { title: `Monopoly Junior Board Game`, price: '£14.99', rating: '4.4', reviews: '445' },
+      { title: `Razor A3 Kick Scooter`, price: '£49.99', rating: '4.7', reviews: '321' },
+      { title: `Fisher-Price Laugh & Learn Puppy`, price: '£27.99', rating: '4.8', reviews: '789' },
+      // Page 2 products
+      { title: `Crayola Super Art Coloring Kit`, price: '£22.99', rating: '4.5', reviews: '456' },
+      { title: `Jenga Classic Block Game`, price: '£9.99', rating: '4.3', reviews: '234' },
+      { title: `Remote Control Stunt Car`, price: '£35.99', rating: '4.6', reviews: '678' },
+      { title: `Melissa & Doug Wooden Puzzle`, price: '£12.99', rating: '4.7', reviews: '345' },
+      { title: `National Geographic Break Open Geodes`, price: '£18.99', rating: '4.4', reviews: '567' },
+      // Page 3 products
+      { title: `UNO Card Game`, price: '£6.99', rating: '4.5', reviews: '890' },
+      { title: `Play-Doh Kitchen Creations`, price: '£16.99', rating: '4.3', reviews: '432' },
+      { title: `Kinetic Sand Sandbox Set`, price: '£28.99', rating: '4.6', reviews: '654' },
+      { title: `Rubik's Cube Original 3x3`, price: '£8.99', rating: '4.4', reviews: '321' },
+      { title: `Thames & Kosmos Chemistry Set`, price: '£42.99', rating: '4.7', reviews: '234' }
+    ];
+
+    const startIndex = (page - 1) * maxResults;
+    const endIndex = startIndex + maxResults;
+    const pageProducts = baseProducts.slice(startIndex, endIndex);
     
-    const fakeProducts = selectedTheme.slice(0, maxResults).map((product, index) => ({
-      asin: `FAKE00${index + 1}`,
+    const fakeProducts = pageProducts.map((product, index) => ({
+      asin: `FAKE${page}${String(index + 1).padStart(2, '0')}`,
       product_title: product.title,
       product_price: product.price,
-      product_photo: `https://images.unsplash.com/photo-${1558060370 + index}?w=300`,
-      product_url: `https://amazon.co.uk/dp/FAKE00${index + 1}`,
+      product_photo: `https://images.unsplash.com/photo-${1558060370 + startIndex + index}?w=300`,
+      product_url: `https://amazon.co.uk/dp/FAKE${page}${String(index + 1).padStart(2, '0')}`,
       product_star_rating: product.rating,
       product_num_ratings: product.reviews
     }));
@@ -276,89 +359,137 @@ export async function POST(request) {
     requestCount = 0;
     resetTime = Date.now() + (24 * 60 * 60 * 1000);
     requestLog.length = 0;
-    themeCache.clear(); // Clear theme cache on reset
+    themeCache.clear();
     console.log('🔄 Daily request counter and cache reset');
   }
 
   try {
-    const { theme, age, category, limit = 10, searchTerm } = await request.json();
-    
-    // Validate inputs
-    if (!searchTerm && (!theme || theme === 'undefined' || !age)) {
-      console.log('🚫 Skipping request - invalid theme or age:', { theme, age, searchTerm });
-      return NextResponse.json({
-        success: true,
-        products: [],
-        count: 0,
-        requestCount,
-        limit: REQUEST_LIMIT,
-        remaining: REQUEST_LIMIT - requestCount,
-        usingFallback: false,
-        skipped: true,
-        reason: 'Invalid theme or age parameters'
-      });
-    }
+    const { 
+      theme, 
+      age, 
+      category, 
+      limit = 20,        // CHANGED: Increased from 10 to 20
+      page = 1,          // NEW: Added pagination support
+      searchTerm, 
+      mode = 'trending'  // NEW: Added mode parameter
+    } = await request.json();
     
     const productService = new RapidAPIProductService();
-    
-    let products;
+    let result;
     let usingFallback = false;
     
-    if (searchTerm) {
-      // For actual search terms, check rate limit and make API calls
-      if (requestCount >= REQUEST_LIMIT) {
-        console.log(`🚫 Request limit exceeded: ${requestCount}/${REQUEST_LIMIT}`);
-        products = generateFallbackProducts(searchTerm);
-        usingFallback = true;
-      } else {
-        // Log the request
-        const logEntry = {
-          timestamp,
-          query: searchTerm,
-          age,
-          requestNumber: requestCount + 1,
-          type: 'search'
-        };
-        requestLog.push(logEntry);
+    // Rate limit check
+    const shouldUseAPI = requestCount < REQUEST_LIMIT;
+    
+    // NEW: Handle different modes
+    switch (mode) {
+      case 'search':
+        if (!searchTerm) {
+          return NextResponse.json({
+            success: false,
+            error: 'Search term is required for search mode',
+            products: [],
+            hasMore: false
+          });
+        }
         
-        console.log(`📊 Search Request ${requestCount + 1}/${REQUEST_LIMIT}: "${searchTerm}" (age: ${age})`);
+        if (shouldUseAPI) {
+          requestCount++;
+          const logEntry = {
+            timestamp,
+            query: searchTerm,
+            age,
+            page,
+            requestNumber: requestCount,
+            type: 'search'
+          };
+          requestLog.push(logEntry);
+          console.log(`📊 Search Request ${requestCount}/${REQUEST_LIMIT}: "${searchTerm}" (age: ${age}, page: ${page})`);
+        }
         
-        // Increment counter for search requests
-        requestCount++;
+        result = await productService.searchAmazonProducts(searchTerm, limit, page);
+        break;
         
-        products = await productService.searchAmazonProducts(searchTerm, limit);
-        usingFallback = products.some(p => p.id.includes('FAKE'));
-      }
-    } else {
-      // For theme-based products, use cached/fake data (no API calls)
-      console.log('🎨 Getting cached theme-based products for:', theme);
-      products = await productService.getThemeBasedProducts(theme, age, limit);
-      usingFallback = true; // Theme products use fake data to preserve API quota
+      case 'category':
+        if (!category || !age) {
+          return NextResponse.json({
+            success: false,
+            error: 'Category and age are required for category mode',
+            products: [],
+            hasMore: false
+          });
+        }
+        
+        if (shouldUseAPI) {
+          requestCount++;
+          const logEntry = {
+            timestamp,
+            query: `category:${category}`,
+            age,
+            page,
+            requestNumber: requestCount,
+            type: 'category'
+          };
+          requestLog.push(logEntry);
+        }
+        
+        result = await productService.getBrowseProducts(category, age, limit, page);
+        break;
+        
+      case 'trending':
+      default:
+        if (!age) {
+          return NextResponse.json({
+            success: false,
+            error: 'Age is required for trending products',
+            products: [],
+            hasMore: false
+          });
+        }
+        
+        if (shouldUseAPI) {
+          requestCount++;
+          const logEntry = {
+            timestamp,
+            query: `trending:age${age}`,
+            age,
+            page,
+            requestNumber: requestCount,
+            type: 'trending'
+          };
+          requestLog.push(logEntry);
+          console.log(`🔥 Trending Request ${requestCount}/${REQUEST_LIMIT}: age ${age}, page ${page}`);
+        }
+        
+        result = await productService.getTrendingProducts(age, limit, page);
+        break;
     }
     
     const duration = Date.now() - startTime;
-    console.log(`✅ Request completed in ${duration}ms. Found ${products.length} products`);
+    console.log(`✅ ${mode} request completed in ${duration}ms. Found ${result.products?.length || 0} products`);
     
     return NextResponse.json({
       success: true,
-      products,
-      count: products.length,
+      products: result.products || result,
+      count: result.products?.length || result?.length || 0,
+      hasMore: result.hasMore || false,          // NEW: Pagination info
+      totalResults: result.totalResults || 0,    // NEW: Total count
+      currentPage: result.currentPage || page,   // NEW: Current page
       requestCount,
       limit: REQUEST_LIMIT,
       remaining: REQUEST_LIMIT - requestCount,
-      usingFallback,
-      cacheHit: !searchTerm // Theme requests are always cached
+      usingFallback: !shouldUseAPI || result.products?.some(p => p.id.includes('FAKE')),
+      mode  // NEW: Return the mode used
     });
     
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(`❌ Request failed after ${duration}ms:`, error.message);
     
-    // Don't count failed requests against limit
-    
     return NextResponse.json({
       success: true,
       products: generateFallbackProducts(),
+      hasMore: false,
       usingFallback: true,
       error: error.message,
       requestCount,

@@ -870,6 +870,7 @@ const handleRemoveAddon = async (addonId) => {
         currentStep={loadingStep}
         supplierCount={supplierCount}
         error={loadingError}
+        
       />
       
 

@@ -615,7 +615,7 @@ useEffect(() => {
               </Alert>
             )}
 {/* Add debug modal here */}
-<DebugAIAssistant />
+
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
               <div className="flex-1 space-y-3 sm:space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">

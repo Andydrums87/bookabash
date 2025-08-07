@@ -1,7 +1,5 @@
-// components/WizardNavigation.js
-
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { WIZARD_STEPS } from "../hooks/useWizardSteps"
 
 const WizardNavigation = ({ 
@@ -12,7 +10,7 @@ const WizardNavigation = ({
   nextStep,
   getValidationErrors,
   stepConfig,
-  onComplete // Add this for final step
+  onComplete 
 }) => {
   const validationErrors = getValidationErrors()
   const isLastStep = currentStep === WIZARD_STEPS.REVIEW_SHARE
@@ -40,18 +38,18 @@ const WizardNavigation = ({
   }
 
   return (
-    <div className="bg-white border-t border-gray-200 px-4 py-4">
+    <div className="bg-white border-t border-gray-200 px-3 sm:px-4 py-3 sm:py-4 sticky bottom-0 z-50 shadow-lg">
       <div className="max-w-7xl mx-auto">
-        {/* Validation Errors */}
+        {/* Validation Errors - More compact on mobile */}
         {validationErrors.length > 0 && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-3 sm:mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start">
-              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
               <div>
-                <h4 className="text-sm font-medium text-red-800 mb-1">
+                <h4 className="text-xs sm:text-sm font-medium text-red-800 mb-1">
                   Please complete the following:
                 </h4>
-                <ul className="text-sm text-red-700 space-y-1">
+                <ul className="text-xs sm:text-sm text-red-700 space-y-1">
                   {validationErrors.map((error, index) => (
                     <li key={index} className="flex items-center">
                       <span className="w-1 h-1 bg-red-500 rounded-full mr-2 flex-shrink-0"></span>
@@ -64,43 +62,44 @@ const WizardNavigation = ({
           </div>
         )}
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between items-center">
+        {/* Navigation Buttons - Mobile optimized */}
+        <div className="flex justify-between items-center gap-3">
           {/* Back Button */}
-          <div>
+          <div className="flex-shrink-0">
             {canGoBack() ? (
               <Button
                 variant="outline"
                 onClick={prevStep}
-                className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-6 py-2"
+                className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-3 sm:px-6 py-2 text-sm sm:text-base"
               >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Back
+                <ChevronLeft className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
             ) : (
-              <div></div> // Empty div for spacing
+              <div className="w-16 sm:w-auto"></div>
             )}
           </div>
 
-          {/* Step Counter */}
-          <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-500">
+          {/* Step Counter - Always visible but smaller on mobile */}
+          <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500 flex-shrink-0">
             <span>Step {currentStep} of {Object.keys(WIZARD_STEPS).length}</span>
           </div>
 
           {/* Next/Complete Button */}
-          <div>
+          <div className="flex-shrink-0">
             <Button
               onClick={isLastStep ? onComplete : nextStep}
               disabled={!canProceedToNext()}
               data-complete-button={isLastStep ? "true" : undefined}
-              className={`font-bold px-8 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${
+              className={`font-bold px-4 sm:px-8 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base ${
                 canProceedToNext()
                   ? "bg-gradient-to-r from-[hsl(var(--primary-600))] to-[hsl(var(--primary-700))] hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))] text-white"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
               <span className="flex items-center">
-                {getNextButtonText()}
+                <span className="hidden sm:inline">{getNextButtonText()}</span>
+                <span className="sm:hidden">{isLastStep ? "Complete" : "Next"}</span>
                 {typeof getNextButtonIcon() === 'string' ? (
                   <span className="ml-2">{getNextButtonIcon()}</span>
                 ) : (
@@ -109,13 +108,6 @@ const WizardNavigation = ({
               </span>
             </Button>
           </div>
-        </div>
-
-        {/* Mobile Step Counter */}
-        <div className="sm:hidden mt-3 text-center">
-          <span className="text-xs text-gray-500">
-            Step {currentStep} of {Object.keys(WIZARD_STEPS).length}
-          </span>
         </div>
       </div>
     </div>

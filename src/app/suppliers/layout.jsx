@@ -62,7 +62,7 @@ export default function SupplierLayout({ children }) {
   return (
     <BusinessProvider>
       <Suspense fallback={<div>Loading...</div>}>
-        <div className="grid min-h-screen w-full md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] p-2 bg-primary-50">
+        <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] p-2 bg-primary-50 ">
           {/* Desktop Sidebar */}
           <div className="hidden bg-muted/40 md:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
@@ -75,7 +75,7 @@ export default function SupplierLayout({ children }) {
                   className="md:h-10 h-8 w-auto" 
                 />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 max-w-screen overflow-x-hidden">
                 <nav className="grid pt-5 items-start px-2 text-xs md:text-sm font-medium lg:px-4">
                   <NavItems />
                 </nav>
@@ -83,8 +83,8 @@ export default function SupplierLayout({ children }) {
             </div>
           </div>
 
-          <div className="flex flex-col">
-          <header className="flex h-14 items-center gap-4 bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <div className="flex flex-col md:w-[85vw] w-[98vw]">
+          <header className="flex h-14 items-center  bg-muted/40 lg:h-[60px] lg:px-6" >
   {/* Mobile Menu */}
   <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
     <SheetTrigger asChild>
@@ -113,7 +113,7 @@ export default function SupplierLayout({ children }) {
         />
       </div>
       
-      <nav className="flex-1 px-2">
+      <nav className="flex-1 px-2 max-w-screen overflow-hidden">
     
         <NavItems isMobile onNavClick={handleNavClick} />
       </nav>
@@ -140,7 +140,7 @@ export default function SupplierLayout({ children }) {
   <div className="flex-1"></div>
 
   {/* Business Switcher - Centered with fixed width */}
-  <div className="w-full">
+  <div className="md:w-full max-w-[70%] overflow-hidden">
   <CompactBusinessSwitcher />
 </div>
 
@@ -156,7 +156,7 @@ export default function SupplierLayout({ children }) {
           
 
             {/* Main Content */}
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/20  max-w-full overflow-hidden">
+            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/20 ">
             <div className="max-w-7xl mx-auto w-full">
               {children}
               </div>

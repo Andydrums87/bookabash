@@ -1,52 +1,28 @@
-// components/WizardProgress.js
-
-import { Check, Lock } from "lucide-react"
+import { Check, Lock } from 'lucide-react'
 import { WIZARD_STEPS } from "../hooks/useWizardSteps"
 
-const WizardProgress = ({ 
-  currentStep, 
-  allSteps, 
-  getStepStatus, 
-  goToStep,
-  getProgress 
-}) => {
+const WizardProgress = ({ currentStep, allSteps, getStepStatus, goToStep, getProgress }) => {
   const stepNumbers = Object.values(WIZARD_STEPS).sort((a, b) => a - b)
 
-  // Snappy mascot image - we'll use the same image for now, but you can customize per step
   const getSnappyImage = (step, status) => {
-    // You can customize different Snappy expressions based on step/status later
     return "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361571/v4l1f7puqvhswqb6j9tz.png"
   }
 
   const getStepClasses = (step) => {
     const status = getStepStatus(step)
-    
-    const baseClasses = "relative flex items-center justify-center w-16 h-16 rounded-full border-3 font-bold text-sm transition-all duration-300 overflow-hidden"
+    const baseClasses = "relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 font-bold text-xs transition-all duration-300 overflow-hidden"
     
     switch (status) {
       case 'completed':
-        return `${baseClasses} bg-green-500 border-green-500 text-white hover:bg-green-600 cursor-pointer shadow-lg`
+        return `${baseClasses} bg-[hsl(var(--primary-600))] border-[hsl(var(--primary-600))] text-white hover:bg-[hsl(var(--primary-700))] cursor-pointer shadow-md`
       case 'current':
-        return `${baseClasses} bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))] text-white ring-4 ring-[hsl(var(--primary-200))] shadow-xl`
+        return `${baseClasses} bg-[hsl(var(--primary-500))] border-[hsl(var(--primary-500))] text-white ring-2 ring-[hsl(var(--primary-200))] shadow-lg`
       case 'available':
-        return `${baseClasses} bg-white border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] hover:bg-[hsl(var(--primary-50))] cursor-pointer shadow-md hover:shadow-lg`
+        return `${baseClasses} bg-white border-[hsl(var(--primary-300))] text-[hsl(var(--primary-600))] hover:bg-[hsl(var(--primary-50))] cursor-pointer shadow-sm hover:shadow-md`
       case 'locked':
         return `${baseClasses} bg-gray-200 border-gray-300 text-gray-400 cursor-not-allowed opacity-60`
       default:
         return baseClasses
-    }
-  }
-
-  const getConnectorClasses = (step) => {
-    const nextStep = step + 1
-    const nextStatus = getStepStatus(nextStep)
-    
-    if (getStepStatus(step) === 'completed' && (nextStatus === 'completed' || nextStatus === 'current')) {
-      return "bg-green-500"
-    } else if (getStepStatus(step) === 'current' || getStepStatus(step) === 'completed') {
-      return "bg-[hsl(var(--primary-400))]"
-    } else {
-      return "bg-gray-300"
     }
   }
 
@@ -58,121 +34,118 @@ const WizardProgress = ({
   }
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-medium text-gray-700">Your Progress</span>
-            <span className="text-sm font-bold text-[hsl(var(--primary-600))] bg-[hsl(var(--primary-50))] px-3 py-1 rounded-full">
-              {getProgress()}% Complete
+    <div className="bg-white border-b border-gray-200">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Compact Progress Header */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">Progress</span>
+            <span className="text-sm font-bold text-[hsl(var(--primary-600))] bg-[hsl(var(--primary-50))] px-2 py-1 rounded-full">
+              {getProgress()}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+          
+          {/* Compact Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 shadow-inner">
             <div 
-              className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] h-3 rounded-full transition-all duration-700 ease-out shadow-sm"
+              className="h-2 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full transition-all duration-700 ease-out"
               style={{ width: `${getProgress()}%` }}
             ></div>
           </div>
         </div>
 
-        {/* Step Indicators with Snappy */}
+        {/* Compact Steps */}
         <div className="relative">
-          {/* Connector Line Background */}
-          <div className="absolute top-8 left-8 right-8 h-1 bg-gray-300 rounded-full"></div>
+          {/* Connection Line */}
+          <div className="absolute top-5 sm:top-6 left-0 right-0 h-0.5 bg-gray-300"></div>
           
-          <div className="flex items-start justify-between relative z-10">
+          <div className="flex justify-between items-start relative">
             {stepNumbers.map((step, index) => {
               const stepConfig = allSteps[step]
               const status = getStepStatus(step)
+              const isActive = status === 'current'
+              const isCompleted = status === 'completed'
               
               return (
                 <div key={step} className="flex flex-col items-center relative">
-                  {/* Snappy Step Circle */}
+                  {/* Compact Step Circle */}
                   <button
                     onClick={() => handleStepClick(step)}
                     className={getStepClasses(step)}
                     disabled={status === 'locked'}
                     title={status === 'locked' ? 'Complete previous steps first' : `Go to ${stepConfig.title}`}
                   >
-                    {status === 'completed' ? (
-                      /* Completed - Show checkmark over Snappy */
+                    {isCompleted ? (
                       <div className="relative w-full h-full">
                         <img 
-                          src={getSnappyImage(step, status)}
-                          alt="Snappy completed"
+                          src={getSnappyImage(step, status) || "/placeholder.svg"}
+                          alt="Completed"
                           className="w-full h-full object-cover rounded-full opacity-80"
                         />
-                        <div className="absolute inset-0 bg-green-500/80 rounded-full flex items-center justify-center">
-                          <Check className="w-8 h-8 text-white" />
+                        <div className="absolute inset-0 bg-[hsl(var(--primary-600))]/80 rounded-full flex items-center justify-center">
+                          <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
                       </div>
                     ) : status === 'locked' ? (
-                      /* Locked - Greyed out Snappy with lock */
                       <div className="relative w-full h-full">
                         <img 
-                          src={getSnappyImage(step, status)}
-                          alt="Snappy locked"
-                          className="w-full h-full object-cover rounded-full grayscale opacity-50"
+                          src={getSnappyImage(step, status) || "/placeholder.svg"}
+                          alt="Locked"
+                          className="w-full h-full object-cover rounded-full grayscale opacity-40"
                         />
                         <div className="absolute inset-0 bg-gray-400/60 rounded-full flex items-center justify-center">
-                          <Lock className="w-6 h-6 text-white" />
+                          <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                         </div>
                       </div>
                     ) : (
-                      /* Available/Current - Show Snappy */
                       <img 
-                        src={getSnappyImage(step, status)}
-                        alt={`Snappy - ${stepConfig.title}`}
-                        className={`w-full h-full object-cover rounded-full ${
-                          status === 'current' ? 'ring-2 ring-white' : ''
-                        }`}
+                        src={getSnappyImage(step, status) || "/placeholder.svg"}
+                        alt={stepConfig.title}
+                        className="w-full h-full object-cover rounded-full"
                       />
                     )}
                   </button>
 
-                  {/* Step Label */}
-                  <div className="mt-4 text-center max-w-32">
-                    <div className={`text-sm font-bold mb-1 ${
-                      status === 'current' 
-                        ? 'text-[hsl(var(--primary-600))]' 
-                        : status === 'completed'
-                        ? 'text-green-600'
-                        : status === 'locked'
-                        ? 'text-gray-400'
-                        : 'text-gray-700'
-                    }`}>
-                      {stepConfig.title}
-                    </div>
-                    <div className="text-xs text-gray-500 leading-tight">
-                      {stepConfig.description}
-                    </div>
-                  </div>
-
-                  {/* Connector Progress */}
+                  {/* Connection Progress */}
                   {index < stepNumbers.length - 1 && (
                     <div 
-                      className={`absolute top-8 left-8 h-1 rounded-full transition-all duration-500 z-20 ${getConnectorClasses(step)}`}
+                      className={`absolute top-5 sm:top-6 left-5 sm:left-6 h-0.5 transition-all duration-500 z-10 ${
+                        isCompleted ? 'bg-[hsl(var(--primary-600))]' : isActive ? 'bg-[hsl(var(--primary-500))]' : 'bg-transparent'
+                      }`}
                       style={{ 
-                        width: 'calc(100% - 4rem)',
-                        opacity: getStepStatus(step) === 'completed' || getStepStatus(step) === 'current' ? 1 : 0
+                        width: `calc(${100 / (stepNumbers.length - 1)}vw - 2.5rem)`,
+                        maxWidth: `calc(${100 / (stepNumbers.length - 1)}% + 1rem)`
                       }}
                     />
                   )}
+
+                  {/* Compact Step Info */}
+                  <div className="mt-2 text-center max-w-20 sm:max-w-24">
+                    <div className={`font-medium text-xs sm:text-sm mb-0.5 ${
+                      isActive
+                        ? 'text-[hsl(var(--primary-600))]'
+                        : isCompleted
+                        ? 'text-[hsl(var(--primary-700))]'
+                        : status === 'locked'
+                        ? 'text-gray-400'
+                        : 'text-gray-600'
+                    }`}>
+                      {stepConfig.title}
+                    </div>
+                    <div className={`text-xs leading-tight hidden sm:block ${
+                      isActive
+                        ? 'text-[hsl(var(--primary-500))]'
+                        : isCompleted
+                        ? 'text-[hsl(var(--primary-600))]'
+                        : 'text-gray-500'
+                    }`}>
+                      {stepConfig.description}
+                    </div>
+                  </div>
                 </div>
               )
             })}
           </div>
-        </div>
-
-        {/* Current Step Info - More prominent */}
-        <div className="mt-8 text-center bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {allSteps[currentStep].title}
-          </h2>
-          <p className="text-gray-600 text-lg">
-            {allSteps[currentStep].description}
-          </p>
         </div>
       </div>
     </div>

@@ -328,21 +328,20 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg w-[80vw] max-w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
-        
+    <Dialog open={isOpen} onOpenChange={handleClose} className="cursor-pointer">
+      <DialogContent className="sm:max-w-lg w-[90vw] md:w-[60vw] max-h-[80vh] overflow-y-auto">
         {step === 1 ? (
           // Step 1: Collect Child's Name (restored to original)
           <>
-            <DialogHeader className="text-center">
-              <DialogTitle className="text-xl sm:text-2xl font-black text-primary-600 leading-tight">
+            <DialogHeader className="">
+              <DialogTitle className="text-4xl font-black text-gray-900 leading-tight">
                 🎉 Almost Ready!<br className="sm:hidden" /> One Quick Thing...
               </DialogTitle>
             </DialogHeader>
 
             {/* Name and Age collection */}
             <div className="space-y-3">
-              <div className="text-center text-gray-700 space-y-2">
+              <div className=" text-gray-700 space-y-2">
                 <p className="text-sm text-gray-600 px-2">
                   Who's celebrating? We'll make it extra special for them! 🎉
                 </p>
@@ -419,7 +418,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
               </div>
             </div>
 
-            <DialogFooter className="pt-6">
+            <DialogFooter className="pt-8">
               <Button 
                 onClick={handleNameSubmit}
                 disabled={!firstName.trim() || !childAge}
@@ -431,25 +430,25 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
           </>
         ) : (
           // Step 2: Simple Celebration
-          <div className="relative  overflow-hidden">
-            <div className="absolute  inset-0 bg-gradient-to-br from-primary-50 to-primary-100"></div>
+          <div className="relative overflow-hidden ">
+            <div className="absolute inset-0"></div>
             
-            <div className="relative z-10 p-6 text-center">
-              <DialogHeader className="text-center pb-6">
-                <DialogTitle className="text-3xl sm:text-4xl font-black text-primary-600 leading-tight mb-6">
+            <div className="relative z-10 p-6 pt-6">
+              <DialogHeader className=" pb-6">
+                <DialogTitle className="text-4xl text-start font-black text-gray-900 leading-tight">
                   🎉 {firstName}'s Party Plan is Ready!
                 </DialogTitle>
               </DialogHeader>
 
               {/* Big Snappy with Confetti - smaller on mobile */}
-              <div className="flex justify-center py-4 sm:py-8 mb-4 sm:mb-8">
+              <div className="flex justify-center mb-4 sm:mb-8">
                 <div className="relative">
                   <Image
                     src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
                     alt="Snappy celebrating"
                     width={250}
                     height={250}
-                    className="w-[150px] h-[150px] sm:w-[250px] sm:h-[250px] drop-shadow-2xl"
+                    className="md:w-[250px] md:h-[250px] w-[200px] h-[200px] drop-shadow-2xl"
                   />
                   {/* Floating confetti around Snappy - smaller on mobile */}
                   <div className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 text-2xl sm:text-3xl animate-bounce">🎊</div>

@@ -4,16 +4,15 @@ import { Sparkles } from "lucide-react"
 
 const HeroSection = () => {
   return (
-    <div className="relative w-full h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+    <div style={{
+      backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
+      backgroundRepeat: 'repeat',
+      backgroundSize: '100px, cover',
+      backgroundPosition: 'center',
+    }} className="relative md:h-[50vh] ] md:pt-0 pt-6 h-[50vh] shadow-2xl overflow-hidden mb-8 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] ">
       <div className="absolute inset-0 bg-black/10"></div>
 
-      {/* Decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-10 left-10 w-4 h-4 bg-white/20 rounded-full animate-pulse"></div>
-        <div className="absolute top-20 right-16 w-2 h-2 bg-white/30 rounded-full animate-pulse delay-300"></div>
-        <div className="absolute bottom-16 left-20 w-3 h-3 bg-white/25 rounded-full animate-pulse delay-700"></div>
-        <Sparkles className="absolute top-16 right-10 w-6 h-6 text-white/30 animate-pulse delay-500" />
-      </div>
+   
 
       <div className="relative h-full flex items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center text-white">

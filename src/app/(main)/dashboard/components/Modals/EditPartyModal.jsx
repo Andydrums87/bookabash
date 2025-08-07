@@ -161,9 +161,9 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] w-[95vw] md:w-full flex flex-col p-6 gap-0 bg-white border border-gray-200 shadow-xl">
+      <DialogContent className=" max-h-[90vh] w-full flex flex-col p-0 gap-0 bg-white border border-gray-200 shadow-xl">
         
-        <DialogHeader className="text-center pb-6">
+        <DialogHeader className="text-center pb-6 p-2">
           <DialogTitle className="text-xl sm:text-2xl font-black text-primary-600 leading-tight">
             🎉 Edit Party Details!<br className="sm:hidden" /> Let's Update Everything...
           </DialogTitle>

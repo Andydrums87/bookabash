@@ -86,7 +86,7 @@ export function UserMenu() {
           variant="ghost" 
           className="h-auto p-2 gap-2 rounded-full hover:bg-gray-100 focus:bg-gray-100"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0">
             {/* User Avatar */}
             <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
               <UserCircle className="h-5 w-5 text-white" />

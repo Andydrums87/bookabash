@@ -183,10 +183,7 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
 
             <div className="mb-6">
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <div className="flex items-center mb-2">
-                  <Sparkles className="w-5 h-5 text-blue-600 mr-2" />
-                  <span className="font-semibold text-blue-900">Registry ID: {registry.id}</span>
-                </div>
+             
                 <p className="text-blue-700 text-sm">Your registry is ready! Add some gift ideas to get started.</p>
               </div>
             </div>

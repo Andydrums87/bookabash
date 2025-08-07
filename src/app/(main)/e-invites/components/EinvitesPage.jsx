@@ -1,4 +1,3 @@
-// app/e-invites/EInvitesPage.jsx
 "use client"
 
 import { useEffect, useRef } from "react"
@@ -99,7 +98,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
         inviteData,
         timestamp: Date.now(),
       }
-
       setGeneratedImage(JSON.stringify(inviteDetails))
       console.log("✅ Template invite generated successfully")
     } catch (error) {
@@ -126,7 +124,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   const saveButtonState = getSaveButtonState()
 
   const handleSaveInvite = (finalCloudinaryUrl = null) => {
-    // Use Cloudinary URL if provided (from Complete), otherwise use current generatedImage
     const imageToSave = finalCloudinaryUrl || generatedImage
     saveInviteToPartyPlan(onSaveSuccess, imageToSave)
     if (!shareableLink) generateShareableLink()
@@ -139,21 +136,13 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   const handleComplete = async () => {
     try {
       console.log("🚀 Starting final invite completion...")
-      
       const cloudinaryResult = await uploadFinalInvite(selectedAiOption, selectedTheme, inviteData)
       console.log("✅ Cloudinary result:", cloudinaryResult)
       
-      console.log("💾 About to call saveInviteToPartyPlan...")
       const success = await saveInviteToPartyPlan(cloudinaryResult.url)
-      console.log("💾 saveInviteToPartyPlan result:", success)
-      
       if (success) {
-        console.log("✅ Save reported success")
         alert("🎉 Your invitation has been completed and saved!")
-      } else {
-        console.error("❌ Save reported failure")
       }
-  
     } catch (error) {
       console.error("❌ Complete failed:", error)
     }
@@ -169,7 +158,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
               inviteData={inviteData}
               handleInputChange={handleInputChange}
               selectedTheme={selectedTheme}
-              useAIGeneration={false} // Don't show headline options in step 1
+              useAIGeneration={false}
             />
           </div>
         )
@@ -177,8 +166,9 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       case WIZARD_STEPS.CREATE_INVITE:
         return (
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Unified Theme/AI Selection */}
+            {/* Mobile: Stack vertically, Desktop: Side by side */}
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+              {/* Theme/AI Selection */}
               <div className="lg:col-span-2 space-y-6">
                 <UnifiedThemeSelection
                   selectedTheme={selectedTheme}
@@ -190,7 +180,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   selectedAiOption={selectedAiOption}
                   clearAiSelection={selectAiOption}
                 />
-
+                
                 <AIOptionsSelection
                   showAiOptions={showAiOptions}
                   aiOptions={aiOptions}
@@ -203,8 +193,8 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                 />
               </div>
 
-              {/* Right Column - Live Preview */}
-              <div>
+              {/* Preview - Mobile: Full width, Desktop: Sidebar */}
+              <div className="order-first lg:order-last">
                 <PreviewAndActions
                   useAIGeneration={useAIGeneration}
                   selectedAiOption={selectedAiOption}
@@ -246,9 +236,9 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       case WIZARD_STEPS.REVIEW_SHARE:
         return (
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:gap-8">
               {/* Final Preview */}
-              <div>
+              <div className="order-first">
                 <PreviewAndActions
                   useAIGeneration={useAIGeneration}
                   selectedAiOption={selectedAiOption}
@@ -268,8 +258,8 @@ const EInvitesPage = ({ onSaveSuccess }) => {
               {/* Summary & Actions */}
               <div className="space-y-6">
                 {/* Party Summary */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Party Summary</h3>
+                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Party Summary</h3>
                   <div className="space-y-3 text-sm">
                     <div><span className="font-medium">Child:</span> {inviteData.childName}, {inviteData.age} years old</div>
                     <div><span className="font-medium">Date:</span> {formatDateForDisplay(inviteData.date)}</div>
@@ -280,8 +270,8 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                 </div>
 
                 {/* Guest Summary */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Guest List</h3>
+                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Guest List</h3>
                   <div className="text-sm">
                     <div className="mb-2"><span className="font-medium">Total Guests:</span> {guestList.length}</div>
                     <div className="mb-2"><span className="font-medium">Invites Sent:</span> {guestList.filter(g => g.status === 'sent').length}</div>
@@ -299,12 +289,12 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] pb-20">
       <ContextualBreadcrumb currentPage="e-invites" />
-      
+
       {/* Only show hero on first step */}
       {wizard.currentStep === WIZARD_STEPS.PARTY_DETAILS && <HeroSection />}
-      
+
       {/* Wizard Progress */}
       <WizardProgress
         currentStep={wizard.currentStep}
@@ -315,11 +305,11 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       />
 
       {/* Step Content */}
-      <div className="px-3 sm:px-6 lg:px-8 py-8">
+      <div className="px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         {renderStepContent()}
       </div>
 
-      {/* Wizard Navigation */}
+      {/* Wizard Navigation - Sticky bottom */}
       <WizardNavigation
         currentStep={wizard.currentStep}
         canGoBack={wizard.canGoBack}

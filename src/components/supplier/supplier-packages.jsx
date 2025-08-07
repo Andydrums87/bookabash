@@ -11,7 +11,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   console.log(pkg)
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-300 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         {/* Modal Header */}
         <div className="relative h-64">
@@ -25,7 +25,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
             onClick={onClose}
             className="absolute top-4 right-4 bg-white hover:bg-gray-100 rounded-full p-2 shadow-md transition-colors"
           >
-            <X size={20} className="text-gray-600" />
+            <X size={20} className="text-gray-600 cursor-pointer" />
           </button>
           <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-4">
             <h2 className="text-2xl font-bold text-gray-900">{pkg.name}</h2>
@@ -46,7 +46,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-3">What's Included</h3>
             <div className="flex flex-wrap gap-2">
               {pkg.features?.map((item, i) => (
-                <span key={i} className="bg-[#fff0ee] text-gray-900 text-sm font-medium px-3 py-1.5 rounded-full">
+                <span key={i} className="bg-primary-500 text-white text-xs font-medium px-3 py-1.5 rounded-full">
                   {item}
                 </span>
               ))}
@@ -65,15 +65,15 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
 
           {/* Package Stats */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-blue-50 rounded-xl p-4 text-center">
-              <Clock className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-              <div className="text-sm text-gray-600">Duration</div>
-              <div className="font-semibold text-gray-900">{pkg.duration}</div>
+            <div className="bg-primary-50 rounded-xl p-4 text-center">
+              <Clock className="w-6 h-6 text-primary-700 mx-auto mb-2" />
+              <div className="text-sm text-primary-700">Duration</div>
+              <div className="font-semibold text-primary-700">{pkg.duration}</div>
             </div>
-            <div className="bg-purple-50 rounded-xl p-4 text-center">
-              <Star className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-              <div className="text-sm text-gray-600">Price Type</div>
-              <div className="font-semibold text-gray-900 capitalize">{pkg.priceType}</div>
+            <div className="bg-primary-500 rounded-xl p-4 text-center">
+              <Star className="w-6 h-6 text-white mx-auto mb-2" />
+              <div className="text-sm text-white">Price Type</div>
+              <div className="font-semibold text-white capitalize">{pkg.priceType}</div>
             </div>
           </div>
         </div>
@@ -88,7 +88,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
   return (
     <>
       <div
-        className={`bg-white rounded-3xl p-3 sm:p-4 pt-0 flex flex-col text-center shadow-lg transition-all duration-300 relative overflow-hidden group ${
+        className={`bg-white rounded-3xl p-3 sm:p-4 pt-0 mb-5 flex flex-col text-center shadow-lg transition-all duration-300 relative overflow-hidden group ${
           isInPlanPackage 
             ? "ring-2 ring-green-500 transform scale-[1.02] cursor-pointer" 
             : isSelected 
@@ -111,7 +111,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
       >
         {/* MOBILE OPTIMIZED IMAGE - Much smaller on mobile */}
         <div
-          className="relative w-24 h-24 sm:w-32 sm:h-32 md:h-[200px] md:w-full mask-image mx-auto mt-3 sm:mt-5 mb-2 sm:mb-3"
+          className="relative w-50 h-50 md:h-[200px] md:w-full mask-image mx-auto mt-3 sm:mt-5 mb-2 sm:mb-3"
           style={{
             WebkitMaskImage: 'url("/image.svg")',
             WebkitMaskRepeat: 'no-repeat',
@@ -290,7 +290,7 @@ export default function SupplierPackages({
     <div className="px-4 md:px-0">
       <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Choose a Package</h2>
       {/* MOBILE OPTIMIZED GRID - Smaller gap on mobile */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
         {packagesData.map((pkg) => {
           const isInPlanPackage = partyDetails.inParty && partyDetails.currentPackage === pkg.id;
           const isSelected = pkg.id === selectedPackageId && !isInPlanPackage;
