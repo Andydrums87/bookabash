@@ -249,7 +249,7 @@ export default function EInvitesManagementPage() {
       <ContextualBreadcrumb currentPage="manage-invite" />
       
       {/* Mobile Quick Actions Bar */}
-      <div className="lg:hidden bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div className="lg:hidden bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-lg font-bold text-gray-900">Share Invitation</h1>
@@ -274,7 +274,7 @@ export default function EInvitesManagementPage() {
    
             <Button 
               onClick={shareViaWhatsApp}
-              className="bg-green-500 hover:bg-green-600 text-white text-xs py-2 flex items-center gap-1"
+              className="bg-green-500 hover:bg-green-600 text-white text-[0.7rem] py-2 flex items-center gap-1"
               size="sm"
             >
               <MessageCircle className="w-4 h-4" />
@@ -288,7 +288,7 @@ export default function EInvitesManagementPage() {
                 const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
                 window.open(mailtoUrl)
               }}
-              className="bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 flex  items-center gap-1"
+              className="bg-blue-500 hover:bg-blue-600 text-white text-[0.7rem] py-2 flex  items-center gap-1"
               size="sm"
             >
               <Mail className="w-4 h-4" />
@@ -300,7 +300,7 @@ export default function EInvitesManagementPage() {
                 const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareableLink)}&quote=${encodeURIComponent(text)}`
                 window.open(facebookUrl, "_blank")
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 flex items-center gap-1"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-[0.7rem] py-2 flex items-center gap-1"
               size="sm"
             >
               <Share2 className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function EInvitesManagementPage() {
               onClick={copyShareableLink}
               variant="outline"
               size="sm"
-              className={`text-xs py-2 flex items-center gap-1 ${copied ? 'bg-green-50 border-green-200 text-green-700' : ''}`}
+              className={`text-[0.7rem] py-2 flex items-center gap-1 ${copied ? 'bg-green-50 border-green-200 text-green-700' : ''}`}
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied!' : 'Copy'}

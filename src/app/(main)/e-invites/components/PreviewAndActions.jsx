@@ -86,9 +86,11 @@ const PreviewAndActions = ({
           {/* Action Buttons - Stacked on mobile */}
           <div className="space-y-3">
             <Button
-              onClick={() => {
-                saveInviteToPartyPlan()
-                if (!generateShareableLink) generateShareableLink()
+              onClick={async () => {
+                console.log("💾 Save button clicked with AI option:", selectedAiOption);
+                // Handle async save
+                await saveInviteToPartyPlan(null, selectedAiOption);
+                if (!generateShareableLink) generateShareableLink();
               }}
               className={`w-full font-bold py-3 px-4 sm:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base ${saveButtonState.className}`}
               disabled={saveButtonState.disabled}

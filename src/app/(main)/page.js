@@ -11,6 +11,9 @@ import CategoryGrid from "@/components/Home/CategoryGrid"
 import HowItWorks from "@/components/Home/HowItWorks"
 import CustomerStories from "@/components/Home/CustomerStories"
 import FinalCTA from "@/components/Home/FinalCTA"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 export default function HomePage() {
   const router = useRouter()
@@ -259,6 +262,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
       <HowItWorks />
       <CustomerStories />
       <FinalCTA />
+    
     </div>
   )
 }

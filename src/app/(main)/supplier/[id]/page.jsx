@@ -831,16 +831,16 @@ const getPendingEnquiriesCount = useCallback(() => {
     setFinalPackageData(addonData)
     setShowAddonModal(false)
 
-    addonData.addons.forEach(addon => {
-      const enhancedAddon = {
-        ...addon,
-        supplierId: supplier?.id,
-        supplierName: supplier?.name,
-        packageId: addonData.package?.id,
-        addedAt: new Date().toISOString()
-      }
-      addAddon(enhancedAddon)
-    })
+    // addonData.addons.forEach(addon => {
+    //   const enhancedAddon = {
+    //     ...addon,
+    //     supplierId: supplier?.id,
+    //     supplierName: supplier?.name,
+    //     packageId: addonData.package?.id,
+    //     addedAt: new Date().toISOString()
+    //   }
+    //   addAddon(enhancedAddon)
+    // })
     
     handleAddToPlan(true, addonData)
   }, [supplier, addAddon, handleAddToPlan])

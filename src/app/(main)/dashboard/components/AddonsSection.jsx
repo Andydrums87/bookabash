@@ -101,7 +101,7 @@ export default function AddonsSection({
             onClick={() => console.log("Addon clicked:", addon.name)}
             className={`group relative overflow-hidden border-2 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer rounded-2xl hover:scale-[1.02] ${
               addon.attachedToSupplier 
-                ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'
+                ? 'bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))]'
                 : 'bg-gradient-to-br from-white to-[hsl(var(--primary-50))] border-[hsl(var(--primary-200))]'
             }`}
           >
@@ -118,7 +118,7 @@ export default function AddonsSection({
                   : 'bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))]'
               }`}>
                 <Image
-                  src={addon.image || "/placeholder.svg"}
+                  src={addon.image || "/placeholder.png"}
                   alt={addon.name}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"

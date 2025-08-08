@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import { themes } from "@/lib/themes"
 
 // Import all components
@@ -13,6 +13,7 @@ import PartyDetailsForm from "./PartyDetailsForm"
 import PreviewAndActions from "./PreviewAndActions"
 import SaveCompleteStep from "./SaveCompleteStep"
 import TemplatesComingSoon from "./TemplatesComingSoon"
+import SuccessModal from "./SuccessModal"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 
 // Import custom hooks
@@ -74,6 +75,9 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     setLastSavedState,
     shareableLink,
     setShareableLink,
+    isSaving,
+    saveSuccess,
+    setSaveSuccess,
     generateShareableLink,
     copyShareableLink,
     saveInviteToPartyPlan,
@@ -94,21 +98,48 @@ const EInvitesPage = ({ onSaveSuccess }) => {
 
   const saveButtonState = getSaveButtonState()
 
-  const handleSaveInvite = (finalCloudinaryUrl = null) => {
+  const [saveResult, setSaveResult] = useState(null)
+
+  const handleSaveInvite = async (finalCloudinaryUrl = null) => {
     const imageToSave = finalCloudinaryUrl || generatedImage
-    saveInviteToPartyPlan(onSaveSuccess, imageToSave)
-    if (!shareableLink) generateShareableLink()
+    // Pass selectedAiOption to the save function and handle result
+    const result = await saveInviteToPartyPlan(imageToSave, selectedAiOption)
+    
+    if (result && result.success) {
+      setSaveResult(result)
+      // Don't generate shareable link here as it's handled in save function
+    }
+  }
+
+  const handleRedirectToDashboard = () => {
+    window.location.href = '/dashboard'
+  }
+
+  const handleCloseSuccessModal = () => {
+    setSaveSuccess(false)
+    setSaveResult(null)
   }
 
   const handleComplete = async () => {
     try {
       console.log("🚀 Starting final invite completion...")
+      console.log("📊 Selected AI Option:", selectedAiOption)
+      console.log("📝 Invite Data:", inviteData)
+      
+      if (!selectedAiOption) {
+        alert("Please select an AI option first!")
+        return
+      }
+      
       const cloudinaryResult = await uploadFinalInvite(selectedAiOption, selectedTheme, inviteData)
       console.log("✅ Cloudinary result:", cloudinaryResult)
       
-      const success = await saveInviteToPartyPlan(cloudinaryResult.url)
-      if (success) {
-        alert("🎉 Your invitation has been completed and saved!")
+      // Pass selectedAiOption to the save function and handle result
+      const result = await saveInviteToPartyPlan(cloudinaryResult.url, selectedAiOption)
+      
+      if (result && result.success) {
+        setSaveResult(result)
+        // Success modal will be shown automatically via saveSuccess state
       }
     } catch (error) {
       console.error("❌ Complete failed:", error)
@@ -227,9 +258,21 @@ const EInvitesPage = ({ onSaveSuccess }) => {
         getValidationErrors={wizard.getValidationErrors}
         stepConfig={wizard.stepConfig}
         onComplete={handleComplete}
+        isSaving={isSaving}
+        selectedAiOption={selectedAiOption}
       />
 
       <canvas ref={canvasRef} style={{ display: "none" }} width={600} height={800} />
+      
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={saveSuccess}
+        onClose={handleCloseSuccessModal}
+        saveResult={saveResult}
+        inviteData={enhancedInviteData}
+        selectedAiOption={selectedAiOption}
+        onRedirectToDashboard={handleRedirectToDashboard}
+      />
     </div>
   )
 }

@@ -334,7 +334,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
           // Step 1: Collect Child's Name (restored to original)
           <>
             <DialogHeader className="">
-              <DialogTitle className="text-4xl font-black text-gray-900 leading-tight">
+              <DialogTitle className="md:text-4xl text-start text-3xl font-black text-gray-900 leading-tight">
                 🎉 Almost Ready!<br className="sm:hidden" /> One Quick Thing...
               </DialogTitle>
             </DialogHeader>

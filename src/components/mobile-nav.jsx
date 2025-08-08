@@ -14,7 +14,6 @@ export default function MobileNav({ user, onSignOut, loading }) {
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/browse", label: "Snap Suppliers", icon: Search },
-    // { href: "/dashboard", label: "My Snapboard", icon: Calendar },
     { href: "/blog", label: "Snapspiration", icon: BookOpen },
     { href: "/favorites", label: "My Favorites", icon: Heart },
   ]
@@ -72,8 +71,9 @@ export default function MobileNav({ user, onSignOut, loading }) {
         )}
         <span className="sr-only">Toggle menu</span>
       </Button>
-  {/* Backdrop */}
-  {isOpen && (
+
+      {/* Backdrop */}
+      {isOpen && (
         <div
           className="fixed inset-0 bg-gray-900/30 backdrop-blur-lg z-40 md:hidden transition-opacity duration-300"
           onClick={closeMenu}
@@ -84,54 +84,51 @@ export default function MobileNav({ user, onSignOut, loading }) {
       <div
         className={`
           fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 md:hidden
-          transform transition-all duration-300 ease-out
+          transform transition-all duration-300 ease-out flex flex-col
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-100">
-
-       
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
           {!loading && user ? (
-            <div className="px-6 py-2">
+            <div className="px-0 py-2">
               <h2 className="text-2xl font-normal text-gray-900">
                 Hello, <span className="text-primary-500">{getUserDisplayName()}</span>
               </h2>
             </div>
           ) : (
             <div className="">
-                <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-                  alt="PartySnap"
-                  width={120}
-                  height={32}
-                  className="h-8 w-auto object-contain"
-                />
+              <Image
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                alt="PartySnap"
+                width={120}
+                height={32}
+                className="h-8 w-auto object-contain"
+              />
             </div>
           )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={closeMenu}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
-            >
-              <X className="h-5 w-5 text-primary-500 hover:text-[hsl(var(--primary-500))]" />
-            </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={closeMenu}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+          >
+            <X className="h-5 w-5 text-primary-500 hover:text-[hsl(var(--primary-500))]" />
+          </Button>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="px-6 py-8 flex-shrink-0">
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-3/4"></div>
           </div>
+        )}
 
-
-      
-          {loading && (
-            <div className="px-6 py-8">
-              <div className="h-8 bg-gray-200 rounded animate-pulse w-3/4"></div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <nav className="flex-1 px-6">
-            <div className="space-y-2 mt-2">
+        {/* Scrollable Navigation Area - Key Fix Here */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <nav className="px-6">
+            <div className="space-y-2 mt-2 pb-6">
               {/* Regular nav items */}
               {navItems.map((item) => (
                 <Link
@@ -145,7 +142,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 </Link>
               ))}
 
-              {/* Dashboard - Expandable */}
+              {/* Dashboard - Expandable with dynamic height */}
               <div className="border-b border-gray-50">
                 <button
                   onClick={() => setDashboardExpanded(!dashboardExpanded)}
@@ -155,11 +152,13 @@ export default function MobileNav({ user, onSignOut, loading }) {
                     <Calendar className="w-6 h-6 mr-4 text-gray-600" />
                     <span className="text-md">My Snapboard</span>
                   </div>
-                  <ChevronRight className={`w-4 h-4 transition-transform ${dashboardExpanded ? 'rotate-90' : ''}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
                 </button>
 
-                {/* Dashboard Sub-items */}
-                {dashboardExpanded && (
+                {/* Dashboard Sub-items with auto height */}
+                <div className={`overflow-hidden transition-all duration-300 ease-out ${
+                  dashboardExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+                }`}>
                   <div className="pl-10 pb-2 space-y-1">
                     {dashboardItems.map((item) => (
                       <Link
@@ -176,7 +175,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
                       </Link>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Featured Action */}
@@ -188,46 +187,48 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 <Star className="w-6 h-6 mr-4 text-red-500" />
                 <span className="text-lg font-normal">Start Planning</span>
               </Link>
+
+              {/* Extra spacing to ensure scroll reaches bottom */}
+              <div className="h-4"></div>
             </div>
           </nav>
+        </div>
 
-          {/* Bottom Actions */}
-          <div className="p-6 border-t border-gray-100">
-            {!loading && user ? (
+        {/* Fixed Bottom Actions */}
+        <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-white">
+          {!loading && user ? (
+            <Button
+              onClick={handleSignOut}
+              className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3 text-base rounded-full transition-all duration-200"
+            >
+              LOG OUT
+            </Button>
+          ) : !loading ? (
+            <div className="space-y-3">
               <Button
-                onClick={handleSignOut}
-                className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white  py-3 text-base rounded-full transition-all duration-200"
+                className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white font-normal py-3 text-base rounded-full transition-all duration-200"
+                asChild
               >
-                LOG OUT
+                <Link href="/signin" onClick={closeMenu}>
+                  Sign In
+                </Link>
               </Button>
-            ) : !loading ? (
-              <div className="space-y-3">
-                <Button
-                  className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white font-normal py-3 text-base rounded-full transition-all duration-200"
-                  asChild
-                >
-                  <Link href="/signin" onClick={closeMenu}>
-                    Sign In
-                  </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-[hsl(var(--primary-500))] text-gray-900 hover:bg-gray-50 font-normal py-3 text-base rounded-full transition-all duration-200"
-                  asChild
-                >
-                  <Link href="/suppliers/onboarding" onClick={closeMenu}>
-                    Business Sign Up
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="h-12 bg-gray-200 rounded-full animate-pulse"></div>
-            )}
+              <Button
+                variant="outline"
+                className="w-full border-[hsl(var(--primary-500))] text-gray-900 hover:bg-gray-50 font-normal py-3 text-base rounded-full transition-all duration-200"
+                asChild
+              >
+                <Link href="/suppliers/onboarding" onClick={closeMenu}>
+                  Business Sign Up
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="h-12 bg-gray-200 rounded-full animate-pulse"></div>
+          )}
 
-            {/* App Info */}
-
-           
-            <div className="mt-6 text-center w-full flex justify-center">
+          {/* App Info */}
+          <div className="mt-6 text-center w-full flex justify-center">
             <Link href="/" onClick={closeMenu}>
               <div className="h-8 relative">
                 <Image
@@ -239,8 +240,6 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 />
               </div>
             </Link>
-              {/* <div className="text-gray-400 text-sm">Version 1.0.0</div> */}
-            </div>
           </div>
         </div>
       </div>

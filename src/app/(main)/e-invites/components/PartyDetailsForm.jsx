@@ -9,6 +9,8 @@ import { getHeadlineOptions, getHeadlineStyles, getHeadlineText } from '../utils
 const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIGeneration }) => {
   const [showAdvanced, setShowAdvanced] = useState(false)
 
+  const date = formatDateForDisplay(inviteData.date)
+
   return (
     <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
       <CardContent className="p-4 sm:p-6">
@@ -52,7 +54,7 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
                 Date *
               </label>
               <Input
-                value={inviteData.date}
+                value={date}
                 onChange={(e) => handleInputChange("date", e.target.value)}
                 placeholder="Party date (e.g., 27/08/2025)"
                 className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"

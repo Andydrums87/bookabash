@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { validateRequiredFields, getThemeElements } from '../utils/helperFunctions'
 import { themes } from '@/lib/themes'
+import { formatDateForDisplay } from '../utils/helperFunctions'
 
 export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
@@ -10,6 +11,10 @@ export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
   const [aiOptions, setAiOptions] = useState([])
   const [selectedAiOption, setSelectedAiOption] = useState(null)
   const [showAiOptions, setShowAiOptions] = useState(false)
+
+  const date = formatDateForDisplay(inviteData.date)
+
+
 
   // Generate AI-powered invite
   const generateAIInvite = async () => {
@@ -46,7 +51,7 @@ export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
       const prompt = `Create a complete, high-quality 2D digital birthday party invitation for a ${themeName.toLowerCase()} theme. MAIN HEADING (large, prominent): "Join us for ${inviteData.childName}'s Birthday Party!"
 
 PARTY DETAILS (clear and readable):
-📅 Date: ${inviteData.date}
+📅 Date: ${date}
 🕐 Time: ${inviteData.time}  
 📍 Location: ${inviteData.venue}
 
@@ -71,7 +76,7 @@ The invitation should look complete and ready to send, with all party informatio
         body: JSON.stringify({
           prompt: prompt,
           childName: inviteData.childName,
-          date: inviteData.date,
+          date: date,
           time: inviteData.time,
           venue: inviteData.venue,
           message: inviteData.message,
@@ -159,7 +164,7 @@ The invitation should look complete and ready to send, with all party informatio
 
 **EXACT TEXT AND POSITIONING:**
 - Main heading: "${inviteData.childName} is turning ${inviteData.age}!"
-- Date information layout: "${inviteData.date}" on the LEFT, "PARTY TIME" in the CENTER circle/bubble, "${inviteData.time}" on the RIGHT
+- Date information layout: "${date}" on the LEFT, "PARTY TIME" in the CENTER circle/bubble, "${inviteData.time}" on the RIGHT
 - Venue: "${inviteData.venue}"
 
 **SPECIFIC LAYOUT REQUIREMENTS:**
@@ -179,7 +184,7 @@ The invitation should look complete and ready to send, with all party informatio
           body: JSON.stringify({
             prompt: prompt,
             childName: inviteData.childName,
-            date: inviteData.date,
+            date: date,
             time: inviteData.time,
             venue: inviteData.venue,
             theme: partyTheme,

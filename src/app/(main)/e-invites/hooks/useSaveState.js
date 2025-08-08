@@ -10,6 +10,9 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [lastSavedState, setLastSavedState] = useState(null)
   const [shareableLink, setShareableLink] = useState("")
+  const [isSaving, setIsSaving] = useState(false) // Add loading state
+  const [saveSuccess, setSaveSuccess] = useState(false) // Add success state
+
 
   // Update unsaved changes status
   useEffect(() => {
@@ -91,113 +94,160 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
     }
   }
 
-  // Save invite to database
-  const saveInviteToPartyPlan = async (finalImageUrl = null) => {
-    const imageToSave = finalImageUrl || generatedImage
-    
-    if (!imageToSave) {
-      console.error("No invite image generated yet")
-      alert("Please wait for the invite to generate before saving.")
-      return false
-    }
+// Update your useSaveState.js hook - replace the saveInviteToPartyPlan function
 
-    try {
-      const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend")
-      console.log("🔍 Getting current party...")
-      const partyResult = await partyDatabaseBackend.getCurrentParty()
+// Update your useSaveState.js hook - replace the saveInviteToPartyPlan function
 
-      console.log("📊 Party result:", partyResult)
-
-      if (!partyResult.success) {
-        console.error("❌ Failed to get current party:", partyResult.error)
-        alert(
-          `No active party found. Please create a party first from the Party Builder.\n\nError: ${partyResult.error}`,
-        )
-        return false
-      }
-
-      if (!partyResult.party) {
-        console.error("❌ No party data returned")
-        alert("No active party found. Please create a party first from the Party Builder.")
-        return false
-      }
-
-      const party = partyResult.party
-      console.log("✅ Found party:", party.id, "-", party.child_name)
-
-      const currentPlan = party.party_plan || {}
-      console.log("📋 Current party plan keys:", Object.keys(currentPlan))
-
-      const themeForDisplay = formatThemeDisplayName(useAIGeneration, selectedTheme, themes)
-
-      const einvitesData = {
-        id: "digital-invites",
-        name: `${inviteData.childName}'s ${themeForDisplay} Invites`,
-        description: useAIGeneration
-          ? `Custom AI-generated digital invitations`
-          : `Custom ${selectedTheme} themed digital invitations`,
-        price: 25,
-        status: "completed",
-        image: imageToSave,
-        category: "Digital Services",
-        priceUnit: "per set",
-        theme: selectedTheme,
-        inviteData: inviteData,
-        guestList: guestList,
-        shareableLink: shareableLink,
-        generationType: useAIGeneration ? "ai" : "template",
-        addedAt: currentPlan.einvites?.addedAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      console.log("💾 Preparing to save einvites data:", {
-        partyId: party.id,
-        generationType: useAIGeneration ? "AI" : "Template",
-        theme: selectedTheme,
-        childName: inviteData.childName,
-      })
-
-      currentPlan.einvites = einvitesData
-
-      console.log("📤 Calling updatePartyPlan...")
-      const updateResult = await partyDatabaseBackend.updatePartyPlan(party.id, currentPlan)
-
-      console.log("📊 Update result:", updateResult)
-
-      if (updateResult.success) {
-        setIsSaved(true)
-        setHasUnsavedChanges(false)
-        setLastSavedState(getCurrentState(selectedTheme, inviteData, guestList, generatedImage, useAIGeneration))
-
-        console.log("✅ E-invite saved to database successfully!")
-        console.log("🔍 Saved to party ID:", party.id)
-
-        alert(
-          `✅ E-invite saved successfully!\n\nParty: ${party.child_name}'s Birthday\nType: ${useAIGeneration ? "AI Generated" : themeForDisplay}\nParty ID: ${party.id}`,
-        )
-
-        return true
-      } else {
-        console.error("❌ Failed to update party plan:", updateResult.error)
-        alert(`Failed to save e-invite to database.\n\nError: ${updateResult.error}`)
-        return false
-      }
-    } catch (error) {
-      console.error("❌ Error saving invite to database:", error)
-      alert(`Error saving e-invite: ${error.message}`)
-      return false
-    }
+// Updated save function with loading states
+const saveInviteToPartyPlan = async (finalImageUrl = null, selectedAiOption = null) => {
+  // Start loading
+  setIsSaving(true);
+  setSaveSuccess(false);
+  
+  console.log("💾 Starting save process...");
+  console.log("📊 AI Option:", selectedAiOption);
+  console.log("📝 Invite Data:", inviteData);
+  
+  const imageToSave = finalImageUrl || selectedAiOption?.imageUrl || generatedImage;
+  
+  if (!imageToSave) {
+    setIsSaving(false);
+    console.error("❌ No invite image available");
+    alert("Please wait for the invite to generate before saving.");
+    return false;
   }
 
+  // For AI generation, we need the AI option
+  if (useAIGeneration && !selectedAiOption) {
+    setIsSaving(false);
+    console.error("❌ No AI option selected");
+    alert("Please select an AI option before saving.");
+    return false;
+  }
+
+  try {
+    const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend");
+    console.log("🔍 Getting current party...");
+    const partyResult = await partyDatabaseBackend.getCurrentParty();
+
+    if (!partyResult.success || !partyResult.party) {
+      setIsSaving(false);
+      console.error("❌ Failed to get current party:", partyResult.error);
+      alert("No active party found. Please create a party first from the Party Builder.");
+      return false;
+    }
+
+    const party = partyResult.party;
+    console.log("✅ Found party:", party.id, "-", party.child_name);
+
+    // Generate invite ID and shareable link
+    const inviteId = generateInviteId();
+    const generatedShareableLink = `${window.location.origin}/e-invites/${inviteId}`;
+    
+    console.log("🔗 Generated invite ID:", inviteId);
+    console.log("🔗 Generated shareable link:", generatedShareableLink);
+
+    // Prepare the data for your existing saveEInvites function
+    const einviteData = {
+      inviteId: inviteId,
+      theme: useAIGeneration ? "ai_generated" : selectedTheme,
+      inviteData: inviteData,
+      guestList: guestList,
+      image: imageToSave,
+      generatedImage: imageToSave,
+      generationType: useAIGeneration ? "ai" : "template",
+      shareableLink: generatedShareableLink,
+      // Include AI option data if available
+      ...(selectedAiOption && {
+        aiOption: {
+          id: selectedAiOption.id,
+          index: selectedAiOption.index,
+          imageUrl: selectedAiOption.imageUrl
+        }
+      })
+    };
+
+    console.log("📤 Calling saveEInvites with data:", einviteData);
+
+    // 1. Save to party_plan first
+    const saveResult = await partyDatabaseBackend.saveEInvites(party.id, einviteData);
+
+    if (!saveResult.success) {
+      setIsSaving(false);
+      console.error("❌ Failed to save to party plan:", saveResult.error);
+      alert(`Failed to save e-invite to party plan.\n\nError: ${saveResult.error}`);
+      return false;
+    }
+
+    console.log("✅ E-invite saved to party plan successfully!");
+
+    // 2. ALWAYS create public invite record for shareable links
+    console.log("📤 Creating public invite record...");
+    
+    const publicInviteResult = await partyDatabaseBackend.createPublicInvite({
+      inviteId: inviteId,
+      partyId: party.id,
+      theme: useAIGeneration ? "ai_generated" : selectedTheme,
+      inviteData: inviteData,
+      generatedImage: imageToSave,
+      generationType: useAIGeneration ? "ai" : "template",
+      shareableLink: generatedShareableLink
+    });
+
+    if (publicInviteResult.success) {
+      console.log("✅ Public invite created successfully!");
+      console.log("🔗 Shareable link active:", generatedShareableLink);
+    } else {
+      console.error("⚠️ Failed to create public invite:", publicInviteResult.error);
+      // Don't fail the whole save, but note it
+    }
+
+    // Update state
+    setIsSaved(true);
+    setHasUnsavedChanges(false);
+    setLastSavedState(getCurrentState(selectedTheme, inviteData, guestList, generatedImage, useAIGeneration));
+    setShareableLink(generatedShareableLink);
+    
+    // Stop loading and show success
+    setIsSaving(false);
+    setSaveSuccess(true);
+
+    // Return success data instead of showing alert here
+    return {
+      success: true,
+      party: party,
+      inviteId: inviteId,
+      shareableLink: generatedShareableLink
+    };
+
+  } catch (error) {
+    setIsSaving(false);
+    console.error("❌ Error saving invite:", error);
+    alert(`Error saving e-invite: ${error.message}`);
+    return false;
+  }
+};
+
   // Get save button state
+ 
+  // Update save button state to include loading
   const getSaveButtonState = () => {
+    if (isSaving) {
+      return {
+        disabled: true,
+        className: "bg-blue-500 cursor-not-allowed",
+        text: "Saving...",
+        icon: <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>,
+      };
+    }
+
     if (!generatedImage) {
       return {
         disabled: true,
         className: "bg-gray-400",
         text: "Generating...",
         icon: <AlertCircle className="w-4 h-4 mr-2" />,
-      }
+      };
     }
 
     if (isSaved && !hasUnsavedChanges) {
@@ -206,7 +256,7 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
         className: "bg-green-600 hover:bg-green-700",
         text: "Saved to Dashboard",
         icon: <Check className="w-4 h-4 mr-2" />,
-      }
+      };
     }
 
     if (hasUnsavedChanges) {
@@ -215,7 +265,7 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
         className: "bg-orange-600 hover:bg-orange-700",
         text: "Save Changes",
         icon: <AlertCircle className="w-4 h-4 mr-2" />,
-      }
+      };
     }
 
     return {
@@ -223,8 +273,9 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
       className: "bg-blue-600 hover:bg-blue-700",
       text: "Save to Dashboard",
       icon: <Send className="w-4 h-4 mr-2" />,
-    }
-  }
+    };
+  };
+
 
   return {
     isSaved,
@@ -234,6 +285,9 @@ export const useSaveState = (selectedTheme, inviteData, guestList, generatedImag
     setLastSavedState,
     shareableLink,
     setShareableLink,
+    isSaving, // Export loading state
+    saveSuccess, // Export success state
+    setSaveSuccess, // Export success setter
     generateShareableLink,
     copyShareableLink,
     saveInviteToPartyPlan,
