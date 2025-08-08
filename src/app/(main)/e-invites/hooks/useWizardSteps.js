@@ -2,37 +2,29 @@
 
 import { useState } from 'react'
 
+// NEW SIMPLIFIED WIZARD STEPS:
 export const WIZARD_STEPS = {
-  PARTY_DETAILS: 1,
-  CREATE_INVITE: 2,
-  GUEST_MANAGEMENT: 3,
-  REVIEW_SHARE: 4,
+  PARTY_DETAILS: 1,    // Enter party info
+  CREATE_INVITE: 2,    // Choose theme/design  
+  SAVE_COMPLETE: 3     // Save and redirect to management
 }
 
-export const STEP_CONFIG = {
+// Updated step configuration with required fields
+export const STEP_CONFIG = {  // ← Fixed: renamed from stepConfig to STEP_CONFIG
   [WIZARD_STEPS.PARTY_DETAILS]: {
     title: "Party Details",
-    description: "Tell us about your party",
-    icon: "📝",
-    requiredFields: ['childName', 'age', 'date', 'time', 'venue']
+    description: "Basic info",
+    requiredFields: ['childName', 'age', 'date', 'time', 'venue'] // ← Added required fields
   },
   [WIZARD_STEPS.CREATE_INVITE]: {
     title: "Create Invite", 
-    description: "Design your invitation",
-    icon: "🎨",
-    requiredFields: []
+    description: "Design & theme",
+    requiredFields: [] // ← No specific fields, just needs generatedImage
   },
-  [WIZARD_STEPS.GUEST_MANAGEMENT]: {
-    title: "Add Guests",
-    description: "Manage your guest list", 
-    icon: "👥",
-    requiredFields: []
-  },
-  [WIZARD_STEPS.REVIEW_SHARE]: {
-    title: "Review & Share",
-    description: "Finalize and send invites",
-    icon: "🚀", 
-    requiredFields: []
+  [WIZARD_STEPS.SAVE_COMPLETE]: {
+    title: "Complete",
+    description: "Save & share",
+    requiredFields: [] // ← No additional requirements
   }
 }
 
@@ -42,22 +34,21 @@ export const useWizardSteps = (inviteData, generatedImage) => {
 
   // Validate if current step can be completed
   const validateStep = (step) => {
-    const stepConfig = STEP_CONFIG[step]
-    
     switch (step) {
       case WIZARD_STEPS.PARTY_DETAILS:
-        return stepConfig.requiredFields.every(field => 
+        // Check required fields for party details
+        const requiredFields = STEP_CONFIG[step].requiredFields
+        return requiredFields.every(field => 
           inviteData[field] && inviteData[field].toString().trim() !== ''
         )
       
       case WIZARD_STEPS.CREATE_INVITE:
+        // Must have generated an image/design
         return !!generatedImage
       
-      case WIZARD_STEPS.GUEST_MANAGEMENT:
-        return true // Optional step
-      
-      case WIZARD_STEPS.REVIEW_SHARE:
-        return !!generatedImage
+      case WIZARD_STEPS.SAVE_COMPLETE:
+        // Must have completed previous steps
+        return !!generatedImage && validateStep(WIZARD_STEPS.PARTY_DETAILS)
       
       default:
         return false
@@ -80,7 +71,7 @@ export const useWizardSteps = (inviteData, generatedImage) => {
       setCompletedSteps(prev => new Set([...prev, currentStep]))
       
       const nextStepNumber = currentStep + 1
-      if (nextStepNumber <= WIZARD_STEPS.REVIEW_SHARE) {
+      if (nextStepNumber <= WIZARD_STEPS.SAVE_COMPLETE) { // ← Updated max step
         setCurrentStep(nextStepNumber)
       }
     }
@@ -142,19 +133,27 @@ export const useWizardSteps = (inviteData, generatedImage) => {
 
   // Get validation errors for current step
   const getValidationErrors = () => {
-    const stepConfig = STEP_CONFIG[currentStep]
     const errors = []
 
     if (currentStep === WIZARD_STEPS.PARTY_DETAILS) {
-      stepConfig.requiredFields.forEach(field => {
+      const requiredFields = STEP_CONFIG[currentStep].requiredFields
+      requiredFields.forEach(field => {
         if (!inviteData[field] || inviteData[field].toString().trim() === '') {
-          errors.push(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`)
+          // Convert camelCase to readable names
+          const fieldName = field
+            .replace(/([A-Z])/g, ' $1') // Add space before capitals
+            .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+          errors.push(`${fieldName} is required`)
         }
       })
     }
 
     if (currentStep === WIZARD_STEPS.CREATE_INVITE && !generatedImage) {
       errors.push('Please create an invitation design')
+    }
+
+    if (currentStep === WIZARD_STEPS.SAVE_COMPLETE && !generatedImage) {
+      errors.push('Please complete the invitation design first')
     }
 
     return errors
@@ -164,7 +163,7 @@ export const useWizardSteps = (inviteData, generatedImage) => {
   const getProgress = () => {
     const totalSteps = Object.keys(WIZARD_STEPS).length
     const completedCount = completedSteps.size
-    const currentProgress = currentStep > WIZARD_STEPS.PARTY_DETAILS ? 0.5 : 0 // Give partial credit for current step
+    const currentProgress = validateStep(currentStep) ? 0.5 : 0 // Give partial credit for current step
     
     return Math.round(((completedCount + currentProgress) / totalSteps) * 100)
   }

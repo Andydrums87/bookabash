@@ -59,6 +59,13 @@ export function ContextualBreadcrumb({
           currentText: "Add Supplier",
           action: goBack,
         }
+        case "manage-invite":
+          return {
+            show: true,
+            backText: "Dashboard",
+            currentText: "Manage Invite",
+            action: goBack,
+          }
 
       case "e-invites":
         return {

@@ -148,7 +148,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     }
   }
 
-  // Render step content based on current step
   const renderStepContent = () => {
     switch (wizard.currentStep) {
       case WIZARD_STEPS.PARTY_DETAILS:
@@ -162,11 +161,11 @@ const EInvitesPage = ({ onSaveSuccess }) => {
             />
           </div>
         )
-
+  
       case WIZARD_STEPS.CREATE_INVITE:
         return (
           <div className="max-w-7xl mx-auto">
-            {/* Mobile: Stack vertically, Desktop: Side by side */}
+            {/* Keep your existing create invite components */}
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
               {/* Theme/AI Selection */}
               <div className="lg:col-span-2 space-y-6">
@@ -192,7 +191,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   setSelectedTheme={setSelectedTheme}
                 />
               </div>
-
+  
               {/* Preview - Mobile: Full width, Desktop: Sidebar */}
               <div className="order-first lg:order-last">
                 <PreviewAndActions
@@ -213,76 +212,24 @@ const EInvitesPage = ({ onSaveSuccess }) => {
             </div>
           </div>
         )
-
-      case WIZARD_STEPS.GUEST_MANAGEMENT:
+  
+      case WIZARD_STEPS.SAVE_COMPLETE:
         return (
-          <div className="max-w-4xl mx-auto">
-            <GuestManagement
-              guestList={guestList}
-              newGuest={newGuest}
-              updateNewGuest={updateNewGuest}
-              addGuest={addGuest}
-              removeGuest={removeGuest}
-              sendViaWhatsApp={sendViaWhatsApp}
-              sendViaEmail={sendViaEmail}
-              sendToAllPending={sendToAllPending}
-              copyShareableLink={copyShareableLink}
+          <div className="max-w-2xl mx-auto">
+            <SaveCompleteStep 
+              inviteData={enhancedInviteData}
               generatedImage={generatedImage}
-              shareableLink={shareableLink}
+              selectedTheme={selectedTheme}
+              selectedAiOption={selectedAiOption}
+              onComplete={handleComplete}
             />
           </div>
         )
-
-      case WIZARD_STEPS.REVIEW_SHARE:
-        return (
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:gap-8">
-              {/* Final Preview */}
-              <div className="order-first">
-                <PreviewAndActions
-                  useAIGeneration={useAIGeneration}
-                  selectedAiOption={selectedAiOption}
-                  inviteData={enhancedInviteData}
-                  selectedTheme={selectedTheme}
-                  generatedImage={generatedImage}
-                  saveButtonState={saveButtonState}
-                  saveInviteToPartyPlan={handleSaveInvite}
-                  copyShareableLink={copyShareableLink}
-                  generateShareableLink={generateShareableLink}
-                  hasUnsavedChanges={hasUnsavedChanges}
-                  themes={themes}
-                  onLayoutSave={handleLayoutSave}
-                />
-              </div>
-
-              {/* Summary & Actions */}
-              <div className="space-y-6">
-                {/* Party Summary */}
-                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Party Summary</h3>
-                  <div className="space-y-3 text-sm">
-                    <div><span className="font-medium">Child:</span> {inviteData.childName}, {inviteData.age} years old</div>
-                    <div><span className="font-medium">Date:</span> {formatDateForDisplay(inviteData.date)}</div>
-                    <div><span className="font-medium">Time:</span> {inviteData.time}</div>
-                    <div><span className="font-medium">Venue:</span> {inviteData.venue}</div>
-                    <div><span className="font-medium">Theme:</span> {useAIGeneration ? "AI Generated" : themes[selectedTheme]?.name}</div>
-                  </div>
-                </div>
-
-                {/* Guest Summary */}
-                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Guest List</h3>
-                  <div className="text-sm">
-                    <div className="mb-2"><span className="font-medium">Total Guests:</span> {guestList.length}</div>
-                    <div className="mb-2"><span className="font-medium">Invites Sent:</span> {guestList.filter(g => g.status === 'sent').length}</div>
-                    <div><span className="font-medium">Pending:</span> {guestList.filter(g => g.status === 'pending').length}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-
+  
+      // REMOVE these cases:
+      // case WIZARD_STEPS.GUEST_MANAGEMENT:
+      // case WIZARD_STEPS.REVIEW_SHARE:
+  
       default:
         return null
     }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Menu, X, Search, Star, MapPin, User, LogOut, Settings, Calendar } from "lucide-react"
+import { Menu, X, Search, Star, MapPin, User, LogOut, Settings, Calendar, ChevronDown, Mail, Gift, Users} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -11,6 +11,102 @@ import MobileNav from "./mobile-nav"
 import { useSuppliers } from '@/utils/mockBackend'
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
+
+function DashboardDropdown() {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Dashboard Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
+      >
+        <span>My Snapboard</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          {/* Main Dashboard */}
+          <Link 
+            href="/dashboard" 
+            className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            <Calendar className="w-5 h-5 mr-3 text-primary-500" />
+            <div>
+              <div className="font-medium">Party Dashboard</div>
+              <div className="text-xs text-gray-500">Overview & planning</div>
+            </div>
+          </Link>
+
+          {/* Party Tools */}
+          <div className="px-4 py-2">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Party Tools</div>
+            
+            <Link 
+              href="/e-invites" 
+              className="flex items-center px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md mb-1"
+              onClick={() => setIsOpen(false)}
+            >
+              <Mail className="w-4 h-4 mr-3 text-blue-500" />
+              <span>E-Invites</span>
+            </Link>
+
+            <Link 
+              href="/gift-registry" 
+              className="flex items-center px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md mb-1"
+              onClick={() => setIsOpen(false)}
+            >
+              <Gift className="w-4 h-4 mr-3 text-purple-500" />
+              <span>Gift Registry</span>
+            </Link>
+
+            <Link 
+              href="/rsvps" 
+              className="flex items-center px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+              onClick={() => setIsOpen(false)}
+            >
+              <Users className="w-4 h-4 mr-3 text-green-500" />
+              <span>RSVP Management</span>
+            </Link>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="border-t border-gray-100 px-4 py-2 mt-2">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Quick Actions</div>
+            
+            <Link 
+              href="/dashboard?action=new-party" 
+              className="flex items-center px-2 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-md"
+              onClick={() => setIsOpen(false)}
+            >
+              <Star className="w-4 h-4 mr-3" />
+              <span>Start New Party</span>
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // User Menu Component
 function UserMenu({ user, onSignOut }) {
@@ -255,9 +351,8 @@ const handleSignOut = async () => {
             <Link href="/browse" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
               Snap Suppliers
             </Link>
-            <Link href="/dashboard" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
-              My Snapboard
-            </Link>
+             {/* Replace dashboard link with dropdown */}
+             <DashboardDropdown />
             <Link href="/blog" className="text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium">
             Snapspiration
             </Link>

@@ -2,20 +2,28 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Calendar, Settings, LogOut, Home, Search, Heart, BookOpen, Star } from 'lucide-react'
+import { Menu, X, Calendar, Settings, LogOut, Home, Search, Heart, BookOpen, Star, Mail, ChevronRight, Gift, Users } from 'lucide-react'
 import Link from "next/link"
 import Image from "next/image"
 
 export default function MobileNav({ user, onSignOut, loading }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [dashboardExpanded, setDashboardExpanded] = useState(false)
 
   // Updated nav items to match desktop
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/browse", label: "Snap Suppliers", icon: Search },
-    { href: "/dashboard", label: "My Snapboard", icon: Calendar },
+    // { href: "/dashboard", label: "My Snapboard", icon: Calendar },
     { href: "/blog", label: "Snapspiration", icon: BookOpen },
     { href: "/favorites", label: "My Favorites", icon: Heart },
+  ]
+
+  const dashboardItems = [
+    { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
+    { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
+    { href: "/gift-registry", label: "Gift Registry", icon: Gift, description: "Gift wishlists" },
+    { href: "/rsvps", label: "RSVP Management", icon: Users, description: "Track responses" },
   ]
 
   useEffect(() => {
@@ -23,6 +31,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
       document.body.style.overflow = "hidden"
     } else {
       document.body.style.overflow = "unset"
+      setDashboardExpanded(false) // Reset dashboard when closing
     }
     return () => {
       document.body.style.overflow = "unset"
@@ -35,6 +44,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
 
   const closeMenu = () => {
     setIsOpen(false)
+    setDashboardExpanded(false)
   }
 
   const getUserDisplayName = () => {
@@ -122,31 +132,52 @@ export default function MobileNav({ user, onSignOut, loading }) {
           {/* Navigation */}
           <nav className="flex-1 px-6">
             <div className="space-y-2 mt-2">
+              {/* Regular nav items */}
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50 last:border-b-0"
+                  className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
                   onClick={closeMenu}
                 >
                   <item.icon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
-                  <span className="text-md ">{item.label}</span>
+                  <span className="text-md">{item.label}</span>
                 </Link>
               ))}
 
-              {/* User-specific links (if signed in) */}
-              {/* {!loading && user && (
-                <>
-                  <Link
-                    href="/profile"
-                    className="flex items-center py-4 text-gray-900 hover:text-gray-600 transition-colors duration-200 border-b border-gray-50"
-                    onClick={closeMenu}
-                  >
-                    <Settings className="w-6 h-6 mr-4 text-gray-600" />
-                    <span className="text-lg font-normal">Settings</span>
-                  </Link>
-                </>
-              )} */}
+              {/* Dashboard - Expandable */}
+              <div className="border-b border-gray-50">
+                <button
+                  onClick={() => setDashboardExpanded(!dashboardExpanded)}
+                  className="flex items-center justify-between w-full py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+                >
+                  <div className="flex items-center">
+                    <Calendar className="w-6 h-6 mr-4 text-gray-600" />
+                    <span className="text-md">My Snapboard</span>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 transition-transform ${dashboardExpanded ? 'rotate-90' : ''}`} />
+                </button>
+
+                {/* Dashboard Sub-items */}
+                {dashboardExpanded && (
+                  <div className="pl-10 pb-2 space-y-1">
+                    {dashboardItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+                        onClick={closeMenu}
+                      >
+                        <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+                        <div>
+                          <div className="text-sm font-medium">{item.label}</div>
+                          <div className="text-xs text-gray-500">{item.description}</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Featured Action */}
               <Link

@@ -2333,10 +2333,7 @@ async getEInvites(partyId) {
   }
 }
 
-/**
- * Create public invite record for sharing
- * Updated to work with existing public_invites schema
- */
+
 async createPublicInvite(inviteData) {
   try {
     console.log('🌐 Creating public invite');
@@ -2376,14 +2373,7 @@ async createPublicInvite(inviteData) {
   }
 }
 
-/**
- * Get public invite by ID
- * Updated to work with existing public_invites schema
- */
-/**
- * Get public invite by ID - FIXED VERSION
- * Updated to work with existing public_invites schema
- */
+
 async getPublicInvite(inviteId) {
   try {
     console.log('🔍 [Backend] Getting public invite:', inviteId);
@@ -2894,6 +2884,33 @@ async getCurrentPartyId() {
       error: error.message,
       partyId: null
     };
+  }
+}
+// In your partyDatabaseBackend
+async getPartyFromInviteId(inviteId) {
+  // Get the public invite first
+  const publicInvite = await this.getPublicInvite(inviteId)
+  if (!publicInvite.success) return publicInvite
+  
+  // Get the party ID from the invite
+  const partyId = publicInvite.invite.party_id || publicInvite.invite.partyId
+  
+  // Return the party data
+  return this.getPartyById(partyId)
+}
+async getUserParties(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return { success: true, parties: data }
+  } catch (error) {
+    return { success: false, error: error.message }
   }
 }
 }
