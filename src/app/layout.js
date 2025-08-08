@@ -36,7 +36,7 @@ export const metadata = {
   title: "PartySnap",
   description: "PartySnap - Your Ultimate Children's Party Planning Platform",
   icons: {
-    icon: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/Head_Only_lsotd1.png",
+    icon: "/favicon.ico",
   },
 };
 

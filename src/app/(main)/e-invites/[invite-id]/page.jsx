@@ -27,38 +27,14 @@ export async function generateMetadata({ params }) {
       const venue = invite.parties?.location || 
                    invite.invite_data?.inviteData?.venue || ''
       
-      const title = `🎉 You're Invited to ${childName}'s ${theme.charAt(0).toUpperCase() + theme.slice(1)} Party!`
+      const title = `You're Invited to ${childName}'s ${theme.charAt(0).toUpperCase() + theme.slice(1)} Party!`
       const description = `Join ${childName} for an amazing ${theme} birthday celebration${date ? ` on ${new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}${venue ? ` in ${venue}` : ''}! RSVP and see all the party details.`
-      const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.com' : 'http://localhost:3000'}/e-invites/${inviteId}`
+      const currentUrl = `${process.env.NODE_ENV === 'production' ? 'https://partysnap.co.uk' : 'http://localhost:3000'}/e-invites/${inviteId}`
       
-      // USE THE ACTUAL AI-GENERATED INVITE IMAGE FROM DATABASE
-      let socialImage = null
+      // USE YOUR STATIC CLOUDINARY IMAGE
+      const socialImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/c_fit,w_1200,h_630,b_white/v1752578794/Transparent_With_Text_1_nfb1pi.png"
       
-      // Try different locations where the image might be stored
-      if (invite.generated_image) {
-        // From the generated_image column (your SQL shows this)
-        socialImage = invite.generated_image
-        console.log('🎨 Using generated_image column:', socialImage)
-      } else if (invite.invite_data?.generatedImage) {
-        // From inside the JSON data (also in your SQL)
-        socialImage = invite.invite_data.generatedImage
-        console.log('🎨 Using invite_data.generatedImage:', socialImage)
-      } else if (invite.sharing?.imageUrl) {
-        // From sharing data if available
-        socialImage = invite.sharing.imageUrl
-        console.log('🎨 Using sharing.imageUrl:', socialImage)
-      } else {
-        // FALLBACK: Use the party dinosaur only if no AI image found
-        socialImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/party-dino-facebook.png"
-        console.log('🎨 Using fallback dinosaur image - no AI image found')
-      }
-      
-      console.log('🔍 Available image sources:', {
-        generated_image: invite.generated_image,
-        invite_data_generatedImage: invite.invite_data?.generatedImage,
-        sharing_imageUrl: invite.sharing?.imageUrl,
-        chosen: socialImage
-      })
+      console.log('🎨 Using static Cloudinary image:', socialImage)
       
       return {
         title,
@@ -74,7 +50,7 @@ export async function generateMetadata({ params }) {
               url: socialImage,
               width: 1200,
               height: 630,
-              alt: `${childName}'s ${theme} party invitation`,
+              alt: `PartySnap - ${childName}'s ${theme} party invitation`,
               type: 'image/png',
             }
           ]
@@ -84,12 +60,18 @@ export async function generateMetadata({ params }) {
           title,
           description,
           images: [socialImage],
+        },
+        other: {
+          'og:image:width': '1200',
+          'og:image:height': '630',
+          'og:image:type': 'image/png',
+          'og:site_name': 'PartySnap',
         }
       }
     }
     
-    // Fallback metadata
-    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/party-dino-facebook.png"
+    // Fallback metadata - ALSO use your static image
+    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/c_fit,w_1200,h_630,b_white/v1752578794/Transparent_With_Text_1_nfb1pi.png"
     
     return {
       title: '🎉 You\'re Invited to a Birthday Party!',
@@ -109,7 +91,7 @@ export async function generateMetadata({ params }) {
     
   } catch (error) {
     console.error('❌ Error generating metadata:', error)
-    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752616713/party-dino-facebook.png"
+    const fallbackImage = "https://res.cloudinary.com/dghzq6xtd/image/upload/c_fit,w_1200,h_630,b_white/v1752578794/Transparent_With_Text_1_nfb1pi.png"
     
     return {
       title: 'Party Invitation - PartySnap',
