@@ -7,11 +7,12 @@ import { themes } from "@/lib/themes"
 import HeroSection from "./HeroSection"
 import WizardProgress from "./WizardProgress"
 import WizardNavigation from "./WizardNavigation"
-import UnifiedThemeSelection from "./UnifiedThemeSelection"
+import AIOnlyThemeSelection from "./AIOnlyThemeSelection"
 import AIOptionsSelection from "./AIOptionsSelection"
 import PartyDetailsForm from "./PartyDetailsForm"
-import GuestManagement from "./GuestManagement"
 import PreviewAndActions from "./PreviewAndActions"
+import SaveCompleteStep from "./SaveCompleteStep"
+import TemplatesComingSoon from "./TemplatesComingSoon"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 
 // Import custom hooks
@@ -77,40 +78,10 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     copyShareableLink,
     saveInviteToPartyPlan,
     getSaveButtonState,
-  } = useSaveState(selectedTheme, inviteData, guestList, generatedImage, useAIGeneration, themes)
+  } = useSaveState(selectedTheme, inviteData, guestList, generatedImage, true, themes) // Force AI mode
 
   // Wizard state management
   const wizard = useWizardSteps(inviteData, generatedImage)
-
-  // Generate template invite
-  const generateInvite = async () => {
-    if (useAIGeneration) {
-      return // AI generation handled separately
-    }
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      const theme = themes[selectedTheme]
-      const inviteDetails = {
-        type: "template",
-        theme: selectedTheme,
-        backgroundUrl: theme.backgroundUrl,
-        inviteData,
-        timestamp: Date.now(),
-      }
-      setGeneratedImage(JSON.stringify(inviteDetails))
-      console.log("✅ Template invite generated successfully")
-    } catch (error) {
-      console.error("Error generating invite:", error)
-    }
-  }
-
-  // Generate invite when theme or data changes (template mode only)
-  useEffect(() => {
-    if (wizard.currentStep === WIZARD_STEPS.CREATE_INVITE && selectedTheme && !selectedAiOption) {
-      generateInvite()
-    }
-  }, [selectedTheme, inviteData, wizard.currentStep, selectedAiOption])
 
   // Enhanced invite data for preview
   const enhancedInviteData = {
@@ -127,10 +98,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     const imageToSave = finalCloudinaryUrl || generatedImage
     saveInviteToPartyPlan(onSaveSuccess, imageToSave)
     if (!shareableLink) generateShareableLink()
-  }
-
-  const handleLayoutSave = (customLayout) => {
-    console.log("Custom layout saved:", customLayout)
   }
 
   const handleComplete = async () => {
@@ -157,7 +124,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
               inviteData={inviteData}
               handleInputChange={handleInputChange}
               selectedTheme={selectedTheme}
-              useAIGeneration={false}
+              useAIGeneration={true} // Force AI mode
             />
           </div>
         )
@@ -165,19 +132,14 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       case WIZARD_STEPS.CREATE_INVITE:
         return (
           <div className="max-w-7xl mx-auto">
-            {/* Keep your existing create invite components */}
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              {/* Theme/AI Selection */}
+              {/* AI Generation Only */}
               <div className="lg:col-span-2 space-y-6">
-                <UnifiedThemeSelection
-                  selectedTheme={selectedTheme}
-                  setSelectedTheme={setSelectedTheme}
-                  themes={themes}
+                <AIOnlyThemeSelection
                   generateAIOptions={generateAIOptions}
                   isGeneratingAI={isGeneratingAI}
-                  generateInvite={generateInvite}
                   selectedAiOption={selectedAiOption}
-                  clearAiSelection={selectAiOption}
+                  inviteData={inviteData}
                 />
                 
                 <AIOptionsSelection
@@ -190,12 +152,15 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   selectedTheme={selectedTheme}
                   setSelectedTheme={setSelectedTheme}
                 />
+
+                {/* Templates Coming Soon Card */}
+                <TemplatesComingSoon />
               </div>
   
               {/* Preview - Mobile: Full width, Desktop: Sidebar */}
               <div className="order-first lg:order-last">
                 <PreviewAndActions
-                  useAIGeneration={useAIGeneration}
+                  useAIGeneration={true} // Force AI mode
                   selectedAiOption={selectedAiOption}
                   inviteData={enhancedInviteData}
                   selectedTheme={selectedTheme}
@@ -206,7 +171,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   generateShareableLink={generateShareableLink}
                   hasUnsavedChanges={hasUnsavedChanges}
                   themes={themes}
-                  onLayoutSave={handleLayoutSave}
+                  onLayoutSave={() => {}}
                 />
               </div>
             </div>
@@ -225,10 +190,6 @@ const EInvitesPage = ({ onSaveSuccess }) => {
             />
           </div>
         )
-  
-      // REMOVE these cases:
-      // case WIZARD_STEPS.GUEST_MANAGEMENT:
-      // case WIZARD_STEPS.REVIEW_SHARE:
   
       default:
         return null

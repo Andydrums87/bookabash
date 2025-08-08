@@ -11,6 +11,7 @@ import { useState, useEffect } from "react"
 import dynamic from 'next/dynamic'
 import GiftRegistryCard from '@/components/GiftRegistryCard'
 import RSVPSummaryCard from "@/app/(main)/rsvps/components/RSVPSummaryCard"
+import { useRouter } from "next/router"
 
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
@@ -23,13 +24,13 @@ function EInvitesCard({
   hasCreatedInvites, 
   onCreateInvites, 
   partyId, 
-
-  partyDetails,
 }) {
   const [einvites, setEinvites] = useState(null)
   const [guestList, setGuestList] = useState([])
   const [dataLoaded, setDataLoaded] = useState(false)
   const [inviteId, setInviteId] = useState(null) // ← Add this
+
+
 
   // Load existing e-invites data
   useEffect(() => {
@@ -140,13 +141,14 @@ function EInvitesCard({
               </p>
             </div>
 
-            <Button
-              onClick={onCreateInvites}
-              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl"
-            >
-              <Mail className="w-5 h-5 mr-2" />
-              Create E-Invites
-            </Button>
+         
+<Button className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl" asChild>
+<Link href="/e-invites/create">
+    <Mail className="w-4 h-4 mr-2" />
+    Create E-Invites
+  </Link>
+
+</Button>
           </>
         ) : (
           // MANAGEMENT VIEW - Clean with direct link to management page

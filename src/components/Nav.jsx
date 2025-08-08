@@ -43,62 +43,66 @@ function DashboardDropdown() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
           {/* Main Dashboard */}
           <Link 
             href="/dashboard" 
             className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
             onClick={() => setIsOpen(false)}
           >
-            <Calendar className="w-5 h-5 mr-3 text-primary-500" />
+            <Calendar className="w-4 h-4 mr-3 text-gray-500" />
             <div>
               <div className="font-medium">Party Dashboard</div>
               <div className="text-xs text-gray-500">Overview & planning</div>
             </div>
           </Link>
 
-          {/* Party Tools */}
-          <div className="px-4 py-2">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Party Tools</div>
+          {/* Party Tools Section */}
+          <div className="py-1">
+            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Party Tools
+            </div>
             
             <Link 
               href="/e-invites" 
-              className="flex items-center px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md mb-1"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setIsOpen(false)}
             >
-              <Mail className="w-4 h-4 mr-3 text-blue-500" />
+              <Mail className="w-4 h-4 mr-3 text-gray-500" />
               <span>E-Invites</span>
             </Link>
 
             <Link 
               href="/gift-registry" 
-              className="flex items-center px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md mb-1"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setIsOpen(false)}
             >
-              <Gift className="w-4 h-4 mr-3 text-purple-500" />
+              <Gift className="w-4 h-4 mr-3 text-gray-500" />
               <span>Gift Registry</span>
             </Link>
 
             <Link 
               href="/rsvps" 
-              className="flex items-center px-2 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setIsOpen(false)}
             >
-              <Users className="w-4 h-4 mr-3 text-green-500" />
+              <Users className="w-4 h-4 mr-3 text-gray-500" />
               <span>RSVP Management</span>
             </Link>
           </div>
 
-          {/* Quick Actions */}
-          <div className="border-t border-gray-100 px-4 py-2 mt-2">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Quick Actions</div>
+          {/* Quick Actions Section */}
+          <div className="border-t border-gray-100 py-1">
+            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Quick Actions
+            </div>
             
             <Link 
               href="/dashboard?action=new-party" 
-              className="flex items-center px-2 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-md"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setIsOpen(false)}
             >
-              <Star className="w-4 h-4 mr-3" />
+              <Star className="w-4 h-4 mr-3 text-gray-500" />
               <span>Start New Party</span>
             </Link>
           </div>

@@ -28,9 +28,30 @@ export default function EInvitesOverviewPage() {
   const [hasEinvites, setHasEinvites] = useState(false)
   const [checkingEinvites, setCheckingEinvites] = useState(false)
   const [einvitesData, setEinvitesData] = useState(null)
+  const [shouldRedirect, setShouldRedirect] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
+    // Check if user came here with intent to create/manage
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromDashboard = urlParams.get('from') === 'dashboard'
+    const createMode = urlParams.get('action') === 'create'
+    const manageMode = urlParams.get('action') === 'manage'
+    
+    // If user explicitly wants to create, redirect to create page immediately
+    if (createMode) {
+      console.log('🚀 User wants to create - redirecting to create page')
+      router.replace('/e-invites/create')
+      return
+    }
+    
+    // Don't redirect to management if user explicitly came to create
+    if (fromDashboard) {
+      setShouldRedirect(false)
+    } else if (manageMode) {
+      setShouldRedirect(true)
+    }
+    
     checkAuthAndParties()
   }, [])
 
@@ -43,12 +64,12 @@ export default function EInvitesOverviewPage() {
   }, [activeParty])
 
   useEffect(() => {
-    // Auto-redirect to management page when einvites exist
-    if (hasEinvites && einvitesData && einvitesData.inviteId) {
+    // Only redirect if we should and have valid data
+    if (shouldRedirect && hasEinvites && einvitesData && einvitesData.inviteId) {
       console.log('🚀 Redirecting to management page:', einvitesData.inviteId)
-      router.push(`/e-invites/${einvitesData.inviteId}/manage`)
+      router.replace(`/e-invites/${einvitesData.inviteId}/manage`)
     }
-  }, [hasEinvites, einvitesData, router])
+  }, [hasEinvites, einvitesData, shouldRedirect, router])
 
   const checkAuthAndParties = async () => {
     try {
@@ -128,7 +149,7 @@ export default function EInvitesOverviewPage() {
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600">
-            {loading ? 'Loading your parties...' : hasEinvites ? 'Redirecting to your invitation...' : 'Checking your invitations...'}
+            {loading ? 'Loading your parties...' : 'Checking your invitations...'}
           </p>
         </div>
       </div>
@@ -145,8 +166,8 @@ export default function EInvitesOverviewPage() {
     return <NoPartyPlannedPage />
   }
 
-  // No einvites created yet - show the "ready to create invites" page
-  if (!hasEinvites) {
+  // If user came to create or we don't have einvites, show create flow
+  if (!hasEinvites || !shouldRedirect) {
     return <NoPartyPlannedPage />
   }
 
@@ -165,11 +186,19 @@ export default function EInvitesOverviewPage() {
             We found your invitation but need to complete the setup.
           </p>
           
-          <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-            <Link href="/e-invites/create">
-              Complete Setup
-            </Link>
-          </Button>
+          <div className="space-y-3">
+            <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
+              <Link href="/e-invites/create">
+                Complete Setup
+              </Link>
+            </Button>
+            
+            <Button asChild variant="outline" className="w-full rounded-xl">
+              <Link href="/dashboard">
+                Back to Dashboard
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -178,25 +207,25 @@ export default function EInvitesOverviewPage() {
 // Component for users not signed in
 function SignInPrompt() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-6">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] flex items-center justify-center px-6">
       <Card className="w-full max-w-md bg-white/80 backdrop-blur-sm shadow-2xl border-0 rounded-3xl">
         <CardContent className="p-8 text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Mail className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Mail className="w-8 h-8 text-primary-500" />
           </div>
           
           <h1 className="text-2xl font-bold text-gray-900 mb-3">Digital Invites</h1>
           <p className="text-gray-600 mb-6">Sign in to create beautiful digital invitations for your parties.</p>
           
           <div className="space-y-3">
-            <Button asChild className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
+            <Button asChild className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white rounded-xl">
               <Link href="/signin">
                 Sign In
               </Link>
             </Button>
             
-            <Button asChild variant="outline" className="w-full border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl">
-              <Link href="/signup">
+            <Button asChild variant="outline" className="w-full border-[hsl(var(--primary-200))] text-primary-600 hover:bg-[hsl(var(--primary-50))] rounded-xl">
+              <Link href="/sign-up">
                 Create Account
               </Link>
             </Button>

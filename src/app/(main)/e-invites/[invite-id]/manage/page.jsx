@@ -248,9 +248,86 @@ export default function EInvitesManagementPage() {
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
       <ContextualBreadcrumb currentPage="manage-invite" />
       
+      {/* Mobile Quick Actions Bar */}
+      <div className="lg:hidden bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-lg font-bold text-gray-900">Share Invitation</h1>
+            <div className="flex gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/e-invites/${inviteId}`} target="_blank">
+                  <Eye className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href={`/e-invites/${inviteId}/edit`}>
+                  <Edit className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+          
+          {/* Quick Share Buttons */}
+          <div className="grid grid-cols-4 gap-2">
+
+
+   
+            <Button 
+              onClick={shareViaWhatsApp}
+              className="bg-green-500 hover:bg-green-600 text-white text-xs py-2 flex items-center gap-1"
+              size="sm"
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </Button>
+
+            <Button 
+              onClick={() => {
+                const subject = `🎉 You're invited to ${partyDetails?.child_name}'s party!`
+                const body = `View the invitation: ${shareableLink}`
+                const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                window.open(mailtoUrl)
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 flex  items-center gap-1"
+              size="sm"
+            >
+              <Mail className="w-4 h-4" />
+              Email
+            </Button>
+            <Button 
+              onClick={() => {
+                const text = `🎉 You're invited to ${partyDetails?.child_name}'s party! ${shareableLink}`
+                const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareableLink)}&quote=${encodeURIComponent(text)}`
+                window.open(facebookUrl, "_blank")
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 flex items-center gap-1"
+              size="sm"
+            >
+              <Share2 className="w-4 h-4" />
+              Facebook
+            </Button>
+            <Button 
+              onClick={copyShareableLink}
+              variant="outline"
+              size="sm"
+              className={`text-xs py-2 flex items-center gap-1 ${copied ? 'bg-green-50 border-green-200 text-green-700' : ''}`}
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? 'Copied!' : 'Copy'}
+            </Button>
+          </div>
+          
+          {totalGuests > 0 && (
+            <div className="mt-2 text-xs text-gray-600 text-center">
+              {totalGuests} guests • {sentInvites} sent • {pendingInvites} pending
+            </div>
+          )}
+        </div>
+      </div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
+        {/* Desktop Header */}
+        <div className="hidden lg:block mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
@@ -278,33 +355,28 @@ export default function EInvitesManagementPage() {
           </div>
         </div>
 
-        {/* Main Content - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
           {/* Left Column: Invitation Preview */}
-          <div className="order-2 lg:order-1">
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm p-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-[hsl(var(--primary-500))]" />
-                  Your Invitation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden mb-6 shadow-inner">
+          <div className="order-1">
+            <Card className="">
+           
+              <CardContent className="bg-transparent p-0">
+                <div className="aspect-[3/4] rounded-lg overflow-hidden mb-4 shadow-inner">
                   {einvites.image ? (
                     <img 
-                      src={einvites.image || "/placeholder.svg"} 
+                      src={einvites.image || "/placeholder.png"} 
                       alt="Party Invitation" 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Mail className="w-16 h-16 text-gray-400" />
+                      <Mail className="w-12 h-12 lg:w-16 lg:h-16 text-gray-400" />
                     </div>
                   )}
                 </div>
                 
-                <Button asChild className="w-full" variant="outline" size="lg">
+                <Button asChild className="w-full" variant="outline">
                   <Link href={`/e-invites/${inviteId}`} target="_blank">
                     <ExternalLink className="w-4 h-4 mr-2" />
                     View Full Invitation
@@ -315,10 +387,10 @@ export default function EInvitesManagementPage() {
           </div>
 
           {/* Right Column: Sharing + Guest Management */}
-          <div className="order-1 lg:order-2 space-y-6">
-            {/* Quick Share Section */}
-            <Card className="shadow-xl border-0 bg-white overflow-hidden p-6">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
+          <div className="order-2 space-y-6">
+            {/* Desktop Quick Share Section */}
+            <Card className="hidden lg:block shadow-xl border-0 bg-white overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white mb-5">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 bg-white/20 rounded-lg">
                     <Share2 className="w-6 h-6" />
@@ -332,17 +404,13 @@ export default function EInvitesManagementPage() {
               
               <CardContent className="space-y-4">
                 {/* Quick Share Buttons */}
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   <Button 
                     onClick={shareViaWhatsApp}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-0"
-                    size="lg"
+                    className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-0 flex items-center justify-center gap-2"
                   >
-                    <div className="flex items-center justify-center gap-3">
-                      <MessageCircle className="w-5 h-5" />
-                      <span>Share on WhatsApp</span>
-                      <div className="text-xs bg-green-400 px-2 py-1 rounded-full">Quick</div>
-                    </div>
+                    <MessageCircle className="w-5 h-5" />
+                    <span>WhatsApp</span>
                   </Button>
                   
                   <Button 
@@ -352,14 +420,34 @@ export default function EInvitesManagementPage() {
                       const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
                       window.open(mailtoUrl)
                     }}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-0"
-                    size="lg"
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-0 flex items-center justify-center gap-2"
                   >
-                    <div className="flex items-center justify-center gap-3">
-                      <Mail className="w-5 h-5" />
-                      <span>Share via Email</span>
-                      <div className="text-xs bg-blue-400 px-2 py-1 rounded-full">Easy</div>
-                    </div>
+                    <Mail className="w-5 h-5" />
+                    <span>Email</span>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      const text = `🎉 You're invited to ${partyDetails?.child_name}'s party! ${shareableLink}`
+                      const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareableLink)}&quote=${encodeURIComponent(text)}`
+                      window.open(facebookUrl, "_blank")
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-0 flex items-center justify-center gap-2"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    <span>Facebook</span>
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      const text = `🎉 You're invited to ${partyDetails?.child_name}'s party! ${shareableLink}`
+                      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`
+                      window.open(twitterUrl, "_blank")
+                    }}
+                    className="bg-black hover:bg-gray-800 text-white font-medium py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border-0 flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    <span>Twitter</span>
                   </Button>
                 </div>
 
@@ -371,7 +459,7 @@ export default function EInvitesManagementPage() {
                 </div>
 
                 {/* Share Link */}
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-5">
                   <div className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <Copy className="w-4 h-4" />
                     Direct Link
@@ -426,14 +514,42 @@ export default function EInvitesManagementPage() {
               </CardContent>
             </Card>
 
+            {/* Mobile Copy Link Section */}
+            <Card className="lg:hidden shadow-lg border-0 bg-white p-4">
+              <CardContent>
+                <div className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Copy className="w-4 h-4" />
+                  Copy Direct Link
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    value={shareableLink} 
+                    readOnly 
+                    className="text-xs bg-gray-50 font-mono border-gray-200 flex-1"
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={copyShareableLink}
+                    className={`px-3 transition-all duration-300 ${
+                      copied 
+                        ? "bg-green-500 hover:bg-green-600 text-white" 
+                        : "bg-gray-800 hover:bg-gray-900 text-white"
+                    }`}
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Guest Management Section */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Add Guest */}
-              <Card className="p-6">
-                <CardHeader>
+              <Card className="shadow-lg border-0 bg-white p-4 lg:p-6">
+                <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <UserPlus className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+                    <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                      <UserPlus className="w-4 h-4 lg:w-5 lg:h-5 text-[hsl(var(--primary-500))]" />
                       Guest Management
                     </CardTitle>
                     <Button 
@@ -442,47 +558,46 @@ export default function EInvitesManagementPage() {
                       size="sm"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Guest
+                      Add
                     </Button>
                   </div>
                 </CardHeader>
                 
                 {showAddGuest && (
-                  <CardContent className="border-t">
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          placeholder="Guest name"
-                          value={newGuest.name}
-                          onChange={(e) => setNewGuest(prev => ({ ...prev, name: e.target.value }))}
-                          className="text-base"
-                        />
+                  <CardContent className="border-t pt-4">
+                    <div className="space-y-3">
+                      <Input
+                        placeholder="Guest name"
+                        value={newGuest.name}
+                        onChange={(e) => setNewGuest(prev => ({ ...prev, name: e.target.value }))}
+                        className="text-sm"
+                      />
+                      
+                      <div className="flex gap-2">
+                        <select
+                          value={newGuest.type}
+                          onChange={(e) => setNewGuest(prev => ({ ...prev, type: e.target.value }))}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-shrink-0 bg-white"
+                        >
+                          <option value="email">📧 Email</option>
+                          <option value="phone">📱 WhatsApp</option>
+                        </select>
                         
-                        <div className="flex gap-2">
-                          <select
-                            value={newGuest.type}
-                            onChange={(e) => setNewGuest(prev => ({ ...prev, type: e.target.value }))}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-shrink-0 bg-white"
-                          >
-                            <option value="email">📧 Email</option>
-                            <option value="phone">📱 WhatsApp</option>
-                          </select>
-                          
-                          <Input
-                            placeholder={newGuest.type === "email" ? "Email address" : "Phone number"}
-                            value={newGuest.contact}
-                            onChange={(e) => setNewGuest(prev => ({ ...prev, contact: e.target.value }))}
-                            className="flex-1 text-base"
-                            inputMode={newGuest.type === "phone" ? "tel" : "email"}
-                          />
-                        </div>
+                        <Input
+                          placeholder={newGuest.type === "email" ? "Email address" : "Phone number"}
+                          value={newGuest.contact}
+                          onChange={(e) => setNewGuest(prev => ({ ...prev, contact: e.target.value }))}
+                          className="flex-1 text-sm"
+                          inputMode={newGuest.type === "phone" ? "tel" : "email"}
+                        />
                       </div>
                       
-                      <div className="flex gap-3">
+                      <div className="flex gap-2">
                         <Button
                           onClick={addGuest}
                           className="flex-1 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white"
                           disabled={!newGuest.name.trim() || !newGuest.contact.trim()}
+                          size="sm"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           Add Guest
@@ -491,6 +606,7 @@ export default function EInvitesManagementPage() {
                         <Button
                           onClick={() => setShowAddGuest(false)}
                           variant="outline"
+                          size="sm"
                         >
                           Cancel
                         </Button>
@@ -502,10 +618,10 @@ export default function EInvitesManagementPage() {
 
               {/* Guest List */}
               {guestList.length > 0 && (
-                <Card className="p-6">
-                  <CardHeader>
+                <Card className="shadow-lg border-0 bg-white p-4 lg:p-6">
+                  <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle>Guest List ({totalGuests})</CardTitle>
+                      <CardTitle className="text-base lg:text-lg">Guest List ({totalGuests})</CardTitle>
                       {pendingInvites > 0 && (
                         <Button
                           onClick={() => {
@@ -527,24 +643,19 @@ export default function EInvitesManagementPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                    <div className="space-y-2 max-h-64 lg:max-h-96 overflow-y-auto">
                       {guestList.map(guest => (
                         <div 
                           key={guest.id} 
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors gap-3"
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
                         >
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 mr-3">
                             <div className="font-medium text-sm text-gray-900 truncate">
                               {guest.name}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
                               {guest.contact}
                             </div>
-                            {guest.sentAt && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                Sent via {guest.sentMethod} • {new Date(guest.sentAt).toLocaleDateString()}
-                              </div>
-                            )}
                           </div>
                           
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -575,7 +686,7 @@ export default function EInvitesManagementPage() {
                                 variant="outline"
                                 onClick={() => guest.type === 'phone' ? sendViaWhatsApp(guest) : sendViaEmail(guest)}
                                 disabled={sendingToGuest === guest.id}
-                                className="h-8 px-3"
+                                className="h-7 px-2"
                               >
                                 {sendingToGuest === guest.id ? (
                                   <div className="w-3 h-3 animate-spin border border-gray-400 border-t-transparent rounded-full" />
@@ -591,7 +702,7 @@ export default function EInvitesManagementPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => removeGuest(guest.id)}
-                              className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
                               <X className="w-3 h-3" />
                             </Button>
@@ -605,16 +716,17 @@ export default function EInvitesManagementPage() {
 
               {/* Empty State */}
               {guestList.length === 0 && (
-                <Card className="p-6">
-                  <CardContent className="p-8 text-center">
-                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No guests added yet</h3>
-                    <p className="text-gray-600 mb-4">
+                <Card className="shadow-lg border-0 bg-white p-4 lg:p-6">
+                  <CardContent className="p-6 text-center">
+                    <Users className="w-10 h-10 lg:w-12 lg:h-12 text-gray-400 mx-auto mb-3" />
+                    <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-2">No guests added yet</h3>
+                    <p className="text-sm text-gray-600 mb-4">
                       Start by adding guests to share your beautiful invitation with them.
                     </p>
                     <Button 
                       onClick={() => setShowAddGuest(true)}
                       className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white"
+                      size="sm"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add Your First Guest

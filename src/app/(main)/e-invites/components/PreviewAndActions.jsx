@@ -1,8 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Link, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Sparkles, Link, AlertCircle, Eye, EyeOff, ImageIcon } from 'lucide-react'
 import { useState } from "react"
-import InvitePreview from "./InvitePreview"
 
 const PreviewAndActions = ({ 
   useAIGeneration,
@@ -24,49 +23,31 @@ const PreviewAndActions = ({
     if (selectedAiOption) {
       return (
         <div className="flex justify-center">
-          <div className="relative w-full max-w-[280px] sm:max-w-[350px] lg:max-w-[400px] aspect-[3/4] rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg">
+          <div className="relative w-full max-w-[320px] sm:max-w-[400px] lg:max-w-[350px] aspect-[3/4] rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg">
             <img
               src={selectedAiOption.imageUrl || "/placeholder.svg"}
               alt="Selected AI Generated Invite"
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-2 left-2 bg-purple-600 text-white px-2 sm:px-3 py-1 rounded-lg text-xs font-bold shadow-lg">
+            <div className="absolute top-2 left-2 bg-primary-600 text-white px-2 sm:px-3 py-1 rounded-lg text-xs font-bold shadow-lg">
               AI Option {selectedAiOption.index}
             </div>
           </div>
         </div>
       )
-    } else if (selectedTheme && inviteData?.childName) {
-      return (
-        <div className="flex justify-center">
-          <div className="w-full max-w-[280px] sm:max-w-[350px] lg:max-w-[400px] aspect-[3/4]">
-            <InvitePreview
-              themeKey={selectedTheme}
-              inviteData={inviteData}
-            />
-          </div>
-        </div>
-      )
-    } else if (selectedTheme) {
-      return (
-        <div className="flex justify-center">
-          <div className="w-full max-w-[280px] sm:max-w-[350px] lg:max-w-[400px] aspect-[3/4] rounded-xl border-2 border-dashed border-yellow-300 flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-50">
-            <div className="text-center text-yellow-700 p-4">
-              <div className="text-3xl sm:text-4xl mb-4">⚠️</div>
-              <div className="font-bold text-base sm:text-lg">Missing Party Details</div>
-              <div className="text-xs sm:text-sm">Go back to Step 1 to fill in party information</div>
-            </div>
-          </div>
-        </div>
-      )
     } else {
+      // Empty slot - don't try to render templates
       return (
         <div className="flex justify-center">
-          <div className="w-full max-w-[280px] sm:max-w-[350px] lg:max-w-[400px] aspect-[3/4] rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="text-center text-gray-500 p-4">
-              <div className="text-3xl sm:text-4xl mb-4">🎨</div>
-              <div className="font-bold text-base sm:text-lg">Select a Theme</div>
-              <div className="text-xs sm:text-sm">Choose a theme above to see your invite preview</div>
+          <div className="w-full max-w-[320px] sm:max-w-[400px] lg:max-w-[350px] aspect-[3/4] rounded-xl border-2 border-dashed border-[hsl(var(--primary-300))] flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
+            <div className="text-center text-primary-600 p-4">
+              <div className="text-4xl sm:text-5xl mb-4">
+                <ImageIcon className="w-12 h-12 mx-auto opacity-60" />
+              </div>
+              <div className="font-bold text-base sm:text-lg">Preview Slot</div>
+              <div className="text-xs sm:text-sm opacity-80 mt-2">
+                Generate AI options to see your invitation here
+              </div>
             </div>
           </div>
         </div>
@@ -133,35 +114,40 @@ const PreviewAndActions = ({
       <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-4 sm:p-6">
           <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-3">
-            {useAIGeneration
-              ? "AI Generated Invite"
-              : `Current Theme: ${themes[selectedTheme]?.name || selectedTheme}`}
+            {selectedAiOption 
+              ? `AI Generated Invite - Option ${selectedAiOption.index}`
+              : "Ready for AI Generation"}
           </h3>
           
-          {useAIGeneration ? (
-            <div className="relative w-full h-16 sm:h-24 mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+          {selectedAiOption ? (
+            <div className="relative w-full h-24 sm:h-32 lg:h-24 mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+              <img
+                src={selectedAiOption.imageUrl || "/placeholder.svg"}
+                alt="Selected AI Option"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/20"></div>
               <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
                 🤖 AI Generated
               </div>
             </div>
           ) : (
-            <div className="relative w-full h-16 sm:h-24 mb-4 rounded-lg overflow-hidden">
-              <img
-                src={themes[selectedTheme]?.backgroundUrl || "/placeholder.jpg"}
-                alt={themes[selectedTheme]?.name || selectedTheme}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/20"></div>
+            <div className="relative w-full h-24 sm:h-32 lg:h-24 mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+              <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
+                🎨 Generate AI Options Above
+              </div>
             </div>
           )}
           
           <div className="text-xs text-gray-500">
-            Your invite will be automatically saved and can be used on your dashboard.
+            {selectedAiOption 
+              ? "Your AI-generated invite will be automatically saved and can be used on your dashboard."
+              : "Fill in party details and generate AI options to create your invitation."}
           </div>
           
           {hasUnsavedChanges && (
-            <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg">
-              <div className="flex items-center text-orange-700">
+            <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] border border-[hsl(var(--primary-200))] rounded-lg">
+              <div className="flex items-center text-[hsl(var(--primary-700))]">
                 <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
                 <span className="text-xs font-bold">You have unsaved changes. Don't forget to save!</span>
               </div>

@@ -380,7 +380,7 @@ export default function SignUpPageContent() {
             <p className="mt-4 text-center text-sm text-gray-600 pb-6">
               Already have an account?{" "}
               <Link
-                href={`/auth/signin?user_type=customer${returnTo ? `&return_to=${encodeURIComponent(returnTo)}` : ''}`}
+                href={`/signin`}
                 className={`font-medium text-primary-600 hover:text-primary-700 hover:underline ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
               >
                 Sign In

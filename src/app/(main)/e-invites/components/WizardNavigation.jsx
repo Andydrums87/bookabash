@@ -1,6 +1,6 @@
 import { WIZARD_STEPS } from "../hooks/useWizardSteps"
 import { Button } from "@/components/ui/button"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, ChevronLeft } from "lucide-react"
 
 function WizardNavigation({ 
   currentStep,
@@ -51,7 +51,7 @@ function WizardNavigation({
             <Button
               onClick={isLastStep ? onComplete : nextStep}
               disabled={!canProceedToNext()}
-              className="bg-gradient-to-r from-primary-600 to-primary-700 text-white"
+              className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-700))] text-white"
             >
               {getNextButtonText()}
               {!isLastStep && <ChevronRight className="w-4 h-4 ml-2" />}

@@ -2,20 +2,51 @@
 
 import React from 'react';
 import { themes } from '@/lib/themes';
+import { ChevronLeft } from 'lucide-react';
 
 const InvitePreview = ({ themeKey, inviteData, className = "" }) => {
-  const theme = themes[themeKey];
+  // Helper function to resolve theme key
+  const resolveThemeKey = (key) => {
+    if (!key) return null;
+    
+    // Direct match
+    if (themes[key]) {
+      return key;
+    }
+    
+    // Try to find partial matches for common mismatches
+    const themeKeys = Object.keys(themes);
+    
+    // Handle common cases like "dinosaur" -> "dinosaur_v1"
+    const partialMatch = themeKeys.find(themeKey => 
+      themeKey.startsWith(key) || key.startsWith(themeKey.split('_')[0])
+    );
+    
+    if (partialMatch) {
+      console.warn(`Theme key mismatch: "${key}" resolved to "${partialMatch}"`);
+      return partialMatch;
+    }
+    
+    return null;
+  };
 
+  const resolvedThemeKey = resolveThemeKey(themeKey);
+  const theme = resolvedThemeKey ? themes[resolvedThemeKey] : null;
 
-   // Add safety check
-   if (!theme) {
-    console.error('Theme not found:', themeKey, 'Available themes:', Object.keys(themes));
+  // Add safety check with better debugging
+  if (!theme) {
+    console.error('Theme resolution failed:');
+    console.error('- Original themeKey:', themeKey);
+    console.error('- Resolved themeKey:', resolvedThemeKey);
+    console.error('- Available themes:', Object.keys(themes));
+    
     return (
       <div className={`relative w-full aspect-[3/4] rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg ${className} flex items-center justify-center bg-gray-100`}>
         <div className="text-center text-gray-500">
           <div className="text-4xl mb-2">⚠️</div>
           <div className="font-bold">Theme not found</div>
-          <div className="text-sm">Theme: {themeKey}</div>
+          <div className="text-sm">Looking for: {themeKey}</div>
+          <div className="text-xs mt-2">Available: {Object.keys(themes).join(', ')}</div>
         </div>
       </div>
     );
@@ -61,9 +92,9 @@ const InvitePreview = ({ themeKey, inviteData, className = "" }) => {
               whiteSpace: key === 'headline' ? 'normal' : 'nowrap',
               wordWrap: 'break-word',
               maxWidth: key === 'headline' ? '90%' : 'auto',
-              padding: '0', // Ensure no background padding
-              backgroundColor: 'transparent', // Ensure no background
-              border: 'none' // Ensure no borders
+              padding: '0',
+              backgroundColor: 'transparent',
+              border: 'none'
             }}
           >
             {getTextContent(key, inviteData)}
