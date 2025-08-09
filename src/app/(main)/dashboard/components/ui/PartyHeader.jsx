@@ -353,7 +353,7 @@ const getFullName = () => {
         backgroundRepeat: 'repeat',
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
-      }} className="relative md:h-auto md:pt-0 pt-6 h-auto rounded-2xl shadow-2xl overflow-hidden mb-8 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
+      }} className="relative md:h-auto md:pt-0 pt-6 h-auto rounded-2xl shadow-2xl overflow-hidden mb-8 bg-primary-400">
         
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
@@ -373,7 +373,7 @@ const getFullName = () => {
         </div>
 
         {/* Gradient overlay for better text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/5"></div>
 
         {/* Content */}
         <div className="relative px-4 md:p-10 text-white">

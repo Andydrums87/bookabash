@@ -39,6 +39,7 @@ import { usePartyDetails } from '../hooks/usePartyDetails'
 import { useSupplierManager } from '../hooks/useSupplierManager'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
+import ReferFriend from "@/components/ReferFriend"
 
 export default function LocalStorageDashboard() {
   // Router and search params
@@ -424,21 +425,27 @@ export default function LocalStorageDashboard() {
                   Get Help
                 </Button>
               </div>
+              <div className="md:hidden block">
+              <ReferFriend />
+              </div>
+           
             </main>
 
             {/* Sidebar */}
             <aside className="hidden lg:block space-y-6">
-              <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+          
                 <BudgetControls {...budgetControlProps} />
-              </Card>
+         
               
               <CountdownWidget partyDate={partyDetails.date} />
-              
+{/*               
               <PartyExcitementMeter 
                 suppliers={suppliers}
                 totalCost={totalCost}
                 budget={tempBudget}
-              />
+              /> */}
+              <ReferFriend  />
+            
             </aside>
           </div>
         </div>

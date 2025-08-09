@@ -285,7 +285,7 @@ export default function SupplierSelectionModal({
     return (
       <>
         {/* Mobile Filter Toggle Button */}
-        <div className="md:hidden flex-shrink-0 p-4 border-b border-[hsl(var(--primary-100))] bg-white">
+        <div className="md:hidden max-h-[85%] flex-shrink-0 p-4 border-b border-[hsl(var(--primary-100))] bg-white">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-3">
               <Button

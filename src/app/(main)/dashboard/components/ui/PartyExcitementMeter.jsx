@@ -36,7 +36,7 @@ export default function PartyExcitementMeter({ excitementLevel = 95, suppliers =
   }
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] border-2 border-[hsl(var(--primary-200))] shadow-xl">
+    <Card className="relative overflow-hidden bg-primary-200 border-2 border-[hsl(var(--primary-200))] shadow-xl">
       {/* Decorative background elements matching header */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-3 left-4 w-2 h-2 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
