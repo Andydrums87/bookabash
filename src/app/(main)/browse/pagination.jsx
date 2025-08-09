@@ -43,13 +43,16 @@ const LoadMoreSuppliersSection = ({
   selectedThemes = [] // For highlighting matching themes
 }) => {
 
+  console.log('🎯 LoadMoreSuppliersSection - allSuppliers:', allSuppliers.length, 'isInitialLoading:', isInitialLoading)
+
   const { toggleFavorite, isFavorite } = useFavorites()
 
   const [displayedSuppliers, setDisplayedSuppliers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-
+  console.log('🎯 Internal loading states - isLoadingMore:', isLoadingMore)
+  
 
   // Configuration
   const SUPPLIERS_PER_PAGE = 8;

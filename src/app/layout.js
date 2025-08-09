@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron } from "next/font/google";
+import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
@@ -33,6 +34,7 @@ const orbitron = Orbitron({
 });
 
 export const metadata = {
+  metadataBase: new URL(getBaseUrl()),
   title: "PartySnap",
   description: "PartySnap - Your Ultimate Children's Party Planning Platform",
   icons: {
