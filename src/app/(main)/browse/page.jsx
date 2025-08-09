@@ -49,6 +49,21 @@ export default async function BrowsePage() {
           })
         }}
       />
+
+<div className="sr-only">
+        <h1>Party Suppliers Directory</h1>
+        <nav aria-label="Party Suppliers">
+          <ul>
+            {initialSuppliers.map(supplier => (
+              <li key={supplier.id}>
+                <a href={`/supplier/${supplier.id}`}>
+                  {supplier.name} - {supplier.category} in {supplier.location} - From £{supplier.priceFrom}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
       
       <Suspense fallback={<MinimalFallback />}>
         <BrowseSuppliersClient initialSuppliers={initialSuppliers} />
@@ -97,6 +112,9 @@ function MinimalFallback() {
   )
 }
 
+
+
+
 // Generate metadata with real data
 export async function generateMetadata() {
   const suppliers = await getSuppliers()
@@ -118,4 +136,7 @@ export async function generateMetadata() {
       description: `Find trusted party suppliers in your area`,
     }
   }
+
+  
 }
+

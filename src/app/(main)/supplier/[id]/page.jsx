@@ -2,8 +2,9 @@
 
 export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
-import { getSupplierById, getRelatedSuppliers } from '@/lib/suppliers-api'
+import { getSupplierById, getRelatedSuppliers, getSuppliers } from '@/lib/suppliers-api'
 import SupplierPageClient from './supplier-page-client'
+
 
 // This runs on the server and generates the page with full content
 export default async function SupplierPage({ params, searchParams }) {
@@ -139,6 +140,8 @@ export async function generateStaticParams() {
     return []
   }
 }
+
+
 
 // Enable ISR for this page
 export const revalidate = 3600 // Revalidate every hour
