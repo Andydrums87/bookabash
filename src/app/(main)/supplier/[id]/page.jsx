@@ -1,4 +1,6 @@
 // app/supplier/[id]/page.js - Server Component (Pure JavaScript)
+
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getSupplierById, getRelatedSuppliers } from '@/lib/suppliers-api'
 import SupplierPageClient from './supplier-page-client'
@@ -71,14 +73,14 @@ export default async function SupplierPage({ params, searchParams }) {
 // Generate metadata for SEO - this is crucial!
 export async function generateMetadata({ params }) {
   try {
-    const supplier = await getSupplierById(params.id)
+    const resolvedParams = await params  // ✅ Await params
+    const supplier = await getSupplierById(resolvedParams.id)  // ✅ Use resolvedParams
     
     if (!supplier) {
       return {
         title: 'Supplier Not Found | PartySnap'
       }
     }
-
     const title = `${supplier.name} - ${supplier.category} | PartySnap`
     const description = `${supplier.description} Located in ${supplier.location}. Starting from £${supplier.priceFrom}. Rated ${supplier.rating}/5 by ${supplier.reviewCount} customers.`
 
