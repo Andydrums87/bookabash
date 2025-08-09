@@ -665,7 +665,19 @@ const filteredSuppliers = suppliers.filter((supplier) => {
     </div>
   </div>
 </div>
-
+    {/* ✅ ADD THIS SECTION HERE - SEO Links (Hidden) */}
+    <div className="sr-only">
+        <h2>Party Suppliers by Location and Service</h2>
+        <ul>
+          {searchedSuppliers.map(supplier => (
+            <li key={supplier.id}>
+              <a href={`/supplier/${supplier.id}`}>
+                {supplier.name} - {supplier.category} in {supplier.location}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {/* Results Section - Streamlined for Mobile */}
       <div className="max-w-screen mx-auto px-2 md:px-3 py-3 md:py-8">
