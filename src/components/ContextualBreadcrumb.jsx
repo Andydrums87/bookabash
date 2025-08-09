@@ -11,6 +11,7 @@ export function ContextualBreadcrumb({
   hasUnsavedChanges = false,
   unsavedMessage = "Unsaved changes",
   inviteDetails,
+  supplierName,
   id,
 }) {
   const { navigationContext, goBack } = useContextualNavigation()
@@ -37,19 +38,26 @@ export function ContextualBreadcrumb({
           action: () => goBack(),
         }
 
-      case "supplier-detail":
-        return {
-          show: true,
-          backText: navigationContext === "dashboard" ? "Dashboard" : "Browse Suppliers",
-          currentText: "Supplier Details",
-          action: () => {
-            if (navigationContext === "dashboard") {
-              // NEW: Pass true to restore modal when going back to dashboard
-              goBack(true);
-            } else {
-              router.push("/browse")
-            }
-          },
+        case "supplier-detail": {
+          // work out back target
+          let backText = "Browse Suppliers"
+          let action = () => router.push("/browse")
+  
+          if (navigationContext === "dashboard") {
+            backText = "Dashboard"
+            action = () => goBack(true)
+          } else if (navigationContext === "favorites") {
+            backText = "My Favorites"
+            action = () => goBack()
+          }
+  
+          return {
+            show: true,
+            backText,
+            // 👇 show supplier name if we have it, else fall back
+            currentText: supplierName || "Supplier Details",
+            action,
+          }
         }
 
       case "add-supplier":

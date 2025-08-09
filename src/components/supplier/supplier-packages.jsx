@@ -1,22 +1,29 @@
 "use client"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Plus, X, Clock, Users, Star } from "lucide-react"
-import { useState } from "react"
+
+const useIsMobile = (breakpoint = 640) => {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < breakpoint)
+    update()
+    window.addEventListener("resize", update)
+    return () => window.removeEventListener("resize", update)
+  }, [breakpoint])
+  return isMobile
+}
 
 const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  console.log(pkg)
-
+  if (!isOpen) return null
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-300 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         {/* Modal Header */}
         <div className="relative h-64">
           <Image
-            src={pkg.image || pkg.imageUrl || '/placeholder.jpg'}
+            src={pkg.image || pkg.imageUrl || "/placeholder.png"}
             alt={pkg.name}
             fill
             className="object-cover"
@@ -27,7 +34,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
           >
             <X size={20} className="text-gray-600 cursor-pointer" />
           </button>
-          <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl p-4">
+          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-2xl p-4">
             <h2 className="text-2xl font-bold text-gray-900">{pkg.name}</h2>
             <div className="flex items-center gap-4 mt-2">
               <span className="text-3xl font-bold text-primary">£{pkg.price}</span>
@@ -79,48 +86,62 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonState, isInPlan, isInPlanPackage, onShowNotification }) => {
-  const [showModal, setShowModal] = useState(false);
+const PackageCard = ({
+  pkg,
+  isSelected,
+  onSelect,
+  onAddToPlan,
+  addToPlanButtonState,
+  isInPlan,
+  isInPlanPackage,
+  onShowNotification
+}) => {
+  const [showModal, setShowModal] = useState(false)
+  const isMobile = useIsMobile(640)
+
+  const features = Array.isArray(pkg.whatsIncluded) ? pkg.whatsIncluded : []
+  const visibleCount = isMobile ? 1 : 2
+  const extraCount = Math.max(0, features.length - visibleCount)
+
+  const truncate = (text) => (isMobile && text.length > 15 ? `${text.slice(0, 12)}…` : text)
 
   return (
     <>
       <div
         className={`bg-white rounded-3xl p-3 sm:p-4 pt-0 mb-5 flex flex-col text-center shadow-lg transition-all duration-300 relative overflow-hidden group ${
-          isInPlanPackage 
-            ? "ring-2 ring-green-500 transform scale-[1.02] cursor-pointer" 
-            : isSelected 
-            ? "ring-2 ring-[#ff795b] transform scale-[1.02] cursor-pointer hover:scale-[1.04] hover:shadow-2xl" 
+          isInPlanPackage
+            ? "ring-2 ring-green-500 scale-[1.02] cursor-pointer"
+            : isSelected
+            ? "ring-2 ring-[#ff795b] scale-[1.02] cursor-pointer hover:scale-[1.04] hover:shadow-2xl"
             : "cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:ring-2 hover:ring-gray-200"
         }`}
         onClick={() => {
           if (isInPlanPackage) {
-            onShowNotification({
+            onShowNotification?.({
               type: "info",
               message: `${pkg.name} is already in your party plan! You can view details or manage it from your dashboard.`
-            });
+            })
           } else if (!isSelected) {
-            onSelect(pkg.id);
+            onSelect(pkg.id)
           }
         }}
-        style={{
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}
+        style={{ transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)" }}
       >
-        {/* MOBILE OPTIMIZED IMAGE - Much smaller on mobile */}
+        {/* Image */}
         <div
           className="relative w-50 h-50 md:h-[200px] md:w-full mask-image mx-auto mt-3 sm:mt-5 mb-2 sm:mb-3"
           style={{
             WebkitMaskImage: 'url("/image.svg")',
-            WebkitMaskRepeat: 'no-repeat',
-            WebkitMaskSize: 'contain',
-            WebkitMaskPosition: 'center',
+            WebkitMaskRepeat: "no-repeat",
+            WebkitMaskSize: "contain",
+            WebkitMaskPosition: "center",
             maskImage: 'url("/image.svg")',
-            maskRepeat: 'no-repeat',
-            maskSize: 'contain',
-            maskPosition: 'center',
+            maskRepeat: "no-repeat",
+            maskSize: "contain",
+            maskPosition: "center"
           }}
         >
           <Image
@@ -131,13 +152,13 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
             sizes="(max-width: 640px) 96px, (max-width: 768px) 128px, 200px"
           />
         </div>
-       
-        {/* MOBILE OPTIMIZED TITLE - Smaller font on mobile */}
+
+        {/* Title */}
         <h3 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 truncate mb-1 px-1 sm:px-2 group-hover:text-gray-900 transition-colors duration-200">
           {pkg.name}
         </h3>
-        
-        {/* MOBILE OPTIMIZED PRICING - Smaller on mobile */}
+
+        {/* Price + Meta */}
         <div className="mb-2 sm:mb-4">
           <p className="text-base sm:text-lg font-bold text-primary group-hover:text-primary transition-colors duration-200">
             £{pkg.price}
@@ -147,35 +168,38 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
               <Clock className="w-3 h-3" />
               <span>{pkg.duration}</span>
             </div>
-            <span className="capitalize">{pkg.priceType?.replace('_', ' ')}</span>
+            <span className="capitalize">{pkg.priceType?.replace("_", " ")}</span>
           </div>
         </div>
 
-        {/* MOBILE OPTIMIZED FEATURES - Fewer features shown on mobile */}
+        {/* Features (no window access) */}
         <div className="flex flex-wrap justify-center items-center gap-1 sm:gap-2 mb-2 sm:mb-4 px-1 sm:px-2">
-          {pkg.whatsIncluded?.slice(0, window.innerWidth < 640 ? 1 : 2).map((feature, i) => (
-            <span key={i} className="bg-[#fff0ee] text-gray-900 text-xs font-medium px-2 sm:px-2.5 py-1 rounded-full group-hover:bg-[#ffebe8] group-hover:scale-105 transition-all duration-200">
-              {feature.length > 15 && window.innerWidth < 640 ? `${feature.substring(0, 12)}...` : feature}
+          {features.slice(0, visibleCount).map((feature, i) => (
+            <span
+              key={i}
+              className="bg-[#fff0ee] text-gray-900 text-xs font-medium px-2 sm:px-2.5 py-1 rounded-full group-hover:bg-[#ffebe8] group-hover:scale-105 transition-all duration-200"
+            >
+              {truncate(feature)}
             </span>
           ))}
-          {pkg.whatsIncluded?.length > (window.innerWidth < 640 ? 1 : 2) && (
+          {extraCount > 0 && (
             <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 sm:px-2.5 py-1 rounded-full">
-              +{pkg.whatsIncluded.length - (window.innerWidth < 640 ? 1 : 2)} more
+              +{extraCount} more
             </span>
           )}
         </div>
-        
-        {/* MOBILE OPTIMIZED BUTTONS - Smaller padding on mobile */}
+
+        {/* Buttons */}
         {isInPlanPackage ? (
           <div className="mt-auto space-y-1 sm:space-y-2">
             <Button
               className="w-full py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold bg-green-500 hover:bg-green-500 text-white cursor-not-allowed"
-              disabled={true}
+              disabled
             >
               <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               In Plan
             </Button>
-            <button 
+            <button
               className="w-full py-1 sm:py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 transition-colors"
               onClick={(e) => {
                 e.stopPropagation()
@@ -197,7 +221,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
             >
               {addToPlanButtonState.text}
             </Button>
-            <button 
+            <button
               className="w-full py-1 sm:py-2 text-xs sm:text-sm text-gray-600 transition-colors cursor-pointer hover:text-[hsl(var(--primary-700))]"
               onClick={(e) => {
                 e.stopPropagation()
@@ -219,7 +243,7 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
             >
               Select Package
             </Button>
-            <button 
+            <button
               className="w-full py-1 sm:py-2 text-xs sm:text-sm text-gray-600 hover:text-[hsl(var(--primary-500))] transition-colors"
               onClick={(e) => {
                 e.stopPropagation()
@@ -230,19 +254,19 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
             </button>
           </div>
         )}
-        
-        {/* MOBILE OPTIMIZED CHECKMARK - Smaller on mobile */}
+
         {(isSelected || isInPlanPackage) && (
-          <div className={`absolute top-2 sm:top-3 right-2 sm:right-3 rounded-full p-1 sm:p-1.5 shadow-md ${
-            isInPlanPackage ? 'bg-green-500' : 'bg-primary'
-          } text-white transform transition-all duration-300 ${
-            !isInPlanPackage ? 'group-hover:scale-110 group-hover:rotate-12' : ''
-          }`}>
+          <div
+            className={`absolute top-2 sm:top-3 right-2 sm:right-3 rounded-full p-1 sm:p-1.5 shadow-md ${
+              isInPlanPackage ? "bg-green-500" : "bg-primary"
+            } text-white transform transition-all duration-300 ${
+              !isInPlanPackage ? "group-hover:scale-110 group-hover:rotate-12" : ""
+            }`}
+          >
             <CheckCircle size={14} className="sm:w-[18px] sm:h-[18px]" />
           </div>
         )}
 
-        {/* MOBILE OPTIMIZED X BUTTON - Smaller on mobile */}
         {isSelected && !isInPlanPackage && (
           <button
             className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-gray-500 hover:bg-red-500 text-white rounded-full p-1 shadow-md transition-all duration-200 opacity-80 hover:opacity-100 transform hover:scale-110"
@@ -258,43 +282,32 @@ const PackageCard = ({ pkg, isSelected, onSelect, onAddToPlan, addToPlanButtonSt
       </div>
 
       {/* Modal */}
-      <PackageDetailsModal 
-        pkg={pkg} 
-        isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
-      />
+      <PackageDetailsModal pkg={pkg} isOpen={showModal} onClose={() => setShowModal(false)} />
     </>
   )
 }
 
-export default function SupplierPackages({ 
-  packages, 
-  selectedPackageId, 
-  setSelectedPackageId, 
-  handleAddToPlan, 
+export default function SupplierPackages({
+  packages,
+  selectedPackageId,
+  setSelectedPackageId,
+  handleAddToPlan,
   getAddToPartyButtonState,
   getSupplierInPartyDetails,
   onShowNotification
 }) {
-  if (!packages || packages.length === 0) {
-    return null
-  }
+  if (!packages || packages.length === 0) return null
 
-  // Check if supplier is already in party plan
   const partyDetails = getSupplierInPartyDetails()
-  
-  // Use packages as-is, don't modify the image property
   const packagesData = packages
 
   return (
     <div className="px-4 md:px-0">
       <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Choose a Package</h2>
-      {/* MOBILE OPTIMIZED GRID - Smaller gap on mobile */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
         {packagesData.map((pkg) => {
-          const isInPlanPackage = partyDetails.inParty && partyDetails.currentPackage === pkg.id;
-          const isSelected = pkg.id === selectedPackageId && !isInPlanPackage;
-          
+          const isInPlanPackage = partyDetails.inParty && partyDetails.currentPackage === pkg.id
+          const isSelected = pkg.id === selectedPackageId && !isInPlanPackage
           return (
             <PackageCard
               key={pkg.id}
@@ -307,7 +320,7 @@ export default function SupplierPackages({
               addToPlanButtonState={getAddToPartyButtonState(pkg.id)}
               onShowNotification={onShowNotification}
             />
-          );
+          )
         })}
       </div>
     </div>

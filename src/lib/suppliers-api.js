@@ -2,15 +2,22 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 
-/* ------------------------------------------
-   Helpers
------------------------------------------- */
-async function getServerClient() {
-  const cookieStore = await cookies();            // ✅ await the cookie store
-  return createServerComponentClient({
-    cookies: () => cookieStore,                   // ✅ pass a function returning the awaited store
-  });
+/* ---------- internal: pick the right client for the current context ---------- */
+async function getSupabase() {
+  // Try request-scoped cookies (RSC render, route handlers)
+  try {
+    const store = await cookies(); // throws if no request scope
+    return createServerComponentClient({ cookies: () => store });
+  } catch {
+    // No request scope (build time, ISR revalidate, generateStaticParams/Metadata)
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      { auth: { persistSession: false } }
+    );
+  }
 }
 
 function toNumber(x) {
@@ -18,13 +25,10 @@ function toNumber(x) {
   return Number.isFinite(n) ? n : null;
 }
 
-/* ------------------------------------------
-   Core fetches (SSR/ISR safe)
------------------------------------------- */
+/* ------------------------------ core queries ------------------------------ */
 export const getSuppliers = cache(async () => {
   try {
-    const supabase = await getServerClient();
-
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from("suppliers")
       .select(`
@@ -66,8 +70,7 @@ export const getSuppliers = cache(async () => {
 
 export const getSupplierById = cache(async (id) => {
   try {
-    const supabase = await getServerClient();
-
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from("suppliers")
       .select(`
@@ -90,11 +93,8 @@ export const getSupplierById = cache(async (id) => {
       .eq("id", id)
       .single();
 
-    if (!error && data) {
-      return transformSupplierRecord(data);
-    }
+    if (!error && data) return transformSupplierRecord(data);
 
-    // Fallback to mock
     const mock = getMockSuppliers().find((s) => s.id === id);
     return mock || null;
   } catch (e) {
@@ -149,7 +149,7 @@ export const getAllSuppliersForSitemap = cache(async () => {
     return list.map((s) => ({
       id: s.id,
       slug: s.slug || s.id,
-      updatedAt: new Date(), // replace with real timestamp if you have it
+      updatedAt: new Date(),
     }));
   } catch (e) {
     console.error("[SSR] Exception getAllSuppliersForSitemap:", e);
@@ -157,9 +157,7 @@ export const getAllSuppliersForSitemap = cache(async () => {
   }
 });
 
-/* ------------------------------------------
-   Transformer (aligned to your CSV / JSONB)
------------------------------------------- */
+/* ------------------------------ transformer ------------------------------ */
 function transformSupplierRecord(record) {
   const d = record.data || {};
 
@@ -175,7 +173,7 @@ function transformSupplierRecord(record) {
     record.json_cover ||
     d.coverPhoto ||
     d.image ||
-    "/placeholder.jpg";
+    "/placeholder.jpg"; // ensure this file exists in /public
 
   return {
     id: record.id,
@@ -205,13 +203,11 @@ function transformSupplierRecord(record) {
     responseTime: d.responseTime || "Within 24 hours",
     phone: d.phone || d?.owner?.phone || "",
     email: d.email || d?.owner?.email || "",
-    activeSince: d.activeSince || ""
+    activeSince: d.activeSince || "",
   };
 }
 
-/* ------------------------------------------
-   Mock fallback (leave your existing one if different)
------------------------------------------- */
+/* ------------------------------ mock fallback ------------------------------ */
 function getMockSuppliers() {
   return [
     {

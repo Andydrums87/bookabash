@@ -148,7 +148,7 @@ export default function SupplierPortfolioGallery({ portfolioImages = [], portfol
                     >
                       {item.type === 'image' ? (
                         <Image
-                          src={item.src || "/placeholder.svg"}
+                          src={item.src || "/placeholder.png"}
                           alt={item.alt || item.title || `Image ${index + 1}`}
                           fill
                           className="object-cover"

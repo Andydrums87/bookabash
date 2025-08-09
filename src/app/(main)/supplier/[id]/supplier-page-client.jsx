@@ -980,7 +980,8 @@ const getPendingEnquiriesCount = useCallback(() => {
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
       <NotificationPopup notification={notification} />
 
-      <ContextualBreadcrumb currentPage="supplier-detail" />
+      <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
+
       
       <SupplierHeader
         supplier={supplier}

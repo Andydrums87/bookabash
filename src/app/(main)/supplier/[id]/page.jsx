@@ -1,147 +1,132 @@
-// app/supplier/[id]/page.js - Server Component (Pure JavaScript)
+export const revalidate = 3600; // keep ISR
 
-export const dynamic = 'force-dynamic'
-import { notFound } from 'next/navigation'
-import { getSupplierById, getRelatedSuppliers, getSuppliers } from '@/lib/suppliers-api'
-import SupplierPageClient from './supplier-page-client'
+import { notFound } from "next/navigation";
+import {
+  getSupplierById,
+  getRelatedSuppliers,
+  getPopularSuppliers,
+} from "@/lib/suppliers-api";
+import SupplierPageClient from "./supplier-page-client";
 
+export default async function SupplierPage(props) {
+  // ✅ await both
+  const { id } = await props.params;
+  const sp = await props.searchParams;
+  const from =
+    typeof sp?.get === "function" ? sp.get("from") : sp?.from || "direct";
 
-// This runs on the server and generates the page with full content
-export default async function SupplierPage({ params, searchParams }) {
+  const supplier = await getSupplierById(id);
+  if (!supplier) notFound();
 
-  const resolvedSearchParams = await searchParams
-  try {
-    // Fetch supplier data on the server
-    const supplier = await getSupplierById(params.id)
-    
-    if (!supplier) {
-      notFound()
-    }
+  const relatedSuppliers = await getRelatedSuppliers(
+    supplier.category,
+    supplier.id
+  );
 
-    // Fetch related suppliers for recommendations
-    const relatedSuppliers = await getRelatedSuppliers(supplier.category, supplier.id)
+  // JSON-LD (guard optional fields)
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: supplier.name,
+    description: supplier.description,
+    image: supplier.image,
+    url: `https://www.partysnap.co.uk/supplier/${supplier.slug || supplier.id}`,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: supplier.location,
+      addressCountry: "GB",
+    },
+    serviceType: supplier.category,
+    areaServed: supplier.location,
+  };
+  if (supplier.rating && supplier.reviewCount) {
+    ld.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: supplier.rating,
+      reviewCount: supplier.reviewCount,
+      bestRating: "5",
+      worstRating: "1",
+    };
+  }
+  if (supplier.priceFrom) {
+    ld.offers = {
+      "@type": "Offer",
+      price: supplier.priceFrom,
+      priceCurrency: "GBP",
+      description: `Starting from £${supplier.priceFrom} ${supplier.priceUnit || ""}`.trim(),
+    };
+  }
 
-    return (
-      <>
-        {/* Critical: Add structured data for SEO */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              "name": supplier.name,
-              "description": supplier.description,
-              "image": supplier.image,
-              "address": {
-                "@type": "PostalAddress",
-                "addressLocality": supplier.location,
-                "addressCountry": "GB"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": supplier.rating,
-                "reviewCount": supplier.reviewCount,
-                "bestRating": "5",
-                "worstRating": "1"
-              },
-              "offers": {
-                "@type": "Offer",
-                "price": supplier.priceFrom,
-                "priceCurrency": "GBP",
-                "description": `Starting from £${supplier.priceFrom} ${supplier.priceUnit}`
-              },
-              "serviceType": supplier.category,
-              "areaServed": supplier.location,
-              "url": `https://partysnap.co.uk/supplier/${supplier.id}`
-            })
-          }}
-        />
-        
-        <SupplierPageClient 
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+      />
+      {/* Minimal crawlable HTML (can keep sr-only if you want it hidden) */}
+      <div className="sr-only">
+        <h1>{supplier.name}</h1>
+        <p>
+          {supplier.category} · {supplier.location}
+          {supplier.priceFrom ? ` · From £${supplier.priceFrom}` : ""}
+        </p>
+        <p>{supplier.description}</p>
+      </div>
+
+      <SupplierPageClient
         backendSupplier={supplier}
         relatedSuppliers={relatedSuppliers}
-        navigationContext={resolvedSearchParams.from || 'direct'}  // ✅ Fixed
+        navigationContext={from}
       />
-      </>
-    )
-  } catch (error) {
-    console.error('Error loading supplier:', error)
-    notFound()
-  }
+    </>
+  );
 }
 
-// Generate metadata for SEO - this is crucial!
 export async function generateMetadata({ params }) {
-  try {
-    const resolvedParams = await params  // ✅ Await params
-    const supplier = await getSupplierById(resolvedParams.id)  // ✅ Use resolvedParams
-    
-    if (!supplier) {
-      return {
-        title: 'Supplier Not Found | PartySnap'
-      }
-    }
-    const title = `${supplier.name} - ${supplier.category} | PartySnap`
-    const description = `${supplier.description} Located in ${supplier.location}. Starting from £${supplier.priceFrom}. Rated ${supplier.rating}/5 by ${supplier.reviewCount} customers.`
+  const { id } = await params;           // ✅ await
+  const supplier = await getSupplierById(id);
+  if (!supplier) return { title: "Supplier Not Found | PartySnap" };
 
-    return {
+  const title = `${supplier.name} - ${supplier.category} | PartySnap`;
+  const description = `${supplier.description} Located in ${supplier.location}${
+    supplier.priceFrom ? `. From £${supplier.priceFrom}` : ""
+  }${supplier.rating ? `. Rated ${supplier.rating}/5` : ""}.`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      supplier.name,
+      supplier.category,
+      supplier.location,
+      ...(supplier.themes || []),
+      "party supplier",
+      "birthday party",
+      supplier.subcategory,
+    ]
+      .filter(Boolean)
+      .join(", "),
+    openGraph: {
       title,
       description,
-      keywords: [
-        supplier.name,
-        supplier.category,
-        supplier.location,
-        ...supplier.themes,
-        'party supplier',
-        'birthday party',
-        supplier.subcategory
-      ].filter(Boolean).join(', '),
-      
-      openGraph: {
-        title,
-        description,
-        images: [
-          {
-            url: supplier.image,
-            width: 800,
-            height: 600,
-            alt: supplier.name,
-          }
-        ],
-        type: 'website',
-        siteName: 'PartySnap',
-      },
-      
-      twitter: {
-        card: 'summary_large_image',
-        title,
-        description,
-        images: [supplier.image],
-      }
-    }
-  } catch (error) {
-    return {
-      title: 'Supplier | PartySnap'
-    }
-  }
+      images: [{ url: supplier.image, width: 800, height: 600, alt: supplier.name }],
+      type: "website",
+      siteName: "PartySnap",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [supplier.image],
+    },
+  };
 }
 
-// Generate static paths for popular suppliers (optional but good for performance)
 export async function generateStaticParams() {
   try {
-    // Get your most popular suppliers for pre-generation
-    const popularSuppliers = await getPopularSuppliers(50) // Top 50 suppliers
-    
-    return popularSuppliers.map((supplier) => ({
-      id: supplier.id,
-    }))
-  } catch (error) {
-    return []
+    const popular = await getPopularSuppliers(50);
+    return popular.map((s) => ({ id: s.id }));
+  } catch {
+    return [];
   }
 }
-
-
-
-// Enable ISR for this page
-export const revalidate = 3600 // Revalidate every hour
