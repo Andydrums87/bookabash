@@ -2,7 +2,7 @@
 import { Clock, Heart, Eye, ArrowRight, Sparkles, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFavorites } from "@/app/(main)/favorites/hooks/useFavoritesHook"
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/universalModal"
 
 const PendingEnquiryModal = ({
   isOpen,

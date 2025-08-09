@@ -14,7 +14,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import Image from "next/image"
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/universalModal"
 
 export default function SupplierCustomizationModal({
   isOpen,
