@@ -50,20 +50,25 @@ export default async function BrowsePage() {
         }}
       />
 
-<div className="sr-only">
-        <h1>Party Suppliers Directory</h1>
-        <nav aria-label="Party Suppliers">
-          <ul>
-            {initialSuppliers.map(supplier => (
-              <li key={supplier.id}>
-                <a href={`/supplier/${supplier.id}`}>
-                  {supplier.name} - {supplier.category} in {supplier.location} - From £{supplier.priceFrom}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+<div style={{
+  position: "absolute",
+  left: "-9999px",
+  top: "auto",
+  width: "1px",
+  height: "1px",
+  overflow: "hidden"
+}}>
+  <h1>Party Suppliers Directory</h1>
+  <ul>
+    {initialSuppliers.map(s => (
+      <li key={s.id}>
+        <a href={`/supplier/${s.id}`}>
+          {s.name} - {s.category} in {s.location} - From £{s.priceFrom}
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
       
       <Suspense fallback={<MinimalFallback />}>
         <BrowseSuppliersClient initialSuppliers={initialSuppliers} />

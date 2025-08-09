@@ -488,11 +488,11 @@ const filteredSuppliers = suppliers.filter((supplier) => {
         className="relative w-full h-[36vh] md:h-[50vh]  overflow-hidden"
       >      
      <div  style={{
-        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
+        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(12 100% 68%), hsl(12, 100%, 68%))`,
         backgroundRepeat: 'repeat',
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
-      }} className="w-full h-full absolute bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]">
+      }} className="w-full h-full absolute">
     {/* <Image
       src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1754515959/iStock-1716501930__1_-removebg_bn6x4d.png"
       alt="People celebrating at a party"
