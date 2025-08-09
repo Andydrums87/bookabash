@@ -12,15 +12,17 @@ export default function BudgetControls({
   setTempBudget,
   budgetPercentage,
   getBudgetCategory,
-  isUpdating,
-  showAdvancedControls,
-  setShowAdvancedControls,
+isUpdating
 }) {
   // Add hydration state to prevent SSR mismatch
   const [isHydrated, setIsHydrated] = useState(false)
   const [initialBudget, setInitialBudget] = useState(null)
   const [showBudgetAdjust, setShowBudgetAdjust] = useState(false)
   const hasInitialized = useRef(false)
+
+  // Check if over budget
+  const isOverBudget = totalSpent > tempBudget
+  const overBudgetAmount = Math.max(0, totalSpent - tempBudget)
 
   useEffect(() => {
     setIsHydrated(true)
@@ -35,8 +37,14 @@ export default function BudgetControls({
   const safeDisplayValues = {
     totalSpent: isHydrated ? totalSpent : 0,
     budgetPercentage: isHydrated ? budgetPercentage : 0,
-    remaining: isHydrated ? Math.max(0, tempBudget - totalSpent) : tempBudget,
+    remaining: isHydrated ? (isOverBudget ? -overBudgetAmount : Math.max(0, tempBudget - totalSpent)) : tempBudget,
   }
+
+  // Cap progress bar at 100% but show actual percentage in text
+  const displayPercentage = Math.min(100, safeDisplayValues.budgetPercentage)
+  const progressBarColor = isOverBudget 
+    ? "bg-red-500" 
+    : "bg-teal-500"
 
   // Memoize expensive calculations
   const budgetCategory = getBudgetCategory(tempBudget)
@@ -49,8 +57,11 @@ export default function BudgetControls({
   }`
 
   return (
-    <div className="relative overflow-hidden bg-white shadow-xl rounded-2xl">
+    <div className="relative overflow-hidden bg-primary-400 shadow-xl rounded-2xl">
       {/* Decorative background elements */}
+      <img src="/Union.png" alt="" className="absolute top-[-50px]" />
+      <img src="/Union3.png" alt="" className="absolute bottom-0 right-0" />
+    
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-4 left-6 w-2 h-2 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
         <div className="absolute top-12 right-8 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
@@ -61,44 +72,48 @@ export default function BudgetControls({
 
       <div className="p-6 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 mt-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl flex items-center justify-center shadow-lg">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Budget Tracker</h2>
+            <h2 className="text-3xl font-bold text-white">Budget Tracker</h2>
           </div>
-    
         </div>
 
         {/* Budget Display */}
         <div className="flex items-baseline justify-between mb-4">
           <div className="flex items-baseline gap-2">
-            <PoundSterling className="w-6 h-6 text-gray-900 mb-1" />
-            <span className="text-3xl font-bold text-gray-900">{safeDisplayValues.totalSpent}</span>
-            <span className="text-gray-600 font-medium">of £{tempBudget}</span>
+            <PoundSterling className="w-6 h-6 text-white mb-1" />
+            <span className="text-3xl font-bold text-white">{safeDisplayValues.totalSpent}</span>
+            <span className="text-white/90 font-medium">of £{tempBudget}</span>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-gray-800">£{safeDisplayValues.remaining}</div>
-            <div className="text-sm text-gray-600">remaining</div>
+            <div className={`text-xl font-extrabold ${isOverBudget ? 'text-red-600' : 'text-white'}`}>
+              {isOverBudget ? `-£${overBudgetAmount}` : `£${Math.abs(safeDisplayValues.remaining)}`}
+            </div>
+            <div className={`text-sm ${isOverBudget ? 'text-red-500' : 'text-white'}`}>
+              {isOverBudget ? 'over budget' : 'remaining'}
+            </div>
           </div>
         </div>
 
         {/* Progress Bar */}
         <div className="space-y-3 mb-4">
           <div className="relative">
-            <div className="w-full bg-gray-100 rounded-full h-4 shadow-inner">
+            <div className="w-full bg-teal-100 rounded-full h-4 shadow-inner">
               <div
-                className="bg-primary-500 h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                style={{ width: `${safeDisplayValues.budgetPercentage}%` }}
+                className={`${progressBarColor} h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden`}
+                style={{ width: `${displayPercentage}%` }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
               </div>
             </div>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600 font-medium">{safeDisplayValues.budgetPercentage}% used</span>
-      
+            <span className={`text-sm font-medium ${isOverBudget ? 'text-red-600' : 'text-white/95'}`}>
+              {safeDisplayValues.budgetPercentage}% used
+            </span>
           </div>
         </div>
 

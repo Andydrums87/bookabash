@@ -1,7 +1,6 @@
 "use client"
 import React, { useState, useRef } from 'react';
 import {
-
   MapPin,
   Sparkles,
   Search,
@@ -16,10 +15,12 @@ import {
   Star,
   Check,
   Calendar as CalendarIcon,
+  PoundSterling,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 import Image from "next/image"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { Calendar } from '@/components/ui/calendar';
@@ -36,7 +37,7 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
     duration: 2,
     guestCount: "",
     location: "",
-    budget: 300,
+    budget: 600, // Updated default budget
     theme: "",
     specificTime: "",
     needsSpecificTime: false,
@@ -112,6 +113,13 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
       setShowLoader(false)
       setLoaderProgress(0)
     }
+  }
+
+  // Budget category helper
+  const getBudgetCategory = (budget) => {
+    if (budget < 500) return "Essential"
+    if (budget < 700) return "Complete"
+    return "Premium"
   }
 
   // Scroll functions
@@ -463,6 +471,51 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                     
                       </div>
                     </div>
+
+                    {/* Budget Slider */}
+                    <div className="group">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <PoundSterling className="w-4 h-4 text-primary-500" />
+                        What's your budget?
+                      </label>
+                      
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-primary-500 mb-2">
+                            £{formData.budget}
+                          </div>
+                          <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold border-0 ${
+                            getBudgetCategory(formData.budget) === "Essential"
+                              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+                              : getBudgetCategory(formData.budget) === "Complete"
+                                ? "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white"
+                                : "bg-gradient-to-r from-purple-500 to-indigo-500 text-white"
+                          }`}>
+                            {getBudgetCategory(formData.budget)} Party
+                          </div>
+                        </div>
+                        
+                        <Slider
+                          value={[formData.budget]}
+                          onValueChange={(value) => handleFieldChange("budget", value[0])}
+                          max={1000}
+                          min={300}
+                          step={50}
+                          className="w-full [&>span:first-child]:h-4 [&>span:first-child>span]:h-4 [&>span:first-child>span]:bg-gradient-to-r [&>span:first-child>span]:from-[hsl(var(--primary-500))] [&>span:first-child>span]:to-[hsl(var(--primary-600))] [&>span:first-child]:bg-gradient-to-r [&>span:first-child]:from-[hsl(var(--primary-100))] [&>span:first-child]:to-[hsl(var(--primary-200))] [&>span:first-child]:border [&>span:first-child]:border-[hsl(var(--primary-200))] [&>span:first-child]:shadow-inner"
+                        />
+                        
+                        <div className="flex justify-between text-xs text-gray-500 font-medium">
+                          <span>£300</span>
+                          <span>£1000+</span>
+                        </div>
+
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600">
+                            This helps us find the perfect suppliers for your celebration!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -781,19 +834,6 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                   {currentStep > 0 ? 'Back' : ''}
                 </button>
 
-                {/* <div className="flex items-center gap-2">
-                  {steps.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`
-                        w-2 h-2 rounded-full transition-all duration-300
-                        ${index === currentStep ? 'bg-primary-500 w-6' : 
-                          index < currentStep ? 'bg-primary-700' : 'bg-gray-300'}
-                      `}
-                    />
-                  ))}
-                </div> */}
-
                 <button
                   type="button"
                   onClick={currentStep === steps.length - 1 ? handleSubmit : nextStep}
@@ -848,6 +888,13 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                       <MapPin className="w-4 h-4 text-gray-400" />
                       <span className="font-medium">Location:</span>
                       <span>{formData.location}</span>
+                    </div>
+                  )}
+                  {formData.budget && (
+                    <div className="flex items-center gap-2">
+                      <PoundSterling className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium">Budget:</span>
+                      <span>£{formData.budget}</span>
                     </div>
                   )}
                   {formData.timeSlot && (

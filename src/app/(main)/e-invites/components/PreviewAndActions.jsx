@@ -112,51 +112,7 @@ const PreviewAndActions = ({
         </CardContent>
       </Card>
 
-      {/* Theme Info Card - More compact on mobile */}
-      <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-4 sm:p-6">
-          <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-3">
-            {selectedAiOption 
-              ? `AI Generated Invite - Option ${selectedAiOption.index}`
-              : "Ready for AI Generation"}
-          </h3>
-          
-          {selectedAiOption ? (
-            <div className="relative w-full h-24 sm:h-32 lg:h-24 mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
-              <img
-                src={selectedAiOption.imageUrl || "/placeholder.svg"}
-                alt="Selected AI Option"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/20"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
-                🤖 AI Generated
-              </div>
-            </div>
-          ) : (
-            <div className="relative w-full h-24 sm:h-32 lg:h-24 mb-4 rounded-lg overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
-              <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
-                🎨 Generate AI Options Above
-              </div>
-            </div>
-          )}
-          
-          <div className="text-xs text-gray-500">
-            {selectedAiOption 
-              ? "Your AI-generated invite will be automatically saved and can be used on your dashboard."
-              : "Fill in party details and generate AI options to create your invitation."}
-          </div>
-          
-          {hasUnsavedChanges && (
-            <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] border border-[hsl(var(--primary-200))] rounded-lg">
-              <div className="flex items-center text-[hsl(var(--primary-700))]">
-                <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="text-xs font-bold">You have unsaved changes. Don't forget to save!</span>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    
     </div>
   )
 }

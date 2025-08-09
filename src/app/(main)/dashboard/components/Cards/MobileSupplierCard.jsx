@@ -2,7 +2,7 @@
 // This shows the supplier info but transforms the card styling to indicate waiting
 
 "use client"
-
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,6 +11,87 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Mail, Gift, X, Sparkles, Clock, Plus, CheckCircle2 } from "lucide-react"
 import SupplierResponseTimer from "../../DatabaseDashboard/components/SupplierResponseTime"
+// Add this component at the top of your file or import it
+function ContactRevealSection({ supplier, supplierName }) {
+  const [isRevealed, setIsRevealed] = useState(false)
+  const owner = supplier?.originalSupplier?.owner
+  console.log(owner)
+
+  if (!isRevealed) {
+    return (
+      <div className="bg-white/70 rounded-lg p-4 mb-4 border border-emerald-200">
+        <h4 className="text-sm font-semibold text-emerald-800 mb-3 text-center flex items-center justify-center gap-2">
+          <span>📞</span> Contact Information
+        </h4>
+        
+        <div className="text-center">
+          <div className="mb-3">
+            <p className="text-sm text-gray-600 mb-2">
+              {supplierName} is ready to discuss your party details
+            </p>
+            <div className="flex justify-center gap-4 text-xs text-gray-500">
+              {owner?.email && <span>📧 Email available</span>}
+              {owner?.phone && <span>📱 Phone available</span>}
+            </div>
+          </div>
+          
+          <Button
+            onClick={() => setIsRevealed(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-6 py-2"
+            size="sm"
+          >
+            <span className="mr-2">🔓</span>
+            Reveal Contact Details
+          </Button>
+        </div>
+        
+        <div className="mt-3 pt-3 border-t border-emerald-200">
+          <p className="text-xs text-emerald-700 text-center">
+            💡 They'll contact you within 24 hours to discuss final details
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white/70 rounded-lg p-4 mb-4 border border-emerald-200">
+      <h4 className="text-sm font-semibold text-emerald-800 mb-3 text-center flex items-center justify-center gap-2">
+        <span>📞</span> Contact Information
+      </h4>
+      <div className="space-y-2">
+        {supplier.email && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600 font-medium">Email:</span>
+            <a 
+              href={`mailto:${supplier.email}`}
+              className="text-sm font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+            >
+              {supplier.email}
+            </a>
+          </div>
+        )}
+        {supplier.phone && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600 font-medium">Phone:</span>
+            <a 
+              href={`tel:${supplier.phone}`}
+              className="text-sm font-medium text-emerald-700 hover:text-emerald-800 hover:underline"
+            >
+              {supplier.phone}
+            </a>
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-3 pt-3 border-t border-emerald-200">
+        <p className="text-xs text-emerald-700 text-center">
+          💡 They'll contact you within 24 hours to discuss final details
+        </p>
+      </div>
+    </div>
+  )
+}
 
 export default function SupplierCard({
   type,
@@ -73,6 +154,7 @@ export default function SupplierCard({
   const supplierState = getSupplierState()
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
 
+
   // Handle empty supplier slot - same as before
   if (supplierState === "empty") {
     if (isPaymentConfirmed) {
@@ -133,6 +215,13 @@ export default function SupplierCard({
           </p>
         </div>
       </Card>
+    )
+  }
+  if (supplierState === "payment_confirmed") {
+    return (
+    <div className='bg-red-200 h-screen'>
+      <p>Hello</p>
+    </div>
     )
   }
 

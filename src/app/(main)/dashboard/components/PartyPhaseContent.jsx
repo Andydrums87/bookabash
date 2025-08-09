@@ -41,6 +41,20 @@ export default function PartyPhaseContent({
           partyData={partyData}
           paymentDetails={paymentDetails}
         />
+           {/* While You Wait Section */}
+           <WhilstYouWaitSection 
+          registry={registry}
+          registryItems={registryItems}
+          partyTheme={partyTheme?.name?.toLowerCase()}
+          childAge={childAge || 6}
+          onCreateRegistry={onCreateRegistry}
+          onAddItem={onAddItem}
+          registryLoading={registryLoading}
+          hasCreatedInvites={hasCreatedInvites}
+        partyDetails={partyDetails}
+        partyId={partyDetails?.id}
+          onCreateInvites={onCreateInvites}
+        />
       </div>
     )
   }
@@ -94,6 +108,20 @@ export default function PartyPhaseContent({
           timeRemaining={24}
           onPaymentReady={onPaymentReady}
           showPaymentCTA={true} // Ready for payment!
+        />
+           {/* While You Wait Section */}
+           <WhilstYouWaitSection 
+          registry={registry}
+          registryItems={registryItems}
+          partyTheme={partyTheme?.name?.toLowerCase()}
+          childAge={childAge || 6}
+          onCreateRegistry={onCreateRegistry}
+          onAddItem={onAddItem}
+          registryLoading={registryLoading}
+          hasCreatedInvites={hasCreatedInvites}
+        partyDetails={partyDetails}
+        partyId={partyDetails?.id}
+          onCreateInvites={onCreateInvites}
         />
       </div>
     )

@@ -67,7 +67,7 @@ const AIOnlyThemeSelection = ({
             className={`w-full py-4 text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ${
               isGeneratingAI
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-[hsl(var(--primary-600))] to-[hsl(var(--primary-700))] hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))] text-white'
+                : 'bg-primary-500 hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))] text-white'
             }`}
           >
             {isGeneratingAI ? (

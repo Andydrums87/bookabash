@@ -3,17 +3,20 @@ import { Card } from "@/components/ui/card"
 import BudgetControls from "@/components/budget-controls"
 import CountdownWidget from "../../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../../components/ui/PartyExcitementMeter"
+import ReferFriend from "@/components/ReferFriend"
+
 
 export default function Sidebar({
   partyData,
   totalCost,
   isPaymentConfirmed,
+  partyDate,
   budgetControlProps
 }) {
   if (!partyData) return null
 
   return (
-    <aside className="hidden lg:block space-y-6">
+    <aside className="lg:block space-y-6">
       {/* Budget Controls - only show if not payment confirmed */}
       {!isPaymentConfirmed && budgetControlProps && (
         <Card className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
@@ -21,17 +24,11 @@ export default function Sidebar({
         </Card>
       )}
       
-      {/* Countdown Widget */}
-      {partyData.date && (
-        <CountdownWidget partyDate={partyData.date} />
-      )}
+<CountdownWidget partyDate={partyDate}/>
+<ReferFriend />
       
-      {/* Party Excitement Meter */}
-      <PartyExcitementMeter 
-        suppliers={createSuppliersObject(partyData)}
-        totalCost={totalCost}
-        budget={budgetControlProps?.tempBudget || 0}
-      />
+    
+         
     </aside>
   )
 }

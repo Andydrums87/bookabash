@@ -3,6 +3,7 @@ import { useState } from 'react'
 import SupplierCard from "./Cards/SupplierCard"
 import AwaitingResponseSupplierCard from "../DatabaseDashboard/components/AwaitingRepsonseSupplierCard"
 import MobileSingleScrollSuppliers from "./MobileSingleScrollSuppliers"
+
 import { useSupplierManager } from '../hooks/useSupplierManager'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
@@ -67,7 +68,7 @@ export default function SupplierGrid({
       <div className={`hidden md:grid gap-6 ${
         hasEnquiriesPending 
           ? 'md:grid-cols-2 md:h-[30%] lg:grid-cols-2 xl:grid-cols-3 max-w-4xl mx-auto' 
-          : 'md:grid-cols-3'
+          : 'md:grid-cols-2'
       }`}>
         {Object.entries(suppliers).map(([type, supplier]) => (
           getEnquiryStatus(type) === 'pending' ? (
@@ -97,6 +98,8 @@ export default function SupplierGrid({
               isPaymentConfirmed={isPaymentConfirmed}
               enquiries={enquiries}
             />
+          
+
           )
         ))}
       </div>

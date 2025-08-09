@@ -12,8 +12,9 @@ import HowItWorks from "@/components/Home/HowItWorks"
 import CustomerStories from "@/components/Home/CustomerStories"
 import FinalCTA from "@/components/Home/FinalCTA"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+
 import Image from "next/image"
+import FeaturesGrid from "@/components/Home/FeaturesGrid"
 
 export default function HomePage() {
   const router = useRouter()
@@ -58,6 +59,10 @@ export default function HomePage() {
 
   const mapThemeValue = (formTheme) => {
     const themeMapping = {
+      "no-theme": "no-theme",
+      "simple": "no-theme",
+      "general": "no-theme",
+      "basic": "no-theme",
       spiderman: "spiderman",
       "spider-man": "spiderman",
       "taylor-swift": "taylor-swift",
@@ -160,7 +165,7 @@ const handleSearch = async (e) => {
       postcode: formData.postcode, // Save the actual postcode
       childName: formData.childName || "Your Child",
       childAge: formData.childAge,
-      budget: 500,
+
       
       // NEW: Time slot fields
       timeSlot: formData.timeSlot || "afternoon", // "morning" or "afternoon"
@@ -256,9 +261,11 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
         validateAndFormatPostcode={validateAndFormatPostcode}
         isSubmitting={isSubmitting}
       />
-
-      {/* <TrustIndicators /> */}
+<TrustIndicators />
+  
       <CategoryGrid />
+      <FeaturesGrid />
+
       <HowItWorks />
       <CustomerStories />
       <FinalCTA />

@@ -13,6 +13,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
+
 export default function Hero({ handleSearch, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
   const router = useRouter()
   const [showFloatingCTA, setShowFloatingCTA] = useState(false)
@@ -107,9 +108,10 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
             ${!formData.date ? 'border-red-300' : ''}
           `}
         >
-          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5  text-gray-400" />
           {formData.date && !isNaN(new Date(formData.date)) ? (
-            format(new Date(formData.date), "EEEE, MMMM d, yyyy")
+            <p className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</p>
+    
           ) : (
             <span className="ml-5">Select event date</span>
           )}
@@ -330,7 +332,7 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
               </div>
             </div>
           </div>
-          
+ 
           {/* Custom animations */}
           <style jsx>{`
             @keyframes fade-in {

@@ -77,17 +77,25 @@ const UniversalModal = ({
           </div>
         )}
 
-        {/* Close button */}
-        {showCloseButton && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors z-20"
-            aria-label="Close modal"
-          >
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        )}
-
+      
+      {/* Close button */}
+      <div className="relative">
+{showCloseButton && (
+  <button
+    onClick={onClose}
+    className={`absolute cursor-pointer top-4 right-4 p-1 rounded-full transition-colors z-20 ${
+      theme === 'fun' 
+        ? 'bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/30' 
+        : 'hover:bg-gray-100'
+    }`}
+    aria-label="Close modal"
+  >
+    <X className={`w-4 h-4 ${
+      theme === 'fun' ? 'text-white' : 'text-gray-500'
+    }`} />
+  </button>
+)}
+      </div>
         <div className="relative z-10 h-full flex flex-col">
           {children}
         </div>
@@ -223,13 +231,14 @@ const ConfirmationModal = ({
         </div>
         <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
         <p className="text-gray-600 mb-6">{message}</p>
-        <div className="flex gap-3">
+        <div className="flex gap-3 ">
           <Button
             variant="outline"
             onClick={onClose}
-            className="flex-1"
+            className="flex-10"
             disabled={isLoading}
           >
+          
             {cancelText}
           </Button>
           <Button

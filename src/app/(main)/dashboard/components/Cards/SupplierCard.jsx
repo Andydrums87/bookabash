@@ -1,14 +1,14 @@
 // Updated SupplierCard component with response timer integration
 
 "use client"
-
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Gift, X, Sparkles, Clock, Plus, CheckCircle2 } from "lucide-react"
+import { Gift, X, Sparkles, Clock, Plus, CheckCircle2, Mail, Phone } from "lucide-react"
 
 
 export default function SupplierCard({
@@ -74,7 +74,148 @@ export default function SupplierCard({
 
   const supplierState = getSupplierState()
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
+// PAYMENT CONFIRMED state with contact info
+if (supplierState === "payment_confirmed") {
+  return (
+    <Card className={`overflow-hidden gap-0 rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
+      {/* Large background image with overlay */}
+      <div className="relative h-64 w-full">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src={supplier.image || supplier.imageUrl || `/placeholder.svg`}
+            alt={supplier.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 1024px) 50vw, 33vw"
+          />
+        </div>
 
+
+        {/* Top badges */}
+        <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+          <div className="flex items-center gap-3">
+            <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm">
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </Badge>
+         
+          </div>
+     
+        </div>
+
+        {/* Bottom content overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+          <div className="text-white">
+            <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
+            <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
+            
+            {/* Price and add-ons row */}
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-black text-white drop-shadow-lg">£{supplier.price}</span>
+              {supplierAddons.length > 0 && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
+                  <span className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Gift className="w-4 h-4" />
+                    {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
+                    <span className="ml-2">+£{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Confirmed Details Section */}
+      <div className=" border-t-2 border-emerald-400">
+        <div className="p-4">
+          {/* Status header */}
+          <div className="text-center mb-4">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="w-8 h-8  rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+              </div>
+              <Badge className="bg-emerald-500 text-white text-sm">Confirmed & Paid</Badge>
+            </div>
+            
+            <p className="text-sm text-emerald-800 font-medium">
+              <span className="font-bold">{supplier.name}</span> is booked and ready for your party! 🎉
+            </p>
+          </div>
+
+          {/* Contact Buttons */}
+          {(() => {
+            const owner = supplier?.originalSupplier?.owner;
+            const formatPhone = (phone) => {
+              if (!phone) return null;
+              return phone.replace(/\D/g, '');
+            };
+
+            if (owner && (owner.email || owner.phone)) {
+              return (
+                <div className="mb-4">
+                  <p className="text-center text-sm text-emerald-800 font-medium mb-3">
+                    📞 Contact {supplier.name} to arrange final details:
+                  </p>
+                  <div className="flex gap-3">
+                    {owner.email && (
+                      <a
+                        href={`mailto:${owner.email}?subject=Party Booking Details - ${supplier.name}&body=Hi, I've just paid for your services through PartySnap. Could we please arrange the final details for my party?`}
+                        className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </a>
+                    )}
+                    {owner.phone && (
+                      <a
+                        href={`tel:${formatPhone(owner.phone)}`}
+                        className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                      >
+                        <Phone className="w-4 h-4" />
+                        Call
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center mb-4">
+                <p className="text-yellow-800 text-sm">
+                  Contact details will be provided via email confirmation
+                </p>
+              </div>
+            );
+          })()}
+
+          {/* Add-ons if present */}
+          {supplierAddons.length > 0 && (
+            <div className="bg-white/60 rounded-lg p-3 mb-4">
+              <h4 className="text-xs font-semibold text-gray-700 mb-2 text-center">Included Add-ons ({supplierAddons.length}):</h4>
+              <div className="space-y-1">
+                {supplierAddons.map((addon) => (
+                  <div key={addon.id} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600 truncate">{addon.name}</span>
+                    <span className="font-medium text-emerald-700">£{addon.price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Booking confirmed message */}
+          <div className="bg-emerald-100 border border-emerald-300 rounded-lg p-3 text-center">
+            <p className="text-sm text-emerald-800 font-medium">
+              ✨ Deposit paid • Booking secured • Party guaranteed! ✨
+            </p>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
   // Handle empty supplier slot
   if (supplierState === "empty") {
     if (isPaymentConfirmed) {

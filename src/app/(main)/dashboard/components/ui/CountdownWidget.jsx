@@ -63,7 +63,7 @@ export default function CountdownWidget({ partyDate = "2025-06-14T14:00:00" }) {
               <Watch className="w- h-6 text-white" />
               </div>
       
-              <h3 className="text-xl font-bold text-gray-800">Party Countdown</h3>
+              <h3 className="text-3xl font-bold text-white">Party Countdown</h3>
   
 
           <img src="/Vector3.svg" alt="" className="absolute bottom-[-12px] left-0 z-10 w-[50%]" />

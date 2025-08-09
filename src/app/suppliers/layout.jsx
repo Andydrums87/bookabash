@@ -75,8 +75,8 @@ export default function SupplierLayout({ children }) {
                   className="md:h-10 h-8 w-auto" 
                 />
               </div>
-              <div className="flex-1 max-w-screen overflow-x-hidden">
-                <nav className="grid pt-5 items-start px-2 text-xs md:text-sm font-medium lg:px-4">
+              <div className="flex-1 max-w-screen overflow-x-hidden overflow-y-scroll">
+                <nav className="grid pt-5 items-start px-2 text-xs md:text-sm min-h-screen font-medium lg:px-4 overflow-scroll">
                   <NavItems />
                 </nav>
               </div>
@@ -113,7 +113,7 @@ export default function SupplierLayout({ children }) {
         />
       </div>
       
-      <nav className="flex-1 px-2 max-w-screen overflow-hidden">
+      <nav className="flex-1 px-2 max-w-screen overflow-scroll">
     
         <NavItems isMobile onNavClick={handleNavClick} />
       </nav>

@@ -427,7 +427,7 @@ const filteredSuppliers = suppliers.filter((supplier) => {
     });
     
     // Add matching supplier names
-    backendSuppliers.forEach(supplier => {
+    suppliers.forEach(supplier => {
       if (supplier.name.toLowerCase().includes(query) && !suggestions.includes(supplier.name)) {
         suggestions.push(supplier.name);
       }

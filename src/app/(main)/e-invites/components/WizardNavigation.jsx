@@ -102,7 +102,7 @@ function WizardNavigation({
             <Button
               onClick={handleNextClick}
               disabled={isNextDisabled()}
-              className={`bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl)var(--primary-700)] text-white hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))]${
+              className={`bg-primary-500 text-white hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))]${
                 isSaving ? 'cursor-not-allowed' : ''
               }`}
             >

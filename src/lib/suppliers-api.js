@@ -158,54 +158,84 @@ export const getAllSuppliersForSitemap = cache(async () => {
 });
 
 /* ------------------------------ transformer ------------------------------ */
-function transformSupplierRecord(record) {
-  const d = record.data || {};
+// lib/suppliers-api.ts (or wherever transform lives)
 
-  const name =
-    record.business_name ||
-    d.businessName ||
-    d.name ||
-    record.json_name ||
-    "Unnamed Supplier";
+function toNum(n, fallback = null) {
+  if (n === null || n === undefined || n === "") return fallback;
+  const v = Number(n);
+  return Number.isFinite(v) ? v : fallback;
+}
 
-  const image =
-    record.json_image ||
-    record.json_cover ||
-    d.coverPhoto ||
-    d.image ||
-    "/placeholder.jpg"; // ensure this file exists in /public
+export function transformSupplierRecord(row) {
+  const d = row?.data ?? {};
+
+  const id = row.id;
+  const name = row.json_name ?? d.name ?? row.business_name ?? "Supplier";
+  const slug = row.business_slug ?? d.slug ?? id;
+  const category = row.json_category ?? d.category ?? row.business_type ?? "Entertainment";
+  const location = row.json_location ?? d.location ?? "London";
+  const description = row.json_desc ?? d.businessDescription ?? d.description ?? "";
+  const image = row.json_image ?? d.image ?? "/placeholder.jpg";
+  const coverPhoto = row.json_cover ?? d.coverPhoto ?? image;
+  const priceFrom = toNum(row.json_price_from ?? d.priceFrom);
+  const priceUnit = d.priceUnit ?? "per event";
+  const rating = toNum(row.json_rating ?? d.rating);
+  const reviewCount = toNum(d.reviewCount, 0);
+
+  const packages = Array.isArray(d.packages) ? d.packages : [];
+  const availability = d.availability ?? null;
+  const unavailableDates = Array.isArray(d.unavailableDates) ? d.unavailableDates : [];
+  const busyDates = Array.isArray(d.busyDates) ? d.busyDates : [];
+  const availabilityNotes = d.availabilityNotes ?? null;
+  const advanceBookingDays = toNum(d.advanceBookingDays);
+  const maxBookingDays = toNum(d.maxBookingDays);
+
+  const portfolioImages = Array.isArray(d.portfolioImages) ? d.portfolioImages : [];
+  const portfolioVideos = Array.isArray(d.portfolioVideos) ? d.portfolioVideos : [];
+  const badges = Array.isArray(d.badges) ? d.badges : [];
+
+  const serviceDetails = (d.serviceDetails && typeof d.serviceDetails === "object") ? d.serviceDetails : {};
+  const stats = (d.stats && typeof d.stats === "object") ? d.stats : undefined;
 
   return {
-    id: record.id,
-    slug: record.business_slug || record.id,
+    id,
+    slug,
     name,
-    description:
-      record.json_desc || d.businessDescription || d.description || "Professional party supplier",
-    category: record.json_category || d.category || "Entertainment",
-    subcategory: d.subcategory || null,
-    location: record.json_location || d.location || "London",
-    priceFrom: toNumber(record.json_price_from ?? d.priceFrom ?? d.price) || 100,
-    priceUnit: d.priceUnit || "per event",
-    rating: toNumber(record.json_rating ?? d.rating) || 4.5,
-    reviewCount: toNumber(d.reviewCount) || 0,
-    themes: Array.isArray(d.themes) ? d.themes : [],
     image,
-    coverPhoto: record.json_cover || d.coverPhoto || image,
-    badges: Array.isArray(d.badges) ? d.badges : [],
-    availability: d.availability || "Available",
-    bookingCount: toNumber(d.bookingCount) || 0,
-    packages: d.packages || [],
-    portfolioImages: d.portfolioImages || [],
-    portfolioVideos: d.portfolioVideos || [],
+    coverPhoto,
+    description,
+    category,
+    subcategory: d.subcategory ?? undefined,
+    location,
+    priceFrom,
+    priceUnit,
+    rating,
+    reviewCount,
+    badges,
+
+    availability,
+    unavailableDates,
+    busyDates,
+    availabilityNotes,
+    advanceBookingDays,
+    maxBookingDays,
+
+    packages,
+    portfolioImages,
+    portfolioVideos,
+
+    serviceDetails,
+    stats,
+    verified: d.verified ?? true,
+    fastResponder: d.fastResponder ?? true,
+    responseTime: d.responseTime ?? "Within 24 hours",
+
+    ownerName: d.ownerName,
     owner: d.owner,
-    verified: d.verified !== false,
-    fastResponder: d.fastResponder !== false,
-    responseTime: d.responseTime || "Within 24 hours",
-    phone: d.phone || d?.owner?.phone || "",
-    email: d.email || d?.owner?.email || "",
-    activeSince: d.activeSince || "",
   };
 }
+
+
 
 /* ------------------------------ mock fallback ------------------------------ */
 function getMockSuppliers() {

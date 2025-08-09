@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input"
 import { ChevronDown, Search, X } from "lucide-react"
 
 const eventTypes = [
+
   // Popular themes
+  { value: "no-theme", label: "No theme - Keep it simple!", category: "Popular"   },
   { value: "princess", label: "Princess", category: "Popular" },
   { value: "superhero", label: "Superhero", category: "Popular" },
   { value: "unicorn", label: "Unicorn Magic", category: "Popular" },

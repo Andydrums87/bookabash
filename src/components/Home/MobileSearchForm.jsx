@@ -17,7 +17,7 @@ export default function MobileSearchForm({
   setPostcodeValid,
   validateAndFormatPostcode,
   isSubmitting,
-}) {
+}) {  
   
   // Form validation function
   const isFormValid = () => {
@@ -179,7 +179,7 @@ export default function MobileSearchForm({
       </div>
     </div>
     
-    {/* Postcode - STANDARDIZED */}
+    {/* Postcode - FIXED VALIDATION */}
     <div className="space-y-3">
       <label className="block text-sm font-semibold text-gray-700">
         Postcode <span className="text-red-500">*</span>
@@ -204,7 +204,7 @@ export default function MobileSearchForm({
           placeholder="Enter your postcode"
           className={`
             bg-gray-50 border-gray-200 focus:border-primary-400 focus:ring-primary-400/20 rounded-xl h-12 pl-10 pr-10 text-base
-            ${(!postcodeValid && formData.postcode) || (!formData.postcode) ? 'border-red-300 focus:border-red-500' : ''}
+            ${formData.postcode && !postcodeValid ? 'border-red-300 focus:border-red-500' : ''}
           `}
           required
         />
@@ -215,19 +215,15 @@ export default function MobileSearchForm({
             <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
           ))}
       </div>
-      {!postcodeValid && formData.postcode && (
+      
+      {/* Only show validation messages when there's actually text in the field */}
+      {formData.postcode && !postcodeValid && (
         <p className="text-xs text-red-600 flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           Please enter a valid UK postcode
         </p>
       )}
-      {!formData.postcode && (
-        <p className="text-xs text-red-600 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          Postcode is required
-        </p>
-      )}
-      {postcodeValid && formData.postcode && (
+      {formData.postcode && postcodeValid && (
         <p className="text-xs text-green-600 flex items-center gap-1">
           <Check className="w-3 h-3" />
           Valid postcode

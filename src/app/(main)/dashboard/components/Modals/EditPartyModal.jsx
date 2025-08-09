@@ -1,14 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -18,12 +10,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Clock, Sun, Sunset, MapPin, Users, PoundSterling, FileText, User, Cake } from 'lucide-react'
+import { CalendarIcon, Clock, Sun, Sunset, MapPin, Users, PoundSterling, FileText, User, Cake, Sparkles } from 'lucide-react'
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 
 export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }) {
   // Safely initialize state with proper date handling
   const [childName, setChildName] = useState(partyDetails?.childName || "")
   const [childAge, setChildAge] = useState(partyDetails?.childAge || "")
+
+ 
 
   const initializeNames = () => {
     // Priority 1: Use firstName/lastName if available
@@ -160,20 +155,24 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className=" max-h-[90vh] w-full flex flex-col p-0 gap-0 bg-white border border-gray-200 shadow-xl">
-        
-        <DialogHeader className="text-center pb-6 p-2">
-          <DialogTitle className="text-xl sm:text-2xl font-black text-primary-600 leading-tight">
-            🎉 Edit Party Details!<br className="sm:hidden" /> Let's Update Everything...
-          </DialogTitle>
-          <DialogDescription className="text-sm text-gray-600 px-2 mt-2">
-            Make changes to your party details below 🎈
-          </DialogDescription>
-        </DialogHeader>
+    <UniversalModal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      size="lg" 
+      theme="fun"
+      showCloseButton={true}
+    >
+      {/* Header */}
+      <ModalHeader 
+        title="Edit Party Details!"
+        subtitle="Let's Update Everything... 🎈"
+        theme="fun"
+        icon={<Sparkles className="w-6 h-6 text-white" />}
+      />
 
-        {/* Scrollable Content */}
-        <div className="overflow-y-auto flex-1 space-y-6">
+      {/* Scrollable Content */}
+      <ModalContent className="overflow-y-auto max-h-[60vh]">
+        <div className="space-y-6">
           
           {/* Birthday Star Section */}
           <div className="space-y-4">
@@ -371,7 +370,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
             </h3>
             
             <div className="space-y-4">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="location" className="text-sm font-medium text-gray-700">
                   Venue or Address
                 </Label>
@@ -385,7 +384,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
                     placeholder="e.g., Village Hall, Home address"
                   />
                 </div>
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label htmlFor="postcode" className="text-sm font-medium text-gray-700">
@@ -418,7 +417,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                     <Select value={guestCount} onValueChange={setGuestCount}>
-                      <SelectTrigger className="pl-10 bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-12 text-base">
+                      <SelectTrigger className="pl-10 w-full py-5 bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl text-base">
                         <SelectValue placeholder="How many guests?" />
                       </SelectTrigger>
                       <SelectContent>
@@ -471,27 +470,28 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
             </div>
           </div>
         </div>
+      </ModalContent>
 
-        <DialogFooter className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="w-full sm:w-auto border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-medium h-12 px-6 rounded-full"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!firstName.trim() || !childAge}
-              className="w-full sm:w-auto bg-primary-500 hover:bg-primary-600 text-white font-bold text-base rounded-full h-12 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              Save {firstName.trim() ? `${firstName.trim()}'s` : "Party"} Details! 🎉
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {/* Footer */}
+      <ModalFooter theme="fun">
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="w-full sm:w-auto border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-medium h-12 px-6 rounded-full"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!firstName.trim() || !childAge}
+            className="w-full sm:w-auto bg-primary-500 hover:bg-primary-600 text-white font-bold text-base rounded-full h-12 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            Save {firstName.trim() ? `${firstName.trim()}'s` : "Party"} Details! 🎉
+          </Button>
+        </div>
+      </ModalFooter>
+    </UniversalModal>
   )
 }

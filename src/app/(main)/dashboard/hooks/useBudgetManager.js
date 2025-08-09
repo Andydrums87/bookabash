@@ -32,25 +32,25 @@ export function useBudgetManager(totalCost = 0, isUpdating, setIsUpdating) {
 
   }, [hasInitialized])
 
-  // Handle budget slider changes with debouncing
-  useEffect(() => {
-    if (!hasInitialized || isUpdating) return
+  // // Handle budget slider changes with debouncing
+  // useEffect(() => {
+  //   if (!hasInitialized || isUpdating) return
     
-    // Don't update if this budget was already processed
-    if (tempBudget === lastProcessedBudget) {
-      return
-    }
+  //   // Don't update if this budget was already processed
+  //   if (tempBudget === lastProcessedBudget) {
+  //     return
+  //   }
     
-    console.log('🎚️ Budget slider changed to:', tempBudget)
+  //   console.log('🎚️ Budget slider changed to:', tempBudget)
     
-    const timeoutId = setTimeout(() => {
-      console.log('🚀 Updating suppliers for budget:', tempBudget)
-      setLastProcessedBudget(tempBudget) // Mark as processed
-      updateSuppliersForBudget(tempBudget)
-    }, 2000)
+  //   const timeoutId = setTimeout(() => {
+  //     console.log('🚀 Updating suppliers for budget:', tempBudget)
+  //     setLastProcessedBudget(tempBudget) // Mark as processed
+  //     updateSuppliersForBudget(tempBudget)
+  //   }, 2000)
     
-    return () => clearTimeout(timeoutId)
-  }, [tempBudget, hasInitialized, isUpdating, lastProcessedBudget])
+  //   return () => clearTimeout(timeoutId)
+  // }, [tempBudget, hasInitialized, isUpdating, lastProcessedBudget])
 
   // Update suppliers for budget function
   const updateSuppliersForBudget = async (newBudget) => {

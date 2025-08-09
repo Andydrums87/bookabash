@@ -17,6 +17,7 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
 import EInvitesBanner from "../components/ui/EInvitesBanner"
 import PartyHeader from "../components/ui/PartyHeader"
+import CountdownWidget from "../components/ui/CountdownWidget"
 
 // Feature Components
 import ReplacementManager from './components/ReplacementManager'
@@ -24,6 +25,7 @@ import SupplierGrid from '../components/SupplierGrid'
 import PartyPhaseContent from '../components/PartyPhaseContent'
 import Sidebar from './components/Sidebar'
 import MobileBudgetBar from "../components/MobileBudgetBar"
+
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
@@ -201,9 +203,11 @@ console.log('🔍 DEBUG partyData.einvites:', JSON.stringify(partyData?.einvites
           {/* Sidebar */}
           <Sidebar
             partyData={partyData}
+            partyDate= {partyDetails?.date}
             totalCost={totalCost}
             isPaymentConfirmed={isPaymentConfirmed}
           />
+
         </div>
       </div>
 

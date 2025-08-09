@@ -110,7 +110,9 @@ export default function MobileSingleScrollSuppliers({
 }) {
   const [activeSection, setActiveSection] = useState(0);
 
-  // Check if we're in awaiting response phase
+
+
+
   const hasEnquiriesPending = enquiries.length > 0 && isSignedIn;
 
   // Filter suppliers based on phase (exclude einvites from main suppliers)
@@ -140,6 +142,8 @@ export default function MobileSingleScrollSuppliers({
     }
   };
 
+
+  
   // Function to scroll to individual party task cards
   const scrollToPartyTask = (cardId) => {
     const element = document.getElementById(cardId);
@@ -372,7 +376,7 @@ export default function MobileSingleScrollSuppliers({
                         getSupplierDisplayName={getSupplierDisplayName}
                         addons={addons}
                         handleRemoveAddon={handleRemoveAddon}
-                        enquiryStatus={getEnquiryStatus ? getEnquiryStatus(type) : null}
+                        enquiryStatus={getEnquiryStatus(type)}
                         enquirySentAt={getEnquiryTimestamp ? getEnquiryTimestamp(type) : null} 
                         isSignedIn={isSignedIn}
                         enquiries={enquiries}
