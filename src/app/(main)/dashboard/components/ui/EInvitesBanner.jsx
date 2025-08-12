@@ -1,30 +1,46 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Mail, Sparkles, ArrowRight, Clock } from "lucide-react"
+import { Mail, Sparkles, ArrowRight, Clock, X } from "lucide-react"
 
 export default function EInvitesBanner({ hasCreatedInvites = false, isBookingPending = true, onCreateInvites }) {
-  // Don't show if invites are already created or booking isn't pending
-  if (hasCreatedInvites || !isBookingPending) {
+  const [isVisible, setIsVisible] = useState(true)
+
+  // Don't show if invites are already created, booking isn't pending, or user has closed it
+  if (hasCreatedInvites || !isBookingPending || !isVisible) {
     return null
   }
 
+  const handleClose = () => {
+    setIsVisible(false)
+  }
+
   return (
-    <div className="relative w-full bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-xl shadow-sm overflow-hidden mb-6">
+    <div className="relative w-full bg-gradient-to-r from-teal-100 to-teal-200 border border-teal-400 rounded-xl shadow-sm overflow-hidden mb-6">
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        className="absolute top-2 right-2 z-20 p-1 rounded-full hover:bg-teal-200/50 transition-colors duration-200 group"
+        aria-label="Close banner"
+      >
+        <X className="w-4 h-4 text-teal-600 group-hover:text-teal-800" />
+      </button>
+
       {/* Subtle decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-2 left-6 w-1 h-1 bg-blue-300 rounded-full opacity-40"></div>
-        <div className="absolute top-2 right-8 w-1 h-1 bg-indigo-300 rounded-full opacity-50"></div>
-        <div className="absolute bottom-2 left-12 w-1 h-1 bg-purple-300 rounded-full opacity-40"></div>
-        <Sparkles className="absolute top-2 right-16 w-2 h-2 text-blue-300 opacity-40" />
-        <Sparkles className="absolute bottom-2 right-6 w-2 h-2 text-indigo-300 opacity-50" />
+        <div className="absolute top-2 left-6 w-1 h-1 bg-teal-300 rounded-full opacity-40"></div>
+        <div className="absolute top-2 right-8 w-1 h-1 bg-teal-300 rounded-full opacity-50"></div>
+        <div className="absolute bottom-2 left-12 w-1 h-1 bg-teal-300 rounded-full opacity-40"></div>
+        <Sparkles className="absolute top-2 right-16 w-2 h-2 text-teal-300 opacity-40" />
+        <Sparkles className="absolute bottom-2 right-6 w-2 h-2 text-teal-300 opacity-50" />
       </div>
 
-      <div className="relative z-10 px-3 py-3 md:px-6 md:py-4">
+      <div className="relative z-10 px-3 py-3 md:px-6 md:py-4 pr-8 md:pr-10">
         <div className="flex items-center gap-3 md:gap-4">
           {/* Smaller icon on mobile */}
           <div className="flex-shrink-0">
-            <div className="w-8 h-8 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 md:w-12 md:h-12 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg">
               <Mail className="w-4 h-4 md:w-6 md:h-6 text-white" />
             </div>
           </div>
@@ -35,7 +51,7 @@ export default function EInvitesBanner({ hasCreatedInvites = false, isBookingPen
               <h3 className="text-sm md:text-lg font-semibold text-gray-900 truncate">
                 Have you made your invites yet?
               </h3>
-              <div className="hidden md:flex items-center gap-1 text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+              <div className="hidden md:flex items-center gap-1 text-sm text-teal-600 bg-teal-100 px-2 py-1 rounded-full">
                 <Clock className="w-3 h-3" />
                 <span className="font-medium">Perfect timing!</span>
               </div>
@@ -51,7 +67,7 @@ export default function EInvitesBanner({ hasCreatedInvites = false, isBookingPen
             <Button
               onClick={onCreateInvites}
               size="sm"
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm px-3 md:px-4 py-2"
+              className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-xs md:text-sm px-3 md:px-4 py-2"
             >
               <span className="md:hidden">Create</span>
               <span className="hidden md:inline">Create Invites</span>
@@ -62,7 +78,7 @@ export default function EInvitesBanner({ hasCreatedInvites = false, isBookingPen
 
         {/* Mobile timing indicator */}
         <div className="md:hidden mt-2 flex items-center justify-center">
-          <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+          <div className="flex items-center gap-1 text-xs text-teal-600 bg-blue-100 px-2 py-1 rounded-full">
             <Clock className="w-3 h-3" />
             <span className="font-medium">Perfect timing!</span>
           </div>

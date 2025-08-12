@@ -258,17 +258,6 @@ const MobileBookingBar = ({
   const buttonState = getButtonState();
 
   const handleMainButtonClick = () => {
-    console.log('🔘 Mobile button clicked:', {
-      buttonState,
-      selectedDate,
-      isFromDashboard,
-      partyDate,
-      requiresDate: buttonState.requiresDate,
-      hasValidPartyPlan: hasValidPartyPlan ? hasValidPartyPlan() : 'No function',
-      selectedPackage: selectedPackage?.name,
-      supplier: supplier?.name,
-      supplierCategory: supplier?.category
-    });
     
     // NEW: Check for pending enquiries first
     if (hasEnquiriesPending && hasEnquiriesPending()) {
@@ -279,7 +268,7 @@ const MobileBookingBar = ({
     
     // For non-dashboard users, check if date selection is needed first
     if (!isFromDashboard && (buttonState.requiresDate || !selectedDate)) {
-      console.log('📅 Opening modal for date selection');
+   
       setIsModalOpen(true);
       return;
     }
@@ -287,20 +276,18 @@ const MobileBookingBar = ({
     // Close any open modals first
     setIsModalOpen(false);
     
-    // Call parent's handleAddToPlan function directly (like desktop does)
-    console.log('🚀 Calling parent handleAddToPlan directly');
-    console.log('📦 Package info being used:', packageInfo);
+ 
     
     // The parent's handleAddToPlan will handle date logic and addon checks
     onAddToPlan(); // Call without parameters - let parent handle everything
   };
 
   const handleAddToPlan = () => {
-    console.log('📱 Mobile handleAddToPlan called - calling parent directly');
+
     
     // NEW: Check for pending enquiries first (also in modal context)
     if (hasEnquiriesPending && hasEnquiriesPending()) {
-      console.log('🚫 Mobile modal: Showing pending enquiry modal');
+
       setIsModalOpen(false); // Close current modal
       onShowPendingEnquiryModal(); // Show pending enquiry modal
       return;
@@ -329,7 +316,7 @@ const MobileBookingBar = ({
       return null;
     }
     const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate);
-    console.log('✅ Displaying selected date:', dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
     return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 

@@ -41,41 +41,41 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       const unapprovedReplacements = replacements.filter(r => !approvedReplacementsRef.current.has(r.id))
       if (unapprovedReplacements.length > 0) {
         localStorage.setItem('pending_replacements', JSON.stringify(unapprovedReplacements))
-        console.log('💾 Saved replacements to localStorage:', unapprovedReplacements.length)
+  
       } else {
         localStorage.removeItem('pending_replacements')
-        console.log('🗑️ Cleared replacements from localStorage (all approved)')
+ 
       }
     } else {
       localStorage.removeItem('pending_replacements')
-      console.log('🗑️ Cleared replacements from localStorage (empty array)')
+ 
     }
   }, [replacements])
 
   // Process declined enquiries for replacements
   useEffect(() => {
     if (enquiries.length > 0 && processingApprovalsRef.current.size === 0) {
-      console.log('🔍 Checking enquiries for rejections:', enquiries.length)
+
       
       const declinedEnquiries = enquiries.filter(enquiry => 
         enquiry.status === 'declined' && !enquiry.replacement_processed
       )
       
-      console.log(`🚫 Found ${declinedEnquiries.length} declined enquiries needing replacement`)
+
       
       if (declinedEnquiries.length === 0) {
-        console.log('✅ No declined enquiries to process')
+
         return
       }
       
       const processAllRejections = async () => {
-        console.log('🔄 Processing multiple rejections...')
+   
         setIsProcessingRejection(true)
         
         const newReplacements = []
         
         for (const enquiry of declinedEnquiries) {
-          console.log(`🔄 Processing rejection for: ${enquiry.supplier_category}`)
+      
           
           try {
             const rejectedSupplier = {
@@ -105,7 +105,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
             )
             
             if (result.success) {
-              console.log(`✅ Replacement created for ${enquiry.supplier_category}`)
+             
               
               const replacementWithEnquiryId = {
                 ...result.replacement,
@@ -116,7 +116,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
               if (!approvedReplacementsRef.current.has(replacementWithEnquiryId.id)) {
                 newReplacements.push(replacementWithEnquiryId)
               } else {
-                console.log(`⏭️ Skipping already approved replacement: ${replacementWithEnquiryId.id}`)
+             
               }
             }
             
@@ -126,7 +126,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
         }
         
         if (newReplacements.length > 0) {
-          console.log(`📊 Adding ${newReplacements.length} new replacements to state`)
+  
           
           setReplacements(prev => {
             const existingCategories = newReplacements.map(r => r.category)
@@ -144,18 +144,18 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       processAllRejections()
       
     } else if (processingApprovalsRef.current.size > 0) {
-      console.log('⏸️ Skipping rejection processing - currently processing approvals')
+
     }
   }, [enquiries, partyId, partyDetails])
 
   // Handle replacement approval
   const handleApproveReplacement = async (replacementId) => {
-    console.log('🎯 APPROVE REPLACEMENT CALLED:', replacementId)
+
     
     // Track that we're processing this approval
     processingApprovalsRef.current.add(replacementId)
     approvedReplacementsRef.current.add(replacementId)
-    console.log('✅ Marked as approved and processing:', replacementId)
+
     
     try {
       const replacement = replacements.find(r => r.id === replacementId)
@@ -164,7 +164,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
         return
       }
 
-      console.log('✅ Found replacement to approve:', replacement.category)
+
       
       // Remove from UI immediately
       setReplacements(prev => {
@@ -174,7 +174,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       })
       
       // Call backend
-      console.log('🔄 Calling backend...')
+
       const result = await partyDatabaseBackend.applyReplacementToParty(
         partyId, 
         replacement, 
@@ -182,7 +182,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       )
       
       if (result.success) {
-        console.log('✅ Backend approval successful')
+
         
         // Mark enquiry as processed
         const { error } = await supabase
@@ -205,7 +205,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
           refreshEnquiries()
         }, 1000)
         
-        console.log('✅ Replacement approval complete')
+
         
       } else {
         console.error('❌ Backend approval failed:', result.error)
@@ -224,7 +224,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
 
   // Handle viewing supplier
   const handleViewSupplier = (supplierId) => {
-    console.log('👁️ Navigating to supplier profile with context:', supplierId)
+
     navigateWithContext(`/supplier/${supplierId}`, 'dashboard')
   }
 

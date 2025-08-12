@@ -23,13 +23,7 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
     refreshRegistry 
   } = useGiftRegistry(partyId)
   
-  console.log('🎯 [GiftRegistryCard] Current state:', {
-    partyId,
-    hasRegistry,
-    registryId: registry?.id,
-    itemCount: registryItems?.length || 0,
-    loading: registryLoading
-  })
+
   
   const hasItems = registryItems && registryItems.length > 0
   const claimedItems = registryItems?.filter((item) => item.is_claimed).length || 0
@@ -145,7 +139,7 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
               <p className="text-gray-600">Help guests know what to bring!</p>
             </div>
 
-            <div className="mb-6">
+            {/* <div className="mb-6">
               <div className="flex items-center space-x-2 mb-3">
                 <Gift className="w-5 h-5 text-primary-600" />
                 <span className="font-semibold text-gray-900">Why create a registry?</span>
@@ -153,7 +147,7 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
               <p className="text-gray-600 text-sm leading-relaxed">
                 While suppliers confirm, set up your gift registry. When you send invites, guests will know exactly what to bring!
               </p>
-            </div>
+            </div> */}
 
             <Button
               onClick={handleCreateOrNavigate}

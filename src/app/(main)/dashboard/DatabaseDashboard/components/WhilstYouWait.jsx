@@ -30,8 +30,6 @@ function EInvitesCard({
   const [dataLoaded, setDataLoaded] = useState(false)
   const [inviteId, setInviteId] = useState(null) // ← Add this
 
-
-
   // Load existing e-invites data
   useEffect(() => {
     if (partyId && hasCreatedInvites) {
@@ -131,7 +129,7 @@ function EInvitesCard({
               <p className="text-gray-600">Beautiful, shareable invitations for your party</p>
             </div>
 
-            <div className="mb-6">
+            {/* <div className="mb-6">
               <div className="flex items-center space-x-2 mb-3">
                 <Mail className="w-5 h-5 text-primary-600" />
                 <span className="font-semibold text-gray-900">Why create invites now?</span>
@@ -139,16 +137,14 @@ function EInvitesCard({
               <p className="text-gray-600 text-sm leading-relaxed">
                 While suppliers confirm, get your guest list sorted and build excitement! Digital invites are instant, trackable, and perfectly themed to your party.
               </p>
-            </div>
+            </div> */}
 
-         
-<Button className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl" asChild>
-<Link href="/e-invites/create">
-    <Mail className="w-4 h-4 mr-2" />
-    Create E-Invites
-  </Link>
-
-</Button>
+            <Button className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl" asChild>
+              <Link href="/e-invites/create">
+                <Mail className="w-4 h-4 mr-2" />
+                Create E-Invites
+              </Link>
+            </Button>
           </>
         ) : (
           // MANAGEMENT VIEW - Clean with direct link to management page
@@ -176,14 +172,14 @@ function EInvitesCard({
             <div className="space-y-3">
               {/* Primary Action: Manage & Share */}
               <Button 
-            asChild 
-            className="w-full bg-primary-400 hover:from-blue-600 hover:[hsl(var(--primary-600))] text-white rounded-xl"
-          >
-            <Link href={inviteId ? `/e-invites/${inviteId}/manage` : '#'}>
-              <Settings className="w-4 h-4 mr-2" />
-              {inviteId ? 'Manage & Share Invite' : 'Loading...'}
-            </Link>
-          </Button>
+                asChild 
+                className="w-full bg-primary-400 hover:from-blue-600 hover:[hsl(var(--primary-600))] text-white rounded-xl"
+              >
+                <Link href={inviteId ? `/e-invites/${inviteId}/manage` : '#'}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  {inviteId ? 'Manage & Share Invite' : 'Loading...'}
+                </Link>
+              </Button>
 
               {/* Secondary Action: Quick Preview */}
               <Button 
@@ -213,6 +209,7 @@ function EInvitesCard({
     </Card>
   )
 }
+
 // Section Header Component
 function SectionHeader({ section }) {
   return (
@@ -250,8 +247,6 @@ function WhilstYouWaitSection({
   hasCreatedInvites,
   onCreateInvites
 }) {
-  
-
   const section = {
     id: "whilst-you-wait",
     title: "Whilst You Wait",
@@ -264,36 +259,35 @@ function WhilstYouWaitSection({
       {/* Section Header */}
       <SectionHeader section={section} />
       
-      {/* Cards Grid */}
-      <div className="grid md:grid-cols-2 gap-6">
-      <div id="gift-registry-card">
-<GiftRegistryCard 
-  partyId={partyId}
-  partyDetails={partyDetails}
-  partyTheme={partyTheme}
-  childAge={childAge}
-
-
-/>
-</div>
-<div id="rsvp-card">
-        <RSVPSummaryCard 
-          partyId={partyId}
-        />
-        </div>
-        {/* Enhanced E-Invites Card */}
+      {/* Equal Height Cards in One Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div id="einvites-card">
-        <EInvitesCard 
-          hasCreatedInvites={hasCreatedInvites}
-          onCreateInvites={onCreateInvites}
-          partyId={partyId}
-          partyDetails={partyDetails}
-        />
+          <EInvitesCard 
+            hasCreatedInvites={hasCreatedInvites}
+            onCreateInvites={onCreateInvites}
+            partyId={partyId}
+            partyDetails={partyDetails}
+          />
+        </div>
+        
+        <div id="gift-registry-card">
+          <GiftRegistryCard 
+            partyId={partyId}
+            partyDetails={partyDetails}
+            partyTheme={partyTheme}
+            childAge={childAge}
+          />
+        </div>
+        
+        <div id="rsvp-card">
+          <RSVPSummaryCard 
+            partyId={partyId}
+          />
         </div>
       </div>
       
       {/* Optional: Help text */}
-      <div className="mt-4 text-center">
+      <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
           ⏱️ While suppliers confirm availability, take care of these party essentials
         </p>

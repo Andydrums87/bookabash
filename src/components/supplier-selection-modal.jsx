@@ -26,6 +26,73 @@ import Image from "next/image"
 import { useSuppliers } from '@/utils/mockBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
+class LocationService {
+  static getPostcodeArea(postcode) {
+    if (!postcode) return null;
+    const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
+    const areaMatch = cleaned.match(/^([A-Z]{1,2})/);
+    return areaMatch ? areaMatch[1] : null;
+  }
+  
+  static arePostcodesNearby(supplierPostcode, partyPostcode, maxDistance = 'district') {
+    if (!supplierPostcode || !partyPostcode) return true;
+    
+    // Handle descriptive locations (fallback for mock data)
+    const descriptiveLocations = [
+      'central london', 'london wide', 'greater london', 
+      'uk wide', 'london', 'nationwide'
+    ];
+    
+    const supplierLower = supplierPostcode.toLowerCase();
+    const partyLower = partyPostcode.toLowerCase();
+    
+    // If supplier serves wide areas, allow it (for mock data)
+    if (descriptiveLocations.some(desc => supplierLower.includes(desc))) {
+
+      return true;
+    }
+    
+    // Extract postcode areas
+    const supplierArea = this.getPostcodeArea(supplierPostcode);
+    const partyArea = this.getPostcodeArea(partyPostcode);
+    
+
+    
+    // Exact postcode match (highest priority)
+    if (supplierPostcode.toUpperCase().replace(/\s/g, '') === partyPostcode.toUpperCase().replace(/\s/g, '')) {
+
+      return true;
+    }
+    
+    // Same area match
+    if (supplierArea === partyArea) {
+
+      return true;
+    }
+    
+    // Adjacent areas (simplified for now)
+    const londonAdjacency = {
+      'SW': ['SE', 'W', 'TW', 'CR', 'SM'],
+      'SE': ['SW', 'E', 'BR', 'DA', 'TN'],
+      'W': ['SW', 'NW', 'TW', 'UB'],
+      'E': ['SE', 'N', 'IG', 'RM'],
+      'N': ['E', 'NW', 'EN', 'AL'],
+      'NW': ['N', 'W', 'HA', 'WD'],
+    };
+    
+    const isAdjacent = londonAdjacency[supplierArea]?.includes(partyArea) || 
+                      londonAdjacency[partyArea]?.includes(supplierArea);
+    
+    if (isAdjacent) {
+
+      return true;
+    }
+    
+
+    return false;
+  }
+}
+
 export default function SupplierSelectionModal({
   isOpen,
   onClose,
@@ -33,7 +100,8 @@ export default function SupplierSelectionModal({
   theme,
   date,
   onSelectSupplier,
-  initialFilters = {} // NEW: Add this prop
+  initialFilters = {}, // NEW: Add this prop
+  partyLocation = null,
 }) {
   // NEW: Initialize state with restored filters or defaults
   const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
@@ -197,6 +265,7 @@ export default function SupplierSelectionModal({
   }), []);
 
   const filteredSuppliers = useMemo(() => {
+ 
     const filtered = suppliers.filter((supplier) => {
       const targetCategories = Array.isArray(categoryMapping[category]) 
         ? categoryMapping[category] 
@@ -220,14 +289,34 @@ export default function SupplierSelectionModal({
         if (!isAvailableOnDate) return false;
       }
       
-      if (distance !== "all") {
+      // UPDATED: Use proper location filtering with postcode matching
+      if (distance !== "all" && partyLocation) {
         if (!supplier.location) {
-          console.log(`📍 ${supplier.name}: No location data - including in results`);
-        } else {
-          const hasLocalArea = supplier.location.toLowerCase().includes('london') || 
-                              supplier.location.toLowerCase().includes('uk wide');
-          if (!hasLocalArea) return false;
+          console.log(`📍 ${supplier.name}: No location data - excluding`);
+          return false;
         }
+        
+        // Use the LocationService for proper postcode matching
+        const distanceMap = {
+          "5": "exact",     // Very strict - same postcode area
+          "10": "district", // Same or adjacent areas  
+          "15": "wide",     // Broader London coverage
+          "all": "any"      // No filtering
+        };
+        
+        const maxDistance = distanceMap[distance] || "district";
+        const canServe = LocationService.arePostcodesNearby(
+          supplier.location, 
+          partyLocation, 
+          maxDistance
+        );
+        
+        if (!canServe) {
+      
+          return false;
+        }
+        
+ 
       }
 
       if (priceRange !== "all") {
@@ -247,8 +336,35 @@ export default function SupplierSelectionModal({
       return true
     });
 
+    // SORT by location relevance - exact matches first!
+    if (partyLocation) {
+      return filtered.sort((a, b) => {
+        // Exact postcode match gets highest priority
+        const aExact = a.location?.toUpperCase().replace(/\s/g, '') === partyLocation.toUpperCase().replace(/\s/g, '');
+        const bExact = b.location?.toUpperCase().replace(/\s/g, '') === partyLocation.toUpperCase().replace(/\s/g, '');
+        
+        if (aExact && !bExact) return -1;
+        if (bExact && !aExact) return 1;
+        
+        // Same area gets second priority
+        const aArea = LocationService.getPostcodeArea(a.location);
+        const bArea = LocationService.getPostcodeArea(b.location);
+        const partyArea = LocationService.getPostcodeArea(partyLocation);
+        
+        const aSameArea = aArea === partyArea;
+        const bSameArea = bArea === partyArea;
+        
+        if (aSameArea && !bSameArea) return -1;
+        if (bSameArea && !aSameArea) return 1;
+        
+        // Then by rating
+        return (b.rating || 0) - (a.rating || 0);
+      });
+    }
+
     return filtered;
-  }, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping]);
+  }, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping, partyLocation]);
+
 
   if (!isOpen) return null
 
@@ -778,23 +894,17 @@ export default function SupplierSelectionModal({
         </div>
       </div>
 
-      {/* NEW: Customization Modal - with debugging */}
-      {console.log('🔍 MODAL RENDER CHECK:', {
-        showCustomizationModal,
-        selectedSupplierForCustomization: selectedSupplierForCustomization?.name,
-        shouldRender: showCustomizationModal && selectedSupplierForCustomization
-      })}
-      
       <SupplierCustomizationModal
         isOpen={showCustomizationModal}
         onClose={() => {
-          console.log('🚪 MODAL CLOSING - onClose called')
+
           setShowCustomizationModal(false)
           setSelectedSupplierForCustomization(null)
         }}
         supplier={selectedSupplierForCustomization}
-        onAddToPlan={handleCustomizationAddToPlan}
+        // onAddToPlan={handleCustomizationAddToPlan}
         isAdding={addingSupplier === selectedSupplierForCustomization?.id}
+        onAddToPlan={onSelectSupplier} 
       />
     </>
   )

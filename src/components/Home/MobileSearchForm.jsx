@@ -17,6 +17,7 @@ export default function MobileSearchForm({
   setPostcodeValid,
   validateAndFormatPostcode,
   isSubmitting,
+  hasAttemptedSubmit
 }) {  
   
   // Form validation function
@@ -60,62 +61,63 @@ export default function MobileSearchForm({
     
     {/* Event Date - STANDARDIZED */}
     <div className="space-y-3">
-      <label className="block text-sm font-semibold text-gray-700">
-        Event date <span className="text-red-500">*</span>
-      </label>
-      <div className="relative">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={`
-                w-full justify-start text-left font-normal h-12 pl-10 pr-4
-                bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl
-                hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
-                ${!formData.date && "text-gray-500"}
-                ${!formData.date ? 'border-red-300' : ''}
-              `}
-            >
-              <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
-              {formData.date && !isNaN(new Date(formData.date)) ? (
-                format(new Date(formData.date), "EEEE, MMMM d, yyyy")
-              ) : (
-                <span className="ml-5">Select event date</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
-            align="start"
-            side="top"
-            sideOffset={8}
-          >
-            <Calendar
-              mode="single"
-              selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
-              onSelect={(date) => {
-                if (date) {
-                  const formattedDate = format(date, "yyyy-MM-dd")
-                  handleFieldChange('date', formattedDate)
-                }
-              }}
-              initialFocus
-              disabled={(date) => date < new Date()}
-              className="rounded-lg"
-            />
-          </PopoverContent>
-        </Popover>
-        
-        {!formData.date && (
-          <div className="mt-1">
-            <p className="text-xs text-red-600 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              Event date is required
-            </p>
-          </div>
-        )}
+  <label className="block text-sm font-semibold text-gray-700">
+    Event date <span className="text-red-500">*</span>
+  </label>
+  <div className="relative">
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={`
+            w-full justify-start text-left font-normal h-12 pl-10 pr-4
+            bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl
+            hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
+            ${!formData.date && "text-gray-500"}
+            ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
+          `}
+        >
+          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+          {formData.date && !isNaN(new Date(formData.date)) ? (
+            format(new Date(formData.date), "EEEE, MMMM d, yyyy")
+          ) : (
+            <span className="ml-5">Select event date</span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
+        align="start"
+        side="top"
+        sideOffset={8}
+      >
+        <Calendar
+          mode="single"
+          selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
+          onSelect={(date) => {
+            if (date) {
+              const formattedDate = format(date, "yyyy-MM-dd")
+              handleFieldChange('date', formattedDate)
+            }
+          }}
+          initialFocus
+          disabled={(date) => date < new Date()}
+          className="rounded-lg"
+        />
+      </PopoverContent>
+    </Popover>
+    
+    {/* FIXED: Only show validation message after submit attempt */}
+    {hasAttemptedSubmit && !formData.date && (
+      <div className="mt-1">
+        <p className="text-xs text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          Event date is required
+        </p>
       </div>
-    </div>
+    )}
+  </div>
+</div>
 
     {/* Event Type - STANDARDIZED */}
     <div className="space-y-3">
@@ -168,14 +170,17 @@ export default function MobileSearchForm({
             <SelectItem value="30">30+ guests</SelectItem>
           </SelectContent>
         </Select>
-        {!formData.guestCount && (
-          <div className="mt-1">
-            <p className="text-xs text-red-600 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              Guest count is required
-            </p>
-          </div>
-        )}
+           {/* FIXED: Only show validation message after submit attempt */}
+    {hasAttemptedSubmit && !formData.guestCount && (
+      <div className="mt-1">
+        <p className="text-xs text-red-600 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+         Guest Count is required
+        </p>
+      </div>
+    )}
+           
+
       </div>
     </div>
     

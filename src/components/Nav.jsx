@@ -342,7 +342,7 @@ const handleSignOut = async () => {
                 alt="PartySnap" 
                 width={150} 
                 height={32} 
-                className="md:h-10 h-8 w-auto" 
+                className="h-auto w-auto" 
               />
             </Link>
           </div>

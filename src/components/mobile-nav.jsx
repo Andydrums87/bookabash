@@ -103,7 +103,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 alt="PartySnap"
                 width={120}
                 height={32}
-                className="h-8 w-auto object-contain"
+                className="h-auto w-auto object-contain"
               />
             </div>
           )}
@@ -236,7 +236,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
                   alt="PartySnap"
                   width={120}
                   height={32}
-                  className="h-8 w-auto object-contain"
+                  className="h-auto w-auto object-contain"
                 />
               </div>
             </Link>

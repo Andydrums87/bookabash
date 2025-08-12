@@ -25,7 +25,7 @@ const Footer = () => {
                 width={160} // Adjust as needed
                 height={160} // Maintain aspect ratio accordingly
                 priority
-                className="relative" // remove absolute, handled by next/image
+                className="relative h-auto w-auto" // remove absolute, handled by next/image
               />
               <p className="text-gray-400 mt-4">The all-in-one platform for booking children's parties.</p>
               <div className="mt-6">

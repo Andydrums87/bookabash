@@ -24,12 +24,12 @@ export default function NotificationPopup({ notification }) {
   let IconComponent = AlertCircle
 
   if (notification.type === "success") {
-    bgColor = "bg-green-500"
+    bgColor = "bg-teal-500"
     IconComponent = CheckCircle
   } else if (notification.type === "warning") {
     bgColor = "bg-yellow-500"
   } else if (notification.type === "info") {
-    bgColor = "bg-blue-500"
+    bgColor = "bg-teal-500"
     IconComponent = AlertCircle
   }
 

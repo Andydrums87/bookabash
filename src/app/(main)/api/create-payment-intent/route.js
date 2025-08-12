@@ -12,8 +12,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 })
 
-console.log(stripeSecretKey)
-
 export async function POST(request) {
   try {
     const { amount, currency, partyDetails, suppliers, addons } = await request.json()
@@ -26,11 +24,13 @@ export async function POST(request) {
         enabled: true,
       },
       metadata: {
+        party_id: partyDetails.id,
         party_child_name: partyDetails.childName,
         party_theme: partyDetails.theme,
         party_date: partyDetails.date,
         supplier_count: suppliers.length.toString(),
-        addon_count: addons.length.toString()
+        addon_count: addons.length.toString(),
+        included_suppliers: JSON.stringify(suppliers.map(s => s.category)) // FIXED: Use 'suppliers' not 'confirmedSuppliers'
       },
     })
 

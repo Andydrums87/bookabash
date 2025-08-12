@@ -215,98 +215,191 @@ export default function AutoReplacementFlow({ replacements = [], onApproveReplac
           {/* Enhanced Header */}
           <div className="flex sm:items-center justify-between mb-6 pt-5">
             <div className="flex items-center space-x-4">
-            
               <div className='flex items-center justify-center'>
-               
-                        <div>
-                        <h4 className="text-2xl font-bold text-gray-800 flex items-center">Ah Snap! Looks like {replacement.oldSupplier.name} isn't available</h4>
-                        <p className="text-gray-500 text-base mb-4">Dont fret. Snappy was on the case and found you someone evven better!</p>
-                        </div>
-
+                <div>
+                  <h4 className="text-2xl font-bold text-gray-800 flex items-center">Ah Snap! Looks like {replacement.oldSupplier.name} isn't available</h4>
+                  <p className="text-gray-500 text-base mb-4">Dont fret. Snappy was on the case and found you someone even better!</p>
+                </div>
               </div>
             </div>
-         
           </div>
 
-          {/* Enhanced Comparison with new card style */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {/* Old Supplier Card */}
-            <div className="relative h-64 rounded-2xl overflow-hidden group">
-              {/* Background Image */}
-              <div
-                className="absolute inset-0 bg-cover bg-center grayscale"
-                style={{
-                  backgroundImage: `url(${replacement.oldSupplier.image || "/placeholder.svg?height=256&width=400"})`,
-                }}
-              />
-              {/* Dark Overlay */}
-              <div className="absolute inset-0 bg-black/60" />
-              
-              {/* Content */}
-              <div className="relative h-full p-6 flex flex-col justify-between text-white">
-                {/* Top badges */}
-                <div className="flex items-center justify-between">
-                  <div className="flex space-x-2">
-                    <Badge className="bg-red-500/90 text-white border-0 font-medium">{replacement.category}</Badge>
-                    <Badge className="bg-gray-500/90 text-white border-0 font-medium">Declined</Badge>
+          {/* FIXED: Enhanced Comparison with mobile-responsive layout */}
+          <div className="mb-6">
+            {/* Desktop Layout - 3 columns */}
+            <div className="hidden md:grid md:grid-cols-3 gap-6">
+              {/* Old Supplier Card */}
+              <div className="relative h-64 rounded-2xl overflow-hidden group">
+                <div
+                  className="absolute inset-0 bg-cover bg-center grayscale"
+                  style={{
+                    backgroundImage: `url(${replacement.oldSupplier.image || "/placeholder.svg?height=256&width=400"})`,
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/60" />
+                
+                <div className="relative h-full p-6 flex flex-col justify-between text-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex space-x-2">
+                      <Badge className="bg-red-500/90 text-white border-0 font-medium">{replacement.category}</Badge>
+                      <Badge className="bg-gray-500/90 text-white border-0 font-medium">Declined</Badge>
+                    </div>
+                    <div className="w-8 h-8 bg-gray-500/80 rounded-full flex items-center justify-center">
+                      <X className="w-4 h-4 text-white" />
+                    </div>
                   </div>
-                  <div className="w-8 h-8 bg-gray-500/80 rounded-full flex items-center justify-center">
-                    <X className="w-4 h-4 text-white" />
+
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2 line-through opacity-75">{replacement.oldSupplier.name}</h3>
+                    <p className="text-white/80 mb-4 text-sm line-clamp-2">
+                      {replacement.oldSupplier.description || "Premium service provider"}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl font-bold">£{replacement.oldSupplier.price}</div>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="font-medium">{replacement.oldSupplier.rating}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Bottom content */}
-                <div>
-                  <h3 className="text-2xl font-bold mb-2 line-through opacity-75">{replacement.oldSupplier.name}</h3>
-                  <p className="text-white/80 mb-4 text-sm line-clamp-2">
-                    {replacement.oldSupplier.description || "Premium service provider"}
-                  </p>
+              {/* Arrow/Snappy */}
+              <div className="relative overflow-hidden flex items-center justify-center rounded-2xl">
+                <img className="h-60" src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753965530/ChatGPT_Image_Jul_31_2025_01_38_43_PM_ozbvja.png" alt="" />
+              </div>
+
+              {/* New Supplier Card */}
+              <div className="relative h-64 rounded-2xl overflow-hidden group hover:scale-105 transition-transform duration-300">
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${replacement.newSupplier.image || "/placeholder.svg?height=256&width=400"})`,
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/50" />
+
+                <div className="relative h-full p-6 flex flex-col justify-between text-white">
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">£{replacement.oldSupplier.price}</div>
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="font-medium">{replacement.oldSupplier.rating}</span>
+                    <div className="flex space-x-2">
+                      <Badge className="bg-orange-500 text-white border-0 font-medium">{replacement.category}</Badge>
+                      <Badge className="bg-blue-500 text-white border-0 font-medium">Available</Badge>
+                    </div>
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">{replacement.newSupplier.name}</h3>
+                    <p className="text-white/90 mb-4 text-sm line-clamp-2">
+                      {replacement.newSupplier.description || "Premium service provider with enhanced features"}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-3xl font-bold">£{replacement.newSupplier.price}</div>
+                        {replacement.newSupplier.price < replacement.oldSupplier.price && (
+                          <Badge className="bg-green-500 text-white text-xs font-bold">
+                            Save £{replacement.oldSupplier.price - replacement.newSupplier.price}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="font-medium">{replacement.newSupplier.rating}</span>
+                        <span className="text-sm text-white/80">({replacement.newSupplier.reviewCount})</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="relative overflow-hidden flex items-center justify-center  rounded-2xl">
-              <img className="h-60" src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753965530/ChatGPT_Image_Jul_31_2025_01_38_43_PM_ozbvja.png" alt="" />
 
-            </div>
-
-            {/* New Supplier Card */}
-            <div className="relative h-64 rounded-2xl overflow-hidden group hover:scale-105 transition-transform duration-300">
-              {/* Background Image */}
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${replacement.newSupplier.image || "/placeholder.svg?height=256&width=400"})`,
-                }}
-              />
-              {/* Dark Overlay */}
-              <div className="absolute inset-0 bg-black/50" />
-
-              {/* Content */}
-              <div className="relative h-full p-6 flex flex-col justify-between text-white">
-                {/* Top badges */}
-                <div className="flex items-center justify-between">
-                  <div className="flex space-x-2">
-                    <Badge className="bg-orange-500 text-white border-0 font-medium">{replacement.category}</Badge>
-                    <Badge className="bg-blue-500 text-white border-0 font-medium">Available</Badge>
-                  </div>
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-white" />
+            {/* Mobile Layout - Vertical Stack */}
+            <div className="md:hidden space-y-4">
+              {/* Mobile Header with Snappy */}
+              <div className="flex items-center justify-center p-4 bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl">
+                <div className="flex items-center space-x-3">
+                  <img 
+                    className="h-12 w-12" 
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753256660/dwb6vr6lxyj7ubokfeel.png" 
+                    alt="Snappy" 
+                  />
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-primary-800">Snappy found you an upgrade!</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                      <RefreshCw className="w-4 h-4 text-primary-600" />
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Bottom content */}
-                <div>
+              {/* Old Supplier - Compact Card */}
+              <div className="bg-gray-100 rounded-xl p-4 border-2 border-dashed border-gray-300">
+                <div className="flex items-center space-x-4">
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                    <img
+                      src={replacement.oldSupplier.image || "/placeholder.svg"}
+                      alt={replacement.oldSupplier.name}
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <X className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Badge className="bg-red-500 text-white text-xs">{replacement.category}</Badge>
+                      <Badge className="bg-gray-500 text-white text-xs">Declined</Badge>
+                    </div>
+                    <h4 className="font-bold text-gray-700 line-through text-lg">{replacement.oldSupplier.name}</h4>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xl font-bold text-gray-600">£{replacement.oldSupplier.price}</span>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-sm font-medium text-gray-600">{replacement.oldSupplier.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Arrow Separator */}
+              <div className="flex justify-center">
+                <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                  <ChevronDown className="w-5 h-5 text-white" />
+                </div>
+              </div>
+
+              {/* New Supplier - Enhanced Card */}
+              <div className="relative rounded-xl overflow-hidden shadow-lg">
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${replacement.newSupplier.image || "/placeholder.svg"})`,
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/50" />
+                
+                <div className="relative p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex space-x-2">
+                      <Badge className="bg-orange-500 text-white border-0 font-medium">{replacement.category}</Badge>
+                      <Badge className="bg-green-500 text-white border-0 font-medium">Available</Badge>
+                    </div>
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+
                   <h3 className="text-2xl font-bold mb-2">{replacement.newSupplier.name}</h3>
                   <p className="text-white/90 mb-4 text-sm line-clamp-2">
                     {replacement.newSupplier.description || "Premium service provider with enhanced features"}
                   </p>
+                  
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <div className="text-3xl font-bold">£{replacement.newSupplier.price}</div>
@@ -327,7 +420,6 @@ export default function AutoReplacementFlow({ replacements = [], onApproveReplac
             </div>
           </div>
 
-       
           {/* Enhanced Actions */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
             <Button

@@ -1,3 +1,4 @@
+// hooks/useSupplierManager.js - FIXED VERSION
 "use client"
 
 import { useState } from "react"
@@ -38,12 +39,8 @@ export function useSupplierManager(removeSupplier) {
     setSelectedSupplierModal({ isOpen: false, category: "" })
   }
 
-  // Handle supplier selection from modal
-  const handleSupplierSelection = (supplier) => {
-    console.log("✅ Successfully selected supplier:", supplier.name)
-    // The supplier will automatically appear in the dashboard 
-    // because usePartyPlan() will re-render with the new data
-  }
+  // REMOVED: handleSupplierSelection - moved to DatabaseDashboard
+  // This hook should only handle UI state, not business logic
 
   // Start delete process
   const handleDeleteSupplier = (supplierType) => {
@@ -126,7 +123,7 @@ export function useSupplierManager(removeSupplier) {
     getSupplierDisplayName,
     openSupplierModal,
     closeSupplierModal,
-    handleSupplierSelection,
+    // REMOVED: handleSupplierSelection - now handled in DatabaseDashboard
     handleDeleteSupplier,
     confirmDeleteSupplier,
     cancelDeleteSupplier

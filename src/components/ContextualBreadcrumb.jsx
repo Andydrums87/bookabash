@@ -74,6 +74,13 @@ export function ContextualBreadcrumb({
             currentText: "Manage Invite",
             action: goBack,
           }
+          case "party-summary":
+            return {
+              show: true,
+              backText: "Dashboard",
+              currentText: "Party Summary",
+              action: goBack
+            }
 
       case "e-invites":
         return {

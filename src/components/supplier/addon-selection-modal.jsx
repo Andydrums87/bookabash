@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Gift, PlusCircle, CheckCircle, Sparkles, Heart, Star } from 'lucide-react'
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/universalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 
 export default function AddonSelectionModal({
   isOpen,

@@ -22,9 +22,9 @@ export default function HomePage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    date: "yyyy/MM/dd",
+    date: "",
     theme: "princess", 
-    guestCount: "15",
+    guestCount: "",
     postcode: "",
     childName: "",
     childAge: 6,
@@ -38,6 +38,9 @@ export default function HomePage() {
   const [showPartyLoader, setShowPartyLoader] = useState(false)
   const [buildingProgress, setBuildingProgress] = useState(0)
   const [postcodeValid, setPostcodeValid] = useState(true)
+
+
+const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
   const handleFieldChange = (field, value) => {
     setFormData(prev => {
@@ -250,6 +253,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
         setPostcodeValid={setPostcodeValid}
         validateAndFormatPostcode={validateAndFormatPostcode}
         isSubmitting={isSubmitting}
+        hasAttemptedSubmit={hasAttemptedSubmit}
       />
 
       <MobileSearchForm
@@ -260,6 +264,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
         setPostcodeValid={setPostcodeValid}
         validateAndFormatPostcode={validateAndFormatPostcode}
         isSubmitting={isSubmitting}
+        hasAttemptedSubmit={hasAttemptedSubmit}
       />
 <TrustIndicators />
   

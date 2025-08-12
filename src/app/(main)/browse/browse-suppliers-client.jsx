@@ -61,7 +61,7 @@ const partyThemes = [
 
 
 export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
-    console.log('🚨 RENDER START - initialSuppliers:', initialSuppliers.length)
+ 
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedLocation, setSelectedLocation] = useState("")
@@ -78,7 +78,7 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [loading, setLoading] = useState(false)
   
-  console.log('🚨 STATE - suppliers:', suppliers.length, 'loading:', loading)
+
 
 
 
@@ -477,7 +477,7 @@ const filteredSuppliers = suppliers.filter((supplier) => {
     setSearchQuery("");
   };
 
-  console.log('🚨 ABOUT TO RENDER - suppliers count:', searchedSuppliers.length)
+
 
   return (
 <div className="min-h-screen bg-[#fef7f7]">

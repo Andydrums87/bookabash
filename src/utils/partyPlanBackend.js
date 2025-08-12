@@ -53,17 +53,17 @@ const DEFAULT_PARTY_PLAN = {
   facePainting: null,
   activities: null,
   partyBags: null,
-  einvites: {
-    id: "digital-invites",
-    name: "Digital Superhero Invites",
-    description: "Themed e-invitations with RSVP tracking",
-    price: 25,
-    status: "confirmed",
-    image: "/placeholder.jpg",
-    category: "Digital Services",
-    priceUnit: "per set",
-    addedAt: new Date().toISOString()
-  },
+  // einvites: {
+  //   id: "digital-invites",
+  //   name: "Digital Superhero Invites",
+  //   description: "Themed e-invitations with RSVP tracking",
+  //   price: 25,
+  //   status: "confirmed",
+  //   image: "/placeholder.jpg",
+  //   category: "Digital Services",
+  //   priceUnit: "per set",
+  //   addedAt: new Date().toISOString()
+  // },
   addons: []
 };
 
@@ -98,16 +98,16 @@ const eventEmitter = new EventEmitter();
 
 class PartyPlanBackend {
   constructor() {
-    if (isClient) {
-      this.initializeData();
-    }
+    // if (isClient) {
+    //   this.initializeData();
+    // }
   }
 
-  initializeData() {
-    if (isClient && !localStorage.getItem(STORAGE_KEY)) {
-      this.savePartyPlan(DEFAULT_PARTY_PLAN);
-    }
-  }
+  // initializeData() {
+  //   if (isClient && !localStorage.getItem(STORAGE_KEY)) {
+  //     this.savePartyPlan(DEFAULT_PARTY_PLAN);
+  //   }
+  // }
 
   getPartyPlan() {
     if (!isClient) {
@@ -116,7 +116,10 @@ class PartyPlanBackend {
 
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      const plan = stored ? JSON.parse(stored) : DEFAULT_PARTY_PLAN;
+      if (!stored || stored === 'null') {
+        return DEFAULT_PARTY_PLAN; // Return default but don't save it
+      }
+      const plan = JSON.parse(stored);
       
       if (!plan.addons) {
         plan.addons = [];
@@ -143,6 +146,7 @@ class PartyPlanBackend {
       return false;
     }
   }
+
 
   addSupplierToPlan(supplier, selectedPackage = null) {
     if (!isClient) {
@@ -522,7 +526,19 @@ const loadPartyPlan = () => {
   try {
     setLoading(true);
     
-    // Get the main plan
+    // Check if localStorage actually has data
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    
+    if (!storedData || storedData === 'null') {
+      // ✅ No localStorage data - return default but don't save it
+
+      setPartyPlan(DEFAULT_PARTY_PLAN);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    
+    // Get the main plan (only if it exists)
     let data = partyPlanBackend.getPartyPlan();
     
     // Check if there are addons in the alternative 'party_plan' key
@@ -567,28 +583,29 @@ const loadPartyPlan = () => {
 };
 
 
-  const addSupplier = async (supplier, selectedPackage = null) => {
-    if (!isClient) {
-      return { success: false, error: 'Not in browser environment' };
-    }
+const addSupplier = async (supplier, selectedPackage = null) => {
+  if (!isClient) {
+    return { success: false, error: 'Not in browser environment' };
+  }
 
-    try {
-      setError(null);
-      const result = partyPlanBackend.addSupplierToPlan(supplier, selectedPackage);
-      
-      if (result.success) {
-        console.log('✅ Supplier added successfully, state will update via event');
-        return { success: true, supplierType: result.supplierType };
-      } else {
-        setError(result.error);
-        return { success: false, error: result.error };
-      }
-    } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+  try {
+    setError(null);
+    
+    // ✅ This will create localStorage when first supplier is added
+    const result = partyPlanBackend.addSupplierToPlan(supplier, selectedPackage);
+    
+    if (result.success) {
+      console.log('✅ Supplier added successfully, state will update via event');
+      return { success: true, supplierType: result.supplierType };
+    } else {
+      setError(result.error);
+      return { success: false, error: result.error };
     }
-  };
-
+  } catch (err) {
+    setError(err.message);
+    return { success: false, error: err.message };
+  }
+};
   const addAddon = async (addon) => {
     if (!isClient) {
       return { success: false, error: 'Not in browser environment' };
@@ -633,6 +650,7 @@ const loadPartyPlan = () => {
     }
   };
 
+
   const removeSupplier = async (supplierType) => {
     if (!isClient) {
       return { success: false, error: 'Not in browser environment' };
@@ -654,8 +672,8 @@ const loadPartyPlan = () => {
       return { success: false, error: err.message };
     }
   };
-
   // 🆕 NEW HOOK FUNCTIONS START HERE 🆕
+
 
   const updateSupplierPackage = async (supplierId, newPackage) => {
     if (!isClient) {
@@ -705,7 +723,6 @@ const loadPartyPlan = () => {
     refetch: loadPartyPlan,
     hasAddon: (addonId) => partyPlanBackend.hasAddon(addonId),
     getPartySummary: () => partyPlanBackend.getPartySummary(),
-    // 🆕 NEW EXPORTS 🆕
     updateSupplierPackage,
     getSupplierFromPlan,
     isSupplierInPartyWithPackage

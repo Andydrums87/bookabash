@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
 
-export default function Hero({ handleSearch, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
+export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
   const router = useRouter()
   const [showFloatingCTA, setShowFloatingCTA] = useState(false)
 
@@ -91,7 +91,7 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
               
    {/* Event Date */}
-<div className="col-span-2 md:col-span-1 space-y-2">
+   <div className="col-span-2 md:col-span-1 space-y-2">
   <label className="block text-sm font-medium text-gray-700">
     Event date <span className="text-red-500">*</span>
   </label>
@@ -105,13 +105,12 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
             bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl
             hover:bg-gray-50 hover:border-[hsl(var(--primary-300))] transition-colors
             ${!formData.date && "text-gray-500"}
-            ${!formData.date ? 'border-red-300' : ''}
+            ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
           `}
         >
           <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5  text-gray-400" />
           {formData.date && !isNaN(new Date(formData.date)) ? (
             <p className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</p>
-    
           ) : (
             <span className="ml-5">Select event date</span>
           )}
@@ -135,12 +134,12 @@ export default function Hero({ handleSearch, formData, postcodeValid, isSubmitti
           initialFocus
           disabled={(date) => date < new Date()}
           className="rounded-lg"
-         
         />
       </PopoverContent>
     </Popover>
     
-    {!formData.date && (
+    {/* FIXED: Only show validation message after submit attempt */}
+    {hasAttemptedSubmit && !formData.date && (
       <div className="absolute top-full left-0 right-0 mt-1 z-10">
         <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
           <AlertCircle className="w-3 h-3" />

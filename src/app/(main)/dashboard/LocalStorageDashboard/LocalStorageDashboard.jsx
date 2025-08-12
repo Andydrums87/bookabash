@@ -20,9 +20,11 @@ import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
 import MobileBudgetBar from "../components/MobileBudgetBar"
-import SupplierCard from "../components/Cards/SupplierCard"
-import MobileSupplierTabs from "../components/MobileSupplierTabs"
-import MobileSingleScrollSuppliers from "../components/MobileSingleScrollSuppliers"
+
+// NEW: Updated imports for unified card system
+import SupplierCard from "../components/SupplierCard/SupplierCard" // Our new unified card system
+import MobileSupplierNavigation from "../components/MobileSupplierNavigation" // New mobile nav
+
 import AddonsSection from "../components/AddonsSection"
 import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from '../components/AddonProviderWrapper'
 import AddonDetailsModal from "@/components/AddonDetailsModal"
@@ -92,6 +94,7 @@ export default function LocalStorageDashboard() {
     removeSupplier,
     addAddon,
     removeAddon,
+    addSupplier,         // ✅ Make sure this is imported
     hasAddon
   } = usePartyPlan()
 
@@ -160,12 +163,49 @@ export default function LocalStorageDashboard() {
     clearModalState()
   }
 
-  const handleSupplierSelection = (supplier) => {
-    console.log('✅ Supplier selected:', supplier)
-    // Handle the supplier selection logic here
-    closeSupplierModal()
+  const handleSupplierSelection = async (supplierData) => {
+    console.log('✅ Supplier selected in localStorage dashboard:', supplierData)
+    
+    try {
+      // Extract the supplier and package info
+      const { supplier, package: selectedPackage, addons: selectedAddons = [], autoEnquiry = false } = supplierData
+      
+      if (!supplier) {
+        console.error('❌ No supplier data provided')
+        return
+      }
+  
+      // For localStorage, we use the addSupplier function from usePartyPlan hook
+      const result = await addSupplier(supplier, selectedPackage)
+      
+      if (result.success) {
+        console.log('✅ Supplier added to localStorage successfully!')
+        
+        // Add any selected addons
+        if (selectedAddons && selectedAddons.length > 0) {
+          for (const addon of selectedAddons) {
+            await handleAddAddon({
+              ...addon,
+              supplierId: supplier.id,
+              supplierName: supplier.name
+            })
+          }
+        }
+        
+        // Close modal after successful addition
+        closeSupplierModal()
+        
+        // Optional: Show success message
+        console.log(`🎉 ${supplier.name} has been added to your party plan!`)
+        
+      } else {
+        console.error('❌ Failed to add supplier:', result.error)
+      }
+      
+    } catch (error) {
+      console.error('💥 Error in handleSupplierSelection:', error)
+    }
   }
-
   // NEW: Modal restoration effect
   useEffect(() => {
     const shouldRestoreModal = searchParams.get('restoreModal')
@@ -295,6 +335,17 @@ export default function LocalStorageDashboard() {
     navigateWithContext('/browse', 'dashboard')
   }
 
+  // NEW: Helper functions for unified card system
+  const getEnquiryStatus = (type) => {
+    // LocalStorage dashboard is always in "selected" state (no enquiries)
+    return null
+  }
+
+  const getEnquiryTimestamp = (type) => {
+    // No enquiry timestamps in localStorage dashboard
+    return null
+  }
+
   // Loading state
   if (!themeLoaded || planLoading) {
     return (
@@ -359,45 +410,54 @@ export default function LocalStorageDashboard() {
                 </Button>
               </div>
 
-              {/* Desktop Supplier Grid */}
-              <div className="hidden md:grid md:grid-cols-3 gap-6">
-                {Object.entries(suppliers).map(([type, supplier]) => (
-                  <SupplierCard 
-                    key={type}
-                    type={type} 
-                    supplier={supplier}
+              {/* NEW: Unified Responsive Supplier Grid */}
+              <div className="w-full">
+                {/* Desktop Grid */}
+                <div className="hidden md:grid md:grid-cols-3 gap-6">
+                  {Object.entries(suppliers).map(([type, supplier]) => (
+                    <SupplierCard 
+                      key={type}
+                      type={type} 
+                      supplier={supplier}
+                      loadingCards={loadingCards}
+                      suppliersToDelete={suppliersToDelete}
+                      openSupplierModal={openSupplierModal}
+                      handleDeleteSupplier={handleDeleteSupplier}
+                      getSupplierDisplayName={getSupplierDisplayName}
+                      addons={addons}
+                      handleRemoveAddon={handleRemoveAddon}
+                      enquiryStatus={getEnquiryStatus(type)} // Always null for localStorage
+                      enquirySentAt={getEnquiryTimestamp(type)} // Always null for localStorage
+                      isSignedIn={false} // LocalStorage = not signed in
+                      isPaymentConfirmed={false} // LocalStorage = planning phase
+                      enquiries={[]} // No enquiries in localStorage
+                      // NEW: LocalStorage is always in planning phase
+                      currentPhase="planning"
+                    />
+                  ))}
+                </div>
+
+                {/* NEW: Mobile Navigation */}
+                <div className="md:hidden">
+                  <MobileSupplierNavigation
+                    suppliers={suppliers}
                     loadingCards={loadingCards}
                     suppliersToDelete={suppliersToDelete}
-                    openSupplierModal={openSupplierModal} // Use the new enhanced function
+                    openSupplierModal={openSupplierModal}
                     handleDeleteSupplier={handleDeleteSupplier}
                     getSupplierDisplayName={getSupplierDisplayName}
                     addons={addons}
                     handleRemoveAddon={handleRemoveAddon}
-                    enquiryStatus={null}
-                    isSignedIn={false}
-                    isPaymentConfirmed={false}
-                    enquiries={[]}
+                    getEnquiryStatus={getEnquiryStatus}
+                    getEnquiryTimestamp={getEnquiryTimestamp}
+                    isPaymentConfirmed={false} // LocalStorage = planning phase
+                    enquiries={[]} // No enquiries in localStorage
+                    // NEW: Don't show party tasks in localStorage dashboard (selected state)
+                    showPartyTasks={false}
+                    currentPhase="planning" // LocalStorage is always planning phase
+                    partyTasksStatus={{}}
                   />
-                ))}
-              </div>
-
-              {/* Mobile Supplier Tabs */}
-              <div className="md:hidden">
-                <MobileSingleScrollSuppliers
-                  suppliers={suppliers}
-                  loadingCards={loadingCards}
-                  suppliersToDelete={suppliersToDelete}
-                  openSupplierModal={openSupplierModal} // Use the new enhanced function
-                  handleDeleteSupplier={handleDeleteSupplier}
-                  getSupplierDisplayName={getSupplierDisplayName}
-                  addons={addons}
-                  handleRemoveAddon={handleRemoveAddon}
-                  getEnquiryStatus={() => null}
-                  isSignedIn={false}
-                  isPaymentConfirmed={false}
-                  enquiries={[]}
-                  handleAddSupplier={handleAddSupplier}
-                />
+                </div>
               </div>
 
               {/* Add-ons Section */}
@@ -470,6 +530,14 @@ export default function LocalStorageDashboard() {
         date={modalConfig.date}
         initialFilters={modalConfig.filters}
         onSelectSupplier={handleSupplierSelection}
+        partyLocation={partyDetails.location}
+        currentPhase="planning"                     // LocalStorage is always planning
+        isAwaitingResponses={false}                 // Never awaiting in localStorage
+        partyData={partyPlan}                       // Pass current party plan
+        enquiries={[]}                              // No enquiries in localStorage
+        hasEnquiriesPending={false}                 // Never pending in localStorage
+        isSignedIn={false}                          // LocalStorage users aren't signed in
+        currentPartyId={null}                       // No party ID for localStorage
       />
 
       <WelcomeDashboardPopup 

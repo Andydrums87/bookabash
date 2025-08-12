@@ -35,12 +35,7 @@ export default function PartyPhaseContent({
   if (phase === 'payment_confirmed') {
     return (
       <div className="mb-8">
-        <PostPaymentSuccessSection
-          suppliers={suppliers}
-          enquiries={enquiries}
-          partyData={partyData}
-          paymentDetails={paymentDetails}
-        />
+     
            {/* While You Wait Section */}
            <WhilstYouWaitSection 
           registry={registry}
@@ -130,7 +125,7 @@ export default function PartyPhaseContent({
   // Planning phase (default)
   return (
     <div className="mb-8">
-      <PlanningPhaseContent />
+      {/* <PlanningPhaseContent /> */}
     </div>
   )
 }

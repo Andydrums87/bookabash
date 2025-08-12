@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, use, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { useContextualNavigation } from "@/hooks/useContextualNavigation"
 import { useSupplier } from "@/utils/mockBackend"
+import { useUserTypeDetection, getHandleAddToPlanBehavior } from '@/hooks/useUserTypeDetection'
 
 import { supabase } from "@/lib/supabase"
 
@@ -34,6 +35,122 @@ import AboutMeComponent from "@/components/supplier/about-me"
 import PendingEnquiryModal from "@/components/supplier/PendingEnquiryModal"
 
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+
+
+const UserDetectionDebugger = () => {
+  const [localStorageData, setLocalStorageData] = useState({})
+  const [authUser, setAuthUser] = useState(null)
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setAuthUser(user)
+    }
+    checkAuth()
+  }, [])
+  
+  useEffect(() => {
+    const checkStorage = () => {
+      setLocalStorageData({
+        partyPlan: localStorage.getItem('user_party_plan'),
+        partyDetails: localStorage.getItem('party_details'),
+        hasValidPlan: hasValidPartyPlanDebug()
+      })
+    }
+    
+    checkStorage()
+    const interval = setInterval(checkStorage, 1000)
+    return () => clearInterval(interval)
+  }, [])
+  
+  // Get the actual behavior
+  const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
+  const buttonState = getAddToPartyButtonState(selectedPackageId)
+  
+  return (
+    <div className="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border z-50 max-w-sm text-xs">
+      <div className="flex justify-between items-center mb-2">
+        <h4 className="font-bold text-sm">🔍 User Detection Debug</h4>
+        <button onClick={() => setDebugMode(false)} className="text-red-500">×</button>
+      </div>
+      
+      <div className="space-y-2">
+        {/* Auth Status */}
+        <div className="bg-gray-50 p-2 rounded">
+          <div className="font-semibold">Authentication:</div>
+          <div>User ID: <span className="font-mono">{authUser?.id || 'None'}</span></div>
+          <div>Email: <span className="font-mono">{authUser?.email || 'None'}</span></div>
+        </div>
+        
+        {/* Storage Status */}
+        <div className="bg-gray-50 p-2 rounded">
+          <div className="font-semibold">Local Storage:</div>
+          <div>Party Plan: <strong>{!!localStorageData.partyPlan ? 'Yes' : 'No'}</strong></div>
+          <div>Party Details: <strong>{!!localStorageData.partyDetails ? 'Yes' : 'No'}</strong></div>
+          <div>Has Valid Plan: <strong>{localStorageData.hasValidPlan ? 'Yes' : 'No'}</strong></div>
+        </div>
+        
+        {/* User Type Detection */}
+        <div className="bg-blue-50 p-2 rounded">
+          <div className="font-semibold">User Type Detection:</div>
+          <div>Loading: <strong>{loading ? 'Yes' : 'No'}</strong></div>
+          <div>User Type: <strong className="text-blue-600">{userType || 'null'}</strong></div>
+          <div>Data Source: <strong>{userContext?.dataSource || 'null'}</strong></div>
+          <div>Needs Date: <strong>{userContext?.needsDateSelection ? 'Yes' : 'No'}</strong></div>
+        </div>
+        
+        {/* Calendar State */}
+        <div className="bg-green-50 p-2 rounded">
+          <div className="font-semibold">Calendar State:</div>
+          <div>Selected Date: <strong>{selectedDate || 'None'}</strong></div>
+          <div>Current Month: <strong>{currentMonth?.getMonth() + 1}/{currentMonth?.getFullYear()}</strong></div>
+        </div>
+        
+        {/* Behavior Logic */}
+        <div className="bg-yellow-50 p-2 rounded">
+          <div className="font-semibold">Behavior Logic:</div>
+          <div>Show Date Picker: <strong>{behavior?.shouldShowDatePicker ? 'Yes' : 'No'}</strong></div>
+          <div>Show À La Carte: <strong>{behavior?.shouldShowAlaCarteModal ? 'Yes' : 'No'}</strong></div>
+          <div>Check Category: <strong>{behavior?.shouldCheckCategoryOccupation ? 'Yes' : 'No'}</strong></div>
+          <div>Send Enquiry: <strong>{behavior?.shouldSendEnquiry ? 'Yes' : 'No'}</strong></div>
+        </div>
+        
+        {/* Button State */}
+        <div className="bg-purple-50 p-2 rounded">
+          <div className="font-semibold">Button State:</div>
+          <div>Text: <strong className="text-purple-600">"{behavior?.buttonText}"</strong></div>
+          <div>Disabled: <strong>{behavior?.buttonDisabled ? 'Yes' : 'No'}</strong></div>
+          <div>Actual Text: <strong>"{typeof buttonState?.text === 'string' ? buttonState.text : 'JSX'}"</strong></div>
+          <div>Actual Disabled: <strong>{buttonState?.disabled ? 'Yes' : 'No'}</strong></div>
+        </div>
+        
+        {/* Actions */}
+        <div className="pt-2 border-t">
+          <button 
+            onClick={() => {
+              console.log('🔄 Manual behavior check:', behavior)
+              console.log('🔄 Manual button state:', buttonState)
+              console.log('🔄 Selected package ID:', selectedPackageId)
+              console.log('🔄 Packages:', packages)
+            }}
+            className="text-xs bg-blue-500 text-white px-2 py-1 rounded mr-2"
+          >
+            Log Details
+          </button>
+          <button 
+            onClick={() => {
+              localStorage.clear()
+              window.location.reload()
+            }}
+            className="text-xs bg-red-500 text-white px-2 py-1 rounded"
+          >
+            Clear & Reload
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 
 const SelectedDateBanner = ({ selectedDate, currentMonth, onClearDate }) => {
@@ -144,9 +261,22 @@ const getCategoryMapping = (category) => {
 export default function SupplierProfilePage({ backendSupplier }) {
   const router = useRouter()
 
+
+
+
+
+const { userType, userContext, loading: userTypeLoading } = useUserTypeDetection()
+  const { partyPlan, addSupplier, addAddon, removeAddon, hasAddon } = usePartyPlan()
+  const { navigateWithContext, navigationContext } = useContextualNavigation()
   
+  const [isLoaded, setIsLoaded] = useState(false)
+  
+
+
   // State variables
   const [selectedPackageId, setSelectedPackageId] = useState(null)
+  const [debugMode, setDebugMode] = useState(false)
+  const [currentPartyId, setCurrentPartyId] = useState(null)
   const [isAddingToPlan, setIsAddingToPlan] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -173,11 +303,6 @@ const [enquiryStatus, setEnquiryStatus] = useState({
 
 
 
-  
-  // Hooks
-//   const {  loading: supplierLoading, error: supplierError } = useSupplier(id)
-  const { partyPlan, addSupplier, addAddon, removeAddon, hasAddon } = usePartyPlan()
-  const { navigateWithContext, navigationContext } = useContextualNavigation()
 
 
 
@@ -250,41 +375,78 @@ const [enquiryStatus, setEnquiryStatus] = useState({
   }, [backendSupplier])
 
 
+  // Add this useEffect to get party ID:
+useEffect(() => {
+  const getPartyId = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
+      if (partyIdResult.success) {
+        setCurrentPartyId(partyIdResult.partyId)
+      }
+    }
+  }
+  getPartyId()
+}, [])
+useEffect(() => {
+  if (!userTypeLoading && backendSupplier) {
+    // Small delay to ensure smooth transition
+    setTimeout(() => setIsLoaded(true), 100)
+  }
+}, [userTypeLoading, backendSupplier])
+
+
 // NEW: Database-based enquiry checking
 const checkEnquiryStatus = useCallback(async () => {
+
+  // Early return if no valid plan
+ 
+
   try {
     setEnquiryStatus(prev => ({ ...prev, loading: true }))
-    
 
+    
     const { data: { user } } = await supabase.auth.getUser()
 
+
     if (!user) {
-        console.log('ℹ️ No authenticated user - skipping enquiry check')
-        setEnquiryStatus({
-          isAwaiting: false,
-          pendingCount: 0,
-          enquiries: [],
-          loading: false
-        })
-        return { canModifyPlan: true, reason: 'no_auth' }
-      }
-    const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
-    
-    if (!partyIdResult.success || !partyIdResult.partyId) {
-      console.log('ℹ️ No current party found - user can modify plan freely')
+
       setEnquiryStatus({
         isAwaiting: false,
         pendingCount: 0,
         enquiries: [],
         loading: false
       })
-      return { canModifyPlan: true, reason: 'no_current_party' }
+      return { canModifyPlan: true, reason: 'no_auth' }
     }
     
-    // Check if party is awaiting responses
-    const awaitingResult = await partyDatabaseBackend.isPartyAwaitingResponses(partyIdResult.partyId)
+    // FIX: Get the party ID first
+    const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
+
+
+
     
+    if (!partyIdResult.success || !partyIdResult.partyId) {
+  
+      setEnquiryStatus({
+        isAwaiting: false,
+        pendingCount: 0,
+        enquiries: [],
+        loading: false
+      })
+      return { canModifyPlan: true, reason: 'no_party_id' }
+    }
+    
+
+    
+    // Check if party is awaiting responses
+
+
+       const awaitingResult = await partyDatabaseBackend.isPartyAwaitingResponses(partyIdResult.partyId)
+
     if (awaitingResult.success) {
+  
+      
       setEnquiryStatus({
         isAwaiting: awaitingResult.isAwaiting,
         pendingCount: awaitingResult.pendingCount || 0,
@@ -299,7 +461,6 @@ const checkEnquiryStatus = useCallback(async () => {
       }
     } else {
       console.error('❌ Error checking enquiry status:', awaitingResult.error)
-      // Default to allowing modifications if there's an error
       setEnquiryStatus({
         isAwaiting: false,
         pendingCount: 0,
@@ -319,14 +480,22 @@ const checkEnquiryStatus = useCallback(async () => {
     })
     return { canModifyPlan: true, reason: 'exception_default_allow' }
   }
-}, [])
+}, [hasValidPlan])
 
-// NEW: Effect to check enquiry status on component mount
+// Actually, even better - make it always run:
+// Try this:
 useEffect(() => {
-  if (hasValidPlan) {
+
+  checkEnquiryStatus()
+}, []) // Empty dependency array to run once on mount
+
+// OR try this to run it when the component is ready:
+useEffect(() => {
+  if (isLoaded && !userTypeLoading) {
+
     checkEnquiryStatus()
   }
-}, [hasValidPlan, checkEnquiryStatus])
+}, [isLoaded, userTypeLoading])
 
 const hasEnquiriesPending = useCallback(() => {
   return enquiryStatus.isAwaiting
@@ -338,11 +507,7 @@ const getPendingEnquiriesCount = useCallback(() => {
 
 
 
-  // NEW: Function to check if user can modify the plan
-  const canModifyPartyPlan = useCallback(async () => {
-    const status = await checkEnquiryStatus()
-    return status.canModifyPlan
-  }, [checkEnquiryStatus])
+
 
 
   // Fix the party plan validation with stable reference
@@ -553,33 +718,121 @@ const getPendingEnquiriesCount = useCallback(() => {
   }, [packages, selectedPackageId, getSupplierInPartyDetails])
 
 
-
   const handleAlaCarteBooking = useCallback(async (partyDetails) => {
-    console.log('🎯 handleAlaCarteBooking STARTED')
-    console.log('📝 Received party details:', partyDetails)
-    
+  
+    if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
+      console.log('🚫 User trying to add supplier - showing pending enquiry modal')
+      setShowPendingEnquiryModal(true)
+      return // Exit early
+    }
+  
     try {
+      // Close modal first
       setShowAlaCarteModal(false)
       await new Promise(resolve => setTimeout(resolve, 100))
       
+      // Start loading states
       setIsAddingToPlan(true)
       setLoadingStep(0)
       setProgress(10)
   
-      const selectedPkg = packages.find(pkg => pkg.id === selectedPackageId)
-      
-      localStorage.setItem('party_details', JSON.stringify({
-        ...partyDetails,
-        createdAt: new Date().toISOString(),
-        source: 'a_la_carte'
-      }))
+      // ✅ FIX 1: Validate required data
+      if (!partyDetails) {
+        throw new Error('No party details provided')
+      }
   
-      setLoadingStep(1)
+      if (!supplier) {
+        throw new Error('No supplier data available')
+      }
+  
+      // Get selected package
+      const selectedPkg = packages.find(pkg => pkg.id === selectedPackageId)
+      if (!selectedPkg) {
+        throw new Error('No package selected')
+      }
+      
+      console.log('📦 Selected package:', selectedPkg)
+      console.log('🏪 Supplier:', { id: supplier.id, name: supplier.name, category: supplier.category })
+      
+      setProgress(25)
+  
+      const enhancedPartyDetails = {
+        // Essential party info
+        childName: partyDetails.childName || 'Your Child',
+        childAge: parseInt(partyDetails.childAge) || 6,
+        date: partyDetails.date || new Date().toISOString().split('T')[0], // Fallback to today
+        time: partyDetails.time || '14:00',
+        location: partyDetails.location || 'London',
+        postcode: partyDetails.postcode || 'SW1A 1AA',
+        guestCount: parseInt(partyDetails.guestCount) || 10,
+        theme: partyDetails.theme || 'superhero',
+        
+        // Pricing
+        totalPrice: partyDetails.totalPrice || selectedPkg.price,
+        basePrice: partyDetails.basePrice || selectedPkg.price,
+        selectedAddons: partyDetails.selectedAddons || [],
+        
+        // Metadata
+        createdAt: new Date().toISOString(),
+        source: 'a_la_carte',
+        
+        // ✅ PRESERVE A-LA-CARTE SPECIFIC FIELDS - This was missing!
+        firstName: partyDetails.firstName, // Preserve first name
+        lastName: partyDetails.lastName,   // Preserve last name  
+        skipWelcomePopup: partyDetails.skipWelcomePopup, // Preserve skip flag
+        timeSlot: partyDetails.timeSlot,   // Preserve time slot
+        
+        // Add essential fields that might be missing
+        duration: partyDetails.duration || '2 hours',
+        budget: partyDetails.totalPrice || selectedPkg.price
+      }
+      
+      console.log('✨ Enhanced party details:', enhancedPartyDetails)
+  
       setProgress(40)
   
-      // Create party plan with supplier - UPDATED with addon support
+      // ✅ FIX 4: Save party details with error handling
+      try {
+        localStorage.setItem('party_details', JSON.stringify(enhancedPartyDetails))
+        console.log('💾 Party details saved to localStorage')
+        
+        // Verify it was saved
+        const saved = localStorage.getItem('party_details')
+        if (!saved) {
+          throw new Error('Failed to save party details to localStorage')
+        }
+      } catch (storageError) {
+        console.error('❌ Storage error:', storageError)
+        throw new Error('Failed to save party details')
+      }
+  
+      setProgress(60)
+  
+      // ✅ FIX 5: Improved category mapping with debug
+      const getCategoryMapping = (category) => {
+        const mapping = {
+          'Entertainment': 'entertainment',
+          'Venues': 'venue',
+          'Venue': 'venue', 
+          'Catering': 'catering',
+          'Face Painting': 'facePainting',
+          'Activities': 'activities',
+          'Party Bags': 'partyBags',
+          'Decorations': 'decorations',
+          'Balloons': 'balloons',
+          'Photography': 'photography'
+        }
+        
+        const result = mapping[category] || 'entertainment'
+        console.log('🎯 Category mapping:', category, '→', result)
+        return result
+      }
+  
       const supplierCategory = getCategoryMapping(supplier.category)
+  
+      // ✅ FIX 6: Create robust party plan structure
       const partyPlan = {
+        // Initialize all possible slots
         venue: null,
         entertainment: null,
         catering: null,
@@ -587,103 +840,156 @@ const getPendingEnquiriesCount = useCallback(() => {
         activities: null,
         partyBags: null,
         decorations: null,
+        balloons: null,
+        photography: null,
+        
+        // Add the selected supplier to correct category
         [supplierCategory]: {
           id: supplier.id,
           name: supplier.name,
-          description: supplier.description,
-          price: partyDetails.totalPrice || selectedPkg.price, // NEW: Use total price including addons
-          status: "pending",
-          image: supplier.image,
+          description: supplier.description || `${supplier.category} service`,
+          price: enhancedPartyDetails.totalPrice,
+          status: "confirmed", // ✅ FIX: Set as confirmed for à la carte
+          image: supplier.image || supplier.coverPhoto || supplier.avatar,
           category: supplier.category,
           priceUnit: supplier.priceUnit || "per event",
           packageId: selectedPkg.id,
           packageData: {
             ...selectedPkg,
-            // NEW: Include addon information in package data
-            selectedAddons: partyDetails.selectedAddons || [],
-            totalPrice: partyDetails.totalPrice || selectedPkg.price,
-            basePrice: partyDetails.basePrice || selectedPkg.price,
-            addonsPriceTotal: (partyDetails.totalPrice || selectedPkg.price) - (partyDetails.basePrice || selectedPkg.price)
+            selectedAddons: enhancedPartyDetails.selectedAddons,
+            totalPrice: enhancedPartyDetails.totalPrice,
+            basePrice: enhancedPartyDetails.basePrice,
+            addonsPriceTotal: enhancedPartyDetails.totalPrice - enhancedPartyDetails.basePrice
           },
-          // NEW: Store addon information at supplier level too
-          selectedAddons: partyDetails.selectedAddons || [],
-          totalPrice: partyDetails.totalPrice || selectedPkg.price,
-          basePrice: partyDetails.basePrice || selectedPkg.price,
+          selectedAddons: enhancedPartyDetails.selectedAddons,
+          totalPrice: enhancedPartyDetails.totalPrice,
+          basePrice: enhancedPartyDetails.basePrice,
           addedAt: new Date().toISOString(),
-          originalSupplier: supplier
+          originalSupplier: {
+            ...supplier,
+            // Include backend data if available
+            ...(backendSupplier || {})
+          },
+          // ✅ FIX 7: Add à la carte specific fields
+          bookingMethod: 'a_la_carte',
+          confirmed: true
         },
+        
+        // Always include e-invites for à la carte bookings
         einvites: {
           id: "digital-invites",
           name: "Digital Party Invites",
           description: "Digital e-invitations with RSVP tracking",
           price: 25,
-          status: "confirmed",
+          status: "available", // Not auto-confirmed for à la carte
           image: "/placeholder.jpg",
           category: "Digital Services",
           priceUnit: "per set",
           addedAt: new Date().toISOString()
         },
-        addons: []
+        
+        // Initialize empty addons array
+        addons: [],
+        
+        // ✅ FIX 8: Add metadata
+        createdAt: new Date().toISOString(),
+        source: 'a_la_carte',
+        theme: enhancedPartyDetails.theme
       }
   
-      setLoadingStep(3)
-      setProgress(90)
+      console.log('🎪 Created party plan:')
+      console.log('  - Supplier category:', supplierCategory)
+      console.log('  - Supplier data:', partyPlan[supplierCategory])
+      console.log('  - Total slots filled:', Object.keys(partyPlan).filter(key => 
+        partyPlan[key] && typeof partyPlan[key] === 'object' && partyPlan[key].name
+      ).length)
   
-      localStorage.setItem('user_party_plan', JSON.stringify(partyPlan))
+      setProgress(80)
   
-      setLoadingStep(4)
-      setProgress(100)
+      // ✅ FIX 9: Save party plan with verification
+      try {
+        localStorage.setItem('user_party_plan', JSON.stringify(partyPlan))
+        console.log('💾 Party plan saved to localStorage')
+        
+        // Verify it was saved correctly
+        const savedPlan = localStorage.getItem('user_party_plan')
+        if (!savedPlan) {
+          throw new Error('Failed to save party plan to localStorage')
+        }
+        
+        const parsedPlan = JSON.parse(savedPlan)
+        if (!parsedPlan[supplierCategory] || !parsedPlan[supplierCategory].name) {
+          throw new Error('Party plan structure is incorrect after saving')
+        }
+        
+        console.log('✅ Party plan verified in localStorage')
+      } catch (storageError) {
+        console.error('❌ Storage error:', storageError)
+        throw new Error('Failed to save party plan')
+      }
   
-      await new Promise(resolve => setTimeout(resolve, 800))
+      setProgress(95)
   
-      // NEW: Enhanced notification message with addon info
-      const addonMessage = partyDetails.selectedAddons?.length > 0 
-        ? ` with ${partyDetails.selectedAddons.length} exciting add-on${partyDetails.selectedAddons.length > 1 ? 's' : ''}` 
+      // ✅ FIX 10: Success notification
+      const addonMessage = enhancedPartyDetails.selectedAddons?.length > 0 
+        ? ` with ${enhancedPartyDetails.selectedAddons.length} add-on${enhancedPartyDetails.selectedAddons.length > 1 ? 's' : ''}` 
         : ''
       
       setNotification({ 
         type: "success", 
-        message: `${supplier.name} added to your party plan${addonMessage}!` 
+        message: `🎉 ${supplier.name} added to your party plan${addonMessage}!` 
       })
   
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      router.push("/dashboard")
+      setProgress(100)
+      console.log('✅ À la carte booking completed successfully')
+  
+      // Wait for progress animation and notification
+      await new Promise(resolve => setTimeout(resolve, 1500))
+  
+      // ✅ FIX 11: Navigate with proper URL parameters
+      console.log('🚀 Navigating to dashboard with welcome flag')
+      router.push("/dashboard?show_welcome=true&source=a_la_carte")
   
     } catch (error) {
-      console.error("❌ Error creating a la carte booking:", error)
+      console.error("❌ Error in handleAlaCarteBooking:", error)
+      console.error("❌ Error stack:", error.stack)
+      
       setNotification({ 
         type: "error", 
-        message: "Failed to create party plan. Please try again." 
+        message: `Failed to create party plan: ${error.message}. Please try again.` 
       })
+      
+      // Clear notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000)
     } finally {
+      // ✅ FIX 12: Always clean up loading states
       setIsAddingToPlan(false)
       setProgress(0)
+      setLoadingStep(0)
+      console.log('🔧 Cleanup completed')
     }
-  }, [packages, selectedPackageId, supplier, router])
+  }, [packages, selectedPackageId, supplier, backendSupplier, router])
 
-
-
-  // Other callback functions with proper dependencies
   const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
+    if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
+      console.log('🚫 User trying to add supplier - showing pending enquiry modal')
+      setShowPendingEnquiryModal(true)
+      return // Exit early
+    }
+  
     if (!supplier || !selectedPackageId) {
       setNotification({ type: "error", message: "Please select a package first." })
       setTimeout(() => setNotification(null), 3000)
       return
     }
-    if (hasValidPartyPlan()) {
-      const canModify = await canModifyPartyPlan()
-
-     
-      if (!canModify) {
-        console.log('🚫 Cannot modify plan - party is awaiting supplier responses')
-        setShowPendingEnquiryModal(true)
-        return
-      }
-    }
-
-     // Check if we need a date first (calendar-first flow)
-     if (!hasValidPartyPlan() && !selectedDate) {
-      // Scroll to calendar with smooth animation
+    
+    // Get behavior based on user type
+    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
+    
+    console.log('🎯 HandleAddToPlan behavior for', userType, ':', behavior)
+    
+    // Date picker flow for anonymous/new users
+    if (behavior.shouldShowDatePicker) {
       const calendarElement = document.getElementById('availability-calendar')
       if (calendarElement) {
         calendarElement.scrollIntoView({ 
@@ -692,7 +998,6 @@ const getPendingEnquiriesCount = useCallback(() => {
           inline: 'nearest'
         })
         
-        // Add a gentle highlight effect
         calendarElement.classList.add('ring-4', 'ring-orange-300', 'ring-opacity-75', 'transition-all', 'duration-500')
         setTimeout(() => {
           calendarElement?.classList.remove('ring-4', 'ring-orange-300', 'ring-opacity-75')
@@ -707,13 +1012,54 @@ const getPendingEnquiriesCount = useCallback(() => {
       setTimeout(() => setNotification(null), 4000)
       return
     }
-
-
-    if (!hasValidPartyPlan()) {
+    
+    if (behavior.shouldShowAlaCarteModal) {
+      console.log('🎪 Opening à la carte modal for anonymous user with date')
       setShowAlaCarteModal(true)
       return
     }
-
+    
+    
+    // Category occupation check for database users
+    if (behavior.shouldCheckCategoryOccupation && userContext.currentPartyId) {
+      try {
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+        if (partyResult.success && partyResult.party?.party_plan) {
+          const dbPartyPlan = partyResult.party.party_plan
+          
+          const categoryMap = {
+            'Entertainment': 'entertainment',
+            'Venues': 'venue', 
+            'Catering': 'catering',
+            'Decorations': 'decorations',
+            'Party Bags': 'partyBags',
+            'Photography': 'photography',
+            'Activities': 'activities',
+            'Face Painting': 'facePainting'
+          }
+          
+          const slotName = categoryMap[supplier.category]
+          const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
+          
+          if (isSlotOccupied) {
+            console.log('🚫 Database user - category occupied, blocking')
+            setNotification({ 
+              type: "info", 
+              message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`,
+              duration: 4000
+            })
+            setTimeout(() => setNotification(null), 4000)
+            return
+          } else {
+            console.log('✅ Database user - category empty, proceeding with auto-enquiry')
+          }
+        }
+      } catch (error) {
+        console.log('Database check failed, continuing...', error)
+      }
+    }
+    
+    // Rest of your existing addon logic
     const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
     if (!selectedPkg) {
       setNotification({ type: "error", message: "Selected package not found." })
@@ -728,7 +1074,6 @@ const getPendingEnquiriesCount = useCallback(() => {
       return
     }
   
-    const partyDetails = getSupplierInPartyDetails()
     setIsAddingToPlan(true)
     setLoadingStep(0)
     setProgress(10)
@@ -745,80 +1090,81 @@ const getPendingEnquiriesCount = useCallback(() => {
         addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0
       }
   
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setLoadingStep(1)
-      setProgress(30)
-  
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setLoadingStep(2)
-      setProgress(55)
-  
       let result
-      if (partyDetails.inParty) {
-        if (partyDetails.currentPackage === selectedPackageId && !addonData) {
-          setNotification({
-            type: "info",
-            message: `${supplier.name} with ${selectedPkg?.name || "this package"} is already in your dashboard!`,
-          })
-          setIsAddingToPlan(false)
-          setProgress(0)
-          setTimeout(() => setNotification(null), 3000)
-          return
-        }
   
-        if (partyDetails.supplierType === "addon") {
-          await removeAddon(supplier.id)
-          const addonDataToAdd = {
-            ...supplier,
-            price: finalPrice,
-            packageId: enhancedPackage.id,
-            selectedAddons: enhancedPackage.addons,
-            packageData: enhancedPackage
+      // Database user - add with auto-enquiry for empty categories
+      if (userType === 'DATABASE_USER' || userType === 'DATA_CONFLICT') {
+        console.log('📊 Database user - adding supplier')
+        
+        const addResult = await partyDatabaseBackend.addSupplierToParty(
+          userContext.currentPartyId,
+          backendSupplier,
+          enhancedPackage
+        )
+        
+        if (addResult.success && behavior.shouldSendEnquiry) {
+          console.log('📧 Sending auto-enquiry for empty category')
+          const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+            userContext.currentPartyId,
+            backendSupplier,
+            enhancedPackage,
+            `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
+          )
+          
+          if (enquiryResult.success) {
+            console.log('✅ Auto-enquiry sent successfully')
           }
-          result = await addAddon(addonDataToAdd)
-        } else {
-          result = await addSupplier(backendSupplier, enhancedPackage)
         }
-  
-        if (result.success) {
-          const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
-          setNotification({ 
-            type: "success", 
-            message: `Package updated to ${selectedPkg?.name || "new package"}${addonMessage}!` 
-          })
-        }
-      } else {
-        const mainCategories = ["Venues", "Catering", "Party Bags", "Face Painting", "Activities", "Entertainment"]
-        if (mainCategories.includes(supplier.category || "")) {
-          result = await addSupplier(backendSupplier, enhancedPackage)
-        } else {
-          const addonDataToAdd = {
-            ...supplier,
-            price: finalPrice,
-            packageId: enhancedPackage.id,
-            selectedAddons: enhancedPackage.addons,
-            packageData: enhancedPackage
+        
+        result = addResult
+      }
+      // LocalStorage user - add freely
+      else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
+        console.log('📦 LocalStorage user - adding supplier freely')
+        
+        const partyDetails = getSupplierInPartyDetails()
+        if (partyDetails.inParty) {
+          if (partyDetails.supplierType === "addon") {
+            await removeAddon(supplier.id)
+            result = await addSupplier(backendSupplier, enhancedPackage)
+          } else {
+            result = await addSupplier(backendSupplier, enhancedPackage)
           }
-          result = await addAddon(addonDataToAdd)
-        }
-  
-        if (result.success) {
-          const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} exciting add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
-          setNotification({ 
-            type: "success", 
-            message: `${supplier.name} has been added to your party plan${addonMessage}!` 
-          })
+        } else {
+          const mainCategories = ["Venues", "Catering", "Party Bags", "Face Painting", "Activities", "Entertainment"]
+          if (mainCategories.includes(supplier.category || "")) {
+            result = await addSupplier(backendSupplier, enhancedPackage)
+          } else {
+            const addonDataToAdd = {
+              ...supplier,
+              price: finalPrice,
+              packageId: enhancedPackage.id,
+              selectedAddons: enhancedPackage.addons,
+              packageData: enhancedPackage
+            }
+            result = await addAddon(addonDataToAdd)
+          }
         }
       }
-  
-      setLoadingStep(3)
-      setProgress(80)
-      await new Promise((resolve) => setTimeout(resolve, 800))
   
       setLoadingStep(4)
       setProgress(100)
   
-      if (result.success) {
+      if (result?.success) {
+        const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
+        
+        if (behavior.shouldSendEnquiry) {
+          setNotification({ 
+            type: "success", 
+            message: `${supplier.name} added and enquiry sent${addonMessage}!` 
+          })
+        } else {
+          setNotification({ 
+            type: "success", 
+            message: `${supplier.name} added to your party${addonMessage}!` 
+          })
+        }
+        
         await new Promise((resolve) => setTimeout(resolve, 1000))
         if (navigationContext === "dashboard") {
           navigateWithContext("/dashboard", "supplier-detail")
@@ -826,11 +1172,11 @@ const getPendingEnquiriesCount = useCallback(() => {
           router.push("/dashboard")
         }
       } else {
-        throw new Error(result.error || "Failed to update party plan")
+        throw new Error(result?.error || "Failed to add supplier")
       }
     } catch (error) {
-      console.error("Error updating party plan:", error)
-      setNotification({ type: "error", message: error.message || "Failed to update party plan. Please try again." })
+      console.error("Error in handleAddToPlan:", error)
+      setNotification({ type: "error", message: error.message || "Failed to add supplier. Please try again." })
       setTimeout(() => setNotification(null), 3000)
     } finally {
       setIsAddingToPlan(false)
@@ -839,7 +1185,109 @@ const getPendingEnquiriesCount = useCallback(() => {
       setSelectedAddons([])
       setFinalPackageData(null)
     }
-  }, [supplier, hasEnquiriesPending, selectedPackageId, hasValidPartyPlan, selectedDate, packages, getSupplierInPartyDetails, addSupplier, addAddon, removeAddon, backendSupplier, navigationContext, navigateWithContext, router])
+  }, [userType, userContext, supplier, selectedPackageId, selectedDate, packages, getSupplierInPartyDetails, addSupplier, addAddon, removeAddon, backendSupplier, navigationContext, navigateWithContext, router])
+
+  const getAddToPartyButtonState = useCallback((packageIdToCompare) => {
+    const currentPackageId = packageIdToCompare || selectedPackageId
+    const partyDetails = getSupplierInPartyDetails()
+    const isLoadingThisPackage = isAddingToPlan && selectedPackageId === currentPackageId
+    
+
+    
+    // Handle loading state first
+    if (isLoadingThisPackage) {
+      return {
+        disabled: true,
+        className: "bg-gray-400",
+        text: (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            {partyDetails.inParty && partyDetails.currentPackage === currentPackageId ? "Updating..." : "Adding..."}
+          </>
+        ),
+      }
+    }
+    
+    // Get behavior from user type detection
+    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
+ 
+    
+    // ✅ FIXED: Handle different user types correctly
+    switch (userType) {
+      case 'ANONYMOUS':
+      case 'ERROR_FALLBACK':
+        // Only anonymous users need date selection flow
+        if (!selectedDate) {
+          return {
+            disabled: false,
+            className: "bg-orange-500 hover:bg-orange-600 text-white",
+            text: "📅 Pick a Date First"
+          }
+        } else {
+          return {
+            disabled: false,
+            className: "bg-primary-500 hover:bg-primary-600 text-white",
+            text: "Book This Supplier"
+          }
+        }
+        
+      case 'LOCALSTORAGE_USER':
+      case 'MIGRATION_NEEDED':
+        // Show "In Plan" for localStorage users with the same package
+        if (partyDetails.inParty && partyDetails.currentPackage === currentPackageId) {
+          return {
+            disabled: true,
+            className: "bg-green-500 hover:bg-green-500 text-white cursor-not-allowed",
+            text: (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                In Plan
+              </>
+            ),
+          }
+        } else {
+          return {
+            disabled: false,
+            className: "bg-primary-500 hover:bg-primary-600 text-white",
+            text: "Add to Plan"
+          }
+        }
+        
+      case 'DATABASE_USER':
+      case 'DATA_CONFLICT':
+        // Database users - always show "Add to Plan" (category check happens in handler)
+        return {
+          disabled: false,
+          className: "bg-primary-500 hover:bg-primary-600 text-white",
+          text: "Add to Plan"
+        }
+        
+      default:
+        // Unknown user type - check if package is selected
+        if (!currentPackageId) {
+          return {
+            disabled: true,
+            className: "bg-gray-300 text-gray-500 cursor-not-allowed",
+            text: "Select a Package",
+          }
+        }
+        
+        // Fallback to behavior text
+        return { 
+          disabled: behavior.buttonDisabled || false, 
+          className: behavior.buttonDisabled 
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-primary-500 hover:bg-primary-600 text-white", 
+          text: behavior.buttonText
+        }
+    }
+  }, [userType, userContext, supplier, selectedDate, selectedPackageId, getSupplierInPartyDetails, isAddingToPlan])
+  
+
+
+  
+
+
 
   const handleAddonConfirm = useCallback((addonData) => {
     setSelectedAddons(addonData.addons)
@@ -886,69 +1334,7 @@ const getPendingEnquiriesCount = useCallback(() => {
   }, [selectedDate, currentMonth])
   
 
-  const getAddToPartyButtonState = useCallback((packageIdToCompare) => {
-    const currentPackageId = packageIdToCompare || selectedPackageId
-    const partyDetails = getSupplierInPartyDetails()
-    const isLoadingThisPackage = isAddingToPlan && selectedPackageId === currentPackageId
-    const hasPartyPlan = hasValidPartyPlan()
-    
-    if (isLoadingThisPackage) {
-      return {
-        disabled: true,
-        className: "bg-gray-400",
-        text: (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            {partyDetails.inParty && partyDetails.currentPackage === currentPackageId ? "Updating..." : "Adding..."}
-          </>
-        ),
-      }
-    }
-    
-    if (partyDetails.inParty && partyDetails.currentPackage === currentPackageId && hasPartyPlan) {
-      return {
-        disabled: true,
-        className: "bg-green-500 hover:bg-green-500 text-white cursor-not-allowed",
-        text: (
-          <>
-            <CheckCircle className="w-4 h-4 mr-2" />
-            In Plan
-          </>
-        ),
-      }
-    }
-    
-    if (!currentPackageId) {
-      return {
-        disabled: true,
-        className: "bg-gray-300 text-gray-500 cursor-not-allowed",
-        text: "Select a Package",
-      }
-    }
-    
-    // NEW: Check if date is required for booking
-    if (!hasPartyPlan && !selectedDate) {
-      return {
-        disabled: true,
-        className: "bg-orange-400 hover:bg-orange-500 text-white cursor-pointer",
-        text: (
-          <>
-            <Calendar className="w-4 h-4 mr-2" />
-            Pick a Date First
-          </>
-        ),
-        requiresDate: true // NEW: Add this flag
-      }
-    }
-    
-    const buttonText = hasPartyPlan ? "Add to Plan" : "Book This Supplier"
-    
-    return { 
-      disabled: false, 
-      className: "bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white", 
-      text: buttonText 
-    }
-  }, [selectedPackageId, getSupplierInPartyDetails, isAddingToPlan, hasValidPartyPlan, selectedDate])
+
 
  
 
@@ -969,6 +1355,21 @@ const getPendingEnquiriesCount = useCallback(() => {
     )
   }
 
+  // UPDATE your loading check to include user type loading:
+if (userTypeLoading) {
+  return (
+    <div className="min-h-screen bg-primary-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p>Detecting user type...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          User type: {userType || 'detecting...'} | Data source: {userContext?.dataSource || 'unknown'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 
   // Compute these values once
   const dashboardContext = isFromDashboard()
@@ -978,6 +1379,7 @@ const getPendingEnquiriesCount = useCallback(() => {
 
   return (
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
+      {debugMode && <UserDetectionDebugger />}
       <NotificationPopup notification={notification} />
 
       <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
@@ -990,7 +1392,13 @@ const getPendingEnquiriesCount = useCallback(() => {
         getAddToPartyButtonState={getAddToPartyButtonState}
         handleAddToPlan={handleAddToPlan}
       />
-
+<button 
+  onClick={() => setDebugMode(!debugMode)}
+  className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded-full z-50 shadow-lg"
+  title="Toggle Debug Mode"
+>
+  🐛
+</button>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           <main className="lg:col-span-2 space-y-8">
@@ -1000,6 +1408,7 @@ const getPendingEnquiriesCount = useCallback(() => {
               setSelectedPackageId={setSelectedPackageId}
               handleAddToPlan={handleAddToPlan}
               getAddToPartyButtonState={getAddToPartyButtonState}
+              
               getSupplierInPartyDetails={getSupplierInPartyDetails}
             />
             {/* NEW: Add selected date confirmation */}

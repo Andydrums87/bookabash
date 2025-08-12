@@ -35,6 +35,81 @@ import SnappyEnquiryLoader from "./components/SnappyEnquiryLoader"
 // Import auth and database functions
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+
+export function EnhancedURLDebugger() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [urlHistory, setUrlHistory] = useState([])
+  
+  useEffect(() => {
+    const currentInfo = {
+      timestamp: new Date().toISOString(),
+      fullUrl: window.location.href,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      searchParamsEntries: Object.fromEntries(searchParams.entries()),
+      directUrlParams: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
+      referrer: document.referrer
+    }
+    
+    setUrlHistory(prev => [...prev.slice(-4), currentInfo]) // Keep last 5 entries
+    console.log('🔍 URL Debug Info:', currentInfo)
+  }, [searchParams])
+  
+  return (
+    <Card className="border-red-200 bg-red-50 shadow-lg mb-6">
+      <CardContent className="p-4">
+        <h3 className="font-semibold text-red-900 mb-2">🔍 Enhanced URL Debugger</h3>
+        
+        {/* Current URL Info */}
+        <div className="mb-4">
+          <h4 className="font-medium text-red-800 mb-1">Current URL:</h4>
+          <div className="text-sm space-y-1">
+            <div><strong>Full:</strong> {urlHistory[urlHistory.length - 1]?.fullUrl}</div>
+            <div><strong>Search:</strong> {urlHistory[urlHistory.length - 1]?.search || 'none'}</div>
+            <div><strong>useSearchParams:</strong> {JSON.stringify(urlHistory[urlHistory.length - 1]?.searchParamsEntries)}</div>
+            <div><strong>Direct parsing:</strong> {JSON.stringify(urlHistory[urlHistory.length - 1]?.directUrlParams)}</div>
+            <div><strong>Referrer:</strong> {urlHistory[urlHistory.length - 1]?.referrer || 'none'}</div>
+          </div>
+        </div>
+        
+        {/* URL History */}
+        {urlHistory.length > 1 && (
+          <div className="mb-4">
+            <h4 className="font-medium text-red-800 mb-1">Recent URL Changes:</h4>
+            <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
+              {urlHistory.slice(-5).map((entry, index) => (
+                <div key={index} className="border-l-2 border-red-300 pl-2">
+                  <div><strong>{entry.timestamp}</strong></div>
+                  <div>URL: {entry.fullUrl}</div>
+                  <div>Params: {JSON.stringify(entry.searchParamsEntries)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Test buttons */}
+        <div className="space-y-2">
+          <ParameterTests />
+          
+          <button 
+            onClick={() => {
+              console.log('🧪 Testing problematic URL...')
+              const testUrl = '/dashboard?enquiry_sent=true&enquiry_count=3'
+              console.log('Target:', testUrl)
+              window.location.href = testUrl
+            }}
+            className="bg-red-500 text-white px-3 py-1 rounded text-sm"
+          >
+            🧪 Test Problematic URL
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function ReviewBookPage() {
   const router = useRouter()
   
@@ -55,6 +130,20 @@ export default function ReviewBookPage() {
   const [supplierCount, setSupplierCount] = useState(0)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState({})
+
+  useEffect(() => {
+    const originalError = console.error
+    console.error = (...args) => {
+      if (args[0]?.includes?.('AuthSessionMissingError')) {
+        console.trace('AUTH ERROR TRACE:')
+      }
+      originalError(...args)
+    }
+    
+    return () => {
+      console.error = originalError
+    }
+  }, [])
 
     // Handle addon clicks to open modal
     const handleAddonClick = (addon) => {
@@ -633,66 +722,7 @@ const handleRemoveAddon = async (addonId) => {
     }
   }
 
-  // Update your handleSubmitEnquiry function
-  const handleSubmitEnquiry = async () => {
-    try {
-      setIsSubmitting(true)
-      setLoadingStep(1) // Start at step 1
-      setLoadingError(null)
-      
-      // Calculate supplier count for display
-      const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
-      const count = Object.values(partyPlan).filter(supplier => 
-        supplier && typeof supplier === 'object' && supplier.name
-      ).length
-      setSupplierCount(count)
 
-      // Step 1: Migrate party to database
-      console.log("📤 Step 1: Migrating party to database...")
-      const migratedParty = await migratePartyToDatabase(user)
-      
-      // Move to step 2
-      setLoadingStep(2)
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Small delay for UX
-
-      // Step 2: Send enquiries to suppliers
-      console.log("📧 Step 2: Sending enquiries to suppliers...")
-      const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-        migratedParty.id,
-        formData.additionalMessage,
-        JSON.stringify({
-          dietary: formData.dietaryRequirements,
-          accessibility: formData.accessibilityRequirements,
-          numberOfChildren: formData.numberOfChildren,
-          contactInfo: {
-            name: formData.parentName,
-            phone: formData.phoneNumber,
-            email: formData.email,
-          },
-        }),
-      )
-
-      if (!enquiryResult.success) {
-        throw new Error(`Failed to send enquiries: ${enquiryResult.error}`)
-      }
-
-      console.log(`✅ Successfully sent ${enquiryResult.count} enquiries!`)
-      
-      // Move to success step
-      setLoadingStep(3)
-      
-      // Wait a moment to show success, then redirect
-      setTimeout(() => {
-        router.push(`/dashboard?enquiry_sent=true&enquiry_count=${enquiryResult.count}`)
-      }, 2000)
-
-    } catch (error) {
-      console.error("❌ Submit enquiry failed:", error)
-      setLoadingError(error.message)
-    } finally {
-      // Don't set isSubmitting to false here - keep the modal open until redirect
-    }
-  }
 
   const handleAuthSuccess = async (authenticatedUser, userData = null) => {
     console.log("✅ Authentication successful, user can now access the review page")
@@ -729,6 +759,185 @@ const handleRemoveAddon = async (addonId) => {
     }
   }
 
+  const handleSubmitEnquiry = async () => {
+    console.log('🚀 handleSubmitEnquiry started')
+    
+    try {
+      setIsSubmitting(true)
+      setLoadingStep(1)
+      setLoadingError(null)
+      
+      // Calculate supplier count for display
+      const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
+      const supplierCount = Object.values(partyPlan).filter(supplier => 
+        supplier && typeof supplier === 'object' && supplier.name
+      ).length
+      
+      console.log('📊 Calculated supplier count:', supplierCount)
+      setSupplierCount(supplierCount)
+  
+      // Step 1: Migrate party to database
+      console.log("📤 Step 1: Migrating party to database...")
+      const migratedParty = await migratePartyToDatabase(user)
+      console.log("✅ Migration result:", migratedParty)
+      
+      // Move to step 2
+      setLoadingStep(2)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+  
+      // Step 2: Send enquiries to suppliers
+      console.log("📧 Step 2: Sending enquiries to suppliers...")
+      const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+        migratedParty.id,
+        formData.additionalMessage,
+        JSON.stringify({
+          dietary: formData.dietaryRequirements,
+          accessibility: formData.accessibilityRequirements,
+          numberOfChildren: formData.numberOfChildren,
+          contactInfo: {
+            name: formData.parentName,
+            phone: formData.phoneNumber,
+            email: formData.email,
+          },
+        }),
+      )
+  
+      console.log('📋 Raw enquiryResult:', enquiryResult)
+  
+      if (!enquiryResult.success) {
+        throw new Error(`Failed to send enquiries: ${enquiryResult.error}`)
+      }
+  
+      // Calculate final count with fallbacks
+      const finalCount = enquiryResult.count || supplierCount || 4
+      console.log('🔢 Final enquiry count:', finalCount)
+  
+      console.log(`✅ Successfully sent ${finalCount} enquiries!`)
+      
+      // Move to success step
+      setLoadingStep(3)
+      
+      // Wait a moment to show success, then redirect
+      setTimeout(() => {
+        console.log('🚀 Starting redirect process...')
+        
+        // Method 1: Try router.push first (more reliable)
+        try {
+          const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`
+          console.log('🔗 Redirecting to:', redirectUrl)
+          
+          router.push(redirectUrl)
+          
+          // Fallback: If router doesn't work, use window.location
+          setTimeout(() => {
+            if (window.location.pathname.includes('review-book')) {
+              console.log('🔄 Router redirect didn\'t work, trying window.location...')
+              window.location.href = redirectUrl
+            }
+          }, 500)
+          
+        } catch (error) {
+          console.error('❌ Router redirect failed:', error)
+          // Fallback to window.location
+          const fallbackUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`
+          window.location.href = fallbackUrl
+        }
+        
+      }, 2000)
+  
+    } catch (error) {
+      console.error("❌ Submit enquiry failed:", error)
+      setLoadingError(error.message)
+      setIsSubmitting(false)
+    }
+  }
+  
+  
+  // ✅ ALTERNATIVE: More robust version with state management
+  const handleSubmitEnquiryRobust = async () => {
+    let enquiryCount = 0 // Initialize with default
+    
+    try {
+      setIsSubmitting(true)
+      setLoadingStep(1)
+      setLoadingError(null)
+      
+      // Calculate supplier count FIRST and store it
+      const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
+      const calculatedSupplierCount = Object.values(partyPlan).filter(supplier => 
+        supplier && typeof supplier === 'object' && supplier.name
+      ).length
+      
+      // Set initial count to calculated value
+      enquiryCount = calculatedSupplierCount || 4 // Fallback to 4 if 0
+      
+      console.log('📊 Calculated supplier count:', calculatedSupplierCount)
+      console.log('📊 Initial enquiry count:', enquiryCount)
+      
+      setSupplierCount(enquiryCount)
+  
+      // Step 1: Migrate party to database
+      console.log("📤 Step 1: Migrating party to database...")
+      const migratedParty = await migratePartyToDatabase(user)
+      
+      setLoadingStep(2)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+  
+      // Step 2: Send enquiries to suppliers
+      console.log("📧 Step 2: Sending enquiries to suppliers...")
+      const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+        migratedParty.id,
+        formData.additionalMessage,
+        JSON.stringify({
+          dietary: formData.dietaryRequirements,
+          accessibility: formData.accessibilityRequirements,
+          numberOfChildren: formData.numberOfChildren,
+          contactInfo: {
+            name: formData.parentName,
+            phone: formData.phoneNumber,
+            email: formData.email,
+          },
+        }),
+      )
+  
+      console.log('📋 Enquiry result:', enquiryResult)
+  
+      if (!enquiryResult.success) {
+        throw new Error(`Failed to send enquiries: ${enquiryResult.error}`)
+      }
+  
+      // ✅ UPDATE COUNT: Only if we got a valid count back
+      if (enquiryResult.count && enquiryResult.count > 0) {
+        enquiryCount = enquiryResult.count
+        console.log('✅ Updated count from result:', enquiryCount)
+      } else {
+        console.log('⚠️ Using fallback count:', enquiryCount)
+      }
+      
+      setLoadingStep(3)
+      
+    } catch (error) {
+      console.error("❌ Submit enquiry failed:", error)
+      setLoadingError(error.message)
+      setIsSubmitting(false)
+      return // Exit early
+    }
+    
+    // ✅ REDIRECT: This will always have a valid enquiryCount
+    setTimeout(() => {
+      console.log('🚀 Redirecting with count:', enquiryCount)
+      
+      // Final validation
+      const finalCount = enquiryCount > 0 ? enquiryCount : 4
+      const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}`
+      
+      console.log('🔗 Redirect URL:', redirectUrl)
+      window.location.href = redirectUrl
+    }, 2000)
+  }
+  
+  
+  
   // Form validation - now only check required fields since user is always signed in
   const isFormValid = formData.parentName && formData.email && selectedSuppliers.length > 0
 
@@ -754,6 +963,8 @@ const handleRemoveAddon = async (addonId) => {
     <>
             <div className="min-h-screen bg-primary-50">
         <ContextualBreadcrumb currentPage="review-book" />
+
+
         <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Hero Header */}
         <div className="text-center mb-8">

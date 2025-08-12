@@ -1,397 +1,350 @@
 "use client"
 
-import { useState } from "react"
+import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Music, Utensils, Palette, Building, Edit, Share, Check, Mail } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import RecommendedAddons from "@/components/recommended-addons"
-import InviteProgressIndicator from "@/components/invite-progress-indicator"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { usePartyData } from "../dashboard/hooks/usePartyData"
+import { usePartyPhase } from "../dashboard/hooks/usePartyPhase"
+import { useRouter } from "next/navigation"
+import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 
-export default function PartySummaryPage() {
-  const [checkedSteps, setCheckedSteps] = useState([])
+export default function PartyPlanSummary() {
+  const router = useRouter()
 
-  const partyDetails = {
-    theme: "Superhero Theme",
-    date: "March 15, 2025",
-    time: "2:00 PM",
+  const {
+    partyData,
+    partyId,
+    totalCost,
+    addons,
+    loading,
+    user,
+    suppliers,
+    isSignedIn,
+    partyDetails,
+    handleDeleteSupplier: removeSupplier,
+  } = usePartyData()
+
+  const { enquiries, isPaymentConfirmed, currentPhase } = usePartyPhase(partyData, partyId)
+
+  const getTableData = () => {
+    if (!suppliers) return []
+
+    const supplierTypes = [
+      "venue",
+      "entertainment",
+      "catering",
+      "facePainting",
+      "activities",
+      "partyBags",
+      "decorations",
+      "balloons",
+    ]
+
+    return supplierTypes
+      .filter((type) => suppliers[type]) // Only include suppliers that exist
+      .map((type) => {
+        const supplier = suppliers[type]
+        const enquiry = enquiries.find((e) => e.supplier_category === type)
+        const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
+        const addonsCost = supplierAddons.reduce((sum, addon) => sum + addon.price, 0)
+        const totalPrice = supplier.price + addonsCost
+
+        return {
+          id: supplier.id,
+          type,
+          serviceName: supplier.name,
+          vendorName: supplier.originalSupplier?.owner?.name || supplier.owner?.name || "N/A",
+          category: type.charAt(0).toUpperCase() + type.slice(1),
+          price: totalPrice,
+          basePrice: supplier.price,
+          addonsPrice: addonsCost,
+          addons: supplierAddons,
+          amountPaid: isPaymentConfirmed ? totalPrice : 0,
+          status: getSupplierStatus(enquiry?.status),
+          enquiryId: enquiry?.id,
+          enquiryStatus: enquiry?.status,
+          supplier: supplier,
+        }
+      })
   }
 
-  const budgetOverview = {
-    totalBudget: 605,
-    amountPaid: 170,
-    remainingBalance: 435,
-    percentPaid: 28,
+  const getSupplierStatus = (enquiryStatus) => {
+    switch (enquiryStatus) {
+      case "accepted":
+        return "confirmed"
+      case "pending":
+        return "process"
+      case "declined":
+        return "declined"
+      default:
+        return "planned"
+    }
   }
 
-  const suppliers = [
-    {
-      id: "venue",
-      category: "Venue",
-      name: "Adventure Play Centre",
-      address: "123 Fun Street, London SW1",
-      details: "2 hours venue hire • Up to 20 children",
-      price: 180,
-      paid: 50,
-      status: "Confirmed",
-      icon: <Building className="w-5 h-5" />,
-    },
-    {
-      id: "entertainment",
-      category: "Entertainment",
-      name: "Captain Marvel - Superhero Show",
-      provider: "Magic Mike Entertainment",
-      details: "90 minutes show • Face painting included",
-      price: 220,
-      paid: 0,
-      status: "Pending",
-      icon: <Music className="w-5 h-5" />,
-    },
-    {
-      id: "catering",
-      category: "Catering",
-      name: "Superhero Party Food Package",
-      provider: "Little Heroes Catering",
-      details: "20 children • Sandwiches, fruit, cake & drinks",
-      price: 120,
-      paid: 120,
-      status: "Confirmed",
-      icon: <Utensils className="w-5 h-5" />,
-    },
-    {
-      id: "decorations",
-      category: "Decorations & Party Bags",
-      name: "Superhero Decoration Package",
-      provider: "Party Perfect Supplies",
-      details: "Balloons, banners, table setup • 20 party bags",
-      price: 85,
-      paid: 0,
-      status: "Pending",
-      icon: <Palette className="w-5 h-5" />,
-    },
-  ]
+  const getBudgetData = () => {
+    const totalSpent = totalCost
+    const totalPaid = isPaymentConfirmed ? totalSpent : 0
+    const remainingToPay = totalSpent - totalPaid
 
-  const bookingStatus = [
-    { category: "Venue", status: "Confirmed" },
-    { category: "Entertainment", status: "Pending" },
-    { category: "Catering", status: "Confirmed" },
-    { category: "Decorations", status: "Pending" },
-  ]
+    const userBudget = partyDetails?.budget || 1000
+    const remainingBudget = userBudget - totalSpent
 
-  const nextSteps = [
-    { id: 1, text: "Venue confirmed & deposit paid", completed: true },
-    { id: 2, text: "Confirm entertainment booking", completed: false },
-    { id: 3, text: "Finalize decoration order", completed: false },
-    { id: 4, text: "Send invitations to guests", completed: false },
-  ]
-
-  const toggleStep = (stepId) => {
-    setCheckedSteps((prev) => (prev.includes(stepId) ? prev.filter((id) => id !== stepId) : [...prev, stepId]))
+    return {
+      total: userBudget,
+      amountPaid: totalPaid,
+      remainingToPay: remainingToPay,
+      remainingBudget: Math.max(0, remainingBudget),
+      totalSpent: totalSpent,
+    }
   }
+
+  const handleAction = async (action, supplierData) => {
+    if (action === "remove") {
+      const confirmed = window.confirm(`Remove ${supplierData.serviceName} from your party?`)
+      if (confirmed) {
+        await removeSupplier(supplierData.type)
+      }
+    } else if (action === "edit") {
+      console.log("Edit supplier:", supplierData)
+    }
+  }
+
+  const handleSendBookingRequest = () => {
+    router.push("/payment")
+  }
+
+  const handleGoBack = () => {
+    router.push("/dashboard")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Loading your party summary...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const tableData = getTableData()
+  const budgetData = getBudgetData()
+
+  const summaryCards = [
+    {
+      title: "Total budget",
+      amount: budgetData.total,
+      bgColor: "bg-primary-500",
+      textColor: "text-white",
+      icon: "🎯",
+    },
+    {
+      title: "Amount paid",
+      amount: budgetData.amountPaid,
+      bgColor: "bg-primary-100",
+      textColor: "text-primary-800",
+      icon: "💰",
+    },
+    {
+      title: "Remaining to pay",
+      amount: budgetData.remainingToPay,
+      bgColor: "bg-primary-200",
+      textColor: "text-primary-900",
+      icon: "📊",
+    },
+    {
+      title: "Remaining budget",
+      amount: budgetData.remainingBudget,
+      bgColor: "bg-primary-300",
+      textColor: "text-primary-900",
+      icon: "💳",
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-    
+    <div className="min-h-screen bg-primary-50">
+      <ContextualBreadcrumb currentPage="party-summary" />
 
-      <div className="container mx-auto px-4 py-4 md:py-8">
-        {/* Mobile-First Page Header */}
-        <div className="mb-6 md:mb-8">
-          <div className="text-center md:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Party Plan Summary</h1>
-            <p className="text-gray-600 text-sm md:text-base mb-4">Review your complete party package</p>
-            <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 md:p-4">
-              <div className="text-center md:text-left">
-                <div className="text-lg md:text-xl font-semibold text-primary-700">{partyDetails.theme}</div>
-                <div className="text-sm md:text-base text-gray-600">
-                  {partyDetails.date} • {partyDetails.time}
-                </div>
-              </div>
-            </div>
+      <div className="bg-primary-50 px-10 py-6">
+        <div className="flex items-center gap-3 ">
+   
+          <div>
+            <h1 className="text-5xl font-extrabold text-gray-900">Party Summary</h1>
+       
           </div>
         </div>
 
-        {/* Mobile-First Layout */}
-        <div className="space-y-6">
-          {/* Invitation Alert - Full Width on Mobile */}
-          <Card className="border-primary-200 bg-primary-50">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
-                <div className="flex items-start md:items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 flex-shrink-0">
-                    <Mail className="w-5 h-5" />
+  
+      </div>
+
+      {/* Main Content */}
+      <div className="px-10 py-6">
+        <div className="mb-6">
+          {/* Mobile view - Card layout */}
+          <div className="block md:hidden space-y-3">
+            {tableData.map((service, index) => (
+              <Card key={service.id || index} className="p-4">
+                <div className="flex justify-between items-start ">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900 text-sm">{service.serviceName}</h3>
+                    <p className="text-xs text-gray-600 mt-1">{service.vendorName}</p>
+                    <p className="text-xs text-gray-500">{service.category}</p>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-sm md:text-base">
-                      Don't forget to send invitations!
-                    </h3>
-                    <p className="text-xs md:text-sm text-gray-600">
-                      Your party is coming up soon - time to invite your guests
-                    </p>
-                  </div>
+                  <Badge
+                    variant={service.status === "confirmed" ? "default" : "secondary"}
+                    className={`
+                      text-xs font-medium px-2 py-1 rounded-full ml-2
+                      ${
+                        service.status === "confirmed"
+                          ? "text-white"
+                          : service.status === "planned"
+                            ? "bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))]"
+                            : "bg-primary-200 text-primary-900 border-[hsl(var(--primary-300))]"
+                      }
+                    `}
+                    style={service.status === "confirmed" ? { backgroundColor: `hsl(${14} 100% 64%)` } : {}}
+                  >
+                    {service.status === "confirmed" && "✓"}
+                    {service.status === "planned" && "📅"}
+                    {service.status === "process" && "⚡"}
+                    {service.status === "declined" && "❌"}
+                  </Badge>
                 </div>
-                <Button className="bg-primary-500 hover:bg-primary-600 text-white w-full md:w-auto" asChild>
-                  <Link href="/e-invites">Create Invites</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Budget Overview - Mobile First */}
-          <Card>
-            <CardContent className="p-4 md:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <span className="mr-2">💰</span>
-                Budget Overview
-              </h3>
-
-              {/* Mobile Budget Display */}
-              <div className="md:hidden space-y-4">
-                <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-4 text-sm">
                     <div>
-                      <div className="text-2xl font-bold text-primary-600">£{budgetOverview.amountPaid}</div>
-                      <div className="text-sm text-gray-600">paid so far</div>
+                      <p className="text-xs text-gray-600">Price</p>
+                      <p className="font-medium">£{service.price}</p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xl font-semibold text-gray-900">£{budgetOverview.remainingBalance}</div>
-                      <div className="text-sm text-gray-600">remaining</div>
-                    </div>
-                  </div>
-                  <Progress value={budgetOverview.percentPaid} className="h-3 mb-2" />
-                  <div className="text-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      £{budgetOverview.totalBudget} total budget • {budgetOverview.percentPaid}% paid
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Desktop Budget Display */}
-              <div className="hidden md:block space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Budget</span>
-                  <span className="font-semibold">£{budgetOverview.totalBudget}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Amount Paid</span>
-                  <span className="font-semibold text-primary-600">£{budgetOverview.amountPaid}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Remaining Balance</span>
-                  <span className="font-semibold">£{budgetOverview.remainingBalance}</span>
-                </div>
-                <div className="pt-2">
-                  <Progress value={budgetOverview.percentPaid} className="h-2" />
-                  <p className="text-sm text-gray-600 mt-1">{budgetOverview.percentPaid}% paid</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Invitation Status */}
-          <InviteProgressIndicator partyDate={partyDetails.date} invitesSent={0} totalGuests={15} />
-
-          {/* Suppliers - Mobile Optimized Cards */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">Your Suppliers</h2>
-            {suppliers.map((supplier) => (
-              <Card key={supplier.id} className="border border-gray-200 shadow-sm">
-                <CardContent className="p-4">
-                  {/* Mobile Layout */}
-                  <div className="md:hidden space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
-                          {supplier.icon}
-                        </div>
-                        <span className="font-medium text-gray-700 text-sm">{supplier.category}</span>
-                      </div>
-                      <Badge
-                        variant={supplier.status === "Confirmed" ? "default" : "secondary"}
-                        className={`text-xs ${
-                          supplier.status === "Confirmed"
-                            ? "bg-primary-100 text-primary-700 border-primary-200"
-                            : "bg-gray-100 text-gray-700 border-gray-200"
-                        }`}
-                      >
-                        {supplier.status}
-                      </Badge>
-                    </div>
-
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-base mb-1">{supplier.name}</h3>
-                      {supplier.provider && <p className="text-sm text-gray-600 mb-1">{supplier.provider}</p>}
-                      {supplier.address && <p className="text-sm text-gray-600 mb-1">{supplier.address}</p>}
-                      <p className="text-sm text-gray-700">{supplier.details}</p>
+                      <p className="text-xs text-gray-600">Paid</p>
+                      <p className="font-medium text-green-600">£{service.amountPaid}</p>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-xl font-bold text-gray-900">£{supplier.price}</div>
-                        {supplier.paid > 0 && (
-                          <div className="text-sm text-primary-600 font-medium">Paid: £{supplier.paid}</div>
-                        )}
-                        {supplier.paid === 0 && <div className="text-sm text-gray-500">Not paid</div>}
-                      </div>
-                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-primary-500">
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                    <div>
+                      <p className="text-xs text-gray-600">Remaining</p>
+                      <p className="font-medium text-orange-600">£{service.price - service.amountPaid}</p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Desktop Layout */}
-                  <div className="hidden md:block">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600">
-                          {supplier.icon}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{supplier.category}</h3>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={supplier.status === "Confirmed" ? "default" : "secondary"}
-                          className={
-                            supplier.status === "Confirmed"
-                              ? "bg-primary-100 text-primary-700 hover:bg-primary-100 border-primary-200"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200"
-                          }
-                        >
-                          {supplier.status}
-                        </Badge>
-                        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-primary-500">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-1">{supplier.name}</h4>
-                        {supplier.provider && <p className="text-sm text-gray-600 mb-1">{supplier.provider}</p>}
-                        {supplier.address && <p className="text-sm text-gray-600 mb-2">{supplier.address}</p>}
-                        <p className="text-sm text-gray-700">{supplier.details}</p>
-                      </div>
-                      <div className="text-right ml-4">
-                        <div className="text-2xl font-bold text-gray-900">£{supplier.price}</div>
-                        {supplier.paid > 0 && (
-                          <div className="text-sm text-primary-600 font-medium">Paid: £{supplier.paid}</div>
-                        )}
-                        {supplier.paid === 0 && <div className="text-sm text-gray-500">Not paid</div>}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
+                <div className="flex gap-2  border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs px-3 py-1 h-7 flex-1 bg-transparent"
+                    onClick={() => handleAction("edit", service)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs px-3 py-1 h-7 text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
+                    onClick={() => handleAction("remove", service)}
+                  >
+                    Remove
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
 
-          {/* Next Steps - Mobile Optimized */}
-          <Card>
-            <CardContent className="p-4 md:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Next Steps</h3>
-              <div className="space-y-3">
-                {nextSteps.map((step) => (
-                  <div key={step.id} className="flex items-start space-x-3">
-                    <button
-                      onClick={() => toggleStep(step.id)}
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        step.completed || checkedSteps.includes(step.id)
-                          ? "bg-primary-500 border-primary-500"
-                          : "border-gray-300 hover:border-primary-300"
-                      }`}
-                    >
-                      {(step.completed || checkedSteps.includes(step.id)) && <Check className="w-3 h-3 text-white" />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <span
-                        className={`text-sm md:text-base ${
-                          step.completed || checkedSteps.includes(step.id)
-                            ? "text-gray-500 line-through"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {step.text}
-                      </span>
-                      {step.id === 4 && !checkedSteps.includes(step.id) && (
-                        <div className="mt-2">
-                          <Button variant="outline" size="sm" className="text-primary-500 border-primary-300" asChild>
-                            <Link href="/e-invites">Do Now</Link>
+          {/* Desktop view - Table layout */}
+          <Card className="hidden md:block overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Service name</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Vendor name</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Category</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Price</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Amount paid</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Remaining amount</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Status</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tableData.map((service, index) => (
+                    <TableRow key={service.id || index} className="border-b border-gray-100">
+                      <TableCell className="px-4 py-4 font-medium text-sm text-gray-900">
+                        {service.serviceName}
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-sm text-gray-600">{service.vendorName}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm text-gray-600">{service.category}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">£{service.price}</TableCell>
+                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
+                        £{service.amountPaid}
+                      </TableCell>
+                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
+                        £{service.price - service.amountPaid}
+                      </TableCell>
+                      <TableCell className="px-4 py-4">
+                        <Badge
+                          variant={service.status === "confirmed" ? "default" : "secondary"}
+                          className={`
+                            text-xs font-medium px-3 py-1 rounded-full
+                            ${
+                              service.status === "confirmed"
+                                ? "text-white"
+                                : service.status === "planned"
+                                  ? "bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))]"
+                                  : "bg-primary-200 text-primary-900 border-[hsl(var(--primary-300))]"
+                            }
+                          `}
+                          style={service.status === "confirmed" ? { backgroundColor: `hsl(${14} 100% 64%)` } : {}}
+                        >
+                          {service.status === "confirmed" && "✓ Confirmed"}
+                          {service.status === "planned" && "📅 Planned"}
+                          {service.status === "process" && "⚡ Process"}
+                          {service.status === "declined" && "❌ Declined"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-4 py-4">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs px-3 py-1 h-7 bg-transparent"
+                            onClick={() => handleAction("remove", service)}
+                          >
+                            Remove
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs px-3 py-1 h-7 text-primary-600 border-[hsl(var(--primary-300))] hover:bg-primary-50 bg-transparent"
+                            onClick={() => handleAction("edit", service)}
+                          >
+                            Edit
                           </Button>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Booking Status - Mobile Optimized */}
-          <Card>
-            <CardContent className="p-4 md:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Status</h3>
-              <div className="grid grid-cols-2 md:flex md:flex-col gap-3">
-                {bookingStatus.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col md:flex-row md:justify-between md:items-center space-y-1 md:space-y-0"
-                  >
-                    <span className="text-gray-700 text-sm md:text-base">{item.category}</span>
-                    <Badge
-                      variant={item.status === "Confirmed" ? "default" : "secondary"}
-                      className={`text-xs self-start md:self-auto ${
-                        item.status === "Confirmed"
-                          ? "bg-primary-100 text-primary-700 border-primary-200"
-                          : "bg-gray-100 text-gray-700 border-gray-200"
-                      }`}
-                    >
-                      {item.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons - Mobile Optimized */}
-          <div className="space-y-3">
-            <Button
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 text-base md:text-lg font-semibold"
-              asChild
-            >
-              <Link href="/review-book">Send Booking Enquiries</Link>
-            </Button>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Button variant="outline" className="w-full border-gray-200 text-gray-700 hover:bg-gray-50" asChild>
-                <Link href="/e-invites">Create & Send Invites</Link>
-              </Button>
-              <Button variant="ghost" className="w-full text-gray-600 hover:text-primary-500">
-                <Share className="w-4 h-4 mr-2" />
-                Share Plan
-              </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          </div>
+          </Card>
         </div>
 
-        {/* Recommended Add-ons Section */}
-        <div className="mt-8">
-          <RecommendedAddons
-            context="summary"
-            title="Last Chance Add-ons"
-            maxItems={4}
-            onAddToCart={(addon) => console.log("Adding addon:", addon)}
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-xs md:text-sm text-gray-500">
-          © 2025 BookABash. Making children's parties magical, one celebration at a time.
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          {summaryCards.map((card, index) => (
+            <Card key={index} className={`p-4 ${card.bgColor} ${card.textColor} border-0 relative overflow-hidden`}>
+              <div className="relative z-10">
+                <p className="text-xs font-medium opacity-90 mb-1">{card.title}</p>
+                <p className="text-2xl font-bold">£{card.amount}</p>
+              </div>
+              {/* Decorative background pattern */}
+              <div className="absolute bottom-0 right-0 opacity-20 text-4xl">{card.icon}</div>
+            </Card>
+          ))}
         </div>
       </div>
     </div>

@@ -86,8 +86,7 @@ const getPartyDetailsFromDatabase = (party) => {
 
   
     } else {
-      // Guest user - use localStorage
-      console.log("👻 Loading party details from localStorage")
+
       details = getPartyDetailsFromLocalStorage();
     }
     

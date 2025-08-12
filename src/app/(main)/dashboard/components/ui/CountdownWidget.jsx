@@ -90,25 +90,25 @@ export default function CountdownWidget({ partyDate = "2025-06-14T14:00:00" }) {
           {/* Countdown Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 ">
             {/* Days */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-200))] hover:border-[hsl(var(--primary-300))] transition-colors z-50">
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-200))] hover:border-[hsl(var(--primary-300))] transition-colors z-20">
               <div className="text-3xl font-bold text-primary-600">{timeUntilParty.days}</div>
               <div className="text-sm text-gray-600 font-medium">Days</div>
             </div>
 
             {/* Hours */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] transition-colors z-50">
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-300))] hover:border-[hsl(var(--primary-400))] transition-colors z-20">
               <div className="text-3xl font-bold text-primary-700">{timeUntilParty.hours}</div>
               <div className="text-sm text-gray-600 font-medium">Hours</div>
             </div>
 
             {/* Minutes */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-400))] hover:border-[hsl(var(--primary-500))] transition-colors">
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-400))] hover:border-[hsl(var(--primary-500))] transition-colors z-20">
               <div className="text-3xl font-bold text-primary-800">{timeUntilParty.minutes}</div>
               <div className="text-sm text-gray-600 font-medium">Minutes</div>
             </div>
 
             {/* Seconds */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-500))] hover:border-[hsl(var(--primary-600))] transition-colors z-50">
+            <div className="bg-white rounded-xl p-4 shadow-sm border-2 border-[hsl(var(--primary-500))] hover:border-[hsl(var(--primary-600))] transition-colors z-20">
               <div className="text-3xl font-bold text-primary-900">{timeUntilParty.seconds}</div>
               <div className="text-sm text-gray-600 font-medium">Seconds</div>
             </div>

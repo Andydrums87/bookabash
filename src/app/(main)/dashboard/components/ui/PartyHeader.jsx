@@ -7,6 +7,8 @@ import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset, ChevronDow
 import EditPartyModal from "../Modals/EditPartyModal"
 import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
+import Router from "next/router"
+import Link from "next/link"
 
 // ... (keep all the utility functions the same)
 const formatDateForDisplay = (dateInput) => {
@@ -167,6 +169,7 @@ export default function PartyHeader({
  
 
   const { toast } = useToast()
+
   
 const handleEditClick = () => {
   if (hasEnquiriesPending) {
@@ -373,7 +376,7 @@ const getFullName = () => {
         </div>
 
         {/* Gradient overlay for better text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/5"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
 
         {/* Content */}
         <div className="relative px-4 md:p-10 text-white">
@@ -388,46 +391,8 @@ const getFullName = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                {/* Mobile Budget Ring - only visible on mobile */}
-                <div className="md:hidden">
-                  <button
-                    onClick={() => setIsBudgetExpanded(!isBudgetExpanded)}
-                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-1 py-1 hover:bg-white/20 transition-all duration-300"
-                  >
-                    <div className="relative w-3 h-6">
-                      {/* Budget progress ring */}
-                      {/* <svg className="w-6 h-6 transform -rotate-90" viewBox="0 0 24 24">
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          fill="none"
-                          stroke="rgba(255,255,255,0.3)"
-                          strokeWidth="2"
-                        />
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          fill="none"
-                          stroke="white"
-                          strokeWidth="2"
-                          strokeDasharray={`${(totalSpent / tempBudget) * 62.83} 62.83`}
-                          className="transition-all duration-500"
-                        />
-                      </svg> */}
-                    </div>
-                    <div className="text-xs ">
-                      {/* <div className="text-white/70 font-medium">Budget</div> */}
-                      <div className="font-semibold">£{totalSpent}/£{tempBudget}</div>
-                    </div>
-                    {isBudgetExpanded ? (
-                      <ChevronUp className="w-3 h-3" />
-                    ) : (
-                      <ChevronDown className="w-3 h-3" />
-                    )}
-                  </button>
-                </div>
+ 
+              
 
                 <Button
   variant="ghost"

@@ -134,6 +134,7 @@ class PartyDatabaseBackend {
   /**
    * Create a new party from party builder form
    */
+
   async createParty(partyDetails, partyPlan = {}) {
     try {
       const userResult = await this.getCurrentUser()
@@ -210,6 +211,10 @@ class PartyDatabaseBackend {
     }
   }
 
+
+
+
+
   /**
    * Update party plan (replaces localStorage party plan updates)
    */
@@ -273,9 +278,67 @@ class PartyDatabaseBackend {
     }
   }
 
+  // Add this to your partyDatabaseBackend
+async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
+  try {
+    console.log('🔄 Updating enquiry payment status for:', { partyId, includedSuppliers })
+    
+    // Update enquiries for suppliers that were included in this payment
+    const { data: updatedEnquiries, error } = await supabase
+      .from('enquiries')
+      .update({ 
+        payment_status: 'paid',
+        updated_at: new Date().toISOString()
+      })
+      .eq('party_id', partyId)
+      .in('supplier_category', includedSuppliers)
+      .eq('status', 'accepted') // Only update accepted enquiries
+      .select()
+
+    if (error) throw error
+
+    console.log(`✅ Updated payment status for ${updatedEnquiries.length} enquiries`)
+    return { success: true, updatedEnquiries }
+
+  } catch (error) {
+    console.error('❌ Error updating enquiry payment status:', error)
+    return { success: false, error: error.message }
+  }
+}
   /**
    * Add supplier to party plan
    */
+
+  async createEnquiry(partyId, enquiryData) {
+    try {
+      const { data: enquiry, error } = await supabase
+        .from('enquiries')
+        .insert({
+          party_id: partyId,
+          supplier_id: enquiryData.supplier_id,
+          supplier_category: enquiryData.supplier_category,
+          package_id: enquiryData.package_id || 'basic',
+          quoted_price: enquiryData.quoted_price,
+          status: enquiryData.status || 'pending',
+          payment_status: enquiryData.payment_status || 'unpaid',
+          special_requests: enquiryData.special_requests || '{}',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+        })
+        .select()
+        .single()
+  
+      if (error) throw error
+  
+      console.log('✅ Enquiry created successfully:', enquiry)
+      return { success: true, enquiry }
+  
+    } catch (error) {
+      console.error('❌ Error creating enquiry:', error)
+      return { success: false, error: error.message }
+    }
+  }
   async addSupplierToParty(partyId, supplier, selectedPackage = null) {
     try {
       // Get current party
@@ -284,9 +347,9 @@ class PartyDatabaseBackend {
         .select('party_plan')
         .eq('id', partyId)
         .single()
-
+  
       if (fetchError) throw fetchError
-
+  
       const currentPlan = party.party_plan || {}
       
       // Determine supplier category
@@ -295,7 +358,7 @@ class PartyDatabaseBackend {
       if (!supplierType) {
         throw new Error(`Unknown supplier category: ${supplier.category}`)
       }
-
+  
       // Create supplier data
       const supplierData = {
         id: supplier.id,
@@ -310,30 +373,44 @@ class PartyDatabaseBackend {
         packageId: selectedPackage?.id || null,
         originalSupplier: supplier
       }
-
+  
       // Update the plan
       currentPlan[supplierType] = supplierData
-
+  
       // Save updated plan
       const result = await this.updatePartyPlan(partyId, currentPlan)
       
       if (result.success) {
+        // NEW: Also create an enquiry for this supplier
+        const enquiryResult = await this.createEnquiry(partyId, {
+          supplier_id: supplier.id,
+          supplier_category: supplierType,
+          status: 'pending',
+          payment_status: 'unpaid',
+          quoted_price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
+          package_id: selectedPackage?.id || 'basic'
+        })
+  
+        if (!enquiryResult.success) {
+          console.error('⚠️ Failed to create enquiry:', enquiryResult.error)
+        }
+  
         return { 
           success: true, 
           supplierType,
           supplier: supplierData,
-          party: result.party 
+          party: result.party,
+          enquiry: enquiryResult.enquiry
         }
       } else {
         throw new Error(result.error)
       }
-
+  
     } catch (error) {
       console.error('❌ Error adding supplier to party:', error)
       return { success: false, error: error.message }
     }
   }
-
   /**
    * ENHANCED Add addon to party plan
    */
@@ -684,6 +761,66 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
       return { success: false, error: error.message }
     }
   }
+  async addSupplierToPartyWithoutEnquiry(partyId, supplier, selectedPackage = null) {
+    try {
+      // Get current party
+      const { data: party, error: fetchError } = await supabase
+        .from('parties')
+        .select('party_plan')
+        .eq('id', partyId)
+        .single()
+  
+      if (fetchError) throw fetchError
+  
+      const currentPlan = party.party_plan || {}
+      
+      // Determine supplier category
+      const supplierType = this.mapCategoryToSupplierType(supplier.category)
+      
+      if (!supplierType) {
+        throw new Error(`Unknown supplier category: ${supplier.category}`)
+      }
+  
+      // Create supplier data
+      const supplierData = {
+        id: supplier.id,
+        name: supplier.name,
+        description: supplier.description,
+        price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
+        status: "pending",
+        image: supplier.image,
+        category: supplier.category,
+        priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
+        addedAt: new Date().toISOString(),
+        packageId: selectedPackage?.id || null,
+        originalSupplier: supplier
+      }
+  
+      // Update the plan
+      currentPlan[supplierType] = supplierData
+  
+      // Save updated plan
+      const result = await this.updatePartyPlan(partyId, currentPlan)
+      
+      if (result.success) {
+        console.log('📝 Supplier added to party plan without enquiry (Quick Add flow)')
+        
+        return { 
+          success: true, 
+          supplierType,
+          supplier: supplierData,
+          party: result.party,
+          enquiry: null // No enquiry created
+        }
+      } else {
+        throw new Error(result.error)
+      }
+  
+    } catch (error) {
+      console.error('❌ Error adding supplier to party without enquiry:', error)
+      return { success: false, error: error.message }
+    }
+  }
 
   /**
    * Get enquiries for a party
@@ -710,6 +847,38 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
     } catch (error) {
       console.error('❌ Error getting enquiries for party:', error)
       return { success: false, error: error.message }
+    }
+  }
+  async hasPartyPendingEnquiries(partyId) {
+    try {
+      console.log('🔍 Checking for pending enquiries for party:', partyId);
+      
+      const { data: enquiries, error } = await supabase
+        .from('enquiries')
+        .select('id, status, supplier_category, created_at')
+        .eq('party_id', partyId)
+        .eq('status', 'pending') // Only check for pending enquiries
+        .order('created_at', { ascending: false });
+  
+      if (error) {
+        console.error('❌ Error checking pending enquiries:', error);
+        return { success: false, error: error.message, hasPending: false, count: 0 };
+      }
+  
+      const hasPending = enquiries && enquiries.length > 0;
+      
+      console.log(`📊 Found ${enquiries?.length || 0} pending enquiries`);
+      
+      return {
+        success: true,
+        hasPending: hasPending,
+        count: enquiries?.length || 0,
+        enquiries: enquiries || []
+      };
+      
+    } catch (error) {
+      console.error('❌ Exception checking pending enquiries:', error);
+      return { success: false, error: error.message, hasPending: false, count: 0 };
     }
   }
 
@@ -743,18 +912,144 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
   /**
    * Map supplier category to party plan type
    */
+
+  async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMessage = '') {
+    try {
+      console.log('📧 Sending individual enquiry:', {
+        partyId,
+        supplierName: supplier.name,
+        supplierId: supplier.id,
+        packageId: selectedPackage?.id
+      })
+  
+      // Get party details for enquiry context
+      const { data: party, error: partyError } = await supabase
+        .from('parties')
+        .select('*')
+        .eq('id', partyId)
+        .single()
+        
+      if (partyError) {
+        console.error('❌ Error fetching party for enquiry:', partyError)
+        throw partyError
+      }
+  
+      // Determine supplier category for enquiry
+      const supplierCategory = this.mapCategoryToSupplierType(supplier.category)
+      if (!supplierCategory) {
+        throw new Error(`Cannot map supplier category: ${supplier.category}`)
+      }
+  
+      // Get any existing add-ons that might be relevant
+      const partyPlan = party.party_plan || {}
+      const allAddons = partyPlan.addons || []
+      
+      // Filter add-ons that might be relevant to this supplier
+      const relevantAddons = allAddons.filter(addon => 
+        !addon.supplierId || // General add-ons
+        addon.supplierId === supplier.id || 
+        addon.supplierName === supplier.name
+      )
+  
+      console.log(`📦 Found ${relevantAddons.length} relevant add-ons for enquiry`)
+  
+      // Calculate quoted price (supplier + package + relevant add-ons)
+      const supplierPrice = selectedPackage ? selectedPackage.price : supplier.priceFrom || 0
+      const addonsPrice = relevantAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+      const totalQuotedPrice = supplierPrice + addonsPrice
+  
+      // Create enquiry data
+      const enquiryData = {
+        party_id: partyId,
+        supplier_id: supplier.id,
+        supplier_category: supplierCategory,
+        package_id: selectedPackage?.id || null,
+        addon_ids: relevantAddons.length > 0 ? relevantAddons.map(a => a.id) : null,
+        addon_details: relevantAddons.length > 0 ? JSON.stringify(relevantAddons) : null,
+        message: customMessage || `Individual enquiry for ${party.child_name || 'child'}'s ${party.theme || 'themed'} party`,
+        special_requests: party.special_requirements || null,
+        quoted_price: totalQuotedPrice,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      }
+  
+      console.log('📤 Creating individual enquiry:', enquiryData)
+  
+      // Insert enquiry
+      const { data: newEnquiry, error: insertError } = await supabase
+        .from('enquiries')
+        .insert(enquiryData)
+        .select(`
+          *,
+          suppliers:supplier_id (
+            id,
+            business_name,
+            data
+          )
+        `)
+        .single()
+  
+      if (insertError) {
+        console.error('❌ Error creating individual enquiry:', insertError)
+        throw insertError
+      }
+  
+      console.log('✅ Individual enquiry created successfully:', newEnquiry.id)
+  
+      return {
+        success: true,
+        enquiry: newEnquiry,
+        message: `Enquiry sent to ${supplier.name}`,
+        quotedPrice: totalQuotedPrice
+      }
+  
+    } catch (error) {
+      console.error('❌ Error sending individual enquiry:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  }
+  
+  /**
+   * Helper method to map supplier category to party plan supplier type
+   * (You might already have this, but here's the implementation)
+   */
   mapCategoryToSupplierType(category) {
+    console.log('🔍 Mapping category:', category, typeof category)
+    
     const mapping = {
+      // Standard supplier categories
       'Entertainment': 'entertainment',
-      'Venues': 'venue', 
-      'Catering': 'catering',
+      'Venues': 'venue',
+      'Catering': 'catering', 
       'Decorations': 'decorations',
       'Party Bags': 'partyBags',
       'Photography': 'photography',
       'Activities': 'activities',
-      'Face Painting': 'facePainting'
+      'Face Painting': 'facePainting',
+      'Balloons': 'balloons',
+      
+      // Handle lowercase versions too
+      'entertainment': 'entertainment',
+      'venues': 'venue',
+      'venue': 'venue',
+      'catering': 'catering',
+      'decorations': 'decorations',
+      'party bags': 'partyBags',
+      'partybags': 'partyBags',
+      'photography': 'photography',
+      'activities': 'activities',
+      'face painting': 'facePainting',
+      'facepainting': 'facePainting',
+      'balloons': 'balloons'
     }
-    return mapping[category]
+    
+    const result = mapping[category] || mapping[category?.toLowerCase()] || null
+    console.log('✅ Mapped', category, 'to', result)
+    
+    return result
   }
 
   /**
@@ -2764,6 +3059,7 @@ async getRSVPAnalytics(partyId) {
 /**
  * Check if party has created e-invites
  */
+
 async hasCreatedEInvites(partyId) {
   try {
     const result = await this.getEInvites(partyId);

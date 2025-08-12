@@ -95,7 +95,7 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
             style={{ width: `${image.size}px`, height: `${image.size}px` }}
           >
             <Image
-              src={image.src || "/placeholder.svg"}
+              src={image.src || "/placeholder.png"}
               alt={image.alt}
               width={image.size}
               height={image.size}

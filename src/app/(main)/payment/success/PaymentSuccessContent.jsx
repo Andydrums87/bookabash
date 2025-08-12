@@ -21,6 +21,10 @@ export default function PaymentSuccessPage() {
     setLoading(false)
   }, [paymentIntentId])
 
+  const handleReturnToDashboard = () => {
+    router.push('/dashboard?payment_success=true&booking_confirmed=true&supplier_count=3&timestamp=' + Date.now())
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center">
@@ -131,7 +135,7 @@ export default function PaymentSuccessPage() {
         {/* Action buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
-            onClick={() => router.push('/dashboard')}
+            onClick={handleReturnToDashboard}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <Home className="w-4 h-4 mr-2" />

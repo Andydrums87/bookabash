@@ -106,7 +106,8 @@ export default function MobileSingleScrollSuppliers({
   getEnquiryTimestamp,
   // New props for party tasks
   partyTasksStatus = {},
-  showPartyTasks = true
+  showPartyTasks = true,
+   renderSupplierCard // <-- This comes from SupplierGrid
 }) {
   const [activeSection, setActiveSection] = useState(0);
 
@@ -164,82 +165,65 @@ export default function MobileSingleScrollSuppliers({
         <div className="px-3 py-5">
           <div className="flex gap-2 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
             
-            {/* Existing supplier sections */}
-            {supplierSections.map((section, index) => {
-              const sectionSuppliers = section.types.map(type => ({
-                type,
-                supplier: visibleSuppliers[type]
-              })).filter(({ supplier }) => {
-                if (isPaymentConfirmed) {
-                  return supplier !== null && supplier !== undefined;
-                }
-                return true;
-              });
+          <div className="space-y-8 px-4">
+        {supplierSections.map((section) => {
+          const sectionSuppliers = section.types.map(type => ({
+            type,
+            supplier: visibleSuppliers[type]
+          })).filter(({ supplier }) => {
+            if (isPaymentConfirmed) {
+              return supplier !== null && supplier !== undefined;
+            }
+            return true;
+          });
+          
+          if (isPaymentConfirmed && sectionSuppliers.length === 0) {
+            return null;
+          }
 
-              if (isPaymentConfirmed && sectionSuppliers.length === 0) {
-                return null;
-              }
+          if (hasEnquiriesPending && sectionSuppliers.length === 0) {
+            return null;
+          }
+          
+          return (
+            <div key={section.id} id={section.id} className="relative">
+              <SectionHeader section={section} />
+              
+              <div className="space-y-4 mb-8">
+                {/* {(() => {
+                  // Check if section has any suppliers when in enquiries pending mode
+                  const suppliersWithContent = sectionSuppliers.filter(({ supplier }) => 
+                    hasEnquiriesPending ? supplier : true
+                  );
 
-              if (hasEnquiriesPending && sectionSuppliers.length === 0) {
-                return null;
-              }
+                  if (suppliersWithContent.length === 0 && hasEnquiriesPending) {
+                    // Show empty state once per section
+                    return (
+                      <div className="bg-white border-2 border-dashed border-gray-200 rounded-xl p-4 text-center">
+                        <div className="text-gray-400 text-2xl mb-2">📋</div>
+                        <p className="text-gray-500 font-medium text-sm mb-1">No suppliers in this section</p>
+                        <p className="text-gray-400 text-xs">
+                          You haven't added any suppliers to this category yet
+                        </p>
+                      </div>
+                    );
+                  }
 
-              const completedCount = sectionSuppliers.filter(({supplier}) => supplier).length;
-              const isComplete = completedCount === sectionSuppliers.length && sectionSuppliers.length > 0;
-              const isActive = activeSection === index;
+                  // UPDATED: Use the render function from parent instead of hardcoded MobileSupplierCard
+                  return sectionSuppliers.map(({ type, supplier }) => {
+                    if (hasEnquiriesPending && !supplier) {
+                      return null
+                    }
 
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => scrollToSection(section.id, index)}
-                  className={`flex-shrink-0 relative transition-all duration-200 ${
-                    isActive ? 'transform scale-105' : 'hover:transform hover:scale-105'
-                  }`}
-                  style={{ minWidth: '70px' }}
-                >
-                  <div className="flex flex-col items-center">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-hidden relative ${
-                      isActive 
-                        ? 'shadow-lg ring-2 ring-orange-300' 
-                        : 'hover:shadow-md'
-                    }`}>
-                      <Image
-                        src={section.image}
-                        alt={section.title}
-                        width={56}
-                        height={56}
-                        className={`w-full h-full object-cover rounded-full ${
-                          isActive ? 'opacity-90' : ''
-                        }`}
-                      />
-                      {isActive && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-400/30 to-pink-400/30 rounded-full"></div>
-                      )}
-                    </div>
-                    
-                    <div className="text-center">
-                      <p className={`text-xs font-semibold leading-tight ${
-                        isActive ? 'text-orange-700' : 'text-gray-700'
-                      }`}>
-                        {section.title.split(' ').map((word, i) => (
-                          <span key={i} className="block">{word}</span>
-                        ))}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {isComplete && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                  
-                  {isActive && (
-                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full"></div>
-                  )}
-                </button>
-              );
-            })}
+                    // Use the shared rendering logic
+                    return renderSupplierCard(type, supplier, true) // true = mobile
+                  });
+                })()} */}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
             {/* Divider between suppliers and party tasks */}
             {showPartyTasks && (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,22 +9,29 @@ import {
   Star, 
   Check, 
   Plus,
-  Clock,
   Users,
   Sparkles,
 } from "lucide-react"
 import Image from "next/image"
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/universalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
+import { Clock, AlertCircle, Heart } from "lucide-react"
 
 export default function SupplierCustomizationModal({
   isOpen,
   onClose,
   supplier,
   onAddToPlan,
-  isAdding = false
+  isAdding = false,
+  // NEW: Add these props
+  currentPhase = "planning",
+  partyData = {},
+  enquiries = [],
+  hasEnquiriesPending = false
 }) {
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [selectedAddons, setSelectedAddons] = useState([])
+  const [showPendingModal, setShowPendingModal] = useState(false)
+  const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: 'planning_empty_slot', showModal: false })
 
   const packages = useMemo(() => {
     if (!supplier) return []
@@ -76,6 +83,75 @@ export default function SupplierCustomizationModal({
     ]
   }, [supplier])
 
+  // useEffect(() => {
+  //   if (!supplier) return
+
+  //   const checkAddPermission = () => {
+  //     // Map supplier category to party plan key
+  //     const getCategoryKey = (category) => {
+  //       const mapping = {
+  //         'Entertainment': 'entertainment',
+  //         'Venues': 'venue',
+  //         'Catering': 'catering',
+  //         'Face Painting': 'facePainting',
+  //         'Activities': 'activities',
+  //         'Party Bags': 'partyBags',
+  //         'Decorations': 'decorations',
+  //         'Balloons': 'balloons'
+  //       }
+  //       return mapping[category] || 'entertainment'
+  //     }
+
+  //     const categoryKey = getCategoryKey(supplier.category)
+  //     const existingSupplier = partyData[categoryKey]
+
+   
+
+  //     // Planning phase logic
+  //     if (currentPhase === 'planning') {
+  //       if (!existingSupplier) {
+  //         setCanAddCheck({ canAdd: true, reason: 'planning_empty_slot', showModal: false })
+  //       } else {
+  //         const categoryEnquiry = enquiries.find(e => e.supplier_category === categoryKey)
+  //         if (categoryEnquiry?.status === 'pending') {
+  //           setCanAddCheck({ canAdd: false, reason: 'planning_has_pending', showModal: true })
+  //         } else {
+  //           setCanAddCheck({ canAdd: true, reason: 'planning_can_replace', showModal: false })
+  //         }
+  //       }
+  //       return
+  //     }
+
+  //     // Awaiting responses phase logic
+  //     if (currentPhase === 'awaiting_responses') {
+  //       if (!existingSupplier) {
+  //         // Empty slot - allow with auto-enquiry
+  //         setCanAddCheck({ canAdd: true, reason: 'awaiting_empty_slot', showModal: false })
+  //       } else {
+  //         // Has existing supplier - don't allow replacement during awaiting responses
+  //         setCanAddCheck({ canAdd: false, reason: 'awaiting_has_existing', showModal: true })
+  //       }
+  //       return
+  //     }
+
+  //     // Confirmed/paid phase - allow adding to empty slots with auto-enquiry
+  //     if (currentPhase === 'confirmed') {
+  //       if (!existingSupplier) {
+  //         setCanAddCheck({ canAdd: true, reason: 'confirmed_empty_slot', showModal: false })
+  //       } else {
+  //         // Could allow replacement in confirmed phase, but for now let's be cautious
+  //         setCanAddCheck({ canAdd: false, reason: 'confirmed_has_existing', showModal: true })
+  //       }
+  //       return
+  //     }
+
+  //     // Default - always allow
+  //     setCanAddCheck({ canAdd: true, reason: 'default_allow', showModal: false })
+  //   }
+
+  //   checkAddPermission()
+  // }, [supplier, currentPhase, partyData, enquiries, hasEnquiriesPending])
+
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
 
   const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId)
@@ -87,12 +163,11 @@ export default function SupplierCustomizationModal({
       return sum + (addon?.price || 0)
     }, 0)
 
-  // Auto-select first package
-  useMemo(() => {
-    if (!selectedPackageId && packages.length > 0) {
-      setSelectedPackageId(packages[0].id)
-    }
-  }, [packages, selectedPackageId])
+    useEffect(() => {
+      if (!selectedPackageId && packages.length > 0) {
+        setSelectedPackageId(packages[0].id)
+      }
+    }, [packages, selectedPackageId])
 
   if (!supplier) return null
 
@@ -103,18 +178,42 @@ export default function SupplierCustomizationModal({
         : [...prev, addonId]
     )
   }
-
   const handleAddToPlan = () => {
+    // Check if we can add this supplier category
+    if (!canAddCheck.canAdd) {
+      console.log('🚫 Cannot add supplier - showing pending modal')
+      setShowPendingModal(true)
+      return
+    }
+  
     const selectedAddonObjects = selectedAddons.map(addonId => 
       availableAddons.find(addon => addon.id === addonId)
     ).filter(Boolean)
-
+  
+    console.log('✅ Adding supplier - will always show confirmation modal')
+  
+    // Always pass data for Quick Add flow (no auto-enquiry from dashboard)
     onAddToPlan({
       supplier,
       package: selectedPackage,
       addons: selectedAddonObjects,
-      totalPrice
+      totalPrice,
+      autoEnquiry: false, // Never auto-send from dashboard
+      reason: canAddCheck.reason
     })
+  }
+
+
+  const getButtonText = () => {
+    if (isAdding) {
+      return 'Adding...'
+    }
+    
+    if (!canAddCheck.canAdd) {
+      return currentPhase === 'awaiting_responses' ? 'Slot Occupied' : 'Enquiry Pending'
+    }
+  
+    return `Quick Add (£${totalPrice})` // This will always show the confirmation modal
   }
 
   return (
@@ -288,23 +387,90 @@ export default function SupplierCustomizationModal({
           </Button>
           <Button
             onClick={handleAddToPlan}
-            className="flex-2 bg-primary-500 hover:bg-primary-600 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
-            disabled={!selectedPackageId || isAdding}
+            className={`flex-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 ${
+              !canAddCheck.canAdd 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-primary-500 hover:bg-primary-600 text-white'
+            }`}
+            disabled={!selectedPackageId || isAdding || !canAddCheck.canAdd}
           >
             {isAdding ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Adding...
+                {getButtonText()}
+              </>
+            ) : !canAddCheck.canAdd ? (
+              <>
+                <Clock className="w-4 h-4 mr-2" />
+                {getButtonText()}
               </>
             ) : (
               <>
                 <Plus className="w-4 h-4 mr-2" />
-                Add to Plan (£{totalPrice})
+                {getButtonText()}
               </>
             )}
           </Button>
         </div>
       </ModalFooter>
+
+      {/* Pending Enquiry Modal */}
+      {showPendingModal && (
+        <UniversalModal isOpen={showPendingModal} onClose={() => setShowPendingModal(false)} size="md">
+          <ModalHeader 
+            title="Category Already Filled"
+            subtitle={`You already have a ${supplier?.category?.toLowerCase()} supplier selected`}
+            icon={<Clock className="w-6 h-6 text-orange-500" />}
+          />
+          <ModalContent>
+            <div className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-orange-100 rounded-full p-2">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-orange-800 text-sm">Why can't I add this supplier?</h3>
+                    <p className="text-orange-700 text-xs mt-1">
+                      {currentPhase === 'awaiting_responses' 
+                        ? `You already have a ${supplier?.category?.toLowerCase()} supplier and we're waiting for their response. You can add more suppliers to empty categories, but can't replace existing ones until they respond.`
+                        : `You have a pending enquiry for a ${supplier?.category?.toLowerCase()} supplier. Wait for them to respond before making changes.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center py-2">
+                <p className="text-gray-700">
+                  You can save <span className="font-semibold text-primary-600">{supplier?.name}</span> for later! 💫
+                </p>
+              </div>
+            </div>
+          </ModalContent>
+          <ModalFooter>
+            <div className="space-y-3 w-full">
+              <Button
+                onClick={() => {
+                  // Add to favorites logic here
+                  setShowPendingModal(false)
+                }}
+                className="w-full bg-primary-500 hover:bg-primary-600 text-white"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Save to Favorites
+              </Button>
+              <Button
+                onClick={() => setShowPendingModal(false)}
+                variant="outline"
+                className="w-full"
+              >
+                Close
+              </Button>
+            </div>
+          </ModalFooter>
+        </UniversalModal>
+      )}
     </UniversalModal>
   )
 }

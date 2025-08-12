@@ -7,6 +7,46 @@ export function useEnquiryStatus(partyId, isSignedIn) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // In useEnquiryStatus.js, update the useEffect:
+useEffect(() => {
+
+  // Only fetch enquiries if user is signed in and has a party ID
+  if (!isSignedIn || !partyId) {
+
+    setEnquiries([])
+    setLoading(false)
+    setError(null)
+    return
+  }
+
+  const fetchEnquiries = async () => {
+
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const result = await partyDatabaseBackend.getEnquiriesForParty(partyId)
+ 
+      
+      if (result.success) {
+        setEnquiries(result.enquiries)
+
+      } else {
+        console.error('❌ Failed to fetch enquiries:', result.error)
+        setError(result.error)
+        setEnquiries([])
+      }
+    } catch (err) {
+      console.error('💥 Error fetching enquiries:', err)
+      setError(err.message)
+      setEnquiries([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchEnquiries()
+}, [partyId, isSignedIn])
   const refreshEnquiries = useCallback(async () => {
     if (!partyId) return
     

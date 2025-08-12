@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Clock, Users, Star, CheckCircle, Calendar, PoundSterling, Sparkles, Gift, Heart } from "lucide-react"
 import Image from "next/image"
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/universalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 
 export default function AddonDetailsModal({ isOpen, onClose, addon, onAddToParty, isAlreadyAdded = false }) {
   const [isAdding, setIsAdding] = useState(false)

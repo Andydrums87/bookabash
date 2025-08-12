@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Clock, ArrowRight, Sparkles } from "lucide-react"
+import { Clock, ArrowRight, Sparkles, CheckCircle, FileText } from "lucide-react"
 
 export default function SnappysPresentParty({
   suppliers = {},
@@ -10,8 +10,11 @@ export default function SnappysPresentParty({
   timeRemaining = 24,
   onPaymentReady,
   showPaymentCTA = false,
+  isPaymentComplete = false, // New prop
 }) {
   const [snappyExpression, setSnappyExpression] = useState("waiting")
+  const [animatedProgress, setAnimatedProgress] = useState(0)
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false)
 
   // Filter out einvites from tracking
   const trackableSuppliers = Object.entries(suppliers).filter(([key, supplier]) => supplier && key !== "einvites")
@@ -28,6 +31,15 @@ export default function SnappysPresentParty({
 
   const confirmedCount = supplierStates.filter((s) => s.status === "accepted").length
   const allConfirmed = confirmedCount === totalSuppliers && totalSuppliers > 0
+  const progressPercentage = totalSuppliers > 0 ? (confirmedCount / totalSuppliers) * 100 : 0
+
+  // Animate progress bar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedProgress(progressPercentage)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [progressPercentage])
 
   // Update Snappy's mood based on progress
   useEffect(() => {
@@ -46,98 +58,135 @@ export default function SnappysPresentParty({
     return `${h}h ${m}m`
   }
 
-  const progressPercentage = totalSuppliers > 0 ? (confirmedCount / totalSuppliers) * 100 : 0
+  const getProgressColor = () => {
+    return "from-teal-500 to-teal-600"
+  }
+
+  const getSnappyMessage = () => {
+    if (allConfirmed) {
+      return isPaymentComplete ? "Party secured & paid! 🎉" : "All suppliers confirmed! 🎉"
+    }
+    if (confirmedCount > 0) {
+      return `${confirmedCount} supplier${confirmedCount > 1 ? "s" : ""} confirmed`
+    }
+    return "Waiting for confirmations..."
+  }
+
+  const CircularProgress = ({ percentage, size = 80, strokeWidth = 8 }) => {
+    const radius = (size - strokeWidth) / 2
+    const circumference = radius * 2 * Math.PI
+    const strokeDasharray = circumference
+    const strokeDashoffset = circumference - (percentage / 100) * circumference
+
+    return (
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg className="transform -rotate-90" width={size} height={size}>
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Progress circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={isPaymentComplete ? "#10b981" : "white"}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-out"
+          />
+        </svg>
+        {/* Center content */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="text-white text-lg font-bold">
+            {confirmedCount}/{totalSuppliers}
+          </div>
+          <div className="text-white/80 text-xs">{Math.round(progressPercentage)}%</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="relative w-full bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] border border-[hsl(var(--primary-200))] rounded-xl shadow-sm overflow-hidden">
-      {/* Subtle decorative elements */}
+    <div className="relative w-full bg-primary-400 rounded-xl shadow-sm overflow-hidden p-6">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-2 left-8 w-1 h-1 bg-[hsl(var(--primary-300))] rounded-full opacity-40"></div>
-        <div className="absolute top-3 right-12 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-50"></div>
-        <Sparkles className="absolute top-2 right-20 w-3 h-3 text-[hsl(var(--primary-300))] opacity-30" />
+        <div className="absolute top-4 left-6 w-2 h-2 bg-white/20 rounded-full"></div>
+        <div className="absolute top-6 right-8 w-1 h-1 bg-white/30 rounded-full"></div>
+        <div className="absolute bottom-4 left-8 w-1.5 h-1.5 bg-white/20 rounded-full"></div>
+        <div className="absolute bottom-6 right-6 w-1 h-1 bg-white/30 rounded-full"></div>
       </div>
 
-      <div className="relative z-10 px-6 py-4">
+      <div className="relative z-10 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="bg-primary-500 p-3 rounded-xl shadow-lg">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-3xl font-extrabold">Party Progress</h3>
+          {!allConfirmed && timeRemaining > 0 && (
+            <div className="flex items-center gap-2 text-sm bg-white/20 px-3 py-1 rounded-full">
+              <Clock className="w-4 h-4" />
+              <span>{formatTime(timeRemaining)} left</span>
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-6">
-          {/* Snappy - Compact */}
           <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-gradient-to-br from-white to-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-lg flex items-center justify-center shadow-sm">
-              <img
-                src={
-                  snappyExpression === "celebrating"
-                    ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753256660/dwb6vr6lxyj7ubokfeel.png"
-                    : snappyExpression === "excited"
-                      ? "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291833/ctcf51iyrrhfv6y481dl.jpg"
-                      : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
-                }
-                alt="Snappy"
-                className="w-full h-full object-contain rounded-lg"
-                onError={(e) => {
-                  e.target.style.display = "none"
-                  e.target.nextSibling.style.display = "block"
-                }}
-                onLoad={(e) => {
-                  e.target.nextSibling.style.display = "none"
-                }}
-              />
-              <div className="text-2xl" style={{ display: "none" }}>
-                {snappyExpression === "celebrating" ? "🐊🎉" : snappyExpression === "excited" ? "🐊😊" : "🐊😴"}
-              </div>
-            </div>
+            <CircularProgress percentage={animatedProgress} />
           </div>
 
-          {/* Progress Section - Takes up most space */}
+          {/* Status message */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-800">
-                {allConfirmed ? "All suppliers confirmed! 🎉" : "Supplier confirmations"}
-              </span>
-              <span className="text-sm font-medium text-[hsl(var(--primary-700))]">
-                {confirmedCount}/{totalSuppliers} confirmed
-              </span>
-            </div>
-
-            {/* Horizontal Progress Bar */}
-            <div className="relative">
-              <div className="w-full bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-full h-3 shadow-inner border border-[hsl(var(--primary-200))]">
-                <div
-                  className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                  style={{
-                    width: `${progressPercentage}%`,
-                    background: allConfirmed
-                      ? "linear-gradient(90deg, hsl(var(--primary-500)), hsl(var(--primary-600)))"
-                      : "linear-gradient(90deg, hsl(var(--primary-500)), hsl(var(--primary-600)))",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+            <div className="text-lg font-semibold mb-1">{getSnappyMessage()}</div>
+            <div className="text-white/80 text-sm">
+              {totalSuppliers > 0 ? (
+                <div className="space-y-1">
+                  {supplierStates.map((supplier, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      {supplier.status === "accepted" ? (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      ) : (
+                        <div className="w-3 h-3 border border-white/40 rounded-full" />
+                      )}
+                      <span className="capitalize text-xs">{supplier.category}</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                "No suppliers to track"
+              )}
             </div>
-          </div>
-
-          {/* Status/Time - Compact */}
-          <div className="flex-shrink-0 text-right">
-            {!allConfirmed && timeRemaining > 0 && (
-              <div className="flex items-center gap-2 text-sm text-[hsl(var(--primary-700))] bg-white/80 px-3 py-1 rounded-full border border-[hsl(var(--primary-300))] shadow-sm mb-2">
-                <Clock className="w-3 h-3" />
-                <span className="font-medium">{formatTime(timeRemaining)}</span>
-              </div>
-            )}
-
-            {allConfirmed && showPaymentCTA && (
-              <Button
-                onClick={onPaymentReady}
-                size="sm"
-                className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white rounded-lg shadow-sm"
-              >
-                Secure Party
-                <ArrowRight className="ml-1 w-3 h-3" />
-              </Button>
-            )}
-
-            {!allConfirmed && <div className="text-xs text-gray-600">{Math.round(progressPercentage)}% complete</div>}
           </div>
         </div>
+
+        {allConfirmed && (
+          <div className="mt-6">
+            {isPaymentComplete ? (
+              <div className="w-full bg-emerald-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Party Secured & Paid
+                <Sparkles className="w-4 h-4" />
+              </div>
+            ) : showPaymentCTA ? (
+              <Button
+                onClick={onPaymentReady}
+                className="w-full bg-white text-primary-600 hover:bg-white/90 font-semibold py-3 rounded-lg"
+              >
+                <Sparkles className="mr-2 w-4 h-4" />
+                Secure Party
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   )
