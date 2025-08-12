@@ -16,7 +16,7 @@ const toastTypes = {
     iconBg: 'bg-[hsl(var(--primary-50))]',
     iconColor: 'text-primary-500',
     textColor: 'text-white',
-    shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
+    shadowColor: 'shadow-[hsl(var(--primary-500))]/25 '  
   },
   error: {
     icon: AlertCircle,

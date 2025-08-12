@@ -230,7 +230,7 @@ const ConfirmationModal = ({
           </div>
         </div>
         <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <p className="text-gray-600 mb-6">{message} </p>
         <div className="flex gap-3 ">
           <Button
             variant="outline"
