@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import Image from "next/image"
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 import { Clock, AlertCircle, Heart } from "lucide-react"
 
 export default function SupplierCustomizationModal({

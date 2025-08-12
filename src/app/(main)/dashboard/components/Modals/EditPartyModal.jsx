@@ -11,7 +11,7 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon, Clock, Sun, Sunset, MapPin, Users, PoundSterling, FileText, User, Cake, Sparkles } from 'lucide-react'
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 
 export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }) {
   // Safely initialize state with proper date handling

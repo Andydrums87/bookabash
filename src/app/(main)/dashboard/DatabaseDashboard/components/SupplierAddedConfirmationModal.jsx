@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from '@/components/ui/UniversalModal'
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from '@/components/ui/UniversalModal.jsx'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Send, Clock, Users, Calendar, MapPin, X } from 'lucide-react'
 
