@@ -83,75 +83,6 @@ export default function SupplierCustomizationModal({
     ]
   }, [supplier])
 
-  // useEffect(() => {
-  //   if (!supplier) return
-
-  //   const checkAddPermission = () => {
-  //     // Map supplier category to party plan key
-  //     const getCategoryKey = (category) => {
-  //       const mapping = {
-  //         'Entertainment': 'entertainment',
-  //         'Venues': 'venue',
-  //         'Catering': 'catering',
-  //         'Face Painting': 'facePainting',
-  //         'Activities': 'activities',
-  //         'Party Bags': 'partyBags',
-  //         'Decorations': 'decorations',
-  //         'Balloons': 'balloons'
-  //       }
-  //       return mapping[category] || 'entertainment'
-  //     }
-
-  //     const categoryKey = getCategoryKey(supplier.category)
-  //     const existingSupplier = partyData[categoryKey]
-
-   
-
-  //     // Planning phase logic
-  //     if (currentPhase === 'planning') {
-  //       if (!existingSupplier) {
-  //         setCanAddCheck({ canAdd: true, reason: 'planning_empty_slot', showModal: false })
-  //       } else {
-  //         const categoryEnquiry = enquiries.find(e => e.supplier_category === categoryKey)
-  //         if (categoryEnquiry?.status === 'pending') {
-  //           setCanAddCheck({ canAdd: false, reason: 'planning_has_pending', showModal: true })
-  //         } else {
-  //           setCanAddCheck({ canAdd: true, reason: 'planning_can_replace', showModal: false })
-  //         }
-  //       }
-  //       return
-  //     }
-
-  //     // Awaiting responses phase logic
-  //     if (currentPhase === 'awaiting_responses') {
-  //       if (!existingSupplier) {
-  //         // Empty slot - allow with auto-enquiry
-  //         setCanAddCheck({ canAdd: true, reason: 'awaiting_empty_slot', showModal: false })
-  //       } else {
-  //         // Has existing supplier - don't allow replacement during awaiting responses
-  //         setCanAddCheck({ canAdd: false, reason: 'awaiting_has_existing', showModal: true })
-  //       }
-  //       return
-  //     }
-
-  //     // Confirmed/paid phase - allow adding to empty slots with auto-enquiry
-  //     if (currentPhase === 'confirmed') {
-  //       if (!existingSupplier) {
-  //         setCanAddCheck({ canAdd: true, reason: 'confirmed_empty_slot', showModal: false })
-  //       } else {
-  //         // Could allow replacement in confirmed phase, but for now let's be cautious
-  //         setCanAddCheck({ canAdd: false, reason: 'confirmed_has_existing', showModal: true })
-  //       }
-  //       return
-  //     }
-
-  //     // Default - always allow
-  //     setCanAddCheck({ canAdd: true, reason: 'default_allow', showModal: false })
-  //   }
-
-  //   checkAddPermission()
-  // }, [supplier, currentPhase, partyData, enquiries, hasEnquiriesPending])
-
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
 
   const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId)
@@ -227,7 +158,7 @@ export default function SupplierCustomizationModal({
       {/* Header with supplier info */}
       <ModalHeader 
         title={supplier.name}
-        subtitle={`${supplier.location} • ⭐ ${supplier.rating}`}
+      
         theme="fun"
         icon={
           <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-white shadow-md">
@@ -251,13 +182,15 @@ export default function SupplierCustomizationModal({
               <Sparkles className="w-5 h-5 text-primary-500" />
               Choose Your Package
             </h3>
-            <div className="grid grid-cols-1 gap-3">
+            
+            {/* Desktop: Grid Layout */}
+            <div className="hidden md:grid md:grid-cols-1 gap-3">
               {packages.map((pkg) => (
                 <Card 
                   key={pkg.id}
                   className={`cursor-pointer transition-all duration-200 ${
                     selectedPackageId === pkg.id 
-                      ? 'ring-2 ring-primary-500 bg-primary-50' 
+                      ? 'ring-2 ring-[hsl(var(--primary-500))] bg-primary-50' 
                       : 'hover:shadow-md hover:bg-gray-50'
                   }`}
                   onClick={() => setSelectedPackageId(pkg.id)}
@@ -295,6 +228,74 @@ export default function SupplierCustomizationModal({
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            {/* Mobile: Horizontal Scroll */}
+            <div className="md:hidden">
+              <div className="flex gap-3 overflow-x-auto pb-4 px-3 py-1 scrollbar-hide snap-x snap-mandatory">
+                {packages.map((pkg, index) => (
+                  <Card 
+                    key={pkg.id}
+                    className={`flex-shrink-0 w-60 cursor-pointer transition-all duration-200 snap-center ${
+                      selectedPackageId === pkg.id 
+                        ? 'ring-2 ring-[hsl(var(--primary-500))] bg-primary-50' 
+                        : 'hover:shadow-md hover:bg-gray-50'
+                    } ${index === 0 ? 'ml-1' : ''} ${index === packages.length - 1 ? 'mr-1' : ''}`}
+                    onClick={() => setSelectedPackageId(pkg.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {/* Header with check icon */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">{pkg.name}</h4>
+                            {pkg.popular && (
+                              <Badge className="bg-primary-500 text-white text-xs px-2 py-0.5">
+                                Popular
+                              </Badge>
+                            )}
+                          </div>
+                          {selectedPackageId === pkg.id && (
+                            <Check className="w-5 h-5 text-primary-500 flex-shrink-0" />
+                          )}
+                        </div>
+                        
+                        {/* Price - prominent on mobile */}
+                        <div className="text-2xl font-bold text-primary-600">£{pkg.price}</div>
+                        
+                        {/* Description */}
+                        {/* <p className="text-sm text-gray-600">{pkg.description}</p> */}
+                        
+                        {/* Features */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Clock className="w-3 h-3 flex-shrink-0" />
+                            <span>{pkg.duration}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Users className="w-3 h-3 flex-shrink-0" />
+                            <span>{pkg.features[1] || "Multiple children"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Scroll indicator dots */}
+              <div className="flex justify-center gap-1 mt-2">
+                {packages.map((_, index) => (
+                  <div 
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      selectedPackageId === packages[index]?.id 
+                        ? 'bg-primary-500' 
+                        : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -346,7 +347,7 @@ export default function SupplierCustomizationModal({
           )}
 
           {/* Price Summary */}
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 border border-primary-200">
+          <div className="bg-primary-50 rounded-xl p-4 border border-[hsl(var(--primary-200))]">
             <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Star className="w-5 h-5 text-primary-500" />
               Price Summary

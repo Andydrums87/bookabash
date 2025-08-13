@@ -75,15 +75,12 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
 />
       </div>
 
-      {/* Main Content */}
-      <h1 className="text-3xl font-black text-gray-800 mb-2">
-        {loadingStep >= 4 ? "Added to Plan!" : "Adding to Your Plan"}
-      </h1>
-      <p className="text-lg text-gray-600 max-w-md mb-6">
+     
+      {/* <p className="text-lg text-gray-600 max-w-md mb-6">
         {loadingStep >= 4
           ? "Your party selection has been successfully added!"
           : stepMessages[currentMessageIndex]}
-      </p>
+      </p> */}
 
        {/* Progress Bar */}
        <div style={{  height: '20px'}} className="rounded-full bg-gray-200 md:w-[40%] w-[80%]">

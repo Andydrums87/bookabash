@@ -24,6 +24,7 @@ import SupplierBadges from "@/components/supplier/supplier-badges"
 import SupplierSidebar from "@/components/supplier/supplier-sidebar"
 import MobileBookingBar from "@/components/supplier/mobile-booking-bar"
 import AlaCarteModal from "../components/AddToCartModal"
+import SupplierUnavailableModal from "@/components/supplier/supplier-unavailable-modal"
 
 import SupplierServiceDetails from "@/components/supplier/supplier-service-details"
 import SupplierPortfolioGallery from "@/components/supplier/supplier-portfolio-gallery"
@@ -244,36 +245,15 @@ const hasValidPartyPlanDebug = () => {
   }
 }
 
-// Helper function to map supplier categories to party plan keys
-const getCategoryMapping = (category) => {
-  const mapping = {
-    'Entertainment': 'entertainment',
-    'Venues': 'venue',
-    'Catering': 'catering',
-    'Face Painting': 'facePainting',
-    'Activities': 'activities',
-    'Party Bags': 'partyBags',
-    'Decorations': 'decorations'
-  }
-  return mapping[category] || 'entertainment'
-}
 
 export default function SupplierProfilePage({ backendSupplier }) {
   const router = useRouter()
 
-
-
-
-
-const { userType, userContext, loading: userTypeLoading } = useUserTypeDetection()
+  const { userType, userContext, loading: userTypeLoading } = useUserTypeDetection()
   const { partyPlan, addSupplier, addAddon, removeAddon, hasAddon } = usePartyPlan()
   const { navigateWithContext, navigationContext } = useContextualNavigation()
   
   const [isLoaded, setIsLoaded] = useState(false)
-  
-
-
-  // State variables
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [debugMode, setDebugMode] = useState(false)
   const [currentPartyId, setCurrentPartyId] = useState(null)
@@ -293,17 +273,13 @@ const { userType, userContext, loading: userTypeLoading } = useUserTypeDetection
   const [finalPackageData, setFinalPackageData] = useState(null)
   const [progress, setProgress] = useState(0)
   const [showPendingEnquiryModal, setShowPendingEnquiryModal] = useState(false)
-  // NEW: Add enquiry status state
-const [enquiryStatus, setEnquiryStatus] = useState({
+  const [showUnavailableModal, setShowUnavailableModal] = useState(false)
+  const [enquiryStatus, setEnquiryStatus] = useState({
   isAwaiting: false,
   pendingCount: 0,
   enquiries: [],
   loading: false
 })
-
-
-
-
 
 
   // Memoized helper functions
@@ -333,7 +309,7 @@ const [enquiryStatus, setEnquiryStatus] = useState({
     return navigationContext === 'dashboard' || hasPartyDate()
   }, [navigationContext, hasPartyDate])
 
-  // Memoized supplier object
+
   const supplier = useMemo(() => {
     if (!backendSupplier) return null
     return {
@@ -375,6 +351,77 @@ const [enquiryStatus, setEnquiryStatus] = useState({
   }, [backendSupplier])
 
 
+
+// Add handler functions for the unavailable modal:
+const handleSelectNewDate = useCallback(() => {
+  setShowUnavailableModal(false)
+  // Scroll to calendar
+  const calendarElement = document.getElementById('availability-calendar')
+  if (calendarElement) {
+    calendarElement.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center'
+    })
+    
+    // Clear selected date to force new selection
+    setSelectedDate(null)
+    
+    // Add highlight effect
+    calendarElement.classList.add('ring-4', 'ring-blue-300', 'ring-opacity-75', 'transition-all', 'duration-500')
+    setTimeout(() => {
+      calendarElement?.classList.remove('ring-4', 'ring-blue-300', 'ring-opacity-75')
+    }, 3000)
+  }
+  
+  setNotification({ 
+    type: "info", 
+    message: "📅 Please select a different date when the supplier is available",
+    duration: 4000
+  })
+  setTimeout(() => setNotification(null), 4000)
+}, [])
+
+
+const getSelectedCalendarDate = useCallback(() => {
+  if (!selectedDate || !currentMonth) {
+    console.log('❌ No selected date or current month:', { selectedDate, currentMonth })
+    return null
+  }
+  
+  try {
+    // Create the date object with local timezone (no UTC conversion)
+    const selectedDateObj = new Date(
+      currentMonth.getFullYear(), 
+      currentMonth.getMonth(), 
+      selectedDate
+    )
+    
+    // Use local date methods instead of toISOString() to avoid timezone issues
+    const year = selectedDateObj.getFullYear()
+    const month = String(selectedDateObj.getMonth() + 1).padStart(2, '0') // +1 because getMonth() is 0-based
+    const day = String(selectedDateObj.getDate()).padStart(2, '0')
+    
+    // Format as YYYY-MM-DD using local date components
+    const dateString = `${year}-${month}-${day}`
+    console.log('📅 Generated calendar date string:', dateString)
+    return dateString
+  } catch (error) {
+    console.error('❌ Error generating calendar date:', error)
+    return null
+  }
+}, [selectedDate, currentMonth])
+
+const handleViewAlternatives = useCallback(() => {
+  setShowUnavailableModal(false)
+  // Navigate to supplier search with same category and date filters
+  const searchParams = new URLSearchParams({
+    category: supplier.category || '',
+    date: getSelectedCalendarDate() || '',
+    available: 'true'
+  })
+  
+  router.push(`/suppliers?${searchParams.toString()}`)
+}, [supplier, getSelectedCalendarDate, router])
   // Add this useEffect to get party ID:
 useEffect(() => {
   const getPartyId = async () => {
@@ -505,6 +552,115 @@ const getPendingEnquiriesCount = useCallback(() => {
   return enquiryStatus.pendingCount
 }, [enquiryStatus.pendingCount])
 
+
+const checkSupplierAvailability = useCallback((dateToCheck) => {
+  console.log('🔍 === AVAILABILITY CHECK START ===')
+  console.log('🔍 Date to check:', dateToCheck)
+  console.log('🔍 Supplier name:', supplier?.name)
+  console.log('🔍 Supplier unavailable dates (raw):', supplier?.unavailableDates)
+  
+  if (!supplier || !dateToCheck) {
+    console.log('❌ No supplier or date to check')
+    return true
+  }
+  
+  try {
+    // Parse the date we're checking (user's party date)
+    const checkDate = new Date(dateToCheck + 'T12:00:00') // Add noon to avoid timezone edge cases
+    if (isNaN(checkDate.getTime())) {
+      console.log('❌ Invalid date to check:', dateToCheck)
+      return true
+    }
+    
+    console.log('🔍 Parsed check date:', checkDate)
+    console.log('🔍 Check date in London timezone:', checkDate.toLocaleDateString('en-GB'))
+    
+    // Check unavailable dates with timezone awareness
+    if (supplier.unavailableDates && supplier.unavailableDates.length > 0) {
+      console.log('🔍 Checking against unavailable dates...')
+      
+      const isUnavailable = supplier.unavailableDates.some((unavailableDate, index) => {
+        console.log(`🔍 [${index}] Checking unavailable date:`, unavailableDate)
+        
+        try {
+          // Parse the database timestamp
+          const unavailableDateTime = new Date(unavailableDate)
+          
+          if (isNaN(unavailableDateTime.getTime())) {
+            console.log(`❌ [${index}] Invalid unavailable date format:`, unavailableDate)
+            return false
+          }
+          
+          // Convert both dates to local date strings for comparison
+          const checkDateString = checkDate.toLocaleDateString('en-GB') // DD/MM/YYYY
+          const unavailableDateString = unavailableDateTime.toLocaleDateString('en-GB') // DD/MM/YYYY
+          
+          console.log(`🔍 [${index}] Comparing local dates:`)
+          console.log(`🔍 [${index}]   Check date: ${checkDateString}`)
+          console.log(`🔍 [${index}]   Unavailable: ${unavailableDateString}`)
+          
+          const isSameDate = checkDateString === unavailableDateString
+          
+          if (isSameDate) {
+            console.log(`❌ [${index}] MATCH FOUND! ${unavailableDate} matches ${dateToCheck}`)
+            console.log(`❌ [${index}] Database timestamp ${unavailableDate} = ${unavailableDateString} in London time`)
+          }
+          
+          return isSameDate
+        } catch (error) {
+          console.log(`❌ [${index}] Error parsing unavailable date:`, unavailableDate, error)
+          return false
+        }
+      })
+      
+      console.log(`🔍 Final unavailable check result: ${isUnavailable}`)
+      
+      if (isUnavailable) {
+        console.log(`❌ Supplier ${supplier.name} is UNAVAILABLE on ${dateToCheck}`)
+        return false
+      }
+    }
+    
+    // Check working hours
+    const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+    console.log(`🔍 Day of week: ${dayOfWeek}`)
+    
+    if (supplier.workingHours && supplier.workingHours[dayOfWeek]) {
+      const workingDay = supplier.workingHours[dayOfWeek]
+      if (!workingDay.active || workingDay.active === false) {
+        console.log(`❌ Supplier ${supplier.name} is not working on ${dayOfWeek}`)
+        return false
+      }
+    }
+    
+    // Check busy dates (similar timezone handling)
+    if (supplier.busyDates && supplier.busyDates.length > 0) {
+      const isBusy = supplier.busyDates.some(busyDate => {
+        try {
+          const busyDateTime = new Date(busyDate)
+          const checkDateString = checkDate.toLocaleDateString('en-GB')
+          const busyDateString = busyDateTime.toLocaleDateString('en-GB')
+          return checkDateString === busyDateString
+        } catch (error) {
+          console.log('❌ Error parsing busy date:', busyDate, error)
+          return false
+        }
+      })
+      
+      if (isBusy) {
+        console.log(`⚠️ Supplier ${supplier.name} is busy on ${dateToCheck} but might still be available`)
+        return true // Treat busy as available for now
+      }
+    }
+    
+    console.log(`✅ Supplier ${supplier.name} is AVAILABLE on ${dateToCheck}`)
+    return true
+    
+  } catch (error) {
+    console.error('❌ Error checking supplier availability:', error)
+    return true // Default to available on error
+  }
+}, [supplier])
 
 
 
@@ -875,18 +1031,7 @@ const getPendingEnquiriesCount = useCallback(() => {
           confirmed: true
         },
         
-        // Always include e-invites for à la carte bookings
-        einvites: {
-          id: "digital-invites",
-          name: "Digital Party Invites",
-          description: "Digital e-invitations with RSVP tracking",
-          price: 25,
-          status: "available", // Not auto-confirmed for à la carte
-          image: "/placeholder.jpg",
-          category: "Digital Services",
-          priceUnit: "per set",
-          addedAt: new Date().toISOString()
-        },
+    
         
         // Initialize empty addons array
         addons: [],
@@ -969,14 +1114,21 @@ const getPendingEnquiriesCount = useCallback(() => {
       console.log('🔧 Cleanup completed')
     }
   }, [packages, selectedPackageId, supplier, backendSupplier, router])
-
   const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
+    console.log('🚀 === HANDLE ADD TO PLAN START ===')
+    console.log('🚀 userType:', userType)
+    console.log('🚀 selectedDate:', selectedDate)
+    console.log('🚀 skipAddonModal:', skipAddonModal)
+    console.log('🚀 addonData:', addonData)
+  
+    // Check if user has pending enquiries
     if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-      console.log('🚫 User trying to add supplier - showing pending enquiry modal')
+      console.log('🚫 User has pending enquiries - showing pending enquiry modal')
       setShowPendingEnquiryModal(true)
-      return // Exit early
+      return
     }
   
+    // Basic validation
     if (!supplier || !selectedPackageId) {
       setNotification({ type: "error", message: "Please select a package first." })
       setTimeout(() => setNotification(null), 3000)
@@ -985,11 +1137,11 @@ const getPendingEnquiriesCount = useCallback(() => {
     
     // Get behavior based on user type
     const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
+    console.log('🚀 Behavior:', behavior)
     
-    console.log('🎯 HandleAddToPlan behavior for', userType, ':', behavior)
-    
-    // Date picker flow for anonymous/new users
+    // 1. DATE PICKER FLOW - For anonymous/new users who need to select a date first
     if (behavior.shouldShowDatePicker) {
+      console.log('📅 Showing date picker prompt')
       const calendarElement = document.getElementById('availability-calendar')
       if (calendarElement) {
         calendarElement.scrollIntoView({ 
@@ -1012,16 +1164,85 @@ const getPendingEnquiriesCount = useCallback(() => {
       setTimeout(() => setNotification(null), 4000)
       return
     }
-    
+  
+    // 2. AVAILABILITY CHECK #1 - For users with calendar selected dates
+    if (selectedDate && currentMonth) {
+      const dateString = getSelectedCalendarDate()
+      console.log('🔍 CALENDAR DATE AVAILABILITY CHECK')
+      console.log('🔍 selectedDate:', selectedDate)
+      console.log('🔍 currentMonth:', currentMonth)
+      console.log('🔍 dateString:', dateString)
+      
+      if (dateString) {
+        const isAvailable = checkSupplierAvailability(dateString)
+        console.log('🔍 Calendar date availability result:', isAvailable)
+        
+        if (!isAvailable) {
+          console.log('🚫 Supplier unavailable on calendar selected date - showing unavailable modal')
+          setShowUnavailableModal(true)
+          return
+        }
+      }
+    }
+  
+    // 3. AVAILABILITY CHECK #2 - For users with party dates from localStorage/database
+    if (!selectedDate && (userType === 'LOCALSTORAGE_USER' || userType === 'DATABASE_USER' || userType === 'MIGRATION_NEEDED')) {
+      let partyDateToCheck = null
+      
+      console.log('🔍 PARTY DATE AVAILABILITY CHECK')
+      console.log('🔍 userType:', userType)
+      
+      // For localStorage users, check party_details
+      if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
+        try {
+          const partyDetails = localStorage.getItem('party_details')
+          if (partyDetails) {
+            const parsed = JSON.parse(partyDetails)
+            partyDateToCheck = parsed.date
+            console.log('🔍 Party date from localStorage:', partyDateToCheck)
+          }
+        } catch (error) {
+          console.log('❌ Could not parse party details for date check:', error)
+        }
+      }
+      
+      // For database users, check their party data
+      if (userType === 'DATABASE_USER' && userContext?.partyData?.date) {
+        partyDateToCheck = userContext.partyData.date
+        console.log('🔍 Party date from database:', partyDateToCheck)
+      }
+      
+      if (partyDateToCheck) {
+        console.log('🔍 Checking availability for party date:', partyDateToCheck)
+        const isAvailable = checkSupplierAvailability(partyDateToCheck)
+        console.log('🔍 Party date availability result:', isAvailable)
+        
+        if (!isAvailable) {
+          console.log('🚫 Supplier unavailable on party date - showing unavailable modal')
+          // Set selectedDate temporarily for modal display
+          try {
+            const tempDate = new Date(partyDateToCheck + 'T12:00:00')
+            setSelectedDate(tempDate.getDate())
+            setCurrentMonth(new Date(tempDate.getFullYear(), tempDate.getMonth(), 1))
+          } catch (error) {
+            console.log('❌ Error setting temporary date for modal:', error)
+          }
+          setShowUnavailableModal(true)
+          return
+        }
+      }
+    }
+  
+    // 4. À LA CARTE FLOW - For anonymous users with selected dates
     if (behavior.shouldShowAlaCarteModal) {
       console.log('🎪 Opening à la carte modal for anonymous user with date')
       setShowAlaCarteModal(true)
       return
     }
     
-    
-    // Category occupation check for database users
+    // 5. CATEGORY OCCUPATION CHECK - For database users
     if (behavior.shouldCheckCategoryOccupation && userContext.currentPartyId) {
+      console.log('🔍 Checking category occupation for database user')
       try {
         const partyResult = await partyDatabaseBackend.getCurrentParty()
         if (partyResult.success && partyResult.party?.party_plan) {
@@ -1055,30 +1276,36 @@ const getPendingEnquiriesCount = useCallback(() => {
           }
         }
       } catch (error) {
-        console.log('Database check failed, continuing...', error)
+        console.log('❌ Database check failed, continuing...', error)
       }
     }
     
-    // Rest of your existing addon logic
+    // 6. PACKAGE VALIDATION
     const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
     if (!selectedPkg) {
       setNotification({ type: "error", message: "Selected package not found." })
+      setTimeout(() => setNotification(null), 3000)
       return
     }
   
+    // 7. ADDON MODAL CHECK - Show addon modal if supplier has addons and we haven't skipped it
     const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
     const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
   
     if (isEntertainer && hasAddons && !skipAddonModal) {
+      console.log('🎭 Showing addon modal (availability already checked)')
       setShowAddonModal(true)
       return
     }
   
+    // 8. START ADDING PROCESS
+    console.log('🚀 Starting add to plan process')
     setIsAddingToPlan(true)
     setLoadingStep(0)
     setProgress(10)
   
     try {
+      // Prepare package data
       const packageToAdd = addonData || selectedPkg
       const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
       
@@ -1090,11 +1317,16 @@ const getPendingEnquiriesCount = useCallback(() => {
         addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0
       }
   
-      let result
+      console.log('🎯 Enhanced package:', enhancedPackage)
+      setProgress(30)
   
-      // Database user - add with auto-enquiry for empty categories
+      let result
+      setLoadingStep(1)
+  
+      // 9. DATABASE USER FLOW
       if (userType === 'DATABASE_USER' || userType === 'DATA_CONFLICT') {
-        console.log('📊 Database user - adding supplier')
+        console.log('📊 Database user - adding supplier to database')
+        setProgress(50)
         
         const addResult = await partyDatabaseBackend.addSupplierToParty(
           userContext.currentPartyId,
@@ -1102,8 +1334,12 @@ const getPendingEnquiriesCount = useCallback(() => {
           enhancedPackage
         )
         
+        setProgress(70)
+        setLoadingStep(2)
+        
         if (addResult.success && behavior.shouldSendEnquiry) {
           console.log('📧 Sending auto-enquiry for empty category')
+          setLoadingStep(3)
           const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
             userContext.currentPartyId,
             backendSupplier,
@@ -1118,9 +1354,11 @@ const getPendingEnquiriesCount = useCallback(() => {
         
         result = addResult
       }
-      // LocalStorage user - add freely
+      // 10. LOCALSTORAGE USER FLOW
       else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
-        console.log('📦 LocalStorage user - adding supplier freely')
+        console.log('📦 LocalStorage user - adding supplier to localStorage')
+        setProgress(50)
+        setLoadingStep(2)
         
         const partyDetails = getSupplierInPartyDetails()
         if (partyDetails.inParty) {
@@ -1150,6 +1388,7 @@ const getPendingEnquiriesCount = useCallback(() => {
       setLoadingStep(4)
       setProgress(100)
   
+      // 11. SUCCESS HANDLING
       if (result?.success) {
         const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
         
@@ -1165,7 +1404,10 @@ const getPendingEnquiriesCount = useCallback(() => {
           })
         }
         
+        setTimeout(() => setNotification(null), 3000)
         await new Promise((resolve) => setTimeout(resolve, 1000))
+        
+        // Navigate based on context
         if (navigationContext === "dashboard") {
           navigateWithContext("/dashboard", "supplier-detail")
         } else {
@@ -1174,18 +1416,44 @@ const getPendingEnquiriesCount = useCallback(() => {
       } else {
         throw new Error(result?.error || "Failed to add supplier")
       }
+  
     } catch (error) {
-      console.error("Error in handleAddToPlan:", error)
-      setNotification({ type: "error", message: error.message || "Failed to add supplier. Please try again." })
+      console.error("❌ Error in handleAddToPlan:", error)
+      setNotification({ 
+        type: "error", 
+        message: error.message || "Failed to add supplier. Please try again." 
+      })
       setTimeout(() => setNotification(null), 3000)
     } finally {
+      // 12. CLEANUP
       setIsAddingToPlan(false)
       setProgress(0)
+      setLoadingStep(0)
       setShowAddonModal(false)
       setSelectedAddons([])
       setFinalPackageData(null)
+      console.log('🔧 handleAddToPlan cleanup completed')
     }
-  }, [userType, userContext, supplier, selectedPackageId, selectedDate, packages, getSupplierInPartyDetails, addSupplier, addAddon, removeAddon, backendSupplier, navigationContext, navigateWithContext, router])
+  }, [
+    userType, 
+    userContext, 
+    supplier, 
+    selectedPackageId, 
+    selectedDate, 
+    currentMonth,
+    packages, 
+    getSupplierInPartyDetails, 
+    addSupplier, 
+    addAddon, 
+    removeAddon, 
+    backendSupplier, 
+    navigationContext, 
+    navigateWithContext, 
+    router, 
+    checkSupplierAvailability, 
+    getSelectedCalendarDate,
+    enquiryStatus
+  ])
 
   const getAddToPartyButtonState = useCallback((packageIdToCompare) => {
     const currentPackageId = packageIdToCompare || selectedPackageId
@@ -1220,7 +1488,7 @@ const getPendingEnquiriesCount = useCallback(() => {
         if (!selectedDate) {
           return {
             disabled: false,
-            className: "bg-orange-500 hover:bg-orange-600 text-white",
+            className: "bg-teal-500 hover:bg-teal-600 text-white",
             text: "📅 Pick a Date First"
           }
         } else {
@@ -1237,7 +1505,7 @@ const getPendingEnquiriesCount = useCallback(() => {
         if (partyDetails.inParty && partyDetails.currentPackage === currentPackageId) {
           return {
             disabled: true,
-            className: "bg-green-500 hover:bg-green-500 text-white cursor-not-allowed",
+            className: "bg-teal-500 hover:bg-teal-500 text-white cursor-not-allowed",
             text: (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
@@ -1314,24 +1582,7 @@ const getPendingEnquiriesCount = useCallback(() => {
     setFinalPackageData(null)
   }, [])
 
-  const getSelectedCalendarDate = useCallback(() => {
-    if (!selectedDate || !currentMonth) return null
-    
-    // Create the date object with local timezone (no UTC conversion)
-    const selectedDateObj = new Date(
-      currentMonth.getFullYear(), 
-      currentMonth.getMonth(), 
-      selectedDate
-    )
-    
-    // Use local date methods instead of toISOString() to avoid timezone issues
-    const year = selectedDateObj.getFullYear()
-    const month = String(selectedDateObj.getMonth() + 1).padStart(2, '0') // +1 because getMonth() is 0-based
-    const day = String(selectedDateObj.getDate()).padStart(2, '0')
-    
-    // Format as YYYY-MM-DD using local date components
-    return `${year}-${month}-${day}`
-  }, [selectedDate, currentMonth])
+
   
 
 
@@ -1371,6 +1622,7 @@ if (userTypeLoading) {
 }
 
 
+
   // Compute these values once
   const dashboardContext = isFromDashboard()
   const userPartyDate = getPartyDate()
@@ -1381,7 +1633,15 @@ if (userTypeLoading) {
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
       {debugMode && <UserDetectionDebugger />}
       <NotificationPopup notification={notification} />
-
+{/* Add the new unavailable modal */}
+<SupplierUnavailableModal
+      isOpen={showUnavailableModal}
+      onClose={() => setShowUnavailableModal(false)}
+      supplier={supplier}
+      selectedDate={getSelectedCalendarDate()}
+      onSelectNewDate={handleSelectNewDate}
+      onViewAlternatives={handleViewAlternatives}
+    />
       <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
 
       

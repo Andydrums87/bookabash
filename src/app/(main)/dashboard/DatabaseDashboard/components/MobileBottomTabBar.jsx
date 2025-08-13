@@ -129,7 +129,7 @@ const MobileBottomTabBar = ({
   return (
     <>
       {/* Bottom Tab Bar - Fixed at bottom on mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 z-50">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 z-10">
         <div className="grid grid-cols-4 gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;

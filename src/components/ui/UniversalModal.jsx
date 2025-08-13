@@ -59,7 +59,7 @@ const UniversalModal = ({
 
   return (
     <div 
-      className="fixed inset-0  bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -119,7 +119,7 @@ const ModalHeader = ({
       case 'elegant':
         return 'bg-gray-50 border-b border-gray-200'
       case 'success':
-        return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+        return 'bg-gradient-to-r from-teal-500 to-teal-600 text-white'
       case 'warning':
         return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
       case 'error':

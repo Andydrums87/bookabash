@@ -125,7 +125,7 @@ export default function SnappysPresentParty({
       </div>
 
       <div className="relative z-10 text-white">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4 mb-4">
           <div className="bg-primary-500 p-3 rounded-xl shadow-lg">
             <FileText className="w-6 h-6 text-white" />
           </div>

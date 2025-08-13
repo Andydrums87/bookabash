@@ -3,12 +3,10 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset, ChevronDown, ChevronUp } from "lucide-react"
+import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset, Loader2 } from "lucide-react"
 import EditPartyModal from "../Modals/EditPartyModal"
 import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
-import Router from "next/router"
-import Link from "next/link"
 
 // ... (keep all the utility functions the same)
 const formatDateForDisplay = (dateInput) => {
@@ -158,72 +156,63 @@ export default function PartyHeader({
   isPaymentConfirmed,
   enquiries = [],
   isSignedIn = false,
-
+  loading = false, // NEW: Add loading prop
 }) {
+  console.log('🎉 PartyHeader received partyDetails:', partyDetails)
+  console.log('🎉 PartyHeader loading state:', loading)
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isBudgetExpanded, setIsBudgetExpanded] = useState(false)
-  const [showEditBlockedAlert, setShowEditBlockedAlert] = useState(false)
   const currentTheme = theme
   const hasEnquiriesPending = enquiries.length > 0 && isSignedIn && !isPaymentConfirmed;
 
- 
-
   const { toast } = useToast()
 
-  
-const handleEditClick = () => {
-  if (hasEnquiriesPending) {
-    toast.warning("Cannot edit party details while awaiting supplier responses", {
-      title: "Party Details Locked",
-      duration: 4000
-    })
-  } else {
-    setIsEditModalOpen(true)
-  }
-}
-const isAlaCarteUser = () => {
-  try {
-    const partyDetails = localStorage.getItem('party_details')
-    if (partyDetails) {
-      const parsed = JSON.parse(partyDetails)
-      return parsed.source === 'a_la_carte'
+  const handleEditClick = () => {
+    if (hasEnquiriesPending) {
+      toast.warning("Cannot edit party details while awaiting supplier responses", {
+        title: "Party Details Locked",
+        duration: 4000
+      })
+    } else {
+      setIsEditModalOpen(true)
     }
-    return false
-  } catch {
-    return false
   }
-}
-
 
   // Helper functions for mobile vs desktop names - FIXED VERSION
-const getFirstName = () => {
-  // First try to get firstName directly
-  if (partyDetails?.firstName) {
-    return partyDetails.firstName;
-  }
-  
-  // Then try to extract from childName (which comes from database as child_name)
-  if (partyDetails?.childName) {
-    const nameParts = partyDetails.childName.split(' ');
-    return nameParts[0];
-  }
-  
-  return "Emma"; // fallback
-};
+  const getFirstName = () => {
+    if (loading) return "Loading...";
+    
+    // First try to get firstName directly
+    if (partyDetails?.firstName) {
+      return partyDetails.firstName;
+    }
+    
+    // Then try to extract from childName (which comes from database as child_name)
+    if (partyDetails?.childName) {
+      const nameParts = partyDetails.childName.split(' ');
+      return nameParts[0];
+    }
+    
+    return "Emma"; // fallback
+  };
 
-const getFullName = () => {
-  // First try to construct from firstName + lastName
-  if (partyDetails?.firstName || partyDetails?.lastName) {
-    return `${partyDetails?.firstName || ''} ${partyDetails?.lastName || ''}`.trim();
-  }
-  
-  // Then use childName directly (this comes from database)
-  if (partyDetails?.childName) {
-    return partyDetails.childName;
-  }
-  
-  return "Emma"; // fallback
-};
+  const getFullName = () => {
+    if (loading) return "Loading...";
+    
+    // First try to construct from firstName + lastName
+    if (partyDetails?.firstName || partyDetails?.lastName) {
+      return `${partyDetails?.firstName || ''} ${partyDetails?.lastName || ''}`.trim();
+    }
+    
+    // Then use childName directly (this comes from database)
+    if (partyDetails?.childName) {
+      return partyDetails.childName;
+    }
+    
+    return "Emma"; // fallback
+  };
+
   const savePartyDetails = (details) => {
     try {
       const existingDetails = JSON.parse(localStorage.getItem("party_details") || "{}")
@@ -275,7 +264,6 @@ const getFullName = () => {
       onPartyDetailsChange(savedDetails);
     }
   };
-
 
   const getModalPartyDetails = () => {
     const details = { ...partyDetails };
@@ -334,18 +322,19 @@ const getFullName = () => {
   };
 
   const formatGuestCount = (count) => {
+    if (loading) return "Loading...";
     if (!count) return "Not specified";
     return `${count} guests`;
   };
 
-  // Get display values
-  const displayDate = partyDetails?.displayDate || formatDateForDisplay(partyDetails?.date) || "14th June, 2025";
-  const displayTimeSlot = partyDetails?.displayTimeSlot || formatTimeSlotForDisplay(
+  // Get display values - with loading states
+  const displayDate = loading ? "Loading..." : (partyDetails?.displayDate || formatDateForDisplay(partyDetails?.date) || "14th June, 2025");
+  const displayTimeSlot = loading ? "Loading..." : (partyDetails?.displayTimeSlot || formatTimeSlotForDisplay(
     partyDetails?.timeSlot, 
     partyDetails?.confirmedStartTime, 
     partyDetails?.duration
-  ) || "Afternoon (1pm-4pm)";
-  const displayDuration = partyDetails?.displayDuration || formatDurationForDisplay(partyDetails?.duration);
+  ) || "Afternoon (1pm-4pm)");
+  const displayDuration = loading ? "Loading..." : (partyDetails?.displayDuration || formatDurationForDisplay(partyDetails?.duration));
   
   const TimeSlotIcon = getTimeSlotIcon(partyDetails?.timeSlot);
 
@@ -358,6 +347,16 @@ const getFullName = () => {
         backgroundPosition: 'center',
       }} className="relative md:h-auto md:pt-0 pt-6 h-auto rounded-2xl shadow-2xl overflow-hidden mb-8 bg-primary-400">
         
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-10 flex items-center justify-center">
+            <div className="bg-white/90 rounded-lg p-4 flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+              <span className="text-sm font-medium text-gray-700">Loading party details...</span>
+            </div>
+          </div>
+        )}
+
         {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-4 left-8 w-16 h-16 bg-white rounded-full animate-pulse"></div>
@@ -381,89 +380,28 @@ const getFullName = () => {
         {/* Content */}
         <div className="relative px-4 md:p-10 text-white">
           <div className="space-y-3 md:space-y-6 ">
-            {/* Theme Badge and Edit Button + Mobile Budget */}
+            {/* Theme Badge and Edit Button */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 md:gap-3">
                 <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-yellow-300 animate-pulse" />
                 <Badge className="bg-white/20 text-white border-white/30 px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold backdrop-blur-sm">
-                  {currentTheme?.name || currentTheme} Party
+                  {loading ? "Loading..." : (currentTheme?.name || currentTheme)} Party
                 </Badge>
               </div>
               
               <div className="flex items-center gap-2">
- 
-              
-
                 <Button
-  variant="ghost"
-  size="sm"
-  onClick={handleEditClick}  // Keep this the same
-  className="p-2 md:p-3 h-auto text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 hover:scale-110 group backdrop-blur-sm border border-white/20"
-  title="Edit party details"
->
-  <Edit className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-12 transition-transform duration-300" />
-</Button>
-              </div>
-            </div>
-
-            {/* Mobile Budget Dropdown - only visible when expanded */}
-            {isBudgetExpanded && (
-              <div className="md:hidden relative z-50 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                <div className="text-center">
-                  <h3 className="font-semibold mb-1 text-white">Adjust Your Budget</h3>
-                  <p className="text-xs opacity-80 text-white">Tap outside to close</p>
-                </div>
-                
-                {/* Simplified Budget Controls for Header */}
-                <div className="space-y-4">
-                  {/* Current Budget Display */}
-                  <div className="flex justify-between items-center text-white">
-                    <span className="text-sm">Current Budget</span>
-                    <span className="text-lg font-bold">£{tempBudget}</span>
-                  </div>
-                  
-                  {/* Budget Slider */}
-                  <div className="space-y-2">
-                    <input
-                      type="range"
-                      min="300"
-                      max="1000"
-                      step="50"
-                      value={tempBudget}
-                      onChange={(e) => budgetControlProps.setTempBudget(Number(e.target.value))}
-                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, white 0%, white ${((tempBudget - 300) / (1000 - 300)) * 100}%, rgba(255,255,255,0.2) ${((tempBudget - 300) / (1000 - 300)) * 100}%, rgba(255,255,255,0.2) 100%)`
-                      }}
-                    />
-                    <div className="flex justify-between text-xs text-white/80">
-                      <span>£300</span>
-                      <span>£1000+</span>
-                    </div>
-                  </div>
-                  
-                  {/* Budget Status */}
-                  <div className="flex justify-between items-center text-white">
-                    <span className="text-sm">Spent</span>
-                    <span className="text-sm">£{totalSpent} / £{tempBudget}</span>
-                  </div>
-                  
-                  {budgetControlProps.isUpdating && (
-                    <div className="text-center text-xs text-white/80">
-                      Updating suppliers...
-                    </div>
-                  )}
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full bg-white/10 border-white/30 text-white hover:bg-white/20"
-                  onClick={() => setIsBudgetExpanded(false)}
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEditClick}
+                  disabled={loading}
+                  className="p-2 md:p-3 h-auto text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 hover:scale-110 group backdrop-blur-sm border border-white/20 disabled:opacity-50"
+                  title="Edit party details"
                 >
-                  Done
+                  <Edit className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-12 transition-transform duration-300" />
                 </Button>
               </div>
-            )}
+            </div>
 
             {/* Party Title */}
             <div className="space-y-1 md:space-y-2">
@@ -480,7 +418,7 @@ const getFullName = () => {
                 <span className="hidden md:inline"><br />Big Day!</span>
               </h1>
               <p className="text-base md:text-2xl text-white/95 drop-shadow-lg font-medium">
-                {currentTheme?.description || `An amazing ${currentTheme} celebration`}
+                {loading ? "Loading celebration details..." : (currentTheme?.description || `An amazing ${currentTheme} celebration`)}
               </p>
             </div>
 
@@ -509,7 +447,7 @@ const getFullName = () => {
                     <p className="text-xs opacity-90 font-medium">Time</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
-                    {partyDetails?.timeSlot === 'morning' ? 'Morning' : 'Afternoon'}
+                    {loading ? "Loading..." : (partyDetails?.timeSlot === 'morning' ? 'Morning' : 'Afternoon')}
                   </p>
                   <p suppressHydrationWarning={true} className="font-medium text-xs opacity-80">
                     {displayDuration}
@@ -525,7 +463,7 @@ const getFullName = () => {
                     <p className="text-xs opacity-90 font-medium">Age</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm">
-                    {partyDetails?.childAge || 6} years
+                    {loading ? "Loading..." : `${partyDetails?.childAge || 6} years`}
                   </p>
                 </div>
 
@@ -538,7 +476,7 @@ const getFullName = () => {
                     <p className="text-xs opacity-90 font-medium">Guests</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm">
-                    {partyDetails?.guestCount || "10"}
+                    {loading ? "Loading..." : (partyDetails?.guestCount || "10")}
                   </p>
                 </div>
 
@@ -551,7 +489,7 @@ const getFullName = () => {
                     <p className="text-xs opacity-90 font-medium">Where</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
-                    {partyDetails?.location || "W1A 1AA"}
+                    {loading ? "Loading..." : (partyDetails?.location || "W1A 1AA")}
                   </p>
                 </div>
               </div>
@@ -610,7 +548,7 @@ const getFullName = () => {
                   <p className="text-sm opacity-90 font-medium">Age</p>
                 </div>
                 <p suppressHydrationWarning={true} className="font-bold text-base">
-                  {partyDetails?.childAge || 6} years
+                  {loading ? "Loading..." : `${partyDetails?.childAge || 6} years`}
                 </p>
               </div>
 
@@ -636,7 +574,7 @@ const getFullName = () => {
                   <p className="text-sm opacity-90 font-medium">Where</p>
                 </div>
                 <p suppressHydrationWarning={true} className="font-bold text-base truncate">
-                  {partyDetails?.location || "W1A 1AA"}
+                  {loading ? "Loading..." : (partyDetails?.location || "W1A 1AA")}
                 </p>
               </div>
             </div>
@@ -646,14 +584,6 @@ const getFullName = () => {
         {/* Bottom accent line */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-300 to-secondary"></div>
       </div>
-
-      {/* Backdrop when budget is expanded - only on mobile */}
-      {isBudgetExpanded && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={() => setIsBudgetExpanded(false)}
-        />
-      )}
 
       {/* Edit Modal */}
       <EditPartyModal

@@ -240,7 +240,7 @@ export default function MobileSearchForm({
     <Button
       type="submit"
       disabled={isSubmitting || !isFormValid()}
-      className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-4 px-6 rounded-xl h-14 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+      className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-lg font-bold py-4 px-6 rounded-full h-14 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
     >
       {isSubmitting ? (
         <div className="flex items-center justify-center">
@@ -248,7 +248,7 @@ export default function MobileSearchForm({
           Building Your Party...
         </div>
       ) : (
-        <div className="flex items-center justify-center relative text-white font-bold">
+        <div className="flex  items-center justify-center relative text-white font-bold">
           Plan My Party! <span className="text-2xl ml-2">🎉</span>
         </div>
       )}

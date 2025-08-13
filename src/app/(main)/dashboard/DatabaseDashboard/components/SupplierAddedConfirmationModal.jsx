@@ -35,25 +35,14 @@ export default function SupplierAddedConfirmationModal({
     >
       <ModalHeader 
         title="Ready to Send Enquiry?"
-        subtitle={`${supplier.name} has been added to your party plan`}
+        subtitle={``}
         theme="success"
-        icon={<CheckCircle className="w-6 h-6 text-white" />}
+        icon={<CheckCircle className="w-6 h-6 text-teal-500" />}
       />
 
       <ModalContent>
         <div className="space-y-6 ">
-          {/* Success message */}
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              🎉 {supplier.name} Added Successfully!
-            </h3>
-            <p className="text-gray-600">
-              Your {supplier.category?.toLowerCase()} is now part of your party plan.
-            </p>
-          </div>
+         
 
           {/* Supplier details */}
           <div className="bg-gray-50 rounded-xl p-4">
@@ -67,7 +56,7 @@ export default function SupplierAddedConfirmationModal({
                 <h4 className="font-semibold text-gray-900">{supplier.name}</h4>
                 <p className="text-sm text-gray-600 capitalize">{supplier.category}</p>
                 {selectedPackage && (
-                  <p className="text-sm font-medium text-primary-600">
+                  <p className="text-sm font-medium text-teal-600">
                     {selectedPackage.name} - £{selectedPackage.price}
                   </p>
                 )}
@@ -133,7 +122,7 @@ export default function SupplierAddedConfirmationModal({
           <Button
             onClick={handleSendEnquiry}
             disabled={isSending}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3"
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3"
           >
             {isSending ? (
               <div className="flex items-center justify-center gap-2">

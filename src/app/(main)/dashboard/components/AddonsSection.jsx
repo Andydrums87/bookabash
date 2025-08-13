@@ -47,7 +47,7 @@ export default function AddonsSection({
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 ">
       {/* Enhanced Header Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-100))] via-[hsl(var(--primary-50))] to-white rounded-2xl border-2 border-[hsl(var(--primary-200))] p-6 mb-8 shadow-lg">
         {/* Decorative background elements */}
@@ -240,64 +240,7 @@ export default function AddonsSection({
         ))}
       </div>
 
-      {/* Enhanced Summary card */}
-      <Card className="mt-8 relative overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-100))] via-[hsl(var(--primary-50))] to-white border-2 border-[hsl(var(--primary-200))] shadow-xl rounded-2xl">
-        {/* Decorative background elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-4 left-8 w-2 h-2 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
-          <div className="absolute top-8 right-12 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
-          <div className="absolute bottom-6 left-16 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-70"></div>
-          <div className="absolute bottom-8 right-8 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-60"></div>
-          <Sparkles className="absolute top-6 right-20 w-4 h-4 text-[hsl(var(--primary-300))] opacity-40" />
-          <Sparkles className="absolute bottom-4 left-12 w-3 h-3 text-[hsl(var(--primary-400))] opacity-60" />
-        </div>
-
-        <CardContent className="p-6 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-2xl flex items-center justify-center shadow-lg">
-                <Gift className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Add-ons Total</h3>
-                <p className="text-gray-700 font-medium">
-                  {allAddons.length} premium {allAddons.length === 1 ? "service" : "services"} selected
-                  {supplierAddons.length > 0 && addons.length > 0 && (
-                    <span className="text-sm text-gray-600 block">
-                      ({supplierAddons.length} package + {addons.length} extra)
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-[hsl(var(--primary-700))] mb-1">
-                £{allAddons.reduce((sum, addon) => sum + addon.price, 0)}
-              </div>
-              <div className="text-sm text-gray-600 bg-white/50 px-3 py-1 rounded-full border border-[hsl(var(--primary-200))]">
-                Total for add-ons
-              </div>
-            </div>
-          </div>
-
-          {/* Enhanced progress indicator */}
-          <div className="mt-6 pt-4 border-t border-[hsl(var(--primary-200))]">
-            <div className="flex items-center justify-between text-sm text-gray-700 mb-2">
-              <span className="font-medium">Services Added</span>
-              <span className="font-semibold">{allAddons.length} items</span>
-            </div>
-            <div className="w-full bg-gradient-to-r from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-full h-2 shadow-inner border border-[hsl(var(--primary-200))]">
-              <div
-                className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                style={{ width: `${Math.min((allAddons.length / 5) * 100, 100)}%` }}
-              >
-                {/* Animated shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  
     </div>
   )
 }

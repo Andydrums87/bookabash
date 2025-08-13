@@ -12,32 +12,34 @@ export function usePartyData() {
   const [totalCost, setTotalCost] = useState(0)
   const [addons, setAddons] = useState([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState(null)
-  const [currentParty, setCurrentParty] = useState(null)
+  const [user, setUser] = useState(null) // Initialize as null, not undefined
+  const [currentParty, setCurrentParty] = useState(null) // Initialize as null, not undefined
   const [isUpdating, setIsUpdating] = useState(false)
-  const [dataSource, setDataSource] = useState('unknown') // Track where data comes from
+  const [dataSource, setDataSource] = useState('unknown')
   const [isSignedIn, setIsSignedIn] = useState(false)
+  const [userLoaded, setUserLoaded] = useState(false) // NEW: Track if user loading is complete
 
   // Load initial party data
   useEffect(() => {
     const loadPartyData = async () => {
       setLoading(true)
-  
-      
       try {
+        console.log('🔄 Starting loadPartyData...')
         const { data: { user }, error } = await supabase.auth.getUser()
         
+        // Always set user state, even if null
+        setUser(user)
+        setUserLoaded(true) // Mark user loading as complete
+        
         if (user && !error) {
-          
+          console.log('👤 User authenticated, loading party from database')
           setIsSignedIn(true)
           
-    
           const partyResult = await partyDatabaseBackend.getCurrentParty()
         
-          
           if (partyResult.success && partyResult.party) {
             const party = partyResult.party
-     
+            console.log('✅ Database party loaded:', party.child_name)
             
             const partyDataWithPayment = {
               ...(party.party_plan || {}),
@@ -46,67 +48,37 @@ export function usePartyData() {
               deposit_amount: party.deposit_amount
             }
             
-
-            
             setCurrentParty(party)
             setPartyData(partyDataWithPayment)
             setPartyId(party.id)
             setTotalCost(party.estimated_cost || 0)
             setDataSource('database')
-            
-     
           } else {
             console.log('❌ getCurrentParty failed:', partyResult.error)
-            setDataSource('localStorage') // At least set a dataSource
+            setCurrentParty(null) // Explicitly set to null
+            setDataSource('localStorage')
           }
         } else {
-          console.log('👥 Not authenticated')
+          console.log('👥 Not authenticated, using localStorage')
           setIsSignedIn(false)
+          setCurrentParty(null) // Explicitly set to null
           setDataSource('localStorage')
+          
+          // Load localStorage data immediately for non-authenticated users
+          const localPartyPlan = localStorage.getItem('party_plan')
+          const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
+          setPartyData(localPartyData)
+          setTotalCost(calculateLocalStorageCost(localPartyData))
+          setAddons(localPartyData.addons || [])
         }
       } catch (error) {
         console.error('❌ Error in loadPartyData:', error)
+        setUser(null)
+        setCurrentParty(null)
+        setUserLoaded(true)
         setDataSource('localStorage')
       } finally {
-
         setLoading(false)
-      }
-    }
-    
-    const loadLocalStorageData = () => {
-      const localPartyPlan = localStorage.getItem('party_plan')
-      const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
-      setPartyData(localPartyData)
-      setDataSource('localStorage')
-    }
-
-    // Helper function to load localStorage party
-    const loadLocalStorageParty = async () => {
-      try {
-        console.log('📦 Loading party data from localStorage...')
-        
-        const localPartyPlan = localStorage.getItem('party_plan')
-        const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
-        
-        setPartyData(localPartyData)
-        setPartyId(null) // No party ID for localStorage
-        setTotalCost(calculateLocalStorageCost(localPartyData))
-        setAddons(localPartyData.addons || [])
-        setDataSource('localStorage')
-        
-        console.log('✅ localStorage party data loaded:', {
-          suppliers: Object.keys(localPartyData).filter(key => key !== 'addons'),
-          addons: localPartyData.addons?.length || 0,
-          totalCost: calculateLocalStorageCost(localPartyData)
-        })
-      } catch (error) {
-        console.error('❌ Error loading localStorage party:', error)
-        // Set empty defaults
-        setPartyData({})
-        setPartyId(null)
-        setTotalCost(0)
-        setAddons([])
-        setDataSource('localStorage')
       }
     }
 
@@ -171,14 +143,15 @@ export function usePartyData() {
     }
   }
 
-  // Use party details hook - FIXED to pass correct parameters
+  // Use party details hook - ONLY after user state is determined
   const {
     partyDetails,
     partyTheme,
     themeLoaded,
+    isLoading: partyDetailsLoading,
     handleNameSubmit,
     handlePartyDetailsUpdate: originalHandlePartyDetailsUpdate
-  } = usePartyDetails(user, currentParty)
+  } = usePartyDetails(userLoaded ? user : undefined, userLoaded ? currentParty : undefined)
 
   // Enhanced party details update
   const handlePartyDetailsUpdate = async (updatedDetails) => {
@@ -269,7 +242,7 @@ export function usePartyData() {
             localStorage.setItem('party_plan', JSON.stringify(currentPartyPlan))
             
             // Update local state
-            setPartyData(currentPartyPlan)
+            setPartyData(localPartyPlan)
             setAddons(currentPartyPlan.addons)
             setTotalCost(calculateLocalStorageCost(currentPartyPlan))
             
@@ -337,20 +310,19 @@ export function usePartyData() {
     balloons: partyData.balloons || null,
   }
 
-
-
   return {
     // Data
     partyData,
-    partyId, // ✅ This should now be correctly set
+    partyId,
     totalCost,
     addons,
-    loading,
+    loading: loading || partyDetailsLoading, // Combine loading states
     user,
     currentParty,
     suppliers,
-    dataSource, // NEW: Track data source
-    isSignedIn, // NEW: Track sign-in status
+    dataSource,
+    isSignedIn,
+    userLoaded, // NEW: Expose user loaded state
     
     // Party details
     partyDetails,

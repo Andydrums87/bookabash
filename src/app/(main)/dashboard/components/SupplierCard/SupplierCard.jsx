@@ -23,6 +23,7 @@ export default function SupplierCard({
   enquirySentAt = null,
   currentPhase,
   onPaymentReady,
+  handleCancelEnquiry
 }) {
   // Skip e-invites entirely - they're handled separately
   if (type === "einvites") {
@@ -77,7 +78,8 @@ export default function SupplierCard({
     currentPhase,
     isSignedIn,
     enquiries,
-    onPaymentReady
+    onPaymentReady,
+    handleCancelEnquiry
   }
 
   // Render the appropriate card component based on state

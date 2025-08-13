@@ -836,9 +836,7 @@ export default function SupplierSelectionModal({
               <h2 className="text-2xl font-bold text-white capitalize">
                 {category === 'facePainting' ? 'Activities' : category} Providers
               </h2>
-              <p className="text-white capitalize">
-                {theme} Theme • {selectedDate ? selectedDate.toLocaleDateString() : date}
-              </p>
+             
             </div>
             <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
               <X className="w-5 h-5 text-white" />

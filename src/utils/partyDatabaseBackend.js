@@ -822,9 +822,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
     }
   }
 
-  /**
-   * Get enquiries for a party
-   */
+
   async getEnquiriesForParty(partyId) {
     try {
       const { data: enquiries, error } = await supabase
@@ -907,6 +905,73 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
     }
 
     return total
+  }
+
+
+  async cancelEnquiryAndRemoveSupplier(partyId, supplierType) {
+    try {
+      console.log('🚫 Cancelling enquiry and removing supplier:', { partyId, supplierType });
+      
+      // Step 1: Find the enquiry
+      const { data: enquiry, error: findError } = await supabase
+        .from('enquiries')
+        .select('id, status')
+        .eq('party_id', partyId)
+        .eq('supplier_category', supplierType)
+        .eq('status', 'pending') // Only cancel pending enquiries
+        .single();
+      
+      if (findError && findError.code !== 'PGRST116') {
+        console.error('❌ Error finding enquiry:', findError);
+        throw findError;
+      }
+      
+      // Mark enquiry as withdrawn by user
+      if (enquiry) {
+        console.log('📧 Marking enquiry as withdrawn by user:', enquiry.id);
+        console.log('🔍 About to update status to: withdrawn'); // ✅ ADD THIS DEBUG LOG
+        
+        const { error: withdrawError } = await supabase
+          .from('enquiries')
+          .update({ 
+            status: 'withdrawn', // ✅ Now allowed in database
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', enquiry.id);
+        
+        if (withdrawError) {
+          console.error('❌ Error withdrawing enquiry:', withdrawError);
+          throw withdrawError;
+        }
+        
+        console.log('✅ Enquiry marked as withdrawn');
+      } else {
+        console.log('⚠️ No pending enquiry found to cancel');
+      }
+      
+      // Step 2: Remove supplier from party plan
+      const removeResult = await this.removeSupplierFromParty(partyId, supplierType);
+      
+      if (!removeResult.success) {
+        throw new Error(`Failed to remove supplier: ${removeResult.error}`);
+      }
+      
+      console.log('✅ Supplier removed from party plan');
+      
+      return {
+        success: true,
+        message: `Request cancelled and ${supplierType} removed from party`,
+        removedSupplier: removeResult.removedSupplier,
+        withdrawnEnquiry: enquiry
+      };
+      
+    } catch (error) {
+      console.error('❌ Error cancelling enquiry and removing supplier:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   /**

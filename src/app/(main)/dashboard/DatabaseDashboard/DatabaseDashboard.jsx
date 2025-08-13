@@ -75,7 +75,7 @@ const [addedSupplierData, setAddedSupplierData] = useState(null)
     handleAddAddon,
     handleRemoveAddon,
     handlePartyDetailsUpdate,
-    partyDetails,
+partyDetails,
     partyTheme,
     themeLoaded
   } = usePartyData()
@@ -296,8 +296,49 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
 
 
     handleDeleteSupplier,
-    getSupplierDisplayName
+    getSupplierDisplayName,
+ 
   } = useSupplierManager(removeSupplier)
+
+  // Add this function to your DatabaseDashboard.jsx
+const [isCancelling, setIsCancelling] = useState(false)
+
+const handleCancelEnquiry = async (supplierType) => {
+  console.log('🚫 handleCancelEnquiry called with:', supplierType)
+  console.log('🔍 partyId:', partyId)
+  
+  if (isCancelling || !partyId) {
+    console.log('⚠️ Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
+    return
+  }
+  
+  setIsCancelling(true)
+  
+  try {
+    const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
+    
+    if (result.success) {
+      console.log('✅ Enquiry cancelled and supplier removed')
+      await refreshPartyData()
+      setEnquiryFeedback(`✅ Request cancelled for ${supplierType}`)
+      setTimeout(() => setEnquiryFeedback(null), 3000)
+    } else {
+      throw new Error(result.error)
+    }
+  } catch (error) {
+    console.error('❌ Error cancelling enquiry:', error)
+    setEnquiryFeedback(`❌ Failed to cancel request: ${error.message}`)
+    setTimeout(() => setEnquiryFeedback(null), 5000)
+  } finally {
+    setIsCancelling(false)
+  }
+}
+
+// Make sure you're passing it to SupplierGrid:
+<SupplierGrid
+  // ... other props
+  handleCancelEnquiry={handleCancelEnquiry}  // ✅ Make sure this line exists
+/>
 
   // Modal state
   const [showSupplierModal, setShowSupplierModal] = useState(false)
@@ -466,16 +507,7 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
           enquiries={enquiries}
           isSignedIn={true}
         />
-{/* 
-          <div className="mb-6">
-            <SnappysPresentParty
-              suppliers={visibleSuppliers}
-              enquiries={enquiries}
-              timeRemaining={24} // You can calculate actual time remaining if needed
-              onPaymentReady={handlePaymentReady}
-              showPaymentCTA={true}
-            />
-          </div> */}
+
 
 {allSuppliersConfirmed && !hasSeenPartyReadyModal && !isPaymentConfirmed && (
   <PartyReadyModal
@@ -537,6 +569,7 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
               renderKey={renderKey}
               onPaymentReady={handlePaymentReady}
               paymentDetails={paymentDetails}
+              handleCancelEnquiry={handleCancelEnquiry} // Pass the cancel function
             />
 
     
@@ -552,10 +585,7 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
               hasCreatedInvites={partyData?.einvites?.status === 'completed'}
             />
 
-            {/* Add-ons and Recommendations */}
-            <div className="w-screen pr-6 md:pr-20">
-              {/* Add-ons and recommended add-ons components */}
-            </div>
+       
           </main>
 
           {/* Sidebar */}

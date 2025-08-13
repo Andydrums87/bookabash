@@ -3,9 +3,10 @@
 
 import { useState } from "react"
 
-export function useSupplierManager(removeSupplier) {
+export function useSupplierManager(removeSupplier, partyId, currentPhase) {
   const [loadingCards, setLoadingCards] = useState([])
   const [suppliersToDelete, setSuppliersToDelete] = useState([])
+  const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [selectedSupplierModal, setSelectedSupplierModal] = useState({
     isOpen: false,
@@ -111,6 +112,30 @@ export function useSupplierManager(removeSupplier) {
     setShowDeleteConfirm(null)
   }
 
+   // NEW: Cancel enquiry (for awaiting responses phase)
+   const handleCancelEnquiry = async (supplierType) => {
+    if (isDeleting || !partyId) return
+    
+    console.log('🚫 Cancelling enquiry for:', supplierType)
+    setIsDeleting(true)
+    
+    try {
+      const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
+      
+      if (result.success) {
+        console.log('✅ Enquiry cancelled and supplier removed')
+        return { success: true, message: result.message }
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('❌ Error cancelling enquiry:', error)
+      return { success: false, error: error.message }
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return {
     loadingCards,
     setLoadingCards,
@@ -126,6 +151,7 @@ export function useSupplierManager(removeSupplier) {
     // REMOVED: handleSupplierSelection - now handled in DatabaseDashboard
     handleDeleteSupplier,
     confirmDeleteSupplier,
+    handleCancelEnquiry,
     cancelDeleteSupplier
   };
 }

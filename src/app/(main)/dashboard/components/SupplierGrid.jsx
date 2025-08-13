@@ -19,6 +19,7 @@ export default function SupplierGrid({
   partyId,
   openSupplierModal,
   renderKey,
+  handleCancelEnquiry
 }) {
   
   // Supplier management
@@ -252,6 +253,7 @@ const getAllSupplierSlots = () => {
               isSignedIn={isSignedIn}
               currentPhase={currentPhase}
               onPaymentReady={onPaymentReady}
+              handleCancelEnquiry={handleCancelEnquiry}   // For enquiry cancellation
             />
           )
         })}
@@ -306,19 +308,6 @@ const getAllSupplierSlots = () => {
         </div>
       )}
 
-      {/* Mobile Add Supplier Button - floating at bottom */}
-      {(currentPhase === 'planning' || actualPhase === 'mixed' || actualPhase === 'ready_for_payment') && (
-        <div className="md:hidden fixed bottom-20 right-4 z-40">
-          <button 
-            onClick={onAddSupplier}
-            className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] w-14 h-14 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        </div>
-      )}
     </div>
   )
 }

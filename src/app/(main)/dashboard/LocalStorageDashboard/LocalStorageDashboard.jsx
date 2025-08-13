@@ -460,11 +460,13 @@ export default function LocalStorageDashboard() {
                 </div>
               </div>
 
-              {/* Add-ons Section */}
-              <AddonsSectionWrapper suppliers={suppliers}  />
+       <div className="md:block hidden">
+       <AddonsSectionWrapper suppliers={suppliers}  />
+       </div>
+      
               
               {/* Recommended Add-ons */}
-              <div className="w-screen pr-6 md:pr-20">
+              <div className="md:block hidden w-screen pr-6 md:pr-20">
                 <RecommendedAddonsWrapper 
                   context="dashboard" 
                   maxItems={4}
@@ -561,6 +563,19 @@ export default function LocalStorageDashboard() {
         onAddToParty={handleAddAddonFromModal}
         isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
       />
+
+   
+        <div className="md:hidden fixed bottom-5 right-4 z-40">
+          <button 
+            onClick={handleAddSupplier}
+            className="bg-primary-400 hover:bg-[hsl(var(--primary-600))] w-10 h-10 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+  
     </div>
   )
 }

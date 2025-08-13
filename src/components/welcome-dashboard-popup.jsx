@@ -253,27 +253,69 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
   const [isAlaCarteUser, setIsAlaCarteUser] = useState(false)
   const [childAge, setChildAge] = useState("")
   const [step, setStep] = useState(1)
+  const [existingChildData, setExistingChildData] = useState(null)
 
   // Choose which variation to use (1, 2, or 3)
   const WELCOME_VARIATION = 2 // Change this number to switch variations!
 
+  // ✅ NEW: Check for existing party details and auto-submit if available
   useEffect(() => {
-    const checkAlaCarteContext = () => {
+    const checkExistingData = () => {
       try {
         const partyDetails = localStorage.getItem('party_details')
         if (partyDetails) {
           const parsed = JSON.parse(partyDetails)
-          setIsAlaCarteUser(parsed.source === 'a_la_carte')
+          
+          console.log('🔍 Checking existing party details:', parsed)
+          
+          // Check if this is from à la carte flow
+          const isFromAlaCarteFlow = parsed.source === 'a_la_carte'
+          setIsAlaCarteUser(isFromAlaCarteFlow)
+          
+          // If we have child data from à la carte, use it and skip to celebration
+          if (isFromAlaCarteFlow && parsed.firstName && parsed.childAge) {
+            console.log('✅ Found existing child data from à la carte flow:', {
+              firstName: parsed.firstName,
+              childAge: parsed.childAge
+            })
+            
+            setExistingChildData({
+              childName: parsed.childName || `${parsed.firstName} ${parsed.lastName || ''}`.trim(),
+              childAge: parsed.childAge,
+              firstName: parsed.firstName,
+              lastName: parsed.lastName || ''
+            })
+            
+            // Auto-submit the existing data and go straight to celebration
+            if (onNameSubmit) {
+              onNameSubmit({
+                childName: parsed.childName || `${parsed.firstName} ${parsed.lastName || ''}`.trim(),
+                childAge: parsed.childAge,
+                firstName: parsed.firstName,
+                lastName: parsed.lastName || ''
+              })
+            }
+            
+            // Skip directly to step 2 (celebration)
+            setStep(2)
+            setFirstName(parsed.firstName)
+            setLastName(parsed.lastName || '')
+            setChildAge(parsed.childAge.toString())
+            
+            return // Early return to skip normal flow
+          }
         }
+        
+        console.log('🔄 No existing data found, showing normal flow')
       } catch (error) {
-        console.log('Error checking a la carte context:', error)
+        console.log('❌ Error checking existing data:', error)
       }
     }
     
     if (isOpen) {
-      checkAlaCarteContext()
+      checkExistingData()
     }
-  }, [isOpen])
+  }, [isOpen, onNameSubmit])
 
   useEffect(() => {
     if (isOpen && step === 2) {
@@ -318,6 +360,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
     setFirstName("")
     setLastName("")
     setChildAge("")
+    setExistingChildData(null)
     onClose()
   }
 
@@ -331,7 +374,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
     <Dialog open={isOpen} onOpenChange={handleClose} className="cursor-pointer">
       <DialogContent className="sm:max-w-lg w-[90vw] md:w-[60vw] max-h-[80vh] overflow-y-auto">
         {step === 1 ? (
-          // Step 1: Collect Child's Name (restored to original)
+          // Step 1: Collect Child's Name (only if not from à la carte)
           <>
             <DialogHeader className="">
               <DialogTitle className="md:text-4xl text-start text-3xl font-black text-gray-900 leading-tight">
@@ -429,16 +472,36 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
             </DialogFooter>
           </>
         ) : (
-          // Step 2: Simple Celebration
+          // Step 2: Simple Celebration (uses existing child data if available)
           <div className="relative overflow-hidden ">
             <div className="absolute inset-0"></div>
             
             <div className="relative z-10 p-6 pt-6">
               <DialogHeader className=" pb-6">
                 <DialogTitle className="text-4xl text-start font-black text-gray-900 leading-tight">
-                  🎉 {firstName}'s Party Plan is Ready!
+                  🎉 {existingChildData?.firstName || firstName}'s Party Plan is Ready!
                 </DialogTitle>
               </DialogHeader>
+
+              {/* Show appropriate message based on source */}
+              {isAlaCarteUser && existingChildData ? (
+                <div className="flex justify-center mb-4 sm:mb-6">
+                  <div className="text-center">
+                    <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-4 inline-block">
+                      ✅ {existingChildData.firstName}'s supplier successfully added!
+                    </div>
+                    <p className="text-lg text-gray-700 font-medium mb-4">
+                      Your party planning dashboard is ready to help you add more suppliers and manage everything!
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center mb-4 sm:mb-6">
+                  <p className="text-lg text-gray-700 font-medium">
+                    Your party planning dashboard is loaded and ready to go!
+                  </p>
+                </div>
+              )}
 
               {/* Big Snappy with Confetti - smaller on mobile */}
               <div className="flex justify-center mb-4 sm:mb-8">
@@ -460,13 +523,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                   <div className="absolute top-1/2 -left-8 sm:-left-10 text-lg sm:text-xl animate-bounce" style={{ animationDelay: '1.2s' }}>⭐</div>
                   <div className="absolute top-1/3 -right-6 sm:-right-8 text-lg sm:text-xl animate-bounce" style={{ animationDelay: '1.4s' }}>💫</div>
                 </div>
-              </div>
-
-              {/* Simple Message - smaller text on mobile */}
-              <div className="mb-6 sm:mb-8">
-                <p className="text-lg sm:text-xl text-gray-700 font-medium leading-relaxed">
-                  Your party planning dashboard is loaded and ready to go!
-                </p>
               </div>
 
               <DialogFooter>
