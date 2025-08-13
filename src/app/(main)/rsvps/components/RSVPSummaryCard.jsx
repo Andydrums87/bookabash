@@ -6,11 +6,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-export default function RSVPSummaryCard({ partyId }) {
+export default function RSVPSummaryCard({ partyId, partyDetails }) {
   const router = useRouter()
 
   const handleViewRSVPs = () => {
-    router.push(`/dashboard/${partyId}/rsvps`)
+    router.push(`/rsvps/${partyId}/`)  // This should match your file structure
   }
 
   return (

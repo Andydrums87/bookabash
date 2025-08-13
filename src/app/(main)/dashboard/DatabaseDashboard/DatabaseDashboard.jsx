@@ -31,7 +31,7 @@ import ReplacementManager from './components/ReplacementManager'
 import SupplierGrid from '../components/SupplierGrid'
 import PartyPhaseContent from '../components/PartyPhaseContent'
 import Sidebar from './components/Sidebar'
-import MobileBudgetBar from "../components/MobileBudgetBar"
+
 import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
 
@@ -481,10 +481,10 @@ const handleCancelEnquiry = async (supplierType) => {
       />
       <EnquirySuccessBanner />
       <EInvitesBanner 
-        hasCreatedInvites={false} 
-        isBookingPending={true} 
-        onCreateInvites={handleCreateInvites} 
-      />
+      partyId={partyId}
+      isBookingPending={currentPhase !== 'confirmed'} 
+      onCreateInvites={handleCreateInvites} 
+    />
       {/* Supplier Added Confirmation Modal */}
 <SupplierAddedConfirmationModal
  isOpen={showSupplierAddedModal}
@@ -501,6 +501,7 @@ const handleCancelEnquiry = async (supplierType) => {
 
         <PartyHeader 
           theme={partyTheme}
+          
           partyDetails={partyDetails}
           onPartyDetailsChange={handlePartyDetailsUpdate}
           isPaymentConfirmed={isPaymentConfirmed}
@@ -603,10 +604,7 @@ const handleCancelEnquiry = async (supplierType) => {
         </div>
       </div>
 
-      {/* Mobile Budget Bar */}
-      {!isPaymentConfirmed && (
-        <MobileBudgetBar totalSpent={totalCost} />
-      )}
+    
 
       {/* Modals */}
       <WelcomeDashboardPopup 

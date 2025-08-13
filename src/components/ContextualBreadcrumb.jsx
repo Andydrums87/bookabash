@@ -89,6 +89,13 @@ export function ContextualBreadcrumb({
           currentText: "E-Invites",
           action: goBack,
         }
+        case "rsvps":
+          return {
+            show: true,
+            backText: "Dashboard",
+            currentText: "Rsvps",
+            action: goBack,
+          }
 
       case "review-book":
         return {

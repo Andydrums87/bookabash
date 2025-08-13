@@ -24,9 +24,11 @@ export default function MobileSupplierNavigation({
   showPartyTasks = false,
   partyTasksStatus = {},
   currentPhase = "planning",
+  handleCancelEnquiry,
   // NEW: Addon-related props
   onAddonClick = null, // For modal approach
   showRecommendedAddons = true, // Whether to show recommended addons
+  onPaymentReady
 }) {
   const [activeTab, setActiveTab] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
@@ -461,6 +463,8 @@ export default function MobileSupplierNavigation({
                 isPaymentConfirmed={isPaymentConfirmed}
                 enquiries={enquiries}
                 currentPhase={currentPhase}
+                handleCancelEnquiry={handleCancelEnquiry}
+                onPaymentReady={onPaymentReady}
               />
             ))
           ) : (

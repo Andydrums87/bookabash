@@ -1,19 +1,73 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Mail, Sparkles, ArrowRight, Clock, X } from "lucide-react"
+import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
-export default function EInvitesBanner({ hasCreatedInvites = false, isBookingPending = true, onCreateInvites }) {
+export default function EInvitesBanner({ 
+  partyId, 
+  isBookingPending = true, 
+  onCreateInvites 
+}) {
   const [isVisible, setIsVisible] = useState(true)
+  const [hasCreatedInvites, setHasCreatedInvites] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
 
-  // Don't show if invites are already created, booking isn't pending, or user has closed it
-  if (hasCreatedInvites || !isBookingPending || !isVisible) {
-    return null
+  // Check for existing invites when component mounts
+  useEffect(() => {
+    if (partyId) {
+      checkInviteStatus()
+    } else {
+      setIsChecking(false)
+    }
+  }, [partyId])
+
+  const checkInviteStatus = async () => {
+    try {
+      setIsChecking(true)
+      const result = await partyDatabaseBackend.getEInvites(partyId)
+      
+      // Check if invites exist and are created
+      const invitesExist = result.success && 
+                          result.einvites && 
+                          (result.einvites.inviteId || 
+                           result.einvites.shareableLink ||
+                           result.einvites.status === 'completed')
+      
+      console.log('📧 EInvitesBanner - Invite status:', {
+        partyId,
+        resultSuccess: result.success,
+        einvites: result.einvites,
+        invitesExist
+      })
+      
+      setHasCreatedInvites(invitesExist)
+    } catch (error) {
+      console.error('📧 EInvitesBanner - Error checking invite status:', error)
+      setHasCreatedInvites(false)
+    } finally {
+      setIsChecking(false)
+    }
   }
 
   const handleClose = () => {
     setIsVisible(false)
+  }
+
+  // Don't show while checking
+  if (isChecking) {
+    return null
+  }
+
+  // Don't show if invites are already created, booking isn't pending, or user has closed it
+  if (hasCreatedInvites || !isBookingPending || !isVisible) {
+    console.log('📧 EInvitesBanner hidden because:', { 
+      hasCreatedInvites, 
+      isBookingPending, 
+      isVisible 
+    })
+    return null
   }
 
   return (

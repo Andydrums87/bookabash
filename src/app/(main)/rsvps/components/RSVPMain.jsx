@@ -10,7 +10,7 @@ export default function RSVPMain() {
   const partyId = params["party-id"]
 
   const handleBack = () => {
-    router.push(`/rsvps/${partyId}`)
+    router.push(`/dashboard`)  // Go back to dashboard, not /rsvps/
   }
 
   return (

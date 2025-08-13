@@ -129,6 +129,33 @@ class PartyDatabaseBackend {
     }
   }
 
+  async getPartyById(partyId) {
+    try {
+      console.log('🔍 Getting party by ID:', partyId);
+      
+      const { data: party, error } = await supabase
+        .from('parties')
+        .select('*')
+        .eq('id', partyId)
+        .single();
+  
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('⚠️ Party not found:', partyId);
+          return { success: false, error: 'Party not found' };
+        }
+        throw error;
+      }
+  
+      console.log('✅ Party found:', party.child_name);
+      return { success: true, party };
+  
+    } catch (error) {
+      console.error('❌ Error getting party by ID:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   // ================== PARTY MANAGEMENT ==================
 
   /**

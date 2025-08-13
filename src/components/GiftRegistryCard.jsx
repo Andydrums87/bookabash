@@ -201,23 +201,10 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              <div className="bg-blue-50 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-blue-600">{registryItems.length}</div>
-                <div className="text-xs text-blue-700">Items</div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-green-600">{claimedItems}</div>
-                <div className="text-xs text-green-700">Claimed</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-purple-600">{completionRate}%</div>
-                <div className="text-xs text-purple-700">Complete</div>
-              </div>
-            </div>
+      
 
             {/* Action buttons */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-1 gap-3 mb-3">
               <Button
        
                 className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-400))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(--primary-600))] text-white rounded-xl"
@@ -233,14 +220,11 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
                 className="border-purple-300 text-purple-600 hover:bg-purple-50 rounded-xl text-sm"
                 asChild
               >
-                <Link href={`/gift-registry/${registry.id}`}>
-                  <Users className="w-4 h-4 mr-2" />
-                  Guest View
-                </Link>
+              
               </Button>
             </div>
 
-            <Button
+            {/* <Button
               size="sm"
               variant="outline"
               className="w-full border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl text-sm"
@@ -259,7 +243,7 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
             >
               <Share2 className="w-4 h-4 mr-2" />
               Share Registry Link
-            </Button>
+            </Button> */}
           </>
         )}
 

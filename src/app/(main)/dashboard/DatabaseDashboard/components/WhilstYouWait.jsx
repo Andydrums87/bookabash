@@ -173,7 +173,7 @@ function EInvitesCard({
               {/* Primary Action: Manage & Share */}
               <Button 
                 asChild 
-                className="w-full bg-primary-400 hover:from-blue-600 hover:[hsl(var(--primary-600))] text-white rounded-xl"
+                className="w-full bg-primary-500 hover:from-blue-600 hover:[hsl(var(--primary-600))] text-white rounded-xl"
               >
                 <Link href={inviteId ? `/e-invites/${inviteId}/manage` : '#'}>
                   <Settings className="w-4 h-4 mr-2" />
@@ -181,28 +181,10 @@ function EInvitesCard({
                 </Link>
               </Button>
 
-              {/* Secondary Action: Quick Preview */}
-              <Button 
-                asChild 
-                variant="outline" 
-                className="w-full border-[hsl(var(--primary-100))] text-primary-500 hover:bg-[hsl(var(--primary-200))] hover:text-white rounded-xl"
-              >
-                <Link href={einvites?.shareableLink || '#'} target="_blank">
-                  <Eye className="w-4 h-4 mr-2" />
-                  Preview Invite
-                </Link>
-              </Button>
             </div>
 
-            {/* Quick Share Hint */}
-            {einvites?.shareableLink && (
-              <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-[hsl(var(--primary-200))]">
-                <div className="flex items-center text-gray-700 text-sm">
-                  <Share2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span>Ready to share! Click "Manage & Share" to send to guests.</span>
-                </div>
-              </div>
-            )}
+  
+           
           </>
         )}
       </CardContent>
@@ -282,6 +264,7 @@ function WhilstYouWaitSection({
         <div id="rsvp-card">
           <RSVPSummaryCard 
             partyId={partyId}
+            partyDetails={partyDetails}  // ← Add this line
           />
         </div>
       </div>

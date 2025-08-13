@@ -19,7 +19,7 @@ import PartyHeader from "../components/ui/PartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
-import MobileBudgetBar from "../components/MobileBudgetBar"
+
 
 // NEW: Updated imports for unified card system
 import SupplierCard from "../components/SupplierCard/SupplierCard" // Our new unified card system
@@ -371,6 +371,7 @@ export default function LocalStorageDashboard() {
         <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
           <PartyHeader 
             theme={partyTheme} 
+            isSignedIn={false}
             partyDetails={partyDetails}
             onPartyDetailsChange={handlePartyDetailsUpdate}
             isPaymentConfirmed={false}

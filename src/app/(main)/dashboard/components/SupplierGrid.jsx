@@ -281,6 +281,8 @@ const getAllSupplierSlots = () => {
             rsvps: { completed: false, count: 0, hasActivity: false },
             gifts: { completed: false, count: 0, hasActivity: false }
           }}
+          handleCancelEnquiry={handleCancelEnquiry}
+          onPaymentReady={onPaymentReady}
         />
       </div>
 

@@ -164,20 +164,24 @@ export default function PartyHeader({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isBudgetExpanded, setIsBudgetExpanded] = useState(false)
   const currentTheme = theme
-  const hasEnquiriesPending = enquiries.length > 0 && isSignedIn && !isPaymentConfirmed;
+
+
+  const isLocked = isSignedIn
 
   const { toast } = useToast()
 
   const handleEditClick = () => {
-    if (hasEnquiriesPending) {
-      toast.warning("Cannot edit party details while awaiting supplier responses", {
+    if (isLocked) {
+      toast.warning("Party details are locked once enquiries are sent to suppliers", {
         title: "Party Details Locked",
+        description: "Contact support if you need to make changes.",
         duration: 4000
       })
     } else {
       setIsEditModalOpen(true)
     }
   }
+
 
   // Helper functions for mobile vs desktop names - FIXED VERSION
   const getFirstName = () => {

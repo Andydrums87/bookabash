@@ -30,18 +30,18 @@ export default function PartyPlanSummary() {
 
   const getTableData = () => {
     if (!suppliers) return []
-
+  
     const supplierTypes = [
       "venue",
       "entertainment",
-      "catering",
+      "catering", 
       "facePainting",
       "activities",
       "partyBags",
       "decorations",
       "balloons",
     ]
-
+  
     return supplierTypes
       .filter((type) => suppliers[type]) // Only include suppliers that exist
       .map((type) => {
@@ -50,7 +50,10 @@ export default function PartyPlanSummary() {
         const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
         const addonsCost = supplierAddons.reduce((sum, addon) => sum + addon.price, 0)
         const totalPrice = supplier.price + addonsCost
-
+  
+        // ✅ OPTION 2: Show paid only when enquiry is accepted (confirmed)
+        const amountPaid = enquiry?.status === 'accepted' ? totalPrice : 0
+  
         return {
           id: supplier.id,
           type,
@@ -61,7 +64,7 @@ export default function PartyPlanSummary() {
           basePrice: supplier.price,
           addonsPrice: addonsCost,
           addons: supplierAddons,
-          amountPaid: isPaymentConfirmed ? totalPrice : 0,
+          amountPaid: amountPaid, // ✅ Now only shows paid when enquiry is accepted
           status: getSupplierStatus(enquiry?.status),
           enquiryId: enquiry?.id,
           enquiryStatus: enquiry?.status,
@@ -84,16 +87,17 @@ export default function PartyPlanSummary() {
   }
 
   const getBudgetData = () => {
+    // ✅ Calculate total paid based on actual confirmed suppliers
+    const totalPaid = tableData.reduce((sum, service) => sum + service.amountPaid, 0)
     const totalSpent = totalCost
-    const totalPaid = isPaymentConfirmed ? totalSpent : 0
     const remainingToPay = totalSpent - totalPaid
-
+  
     const userBudget = partyDetails?.budget || 1000
     const remainingBudget = userBudget - totalSpent
-
+  
     return {
       total: userBudget,
-      amountPaid: totalPaid,
+      amountPaid: totalPaid,  // ✅ Now correctly reflects only confirmed suppliers
       remainingToPay: remainingToPay,
       remainingBudget: Math.max(0, remainingBudget),
       totalSpent: totalSpent,
@@ -166,187 +170,194 @@ export default function PartyPlanSummary() {
 
   return (
     <div className="min-h-screen bg-primary-50">
-      <ContextualBreadcrumb currentPage="party-summary" />
+    <ContextualBreadcrumb currentPage="party-summary" />
 
-      <div className="bg-primary-50 px-10 py-6">
-        <div className="flex items-center gap-3 ">
-   
-          <div>
-            <h1 className="text-5xl font-extrabold text-gray-900">Party Summary</h1>
-       
+    <div className="bg-primary-50 px-4 md:px-10 py-6">
+      <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900">Party Summary</h1>
+    </div>
+
+    {/* Main Content */}
+    <div className="px-4 md:px-10 py-6">
+      
+      {/* Mobile: Scrollable Table */}
+      <div className="block md:hidden mb-4">
+        <div className="overflow-x-auto">
+          <div className="min-w-[600px]"> {/* Force minimum width for scrolling */}
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-primary-50">
+                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[120px]">Service</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[80px]">Price</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[60px]">Paid</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[80px]">Remaining</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[80px]">Status</TableHead>
+                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[100px]">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tableData.map((service, index) => (
+                  <TableRow key={service.id || index} className={`border-b border-gray-100 ${
+                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                  }`}>
+                    <TableCell className="px-3 py-3">
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 leading-tight">{service.serviceName}</p>
+                        <p className="text-xs text-gray-600">{service.category}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-3 py-3 text-sm font-medium text-gray-900">
+                      £{service.price}
+                    </TableCell>
+                    <TableCell className="px-3 py-3 text-sm font-medium text-primary-600">
+                      £{service.amountPaid}
+                    </TableCell>
+                    <TableCell className="px-3 py-3 text-sm font-medium text-gray-900">
+                      £{service.price - service.amountPaid}
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
+                      <Badge className={`text-xs px-2 py-1 ${
+                        service.status === "confirmed" ? "bg-primary-500 text-white" : 
+                        service.status === "process" ? "bg-primary-300 text-primary-800" : 
+                        "bg-gray-200 text-gray-700"
+                      }`}>
+                        {service.status === "confirmed" ? "✓" : 
+                         service.status === "process" ? "⚡" : 
+                         "📅"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs px-2 py-1 h-6"
+                          onClick={() => handleAction("edit", service)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs px-2 py-1 h-6 text-red-600 border-red-300"
+                          onClick={() => handleAction("remove", service)}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
-
-  
+        
+        {/* Scroll hint */}
+        <p className="text-xs text-gray-500 text-center mt-2">← Swipe to see more →</p>
       </div>
 
-      {/* Main Content */}
-      <div className="px-10 py-6">
-        <div className="mb-6">
-          {/* Mobile view - Card layout */}
-          <div className="block md:hidden space-y-3">
-            {tableData.map((service, index) => (
-              <Card key={service.id || index} className="p-4">
-                <div className="flex justify-between items-start ">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 text-sm">{service.serviceName}</h3>
-                    <p className="text-xs text-gray-600 mt-1">{service.vendorName}</p>
-                    <p className="text-xs text-gray-500">{service.category}</p>
-                  </div>
-                  <Badge
-                    variant={service.status === "confirmed" ? "default" : "secondary"}
-                    className={`
-                      text-xs font-medium px-2 py-1 rounded-full ml-2
-                      ${
-                        service.status === "confirmed"
-                          ? "text-white"
-                          : service.status === "planned"
-                            ? "bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))]"
-                            : "bg-primary-200 text-primary-900 border-[hsl(var(--primary-300))]"
-                      }
-                    `}
-                    style={service.status === "confirmed" ? { backgroundColor: `hsl(${14} 100% 64%)` } : {}}
-                  >
-                    {service.status === "confirmed" && "✓"}
-                    {service.status === "planned" && "📅"}
-                    {service.status === "process" && "⚡"}
-                    {service.status === "declined" && "❌"}
-                  </Badge>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-4 text-sm">
-                    <div>
-                      <p className="text-xs text-gray-600">Price</p>
-                      <p className="font-medium">£{service.price}</p>
+      {/* Desktop: Keep existing table */}
+      <Card className="hidden md:block overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Service name</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Vendor name</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Category</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Price</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Amount paid</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Remaining amount</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Status</TableHead>
+                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tableData.map((service, index) => (
+                <TableRow key={service.id || index} className="border-b border-gray-100">
+                  <TableCell className="px-4 py-4 font-medium text-sm text-gray-900">
+                    {service.serviceName}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-sm text-gray-600">{service.vendorName}</TableCell>
+                  <TableCell className="px-4 py-4 text-sm text-gray-600">{service.category}</TableCell>
+                  <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">£{service.price}</TableCell>
+                  <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
+                    £{service.amountPaid}
+                  </TableCell>
+                  <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
+                    £{service.price - service.amountPaid}
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    <Badge
+                      variant={service.status === "confirmed" ? "default" : "secondary"}
+                      className={`
+                        text-xs font-medium px-3 py-1 rounded-full
+                        ${
+                          service.status === "confirmed"
+                            ? "text-white"
+                            : service.status === "planned"
+                              ? "bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))]"
+                              : "bg-primary-200 text-primary-900 border-[hsl(var(--primary-300))]"
+                        }
+                      `}
+                      style={service.status === "confirmed" ? { backgroundColor: `hsl(${14} 100% 64%)` } : {}}
+                    >
+                      {service.status === "confirmed" && "✓ Confirmed"}
+                      {service.status === "planned" && "📅 Planned"}
+                      {service.status === "process" && "⚡ Process"}
+                      {service.status === "declined" && "❌ Declined"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 py-4">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs px-3 py-1 h-7 bg-transparent"
+                        onClick={() => handleAction("remove", service)}
+                      >
+                        Remove
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs px-3 py-1 h-7 text-primary-600 border-[hsl(var(--primary-300))] hover:bg-primary-50 bg-transparent"
+                        onClick={() => handleAction("edit", service)}
+                      >
+                        Edit
+                      </Button>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Paid</p>
-                      <p className="font-medium text-green-600">£{service.amountPaid}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Remaining</p>
-                      <p className="font-medium text-orange-600">£{service.price - service.amountPaid}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2  border-t border-gray-100">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs px-3 py-1 h-7 flex-1 bg-transparent"
-                    onClick={() => handleAction("edit", service)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs px-3 py-1 h-7 text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
-                    onClick={() => handleAction("remove", service)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Desktop view - Table layout */}
-          <Card className="hidden md:block overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Service name</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Vendor name</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Category</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Price</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Amount paid</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Remaining amount</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Status</TableHead>
-                    <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tableData.map((service, index) => (
-                    <TableRow key={service.id || index} className="border-b border-gray-100">
-                      <TableCell className="px-4 py-4 font-medium text-sm text-gray-900">
-                        {service.serviceName}
-                      </TableCell>
-                      <TableCell className="px-4 py-4 text-sm text-gray-600">{service.vendorName}</TableCell>
-                      <TableCell className="px-4 py-4 text-sm text-gray-600">{service.category}</TableCell>
-                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">£{service.price}</TableCell>
-                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
-                        £{service.amountPaid}
-                      </TableCell>
-                      <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
-                        £{service.price - service.amountPaid}
-                      </TableCell>
-                      <TableCell className="px-4 py-4">
-                        <Badge
-                          variant={service.status === "confirmed" ? "default" : "secondary"}
-                          className={`
-                            text-xs font-medium px-3 py-1 rounded-full
-                            ${
-                              service.status === "confirmed"
-                                ? "text-white"
-                                : service.status === "planned"
-                                  ? "bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))]"
-                                  : "bg-primary-200 text-primary-900 border-[hsl(var(--primary-300))]"
-                            }
-                          `}
-                          style={service.status === "confirmed" ? { backgroundColor: `hsl(${14} 100% 64%)` } : {}}
-                        >
-                          {service.status === "confirmed" && "✓ Confirmed"}
-                          {service.status === "planned" && "📅 Planned"}
-                          {service.status === "process" && "⚡ Process"}
-                          {service.status === "declined" && "❌ Declined"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-4 py-4">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs px-3 py-1 h-7 bg-transparent"
-                            onClick={() => handleAction("remove", service)}
-                          >
-                            Remove
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs px-3 py-1 h-7 text-primary-600 border-[hsl(var(--primary-300))] hover:bg-primary-50 bg-transparent"
-                            onClick={() => handleAction("edit", service)}
-                          >
-                            Edit
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </Card>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
+      </Card>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          {summaryCards.map((card, index) => (
-            <Card key={index} className={`p-4 ${card.bgColor} ${card.textColor} border-0 relative overflow-hidden`}>
-              <div className="relative z-10">
-                <p className="text-xs font-medium opacity-90 mb-1">{card.title}</p>
-                <p className="text-2xl font-bold">£{card.amount}</p>
-              </div>
-              {/* Decorative background pattern */}
-              <div className="absolute bottom-0 right-0 opacity-20 text-4xl">{card.icon}</div>
-            </Card>
-          ))}
-        </div>
+      {/* Summary Cards - Simple 2x2 grid */}
+      <div className="grid grid-cols-2 gap-3 mt-4">
+        <Card className="p-3 bg-primary-500 text-white">
+          <p className="text-xs opacity-90">Total Cost</p>
+          <p className="text-xl font-bold">£{budgetData.totalSpent}</p>
+        </Card>
+        
+        <Card className="p-3 bg-primary-400 text-white">
+          <p className="text-xs opacity-90">Amount Paid</p>
+          <p className="text-xl font-bold">£{budgetData.amountPaid}</p>
+        </Card>
+        
+        <Card className="p-3 bg-primary-300 text-primary-800">
+          <p className="text-xs opacity-90">Remaining</p>
+          <p className="text-xl font-bold">£{budgetData.remainingToPay}</p>
+        </Card>
+        
+        <Card className="p-3 bg-primary-200 text-primary-800">
+          <p className="text-xs opacity-90">Budget Left</p>
+          <p className="text-xl font-bold">£{budgetData.remainingBudget}</p>
+        </Card>
       </div>
     </div>
+  </div>
   )
 }
