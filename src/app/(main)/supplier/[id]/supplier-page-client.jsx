@@ -9,7 +9,7 @@ import { useUserTypeDetection, getHandleAddToPlanBehavior } from '@/hooks/useUse
 import { supabase } from "@/lib/supabase"
 
 import { Shield, Award, CheckCircle, AlertCircle, Calendar } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
@@ -25,6 +25,7 @@ import SupplierSidebar from "@/components/supplier/supplier-sidebar"
 import MobileBookingBar from "@/components/supplier/mobile-booking-bar"
 import AlaCarteModal from "../components/AddToCartModal"
 import SupplierUnavailableModal from "@/components/supplier/supplier-unavailable-modal"
+
 
 import SupplierServiceDetails from "@/components/supplier/supplier-service-details"
 import SupplierPortfolioGallery from "@/components/supplier/supplier-portfolio-gallery"
@@ -249,12 +250,16 @@ const hasValidPartyPlanDebug = () => {
 export default function SupplierProfilePage({ backendSupplier }) {
   const router = useRouter()
 
+
   const { userType, userContext, loading: userTypeLoading } = useUserTypeDetection()
   const { partyPlan, addSupplier, addAddon, removeAddon, hasAddon } = usePartyPlan()
   const { navigateWithContext, navigationContext } = useContextualNavigation()
+
   
   const [isLoaded, setIsLoaded] = useState(false)
   const [selectedPackageId, setSelectedPackageId] = useState(null)
+  const [replacementContext, setReplacementContext] = useState(null)
+
   const [debugMode, setDebugMode] = useState(false)
   const [currentPartyId, setCurrentPartyId] = useState(null)
   const [isAddingToPlan, setIsAddingToPlan] = useState(false)
@@ -423,18 +428,25 @@ const handleViewAlternatives = useCallback(() => {
   router.push(`/suppliers?${searchParams.toString()}`)
 }, [supplier, getSelectedCalendarDate, router])
   // Add this useEffect to get party ID:
-useEffect(() => {
+ // ✅ GET: Current party ID on component mount
+ useEffect(() => {
   const getPartyId = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
-      if (partyIdResult.success) {
-        setCurrentPartyId(partyIdResult.partyId)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
+        if (partyIdResult.success) {
+          console.log('🎯 Dashboard got party ID:', partyIdResult.partyId)
+          setCurrentPartyId(partyIdResult.partyId)
+        }
       }
+    } catch (error) {
+      console.error('❌ Error getting party ID:', error)
     }
   }
   getPartyId()
 }, [])
+
 useEffect(() => {
   if (!userTypeLoading && backendSupplier) {
     // Small delay to ensure smooth transition
@@ -543,6 +555,107 @@ useEffect(() => {
     checkEnquiryStatus()
   }
 }, [isLoaded, userTypeLoading])
+
+useEffect(() => {
+  console.log('🔍 === SINGLE REPLACEMENT CONTEXT CHECK ===')
+  
+  // 1. Check URL parameters
+  const urlParams = new URLSearchParams(window.location.search)
+  const fromParam = urlParams.get('from')
+  
+  console.log('🔍 URL from parameter:', fromParam)
+  console.log('🔍 Current URL:', window.location.href)
+  
+  // 2. If coming from browse, clear everything and exit
+  if (fromParam === 'browse') {
+    console.log('🚫 From browse - clearing all replacement context')
+    setReplacementContext(null)
+    sessionStorage.removeItem('replacementContext')
+    sessionStorage.removeItem('shouldRestoreReplacementModal')
+    sessionStorage.removeItem('modalShowUpgrade')
+    return
+  }
+  
+  // 3. Check session storage for replacement context
+  const storedContext = sessionStorage.getItem('replacementContext')
+  console.log('🔍 Stored context exists:', !!storedContext)
+  
+  if (storedContext) {
+    try {
+      const parsedContext = JSON.parse(storedContext)
+      console.log('✅ Setting replacement context:', parsedContext)
+      setReplacementContext(parsedContext)
+    } catch (error) {
+      console.error('❌ Error parsing replacement context:', error)
+      setReplacementContext(null)
+      sessionStorage.removeItem('replacementContext')
+    }
+  } else {
+    console.log('❌ No stored context, clearing replacement state')
+    setReplacementContext(null)
+  }
+}, []) // Empty dependency - run once on mount
+
+  // Add this to your SupplierProfilePage component
+useEffect(() => {
+  if (replacementContext?.isReplacement && supplier?.category) {
+    console.log('🏪 Storing current supplier data for replacement:', supplier)
+    
+    try {
+      const currentContext = sessionStorage.getItem('replacementContext')
+      if (currentContext) {
+        const parsedContext = JSON.parse(currentContext)
+        
+        const updatedContext = {
+          ...parsedContext,
+          currentSupplierData: {
+            id: supplier.id,
+            name: supplier.name,
+            category: supplier.category, // ✅ This is the key field
+            description: supplier.description,
+            price: supplier.priceFrom,
+            priceFrom: supplier.priceFrom,
+            image: supplier.image,
+            rating: supplier.rating,
+            reviewCount: supplier.reviewCount
+          },
+          lastUpdatedAt: new Date().toISOString()
+        }
+        
+        sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
+        console.log('💾 Stored current supplier data with category:', supplier.category)
+      }
+    } catch (error) {
+      console.error('❌ Error storing supplier data:', error)
+    }
+  }
+}, [replacementContext, supplier])
+
+  const handleReturnToReplacement = useCallback(() => {
+    console.log('🔄 Returning to replacement flow from supplier profile')
+    
+    if (replacementContext?.returnUrl) {
+      router.push(replacementContext.returnUrl)
+    } else {
+      router.push('/dashboard')
+    }
+  }, [replacementContext, router])
+
+
+
+  
+
+  // ✅ FIX 4: Debug logging for replacement context
+  useEffect(() => {
+    if (replacementContext) {
+      console.log('🎯 Replacement context is set:', replacementContext)
+      console.log('🎯 Should show banner:', !!replacementContext.isReplacement)
+    } else {
+      console.log('❌ No replacement context found')
+    }
+  }, [replacementContext])
+
+
 
 const hasEnquiriesPending = useCallback(() => {
   return enquiryStatus.isAwaiting
@@ -663,6 +776,21 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
 }, [supplier])
 
 
+useEffect(() => {
+  console.log('🔍 === DEBUGGING REPLACEMENT BANNER ===')
+  console.log('Current URL:', window.location.href)
+  console.log('Search params:', window.location.search)
+  
+  const urlParams = new URLSearchParams(window.location.search)
+  console.log('From parameter:', urlParams.get('from'))
+  
+  const storedContext = sessionStorage.getItem('replacementContext')
+  console.log('Session storage context:', storedContext)
+  
+  console.log('Current replacementContext state:', replacementContext)
+  console.log('Should show banner:', !!replacementContext?.isReplacement)
+  
+}, [replacementContext])
 
 
 
@@ -1460,8 +1588,6 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
     const partyDetails = getSupplierInPartyDetails()
     const isLoadingThisPackage = isAddingToPlan && selectedPackageId === currentPackageId
     
-
-    
     // Handle loading state first
     if (isLoadingThisPackage) {
       return {
@@ -1476,11 +1602,24 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
       }
     }
     
+    // ✅ NEW: Check if we're in replacement mode
+    const urlParams = new URLSearchParams(window.location.search)
+    const isInReplacementMode = urlParams.get('from') === 'replacement' || !!replacementContext?.isReplacement
+    
+    // ✅ FIX: Skip date validation for replacement mode
+    if (isInReplacementMode) {
+      console.log('🔄 In replacement mode - skipping date validation')
+      return {
+        disabled: false,
+        className: "bg-primary-500 hover:bg-primary-600 text-white",
+        text: "Add to Plan"
+      }
+    }
+    
     // Get behavior from user type detection
     const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
- 
     
-    // ✅ FIXED: Handle different user types correctly
+    // ✅ EXISTING: Handle different user types correctly (only for non-replacement mode)
     switch (userType) {
       case 'ANONYMOUS':
       case 'ERROR_FALLBACK':
@@ -1549,11 +1688,93 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
           text: behavior.buttonText
         }
     }
-  }, [userType, userContext, supplier, selectedDate, selectedPackageId, getSupplierInPartyDetails, isAddingToPlan])
+  }, [userType, userContext, supplier, selectedDate, selectedPackageId, getSupplierInPartyDetails, isAddingToPlan, replacementContext])
+  const ReplacementApproveButton = ({ 
+    selectedPackage, 
+    selectedPackageId, 
+    packages, 
+    replacementContext, 
+    router 
+  }) => {
+    const handleApprovePackage = () => {
+      console.log('✅ Approving package in replacement mode:', selectedPackageId)
+      
+      // Store the selected package info in replacement context
+      try {
+        const currentContext = sessionStorage.getItem('replacementContext')
+        if (currentContext) {
+          const parsedContext = JSON.parse(currentContext)
+          
+          // Get the selected package
+          const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
+          
+          // Update context with current package selection
+          const updatedContext = {
+            ...parsedContext,
+            selectedPackageId: selectedPackageId,
+            selectedPackageData: selectedPkg,
+            lastViewedAt: new Date().toISOString()
+          }
+          
+          console.log('💾 Updating replacement context with package:', updatedContext)
+          sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
+        }
+      } catch (error) {
+        console.error('❌ Error updating context with package:', error)
+      }
+      
+      // Set flags to restore modal in "upgraded" state and navigate back
+      sessionStorage.setItem('shouldRestoreReplacementModal', 'true')
+      sessionStorage.setItem('modalShowUpgrade', 'true')
+      
+      // Navigate back to dashboard
+      if (replacementContext?.returnUrl) {
+        router.push(replacementContext.returnUrl)
+      } else {
+        router.push('/dashboard')
+      }
+    }
   
+    // Only show if we're in replacement mode
+    const urlParams = new URLSearchParams(window.location.search)
+    const isInReplacementMode = urlParams.get('from') === 'replacement' || !!replacementContext?.isReplacement
+    
+    if (!isInReplacementMode) return null
+  
+    return (
+      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-lg">🐊</span>
+            </div>
+            <div>
+              <h4 className="font-semibold text-orange-900 text-sm">
+                Replacement Selection
+              </h4>
+              <p className="text-sm text-orange-700">
+                {selectedPackage?.name} - £{selectedPackage?.price}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleApprovePackage}
+            disabled={!selectedPackageId}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              selectedPackageId 
+                ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            ✅ Approve This Package
+          </button>
+        </div>
+      </div>
+    )
+  }
 
 
-  
 
 
 
@@ -1583,11 +1804,6 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
   }, [])
 
 
-  
-
-
-
- 
 
   if (hasLoadedOnce && (supplierError || !supplier)) {
     return (
@@ -1633,6 +1849,8 @@ if (userTypeLoading) {
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
       {debugMode && <UserDetectionDebugger />}
       <NotificationPopup notification={notification} />
+
+ 
 {/* Add the new unavailable modal */}
 <SupplierUnavailableModal
       isOpen={showUnavailableModal}
@@ -1643,6 +1861,7 @@ if (userTypeLoading) {
       onViewAlternatives={handleViewAlternatives}
     />
       <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
+
 
       
       <SupplierHeader
@@ -1662,15 +1881,21 @@ if (userTypeLoading) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           <main className="lg:col-span-2 space-y-8">
+
             <SupplierPackages
               packages={packages}
               selectedPackageId={selectedPackageId}
               setSelectedPackageId={setSelectedPackageId}
               handleAddToPlan={handleAddToPlan}
               getAddToPartyButtonState={getAddToPartyButtonState}
-              
+
               getSupplierInPartyDetails={getSupplierInPartyDetails}
+              onShowNotification={setNotification} // Make sure this is connected
+   
+              isReplacementMode={!!replacementContext?.isReplacement}
             />
+
+
             {/* NEW: Add selected date confirmation */}
   <SelectedDateBanner 
     selectedDate={selectedDate}
@@ -1732,32 +1957,36 @@ if (userTypeLoading) {
 
 
 <MobileBookingBar 
-  selectedPackage={packages.find(pkg => pkg.id === selectedPackageId) || packages[0] || null}
-  supplier={supplier}
-  onAddToPlan={handleAddToPlan}
-  addToPlanButtonState={getAddToPartyButtonState(selectedPackageId)}
-  selectedDate={selectedDate}
-  currentMonth={currentMonth}
-  setSelectedDate={setSelectedDate}
-  setCurrentMonth={setCurrentMonth}
-  hasValidPartyPlan={hasValidPartyPlan}
-  isFromDashboard={dashboardContext}
-  partyDate={userPartyDate}
-  onSaveForLater={(data) => {
-    setNotification({ 
-      type: "success", 
-      message: `${supplier.name} saved for later!` 
-    });
-    setTimeout(() => setNotification(null), 3000);
-  }}
-  showAddonModal={showAddonModal}
-  setShowAddonModal={setShowAddonModal}
-  onAddonConfirm={handleAddonConfirm}
-  isAddingToPlan={isAddingToPlan}
-  // NEW: Add these props for pending enquiry functionality
-  hasEnquiriesPending={hasEnquiriesPending}
-  onShowPendingEnquiryModal={() => setShowPendingEnquiryModal(true)}
-  pendingCount={getPendingEnquiriesCount()}
+   selectedPackage={packages.find(pkg => pkg.id === selectedPackageId) || packages[0] || null}
+   supplier={supplier}
+   onAddToPlan={handleAddToPlan}
+   addToPlanButtonState={getAddToPartyButtonState(selectedPackageId)}
+   selectedDate={selectedDate}
+   currentMonth={currentMonth}
+   setSelectedDate={setSelectedDate}
+   setCurrentMonth={setCurrentMonth}
+   hasValidPartyPlan={hasValidPartyPlan}
+   isFromDashboard={dashboardContext}
+   partyDate={userPartyDate}
+   onSaveForLater={(data) => {
+     setNotification({ 
+       type: "success", 
+       message: `${supplier.name} saved for later!` 
+     });
+     setTimeout(() => setNotification(null), 3000);
+   }}
+   showAddonModal={showAddonModal}
+   setShowAddonModal={setShowAddonModal}
+   onAddonConfirm={handleAddonConfirm}
+   isAddingToPlan={isAddingToPlan}
+   hasEnquiriesPending={hasEnquiriesPending}
+   onShowPendingEnquiryModal={() => setShowPendingEnquiryModal(true)}
+   pendingCount={getPendingEnquiriesCount()}
+   isReplacementMode={!!replacementContext?.isReplacement}
+   replacementSupplierName={replacementContext?.supplierName || replacementContext?.newSupplierName || supplier?.name}
+   onReturnToReplacement={handleReturnToReplacement}
+   packages={packages}
+
 />
 
       {/* Only render modal when it should be open AND we have valid data */}

@@ -19,6 +19,7 @@ import { useSupplierManager } from "../hooks/useSupplierManager"
 import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
 
+
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
@@ -58,6 +59,7 @@ export default function DatabaseDashboard() {
   const [showSupplierAddedModal, setShowSupplierAddedModal] = useState(false)
   const [renderKey, setRenderKey] = useState(0)
 const [addedSupplierData, setAddedSupplierData] = useState(null)
+const [notification, setNotification] = useState(null)
 
   // MAIN PARTY DATA HOOK
   const {
@@ -99,7 +101,7 @@ const handleSupplierSelection = async (supplierData) => {
   const supplier = supplierData?.supplier || supplierData
   const selectedPackage = supplierData?.package || null
   
-  console.log('🎯 Supplier selected:', supplier?.name)
+  
   
   if (!supplier) {
     console.error('❌ No supplier data provided')
@@ -255,14 +257,22 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
     updateSuppliersForBudget
   } = useBudgetManager(totalCost, isUpdating, setIsUpdating)
 
-  // Replacement system - ONLY if we have a party ID
-  const {
-    replacements,
-    isProcessingRejection,
-    handleApproveReplacement,
-    handleViewSupplier,
-    handleDismissReplacement
-  } = useReplacementManager(partyId, partyData, refreshPartyData)
+// 2. Fix the useReplacementManager call with all required parameters
+const {
+  replacements,
+  isProcessingRejection,
+  handleApproveReplacement,
+  handleViewSupplier,
+  handleDismissReplacement,
+  clearApprovedReplacements
+} = useReplacementManager(
+  partyId,                    // 1st parameter
+  partyDetails,              // 2nd parameter  
+  refreshPartyData,          // 3rd parameter
+  setNotification,           // 4th parameter - ADD THIS
+  null                       // 5th parameter - ADD THIS (currentSupplier)
+)
+
 
   // Supplier management
   const removeSupplier = async (supplierType) => {
@@ -302,6 +312,73 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
 
   // Add this function to your DatabaseDashboard.jsx
 const [isCancelling, setIsCancelling] = useState(false)
+
+// Replace your handleModalSendEnquiry function with this:
+
+const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
+  console.log('🔍 DEBUG: SupplierAddedConfirmationModal handleSendEnquiry:')
+  console.log('  - supplier:', supplier?.name)
+  console.log('  - selectedPackage:', selectedPackage?.name)
+  console.log('  - partyId (direct prop):', partyId)
+  console.log('  - partyDetails.id:', partyDetails?.id)
+  console.log('  - onSendEnquiry type:', typeof onSendEnquiry)
+
+
+  
+  setSendingEnquiry(true)
+  
+  try {
+    // STEP 1: Add supplier to party plan
+    console.log('📝 STEP 1: Adding supplier to party plan...')
+    const addResult = await partyDatabaseBackend.addSupplierToParty(
+      partyId,
+      supplier,
+      selectedPackage
+    )
+
+    if (!addResult.success) {
+      throw new Error(addResult.error)
+    }
+    
+    console.log('✅ STEP 1: Supplier added to party plan successfully')
+
+    // STEP 2: Send individual enquiry
+    console.log('📧 STEP 2: Sending individual enquiry...')
+    const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+      partyId,
+      supplier,
+      selectedPackage,
+      `Quick enquiry for ${supplier.name}`
+    )
+
+    if (!enquiryResult.success) {
+      console.error('❌ Enquiry failed but supplier was added:', enquiryResult.error)
+      // Don't throw error - supplier was successfully added
+      setEnquiryFeedback(`⚠️ ${supplier.name} added, but enquiry failed to send`)
+    } else {
+      console.log('✅ STEP 2: Enquiry sent successfully')
+    }
+
+    // STEP 3: Close modal and refresh
+    console.log('🔄 STEP 3: Refreshing data and closing modal...')
+    await refreshPartyData()
+    setShowSupplierAddedModal(false)
+    setAddedSupplierData(null)
+    
+    // Show success banner
+    const currentUrl = new URL(window.location)
+    currentUrl.searchParams.set('enquiry_sent', 'true')
+    currentUrl.searchParams.set('enquiry_count', '1')
+    router.push(currentUrl.toString())
+    
+  } catch (error) {
+    console.error('❌ CRITICAL ERROR in handleModalSendEnquiry:', error)
+    setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
+  } finally {
+    console.log('🏁 STEP 4: Setting sendingEnquiry to false')
+    setSendingEnquiry(false)
+  }
+}
 
 const handleCancelEnquiry = async (supplierType) => {
   console.log('🚫 handleCancelEnquiry called with:', supplierType)
@@ -383,38 +460,7 @@ const handleCancelEnquiry = async (supplierType) => {
     }
   }, [searchParams, router])
 
-  const handleModalSendEnquiry = async (supplier, selectedPackage) => {
-    console.log('📧 User confirmed - adding supplier AND sending enquiry')
-    setSendingEnquiry(true)
-    
-    try {
-      // Add supplier to party plan with enquiry creation
-      const addResult = await partyDatabaseBackend.addSupplierToParty(
-        partyId,
-        supplier,
-        selectedPackage
-      )
-  
-      if (addResult.success) {
-        await refreshPartyData()
-        setShowSupplierAddedModal(false)
-        setAddedSupplierData(null)
-        
-        // Show success banner
-        const currentUrl = new URL(window.location)
-        currentUrl.searchParams.set('enquiry_sent', 'true')
-        currentUrl.searchParams.set('enquiry_count', '1')
-        router.push(currentUrl.toString())
-      } else {
-        throw new Error(addResult.error)
-      }
-    } catch (error) {
-      console.error('Error adding supplier and sending enquiry:', error)
-      setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
-    } finally {
-      setSendingEnquiry(false)
-    }
-  }
+
   const handleModalClose = () => {
     console.log('🚪 User clicked "Maybe Later" - closing modal, no supplier added')
     setShowSupplierAddedModal(false)
@@ -470,7 +516,24 @@ const handleCancelEnquiry = async (supplierType) => {
 
   return (
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
+
+
       <ContextualBreadcrumb currentPage="dashboard"/>
+      {notification && (
+  <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+    notification.type === 'success' ? 'bg-green-500 text-white' : 
+    notification.type === 'error' ? 'bg-red-500 text-white' : 
+    'bg-blue-500 text-white'
+  }`}>
+    {notification.message}
+    <button 
+      onClick={() => setNotification(null)}
+      className="ml-2 text-white hover:text-gray-200"
+    >
+      ×
+    </button>
+  </div>
+)}
       <BookingConfirmedBanner 
         suppliers={visibleSuppliers}
         enquiries={enquiries}
@@ -494,6 +557,12 @@ const handleCancelEnquiry = async (supplierType) => {
  selectedPackage={addedSupplierData?.selectedPackage}
  partyDetails={partyDetails}
  isSending={sendingEnquiry}
+ currentPhase={currentPhase}
+ partyData={partyData}
+ partyId={partyId}
+ enquiries={enquiries}
+ hasEnquiriesPending={hasEnquiriesPending}
+ partyId={partyId}
 />
       
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">

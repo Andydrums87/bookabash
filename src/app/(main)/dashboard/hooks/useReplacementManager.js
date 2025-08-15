@@ -1,13 +1,12 @@
-// hooks/useReplacementManager.js - Handles all replacement logic
 import { useState, useEffect, useRef } from 'react'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { supabase } from "@/lib/supabase"
 import { useEnquiryStatus } from "../hooks/useEnquiryStatus"
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 
-export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
+export function useReplacementManager(partyId, partyDetails, refreshPartyData, setNotification, currentSupplier = null) {
   const { navigateWithContext } = useContextualNavigation()
-  
+
   // State
   const [replacements, setReplacements] = useState([])
   const [isProcessingRejection, setIsProcessingRejection] = useState(false)
@@ -15,25 +14,163 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
   // Refs for tracking
   const approvedReplacementsRef = useRef(new Set())
   const processingApprovalsRef = useRef(new Set())
-  
+
   // Get enquiries
   const { enquiries, refreshEnquiries } = useEnquiryStatus(partyId, true)
 
-  // Load saved replacements from localStorage
-  useEffect(() => {
-    const savedReplacements = localStorage.getItem('pending_replacements')
-    if (savedReplacements) {
-      try {
-        const parsed = JSON.parse(savedReplacements)
-        const filteredReplacements = parsed.filter(r => !approvedReplacementsRef.current.has(r.id))
-        console.log('📥 Loading saved replacements from localStorage:', parsed.length, 'filtered to:', filteredReplacements.length)
-        setReplacements(filteredReplacements)
-      } catch (error) {
-        console.error('❌ Error loading saved replacements:', error)
-        localStorage.removeItem('pending_replacements')
+
+
+ // ✅ ADD: Debug the enquiry hook
+useEffect(() => {
+
+  
+  // ✅ Let's also manually check the database
+  if (partyId) {
+
+    partyDatabaseBackend.getEnquiriesForParty(partyId).then(result => {
+
+      if (result.success) {
+        
       }
+    })
+  }
+}, [partyId, enquiries])
+
+
+
+// In the useEffect that processes enquiries for replacements
+useEffect(() => {
+ 
+  
+  // Check for restoration flags FIRST, regardless of other conditions
+  const shouldRestore = sessionStorage.getItem('shouldRestoreReplacementModal')
+  const storedContext = sessionStorage.getItem('replacementContext')
+  
+
+  
+  if (shouldRestore === 'true' && storedContext) {
+
+    
+    try {
+      const context = JSON.parse(storedContext)
+      
+      const tempReplacement = {
+        id: context.replacementId || 'temp-restoration-' + Date.now(),
+        category: context.category || context.mobileApproval?.supplierCategory || 'Entertainment',
+        status: 'pending_approval',
+        reason: 'Restoration for package selection',
+        oldSupplier: {
+          name: context.oldSupplierName || 'Previous Supplier',
+          price: 100
+        },
+        newSupplier: {
+          id: context.selectedSupplierData?.id || context.newSupplierId || 'unknown',
+          name: context.selectedSupplierData?.name || context.newSupplierName || context.supplierName || 'New Supplier',
+          price: context.selectedPackageData?.price || context.mobileApproval?.packagePrice || 150,
+          description: context.selectedSupplierData?.description || 'Replacement supplier'
+        },
+        isRestoration: true,
+        originalEnquiryId: context.originalEnquiryId
+      }
+      
+
+      setReplacements([tempReplacement])
+      
+      return // Exit early - don't process regular enquiries when restoring
+    } catch (error) {
+      console.error('❌ RESTORATION: Error:', error)
+      sessionStorage.removeItem('shouldRestoreReplacementModal')
+      sessionStorage.removeItem('replacementContext')
     }
-  }, [])
+  }
+  
+  // Only process regular enquiries if we have partyId and enquiries
+  if (!partyId || enquiries.length === 0) {
+  
+    return
+  }
+  
+  
+  // ✅ REGULAR PROCESSING: Only run if NOT restoring and we have enquiries
+  if (enquiries.length > 0 && processingApprovalsRef.current.size === 0) {
+    const declinedEnquiries = enquiries.filter(enquiry => 
+      enquiry.status === 'declined' && enquiry.replacement_processed === false
+    )
+    
+
+    
+    if (declinedEnquiries.length === 0) {
+ 
+      setReplacements([]) // ✅ Clear any existing replacements
+      return
+    }
+    
+    // Process declined enquiries for replacements
+    const processAllRejections = async () => {
+      setIsProcessingRejection(true)
+      const newReplacements = []
+      
+      for (const enquiry of declinedEnquiries) {
+        try {
+          const rejectedSupplier = {
+            id: enquiry.supplier_id,
+            name: enquiry.suppliers?.business_name || 'Unknown Supplier',
+            price: enquiry.quoted_price || 0,
+            rating: enquiry.suppliers?.data?.rating || 4.0,
+            image: enquiry.suppliers?.data?.image || '/placeholder.jpg',
+            category: enquiry.supplier_category,
+            reviewCount: enquiry.suppliers?.data?.reviewCount || 0
+          }
+          
+          const userPreferences = {
+            budget: partyDetails.budget,
+            date: partyDetails.date,
+            location: partyDetails.location,
+            theme: partyDetails.theme?.toLowerCase(),
+            childAge: partyDetails.childAge,
+            numberOfChildren: partyDetails.numberOfChildren
+          }
+          
+          const result = await partyDatabaseBackend.handleSupplierRejection(
+            partyId,
+            enquiry.id,
+            rejectedSupplier,
+            userPreferences
+          )
+          
+          if (result.success) {
+            const replacementWithEnquiryId = {
+              ...result.replacement,
+              originalEnquiryId: enquiry.id
+            }
+            
+            // Only add if not already approved
+            if (!approvedReplacementsRef.current.has(replacementWithEnquiryId.id)) {
+              newReplacements.push(replacementWithEnquiryId)
+            }
+          }
+          
+        } catch (error) {
+          console.error(`💥 Error processing ${enquiry.supplier_category} rejection:`, error)
+        }
+      }
+      
+      if (newReplacements.length > 0) {
+        setReplacements(prev => {
+          const existingCategories = newReplacements.map(r => r.category)
+          const filtered = prev.filter(r => 
+            !existingCategories.includes(r.category) && !approvedReplacementsRef.current.has(r.id)
+          )
+          return [...filtered, ...newReplacements]
+        })
+      }
+      
+      setIsProcessingRejection(false)
+    }
+    
+    processAllRejections()
+  }
+}, [enquiries, partyId, partyDetails])
 
   // Save replacements to localStorage
   useEffect(() => {
@@ -41,42 +178,31 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       const unapprovedReplacements = replacements.filter(r => !approvedReplacementsRef.current.has(r.id))
       if (unapprovedReplacements.length > 0) {
         localStorage.setItem('pending_replacements', JSON.stringify(unapprovedReplacements))
-  
       } else {
         localStorage.removeItem('pending_replacements')
- 
       }
     } else {
       localStorage.removeItem('pending_replacements')
- 
     }
   }, [replacements])
 
   // Process declined enquiries for replacements
   useEffect(() => {
-    if (enquiries.length > 0 && processingApprovalsRef.current.size === 0) {
 
-      
+    if (enquiries.length > 0 && processingApprovalsRef.current.size === 0) {
       const declinedEnquiries = enquiries.filter(enquiry => 
         enquiry.status === 'declined' && !enquiry.replacement_processed
       )
-      
-
-      
+  
       if (declinedEnquiries.length === 0) {
-
         return
       }
       
       const processAllRejections = async () => {
-   
         setIsProcessingRejection(true)
-        
         const newReplacements = []
         
         for (const enquiry of declinedEnquiries) {
-      
-          
           try {
             const rejectedSupplier = {
               id: enquiry.supplier_id,
@@ -105,8 +231,6 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
             )
             
             if (result.success) {
-             
-              
               const replacementWithEnquiryId = {
                 ...result.replacement,
                 originalEnquiryId: enquiry.id
@@ -115,8 +239,6 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
               // Only add if not already approved
               if (!approvedReplacementsRef.current.has(replacementWithEnquiryId.id)) {
                 newReplacements.push(replacementWithEnquiryId)
-              } else {
-             
               }
             }
             
@@ -126,14 +248,11 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
         }
         
         if (newReplacements.length > 0) {
-  
-          
           setReplacements(prev => {
             const existingCategories = newReplacements.map(r => r.category)
             const filtered = prev.filter(r => 
               !existingCategories.includes(r.category) && !approvedReplacementsRef.current.has(r.id)
             )
-            
             return [...filtered, ...newReplacements]
           })
         }
@@ -142,90 +261,327 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       }
       
       processAllRejections()
-      
-    } else if (processingApprovalsRef.current.size > 0) {
-
     }
   }, [enquiries, partyId, partyDetails])
 
-  // Handle replacement approval
-  const handleApproveReplacement = async (replacementId) => {
+  // ✅ ENHANCED: Approval function with current supplier data
+  const handleApproveReplacement = async (replacementId, selectedPackageData = null) => {
 
-    
-    // Track that we're processing this approval
-    processingApprovalsRef.current.add(replacementId)
-    approvedReplacementsRef.current.add(replacementId)
+    const currentPartyId = partyId
+    // ✅ VALIDATE: Required dependencies
+    if (!partyId) {
+      console.error('❌ No partyId provided to replacement manager')
 
+      setNotification?.({
+        type: 'error',
+        message: 'Unable to process replacement. Party ID not found. Please refresh the page and try again.'
+      })
+      return
+    }
     
     try {
+      // Find the replacement
       const replacement = replacements.find(r => r.id === replacementId)
       if (!replacement) {
-        console.warn('❌ Replacement not found:', replacementId)
+        console.error('❌ Replacement not found:', replacementId)
         return
       }
+      
 
+      // ✅ CATEGORY RESOLUTION: The category should come from the original enquiry/old supplier
+      // because that's what we're replacing (same category, different supplier)
+      const originalCategory = replacement.oldSupplier?.category || 
+                              replacement.category ||
+                              replacement.supplier_category ||
+                              'Entertainment' // Final fallback
+      
 
       
-      // Remove from UI immediately
-      setReplacements(prev => {
-        const newState = prev.filter(r => r.id !== replacementId)
-        console.log(`📊 Removed replacement from UI. ${prev.length} -> ${newState.length}`)
-        return newState
-      })
+      // ✅ ENHANCED: Get category from multiple possible sources with original category priority
+      const supplierCategory = originalCategory || 
+                              replacement.newSupplier?.category ||
+                              replacement.newSupplier?.supplier_category ||
+                              'Entertainment'
       
-      // Call backend
+    
+      // ✅ GET: Enhanced package data from multiple sources
+      let packageToUse = selectedPackageData
+      
+      if (!packageToUse) {
+        // Try to get from session storage
+        try {
+          const storedContext = sessionStorage.getItem('replacementContext')
+          if (storedContext) {
+            const context = JSON.parse(storedContext)
+            packageToUse = context.selectedPackageData
+         
+          }
+        } catch (error) {
+          console.error('❌ Error getting package from session storage:', error)
+        }
+      }
+      
+      // ✅ GET: Current supplier data from session storage (most reliable)
+      let currentSupplierFromSession = null
+      try {
+        const storedContext = sessionStorage.getItem('replacementContext')
+        if (storedContext) {
+          const context = JSON.parse(storedContext)
+          currentSupplierFromSession = context.currentSupplierData
+        
+        }
+      } catch (error) {
+        console.error('❌ Error getting current supplier from session storage:', error)
+      }
+      
+      // ✅ DETERMINE: Category from the most reliable source
+      let categoryToUse = 'Entertainment' // Default fallback
+      
+      if (currentSupplierFromSession && currentSupplierFromSession.category) {
+        categoryToUse = currentSupplierFromSession.category
 
-      const result = await partyDatabaseBackend.applyReplacementToParty(
-        partyId, 
-        replacement, 
-        replacement.originalEnquiryId
+      } else if (currentSupplier && currentSupplier.category) {
+        categoryToUse = currentSupplier.category
+
+      } else if (replacement.category) {
+        categoryToUse = replacement.category
+       
+      } else {
+
+      }
+      
+      // ✅ BUILD: Final supplier object with guaranteed category
+      const finalSupplier = {
+        // Start with replacement.newSupplier as base (has the new supplier's data)
+        ...replacement.newSupplier,
+        // Add the category we determined above
+        category: categoryToUse,
+        // Override with current supplier data if available (for complete info)
+        ...(currentSupplierFromSession || {}),
+        // Ensure we keep the replacement supplier's identity
+        id: replacement.newSupplier.id,
+        name: replacement.newSupplier.name || currentSupplierFromSession?.name,
+        // Force category again to make sure it doesn't get overwritten
+        category: categoryToUse
+      }
+      
+   
+      
+      // ✅ FALLBACK: Create default package if none found
+      if (!packageToUse) {
+       
+        packageToUse = {
+          id: 'basic',
+          name: 'Basic Package', 
+          price: finalSupplier.price || replacement.newSupplier.price,
+          duration: '2 hours',
+          features: ['Standard service'],
+          description: `Basic package`
+        }
+      }
+      
+  
+      
+      // ✅ ENHANCED: Create comprehensive package data for database
+      const enhancedPackageData = {
+        // Core package info
+        id: packageToUse.id,
+        name: packageToUse.name,
+        price: packageToUse.price,
+        duration: packageToUse.duration || '2 hours',
+        features: packageToUse.features || ['Standard service'],
+        description: packageToUse.description || `${packageToUse.name} for ${replacement.category}`,
+        
+        // Pricing breakdown
+        originalPrice: packageToUse.originalPrice || packageToUse.price,
+        totalPrice: packageToUse.totalPrice || packageToUse.price,
+        basePrice: packageToUse.basePrice || packageToUse.price,
+        addonsPriceTotal: packageToUse.addonsPriceTotal || 0,
+        
+        // Add-ons (if any)
+        addons: packageToUse.addons || [],
+        selectedAddons: packageToUse.selectedAddons || [],
+        
+        // Replacement metadata
+        isReplacementPackage: true,
+        replacementId: replacementId,
+        selectedAt: new Date().toISOString(),
+        originalSupplierName: replacement.oldSupplier.name,
+        
+        // Additional metadata for tracking
+        packageSelectionSource: selectedPackageData ? 'modal_approval' : 'session_storage',
+        replacementReason: `Replacing ${replacement.oldSupplier.name} (declined)`
+      }
+      
+ 
+      
+      // ✅ VALIDATE: Category before proceeding
+      if (!supplierCategory || supplierCategory === 'undefined' || supplierCategory === 'null') {
+        console.error('❌ Invalid category for supplier:', {
+          supplierCategory,
+          replacementId,
+          replacement: replacement
+        })
+        setNotification?.({
+          type: 'error',
+          message: 'Unable to determine supplier category. Please try again or contact support.'
+        })
+        return
+      }
+      
+      const enhancedSupplier = {
+        ...replacement.newSupplier,
+        category: supplierCategory, // ✅ Ensure category is set and valid
+        // Ensure other required fields are present
+        id: replacement.newSupplier.id || replacement.newSupplier.supplier_id,
+        name: replacement.newSupplier.name || replacement.newSupplier.business_name,
+        description: replacement.newSupplier.description || `${supplierCategory} service provider`,
+        price: replacement.newSupplier.price || packageToUse.price,
+        priceFrom: replacement.newSupplier.priceFrom || replacement.newSupplier.price || packageToUse.price,
+        image: replacement.newSupplier.image || replacement.newSupplier.imageUrl || '/placeholder.jpg'
+      }
+      
+      // ✅ FINAL VALIDATION: Ensure all required fields are present
+      const requiredFields = ['id', 'name', 'category']
+      const missingFields = requiredFields.filter(field => !enhancedSupplier[field])
+      
+      if (missingFields.length > 0) {
+        console.error('❌ Missing required supplier fields:', {
+          missingFields,
+          enhancedSupplier,
+          originalSupplier: replacement.newSupplier
+        })
+        setNotification?.({
+          type: 'error',
+          message: `Missing supplier information: ${missingFields.join(', ')}. Please try again.`
+        })
+        return
+      }
+      
+
+      
+      // ✅ ADD: Mark replacement as being processed
+      approvedReplacementsRef.current.add(replacementId)
+      processingApprovalsRef.current.add(replacementId)
+      
+
+      
+      const addResult = await partyDatabaseBackend.addSupplierToParty(
+        currentPartyId,
+        enhancedSupplier,
+        enhancedPackageData
       )
       
-      if (result.success) {
+      if (addResult.success) {
+        if (replacement.originalEnquiryId) {
+          await supabase
+            .from('enquiries')
+            .update({ replacement_processed: true })
+            .eq('id', replacement.originalEnquiryId)
+        }
+      
+        
+        // ✅ ENHANCED: Send enquiry with detailed package information
+        const enquiryMessage = [
+          `🔄 Replacement booking confirmed!`,
+          ``,
+          `📋 Package Details:`,
+          `• ${enhancedPackageData.name} - £${enhancedPackageData.totalPrice}`,
+          `• Duration: ${enhancedPackageData.duration}`,
+          `• Features: ${enhancedPackageData.features.join(', ')}`,
+          ``,
+          `🏪 Replacing: ${replacement.oldSupplier.name} (unavailable)`,
+          ``,
+          `Party Date: ${partyDetails.date}`,
+          `Location: ${partyDetails.location}`,
+          `Children: ${partyDetails.numberOfChildren || 'Not specified'}`,
+          ``,
+          `Looking forward to making this party amazing! 🎉`
+        ].join('\n')
+ 
+        
+        const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+          partyId,
+          enhancedSupplier,  // ✅ Use same defensive copy with category
+          enhancedPackageData,
+          enquiryMessage
+        )
+        
+        if (enquiryResult.success) {
+   
+          
+          // ✅ CLEAR: Package data from session storage after successful booking
+          try {
+            sessionStorage.removeItem('replacementContext')
+            sessionStorage.removeItem('shouldRestoreReplacementModal')
+            sessionStorage.removeItem('modalShowUpgrade')
 
-        
-        // Mark enquiry as processed
-        const { error } = await supabase
-          .from('enquiries')
-          .update({ 
-            replacement_processed: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', replacement.originalEnquiryId)
-        
-        if (error) {
-          console.error('❌ Error marking enquiry as processed:', error)
+          } catch (error) {
+            console.error('❌ Error clearing session data:', error)
+          }
+          
+        } else {
+          console.error('❌ Failed to send enquiry:', enquiryResult.error)
         }
         
-        // Refresh party data
-        await refreshPartyData()
+        // ✅ REMOVE: Replacement from list
+        setReplacements(prev => prev.filter(r => r.id !== replacementId))
         
-        // Refresh enquiries after a delay
-        setTimeout(() => {
-          refreshEnquiries()
-        }, 1000)
+        // ✅ REFRESH: Party data to show updated supplier
+        if (refreshPartyData) {
+          await refreshPartyData()
+        }
         
-
+        // ✅ SHOW: Enhanced success notification
+        const packageInfo = enhancedPackageData.addons?.length > 0 
+          ? ` (${enhancedPackageData.name} + ${enhancedPackageData.addons.length} add-ons)` 
+          : ` (${enhancedPackageData.name})`
+        
+        setNotification?.({
+          type: 'success',
+          message: `🎉 ${finalSupplier.name} booked successfully${packageInfo}! Enquiry sent with package details.`,
+          duration: 5000
+        })
         
       } else {
-        console.error('❌ Backend approval failed:', result.error)
+        console.error('❌ Failed to add replacement:', addResult.error)
+        setNotification?.({
+          type: 'error',
+          message: `Failed to book ${finalSupplier.name}. Please try again.`
+        })
+        
+        // Remove from processing set on failure
+        approvedReplacementsRef.current.delete(replacementId)
       }
       
     } catch (error) {
-      console.error('💥 Error in handleApproveReplacement:', error)
+      console.error('❌ Error approving replacement:', error)
+      setNotification?.({
+        type: 'error',
+        message: 'Failed to book replacement. Please try again.'
+      })
+      
+      // Remove from processing set on error
+      approvedReplacementsRef.current.delete(replacementId)
     } finally {
-      // Remove from processing after a delay to prevent race conditions
-      setTimeout(() => {
-        processingApprovalsRef.current.delete(replacementId)
-        console.log('✅ Finished processing approval for:', replacementId)
-      }, 2000)
+      // Always remove from processing set
+      processingApprovalsRef.current.delete(replacementId)
     }
   }
 
-  // Handle viewing supplier
-  const handleViewSupplier = (supplierId) => {
+  // ✅ ENHANCED: View supplier with proper context setting
+  const handleViewSupplier = (supplierIdOrUrl) => {
+  
+    
+    // Check if it's a full URL (from replacement modal)
+    if (typeof supplierIdOrUrl === 'string' && supplierIdOrUrl.startsWith('/supplier/')) {
 
-    navigateWithContext(`/supplier/${supplierId}`, 'dashboard')
+      navigateWithContext(supplierIdOrUrl, 'replacement')
+    } else {
+      // Regular supplier ID from dashboard context
+
+      navigateWithContext(`/supplier/${supplierIdOrUrl}`, 'dashboard')
+    }
   }
 
   // Handle dismissing replacement
@@ -234,23 +590,29 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
       const replacement = replacements.find(r => r.id === replacementId)
       if (!replacement) return
 
-      console.log('❌ Dismissing replacement:', replacementId)
-      
-      // Mark original enquiry as processed (user chose not to replace)
-      const { error } = await supabase
-        .from('enquiries')
-        .update({ 
-          replacement_processed: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', replacement.originalEnquiryId)
-      
+      if (replacement?.originalEnquiryId) {
+        // ✅ Mark as processed when dismissed
+        await supabase
+          .from('enquiries')
+          .update({ replacement_processed: true })
+          .eq('id', replacement.originalEnquiryId)
+      }
+  
       if (error) {
         console.error('❌ Error marking enquiry as processed:', error)
       }
       
       // Remove from UI state
       setReplacements(prev => prev.filter(r => r.id !== replacementId))
+      
+      // ✅ CLEAR: Session data when dismissing
+      try {
+        sessionStorage.removeItem('replacementContext')
+        sessionStorage.removeItem('shouldRestoreReplacementModal')
+        sessionStorage.removeItem('modalShowUpgrade')
+      } catch (error) {
+        console.error('❌ Error clearing session data on dismiss:', error)
+      }
       
       console.log('✅ Replacement dismissed and enquiry marked as processed')
       
@@ -268,7 +630,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData) {
   return {
     replacements,
     isProcessingRejection,
-    handleApproveReplacement,
+    handleApproveReplacement, // ✅ Now properly handles package data
     handleViewSupplier,
     handleDismissReplacement,
     clearApprovedReplacements

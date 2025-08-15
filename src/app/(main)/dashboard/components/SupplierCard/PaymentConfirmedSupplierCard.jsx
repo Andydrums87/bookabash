@@ -20,7 +20,7 @@ export default function PaymentConfirmedSupplierCard({
       border-4 border-teal-500 paid-double-border`}>
       
       {/* Success checkmark corner badge */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-10">
         <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
           <CheckCircle2 className="w-5 h-5 text-white" />
         </div>

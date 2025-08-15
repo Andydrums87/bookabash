@@ -1,8 +1,5 @@
 "use client"
-
-import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { usePartyData } from "../dashboard/hooks/usePartyData"
@@ -30,18 +27,18 @@ export default function PartyPlanSummary() {
 
   const getTableData = () => {
     if (!suppliers) return []
-  
+
     const supplierTypes = [
       "venue",
       "entertainment",
-      "catering", 
+      "catering",
       "facePainting",
       "activities",
       "partyBags",
       "decorations",
       "balloons",
     ]
-  
+
     return supplierTypes
       .filter((type) => suppliers[type]) // Only include suppliers that exist
       .map((type) => {
@@ -50,10 +47,10 @@ export default function PartyPlanSummary() {
         const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
         const addonsCost = supplierAddons.reduce((sum, addon) => sum + addon.price, 0)
         const totalPrice = supplier.price + addonsCost
-  
+
         // ✅ OPTION 2: Show paid only when enquiry is accepted (confirmed)
-        const amountPaid = enquiry?.status === 'accepted' ? totalPrice : 0
-  
+        const amountPaid = enquiry?.status === "accepted" ? totalPrice : 0
+
         return {
           id: supplier.id,
           type,
@@ -91,13 +88,13 @@ export default function PartyPlanSummary() {
     const totalPaid = tableData.reduce((sum, service) => sum + service.amountPaid, 0)
     const totalSpent = totalCost
     const remainingToPay = totalSpent - totalPaid
-  
+
     const userBudget = partyDetails?.budget || 1000
     const remainingBudget = userBudget - totalSpent
-  
+
     return {
       total: userBudget,
-      amountPaid: totalPaid,  // ✅ Now correctly reflects only confirmed suppliers
+      amountPaid: totalPaid, // ✅ Now correctly reflects only confirmed suppliers
       remainingToPay: remainingToPay,
       remainingBudget: Math.max(0, remainingBudget),
       totalSpent: totalSpent,
@@ -125,9 +122,9 @@ export default function PartyPlanSummary() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[hsl(var(--primary-50))] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin w-8 h-8 border-4 border-[hsl(var(--primary-500))] border-t-transparent rounded-full mx-auto mb-4"></div>
           <p>Loading your party summary...</p>
         </div>
       </div>
@@ -137,111 +134,108 @@ export default function PartyPlanSummary() {
   const tableData = getTableData()
   const budgetData = getBudgetData()
 
-  const summaryCards = [
-    {
-      title: "Total budget",
-      amount: budgetData.total,
-      bgColor: "bg-primary-500",
-      textColor: "text-white",
-      icon: "🎯",
-    },
-    {
-      title: "Amount paid",
-      amount: budgetData.amountPaid,
-      bgColor: "bg-primary-100",
-      textColor: "text-primary-800",
-      icon: "💰",
-    },
-    {
-      title: "Remaining to pay",
-      amount: budgetData.remainingToPay,
-      bgColor: "bg-primary-200",
-      textColor: "text-primary-900",
-      icon: "📊",
-    },
-    {
-      title: "Remaining budget",
-      amount: budgetData.remainingBudget,
-      bgColor: "bg-primary-300",
-      textColor: "text-primary-900",
-      icon: "💳",
-    },
-  ]
-
   return (
-    <div className="min-h-screen bg-primary-50">
-    <ContextualBreadcrumb currentPage="party-summary" />
+    <div className="min-h-screen bg-[hsl(var(--primary-50))] px-2">
+      <ContextualBreadcrumb currentPage="party-summary" />
 
-    <div className="bg-primary-50 px-4 md:px-10 py-6">
-      <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900">Party Summary</h1>
-    </div>
+      <div className="bg-[hsl(var(--primary-50))] px-3 pt-8 pb-5">
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">Party Summary</h1>
+      </div>
 
-    {/* Main Content */}
-    <div className="px-4 md:px-10 py-6">
-      
-      {/* Mobile: Scrollable Table */}
-      <div className="block md:hidden mb-4">
-        <div className="overflow-x-auto">
-          <div className="min-w-[600px]"> {/* Force minimum width for scrolling */}
-            <Table>
+      <div className="px-3 md:px-6 pb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
+          <div className="overflow-x-auto">
+            <Table className="min-w-full">
               <TableHeader>
-                <TableRow className="bg-primary-50">
-                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[120px]">Service</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[80px]">Price</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[60px]">Paid</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[80px]">Remaining</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[80px]">Status</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-700 px-3 py-2 min-w-[100px]">Action</TableHead>
+                <TableRow className="bg-gray-50 border-b border-gray-200">
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[120px]">
+                    Service name
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[80px]">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[100px]">
+                    Vendor name
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[80px]">
+                    Category
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[70px]">
+                    Price
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[80px]">
+                    Amount paid
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[90px]">
+                    Remaining amount
+                  </TableHead>
+                  <TableHead className="text-xs md:text-sm font-medium text-gray-700 px-3 md:px-8 py-3 md:py-6 min-w-[100px]">
+                    Action
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tableData.map((service, index) => (
-                  <TableRow key={service.id || index} className={`border-b border-gray-100 ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                  }`}>
-                    <TableCell className="px-3 py-3">
-                      <div>
-                        <p className="font-medium text-sm text-gray-900 leading-tight">{service.serviceName}</p>
-                        <p className="text-xs text-gray-600">{service.category}</p>
-                      </div>
+                  <TableRow
+                    key={service.id || index}
+                    className="border-b border-gray-100 hover:bg-[hsl(var(--primary-50))] transition-colors"
+                  >
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
+                      {service.serviceName}
                     </TableCell>
-                    <TableCell className="px-3 py-3 text-sm font-medium text-gray-900">
-                      £{service.price}
-                    </TableCell>
-                    <TableCell className="px-3 py-3 text-sm font-medium text-primary-600">
-                      £{service.amountPaid}
-                    </TableCell>
-                    <TableCell className="px-3 py-3 text-sm font-medium text-gray-900">
-                      £{service.price - service.amountPaid}
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <Badge className={`text-xs px-2 py-1 ${
-                        service.status === "confirmed" ? "bg-primary-500 text-white" : 
-                        service.status === "process" ? "bg-primary-300 text-primary-800" : 
-                        "bg-gray-200 text-gray-700"
-                      }`}>
-                        {service.status === "confirmed" ? "✓" : 
-                         service.status === "process" ? "⚡" : 
-                         "📅"}
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6">
+                      <Badge
+                        className={`
+                          text-xs font-medium px-2 md:px-3 py-1 rounded-full
+                          ${
+                            service.status === "confirmed"
+                              ? "bg-[hsl(var(--primary-500))] text-white hover:bg-[hsl(var(--primary-600))]"
+                              : service.status === "process"
+                                ? "bg-[hsl(var(--primary-200))] text-[hsl(var(--primary-800))] hover:bg-[hsl(var(--primary-300))]"
+                                : service.status === "declined"
+                                  ? "bg-red-100 text-red-800 hover:bg-red-200"
+                                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                          }
+                        `}
+                      >
+                        {service.status === "confirmed" && "✓ Confirmed"}
+                        {service.status === "planned" && "📅 Planned"}
+                        {service.status === "process" && "Process"}
+                        {service.status === "declined" && "✗ Declined"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <div className="flex gap-1">
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6 text-gray-600 text-xs md:text-sm">
+                      {service.vendorName}
+                    </TableCell>
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6 text-gray-600 text-xs md:text-sm">
+                      {service.category}
+                    </TableCell>
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
+                      £{service.price}
+                    </TableCell>
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
+                      £{service.amountPaid}
+                    </TableCell>
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6 font-medium text-gray-900 text-xs md:text-sm">
+                      £{service.price - service.amountPaid}
+                    </TableCell>
+                    <TableCell className="px-3 md:px-8 py-3 md:py-6">
+                      <div className="flex gap-1 md:gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs px-2 py-1 h-6"
-                          onClick={() => handleAction("edit", service)}
+                          className="text-xs px-2 md:px-3 py-1 h-7 md:h-8 border-gray-300 hover:bg-gray-50 bg-transparent"
+                          onClick={() => handleAction("remove", service)}
                         >
-                          Edit
+                          Remove
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs px-2 py-1 h-6 text-red-600 border-red-300"
-                          onClick={() => handleAction("remove", service)}
+                          className="text-xs px-2 md:px-3 py-1 h-7 md:h-8 text-[hsl(var(--primary-600))] border-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-50))] bg-transparent"
+                          onClick={() => handleAction("edit", service)}
                         >
-                          ✕
+                          Edit
                         </Button>
                       </div>
                     </TableCell>
@@ -251,113 +245,29 @@ export default function PartyPlanSummary() {
             </Table>
           </div>
         </div>
-        
-        {/* Scroll hint */}
-        <p className="text-xs text-gray-500 text-center mt-2">← Swipe to see more →</p>
-      </div>
 
-      {/* Desktop: Keep existing table */}
-      <Card className="hidden md:block overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Service name</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Vendor name</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Category</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Price</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Amount paid</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Remaining amount</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Status</TableHead>
-                <TableHead className="text-xs font-medium text-gray-600 px-4 py-3">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((service, index) => (
-                <TableRow key={service.id || index} className="border-b border-gray-100">
-                  <TableCell className="px-4 py-4 font-medium text-sm text-gray-900">
-                    {service.serviceName}
-                  </TableCell>
-                  <TableCell className="px-4 py-4 text-sm text-gray-600">{service.vendorName}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm text-gray-600">{service.category}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">£{service.price}</TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
-                    £{service.amountPaid}
-                  </TableCell>
-                  <TableCell className="px-4 py-4 text-sm font-medium text-gray-900">
-                    £{service.price - service.amountPaid}
-                  </TableCell>
-                  <TableCell className="px-4 py-4">
-                    <Badge
-                      variant={service.status === "confirmed" ? "default" : "secondary"}
-                      className={`
-                        text-xs font-medium px-3 py-1 rounded-full
-                        ${
-                          service.status === "confirmed"
-                            ? "text-white"
-                            : service.status === "planned"
-                              ? "bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))]"
-                              : "bg-primary-200 text-primary-900 border-[hsl(var(--primary-300))]"
-                        }
-                      `}
-                      style={service.status === "confirmed" ? { backgroundColor: `hsl(${14} 100% 64%)` } : {}}
-                    >
-                      {service.status === "confirmed" && "✓ Confirmed"}
-                      {service.status === "planned" && "📅 Planned"}
-                      {service.status === "process" && "⚡ Process"}
-                      {service.status === "declined" && "❌ Declined"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-4 py-4">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs px-3 py-1 h-7 bg-transparent"
-                        onClick={() => handleAction("remove", service)}
-                      >
-                        Remove
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs px-3 py-1 h-7 text-primary-600 border-[hsl(var(--primary-300))] hover:bg-primary-50 bg-transparent"
-                        onClick={() => handleAction("edit", service)}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+          <div className="bg-[hsl(var(--primary-500))] rounded-lg p-4 md:p-8 text-white">
+            <h3 className="text-xs md:text-sm font-medium text-white/80 mb-2 md:mb-3">Total Cost</h3>
+            <p className="text-2xl md:text-4xl font-bold">£{budgetData.totalSpent}</p>
+          </div>
+
+          <div className="bg-[hsl(var(--primary-400))] rounded-lg p-4 md:p-8 text-white">
+            <h3 className="text-xs md:text-sm font-medium text-white/80 mb-2 md:mb-3">Amount Paid</h3>
+            <p className="text-2xl md:text-4xl font-bold">£{budgetData.amountPaid}</p>
+          </div>
+
+          <div className="bg-[hsl(var(--primary-300))] rounded-lg p-4 md:p-8 text-[hsl(var(--primary-900))]">
+            <h3 className="text-xs md:text-sm font-medium text-[hsl(var(--primary-800))] mb-2 md:mb-3">Remaining</h3>
+            <p className="text-2xl md:text-4xl font-bold">£{budgetData.remainingToPay}</p>
+          </div>
+
+          <div className="bg-[hsl(var(--primary-200))] rounded-lg p-4 md:p-8 text-[hsl(var(--primary-900))]">
+            <h3 className="text-xs md:text-sm font-medium text-[hsl(var(--primary-800))] mb-2 md:mb-3">Budget Left</h3>
+            <p className="text-2xl md:text-4xl font-bold">£{budgetData.remainingBudget}</p>
+          </div>
         </div>
-      </Card>
-
-      {/* Summary Cards - Simple 2x2 grid */}
-      <div className="grid grid-cols-2 gap-3 mt-4">
-        <Card className="p-3 bg-primary-500 text-white">
-          <p className="text-xs opacity-90">Total Cost</p>
-          <p className="text-xl font-bold">£{budgetData.totalSpent}</p>
-        </Card>
-        
-        <Card className="p-3 bg-primary-400 text-white">
-          <p className="text-xs opacity-90">Amount Paid</p>
-          <p className="text-xl font-bold">£{budgetData.amountPaid}</p>
-        </Card>
-        
-        <Card className="p-3 bg-primary-300 text-primary-800">
-          <p className="text-xs opacity-90">Remaining</p>
-          <p className="text-xl font-bold">£{budgetData.remainingToPay}</p>
-        </Card>
-        
-        <Card className="p-3 bg-primary-200 text-primary-800">
-          <p className="text-xs opacity-90">Budget Left</p>
-          <p className="text-xl font-bold">£{budgetData.remainingBudget}</p>
-        </Card>
       </div>
     </div>
-  </div>
   )
 }

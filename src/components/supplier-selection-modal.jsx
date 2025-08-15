@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import SupplierCustomizationModal from './SupplierCustomizationModal'
+import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { 
   X, 
   Star, 
@@ -102,6 +103,11 @@ export default function SupplierSelectionModal({
   onSelectSupplier,
   initialFilters = {}, // NEW: Add this prop
   partyLocation = null,
+  currentPhase = "planning",
+  partyData = {},
+  enquiries = [],
+  hasEnquiriesPending = false,
+  partyId, // Add this too
 }) {
   // NEW: Initialize state with restored filters or defaults
   const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
@@ -134,6 +140,38 @@ export default function SupplierSelectionModal({
   const handleQuickAdd = (supplier) => {
     setSelectedSupplierForCustomization(supplier)
     setShowCustomizationModal(true)
+  }
+
+  const handleSendIndividualEnquiry = async (supplier, selectedPackage, partyId) => {
+    try {
+      console.log('📧 Sending individual enquiry from selection modal:', {
+        supplierName: supplier.name,
+        packageName: selectedPackage.name,
+        partyId
+      })
+      
+      // Import your database backend at the top of the file
+      // import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
+      
+      // Call your backend to send individual enquiry
+      const result = await partyDatabaseBackend.sendIndividualEnquiry(
+        partyId, 
+        supplier, 
+        selectedPackage, 
+        `Quick enquiry for ${supplier.category} services`
+      )
+      
+      if (result.success) {
+        console.log('✅ Individual enquiry sent successfully')
+        return { success: true, enquiry: result.enquiry }
+      } else {
+        console.error('❌ Failed to send enquiry:', result.error)
+        return { success: false, error: result.error }
+      }
+    } catch (error) {
+      console.error('❌ Error in handleSendIndividualEnquiry:', error)
+      return { success: false, error: error.message }
+    }
   }
 
   // NEW: Handle customization modal add to plan - with comprehensive debugging
@@ -892,7 +930,7 @@ export default function SupplierSelectionModal({
         </div>
       </div>
 
-      <SupplierCustomizationModal
+           <SupplierCustomizationModal
         isOpen={showCustomizationModal}
         onClose={() => {
 

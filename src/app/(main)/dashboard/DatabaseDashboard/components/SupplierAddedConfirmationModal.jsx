@@ -12,12 +12,31 @@ export default function SupplierAddedConfirmationModal({
   supplier,
   selectedPackage,
   partyDetails,
-  isSending = false
+  isSending = false,
+  partyId, // ✅ ADD THIS PROP
 }) {
   if (!supplier) return null
 
   const handleSendEnquiry = () => {
-    onSendEnquiry(supplier, selectedPackage)
+
+    
+    const partyId = partyDetails?.id
+    
+    if (!partyId) {
+      console.error('❌ partyId is missing in partyDetails!')
+      console.error('❌ partyDetails structure:', partyDetails)
+      return
+    }
+    
+    if (!onSendEnquiry) {
+      console.error('❌ onSendEnquiry function is missing!')
+      return
+    }
+    
+
+    
+    // ✅ FIXED: Pass all 3 parameters including partyId
+    onSendEnquiry(supplier, selectedPackage, partyId)
   }
 
   const handleNotYet = () => {

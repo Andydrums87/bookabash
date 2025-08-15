@@ -110,28 +110,39 @@ export default function SupplierCustomizationModal({
     )
   }
   const handleAddToPlan = () => {
-    // Check if we can add this supplier category
-    if (!canAddCheck.canAdd) {
-      console.log('🚫 Cannot add supplier - showing pending modal')
-      setShowPendingModal(true)
-      return
-    }
-  
     const selectedAddonObjects = selectedAddons.map(addonId => 
       availableAddons.find(addon => addon.id === addonId)
     ).filter(Boolean)
   
-    console.log('✅ Adding supplier - will always show confirmation modal')
+    console.log('🔍 DEBUG: handleAddToPlan called with:')
+    console.log('  - supplier:', supplier?.name)
+    console.log('  - selectedPackage:', selectedPackage)
+    console.log('  - selectedAddonObjects:', selectedAddonObjects)
+    console.log('  - totalPrice:', totalPrice)
+    console.log('  - onAddToPlan type:', typeof onAddToPlan)
+    console.log('  - onAddToPlan function:', onAddToPlan)
   
-    // Always pass data for Quick Add flow (no auto-enquiry from dashboard)
-    onAddToPlan({
+    if (!onAddToPlan) {
+      console.error('❌ onAddToPlan is not defined!')
+      return
+    }
+  
+    const dataToSend = {
       supplier,
       package: selectedPackage,
       addons: selectedAddonObjects,
       totalPrice,
-      autoEnquiry: false, // Never auto-send from dashboard
-      reason: canAddCheck.reason
-    })
+      autoEnquiry: false
+    }
+  
+    console.log('🚀 Calling onAddToPlan with:', dataToSend)
+  
+    try {
+      const result = onAddToPlan(dataToSend)
+      console.log('✅ onAddToPlan returned:', result)
+    } catch (error) {
+      console.error('❌ Error calling onAddToPlan:', error)
+    }
   }
 
 

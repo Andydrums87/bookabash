@@ -78,7 +78,7 @@ export default function DeclinedSupplierCard({
             </div>
             <Badge className="bg-red-500 text-white">Not Available</Badge>
           </div>
-
+{/* 
           <div className="text-center mb-4">
             <p className="text-sm text-red-800 font-medium mb-2">
               Unfortunately, <span className="font-bold">{supplier.name}</span> isn't available for your party date.
@@ -86,7 +86,7 @@ export default function DeclinedSupplierCard({
             <p className="text-xs text-red-700">
               Don't worry - let's find you another great option!
             </p>
-          </div>
+          </div> */}
 
           <div className="space-y-3">
             <Button

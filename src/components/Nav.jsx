@@ -268,6 +268,9 @@ const handleSignOut = async () => {
     localStorage.removeItem("party_details")
     localStorage.removeItem("user_party_plan")
     localStorage.removeItem("party_plan") // Add this one too
+    sessionStorage.removeItem('replacementContext')
+    sessionStorage.removeItem('shouldRestoreReplacementModal')
+    sessionStorage.removeItem('modalShowUpgrade')
     
     setUser(null)
     router.push('/')
