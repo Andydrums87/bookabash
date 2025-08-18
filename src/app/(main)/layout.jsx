@@ -1,16 +1,18 @@
-import Nav from "@/components/Nav"; // Assuming Nav.jsx is in components/
-import Footer from "@/components/Footer"; // Assuming Footer.jsx is in components/
+
+import Nav from "@/components/Nav";
+import Footer from "@/components/Footer";
 import { ToastProvider } from '@/components/ui/toast'
 
+// Change the function name from MainLayout to just Layout
 export default function MainLayout({ children }) {
   return (
     <>
-       <ToastProvider>
-      <Nav />
-      <main className="flex-grow"> {/* Optional: Add class for main content styling if needed */}
-        {children}
-      </main>
-      <Footer />
+      <ToastProvider>
+        <Nav />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
       </ToastProvider>
     </>
   );

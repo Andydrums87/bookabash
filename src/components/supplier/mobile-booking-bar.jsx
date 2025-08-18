@@ -124,67 +124,84 @@ const MobileBookingBar = ({
         verified: supplier.verified
       }
       
-      // Update replacement context
+      // ✅ ENHANCED: Update replacement context with all necessary data
       const currentContext = sessionStorage.getItem('replacementContext')
+      let updatedContext = {}
+      
       if (currentContext) {
         const parsedContext = JSON.parse(currentContext)
-        const updatedContext = {
+        updatedContext = {
           ...parsedContext,
+          // ✅ PACKAGE SELECTION DATA
           selectedPackageId: completePackageData.id,
           selectedPackageData: enhancedPackageData,
           selectedSupplierData: enhancedSupplierData,
           packageSelectedAt: new Date().toISOString(),
           packageApprovedAt: new Date().toISOString(),
+          
+          // ✅ RESTORATION FLAGS - This is crucial!
+          readyForBooking: true,
+          shouldRestoreModal: true,
+          modalShouldShowUpgrade: true,
+          
+          // ✅ NAVIGATION DATA
+          returnUrl: '/dashboard',
           lastViewedAt: new Date().toISOString(),
           approvalSource: 'mobile_booking_bar',
-          readyForBooking: true,
+          
+          // ✅ REPLACEMENT APPROVAL DATA
           mobileApproval: {
             timestamp: new Date().toISOString(),
             packageName: enhancedPackageData.name,
             packagePrice: enhancedPackageData.price,
             supplierName: enhancedSupplierData.name,
-            supplierCategory: enhancedSupplierData.category
+            supplierCategory: enhancedSupplierData.category,
+            approved: true
           }
         }
-        
-        sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
-        console.log('💾 MOBILE APPROVE: Updated replacement context')
       } else {
-        console.error('❌ MOBILE APPROVE: No replacement context found')
-        
-        // Create new context if none exists
-        const newContext = {
+        // ✅ CREATE: Complete new context if none exists
+        updatedContext = {
           isReplacement: true,
           selectedPackageId: completePackageData.id,
           selectedPackageData: enhancedPackageData,
           selectedSupplierData: enhancedSupplierData,
           packageSelectedAt: new Date().toISOString(),
           packageApprovedAt: new Date().toISOString(),
+          
+          // ✅ RESTORATION FLAGS
+          readyForBooking: true,
+          shouldRestoreModal: true,
+          modalShouldShowUpgrade: true,
+          
+          // ✅ NAVIGATION DATA
           returnUrl: '/dashboard',
           createdAt: new Date().toISOString(),
           createdFrom: 'mobile_booking_bar',
-          readyForBooking: true,
           approvalSource: 'mobile_booking_bar',
+          
+          // ✅ REPLACEMENT APPROVAL DATA
           mobileApproval: {
             timestamp: new Date().toISOString(),
             packageName: enhancedPackageData.name,
             packagePrice: enhancedPackageData.price,
             supplierName: enhancedSupplierData.name,
-            supplierCategory: enhancedSupplierData.category
+            supplierCategory: enhancedSupplierData.category,
+            approved: true
           }
         }
-        
-        sessionStorage.setItem('replacementContext', JSON.stringify(newContext))
-        console.log('💾 MOBILE APPROVE: Created new replacement context')
       }
       
-      // Set restoration flags
+      console.log('💾 MOBILE APPROVE: Setting comprehensive replacement context:', updatedContext)
+      sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
+      
+      // ✅ SET: Restoration flags that the dashboard will check
       sessionStorage.setItem('shouldRestoreReplacementModal', 'true')
       sessionStorage.setItem('modalShowUpgrade', 'true')
       
-      console.log('🚀 MOBILE APPROVE: Flags set, navigating to dashboard')
+      console.log('🚀 MOBILE APPROVE: All flags set, navigating to dashboard')
       
-      // Navigate back with small delay to ensure session storage is saved
+      // ✅ NAVIGATE: Back to dashboard with small delay to ensure session storage is saved
       setTimeout(() => {
         if (onReturnToReplacement) {
           console.log('🚀 MOBILE APPROVE: Using onReturnToReplacement callback')
@@ -193,17 +210,17 @@ const MobileBookingBar = ({
           console.log('🚀 MOBILE APPROVE: Using window.location.href fallback')
           window.location.href = '/dashboard'
         }
-      }, 100)
+      }, 200) // Increased delay to ensure session storage is properly saved
       
     } catch (error) {
       console.error('❌ MOBILE APPROVE: Error during approval:', error)
       alert('Error saving package selection. Please try again.')
     }
   }
-
+  
   const handleBackToReplacement = () => {
-        console.log('🚀 Mobile: Package approved, forcing page reload to ensure restoration')
-window.location.href = '/dashboard'
+    console.log('🚀 Mobile: Package approved, forcing page reload to ensure restoration')
+    window.location.href = '/dashboard'
   }
 
   // Default package if none provided

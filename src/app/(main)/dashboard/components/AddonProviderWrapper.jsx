@@ -92,10 +92,10 @@ export function AddonsSectionWrapper({ className = "", suppliers }) {
     
     try {
       const result = await contextRemoveAddon(addonId)
-      if (result.success) {
+      if (result?.success) {
         console.log("✅ Add-on removed successfully via context!")
       } else {
-        console.error("❌ Failed to remove addon via context:", result.error)
+        console.error("❌ Failed to remove addon via context:", result?.error)
       }
     } catch (error) {
       console.error("💥 Error removing addon via context:", error)

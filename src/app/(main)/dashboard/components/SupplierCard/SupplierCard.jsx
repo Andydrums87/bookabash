@@ -55,18 +55,94 @@ export default function SupplierCard({
 
   const supplierState = getSupplierState()
 
-  // Enhanced debug logging
-  const enquiry = enquiries.find(e => e.supplier_category === type)
+  // ✅ FIXED: Enhanced addon collection that includes enquiry addons
+  const supplierAddons = (() => {
+    console.log(`🔍 Getting addons for ${type} supplier:`, supplier?.name)
+    
+    // Find the enquiry for this supplier type
+    const enquiry = enquiries.find(e => e.supplier_category === type)
+    
+    // Method 1: Get add-ons from enquiry data (PRIMARY source for database dashboard)
+    let enquiryAddons = []
+    if (enquiry?.addon_details) {
+      try {
+        // Parse the addon_details JSON string
+        const parsedAddons = JSON.parse(enquiry.addon_details)
+        enquiryAddons = Array.isArray(parsedAddons) ? parsedAddons : []
+        console.log(`  📋 Found ${enquiryAddons.length} addons in enquiry:`, enquiryAddons.map(a => a.name))
+      } catch (error) {
+        console.error(`❌ Error parsing addon_details for ${type}:`, error)
+        
+        // Fallback: try to get addon IDs and reconstruct
+        if (enquiry.addon_ids) {
+          try {
+            const addonIds = JSON.parse(enquiry.addon_ids)
+            // You might need to fetch addon details by IDs here
+            // For now, we'll create basic addon objects
+            enquiryAddons = addonIds.map(id => ({
+              id,
+              name: `Addon ${id}`,
+              price: 0 // You'll need to fetch actual price
+            }))
+          } catch (idError) {
+            console.error(`❌ Error parsing addon_ids for ${type}:`, idError)
+          }
+        }
+      }
+    }
+    
+    // Method 2: Get add-ons from global addons array (for standalone add-ons)
+    const globalAddons = addons.filter((addon) => {
+      // Match by supplier ID or supplier type
+      return addon.supplierId === supplier?.id || 
+             addon.supplierType === type ||
+             addon.attachedToSupplier === type
+    })
+    
+    // Method 3: Get add-ons from supplier's selectedAddons property (for localStorage)
+    const packageAddons = supplier?.selectedAddons || []
+    
+    // Combine all sources and remove duplicates
+    const allAddons = [...enquiryAddons, ...globalAddons, ...packageAddons]
+    const uniqueAddons = allAddons.filter((addon, index, arr) => 
+      arr.findIndex(a => a.id === addon.id) === index
+    )
+    
+    console.log(`  ✅ Total unique addons for ${type}:`, {
+      enquiry: enquiryAddons.length,
+      global: globalAddons.length, 
+      package: packageAddons.length,
+      total: uniqueAddons.length,
+      addons: uniqueAddons.map(a => ({ name: a.name, price: a.price }))
+    })
+    
+    return uniqueAddons
+  })()
 
+  // ✅ FIXED: Calculate total price including enquiry addons
+  const getTotalPrice = () => {
+    if (!supplier) return 0
+    
+    const basePrice = supplier.price || 0
+    const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+    
+   
+    
+    return basePrice + addonsPrice
+  }
 
-  const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
+  const totalPrice = getTotalPrice()
+  
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
 
   // Common props that all cards need
   const commonProps = {
     type,
-    supplier,
+    supplier: {
+      ...supplier,
+      totalPrice // Add calculated total price
+    },
     supplierAddons,
     isLoading,
     isDeleting,
@@ -81,6 +157,10 @@ export default function SupplierCard({
     onPaymentReady,
     handleCancelEnquiry
   }
+
+  // Enhanced debug logging
+  const enquiry = enquiries.find(e => e.supplier_category === type)
+
 
   // Render the appropriate card component based on state
   switch (supplierState) {

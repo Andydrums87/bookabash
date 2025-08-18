@@ -304,7 +304,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             }`}>
               <button 
                 onClick={() => {
-                  router.push('/dashboard')
+                  router.push('/party-builder')
                 }}
                 className="bg-white active:scale-200 active:bg-[hsl(var(--primary-100))] hover:bg-gray-50 text-[hsl(var(--primary-500))] font-bold h-16 w-64 sm:w-72 rounded-full transition-all duration-300 transform hover:scale-105 relative overflow-hidden group border-2 border-[hsl(var(--primary-500))] animate-bounce-gentle shadow-lg hover:shadow-2xl"
                 style={{

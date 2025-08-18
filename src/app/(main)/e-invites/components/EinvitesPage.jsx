@@ -160,38 +160,23 @@ const EInvitesPage = ({ onSaveSuccess }) => {
           </div>
         )
   
-      case WIZARD_STEPS.CREATE_INVITE:
-        return (
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              {/* AI Generation Only */}
-              <div className="lg:col-span-2 space-y-6">
+        case WIZARD_STEPS.CREATE_INVITE:
+          return (
+            <div className="max-w-7xl mx-auto">
+              {/* Mobile Layout: Preview First, then AI Generation */}
+              <div className="lg:hidden space-y-6">
+
+  
+                {/* AI Generation - Mobile: Show after preview */}
                 <AIOnlyThemeSelection
                   generateAIOptions={generateAIOptions}
                   isGeneratingAI={isGeneratingAI}
                   selectedAiOption={selectedAiOption}
                   inviteData={inviteData}
                 />
-                
-                <AIOptionsSelection
-                  showAiOptions={showAiOptions}
-                  aiOptions={aiOptions}
-                  selectedAiOption={selectedAiOption}
-                  selectAiOption={selectAiOption}
-                  generateAIOptions={generateAIOptions}
-                  isGeneratingAI={isGeneratingAI}
-                  selectedTheme={selectedTheme}
-                  setSelectedTheme={setSelectedTheme}
-                />
-
-                {/* Templates Coming Soon Card */}
-                <TemplatesComingSoon />
-              </div>
-  
-              {/* Preview - Mobile: Full width, Desktop: Sidebar */}
-              <div className="order-first lg:order-last">
-                <PreviewAndActions
-                  useAIGeneration={true} // Force AI mode
+                        {/* Preview - Mobile: Show first */}
+                        <PreviewAndActions
+                  useAIGeneration={true}
                   selectedAiOption={selectedAiOption}
                   inviteData={enhancedInviteData}
                   selectedTheme={selectedTheme}
@@ -204,10 +189,68 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   themes={themes}
                   onLayoutSave={() => {}}
                 />
+                
+                <AIOptionsSelection
+                  showAiOptions={showAiOptions}
+                  aiOptions={aiOptions}
+                  selectedAiOption={selectedAiOption}
+                  selectAiOption={selectAiOption}
+                  generateAIOptions={generateAIOptions}
+                  isGeneratingAI={isGeneratingAI}
+                  selectedTheme={selectedTheme}
+                  setSelectedTheme={setSelectedTheme}
+                />
+  
+                {/* Templates Coming Soon Card */}
+                <TemplatesComingSoon />
+              </div>
+  
+              {/* Desktop Layout: Side-by-side */}
+              <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+                {/* AI Generation - Desktop: Left side */}
+                <div className="lg:col-span-2 space-y-6">
+                  <AIOnlyThemeSelection
+                    generateAIOptions={generateAIOptions}
+                    isGeneratingAI={isGeneratingAI}
+                    selectedAiOption={selectedAiOption}
+                    inviteData={inviteData}
+                  />
+                  
+                  <AIOptionsSelection
+                    showAiOptions={showAiOptions}
+                    aiOptions={aiOptions}
+                    selectedAiOption={selectedAiOption}
+                    selectAiOption={selectAiOption}
+                    generateAIOptions={generateAIOptions}
+                    isGeneratingAI={isGeneratingAI}
+                    selectedTheme={selectedTheme}
+                    setSelectedTheme={setSelectedTheme}
+                  />
+  
+                  {/* Templates Coming Soon Card */}
+                  <TemplatesComingSoon />
+                </div>
+    
+                {/* Preview - Desktop: Right sidebar */}
+                <div>
+                  <PreviewAndActions
+                    useAIGeneration={true}
+                    selectedAiOption={selectedAiOption}
+                    inviteData={enhancedInviteData}
+                    selectedTheme={selectedTheme}
+                    generatedImage={generatedImage}
+                    saveButtonState={saveButtonState}
+                    saveInviteToPartyPlan={handleSaveInvite}
+                    copyShareableLink={copyShareableLink}
+                    generateShareableLink={generateShareableLink}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    themes={themes}
+                    onLayoutSave={() => {}}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        )
+          )
   
       case WIZARD_STEPS.SAVE_COMPLETE:
         return (

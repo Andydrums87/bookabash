@@ -175,6 +175,8 @@ class PartyDatabaseBackend {
         child_age: partyDetails.childAge,
         party_date: partyDetails.date,
         party_time: partyDetails.time,
+        start_time: partyDetails.startTime, 
+        end_time: partyDetails.endTime,
         guest_count: partyDetails.guestCount,
         location: partyDetails.location,
         postcode: partyDetails.postcode,
@@ -186,11 +188,7 @@ class PartyDatabaseBackend {
         status: 'draft'
       }
 
-      console.log('💾 Creating party with plan:', {
-        party_plan: partyPlan,
-        addons_count: partyPlan.addons?.length || 0,
-        estimated_cost: this.calculatePartyPlanCost(partyPlan)
-      })
+  
 
       const { data: newParty, error } = await supabase
         .from('parties')
@@ -1028,7 +1026,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
         .select('id, status')
         .eq('party_id', partyId)
         .eq('supplier_category', supplierType)
-        .eq('status', 'pending') // Only cancel pending enquiries
+        .in('status', ['pending', 'declined']) // ✅ UPDATED: Handle both pending and declined
         .single();
       
       if (findError && findError.code !== 'PGRST116') {
@@ -1039,14 +1037,23 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
       // Mark enquiry as withdrawn by user
       if (enquiry) {
         console.log('📧 Marking enquiry as withdrawn by user:', enquiry.id);
-        console.log('🔍 About to update status to: withdrawn'); // ✅ ADD THIS DEBUG LOG
+        console.log('🔍 Enquiry status:', enquiry.status);
+        
+        // ✅ NEW: Different update based on enquiry status
+        const updateData = {
+          status: 'withdrawn',
+          updated_at: new Date().toISOString()
+        }
+        
+        // ✅ KEY FIX: If enquiry was declined, mark replacement as processed
+        if (enquiry.status === 'declined') {
+          updateData.replacement_processed = true
+          console.log('🔄 Enquiry was declined - marking replacement as processed')
+        }
         
         const { error: withdrawError } = await supabase
           .from('enquiries')
-          .update({ 
-            status: 'withdrawn', // ✅ Now allowed in database
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', enquiry.id);
         
         if (withdrawError) {
@@ -1054,12 +1061,12 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
           throw withdrawError;
         }
         
-        console.log('✅ Enquiry marked as withdrawn');
+        console.log('✅ Enquiry marked as withdrawn and replacement processed if needed');
       } else {
-        console.log('⚠️ No pending enquiry found to cancel');
+        console.log('⚠️ No enquiry found to cancel');
       }
       
-      // Step 2: Remove supplier from party plan
+      // Step 2: Remove supplier from party plan (existing logic)
       const removeResult = await this.removeSupplierFromParty(partyId, supplierType);
       
       if (!removeResult.success) {
@@ -1072,7 +1079,8 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
         success: true,
         message: `Request cancelled and ${supplierType} removed from party`,
         removedSupplier: removeResult.removedSupplier,
-        withdrawnEnquiry: enquiry
+        withdrawnEnquiry: enquiry,
+        replacementProcessed: enquiry?.status === 'declined' // ✅ NEW: Indicate if replacement was processed
       };
       
     } catch (error) {
@@ -1193,6 +1201,49 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
     }
   }
   
+// 3. Add the markReplacementAsProcessed method to your partyDatabaseBackend.js
+async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierId = null) {
+  try {
+    console.log('🔄 === REPLACEMENT PROCESSING DEBUG ===')
+    console.log('🔄 Input parameters:', { 
+      partyId, 
+      supplierCategory, 
+      replacementSupplierId 
+    })
+
+    // Update the declined enquiry to mark replacement as processed
+    const { data: updatedEnquiry, error: updateError } = await supabase
+      .from('enquiries')
+      .update({ 
+        replacement_processed: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('party_id', partyId)
+      .eq('supplier_category', supplierCategory)
+      .eq('status', 'declined')
+      .eq('replacement_processed', false)
+      .select()
+      .maybeSingle() // Use maybeSingle to handle no results gracefully
+
+    if (updateError) {
+      console.error('❌ Update error:', updateError)
+      throw updateError
+    }
+
+    if (updatedEnquiry) {
+      console.log('✅ Successfully updated enquiry:', updatedEnquiry)
+      return { success: true, enquiry: updatedEnquiry }
+    } else {
+      console.log('⚠️ No matching declined enquiry found to update')
+      return { success: false, error: 'No matching declined enquiry found' }
+    }
+
+  } catch (error) {
+    console.error('❌ === REPLACEMENT PROCESSING ERROR ===')
+    console.error('❌ Error details:', error)
+    return { success: false, error: error.message }
+  }
+}
   /**
    * Helper method to map supplier category to party plan supplier type
    * (You might already have this, but here's the implementation)

@@ -20,157 +20,173 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
 
 
 
- // ✅ ADD: Debug the enquiry hook
-useEffect(() => {
 
-  
-  // ✅ Let's also manually check the database
-  if (partyId) {
 
-    partyDatabaseBackend.getEnquiriesForParty(partyId).then(result => {
 
-      if (result.success) {
-        
-      }
+
+  useEffect(() => {
+    console.log('🔍 === REPLACEMENT CONTEXT CHECK ===')
+    
+    // ✅ STEP 1: Check restoration flags FIRST and with priority
+    const shouldRestore = sessionStorage.getItem('shouldRestoreReplacementModal')
+    const modalShowUpgrade = sessionStorage.getItem('modalShowUpgrade')
+    const storedContext = sessionStorage.getItem('replacementContext')
+    
+    console.log('🔍 Restoration flags:', { 
+      shouldRestore, 
+      modalShowUpgrade, 
+      hasStoredContext: !!storedContext 
     })
-  }
-}, [partyId, enquiries])
-
-
-
-// In the useEffect that processes enquiries for replacements
-useEffect(() => {
- 
-  
-  // Check for restoration flags FIRST, regardless of other conditions
-  const shouldRestore = sessionStorage.getItem('shouldRestoreReplacementModal')
-  const storedContext = sessionStorage.getItem('replacementContext')
-  
-
-  
-  if (shouldRestore === 'true' && storedContext) {
-
     
-    try {
-      const context = JSON.parse(storedContext)
+    // ✅ STEP 2: Handle restoration case - THIS IS THE KEY FIX
+    if (shouldRestore === 'true' && storedContext) {
+      console.log('🎯 RESTORATION MODE DETECTED - Creating restoration replacement')
       
-      const tempReplacement = {
-        id: context.replacementId || 'temp-restoration-' + Date.now(),
-        category: context.category || context.mobileApproval?.supplierCategory || 'Entertainment',
-        status: 'pending_approval',
-        reason: 'Restoration for package selection',
-        oldSupplier: {
-          name: context.oldSupplierName || 'Previous Supplier',
-          price: 100
-        },
-        newSupplier: {
-          id: context.selectedSupplierData?.id || context.newSupplierId || 'unknown',
-          name: context.selectedSupplierData?.name || context.newSupplierName || context.supplierName || 'New Supplier',
-          price: context.selectedPackageData?.price || context.mobileApproval?.packagePrice || 150,
-          description: context.selectedSupplierData?.description || 'Replacement supplier'
-        },
-        isRestoration: true,
-        originalEnquiryId: context.originalEnquiryId
+      try {
+        const context = JSON.parse(storedContext)
+        console.log('📦 Parsed restoration context:', context)
+        
+        // ✅ CREATE: Restoration replacement that will trigger the modal
+        const restorationReplacement = {
+          id: context.replacementId || 'restoration-' + Date.now(),
+          category: context.category || context.mobileApproval?.supplierCategory || 'Entertainment',
+          status: 'pending_approval',
+          reason: 'Package selection approved - ready for final booking',
+          
+          // ✅ OLD SUPPLIER DATA
+          oldSupplier: {
+            name: context.oldSupplierName || 'Previous Supplier',
+            price: context.oldSupplierPrice || 100,
+            image: context.oldSupplierImage || '/placeholder.jpg'
+          },
+          
+          // ✅ NEW SUPPLIER DATA (from mobile approval)
+          newSupplier: {
+            id: context.selectedSupplierData?.id || context.newSupplierId || 'unknown',
+            name: context.selectedSupplierData?.name || context.mobileApproval?.supplierName || 'Selected Supplier',
+            price: context.selectedPackageData?.price || context.mobileApproval?.packagePrice || 150,
+            description: context.selectedSupplierData?.description || 'Your selected replacement supplier',
+            image: context.selectedSupplierData?.image || '/placeholder.jpg',
+            rating: context.selectedSupplierData?.rating || 4.5,
+            reviewCount: context.selectedSupplierData?.reviewCount || 20
+          },
+          
+          // ✅ RESTORATION FLAGS
+          isRestoration: true,
+          fromMobileApproval: true,
+          packageAlreadySelected: true,
+          originalEnquiryId: context.originalEnquiryId,
+          
+          // ✅ MOBILE APPROVAL DATA
+          mobileApprovalData: context.mobileApproval,
+          selectedPackageData: context.selectedPackageData
+        }
+        
+        console.log('✅ Created restoration replacement:', restorationReplacement)
+        
+        // ✅ SET: The replacement immediately to trigger the modal
+        setReplacements([restorationReplacement])
+        
+        console.log('🎯 RESTORATION: Replacement set, modal should open automatically')
+        
+        return // ✅ EXIT EARLY - Don't process regular enquiries during restoration
+        
+      } catch (error) {
+        console.error('❌ RESTORATION ERROR:', error)
+        // Clear corrupted flags
+        sessionStorage.removeItem('shouldRestoreReplacementModal')
+        sessionStorage.removeItem('modalShowUpgrade')
+        sessionStorage.removeItem('replacementContext')
       }
-      
-
-      setReplacements([tempReplacement])
-      
-      return // Exit early - don't process regular enquiries when restoring
-    } catch (error) {
-      console.error('❌ RESTORATION: Error:', error)
-      sessionStorage.removeItem('shouldRestoreReplacementModal')
-      sessionStorage.removeItem('replacementContext')
     }
-  }
-  
-  // Only process regular enquiries if we have partyId and enquiries
-  if (!partyId || enquiries.length === 0) {
-  
-    return
-  }
-  
-  
-  // ✅ REGULAR PROCESSING: Only run if NOT restoring and we have enquiries
-  if (enquiries.length > 0 && processingApprovalsRef.current.size === 0) {
-    const declinedEnquiries = enquiries.filter(enquiry => 
-      enquiry.status === 'declined' && enquiry.replacement_processed === false
-    )
     
-
-    
-    if (declinedEnquiries.length === 0) {
- 
-      setReplacements([]) // ✅ Clear any existing replacements
+    // ✅ STEP 3: Regular enquiry processing (only if not restoring)
+    if (!partyId || enquiries.length === 0) {
+      console.log('❌ No partyId or enquiries for regular processing')
       return
     }
     
-    // Process declined enquiries for replacements
-    const processAllRejections = async () => {
-      setIsProcessingRejection(true)
-      const newReplacements = []
+    // ✅ STEP 4: Process regular declined enquiries (existing logic)
+    if (enquiries.length > 0 && processingApprovalsRef.current.size === 0) {
+      const declinedEnquiries = enquiries.filter(enquiry => 
+        enquiry.status === 'declined' && enquiry.replacement_processed === false
+      )
       
-      for (const enquiry of declinedEnquiries) {
-        try {
-          const rejectedSupplier = {
-            id: enquiry.supplier_id,
-            name: enquiry.suppliers?.business_name || 'Unknown Supplier',
-            price: enquiry.quoted_price || 0,
-            rating: enquiry.suppliers?.data?.rating || 4.0,
-            image: enquiry.suppliers?.data?.image || '/placeholder.jpg',
-            category: enquiry.supplier_category,
-            reviewCount: enquiry.suppliers?.data?.reviewCount || 0
-          }
-          
-          const userPreferences = {
-            budget: partyDetails.budget,
-            date: partyDetails.date,
-            location: partyDetails.location,
-            theme: partyDetails.theme?.toLowerCase(),
-            childAge: partyDetails.childAge,
-            numberOfChildren: partyDetails.numberOfChildren
-          }
-          
-          const result = await partyDatabaseBackend.handleSupplierRejection(
-            partyId,
-            enquiry.id,
-            rejectedSupplier,
-            userPreferences
-          )
-          
-          if (result.success) {
-            const replacementWithEnquiryId = {
-              ...result.replacement,
-              originalEnquiryId: enquiry.id
+      console.log('📊 Found declined enquiries:', declinedEnquiries.length)
+      
+      if (declinedEnquiries.length === 0) {
+        console.log('✅ No declined enquiries - clearing replacements')
+        setReplacements([])
+        return
+      }
+      
+      // Process declined enquiries (existing logic)
+      const processAllRejections = async () => {
+        setIsProcessingRejection(true)
+        const newReplacements = []
+        
+        for (const enquiry of declinedEnquiries) {
+          try {
+            const rejectedSupplier = {
+              id: enquiry.supplier_id,
+              name: enquiry.suppliers?.business_name || 'Unknown Supplier',
+              price: enquiry.quoted_price || 0,
+              rating: enquiry.suppliers?.data?.rating || 4.0,
+              image: enquiry.suppliers?.data?.image || '/placeholder.jpg',
+              category: enquiry.supplier_category,
+              reviewCount: enquiry.suppliers?.data?.reviewCount || 0
             }
             
-            // Only add if not already approved
-            if (!approvedReplacementsRef.current.has(replacementWithEnquiryId.id)) {
-              newReplacements.push(replacementWithEnquiryId)
+            const userPreferences = {
+              budget: partyDetails.budget,
+              date: partyDetails.date,
+              location: partyDetails.location,
+              theme: partyDetails.theme?.toLowerCase(),
+              childAge: partyDetails.childAge,
+              numberOfChildren: partyDetails.numberOfChildren
             }
+            
+            const result = await partyDatabaseBackend.handleSupplierRejection(
+              partyId,
+              enquiry.id,
+              rejectedSupplier,
+              userPreferences
+            )
+            
+            if (result.success) {
+              const replacementWithEnquiryId = {
+                ...result.replacement,
+                originalEnquiryId: enquiry.id
+              }
+              
+              // Only add if not already approved
+              if (!approvedReplacementsRef.current.has(replacementWithEnquiryId.id)) {
+                newReplacements.push(replacementWithEnquiryId)
+              }
+            }
+            
+          } catch (error) {
+            console.error(`💥 Error processing ${enquiry.supplier_category} rejection:`, error)
           }
-          
-        } catch (error) {
-          console.error(`💥 Error processing ${enquiry.supplier_category} rejection:`, error)
         }
+        
+        if (newReplacements.length > 0) {
+          console.log('✅ Setting new replacements:', newReplacements.length)
+          setReplacements(prev => {
+            const existingCategories = newReplacements.map(r => r.category)
+            const filtered = prev.filter(r => 
+              !existingCategories.includes(r.category) && !approvedReplacementsRef.current.has(r.id)
+            )
+            return [...filtered, ...newReplacements]
+          })
+        }
+        
+        setIsProcessingRejection(false)
       }
       
-      if (newReplacements.length > 0) {
-        setReplacements(prev => {
-          const existingCategories = newReplacements.map(r => r.category)
-          const filtered = prev.filter(r => 
-            !existingCategories.includes(r.category) && !approvedReplacementsRef.current.has(r.id)
-          )
-          return [...filtered, ...newReplacements]
-        })
-      }
-      
-      setIsProcessingRejection(false)
+      processAllRejections()
     }
-    
-    processAllRejections()
-  }
-}, [enquiries, partyId, partyDetails])
+  }, [enquiries, partyId, partyDetails])
 
   // Save replacements to localStorage
   useEffect(() => {

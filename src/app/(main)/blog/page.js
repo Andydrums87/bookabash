@@ -105,7 +105,7 @@ export default function Blog() {
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-sm p-8 md:p-12 rounded-lg shadow-xl">
             <div className="text-center">
-              <h1 className="text-3xl md:text-5xl font-bold text-[#2F2F2F] mb-4">The BookABash Blog</h1>
+              <h1 className="text-3xl md:text-5xl font-bold text-[#2F2F2F] mb-4">The PartySnap Blog</h1>
               <p className="text-xl text-[#707070] mb-8">Expert tips, ideas, and inspiration for planning the perfect children&apos;s party</p>
               <div className="relative max-w-2xl mx-auto">
                 <input type="text" placeholder="Search articles..." className="w-full p-4 pl-12 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#FC6B57] shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />

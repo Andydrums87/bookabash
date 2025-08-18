@@ -15,6 +15,7 @@ export default function ConfirmedSupplierCard({
   onPaymentReady
 }) {
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
+  const displayPrice = supplier.totalPrice || supplier.price || 0
 
   return (
     <Card className={`overflow-hidden rounded-2xl shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""} 
@@ -54,7 +55,7 @@ export default function ConfirmedSupplierCard({
             <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
             
             <div className="flex items-center justify-between">
-              <span className="text-3xl font-black text-white drop-shadow-lg">£{supplier.price}</span>
+              <span className="text-3xl font-black text-white drop-shadow-lg">£{displayPrice}</span>
               {supplierAddons.length > 0 && (
                 <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
                   <span className="text-sm font-semibold text-white flex items-center gap-2">

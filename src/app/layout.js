@@ -1,9 +1,7 @@
 import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron } from "next/font/google";
 import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
-import Footer from "@/components/Footer";
-import Nav from "@/components/Nav";
-import NavigationTracker from "@/components/NavigationTracker";
+
 
 // Add this
 const poppins = Poppins({

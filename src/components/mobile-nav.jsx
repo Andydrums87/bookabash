@@ -10,10 +10,11 @@ export default function MobileNav({ user, onSignOut, loading }) {
   const [isOpen, setIsOpen] = useState(false)
   const [dashboardExpanded, setDashboardExpanded] = useState(false)
 
-  // Updated nav items to match desktop
+  // Reordered nav items - dashboard after browse
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/browse", label: "Snap Suppliers", icon: Search },
+    // Dashboard will be inserted here as expandable
     { href: "/blog", label: "Snapspiration", icon: BookOpen },
     { href: "/favorites", label: "My Favorites", icon: Heart },
   ]
@@ -125,24 +126,41 @@ export default function MobileNav({ user, onSignOut, loading }) {
           </div>
         )}
 
-        {/* Scrollable Navigation Area - Key Fix Here */}
+        {/* Scrollable Navigation Area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <nav className="px-6">
             <div className="space-y-2 mt-2 pb-6">
-              {/* Regular nav items */}
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
-                  onClick={closeMenu}
-                >
-                  <item.icon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
-                  <span className="text-md">{item.label}</span>
-                </Link>
-              ))}
+              {/* Home */}
+              {(() => {
+                const HomeIcon = navItems[0].icon;
+                return (
+                  <Link
+                    href={navItems[0].href}
+                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                    onClick={closeMenu}
+                  >
+                    <HomeIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                    <span className="text-md">{navItems[0].label}</span>
+                  </Link>
+                );
+              })()}
 
-              {/* Dashboard - Expandable with dynamic height */}
+              {/* Snap Suppliers */}
+              {(() => {
+                const SearchIcon = navItems[1].icon;
+                return (
+                  <Link
+                    href={navItems[1].href}
+                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                    onClick={closeMenu}
+                  >
+                    <SearchIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                    <span className="text-md">{navItems[1].label}</span>
+                  </Link>
+                );
+              })()}
+
+              {/* Dashboard - Expandable (now positioned after Snap Suppliers) */}
               <div className="border-b border-gray-50">
                 <button
                   onClick={() => setDashboardExpanded(!dashboardExpanded)}
@@ -177,6 +195,35 @@ export default function MobileNav({ user, onSignOut, loading }) {
                   </div>
                 </div>
               </div>
+
+              {/* Remaining nav items (Snapspiration and My Favorites) */}
+              {(() => {
+                const BookIcon = navItems[2].icon;
+                return (
+                  <Link
+                    href={navItems[2].href}
+                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                    onClick={closeMenu}
+                  >
+                    <BookIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                    <span className="text-md">{navItems[2].label}</span>
+                  </Link>
+                );
+              })()}
+
+              {(() => {
+                const HeartIcon = navItems[3].icon;
+                return (
+                  <Link
+                    href={navItems[3].href}
+                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                    onClick={closeMenu}
+                  >
+                    <HeartIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                    <span className="text-md">{navItems[3].label}</span>
+                  </Link>
+                );
+              })()}
 
               {/* Featured Action */}
               <Link

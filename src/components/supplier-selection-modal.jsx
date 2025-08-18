@@ -255,7 +255,7 @@ export default function SupplierSelectionModal({
   const checkSupplierAvailabilityOnDate = (supplier, date) => {
     if (!date) return true;
     
-    console.log(`🔍 Checking availability for ${supplier.name} on ${date}`);
+  
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -278,9 +278,7 @@ export default function SupplierSelectionModal({
       console.log(`⏰ ${supplier.name}: Past date - unavailable`);
       return false;
     }
-    
-    // Additional availability checks...
-    console.log(`✅ ${supplier.name}: Available on ${checkDate.toDateString()}`);
+
     return true;
   };
 

@@ -3,12 +3,12 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Sun, Sunset, Loader2 } from "lucide-react"
+import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Loader2 } from "lucide-react"
 import EditPartyModal from "../Modals/EditPartyModal"
 import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
 
-// ... (keep all the utility functions the same)
+// Utility functions
 const formatDateForDisplay = (dateInput) => {
   if (!dateInput) return null;
   
@@ -55,21 +55,6 @@ const getDaySuffix = (day) => {
   }
 };
 
-const formatTimeSlotForDisplay = (timeSlot, confirmedStartTime = null, duration = 2) => {
-  if (confirmedStartTime) {
-    const startTime = formatTimeForDisplay(confirmedStartTime);
-    const endTime = calculateEndTime(confirmedStartTime, duration);
-    return `${startTime} - ${endTime}`;
-  }
-  
-  const timeSlotDisplays = {
-    morning: "Morning Party",
-    afternoon: "Afternoon Party"
-  };
-  
-  return timeSlotDisplays[timeSlot] || "Afternoon Party";
-};
-
 const formatTimeForDisplay = (timeInput) => {
   if (!timeInput) return null;
   
@@ -77,11 +62,11 @@ const formatTimeForDisplay = (timeInput) => {
     if (typeof timeInput === 'string' && timeInput.includes(':')) {
       const [hours, minutes] = timeInput.split(':');
       const timeObj = new Date();
-      timeObj.setHours(parseInt(hours), parseInt(minutes));
+      timeObj.setHours(parseInt(hours), parseInt(minutes || 0));
       
       return timeObj.toLocaleTimeString('en-US', {
         hour: 'numeric',
-        minute: '2-digit',
+        minute: minutes && minutes !== '00' ? '2-digit' : undefined,
         hour12: true,
       });
     }
@@ -97,19 +82,50 @@ const formatTimeForDisplay = (timeInput) => {
   }
 };
 
+// NEW: Enhanced time range formatter that handles database times
+const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) => {
+  // If we have both database start_time and end_time, use those
+  if (startTime && endTime) {
+    console.log('🕐 Using database times:', { startTime, endTime });
+    
+    const formattedStart = formatTimeForDisplay(startTime);
+    const formattedEnd = formatTimeForDisplay(endTime);
+    
+    if (formattedStart && formattedEnd) {
+      return `${formattedStart} - ${formattedEnd}`;
+    }
+  }
+  
+  // If we only have start_time, calculate end time using duration
+  if (startTime) {
+    console.log('🕐 Using database start_time with calculated end:', { startTime, fallbackDuration });
+    
+    const formattedStart = formatTimeForDisplay(startTime);
+    const calculatedEnd = calculateEndTime(startTime, fallbackDuration);
+    
+    if (formattedStart && calculatedEnd) {
+      return `${formattedStart} - ${calculatedEnd}`;
+    }
+  }
+  
+  // Fallback to legacy format
+  console.log('🕐 Falling back to legacy time format');
+  return "2pm - 4pm";
+};
+
 const calculateEndTime = (startTime, duration = 2) => {
   if (!startTime) return null;
   
   try {
     const [hours, minutes] = startTime.split(':');
     const startDate = new Date();
-    startDate.setHours(parseInt(hours), parseInt(minutes));
+    startDate.setHours(parseInt(hours), parseInt(minutes || 0));
     
     const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000));
     
     return endDate.toLocaleTimeString('en-US', {
       hour: 'numeric',
-      minute: '2-digit',
+      minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
       hour12: true,
     });
   } catch (error) {
@@ -117,38 +133,27 @@ const calculateEndTime = (startTime, duration = 2) => {
   }
 };
 
-const formatDurationForDisplay = (duration) => {
-  if (!duration) return '2 hours';
+// LEGACY: Keep for backwards compatibility with localStorage
+const formatTimeRange = (startTime, duration = 2) => {
+  if (!startTime) return "2pm - 4pm"; // Default fallback
   
-  if (duration === Math.floor(duration)) {
-    return `${duration} hours`;
-  } else {
-    const hours = Math.floor(duration);
-    const minutes = (duration - hours) * 60;
-    
-    if (minutes === 30) {
-      return `${hours}½ hours`;
-    } else {
-      return `${hours}h ${minutes}m`;
-    }
+  const formattedStartTime = formatTimeForDisplay(startTime);
+  const endTime = calculateEndTime(startTime, duration);
+  
+  if (formattedStartTime && endTime) {
+    return `${formattedStartTime} - ${endTime}`;
   }
-};
-
-const getTimeSlotIcon = (timeSlot) => {
-  switch (timeSlot) {
-    case 'morning':
-      return Sun;
-    case 'afternoon':
-      return Sunset;
-    default:
-      return Clock;
-  }
+  
+  return "2pm - 4pm"; // Fallback
 };
 
 export default function PartyHeader({ 
   theme, 
   partyDetails, 
   onPartyDetailsChange, 
+  // NEW: Add dataSource and currentParty props to determine source
+  dataSource = 'localStorage',
+  currentParty = null,
   // Budget props for mobile integration
   totalSpent = 0,
   tempBudget = 600,
@@ -156,15 +161,13 @@ export default function PartyHeader({
   isPaymentConfirmed,
   enquiries = [],
   isSignedIn = false,
-  loading = false, // NEW: Add loading prop
+  loading = false,
 }) {
-  console.log('🎉 PartyHeader received partyDetails:', partyDetails)
-  console.log('🎉 PartyHeader loading state:', loading)
+
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isBudgetExpanded, setIsBudgetExpanded] = useState(false)
   const currentTheme = theme
-
 
   const isLocked = isSignedIn
 
@@ -182,17 +185,21 @@ export default function PartyHeader({
     }
   }
 
-
-  // Helper functions for mobile vs desktop names - FIXED VERSION
+  // Helper functions for mobile vs desktop names
   const getFirstName = () => {
     if (loading) return "Loading...";
     
-    // First try to get firstName directly
+    // Database source: use child_name from currentParty
+    if (dataSource === 'database' && currentParty?.child_name) {
+      const nameParts = currentParty.child_name.split(' ');
+      return nameParts[0];
+    }
+    
+    // localStorage source: use partyDetails
     if (partyDetails?.firstName) {
       return partyDetails.firstName;
     }
     
-    // Then try to extract from childName (which comes from database as child_name)
     if (partyDetails?.childName) {
       const nameParts = partyDetails.childName.split(' ');
       return nameParts[0];
@@ -204,12 +211,16 @@ export default function PartyHeader({
   const getFullName = () => {
     if (loading) return "Loading...";
     
-    // First try to construct from firstName + lastName
+    // Database source: use child_name from currentParty
+    if (dataSource === 'database' && currentParty?.child_name) {
+      return currentParty.child_name;
+    }
+    
+    // localStorage source: construct from partyDetails
     if (partyDetails?.firstName || partyDetails?.lastName) {
       return `${partyDetails?.firstName || ''} ${partyDetails?.lastName || ''}`.trim();
     }
     
-    // Then use childName directly (this comes from database)
     if (partyDetails?.childName) {
       return partyDetails.childName;
     }
@@ -230,16 +241,8 @@ export default function PartyHeader({
         processedDetails.displayDate = formatDateForDisplay(details.date);
       }
       
-      if (details.timeSlot || details.confirmedStartTime) {
-        processedDetails.displayTimeSlot = formatTimeSlotForDisplay(
-          details.timeSlot, 
-          details.confirmedStartTime, 
-          details.duration
-        );
-      }
-      
-      if (details.duration) {
-        processedDetails.displayDuration = formatDurationForDisplay(details.duration);
+      if (details.startTime) {
+        processedDetails.displayTimeRange = formatTimeRange(details.startTime, details.duration);
       }
       
       processedDetails.postcode = details.postcode ||
@@ -275,7 +278,12 @@ export default function PartyHeader({
     let firstName = details.firstName || "Snappy";
     let lastName = details.lastName || "";
     
-    if (!details.firstName && !details.lastName && details.childName) {
+    // Handle database source
+    if (dataSource === 'database' && currentParty?.child_name) {
+      const nameParts = currentParty.child_name.split(' ');
+      firstName = nameParts[0] || "Snappy";
+      lastName = nameParts.slice(1).join(' ') || "";
+    } else if (!details.firstName && !details.lastName && details.childName) {
       const nameParts = details.childName.split(' ');
       firstName = nameParts[0] || "Snappy";
       lastName = nameParts.slice(1).join(' ') || "";
@@ -283,7 +291,10 @@ export default function PartyHeader({
 
     let parsedDate = new Date();
     
-    if (details.date) {
+    // Handle database date
+    if (dataSource === 'database' && currentParty?.party_date) {
+      parsedDate = new Date(currentParty.party_date);
+    } else if (details.date) {
       try {
         if (details.date instanceof Date && !isNaN(details.date.getTime())) {
           parsedDate = details.date;
@@ -306,18 +317,25 @@ export default function PartyHeader({
       }
     }
     
+    // Handle database times
+    let startTime = "14:00";
+    if (dataSource === 'database' && currentParty?.start_time) {
+      startTime = currentParty.start_time;
+    } else if (details.startTime) {
+      startTime = details.startTime;
+    }
+    
     return {
       firstName,
       lastName, 
       childName: `${firstName} ${lastName}`.trim(),
-      childAge: details.childAge || 6,
+      childAge: (dataSource === 'database' ? currentParty?.child_age : details.childAge) || 6,
       theme: details.theme || "princess",
       date: parsedDate,
-      timeSlot: details.timeSlot || "afternoon",
+      startTime: startTime,
       duration: details.duration || 2,
-      confirmedStartTime: details.confirmedStartTime || null,
-      location: details.location || "W1A 1AA",
-      guestCount: details.guestCount || "",
+      location: (dataSource === 'database' ? currentParty?.location : details.location) || "W1A 1AA",
+      guestCount: (dataSource === 'database' ? currentParty?.guest_count : details.guestCount) || "",
       budget: details.budget || "",
       specialNotes: details.specialNotes || "",
       postcode: details.postcode || details.location || "W1A 1AA",
@@ -331,16 +349,84 @@ export default function PartyHeader({
     return `${count} guests`;
   };
 
-  // Get display values - with loading states
-  const displayDate = loading ? "Loading..." : (partyDetails?.displayDate || formatDateForDisplay(partyDetails?.date) || "14th June, 2025");
-  const displayTimeSlot = loading ? "Loading..." : (partyDetails?.displayTimeSlot || formatTimeSlotForDisplay(
-    partyDetails?.timeSlot, 
-    partyDetails?.confirmedStartTime, 
-    partyDetails?.duration
-  ) || "Afternoon (1pm-4pm)");
-  const displayDuration = loading ? "Loading..." : (partyDetails?.displayDuration || formatDurationForDisplay(partyDetails?.duration));
-  
-  const TimeSlotIcon = getTimeSlotIcon(partyDetails?.timeSlot);
+  // NEW: Enhanced display value getters that handle database vs localStorage
+  const getDisplayDate = () => {
+    if (loading) return "Loading...";
+    
+    // Database source: use party_date from currentParty
+    if (dataSource === 'database' && currentParty?.party_date) {
+      return formatDateForDisplay(currentParty.party_date);
+    }
+    
+    // localStorage source: use existing logic
+    return partyDetails?.displayDate || 
+           formatDateForDisplay(partyDetails?.date) || 
+           "14th June, 2025";
+  };
+
+  const getDisplayTimeRange = () => {
+    if (loading) return "Loading...";
+    
+    // Database source: use start_time and end_time from currentParty
+    if (dataSource === 'database' && currentParty) {
+      console.log('🕐 Getting time range from database:', {
+        start_time: currentParty.start_time,
+        end_time: currentParty.end_time,
+        duration: currentParty.duration
+      });
+      
+      return formatTimeRangeFromDatabase(
+        currentParty.start_time, 
+        currentParty.end_time, 
+        currentParty.duration || 2
+      );
+    }
+    
+    // localStorage source: use existing logic
+    return partyDetails?.displayTimeRange || 
+           formatTimeRange(partyDetails?.startTime, partyDetails?.duration) || 
+           "2pm - 4pm";
+  };
+
+  const getChildAge = () => {
+    if (loading) return "Loading...";
+    
+    // Database source
+    if (dataSource === 'database' && currentParty?.child_age) {
+      return `${currentParty.child_age} years`;
+    }
+    
+    // localStorage source
+    return `${partyDetails?.childAge || 6} years`;
+  };
+
+  const getGuestCount = () => {
+    if (loading) return "Loading...";
+    
+    // Database source
+    if (dataSource === 'database' && currentParty?.guest_count) {
+      return formatGuestCount(currentParty.guest_count);
+    }
+    
+    // localStorage source
+    return formatGuestCount(partyDetails?.guestCount);
+  };
+
+  const getLocation = () => {
+    if (loading) return "Loading...";
+    
+    // Database source
+    if (dataSource === 'database' && currentParty?.location) {
+      return currentParty.location;
+    }
+    
+    // localStorage source
+    return partyDetails?.location || "W1A 1AA";
+  };
+
+  // Get display values using the new functions
+  const displayDate = getDisplayDate();
+  const displayTimeRange = getDisplayTimeRange();
 
   return (
     <>
@@ -446,15 +532,12 @@ export default function PartyHeader({
                 <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 bg-white/20 rounded-full">
-                      <TimeSlotIcon className="w-3 h-3" />
+                      <Clock className="w-3 h-3" />
                     </div>
                     <p className="text-xs opacity-90 font-medium">Time</p>
                   </div>
-                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
-                    {loading ? "Loading..." : (partyDetails?.timeSlot === 'morning' ? 'Morning' : 'Afternoon')}
-                  </p>
-                  <p suppressHydrationWarning={true} className="font-medium text-xs opacity-80">
-                    {displayDuration}
+                  <p suppressHydrationWarning={true} className="font-bold text-xs leading-tight">
+                    {displayTimeRange}
                   </p>
                 </div>
 
@@ -467,7 +550,7 @@ export default function PartyHeader({
                     <p className="text-xs opacity-90 font-medium">Age</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm">
-                    {loading ? "Loading..." : `${partyDetails?.childAge || 6} years`}
+                    {getChildAge()}
                   </p>
                 </div>
 
@@ -480,7 +563,7 @@ export default function PartyHeader({
                     <p className="text-xs opacity-90 font-medium">Guests</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm">
-                    {loading ? "Loading..." : (partyDetails?.guestCount || "10")}
+                    {getGuestCount()}
                   </p>
                 </div>
 
@@ -493,7 +576,7 @@ export default function PartyHeader({
                     <p className="text-xs opacity-90 font-medium">Where</p>
                   </div>
                   <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
-                    {loading ? "Loading..." : (partyDetails?.location || "W1A 1AA")}
+                    {getLocation()}
                   </p>
                 </div>
               </div>
@@ -508,7 +591,7 @@ export default function PartyHeader({
               </div>
             </div>
 
-            {/* Desktop: Original Grid Layout */}
+            {/* Desktop: Grid Layout */}
             <div className="hidden md:grid md:grid-cols-5 gap-4">
               {/* Date */}
               <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
@@ -525,20 +608,17 @@ export default function PartyHeader({
                 </div>
               </div>
 
-              {/* Time Slot */}
+              {/* Time */}
               <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <TimeSlotIcon className="w-5 h-5" />
+                    <Clock className="w-5 h-5" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Time</p>
                 </div>
                 <div className="space-y-1">
-                  <p suppressHydrationWarning={true} className="font-bold text-base">
-                    {displayTimeSlot}
-                  </p>
-                  <p suppressHydrationWarning={true} className="font-medium text-xs opacity-80">
-                    {displayDuration}
+                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
+                    {displayTimeRange}
                   </p>
                 </div>
               </div>
@@ -552,7 +632,7 @@ export default function PartyHeader({
                   <p className="text-sm opacity-90 font-medium">Age</p>
                 </div>
                 <p suppressHydrationWarning={true} className="font-bold text-base">
-                  {loading ? "Loading..." : `${partyDetails?.childAge || 6} years`}
+                  {getChildAge()}
                 </p>
               </div>
 
@@ -565,7 +645,7 @@ export default function PartyHeader({
                   <p className="text-sm opacity-90 font-medium">Guests</p>
                 </div>
                 <p suppressHydrationWarning={true} className="font-bold text-base">
-                  {formatGuestCount(partyDetails?.guestCount)}
+                  {getGuestCount()}
                 </p>
               </div>
 
@@ -578,7 +658,7 @@ export default function PartyHeader({
                   <p className="text-sm opacity-90 font-medium">Where</p>
                 </div>
                 <p suppressHydrationWarning={true} className="font-bold text-base truncate">
-                  {loading ? "Loading..." : (partyDetails?.location || "W1A 1AA")}
+                  {getLocation()}
                 </p>
               </div>
             </div>

@@ -1,18 +1,47 @@
 
 "use client"
+import { useState } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { ConfirmationModal } from "@/components/ui/universalModal"
 import { XCircle, RefreshCw } from "lucide-react"
 
 export default function DeclinedSupplierCard({
   type,
   supplier,
   openSupplierModal,
-  handleDeleteSupplier,
-  getSupplierDisplayName
+  isDeleting = false, 
+  handleCancelEnquiry,
+  getSupplierDisplayName,
+
 }) {
+  const [showCancelModal, setShowCancelModal] = useState(false)
+
+
+  const handleConfirmCancel = () => {
+    console.log('✅ User confirmed cancellation - proceeding')
+    setShowCancelModal(false)
+    if (handleCancelEnquiry) {
+      handleCancelEnquiry(type)
+    }
+  }
+
+  const handleFindAlternative = () => {
+
+    // ✅ Set replacement context in sessionStorage
+    sessionStorage.setItem('replacementContext', JSON.stringify({
+      isReplacementFlow: true,
+      originalSupplierCategory: type,
+      declinedSupplierName: supplier.name,
+      timestamp: Date.now()
+    }))
+    
+    // Use your existing openSupplierModal function - no changes needed!
+    openSupplierModal(type)
+  }
+
   const getDisplayName = (supplierType) => {
     if (getSupplierDisplayName) {
       return getSupplierDisplayName(supplierType)
@@ -29,6 +58,8 @@ export default function DeclinedSupplierCard({
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
+
+  const displayPrice = supplier.totalPrice || supplier.price || 0
 
   return (
     <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative">
@@ -64,7 +95,7 @@ export default function DeclinedSupplierCard({
           <div className="text-white">
             <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
             <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
-            <span className="text-3xl font-black text-white drop-shadow-lg opacity-75">£{supplier.price}</span>
+            <span className="text-3xl font-black text-white drop-shadow-lg opacity-75">£{displayPrice}</span>
           </div>
         </div>
       </div>
@@ -90,7 +121,7 @@ export default function DeclinedSupplierCard({
 
           <div className="space-y-3">
             <Button
-              onClick={() => openSupplierModal(type)}
+          onClick={handleFindAlternative}
               className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -98,7 +129,7 @@ export default function DeclinedSupplierCard({
             </Button>
             
             <Button
-              onClick={() => handleDeleteSupplier(type)}
+              onClick={() => setShowCancelModal(true)}
               variant="outline"
               className="w-full border-red-300 text-red-800 hover:bg-red-200"
             >
@@ -107,6 +138,22 @@ export default function DeclinedSupplierCard({
           </div>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Enquiry Request?"
+        message={
+          `Are you sure you want to cancel your enquiry with ${supplier.name}?\n\n` 
+    +
+          `This will remove them from your party and notify the supplier that you've withdrawn the request.\n\n` 
+          
+        }
+        confirmText="Yes, Cancel Request"
+        cancelText="Keep Request"
+        type="warning"
+        isLoading={isDeleting}
+      />
     </Card>
   )
 }

@@ -10,16 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Clock, Sun, Sunset, MapPin, Users, PoundSterling, FileText, User, Cake, Sparkles } from 'lucide-react'
+import { CalendarIcon, Clock, MapPin, Users, PoundSterling, FileText, User, Cake, Sparkles } from 'lucide-react'
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 
 export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }) {
-  // Safely initialize state with proper date handling
-  const [childName, setChildName] = useState(partyDetails?.childName || "")
-  const [childAge, setChildAge] = useState(partyDetails?.childAge || "")
-
- 
-
+  // Initialize names
   const initializeNames = () => {
     // Priority 1: Use firstName/lastName if available
     if (partyDetails?.firstName || partyDetails?.lastName) {
@@ -46,6 +41,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
   const { firstName: initFirstName, lastName: initLastName } = initializeNames()
   const [firstName, setFirstName] = useState(initFirstName)
   const [lastName, setLastName] = useState(initLastName)
+  const [childAge, setChildAge] = useState(partyDetails?.childAge || "")
 
   // Safe date initialization
   const initializeDate = () => {
@@ -63,7 +59,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
   }
 
   const [date, setDate] = useState(initializeDate())
-  const [timeSlot, setTimeSlot] = useState(partyDetails?.timeSlot || "afternoon")
+  const [startTime, setStartTime] = useState(partyDetails?.startTime || "14:00") // Default to 2pm
   const [duration, setDuration] = useState(partyDetails?.duration || 2)
   const [location, setLocation] = useState(partyDetails?.location || "")
   const [guestCount, setGuestCount] = useState(partyDetails?.guestCount || "")
@@ -81,6 +77,19 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
     { value: 4, label: "4 hours" },
   ]
 
+  // Start time options
+  const timeOptions = [
+    { value: "09:00", label: "9am", popular: false },
+    { value: "10:00", label: "10am", popular: true },
+    { value: "11:00", label: "11am", popular: true },
+    { value: "12:00", label: "12pm", popular: true },
+    { value: "13:00", label: "1pm", popular: true },
+    { value: "14:00", label: "2pm", popular: true },
+    { value: "15:00", label: "3pm", popular: false },
+    { value: "16:00", label: "4pm", popular: false },
+    { value: "17:00", label: "5pm", popular: false },
+  ]
+
   // Guest count options
   const guestOptions = [
     { value: "5", label: "5 guests" },
@@ -91,34 +100,16 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
     { value: "30", label: "30+ guests" },
   ]
 
-  // Calculate end time for preview
-  const calculateEndTime = (timeSlot, durationHours) => {
-    if (!timeSlot || !durationHours) return null
-    try {
-      const timeSlotWindows = {
-        morning: { start: "10:00", end: "13:00" },
-        afternoon: { start: "13:00", end: "17:00" },
-      }
-      const window = timeSlotWindows[timeSlot]
-      if (!window) return null
-      const startTime = formatTimeForDisplay(window.start)
-      const endHour = Number.parseInt(window.start.split(":")[0]) + durationHours
-      const endTime = formatTimeForDisplay(`${endHour.toString().padStart(2, "0")}:00`)
-      return `${startTime} - ${endTime}`
-    } catch (error) {
-      return null
-    }
-  }
-
+  // Format time for display
   const formatTimeForDisplay = (timeInput) => {
     if (!timeInput) return null
     try {
       const [hours, minutes] = timeInput.split(":")
       const timeObj = new Date()
-      timeObj.setHours(Number.parseInt(hours), Number.parseInt(minutes))
+      timeObj.setHours(parseInt(hours), parseInt(minutes || 0))
       return timeObj.toLocaleTimeString("en-US", {
         hour: "numeric",
-        minute: "2-digit",
+        minute: minutes && minutes !== '00' ? "2-digit" : undefined,
         hour12: true,
       })
     } catch (error) {
@@ -126,7 +117,34 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
     }
   }
 
-  const timePreview = calculateEndTime(timeSlot, duration)
+  // Calculate end time for preview
+  const calculateEndTime = (startTime, durationHours) => {
+    if (!startTime || !durationHours) return null
+    try {
+      const [hours, minutes] = startTime.split(":")
+      const startDate = new Date()
+      startDate.setHours(parseInt(hours), parseInt(minutes || 0))
+      
+      const endDate = new Date(startDate.getTime() + (durationHours * 60 * 60 * 1000))
+      
+      return endDate.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: endDate.getMinutes() > 0 ? "2-digit" : undefined,
+        hour12: true,
+      })
+    } catch (error) {
+      return null
+    }
+  }
+
+  const timePreview = (() => {
+    const start = formatTimeForDisplay(startTime)
+    const end = calculateEndTime(startTime, duration)
+    if (start && end) {
+      return `${start} - ${end}`
+    }
+    return null
+  })()
 
   const handleSave = () => {
     const fullName = `${firstName} ${lastName}`.trim();
@@ -136,7 +154,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
       firstName: firstName.trim(), // Keep for UI components
       lastName: lastName.trim(), // Keep for UI components
       date,
-      timeSlot,
+      startTime, // New field instead of timeSlot
       duration,
       location,
       guestCount,
@@ -282,39 +300,34 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
                 </Popover>
               </div>
 
-              {/* Time Slot */}
+              {/* Start Time */}
               <div className="space-y-2">
-                <Label htmlFor="timeSlot" className="text-sm font-medium text-gray-700">
-                  Time Slot
+                <Label htmlFor="startTime" className="text-sm font-medium text-gray-700">
+                  Start Time
                 </Label>
-                <Select value={timeSlot} onValueChange={setTimeSlot}>
-                  <SelectTrigger className="bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-12 text-base">
-                    <SelectValue placeholder="Select time slot" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">
-                      <div className="flex items-center gap-3 py-1">
-                        <Sun className="w-4 h-4 text-yellow-500" />
-                        <div>
-                          <div className="font-medium">Morning Party</div>
-                          <div className="text-xs text-gray-500">10am - 1pm window</div>
-                        </div>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="afternoon">
-                      <div className="flex items-center gap-3 py-1">
-                        <Sunset className="w-4 h-4 text-orange-500" />
-                        <div className="flex-1">
-                          <div className="font-medium">Afternoon Party</div>
-                          <div className="text-xs text-gray-500">1pm - 4pm window</div>
-                        </div>
-                        <span className="ml-2 text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-700 font-bold">
-                          Popular
-                        </span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                  <Select value={startTime} onValueChange={setStartTime}>
+                    <SelectTrigger className="pl-10 w-full bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-12 text-base">
+                      <SelectValue placeholder="Select start time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2 py-1">
+                            <Clock className="w-4 h-4 text-gray-500" />
+                            <span className="font-medium">{option.label}</span>
+                            {option.popular && (
+                              <span className="ml-2 text-xs px-2 py-1 rounded-full bg-primary-100 text-primary-700 font-bold">
+                                Popular
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Duration */}
@@ -324,7 +337,7 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
                 </Label>
                 <Select
                   value={duration.toString()}
-                  onValueChange={(value) => setDuration(Number.parseFloat(value))}
+                  onValueChange={(value) => setDuration(parseFloat(value))}
                 >
                   <SelectTrigger className="bg-white border-2 border-gray-200 focus:border-primary-500 rounded-xl h-12 text-base">
                     <SelectValue placeholder="Select duration" />
@@ -348,13 +361,18 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
               </div>
 
               {/* Time Preview */}
-              {timeSlot && duration && (
-                <div className="bg-primary-50 border border-primary-200 rounded-xl p-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary-600" />
+              {startTime && duration && timePreview && (
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-100 rounded-full">
+                      <Clock className="w-4 h-4 text-primary-600" />
+                    </div>
                     <div>
-                      <div className="font-medium text-primary-800 text-sm">Party Time Preview</div>
-                      <div className="text-sm text-primary-700">{timePreview}</div>
+                      <div className="font-semibold text-primary-800">Party Time</div>
+                      <div className="text-lg font-bold text-primary-700">{timePreview}</div>
+                      <div className="text-sm text-primary-600">
+                        {duration} hour{duration > 1 ? 's' : ''} of celebration time ✨
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -370,33 +388,20 @@ export default function EditPartyModal({ isOpen, onClose, partyDetails, onSave }
             </h3>
             
             <div className="space-y-4">
-              {/* <div className="space-y-2">
-                <Label htmlFor="location" className="text-sm font-medium text-gray-700">
-                  Venue or Address
-                </Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="pl-10 h-12 text-base border-2 border-gray-200 focus:border-primary-500 rounded-xl"
-                    placeholder="e.g., Village Hall, Home address"
-                  />
-                </div>
-              </div> */}
-
               <div className="space-y-2">
                 <Label htmlFor="postcode" className="text-sm font-medium text-gray-700">
                   Postcode
                 </Label>
-                <Input
-                  id="postcode"
-                  value={postcode}
-                  onChange={(e) => setPostcode(e.target.value)}
-                  className="h-12 text-base border-2 border-gray-200 focus:border-primary-500 rounded-xl"
-                  placeholder="e.g., SW1A 1AA"
-                />
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="postcode"
+                    value={postcode}
+                    onChange={(e) => setPostcode(e.target.value)}
+                    className="pl-10 h-12 text-base border-2 border-gray-200 focus:border-primary-500 rounded-xl"
+                    placeholder="e.g., SW1A 1AA"
+                  />
+                </div>
               </div>
             </div>
           </div>

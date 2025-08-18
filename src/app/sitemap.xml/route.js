@@ -1,7 +1,7 @@
 import { allPosts } from "@/content/blogPost";
 
 export async function GET() {
-  const baseUrl = "https://bookabash.com"; // Replace with your actual domain
+  const baseUrl = "https://partysnap.co.uk"; // Replace with your actual domain
   const posts = allPosts;
 
   const urls = posts.map((post) => {

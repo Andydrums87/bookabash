@@ -24,6 +24,7 @@ import RecommendedAddons from "@/components/recommended-addons"
 
 // Import the new components
 import PartySummaryCard from "./components/PartySummaryCard"
+import TotalPriceSummaryCard from "./components/TotalPriceSummaryCard"
 import SelectedSuppliersCard from "./components/SelectedSuppliersCard"
 import SelectedAddonsCard from "./components/SelectedAddonsCard"
 import ContactInformationForm from "./components/ContactInformationForm"
@@ -316,7 +317,7 @@ const handleRemoveAddon = async (addonId) => {
     }
   }, [loadingProfile, user, authRequired, showAuthModal])
 
-  // Data loading functions
+
   const loadPartyDataFromLocalStorage = () => {
     try {
       // Get party details
@@ -352,7 +353,7 @@ const handleRemoveAddon = async (addonId) => {
         
         return `${day}${suffix} ${month}, ${year}`;
       };
-
+  
       const getDaySuffix = (day) => {
         if (day >= 11 && day <= 13) {
           return 'th';
@@ -364,93 +365,120 @@ const handleRemoveAddon = async (addonId) => {
           default: return 'th';
         }
       };
-
-      // Format time slot for display
-      const formatTimeSlotForDisplay = (details) => {
-        // Check if we have time slot information
-        if (details.timeSlot && details.duration) {
-          const timeSlotDisplays = {
-            morning: "Morning Party",
-            afternoon: "Afternoon Party"
-          };
+  
+      // Format time for display - prioritize startTime over timeSlot
+      const formatTimeForDisplay = (details) => {
+        // Priority 1: Check for startTime (new format)
+        if (details.startTime) {
+          const duration = details.duration || 2
           
-          const formatDurationForDisplay = (duration) => {
-            if (!duration) return '';
-            
-            if (duration === Math.floor(duration)) {
-              return ` (${duration} hours)`;
-            } else {
-              const hours = Math.floor(duration);
-              const minutes = (duration - hours) * 60;
-              
-              if (minutes === 30) {
-                return ` (${hours}½ hours)`;
-              } else {
-                return ` (${hours}h ${minutes}m)`;
-              }
-            }
-          };
-          
-          const slotDisplay = timeSlotDisplays[details.timeSlot] || "Afternoon Party";
-          const durationDisplay = formatDurationForDisplay(details.duration);
-          
-          return slotDisplay + durationDisplay;
-        }
-        
-        // Fallback to legacy time display if no time slot
-        if (details.time) {
           try {
-            const [hours, minutes] = details.time.split(':');
-            const timeObj = new Date();
-            timeObj.setHours(parseInt(hours), parseInt(minutes));
+            // Format start time
+            const [hours, minutes] = details.startTime.split(':')
+            const startDate = new Date()
+            startDate.setHours(parseInt(hours), parseInt(minutes || 0))
             
-            const displayTime = timeObj.toLocaleTimeString('en-US', {
+            const formattedStart = startDate.toLocaleTimeString('en-US', {
               hour: 'numeric',
-              minute: '2-digit',
+              minute: minutes && minutes !== '00' ? '2-digit' : undefined,
               hour12: true,
-            });
+            })
             
-            // Calculate end time (assume 2 hours)
-            const endTimeObj = new Date(timeObj.getTime() + (2 * 60 * 60 * 1000));
-            const displayEndTime = endTimeObj.toLocaleTimeString('en-US', {
+            // Calculate end time
+            const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
+            const formattedEnd = endDate.toLocaleTimeString('en-US', {
               hour: 'numeric',
-              minute: '2-digit',
+              minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
               hour12: true,
-            });
+            })
             
-            return `${displayTime} - ${displayEndTime}`;
+            return `${formattedStart} - ${formattedEnd}`
           } catch (error) {
-            return details.time || "TBD";
+            console.error('Error formatting startTime:', error)
+            return "TBD"
+          }
+        }
+  
+        // Priority 2: Legacy time field (already formatted)
+        if (details.time && details.time.includes('-')) {
+          return details.time
+        }
+  
+        // Priority 3: Convert legacy timeSlot to time range (backwards compatibility)
+        if (details.timeSlot && details.duration) {
+          const timeSlotTimes = {
+            morning: "10:00",
+            afternoon: "14:00"
+          }
+          
+          const startTime = timeSlotTimes[details.timeSlot]
+          if (startTime) {
+            try {
+              const [hours, minutes] = startTime.split(':')
+              const startDate = new Date()
+              startDate.setHours(parseInt(hours), parseInt(minutes))
+              
+              const formattedStart = startDate.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })
+              
+              const endDate = new Date(startDate.getTime() + (details.duration * 60 * 60 * 1000))
+              const formattedEnd = endDate.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })
+              
+              return `${formattedStart} - ${formattedEnd}`
+            } catch (error) {
+              console.error('Error converting timeSlot:', error)
+            }
           }
         }
         
-        return "TBD";
+        // Priority 4: Legacy time field as-is
+        if (details.time) {
+          return details.time
+        }
+        
+        return "TBD"
       };
-
+  
       // Set formatted party details
       setPartyDetails({
         date: formatDateForDisplay(details.date),
-        time: formatTimeSlotForDisplay(details),
+        time: formatTimeForDisplay(details),
         theme: details.theme || "Party",
         location: details.location || "TBD",
         age: details.childAge || "TBD",
         childName: details.childName || "Your Child",
         
-        // Keep raw data for migration purposes
+        // Keep raw data for migration and PartySummaryCard
         rawDate: details.date,
-        rawTime: details.time,
-        timeSlot: details.timeSlot,
+        rawStartTime: details.startTime,
+        startTime: details.startTime,
         duration: details.duration,
         postcode: details.postcode
       })
-
-      // Get selected suppliers from party plan
+  
+      // ✅ FIXED: Process party plan and EXCLUDE einvites
       const partyPlan = JSON.parse(localStorage.getItem("user_party_plan") || "{}")
       const suppliers = []
-      const fullSupplierData = {} // NEW: Store full supplier objects
-
-      Object.entries(partyPlan).forEach(([key, supplier]) => {
-        if (supplier && key !== "addons" && supplier.name) {
+      const fullSupplierData = {}
+  
+      // ✅ FIXED: Only process real supplier types, NOT einvites
+      const realSupplierTypes = [
+        'venue', 'entertainment', 'catering', 'decorations', 
+        'facePainting', 'activities', 'partyBags', 'balloons'
+      ]
+  
+      realSupplierTypes.forEach((key) => {
+        const supplier = partyPlan[key]
+        
+        // Only include if supplier exists and has a name
+        if (supplier && supplier.name) {
           const iconMap = {
             venue: <Building className="w-5 h-5" />,
             entertainment: <Music className="w-5 h-5" />,
@@ -460,7 +488,6 @@ const handleRemoveAddon = async (addonId) => {
             activities: <Music className="w-5 h-5" />,
             partyBags: <Palette className="w-5 h-5" />,
             balloons: <Palette className="w-5 h-5" />,
-            einvites: <Info className="w-5 h-5" />,
           }
       
           suppliers.push({
@@ -473,28 +500,36 @@ const handleRemoveAddon = async (addonId) => {
             description: supplier.description,
           })
           
-          // NEW: Store full supplier object for add-ons extraction
           fullSupplierData[key] = supplier
         }
       })
-
+  
+      // ✅ FIXED: Clean up any einvites from localStorage if it exists
+      if (partyPlan.einvites) {
+        console.log('🧹 Removing einvites from user_party_plan during review load')
+        delete partyPlan.einvites
+        localStorage.setItem("user_party_plan", JSON.stringify(partyPlan))
+      }
+  
       // Get add-ons from party plan
       const addons = partyPlan.addons || []
       setSelectedAddons(addons)
       setSelectedSuppliers(suppliers)
       setFullSupplierData(fullSupplierData)
-
+  
       console.log("📋 Loaded party data from localStorage:", {
         details,
         suppliers: suppliers.length,
         addons: addons.length,
         formattedDate: formatDateForDisplay(details.date),
-        formattedTime: formatTimeSlotForDisplay(details)
+        formattedTime: formatTimeForDisplay(details),
+        excludedEinvites: !!partyPlan.einvites // Shows if we cleaned up einvites
       })
     } catch (error) {
       console.error("❌ Error loading party data:", error)
     }
   }
+  
 
   const checkAuthStatusAndLoadProfile = async () => {
     try {
@@ -594,11 +629,7 @@ const handleRemoveAddon = async (addonId) => {
     })
   }
   
-  // Also add this to see the initial state structure:
-  console.log('🏗️ Initial formData structure:', {
-    dietaryRequirements: formData.dietaryRequirements,
-    accessibilityRequirements: formData.accessibilityRequirements
-  })
+
 
   
   // Enhanced loading with debugging
@@ -648,79 +679,253 @@ const handleRemoveAddon = async (addonId) => {
     }
   }, [])
 
-  // Migration and submission logic
-  const migratePartyToDatabase = async (authenticatedUser) => {
-    try {
-      setIsMigrating(true)
-      console.log("🔄 Starting party migration to database...")
+// Updated migration function to handle new time format
+const migratePartyToDatabase = async (authenticatedUser) => {
+  try {
+    setIsMigrating(true)
+    console.log("🔄 Starting party migration to database...")
 
-      // Get localStorage data
-      const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}")
-      const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}")
+    // Get localStorage data
+    const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}")
+    const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}")
 
-      console.log("📋 localStorage data:", { partyDetailsLS, partyPlanLS })
+    console.log("📋 localStorage data:", { partyDetailsLS, partyPlanLS })
 
-      // Ensure user profile exists (create if needed)
-      const userResult = await partyDatabaseBackend.createOrGetUser({
-        firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
-        lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
-        email: authenticatedUser.email,
-        phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
-        postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
-      })
+    // Ensure user profile exists (create if needed)
+    const userResult = await partyDatabaseBackend.createOrGetUser({
+      firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
+      lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
+      email: authenticatedUser.email,
+      phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
+      postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
+    })
 
-      if (!userResult.success) {
-        throw new Error(`Failed to create user profile: ${userResult.error}`)
-      }
+    if (!userResult.success) {
+      throw new Error(`Failed to create user profile: ${userResult.error}`)
+    }
 
-      console.log("✅ User profile ready:", userResult.user.id)
+    console.log("✅ User profile ready:", userResult.user.id)
 
-      // Create party in database with time slot information
-      const partyData = {
-        childName: partyDetailsLS.childName || "Your Child",
-        childAge: Number.parseInt(partyDetailsLS.childAge) || 6,
-        date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
-        
-        // Handle time slot information
-        time: partyDetailsLS.time || "14:00",
-        timeSlot: partyDetailsLS.timeSlot || "afternoon",
-        duration: partyDetailsLS.duration || 2,
-        
-        guestCount:
-          Number.parseInt(formData.numberOfChildren?.split("-")[0]) || Number.parseInt(partyDetailsLS.guestCount) || 15,
-        location: partyDetailsLS.location || "TBD",
-        postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
-        theme: partyDetailsLS.theme || "party",
-        budget: Number.parseInt(partyDetailsLS.budget) || 600,
-        specialRequirements: formData.additionalMessage || "",
-        
-        // Additional time metadata
-        timePreference: partyDetailsLS.timePreference || {
-          type: 'flexible',
-          slot: partyDetailsLS.timeSlot || 'afternoon',
+    // Handle time data - prioritize new format
+    const getTimeData = () => {
+      // Priority 1: Check for startTime (new format)
+      if (partyDetailsLS.startTime) {
+        console.log("✅ Using new startTime format:", partyDetailsLS.startTime)
+        const endTime = calculateEndTime(partyDetailsLS.startTime, partyDetailsLS.duration || 2)
+        return {
+          time: partyDetailsLS.startTime, // Keep for backwards compatibility
+          startTime: partyDetailsLS.startTime, // New start_time column
+          endTime: endTime, // New end_time column
           duration: partyDetailsLS.duration || 2,
-          specificTime: null
+          timePreference: {
+            type: 'specific',
+            startTime: partyDetailsLS.startTime,
+            duration: partyDetailsLS.duration || 2,
+            endTime: endTime
+          }
         }
       }
-
-      console.log("🎉 Creating party with data:", partyData)
-      console.log("🎁 Add-ons being migrated:", partyPlanLS.addons?.length || 0)
-
-      const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS)
-
-      if (!createResult.success) {
-        throw new Error(`Failed to create party: ${createResult.error}`)
+      
+      // Priority 2: Legacy timeSlot format
+      if (partyDetailsLS.timeSlot) {
+        console.log("⚠️ Using legacy timeSlot format:", partyDetailsLS.timeSlot)
+        const timeSlotToTime = {
+          morning: "10:00",
+          afternoon: "14:00"
+        }
+        const startTime = timeSlotToTime[partyDetailsLS.timeSlot] || "14:00"
+        const endTime = calculateEndTime(startTime, partyDetailsLS.duration || 2)
+        
+        return {
+          time: startTime, // Keep for backwards compatibility
+          startTime: startTime, // New start_time column
+          endTime: endTime, // New end_time column
+          duration: partyDetailsLS.duration || 2,
+          timePreference: {
+            type: 'flexible',
+            slot: partyDetailsLS.timeSlot,
+            duration: partyDetailsLS.duration || 2,
+            startTime: startTime
+          }
+        }
       }
-
-      console.log("✅ Party migrated successfully to database:", createResult.party.id)
-      return createResult.party
-    } catch (error) {
-      console.error("❌ Migration failed:", error)
-      throw error
-    } finally {
-      setIsMigrating(false)
+      
+      // Priority 3: Legacy time format
+      if (partyDetailsLS.time) {
+        console.log("⚠️ Using legacy time format:", partyDetailsLS.time)
+        // If it's already formatted (contains '-'), extract start time
+        if (partyDetailsLS.time.includes('-')) {
+          // Try to extract start time from "11am - 1pm" format
+          const timeMatch = partyDetailsLS.time.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)/i)
+          if (timeMatch) {
+            let hour = parseInt(timeMatch[1])
+            const minute = timeMatch[2] || '00'
+            const ampm = timeMatch[3].toLowerCase()
+            
+            if (ampm === 'pm' && hour !== 12) hour += 12
+            if (ampm === 'am' && hour === 12) hour = 0
+            
+            const rawStartTime = `${hour.toString().padStart(2, '0')}:${minute}`
+            const endTime = calculateEndTime(rawStartTime, partyDetailsLS.duration || 2)
+            
+            return {
+              time: rawStartTime, // Keep for backwards compatibility
+              startTime: rawStartTime, // New start_time column
+              endTime: endTime, // New end_time column
+              duration: partyDetailsLS.duration || 2,
+              timePreference: {
+                type: 'specific',
+                duration: partyDetailsLS.duration || 2
+              }
+            }
+          } else {
+            // Fallback if parsing fails
+            const endTime = calculateEndTime("14:00", partyDetailsLS.duration || 2)
+            return {
+              time: "14:00",
+              startTime: "14:00",
+              endTime: endTime,
+              duration: partyDetailsLS.duration || 2,
+              timePreference: {
+                type: 'specific',
+                duration: partyDetailsLS.duration || 2
+              }
+            }
+          }
+        } else {
+          // If it's raw time like "14:00", use it
+          const endTime = calculateEndTime(partyDetailsLS.time, partyDetailsLS.duration || 2)
+          return {
+            time: partyDetailsLS.time, // Keep for backwards compatibility
+            startTime: partyDetailsLS.time, // New start_time column
+            endTime: endTime, // New end_time column
+            duration: partyDetailsLS.duration || 2,
+            timePreference: {
+              type: 'specific',
+              startTime: partyDetailsLS.time,
+              duration: partyDetailsLS.duration || 2,
+              endTime: endTime
+            }
+          }
+        }
+      }
+      
+      // Fallback
+      console.log("⚠️ No time data found, using default")
+      return {
+        time: "14:00", // Keep for backwards compatibility
+        startTime: "14:00", // New start_time column
+        endTime: "16:00", // New end_time column
+        duration: 2,
+        timePreference: {
+          type: 'flexible',
+          slot: 'afternoon',
+          duration: 2,
+          startTime: "14:00"
+        }
+      }
     }
+
+    // Helper function to format time for database storage
+    const formatTimeForDatabase = (startTime, duration) => {
+      try {
+        const [hours, minutes] = startTime.split(':')
+        const startDate = new Date()
+        startDate.setHours(parseInt(hours), parseInt(minutes || 0))
+        
+        // Format start time
+        const formattedStart = startDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: minutes && minutes !== '00' ? '2-digit' : undefined,
+          hour12: true,
+        })
+        
+        // Calculate end time
+        const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
+        const formattedEnd = endDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
+          hour12: true,
+        })
+        
+        return `${formattedStart} - ${formattedEnd}`
+      } catch (error) {
+        console.error("Error formatting time for database:", error)
+        return startTime
+      }
+    }
+
+    // Helper function to calculate end time
+    const calculateEndTime = (startTime, duration) => {
+      try {
+        const [hours, minutes] = startTime.split(':')
+        const startDate = new Date()
+        startDate.setHours(parseInt(hours), parseInt(minutes || 0))
+        
+        const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
+        
+        return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
+      } catch (error) {
+        console.error("Error calculating end time:", error)
+        return "16:00" // Default fallback
+      }
+    }
+
+    const timeData = getTimeData()
+    console.log("⏰ Final time data for database:", timeData)
+
+    // Create party in database with separate start/end times
+    const partyData = {
+      childName: partyDetailsLS.childName || "Your Child",
+      childAge: parseInt(partyDetailsLS.childAge) || 6,
+      date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
+      
+      // Legacy time field (keep for backwards compatibility)
+      time: timeData.time,
+      
+      // New separate time columns - try both naming conventions
+      startTime: timeData.startTime,   // camelCase
+      start_time: timeData.startTime,  // snake_case
+      endTime: timeData.endTime,       // camelCase  
+      end_time: timeData.endTime,      // snake_case
+      
+      duration: timeData.duration,
+      
+      guestCount: parseInt(formData.numberOfChildren?.split("-")[0]) || parseInt(partyDetailsLS.guestCount) || 15,
+      location: partyDetailsLS.location || "TBD",
+      postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
+      theme: partyDetailsLS.theme || "party",
+      budget: parseInt(partyDetailsLS.budget) || 600,
+      specialRequirements: formData.additionalMessage || "",
+      
+      // Time preference object
+      timePreference: timeData.timePreference
+    }
+
+    console.log("🎉 Creating party with time data:", {
+      startTime: timeData.startTime,
+      endTime: timeData.endTime,
+      duration: timeData.duration
+    })
+
+    console.log("🎉 Creating party with data:", partyData)
+    console.log("🎁 Add-ons being migrated:", partyPlanLS.addons?.length || 0)
+
+    const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS)
+
+    if (!createResult.success) {
+      throw new Error(`Failed to create party: ${createResult.error}`)
+    }
+
+    console.log("✅ Party migrated successfully to database:", createResult.party.id)
+    return createResult.party
+  } catch (error) {
+    console.error("❌ Migration failed:", error)
+    throw error
+  } finally {
+    setIsMigrating(false)
   }
+}
 
 
 
@@ -991,6 +1196,7 @@ const handleRemoveAddon = async (addonId) => {
         onRemoveAddon={handleRemoveAddon}
       />
 
+
           {/* Contact Information */}
           <ContactInformationForm 
             formData={formData}
@@ -1011,6 +1217,12 @@ const handleRemoveAddon = async (addonId) => {
             formData={formData}
             onInputChange={handleInputChange}
           />
+            {/* ✅ NEW: Total Price Summary */}
+  <TotalPriceSummaryCard 
+    selectedSuppliers={selectedSuppliers}
+    selectedAddons={selectedAddons}
+    suppliers={fullSupplierData}
+  />
 
           {/* What Happens Next */}
           <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg">
@@ -1061,12 +1273,12 @@ const handleRemoveAddon = async (addonId) => {
 
           {/* Quick Add-ons */}
           <div>
-          <RecommendedAddons 
+          {/* <RecommendedAddons 
           context="review" 
           maxItems={4}
           onAddonClick={handleAddonClick} // Use modal instead of onAddToCart
           title="Quick Add-ons"
-        />
+        /> */}
           </div>
           <AddonDetailsModal
         isOpen={isAddonModalOpen}
@@ -1088,7 +1300,7 @@ const handleRemoveAddon = async (addonId) => {
 
           {/* Submit Button - Simplified since user is always signed in */}
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 mb-4">
+            {/* <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 mb-4">
               <div className="flex items-start space-x-3">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <CheckCircle className="w-4 h-4 text-green-600" />
@@ -1103,10 +1315,10 @@ const handleRemoveAddon = async (addonId) => {
                   </p>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <Button
-              className="w-full bg-primary-400 hover:bg-primary-500 text-white py-4 sm:py-6 text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+              className="w-full bg-primary-500 hover:bg-primary-500 text-white py-4 sm:py-6 text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
               onClick={handleSubmitEnquiry}
               disabled={isSubmitting || isMigrating || !isFormValid}
             >

@@ -109,42 +109,62 @@ export default function SupplierCustomizationModal({
         : [...prev, addonId]
     )
   }
-  const handleAddToPlan = () => {
-    const selectedAddonObjects = selectedAddons.map(addonId => 
-      availableAddons.find(addon => addon.id === addonId)
-    ).filter(Boolean)
-  
-    console.log('🔍 DEBUG: handleAddToPlan called with:')
-    console.log('  - supplier:', supplier?.name)
-    console.log('  - selectedPackage:', selectedPackage)
-    console.log('  - selectedAddonObjects:', selectedAddonObjects)
-    console.log('  - totalPrice:', totalPrice)
-    console.log('  - onAddToPlan type:', typeof onAddToPlan)
-    console.log('  - onAddToPlan function:', onAddToPlan)
-  
-    if (!onAddToPlan) {
-      console.error('❌ onAddToPlan is not defined!')
-      return
+// In your SupplierCustomizationModal component, replace the handleAddToPlan function with this:
+
+const handleAddToPlan = () => {
+  // ✅ FIXED: Properly tag add-ons as supplier add-ons
+  const selectedAddonObjects = selectedAddons.map(addonId => {
+    const addon = availableAddons.find(addon => addon.id === addonId)
+    if (!addon) return null
+    
+    console.log('🔧 BEFORE tagging addon:', addon)
+    
+    // ✅ Tag add-ons as supplier add-ons with ALL required properties
+    const taggedAddon = {
+      ...addon,
+      supplierId: supplier.id,              // ← Links to supplier ID
+      supplierName: supplier.name,          // ← Shows supplier name  
+      attachedToSupplier: true,            // ← Flags as supplier addon
+      isSupplierAddon: true,               // ← Additional identification flag
+      supplierType: supplier.category,     // ← Supplier category
+      addedAt: new Date().toISOString(),   // ← Timestamp
+      displayId: `${supplier.id}-${addon.id}` // ← Unique display ID
     }
-  
-    const dataToSend = {
-      supplier,
-      package: selectedPackage,
-      addons: selectedAddonObjects,
-      totalPrice,
-      autoEnquiry: false
-    }
-  
-    console.log('🚀 Calling onAddToPlan with:', dataToSend)
-  
-    try {
-      const result = onAddToPlan(dataToSend)
-      console.log('✅ onAddToPlan returned:', result)
-    } catch (error) {
-      console.error('❌ Error calling onAddToPlan:', error)
-    }
+    
+    console.log('🔧 AFTER tagging addon:', taggedAddon)
+    
+    return taggedAddon
+  }).filter(Boolean)
+
+  console.log('🔍 DEBUG: handleAddToPlan called with:')
+  console.log('  - supplier:', supplier?.name)
+  console.log('  - selectedPackage:', selectedPackage)
+  console.log('  - selectedAddonObjects (PROPERLY TAGGED):', selectedAddonObjects)
+  console.log('  - totalPrice:', totalPrice)
+  console.log('  - onAddToPlan type:', typeof onAddToPlan)
+
+  if (!onAddToPlan) {
+    console.error('❌ onAddToPlan is not defined!')
+    return
   }
 
+  const dataToSend = {
+    supplier,
+    package: selectedPackage,
+    addons: selectedAddonObjects, // ← Now properly tagged as supplier add-ons
+    totalPrice,
+    autoEnquiry: false
+  }
+
+  console.log('🚀 Calling onAddToPlan with FIXED data:', dataToSend)
+
+  try {
+    const result = onAddToPlan(dataToSend)
+    console.log('✅ onAddToPlan returned:', result)
+  } catch (error) {
+    console.error('❌ Error calling onAddToPlan:', error)
+  }
+}
 
   const getButtonText = () => {
     if (isAdding) {

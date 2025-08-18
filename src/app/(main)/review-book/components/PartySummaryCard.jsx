@@ -4,6 +4,66 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Calendar, Clock, MapPin, Users, Sparkles } from "lucide-react"
 
 export default function PartySummaryCard({ partyDetails = {} }) {
+  // Helper function to format time range from localStorage data
+  const formatTimeDisplay = (partyDetails) => {
+    // Check if we have the new startTime format
+    if (partyDetails.rawStartTime || partyDetails.startTime) {
+      const startTime = partyDetails.rawStartTime || partyDetails.startTime
+      const duration = partyDetails.duration || 2
+      
+      try {
+        // Format start time
+        const [hours, minutes] = startTime.split(':')
+        const startDate = new Date()
+        startDate.setHours(parseInt(hours), parseInt(minutes || 0))
+        
+        const formattedStart = startDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: minutes && minutes !== '00' ? '2-digit' : undefined,
+          hour12: true,
+        })
+        
+        // Calculate end time
+        const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
+        const formattedEnd = endDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
+          hour12: true,
+        })
+        
+        return `${formattedStart} - ${formattedEnd}`
+      } catch (error) {
+        console.error('Error formatting time:', error)
+        return partyDetails.time || "TBD"
+      }
+    }
+    
+    // Fallback to existing time display
+    return partyDetails.time || "TBD"
+  }
+
+  // Helper function to get duration text
+  const getDurationText = (partyDetails) => {
+    const duration = partyDetails.duration
+    if (!duration) return null
+    
+    if (duration === Math.floor(duration)) {
+      return `${duration} hour${duration > 1 ? 's' : ''}`
+    } else {
+      const hours = Math.floor(duration)
+      const minutes = (duration - hours) * 60
+      
+      if (minutes === 30) {
+        return `${hours}½ hours`
+      } else {
+        return `${hours}h ${minutes}m`
+      }
+    }
+  }
+
+  const timeDisplay = formatTimeDisplay(partyDetails)
+  const durationText = getDurationText(partyDetails)
+
   return (
     <Card className="border-2 border-[hsl(var(--primary-200))] shadow-lg bg-gradient-to-br from-primary-50 to-white overflow-hidden">
       <CardContent className="p-0">
@@ -48,13 +108,7 @@ export default function PartySummaryCard({ partyDetails = {} }) {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Time</p>
-                <p className="text-gray-900 font-semibold">{partyDetails.time}</p>
-                {/* Show additional time info if available */}
-                {partyDetails.timeSlot && partyDetails.duration && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {partyDetails.timeSlot === 'morning' ? '10am-1pm window' : '1pm-4pm window'}
-                  </p>
-                )}
+                <p className="text-gray-900 font-semibold">{timeDisplay}</p>
               </div>
             </div>
 

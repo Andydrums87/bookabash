@@ -53,17 +53,6 @@ const DEFAULT_PARTY_PLAN = {
   facePainting: null,
   activities: null,
   partyBags: null,
-  // einvites: {
-  //   id: "digital-invites",
-  //   name: "Digital Superhero Invites",
-  //   description: "Themed e-invitations with RSVP tracking",
-  //   price: 25,
-  //   status: "confirmed",
-  //   image: "/placeholder.jpg",
-  //   category: "Digital Services",
-  //   priceUnit: "per set",
-  //   addedAt: new Date().toISOString()
-  // },
   addons: []
 };
 
@@ -138,8 +127,15 @@ class PartyPlanBackend {
     }
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
-      eventEmitter.emit('partyPlanUpdated', plan);
+      // ✅ FIXED: Ensure einvites is never saved to party plan
+      const cleanPlan = { ...plan };
+      if (cleanPlan.einvites) {
+        console.log('🧹 Removing einvites before saving party plan');
+        delete cleanPlan.einvites;
+      }
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanPlan));
+      eventEmitter.emit('partyPlanUpdated', cleanPlan);
       return true;
     } catch (error) {
       console.error('Error saving party plan:', error);
@@ -147,119 +143,143 @@ class PartyPlanBackend {
     }
   }
 
+// Replace your addSupplierToPlan function in partyPlanBackend.js with this fixed version:
 
-  addSupplierToPlan(supplier, selectedPackage = null) {
-    if (!isClient) {
-      return { success: false, error: 'Not in browser environment' };
-    }
-
-    try {
-      const plan = this.getPartyPlan();
-      
-      const supplierType = CATEGORY_TYPE_MAP[supplier.category];
-      
-      if (!supplierType) {
-        return { success: false, error: `Unknown supplier category: ${supplier.category}` };
-      }
-
-      // ✅ FIXED: Enhanced supplier data that preserves add-ons
-      const supplierData = {
-        id: supplier.id,
-        name: supplier.name,
-        description: supplier.description,
-        // ✅ Use total price (base + add-ons) instead of just base price
-        price: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
-        status: "pending",
-        image: supplier.image,
-        category: supplier.category,
-        priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
-        addedAt: new Date().toISOString(),
-        packageId: selectedPackage?.id || null,
-        originalSupplier: supplier,
-        
-        // ✅ NEW: Store the complete package data with add-ons
-        packageData: selectedPackage || null,
-        selectedAddons: selectedPackage?.selectedAddons || selectedPackage?.addons || [],
-        totalPrice: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
-        originalPrice: selectedPackage?.originalPrice || selectedPackage?.price || supplier.priceFrom,
-        addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0
-      };
-
-      // ✅ NEW: Debug logging to verify the data
-      console.log('🔍 BACKEND DEBUG - Storing supplier with data:', {
-        supplierName: supplier.name,
-        basePrice: selectedPackage?.price || supplier.priceFrom,
-        totalPrice: supplierData.totalPrice,
-        addonsCount: supplierData.addonsCount,
-        selectedAddons: supplierData.selectedAddons,
-        hasPackageData: !!supplierData.packageData
-      });
-
-      plan[supplierType] = supplierData;
-      
-      this.savePartyPlan(plan);
-      
-      console.log('✅ Supplier added and event emitted:', supplierType);
-      
-      return { 
-        success: true, 
-        supplierType,
-        supplier: supplierData 
-      };
-    } catch (error) {
-      console.error('Error adding supplier to plan:', error);
-      return { success: false, error: error.message };
-    }
+addSupplierToPlan(supplier, selectedPackage = null) {
+  if (!isClient) {
+    return { success: false, error: 'Not in browser environment' };
   }
 
-  addAddonToPlan(addon) {
-    if (!isClient) {
-      return { success: false, error: 'Not in browser environment' };
+  try {
+    const plan = this.getPartyPlan();
+    
+    const supplierType = CATEGORY_TYPE_MAP[supplier.category];
+    
+    if (!supplierType) {
+      return { success: false, error: `Unknown supplier category: ${supplier.category}` };
     }
 
-    try {
-      const plan = this.getPartyPlan();
-      
-      const existingAddonIndex = plan.addons.findIndex(existing => existing.id === addon.id);
-      
-      if (existingAddonIndex !== -1) {
-        return { success: false, error: 'Add-on already in party plan' };
-      }
+    // ✅ FIXED: Extract add-ons from selectedPackage if they exist
+    const packageAddons = selectedPackage?.addons || selectedPackage?.selectedAddons || [];
+    
+    console.log('🔧 BACKEND DEBUG - Adding supplier with addons:', {
+      supplierName: supplier.name,
+      packageAddons: packageAddons,
+      selectedPackage: selectedPackage
+    });
 
-      const addonData = {
-        id: addon.id,
-        name: addon.name,
-        description: addon.description,
-        price: addon.price,
-        originalPrice: addon.originalPrice || null,
-        status: "pending",
-        image: addon.image,
-        category: addon.category,
-        duration: addon.duration,
-        rating: addon.rating,
-        reviewCount: addon.reviewCount,
-        popular: addon.popular || false,
-        limitedTime: addon.limitedTime || false,
-        addedAt: new Date().toISOString(),
-        packageId: addon.packageId || null, // Add package tracking for addons too
-        type: 'addon'
-      };
+    // ✅ FIXED: Enhanced supplier data that preserves add-ons
+    const supplierData = {
+      id: supplier.id,
+      name: supplier.name,
+      description: supplier.description,
+      // ✅ Use total price (base + add-ons) instead of just base price
+      price: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
+      status: "pending",
+      image: supplier.image,
+      category: supplier.category,
+      priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
+      addedAt: new Date().toISOString(),
+      packageId: selectedPackage?.id || null,
+      originalSupplier: supplier,
+      
+      // ✅ NEW: Store the complete package data with add-ons
+      packageData: selectedPackage || null,
+      selectedAddons: packageAddons, // ✅ FIXED: Use extracted add-ons
+      totalPrice: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
+      originalPrice: selectedPackage?.originalPrice || selectedPackage?.price || supplier.priceFrom,
+      addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0
+    };
 
-      plan.addons.push(addonData);
-      
-      this.savePartyPlan(plan);
-      
-      console.log('✅ Add-on added and event emitted:', addon.name);
-      
-      return { 
-        success: true, 
-        addon: addonData 
-      };
-    } catch (error) {
-      console.error('Error adding add-on to plan:', error);
-      return { success: false, error: error.message };
-    }
+    // ✅ NEW: Debug logging to verify the data
+    console.log('🔍 BACKEND DEBUG - Storing supplier with data:', {
+      supplierName: supplier.name,
+      basePrice: selectedPackage?.price || supplier.priceFrom,
+      totalPrice: supplierData.totalPrice,
+      selectedAddons: supplierData.selectedAddons,
+      addonsCount: supplierData.selectedAddons.length,
+      hasPackageData: !!supplierData.packageData
+    });
+
+    plan[supplierType] = supplierData;
+    
+    this.savePartyPlan(plan);
+    
+    console.log('✅ Supplier added and event emitted:', supplierType);
+    
+    return { 
+      success: true, 
+      supplierType,
+      supplier: supplierData 
+    };
+  } catch (error) {
+    console.error('Error adding supplier to plan:', error);
+    return { success: false, error: error.message };
   }
+}
+
+// Replace the addAddonToPlan function in your PartyPlanBackend class with this corrected version:
+
+addAddonToPlan(addon) {
+  if (!isClient) {
+    return { success: false, error: 'Not in browser environment' };
+  }
+
+  try {
+    const plan = this.getPartyPlan(); // ✅ Keep the 'this.' prefix
+    
+    const existingAddonIndex = plan.addons.findIndex(existing => existing.id === addon.id);
+    
+    if (existingAddonIndex !== -1) {
+      return { success: false, error: 'Add-on already in party plan' };
+    }
+
+    // ✅ FIXED: Preserve ALL addon properties, including supplier-related ones
+    const addonData = {
+      // Core addon properties (keep existing ones)
+      id: addon.id,
+      name: addon.name,
+      description: addon.description,
+      price: addon.price,
+      originalPrice: addon.originalPrice || null,
+      status: "pending",
+      image: addon.image,
+      category: addon.category,
+      duration: addon.duration,
+      rating: addon.rating,
+      reviewCount: addon.reviewCount,
+      popular: addon.popular || false,
+      limitedTime: addon.limitedTime || false,
+      addedAt: new Date().toISOString(),
+      packageId: addon.packageId || null,
+      type: 'addon',
+      
+      // ✅ NEW: Add supplier-related properties
+      supplierId: addon.supplierId || null,
+      supplierName: addon.supplierName || null,
+      attachedToSupplier: addon.attachedToSupplier || false,
+      isSupplierAddon: addon.isSupplierAddon || false,
+      supplierType: addon.supplierType || null,
+      displayId: addon.displayId || null
+    };
+
+    console.log('🔍 BACKEND DEBUG - Saving addon with data:', addonData);
+
+    plan.addons.push(addonData);
+    
+    this.savePartyPlan(plan); // ✅ Keep the 'this.' prefix
+    
+    console.log('✅ Add-on added and event emitted:', addon.name);
+    
+    return { 
+      success: true, 
+      addon: addonData 
+    };
+  } catch (error) {
+    console.error('Error adding add-on to plan:', error);
+    return { success: false, error: error.message };
+  }
+}
 
   removeAddonFromPlan(addonId) {
     if (!isClient) {
@@ -288,6 +308,97 @@ class PartyPlanBackend {
     }
   }
 
+  removeAddonFromSupplier(supplierType, addonId) {
+    if (!isClient) {
+      return { success: false, error: 'Not in browser environment' };
+    }
+  
+    try {
+      const plan = this.getPartyPlan();
+      
+      // Check if supplier exists
+      if (!plan[supplierType]) {
+        return { success: false, error: 'Supplier not found in party plan' };
+      }
+      
+      const supplier = plan[supplierType];
+      
+      // Check if supplier has selectedAddons
+      if (!supplier.selectedAddons || !Array.isArray(supplier.selectedAddons)) {
+        return { success: false, error: 'No add-ons found for this supplier' };
+      }
+      
+      // Find the add-on index
+      const addonIndex = supplier.selectedAddons.findIndex(addon => addon.id === addonId);
+      
+      if (addonIndex === -1) {
+        return { success: false, error: 'Add-on not found for this supplier' };
+      }
+      
+      // Remove the add-on
+      const removedAddon = supplier.selectedAddons[addonIndex];
+      supplier.selectedAddons.splice(addonIndex, 1);
+      
+      // Update prices
+      supplier.totalPrice = supplier.originalPrice + supplier.selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+      supplier.addonsPriceTotal = supplier.selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+      supplier.price = supplier.totalPrice; // Update main price
+      
+      this.savePartyPlan(plan);
+      
+      console.log('✅ Add-on removed from supplier:', removedAddon.name);
+      
+      return { success: true, removedAddon };
+    } catch (error) {
+      console.error('Error removing add-on from supplier:', error);
+      return { success: false, error: error.message };
+    }
+  }
+  
+  // Also update your existing removeAddonFromPlan to handle both cases:
+  removeAddonFromPlan(addonId) {
+    if (!isClient) {
+      return { success: false, error: 'Not in browser environment' };
+    }
+  
+    try {
+      const plan = this.getPartyPlan();
+      
+      // First, try to remove from global addons array
+      const addonIndex = plan.addons.findIndex(addon => addon.id === addonId);
+      
+      if (addonIndex !== -1) {
+        // Found in global addons - remove it
+        const removedAddon = plan.addons[addonIndex];
+        plan.addons.splice(addonIndex, 1);
+        
+        this.savePartyPlan(plan);
+        console.log('✅ Add-on removed from global addons:', removedAddon.name);
+        return { success: true, removedAddon };
+      }
+      
+      // If not found in global addons, check supplier selectedAddons
+      const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+      
+      for (const supplierType of supplierTypes) {
+        const supplier = plan[supplierType];
+        if (supplier && supplier.selectedAddons && Array.isArray(supplier.selectedAddons)) {
+          const supplierAddonIndex = supplier.selectedAddons.findIndex(addon => addon.id === addonId);
+          
+          if (supplierAddonIndex !== -1) {
+            // Found in supplier addons - use the specific removal function
+            return this.removeAddonFromSupplier(supplierType, addonId);
+          }
+        }
+      }
+      
+      return { success: false, error: 'Add-on not found in party plan' };
+    } catch (error) {
+      console.error('Error removing add-on from plan:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   removeSupplierFromPlan(supplierType) {
     if (!isClient) {
       return { success: false, error: 'Not in browser environment' };
@@ -297,10 +408,7 @@ class PartyPlanBackend {
       const plan = this.getPartyPlan();
       const removedSupplier = plan[supplierType];
       
-      if (supplierType === 'einvites') {
-        return { success: false, error: 'Cannot remove e-invites' };
-      }
-      
+   
       plan[supplierType] = null;
       this.savePartyPlan(plan);
       
@@ -428,19 +536,22 @@ class PartyPlanBackend {
     return () => eventEmitter.off('partyPlanUpdated', callback);
   }
 
-  getTotalCost() {
-    const plan = this.getPartyPlan();
-    
-    const supplierCost = Object.entries(plan)
-      .filter(([key, supplier]) => key !== 'addons' && supplier !== null)
-      .reduce((total, [key, supplier]) => total + (supplier.price || 0), 0);
-    
-    const addonCost = (plan.addons || [])
-      .reduce((total, addon) => total + (addon.price || 0), 0);
-    
-    return supplierCost + addonCost;
-  }
-
+// ✅ FIXED: Calculate total cost excluding einvites
+getTotalCost() {
+  const plan = this.getPartyPlan();
+  
+  // Only include real supplier types, not einvites
+  const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+  
+  const supplierCost = realSupplierTypes
+    .filter(type => plan[type] !== null && plan[type] !== undefined)
+    .reduce((total, type) => total + (plan[type].price || 0), 0);
+  
+  const addonCost = (plan.addons || [])
+    .reduce((total, addon) => total + (addon.price || 0), 0);
+  
+  return supplierCost + addonCost;
+}
   getAddons() {
     const plan = this.getPartyPlan();
     return plan.addons || [];
@@ -461,23 +572,28 @@ class PartyPlanBackend {
     return plan[supplierType];
   }
 
-  getPartySummary() {
-    const plan = this.getPartyPlan();
-    const suppliers = Object.entries(plan)
-      .filter(([key]) => key !== 'addons')
-      .filter(([key, supplier]) => supplier !== null)
-      .map(([key, supplier]) => ({ ...supplier, type: key }));
-    
-    const addons = plan.addons || [];
-    const totalCost = this.getTotalCost();
-    
-    return {
-      suppliers,
-      addons,
-      totalCost,
-      itemCount: suppliers.length + addons.length
-    };
-  }
+
+    // ✅ FIXED: Get party summary excluding einvites
+    getPartySummary() {
+      const plan = this.getPartyPlan();
+      
+      // Only include real supplier types
+      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+      
+      const suppliers = realSupplierTypes
+        .filter(type => plan[type] !== null && plan[type] !== undefined)
+        .map(type => ({ ...plan[type], type }));
+      
+      const addons = plan.addons || [];
+      const totalCost = this.getTotalCost();
+      
+      return {
+        suppliers,
+        addons,
+        totalCost,
+        itemCount: suppliers.length + addons.length
+      };
+    }
 }
 
 // Create singleton instance
@@ -650,6 +766,29 @@ const addSupplier = async (supplier, selectedPackage = null) => {
     }
   };
 
+// Add this function to your usePartyPlan hook (in the return object):
+
+const removeAddonFromSupplier = async (supplierType, addonId) => {
+  if (!isClient) {
+    return { success: false, error: 'Not in browser environment' };
+  }
+
+  try {
+    setError(null);
+    const result = partyPlanBackend.removeAddonFromSupplier(supplierType, addonId);
+    
+    if (result.success) {
+      console.log('✅ Add-on removed from supplier successfully, state will update via event');
+      return { success: true };
+    } else {
+      setError(result.error);
+      return { success: false, error: result.error };
+    }
+  } catch (err) {
+    setError(err.message);
+    return { success: false, error: err.message };
+  }
+};
 
   const removeSupplier = async (supplierType) => {
     if (!isClient) {
@@ -725,6 +864,7 @@ const addSupplier = async (supplier, selectedPackage = null) => {
     getPartySummary: () => partyPlanBackend.getPartySummary(),
     updateSupplierPackage,
     getSupplierFromPlan,
+    removeAddonFromSupplier, 
     isSupplierInPartyWithPackage
   };
 }

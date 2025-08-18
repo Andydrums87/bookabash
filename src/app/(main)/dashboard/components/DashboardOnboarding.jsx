@@ -33,14 +33,14 @@ import { cn } from '@/lib/utils';
 export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitting = false }) {
   const [formData, setFormData] = useState({
     date: "",
-    timeSlot: "",
+    startTime: "", // Changed from timeSlot to startTime
     duration: 2,
     guestCount: "",
     location: "",
-    budget: 600, // Updated default budget
+    budget: 600,
     theme: "",
-    specificTime: "",
-    needsSpecificTime: false,
+    customStartTime: "",
+    needsCustomTime: false,
   })
 
   const [selectedTheme, setSelectedTheme] = useState("")
@@ -85,20 +85,29 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
         })
       }, 200)
 
+      // Calculate end time for the party
+      const calculateEndTime = (startTime, duration) => {
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const totalMinutes = startHour * 60 + startMinute + (duration * 60);
+        const endHour = Math.floor(totalMinutes / 60);
+        const endMinute = Math.floor(totalMinutes % 60);
+        return `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+      }
+
       const submitData = {
         date: formData.date,
-        timeSlot: formData.timeSlot,
+        startTime: formData.startTime, // 24-hour format like "14:00"
+        endTime: calculateEndTime(formData.startTime, formData.duration),
         duration: formData.duration,
-        specificTime: formData.needsSpecificTime ? formData.specificTime : null,
         theme: selectedTheme === "no-theme" ? null : selectedTheme,
         guestCount: formData.guestCount,
         postcode: formData.location,
         budget: formData.budget,
         timePreference: {
-          type: formData.needsSpecificTime ? "specific" : "flexible",
-          slot: formData.timeSlot,
+          type: "specific",
+          startTime: formData.startTime,
           duration: formData.duration,
-          specificTime: formData.specificTime || null,
+          endTime: calculateEndTime(formData.startTime, formData.duration),
         },
       }
 
@@ -520,129 +529,156 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                 </div>
               )}
 
-              {/* Step 2: Timing */}
-              {currentStep === 1 && (
+             
+{/* Step 2: Timing */}
+{currentStep === 1 && (
                 <div className="">
-                  <div className="text-center mb-8 text-center mb-8 bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] p-6 rounded-t-2xl">
+                  <div className="text-center mb-8 bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] p-6 rounded-t-2xl">
                     <h2 className="text-3xl sm:text-3xl font-bold text-white mb-2">Perfect Timing</h2>
-                    <p className="text-white">When works best for your family?</p>
+                    <p className="text-white">What time works best for your family?</p>
                   </div>
 
                   <div className="space-y-8 px-4">
-                    {/* Time Slots */}
+                    {/* Start Time */}
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Choose your time slot</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button
-                          type="button"
-                          onClick={() => handleFieldChange("timeSlot", "morning")}
-                          className={`
-                            p-6 rounded-xl border-2 transition-all duration-300 hover:scale-105 group
-                            ${formData.timeSlot === "morning"
-                              ? 'bg-yellow-50 border-yellow-400 shadow-lg'
-                              : 'bg-white border-gray-200 hover:border-yellow-300'
-                            }
-                          `}
-                        >
-                          <div className="flex items-center gap-4 mb-3">
-                            <div className={`
-                              p-3 rounded-full transition-all duration-300
-                              ${formData.timeSlot === "morning" ? 'bg-yellow-400' : 'bg-gray-100 group-hover:bg-yellow-100'}
-                            `}>
-                              <Sun className={`w-6 h-6 ${formData.timeSlot === "morning" ? 'text-white' : 'text-gray-600'}`} />
-                            </div>
-                            <div className="text-left">
-                              <h4 className="font-bold text-lg">Morning Party</h4>
-                              <p className="text-gray-600 text-sm">10am - 1pm</p>
-                            </div>
-                          </div>
-                          <p className="text-gray-600 text-sm">Perfect for younger children</p>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleFieldChange("timeSlot", "afternoon")}
-                          className={`
-                            p-6 rounded-xl border-2 transition-all duration-300 hover:scale-105 group relative
-                            ${formData.timeSlot === "afternoon"
-                              ? 'bg-[hsl(var(--primary-50))] border-[hsl(var(--primary-400))] shadow-lg'
-                              : 'bg-white border-gray-200 hover:border-[hsl(var(--primary-300))]'
-                            }
-                          `}
-                        >
-                          <div className="absolute top-3 right-3">
-                            <span className="bg-primary-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                              Most Popular
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-4 mb-3">
-                            <div className={`
-                              p-3 rounded-full transition-all duration-300
-                              ${formData.timeSlot === "afternoon" ? 'bg-primary-500' : 'bg-gray-100 group-hover:bg-[hsl(var(--primary-100))]'}
-                            `}>
-                              <Sunset className={`w-6 h-6 ${formData.timeSlot === "afternoon" ? 'text-white' : 'text-gray-600'}`} />
-                            </div>
-                            <div className="text-left">
-                              <h4 className="font-bold text-lg">Afternoon Party</h4>
-                              <p className="text-gray-600 text-sm">1pm - 4pm</p>
-                            </div>
-                          </div>
-                          <p className="text-gray-600 text-sm">Great for all ages</p>
-                        </button>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-primary-500" />
+                        What time should the party start?
+                      </h3>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                        {[
+                          { value: "09:00", label: "9am", popular: false },
+                          { value: "10:00", label: "10am", popular: true },
+                          { value: "11:00", label: "11am", popular: true },
+                          { value: "12:00", label: "12pm", popular: true },
+                          { value: "13:00", label: "1pm", popular: true },
+                          { value: "14:00", label: "2pm", popular: true },
+                          { value: "15:00", label: "3pm", popular: false },
+                          { value: "16:00", label: "4pm", popular: false },
+                          { value: "17:00", label: "5pm", popular: false },
+                        ].map((time) => (
+                          <button
+                            key={time.value}
+                            type="button"
+                            onClick={() => handleFieldChange("startTime", time.value)}
+                            className={`
+                              relative p-4 rounded-xl border-2 font-medium transition-all duration-300 hover:scale-105
+                              ${formData.startTime === time.value
+                                ? 'bg-primary-500 border-[hsl(var(--primary-500))] text-white shadow-lg'
+                                : 'bg-white border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-300))]'
+                              }
+                            `}
+                          >
+                            {time.popular && formData.startTime !== time.value && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary-500 rounded-full"></div>
+                            )}
+                            {time.label}
+                          </button>
+                        ))}
                       </div>
+                      <p className="text-sm text-gray-500 mt-3 text-center">
+                        💡 Popular times are marked with a dot
+                      </p>
                     </div>
 
                     {/* Duration */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">How long should the magic last?</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {[1.5, 2, 2.5, 3].map((duration) => (
+                        {[
+                          { value: 1.5, label: "1½ hours", popular: false },
+                          { value: 2, label: "2 hours", popular: true },
+                          { value: 2.5, label: "2½ hours", popular: false },
+                          { value: 3, label: "3 hours", popular: true },
+                          { value: 3.5, label: "3½ hours", popular: false },
+                          { value: 4, label: "4 hours", popular: false },
+                        ].map((duration) => (
                           <button
-                            key={duration}
+                            key={duration.value}
                             type="button"
-                            onClick={() => handleFieldChange("duration", duration)}
+                            onClick={() => handleFieldChange("duration", duration.value)}
                             className={`
-                              p-4 rounded-xl border-2 font-medium transition-all duration-300 hover:scale-105
-                              ${formData.duration === duration
+                              relative p-4 rounded-xl border-2 font-medium transition-all duration-300 hover:scale-105
+                              ${formData.duration === duration.value
                                 ? 'bg-primary-500 border-[hsl(var(--primary-500))] text-white shadow-lg'
                                 : 'bg-white border-gray-200 text-gray-700 hover:border-[hsl(var(--primary-300))]'
                               }
                             `}
                           >
-                            {duration === 1.5 ? '1½' : duration} hour{duration > 1 ? 's' : ''}
+                            {duration.popular && formData.duration !== duration.value && (
+                              <span className="absolute top-1 right-1 text-xs bg-yellow-400 text-yellow-800 px-1 rounded">★</span>
+                            )}
+                            {duration.label}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Specific Time Option */}
+                    {/* Party Time Preview */}
+                    {formData.startTime && formData.duration && (
+                      <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] border-2 border-[hsl(var(--primary-200))] rounded-2xl p-6 text-center">
+                        <h4 className="text-lg font-bold text-gray-800 mb-2">Your Party Time</h4>
+                        <div className="text-3xl font-bold text-primary-600 mb-2">
+                          {(() => {
+                            const startTime = formData.startTime;
+                            const duration = parseFloat(formData.duration);
+                            
+                            // Format start time
+                            const [startHour, startMinute] = startTime.split(':').map(Number);
+                            const startAmPm = startHour >= 12 ? 'pm' : 'am';
+                            const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
+                            const startFormatted = `${start12Hour}${startMinute > 0 ? `:${startMinute.toString().padStart(2, '0')}` : ''}${startAmPm}`;
+                            
+                            // Calculate end time
+                            const totalMinutes = startHour * 60 + startMinute + (duration * 60);
+                            const endHour = Math.floor(totalMinutes / 60);
+                            const endMinute = Math.floor(totalMinutes % 60);
+                            const endAmPm = endHour >= 12 ? 'pm' : 'am';
+                            const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
+                            const endFormatted = `${end12Hour}${endMinute > 0 ? `:${endMinute.toString().padStart(2, '0')}` : ''}${endAmPm}`;
+                            
+                            return `${startFormatted} - ${endFormatted}`;
+                          })()}
+                        </div>
+                        <p className="text-gray-600">
+                          Perfect! That's {formData.duration} hour{formData.duration > 1 ? 's' : ''} of celebration time ✨
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Custom Time Option */}
                     <div className="text-center">
                       <Button
                         type="button"
                         variant="ghost"
                         className="text-gray-600 hover:text-gray-800 font-medium"
-                        onClick={() => handleFieldChange("needsSpecificTime", !formData.needsSpecificTime)}
+                        onClick={() => handleFieldChange("needsCustomTime", !formData.needsCustomTime)}
                       >
-                        {formData.needsSpecificTime ? "Use flexible timing instead" : "I need a specific time"}
+                        {formData.needsCustomTime ? "Choose from preset times" : "I need a different start time"}
                       </Button>
                     </div>
 
-                    {/* Specific Time Input */}
-                    {formData.needsSpecificTime && (
-                      <div className="max-w-lg mx-auto mt-6 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl shadow-lg">
+                    {/* Custom Time Input */}
+                    {formData.needsCustomTime && (
+                      <div className="max-w-lg mx-auto mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl shadow-lg">
                         <div className="text-center mb-4">
-                          <p className="text-sm text-yellow-800 font-bold">⚠️ Specific times may limit supplier options</p>
-                          <p className="text-xs text-yellow-700 mt-1">
-                            We'll try our best, but you might need to be flexible
+                          <h4 className="font-bold text-blue-800 mb-2">Custom Start Time</h4>
+                          <p className="text-sm text-blue-700">
+                            Enter any time between 8am and 6pm
                           </p>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <Clock className="w-5 h-5 text-yellow-600" />
+                          <Clock className="w-5 h-5 text-blue-600" />
                           <Input
                             type="time"
-                            value={formData.specificTime}
-                            onChange={(e) => handleFieldChange("specificTime", e.target.value)}
-                            className="flex-1 border-yellow-300 focus:border-yellow-500 rounded-xl"
+                            min="08:00"
+                            max="18:00"
+                            value={formData.customStartTime || ""}
+                            onChange={(e) => {
+                              handleFieldChange("customStartTime", e.target.value)
+                              handleFieldChange("startTime", e.target.value)
+                            }}
+                            className="flex-1 border-blue-300 focus:border-blue-500 rounded-xl"
                           />
                         </div>
                       </div>
@@ -823,42 +859,42 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                 </div>
               )}
 
-              {/* Navigation */}
-              <div className="bg-gray-50 px-6 py-4 sm:px-8 flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className="px-4 py-2 text-gray-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:text-gray-800 transition-colors"
-                >
-                  {currentStep > 0 ? 'Back' : ''}
-                </button>
+            {/* Navigation */}
+  <div className="bg-gray-50 px-6 py-4 sm:px-8 flex justify-between items-center">
+    <button
+      type="button"
+      onClick={prevStep}
+      disabled={currentStep === 0}
+      className="px-4 py-2 text-gray-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:text-gray-800 transition-colors"
+    >
+      {currentStep > 0 ? 'Back' : ''}
+    </button>
 
-                <button
-                  type="button"
-                  onClick={currentStep === steps.length - 1 ? handleSubmit : nextStep}
-                  disabled={
-                    (currentStep === 0 && (!formData.date || !formData.guestCount || !formData.location)) ||
-                    (currentStep === 1 && !formData.timeSlot) ||
-                    isSubmitting
-                  }
-                  className="bg-primary-400 hover:bg-primary-500 text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center justify-center">
-                      <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                      Building Your Party...
-                    </div>
-                  ) : currentStep === steps.length - 1 ? (
-                    'Create Magic ✨'
-                  ) : (
-                    <>
-                      Continue
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
+    <button
+      type="button"
+      onClick={currentStep === steps.length - 1 ? handleSubmit : nextStep}
+      disabled={
+        (currentStep === 0 && (!formData.date || !formData.guestCount || !formData.location)) ||
+        (currentStep === 1 && (!formData.startTime || !formData.duration)) || // Updated validation
+        isSubmitting
+      }
+      className="bg-primary-400 hover:bg-primary-500 text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
+    >
+      {isSubmitting ? (
+        <div className="flex items-center justify-center">
+          <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+          Building Your Party...
+        </div>
+      ) : currentStep === steps.length - 1 ? (
+        'Create Magic ✨'
+      ) : (
+        <>
+          Continue
+          <ArrowRight className="w-4 h-4" />
+        </>
+      )}
+    </button>
+  </div>
             </div>
 
             {/* Summary Card */}
@@ -897,11 +933,39 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                       <span>£{formData.budget}</span>
                     </div>
                   )}
-                  {formData.timeSlot && (
+                  {formData.startTime && formData.duration && (
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-400" />
                       <span className="font-medium">Time:</span>
-                      <span className="capitalize">{formData.timeSlot} ({formData.duration}h)</span>
+                      <span>
+                        {(() => {
+                          const startTime = formData.startTime;
+                          const duration = parseFloat(formData.duration);
+                          
+                          // Format start time
+                          const [startHour, startMinute] = startTime.split(':').map(Number);
+                          const startAmPm = startHour >= 12 ? 'pm' : 'am';
+                          const start12Hour = startHour === 0 ? 12 : startHour > 12 ? startHour - 12 : startHour;
+                          const startFormatted = `${start12Hour}${startMinute > 0 ? `:${startMinute.toString().padStart(2, '0')}` : ''}${startAmPm}`;
+                          
+                          // Calculate end time
+                          const totalMinutes = startHour * 60 + startMinute + (duration * 60);
+                          const endHour = Math.floor(totalMinutes / 60);
+                          const endMinute = Math.floor(totalMinutes % 60);
+                          const endAmPm = endHour >= 12 ? 'pm' : 'am';
+                          const end12Hour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
+                          const endFormatted = `${end12Hour}${endMinute > 0 ? `:${endMinute.toString().padStart(2, '0')}` : ''}${endAmPm}`;
+                          
+                          return `${startFormatted} - ${endFormatted} (${duration}h)`;
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  {selectedTheme && selectedTheme !== 'no-theme' && (
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-gray-400" />
+                      <span className="font-medium">Theme:</span>
+                      <span className="capitalize">{selectedTheme.replace('-', ' ')}</span>
                     </div>
                   )}
                 </div>

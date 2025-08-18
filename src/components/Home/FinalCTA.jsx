@@ -26,7 +26,7 @@ export default function FinalCTA() {
               </p>
               <div className="space-y-4">
                 <Link
-                  href="#"
+                  href="/party-builder"
                   className="block w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-8 py-5 rounded-2xl transition-all duration-300 text-center text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Start Booking Now

@@ -95,7 +95,8 @@ export default function LocalStorageDashboard() {
     addAddon,
     removeAddon,
     addSupplier,         // ✅ Make sure this is imported
-    hasAddon
+    hasAddon,
+    removeAddonFromSupplier,
   } = usePartyPlan()
 
   // Other hooks
@@ -144,6 +145,29 @@ export default function LocalStorageDashboard() {
     balloons: partyPlan.balloons || null,
   }
 
+  // 🔍 DEBUG: Check what's in the suppliers object
+console.log('🔍 SUPPLIERS DEBUG:')
+Object.entries(suppliers).forEach(([type, supplier]) => {
+  if (supplier) {
+    console.log(`  ${type}:`, {
+      name: supplier.name,
+      selectedAddons: supplier.selectedAddons,
+      selectedAddonsLength: supplier.selectedAddons?.length || 0,
+      packageData: supplier.packageData,
+      hasSelectedAddons: !!supplier.selectedAddons,
+      allKeys: Object.keys(supplier)
+    })
+  }
+})
+
+// 🔍 DEBUG: Check what's in the global addons array
+console.log('🔍 GLOBAL ADDONS DEBUG:', {
+  addons: addons,
+  addonsLength: addons.length,
+  supplierAddons: addons.filter(addon => addon.supplierId),
+  standaloneAddons: addons.filter(addon => !addon.supplierId)
+})
+
   // NEW: Enhanced modal handlers
   const openSupplierModal = (category, theme = 'superhero') => {
     console.log('🔓 Opening supplier modal:', { category, theme })
@@ -181,14 +205,25 @@ export default function LocalStorageDashboard() {
       if (result.success) {
         console.log('✅ Supplier added to localStorage successfully!')
         
-        // Add any selected addons
+        // ✅ FIXED: Add any selected addons with proper supplier properties
         if (selectedAddons && selectedAddons.length > 0) {
+          console.log('🔧 Adding supplier addons:', selectedAddons)
+          
           for (const addon of selectedAddons) {
-            await handleAddAddon({
-              ...addon,
-              supplierId: supplier.id,
-              supplierName: supplier.name
-            })
+            console.log('🔧 Processing addon:', addon)
+            
+            // ✅ Call addAddon with the supplier ID as second parameter
+            await handleAddAddon(addon, supplier.id)
+            
+            // Alternative approach - call addAddon directly with properly tagged addon:
+            // await addAddon({
+            //   ...addon,
+            //   supplierId: supplier.id,
+            //   supplierName: supplier.name,
+            //   attachedToSupplier: true,
+            //   isSupplierAddon: true,
+            //   addedAt: new Date().toISOString()
+            // })
           }
         }
         
@@ -206,6 +241,7 @@ export default function LocalStorageDashboard() {
       console.error('💥 Error in handleSupplierSelection:', error)
     }
   }
+  
   // NEW: Modal restoration effect
   useEffect(() => {
     const shouldRestoreModal = searchParams.get('restoreModal')
@@ -291,19 +327,29 @@ export default function LocalStorageDashboard() {
     }
   }, [searchParams, router])
 
-  // Add-on handlers
   const handleAddAddon = async (addon, supplierId = null) => {
+
+    
     if (hasAddon(addon.id)) {
+      console.log('🔍 HANDLEADDADDON DEBUG - Addon already exists, returning early')
       return
     }
     
     try {
+      // ✅ FIXED: Preserve existing supplier properties from addon, only override if not present
+      const finalSupplierId = addon.supplierId || supplierId
+      const finalSupplierName = addon.supplierName || (finalSupplierId ? suppliers[finalSupplierId]?.name : 'General')
+      
       const addonWithSupplier = {
         ...addon,
-        supplierId: supplierId,
-        supplierName: supplierId ? suppliers[supplierId]?.name : 'General',
+        supplierId: finalSupplierId,
+        supplierName: finalSupplierName,
+        attachedToSupplier: !!finalSupplierId,  // ✅ Add this flag
+        isSupplierAddon: !!finalSupplierId,     // ✅ Add this flag
         addedAt: new Date().toISOString()
       }
+      
+      console.log('🔧 Final addon being added:', addonWithSupplier)
       
       const result = await addAddon(addonWithSupplier)
       
@@ -319,7 +365,30 @@ export default function LocalStorageDashboard() {
 
   const handleRemoveAddon = async (addonId) => {
     try {
-      const result = await removeAddon(addonId)
+      console.log('🗑️ Attempting to remove addon:', addonId)
+      
+      // First try the regular remove (for global addons)
+      let result = await removeAddon(addonId)
+      
+      if (!result.success) {
+        console.log('🔄 Not found in global addons, checking supplier addons...')
+        
+        // If not found in global addons, try each supplier
+        const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons']
+        
+        for (const supplierType of supplierTypes) {
+          const supplier = suppliers[supplierType]
+          if (supplier && supplier.selectedAddons) {
+            const hasAddon = supplier.selectedAddons.some(addon => addon.id === addonId)
+            if (hasAddon) {
+              console.log(`🎯 Found addon in ${supplierType}, removing...`)
+              result = await removeAddonFromSupplier(supplierType, addonId)
+              break
+            }
+          }
+        }
+      }
+      
       if (result.success) {
         console.log("✅ Add-on removed successfully!")
       } else {
@@ -329,7 +398,6 @@ export default function LocalStorageDashboard() {
       console.error("💥 Error removing addon:", error)
     }
   }
-
   // Navigation handlers
   const handleAddSupplier = () => {
     navigateWithContext('/browse', 'dashboard')

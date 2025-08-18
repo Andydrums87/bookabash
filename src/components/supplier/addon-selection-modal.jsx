@@ -46,9 +46,27 @@ export default function AddonSelectionModal({
   }
 
   const handleConfirm = () => {
+    console.log('🔧 AddonSelectionModal - Tagging selected addons with supplier properties')
+    console.log('🔧 Original selectedAddons:', selectedAddons)
+    console.log('🔧 Supplier info:', { id: supplier?.id, name: supplier?.name, category: supplier?.category })
+  
+    // ✅ FIXED: Tag selected add-ons as supplier add-ons
+    const taggedAddons = selectedAddons.map(addon => ({
+      ...addon,
+      supplierId: supplier.id,              // ← Link to supplier
+      supplierName: supplier.name,          // ← Show supplier name
+      attachedToSupplier: true,            // ← Flag as supplier addon
+      isSupplierAddon: true,               // ← Additional identification
+      supplierType: supplier.category,     // ← Supplier category
+      addedAt: new Date().toISOString(),   // ← Timestamp
+      displayId: `${supplier.id}-${addon.id}` // ← Unique display ID
+    }))
+  
+    console.log('🔧 Tagged addons:', taggedAddons)
+  
     onConfirm({
       package: selectedPackage,
-      addons: selectedAddons,
+      addons: taggedAddons, // ✅ Use tagged addons instead of raw selectedAddons
       totalPrice: totalPrice,
     })
   }

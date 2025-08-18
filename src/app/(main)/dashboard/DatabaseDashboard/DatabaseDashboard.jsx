@@ -77,7 +77,7 @@ const [notification, setNotification] = useState(null)
     handleAddAddon,
     handleRemoveAddon,
     handlePartyDetailsUpdate,
-partyDetails,
+    partyDetails,
     partyTheme,
     themeLoaded
   } = usePartyData()
@@ -316,18 +316,22 @@ const [isCancelling, setIsCancelling] = useState(false)
 // Replace your handleModalSendEnquiry function with this:
 
 const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
-  console.log('🔍 DEBUG: SupplierAddedConfirmationModal handleSendEnquiry:')
-  console.log('  - supplier:', supplier?.name)
-  console.log('  - selectedPackage:', selectedPackage?.name)
-  console.log('  - partyId (direct prop):', partyId)
-  console.log('  - partyDetails.id:', partyDetails?.id)
-  console.log('  - onSendEnquiry type:', typeof onSendEnquiry)
-
-
-  
   setSendingEnquiry(true)
   
   try {
+    // ✅ Check sessionStorage for replacement context
+    const replacementContextString = sessionStorage.getItem('replacementContext')
+    let replacementContext = null
+    
+    if (replacementContextString) {
+      try {
+        replacementContext = JSON.parse(replacementContextString)
+        console.log('🔄 Found replacement context:', replacementContext)
+      } catch (error) {
+        console.error('❌ Error parsing replacement context:', error)
+      }
+    }
+
     // STEP 1: Add supplier to party plan
     console.log('📝 STEP 1: Adding supplier to party plan...')
     const addResult = await partyDatabaseBackend.addSupplierToParty(
@@ -353,14 +357,46 @@ const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
 
     if (!enquiryResult.success) {
       console.error('❌ Enquiry failed but supplier was added:', enquiryResult.error)
-      // Don't throw error - supplier was successfully added
       setEnquiryFeedback(`⚠️ ${supplier.name} added, but enquiry failed to send`)
     } else {
       console.log('✅ STEP 2: Enquiry sent successfully')
     }
 
-    // STEP 3: Close modal and refresh
-    console.log('🔄 STEP 3: Refreshing data and closing modal...')
+    // ✅ STEP 3: If this was a replacement, mark old enquiry as processed
+    if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
+      console.log('🔄 === REPLACEMENT PROCESSING ===')
+      console.log('🔄 Replacement context:', replacementContext)
+      console.log('🔄 Party ID:', partyId)
+      console.log('🔄 Original supplier category:', replacementContext.originalSupplierCategory)
+      console.log('🔄 New supplier:', supplier.name)
+      
+      try {
+        const markResult = await partyDatabaseBackend.markReplacementAsProcessed(
+          partyId,
+          replacementContext.originalSupplierCategory,
+          supplier.id
+        )
+        
+        console.log('🔄 Mark replacement result:', markResult)
+        
+        if (markResult.success) {
+          console.log('✅ STEP 3: Replacement marked as processed successfully')
+        } else {
+          console.error('⚠️ STEP 3: Failed to mark replacement as processed:', markResult.error)
+        }
+      } catch (error) {
+        console.error('❌ STEP 3: Exception marking replacement as processed:', error)
+      }
+      
+      // ✅ Clear the replacement context
+      sessionStorage.removeItem('replacementContext')
+      console.log('🧹 Cleared replacement context from sessionStorage')
+    } else {
+      console.log('ℹ️ Not a replacement flow - skipping replacement processing')
+    }
+
+    // STEP 4: Close modal and refresh (unchanged)
+    console.log('🔄 STEP 4: Refreshing data and closing modal...')
     await refreshPartyData()
     setShowSupplierAddedModal(false)
     setAddedSupplierData(null)
@@ -375,10 +411,13 @@ const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
     console.error('❌ CRITICAL ERROR in handleModalSendEnquiry:', error)
     setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
   } finally {
-    console.log('🏁 STEP 4: Setting sendingEnquiry to false')
+    console.log('🏁 FINAL STEP: Setting sendingEnquiry to false')
     setSendingEnquiry(false)
   }
 }
+
+
+
 
 const handleCancelEnquiry = async (supplierType) => {
   console.log('🚫 handleCancelEnquiry called with:', supplierType)
@@ -473,7 +512,8 @@ const handleCancelEnquiry = async (supplierType) => {
   const handlePaymentReady = () => router.push('/payment/secure-party')
   const handleCreateInvites = () => window.location.href = "/e-invites"
 
-  
+
+
 
   // Loading state
   if (loading || !themeLoaded || phaseLoading) {
@@ -562,21 +602,25 @@ const handleCancelEnquiry = async (supplierType) => {
  partyId={partyId}
  enquiries={enquiries}
  hasEnquiriesPending={hasEnquiriesPending}
- partyId={partyId}
+
 />
       
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
  
 
-        <PartyHeader 
-          theme={partyTheme}
-          
-          partyDetails={partyDetails}
-          onPartyDetailsChange={handlePartyDetailsUpdate}
-          isPaymentConfirmed={isPaymentConfirmed}
-          enquiries={enquiries}
-          isSignedIn={true}
-        />
+      <PartyHeader 
+  theme={partyTheme}
+  partyDetails={partyDetails}
+  onPartyDetailsChange={handlePartyDetailsUpdate}
+  // NEW: Add these props to support database time handling
+  dataSource={dataSource}           // 'database' or 'localStorage'
+  currentParty={currentParty}       // The full party object from database
+  // Existing props
+  isPaymentConfirmed={isPaymentConfirmed}
+  enquiries={enquiries}
+  isSignedIn={true}
+
+/>
 
 
 {allSuppliersConfirmed && !hasSeenPartyReadyModal && !isPaymentConfirmed && (

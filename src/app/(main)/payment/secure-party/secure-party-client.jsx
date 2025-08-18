@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
@@ -31,6 +32,8 @@ import {
 // Hooks and Backend
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
+
+
 
 // Initialize Stripe with proper configuration
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
@@ -417,6 +420,93 @@ export default function PaymentPageContent() {
  // Party plan hook for current data
 const { partyPlan, addons } = usePartyPlan()
 
+useEffect(() => {
+  const loadPaymentData = async () => {
+    try {
+      // Get current user
+      const userResult = await partyDatabaseBackend.getCurrentUser()
+      if (!userResult.success) {
+        router.push('/auth/signin?redirect=/payment')
+        return
+      }
+      setUser(userResult.user)
+
+      // Get current party from database
+      const partyResult = await partyDatabaseBackend.getCurrentParty()
+      if (!partyResult.success || !partyResult.party) {
+        router.push('/dashboard')
+        return
+      }
+
+      setPartyId(partyResult.party.id)
+      setPartyDetails({
+        id: partyResult.party.id,
+        childName: partyResult.party.child_name,
+        theme: partyResult.party.theme,
+        date: partyResult.party.party_date,
+        childAge: partyResult.party.child_age,
+        location: partyResult.party.location,
+        guestCount: partyResult.party.guest_count,
+        email: userResult.user.email,
+        parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
+      })
+
+      // ✅ SIMPLE: Get accepted enquiries for payment status check
+      const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
+      
+      // ✅ SIMPLE: Get supplier data from party plan (which has all the real data)
+      const partyPlan = partyResult.party.party_plan || {}
+      
+      if (enquiriesResult.success) {
+        // Get categories that are accepted but unpaid
+        const unpaidAcceptedEnquiries = enquiriesResult.enquiries.filter(enquiry => 
+          enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid'
+        )
+        
+        console.log('💳 Unpaid accepted enquiries:', unpaidAcceptedEnquiries)
+        console.log('🎪 Party plan:', partyPlan)
+        
+        // ✅ MAP: Use party plan data for supplier details
+        const confirmed = unpaidAcceptedEnquiries.map(enquiry => {
+          const supplierCategory = enquiry.supplier_category
+          const supplierFromPlan = partyPlan[supplierCategory]
+          
+          if (!supplierFromPlan) {
+            console.warn(`⚠️ No supplier found in party plan for category: ${supplierCategory}`)
+            return null
+          }
+          
+          return {
+            id: supplierFromPlan.id,
+            name: supplierFromPlan.name,
+            image: supplierFromPlan.image || '/placeholder.jpg',
+            rating: supplierFromPlan.rating || 4.5,
+            description: supplierFromPlan.description || 'Professional service provider',
+            category: supplierCategory,
+            price: enquiry.quoted_price || supplierFromPlan.price || 0,
+            enquiry_id: enquiry.id,
+            // ✅ BONUS: Include package details if available
+            packageData: supplierFromPlan.packageData,
+            selectedAddons: supplierFromPlan.selectedAddons || [],
+            hasAddons: (supplierFromPlan.selectedAddons || []).length > 0
+          }
+        }).filter(Boolean) // Remove any null entries
+        
+        console.log('✅ Final confirmed suppliers for payment:', confirmed)
+        setConfirmedSuppliers(confirmed)
+      }
+
+    } catch (error) {
+      console.error('Error loading payment data:', error)
+      router.push('/dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  loadPaymentData()
+}, [router])
+
 // Calculate cost only for unpaid confirmed suppliers
 const totalCost = confirmedSuppliers.reduce((sum, supplier) => sum + supplier.price, 0)
 const depositAmount = Math.max(50, totalCost * 0.2) // 20% deposit or £50 minimum
@@ -641,7 +731,7 @@ const confirmed = enquiriesResult.enquiries
                 {confirmedSuppliers.map((supplier) => (
                   <div key={supplier.id} className="flex items-center space-x-3 md:space-x-4 p-3 md:p-4 bg-gray-50 rounded-xl">
                     <img 
-                      src={supplier.image || "/placeholder.pnh"} 
+                      src={supplier.image || "/placeholder.png"} 
                       alt={supplier.name}
                       className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover"
                     />

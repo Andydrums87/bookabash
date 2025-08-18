@@ -1,11 +1,11 @@
-
 "use client"
+import { useState } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Gift, X } from "lucide-react"
+import { Gift, X, ChevronDown, ChevronUp } from "lucide-react"
 
 export default function SelectedSupplierCard({
   type,
@@ -18,6 +18,8 @@ export default function SelectedSupplierCard({
   handleRemoveAddon,
   getSupplierDisplayName
 }) {
+  const [showAddons, setShowAddons] = useState(false)
+
   const getDisplayName = (supplierType) => {
     if (getSupplierDisplayName) {
       return getSupplierDisplayName(supplierType)
@@ -34,6 +36,14 @@ export default function SelectedSupplierCard({
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
+
+  // ✅ Use totalPrice if available, otherwise fall back to price
+  const displayPrice = supplier.totalPrice || supplier.price || 0
+  const hasAddons = supplierAddons && supplierAddons.length > 0
+  
+  // Calculate breakdown for display
+  const basePrice = supplier.price || 0
+  const addonsTotal = supplierAddons?.reduce((sum, addon) => sum + (addon.price || 0), 0) || 0
 
   return (
     <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
@@ -78,16 +88,14 @@ export default function SelectedSupplierCard({
                 <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-3xl font-black text-white drop-shadow-lg">£{supplier.price}</span>
-                  {supplierAddons.length > 0 && (
-                    <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 border border-white/30">
-                      <span className="text-sm font-semibold text-white flex items-center gap-2">
-                        <Gift className="w-4 h-4" />
-                        {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
-                        <span className="ml-2">+£{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}</span>
-                      </span>
-                    </div>
-                  )}
+                  <div className="text-white">
+                    <span className="text-3xl font-black drop-shadow-lg">£{displayPrice}</span>
+                    {hasAddons && addonsTotal > 0 && (
+                      <div className="text-xs text-white/80 mt-1">
+                        Base: £{basePrice} + Add-ons: £{addonsTotal}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -97,35 +105,52 @@ export default function SelectedSupplierCard({
 
       {/* Bottom section */}
       <div className="p-6 bg-white">
-        {/* Add-ons section */}
-        {supplierAddons.length > 0 && (
+        {/* ✅ COMPACT Add-ons dropdown header */}
+        {hasAddons && (
           <div className="mb-6">
-            <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              <Gift className="w-4 h-4 text-[hsl(var(--primary-600))]" />
-              Selected Add-ons ({supplierAddons.length})
-            </h4>
-            <div className="space-y-3">
-              {supplierAddons.map((addon) => (
-                <div key={addon.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{addon.name}</p>
-                    <p className="text-xs text-gray-600 truncate">{addon.description}</p>
+            <button
+              onClick={() => setShowAddons(!showAddons)}
+              className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))] hover:from-[hsl(var(--primary-100))] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Gift className="w-4 h-4 text-[hsl(var(--primary-600))]" />
+                <span className="font-bold text-gray-500 text-xs">
+                  Selected Add-ons ({supplierAddons.length})
+                </span>
+             
+              </div>
+              {showAddons ? (
+                <ChevronUp className="w-4 h-4 text-gray-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              )}
+            </button>
+
+            {/* ✅ COLLAPSIBLE Add-ons content */}
+            {showAddons && (
+              <div className="mt-3 space-y-3 animate-in slide-in-from-top duration-200">
+                {supplierAddons.map((addon) => (
+                  <div key={addon.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 ml-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{addon.name}</p>
+                      <p className="text-xs text-gray-600 truncate">{addon.description}</p>
+                    </div>
+                    <div className="flex items-center gap-3 ml-3">
+                      <span className="text-sm font-bold text-[hsl(var(--primary-600))]">£{addon.price}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveAddon(addon.id)
+                        }}
+                        className="w-6 h-6 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 ml-3">
-                    <span className="text-sm font-bold text-[hsl(var(--primary-600))]">£{addon.price}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRemoveAddon(addon.id)
-                      }}
-                      className="w-6 h-6 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

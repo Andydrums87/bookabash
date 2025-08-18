@@ -11,6 +11,133 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
 
   const date = formatDateForDisplay(inviteData.date)
 
+  // Helper function to format time for 12-hour display
+  const formatTimeForDisplay = (time24) => {
+    if (!time24) return ""
+    try {
+      const [hours, minutes] = time24.split(':')
+      const date = new Date()
+      date.setHours(parseInt(hours), parseInt(minutes || 0))
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: minutes && minutes !== '00' ? '2-digit' : undefined,
+        hour12: true
+      }).toLowerCase().replace(' ', '')
+    } catch (error) {
+      return time24 // Return original if parsing fails
+    }
+  }
+
+  // Helper function to format time range from start_time and end_time
+  const getTimeDisplayValue = () => {
+    const startTime = inviteData.start_time || inviteData.startTime
+    const endTime = inviteData.end_time || inviteData.endTime
+    
+    if (startTime && endTime) {
+      const formattedStart = formatTimeForDisplay(startTime)
+      const formattedEnd = formatTimeForDisplay(endTime)
+      return `${formattedStart}-${formattedEnd}`
+    } else if (startTime) {
+      const formattedStart = formatTimeForDisplay(startTime)
+      return `${formattedStart}-?`
+    } else if (inviteData.time) {
+      // Fallback to legacy time field if it exists
+      return inviteData.time
+    }
+    return ""
+  }
+
+  // Helper function to parse time range input and update both start_time and end_time
+  const handleTimeChange = (value) => {
+    // Check if value contains a dash (start - end format)
+    if (value.includes('-') || value.includes(' - ')) {
+      // Split on either format: "2pm-4pm" or "2pm - 4pm"
+      const splitChar = value.includes(' - ') ? ' - ' : '-'
+      const [startTime, endTime] = value.split(splitChar).map(t => t.trim())
+      
+      // Convert to 24-hour format for database storage if needed
+      const convertTo24Hour = (time12) => {
+        try {
+          if (time12.includes(':')) {
+            // If already has colon, assume it's in proper format
+            return time12
+          }
+          
+          // Handle formats like "2pm", "2:30pm", etc.
+          const time = time12.toLowerCase().replace(/\s/g, '')
+          const isPM = time.includes('pm')
+          const isAM = time.includes('am')
+          
+          let timeStr = time.replace(/[ap]m/g, '')
+          
+          if (!timeStr.includes(':')) {
+            timeStr += ':00'
+          }
+          
+          const [hours, minutes] = timeStr.split(':')
+          let hour24 = parseInt(hours)
+          
+          if (isPM && hour24 !== 12) {
+            hour24 += 12
+          } else if (isAM && hour24 === 12) {
+            hour24 = 0
+          }
+          
+          return `${hour24.toString().padStart(2, '0')}:${minutes}`
+        } catch (error) {
+          return time12 // Return original if conversion fails
+        }
+      }
+      
+      // Update both start_time and end_time in 24-hour format
+      handleInputChange("start_time", convertTo24Hour(startTime))
+      handleInputChange("end_time", convertTo24Hour(endTime))
+      
+      // Also update legacy time field for backwards compatibility
+      handleInputChange("time", value)
+    } else {
+      // If no dash, treat as start time only
+      const convertTo24Hour = (time12) => {
+        try {
+          if (time12.includes(':')) {
+            return time12
+          }
+          
+          const time = time12.toLowerCase().replace(/\s/g, '')
+          const isPM = time.includes('pm')
+          const isAM = time.includes('am')
+          
+          let timeStr = time.replace(/[ap]m/g, '')
+          
+          if (!timeStr.includes(':')) {
+            timeStr += ':00'
+          }
+          
+          const [hours, minutes] = timeStr.split(':')
+          let hour24 = parseInt(hours)
+          
+          if (isPM && hour24 !== 12) {
+            hour24 += 12
+          } else if (isAM && hour24 === 12) {
+            hour24 = 0
+          }
+          
+          return `${hour24.toString().padStart(2, '0')}:${minutes}`
+        } catch (error) {
+          return time12
+        }
+      }
+      
+      handleInputChange("start_time", convertTo24Hour(value))
+      handleInputChange("time", value)
+      
+      // Clear end_time if it was previously set
+      if (inviteData.end_time) {
+        handleInputChange("end_time", "")
+      }
+    }
+  }
+
   return (
     <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
       <CardContent className="p-4 sm:p-6">
@@ -59,11 +186,7 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
                 placeholder="Party date (e.g., 27/08/2025)"
                 className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
               />
-              {inviteData.date && (
-                <div className="mt-1 text-xs text-gray-600">
-                  Will display as: <span className="font-bold">"{formatDateForDisplay(inviteData.date)}"</span>
-                </div>
-              )}
+             
             </div>
             
             <div>
@@ -71,11 +194,12 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
                 Time *
               </label>
               <Input
-                value={inviteData.time}
-                onChange={(e) => handleInputChange("time", e.target.value)}
-                placeholder="Party time"
+                value={getTimeDisplayValue()}
+                onChange={(e) => handleTimeChange(e.target.value)}
+                placeholder="Party time (e.g., 2pm-4pm)"
                 className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
               />
+             
             </div>
           </div>
 

@@ -16,7 +16,7 @@ const getSupplierGradient = (category) => {
     'Activities': 'bg-gradient-to-br from-cyan-400 to-blue-400',
     'PartyBags': 'bg-gradient-to-br from-yellow-400 to-orange-400',
     'Balloons': 'bg-gradient-to-br from-teal-400 to-cyan-400',
-    'Einvites': 'bg-gradient-to-br from-violet-400 to-purple-400'
+
   }
   return gradients[category] || 'bg-gradient-to-br from-gray-400 to-slate-400'
 }
