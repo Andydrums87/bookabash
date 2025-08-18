@@ -313,7 +313,7 @@ const handleSubmit = async (e) => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading || oauthLoading}
-                  className="focus:ring-primary-500 focus:border-primary-500 text-xs placeholder:text-xs placeholder:text-gray-400"
+                  className="focus:ring-primary-500 focus:border-primary-500 text-base placeholder:text-xs placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
@@ -323,7 +323,7 @@ const handleSubmit = async (e) => {
                   </Label>
                   <Link
                     href="/forgot-password"
-                    className={`text-sm text-primary-600 hover:text-primary-700 hover:underline  ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
+                    className={`text-base text-primary-600 hover:text-primary-700 hover:underline  ${isLoading || oauthLoading ? "pointer-events-none opacity-50" : ""}`}
                     aria-disabled={isLoading || oauthLoading}
                     tabIndex={isLoading || oauthLoading ? -1 : undefined}
                   >
@@ -339,7 +339,7 @@ const handleSubmit = async (e) => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading || oauthLoading}
-                    className="focus:ring-primary-500 focus:border-primary-500 placeholder:text-gray-400 text-xs"
+                    className="focus:ring-primary-500 focus:border-primary-500 placeholder:text-gray-400 text-base"
                   />
                   <Button
                     type="button"

@@ -14,7 +14,7 @@ const SaveCompleteStep = ({
       <CardContent className="p-6 sm:p-8 text-center">
         {/* Ready Header */}
         <div className="flex items-center justify-center mb-6">
-          <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full">
+          <div className="p-4 bg-teal-500 rounded-full">
             <CheckCircle className="w-8 h-8 text-white" />
           </div>
         </div>
@@ -45,7 +45,7 @@ const SaveCompleteStep = ({
         )}
 
         {/* Party Details Summary */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl border border-[hsl(var(--primary-200))]">
+        {/* <div className="mb-8 p-6 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl border border-[hsl(var(--primary-200))]">
           <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center justify-center gap-2">
             <Calendar className="w-5 h-5 text-primary-600" />
             Party Details
@@ -78,10 +78,10 @@ const SaveCompleteStep = ({
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* What happens next */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-[hsl(var(--primary-50))] rounded-xl border border-blue-200">
+        {/* <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-[hsl(var(--primary-50))] rounded-xl border border-blue-200">
           <h3 className="font-bold text-lg text-gray-900 mb-4">What happens when you complete?</h3>
           <div className="text-sm text-gray-700 space-y-3">
             <div className="flex items-start gap-3">
@@ -101,10 +101,10 @@ const SaveCompleteStep = ({
               <span>You'll be redirected to your dashboard to manage the invitation</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Call to action - points to wizard navigation */}
-        <div className="p-4 bg-gradient-to-r from-yellow-50 to-[hsl(var(--primary-100))] rounded-xl border border-[hsl(var(--primary-200))]">
+        <div className="p-4 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl border border-[hsl(var(--primary-200))]">
           <p className="text-sm font-medium text-gray-700">
             🎯 Click the <strong>"Complete"</strong> button below to finalize your invitation!
           </p>

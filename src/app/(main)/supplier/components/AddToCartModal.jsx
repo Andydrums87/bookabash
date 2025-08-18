@@ -25,7 +25,8 @@ export default function AlaCarteModal({
   const [childAge, setChildAge] = useState("")
   const [partyDate, setPartyDate] = useState(preSelectedDate || "")
   const [postcode, setPostcode] = useState("")
-  const [guestCount, setGuestCount] = useState("")
+  // Initialize guest count as undefined for dropdown placeholder to show
+  const [guestCount, setGuestCount] = useState()
   const [selectedAddons, setSelectedAddons] = useState([])
   const [totalPrice, setTotalPrice] = useState(selectedPackage?.price || 0)
 
@@ -173,7 +174,7 @@ export default function AlaCarteModal({
     setChildAge("")
     setPartyDate(preSelectedDate || "")
     setPostcode("")
-    setGuestCount("")
+    setGuestCount(undefined)
     setSelectedAddons([])
     setTotalPrice(selectedPackage?.price || 0)
     onClose()
@@ -188,6 +189,8 @@ export default function AlaCarteModal({
   if (!supplier || !selectedPackage) {
     return null
   }
+
+  // Remove the guestCountOptions array since we're not using dropdown anymore
 
   // Get modal configuration based on step
   const getModalConfig = () => {
@@ -354,8 +357,8 @@ export default function AlaCarteModal({
                 <div className="relative">
                   <Cake className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
                   <Select value={childAge} onValueChange={setChildAge}>
-                    <SelectTrigger className="w-full pl-10 h-11 text-base border-2 border-gray-200 focus:border-primary-400 rounded-lg">
-                      <SelectValue placeholder="Select age" />
+                    <SelectTrigger className="w-full pl-10 h-11 border-2 border-gray-200 focus:border-primary-400 rounded-lg">
+                      <SelectValue placeholder="Select age" className="text-sm" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="2">2 years old</SelectItem>
@@ -380,15 +383,15 @@ export default function AlaCarteModal({
               <Label htmlFor="partyDate" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 Party date
                 {preSelectedDate && (
-                  <span className="text-xs text-white bg-primary-500 px-2 py-0.5 rounded-full">
-                    ✓ Confirmed available
+                  <span className="text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
+                    ✓ Available
                   </span>
                 )}
               </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 {preSelectedDate ? (
-                  <div className="pl-10 pr-4 h-11 text-base bg-primary-500 rounded-lg flex items-center text-white font-medium">
+                  <div className="pl-10 pr-4 h-11 text-base bg-emerald-50 border-2 border-emerald-200 rounded-lg flex items-center text-emerald-800 font-medium">
                     {new Date(preSelectedDate + 'T12:00:00').toLocaleDateString('en-US', { 
                       weekday: 'short', 
                       month: 'short', 
@@ -433,18 +436,20 @@ export default function AlaCarteModal({
                   Kids attending
                 </Label>
                 <div className="relative">
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="guestCount"
-                    type="number"
-                    value={guestCount}
-                    onChange={(e) => setGuestCount(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="pl-10 h-11 text-base border-2 border-gray-200 focus:border-primary-400 rounded-lg"
-                    placeholder="12"
-                    min="1"
-                    max="50"
-                  />
+                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
+                  <Select value={guestCount} onValueChange={setGuestCount}>
+                    <SelectTrigger className="w-full pl-10 h-11 py-5 border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-lg placeholder:text-xs">
+                      <SelectValue placeholder="How many kids?" className="text-xs" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">Up to 5 kids</SelectItem>
+                      <SelectItem value="10">Up to 10 kids</SelectItem>
+                      <SelectItem value="15">Up to 15 kids</SelectItem>
+                      <SelectItem value="20">Up to 20 kids</SelectItem>
+                      <SelectItem value="25">Up to 25 kids</SelectItem>
+                      <SelectItem value="30">30+ kids</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

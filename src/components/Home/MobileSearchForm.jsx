@@ -48,13 +48,16 @@ export default function MobileSearchForm({
   return (
     <div className="md:hidden px-4 -mt-37 py-10 relative z-30 bg-primary-50" id="search-form">
  <div className="text-center mb-16">
-          <h2 className="text-5xl font-black text-gray-900 mb-6">
-            Quick Start{" "}
-            <span className="relative text-primary-500">
-              Snap!!!!
-              <div className="absolute -bottom-2 left-0 w-full h-3 bg-primary-500 -skew-x-12"></div>
-            </span>
-          </h2>
+ <h2 className="text-5xl font-black text-gray-900 mb-3">
+          Plan Your{" "}
+          <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
+            Dream Party
+            <div className="absolute -bottom-1 left-0 w-full h-2 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] -skew-x-12 opacity-30"></div>
+          </span>
+        </h2>
+        <p className="text-xl text-gray-700 mt-10 font-medium">
+          In just 30 seconds! 
+        </p>
         </div>
          <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-6 shadow-2xl border border-[hsl(var(--primary-200))]">
   <div className="space-y-6">
@@ -70,8 +73,8 @@ export default function MobileSearchForm({
         <Button
           variant="outline"
           className={`
-            w-full justify-start text-left font-normal h-12 pl-10 pr-4
-            bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl
+            w-full font-normal h-12 
+            bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
             hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
             ${!formData.date && "text-gray-500"}
             ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
@@ -79,7 +82,9 @@ export default function MobileSearchForm({
         >
           <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
           {formData.date && !isNaN(new Date(formData.date)) ? (
-            format(new Date(formData.date), "EEEE, MMMM d, yyyy")
+            <span className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</span>
+            
+ 
           ) : (
             <span className="ml-5">Select event date</span>
           )}
@@ -208,7 +213,7 @@ export default function MobileSearchForm({
           }}
           placeholder="Enter your postcode"
           className={`
-            bg-gray-50 border-gray-200 focus:border-primary-400 focus:ring-primary-400/20 rounded-xl h-12 pl-10 pr-10 text-base
+            bg-gray-50 placeholder:text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-base
             ${formData.postcode && !postcodeValid ? 'border-red-300 focus:border-red-500' : ''}
           `}
           required

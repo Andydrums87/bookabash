@@ -11,7 +11,11 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
 
   const date = formatDateForDisplay(inviteData.date)
 
-  // Helper function to format time for 12-hour display
+  // Helper function to get first name only from childName
+  const getFirstNameOnly = (fullName) => {
+    if (!fullName) return ""
+    return fullName.split(' ')[0]
+  }
   const formatTimeForDisplay = (time24) => {
     if (!time24) return ""
     try {
@@ -138,6 +142,8 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
     }
   }
 
+  // Helper function to format time for 12-hour display
+
   return (
     <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
       <CardContent className="p-4 sm:p-6">
@@ -151,12 +157,24 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                Child's Name *
+                Child's First Name *
               </label>
               <Input
-                value={inviteData.childName}
-                onChange={(e) => handleInputChange("childName", e.target.value)}
-                placeholder="Enter child's name"
+                value={getFirstNameOnly(inviteData.childName)}
+                onChange={(e) => {
+                  // Only store the first name
+                  const input = e.target.value
+                  const firstName = input.split(' ')[0]
+                  handleInputChange("childName", firstName)
+                }}
+                onPaste={(e) => {
+                  // Handle paste events to also extract first name only
+                  e.preventDefault()
+                  const pastedText = e.clipboardData.getData('text')
+                  const firstName = pastedText.split(' ')[0]
+                  handleInputChange("childName", firstName)
+                }}
+                placeholder="Enter child's first name"
                 className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
               />
             </div>

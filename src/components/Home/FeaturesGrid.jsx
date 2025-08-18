@@ -13,10 +13,7 @@ export default function FeaturesGrid() {
   <div className="text-center mb-20">
     <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-8 leading-tight">
       Lets party the smart way!
-      <br />
-      Magical themes. Trusted suppliers,
-      <br />
-      zero grown-up stress
+  
     </h2>
     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
       {

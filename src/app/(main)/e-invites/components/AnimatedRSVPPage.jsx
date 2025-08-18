@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useContextualNavigation } from "@/hooks/useContextualNavigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 import { 
   Calendar, 
   Clock, 
@@ -112,15 +113,7 @@ export default function AnimatedRSVPPage() {
       }
 
       const invite = result.invite
-      console.log('✅ Loaded invite:', invite)
-      console.log('📋 Invite data structure:', {
-        id: invite.id,
-        theme: invite.theme,
-        has_generated_image: !!invite.generated_image,
-        has_invite_data: !!invite.invite_data,
-        has_parties: !!invite.parties,
-        invite_data_keys: invite.invite_data ? Object.keys(invite.invite_data) : 'null'
-      })
+   
 
       // Structure the invite details for the component
       const structuredInviteDetails = {
@@ -360,21 +353,7 @@ export default function AnimatedRSVPPage() {
                   />
                 </svg>
 
-                {/* Magical sparkles around envelope */}
-                <div className={`absolute -inset-8 ${animationPhase === 'envelope' || animationPhase === 'opening' ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
-                  <div className="absolute top-4 left-8 text-primary-500 animate-ping">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div className="absolute top-8 right-12 text-primary-400 animate-pulse">
-                    <Heart className="w-3 h-3" />
-                  </div>
-                  <div className="absolute bottom-8 left-12 text-primary-600 animate-bounce">
-                    <Sparkles className="w-3 h-3" />
-                  </div>
-                  <div className="absolute bottom-4 right-8 text-primary-500 animate-ping" style={{ animationDelay: '0.5s' }}>
-                    <Heart className="w-4 h-4" />
-                  </div>
-                </div>
+           
               </div>
             </div>
 
@@ -446,21 +425,7 @@ export default function AnimatedRSVPPage() {
                       />
                     </div>
 
-                    {/* Enhanced sparkles */}
-                    <div className="absolute -inset-6">
-                      <div className="absolute -top-4 -right-4 text-primary-500 animate-spin">
-                        <Sparkles className="w-8 h-8" />
-                      </div>
-                      <div className="absolute -bottom-4 -left-4 text-primary-400 animate-pulse">
-                        <Heart className="w-6 h-6" />
-                      </div>
-                      <div className="absolute top-1/2 -left-6 text-primary-600 animate-bounce">
-                        <Sparkles className="w-5 h-5" />
-                      </div>
-                      <div className="absolute top-1/2 -right-6 text-primary-500 animate-pulse" style={{ animationDelay: '0.3s' }}>
-                        <Heart className="w-5 h-5" />
-                      </div>
-                    </div>
+                
                   </div>
                 </div>
               </div>
@@ -556,7 +521,7 @@ export default function AnimatedRSVPPage() {
                   ) : (
                     /* No RSVP yet - Show buttons */
                     <>
-                      <h3 className="text-3xl font-bold text-gray-900 mb-3 text-center lg:text-left">
+                      <h3 className="text-3xl font-bold text-gray-900 mb-3 mt-20 text-center lg:text-left">
                         Will you be joining us? 🎉
                       </h3>
                       
@@ -588,16 +553,14 @@ export default function AnimatedRSVPPage() {
 
                 {/* Gift Registry - Always show */}
                 {inviteDetails?.partyId && (
-                  <div className="bg-gradient-to-br from-white/60 to-primary-50/60 backdrop-blur-sm rounded-3xl p-8 lg:max-w-none max-w-md mx-auto border border-primary-200/40 mb-20 md:mb-0">
+                  <div className="bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-50))] backdrop-blur-sm rounded-3xl p-8 lg:max-w-none max-w-md mx-auto border border-[hsl(var(--primary-200))] mb-20 md:mb-0">
                     <div className="flex items-start space-x-5">
                       <div className="flex-shrink-0">
-                        <div className="w-16 h-16 bg-gradient-to-br from-primary-200/80 to-primary-300/80 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                          <Gift className="w-8 h-8 text-primary-700" />
-                        </div>
+                       
                       </div>
                       <div className="flex-1">
                         <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                          🎁 {inviteDetails.inviteData?.childName || 'Birthday Child'}'s Gift Registry
+                          {inviteDetails.inviteData?.childName || 'Birthday Child'}'s Gift Registry
                         </h3>
                         <p className="text-gray-600 mb-5 text-lg leading-relaxed">
                           See what {inviteDetails.inviteData?.childName || 'the birthday child'} is hoping for and help make their party extra special!
@@ -639,208 +602,208 @@ export default function AnimatedRSVPPage() {
           </div>
         )}
       </div>
+{/* RSVP Modal - Updated with UniversalModal */}
+{showRSVPModal && (
+  <UniversalModal 
+    isOpen={showRSVPModal} 
+    onClose={() => setShowRSVPModal(false)}
+    size="md"
+    theme="fun"
+  >
+    <ModalHeader
+      title={rsvpData.status === 'yes' ? '🎉 Awesome!' : '😢 Sorry to miss you'}
+      subtitle={rsvpData.status === 'yes' ? "Let's get you signed up!" : "Thanks for letting us know"}
+      theme="fun"
+      icon={rsvpData.status === 'yes' ? 
+        <CheckCircle className="w-6 h-6" /> : 
+        <XCircle className="w-6 h-6" />
+      }
+    />
 
-   {/* RSVP Modal - Fixed for mobile */}
-   {showRSVPModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <CardContent className="p-6">
-              
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {rsvpData.status === 'yes' ? '🎉 Awesome!' : '😢 Sorry to miss you'}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowRSVPModal(false)}
-                  className="rounded-full"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Name *
-                  </label>
-                  <Input
-                    value={rsvpData.guestName}
-                    onChange={(e) => setRsvpData(prev => ({ ...prev, guestName: e.target.value }))}
-                    placeholder="Enter your name"
-                    className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <Input
-                      type="email"
-                      value={rsvpData.email}
-                      onChange={(e) => setRsvpData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="your@email.com"
-                      className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <Input
-                      type="tel"
-                      value={rsvpData.phone}
-                      onChange={(e) => setRsvpData(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Phone number"
-                      className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                    />
-                  </div>
-                </div>
-
-                {rsvpData.status === 'yes' && (
-                  <>
-                    {/* Improved number inputs with + - buttons for mobile */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Users className="w-4 h-4 inline mr-1" />
-                          Total Guests
-                        </label>
-                        <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
-                          <button
-                            type="button"
-                            onClick={() => setRsvpData(prev => ({ 
-                              ...prev, 
-                              guestCount: Math.max(1, prev.guestCount - 1) 
-                            }))}
-                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min="1"
-                            value={rsvpData.guestCount}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 1;
-                              setRsvpData(prev => ({ ...prev, guestCount: Math.max(1, value) }));
-                            }}
-                            className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setRsvpData(prev => ({ 
-                              ...prev, 
-                              guestCount: Math.min(20, prev.guestCount + 1) 
-                            }))}
-                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          <Baby className="w-4 h-4 inline mr-1" />
-                          Children
-                        </label>
-                        <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
-                          <button
-                            type="button"
-                            onClick={() => setRsvpData(prev => ({ 
-                              ...prev, 
-                              childrenCount: Math.max(0, prev.childrenCount - 1) 
-                            }))}
-                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min="0"
-                            value={rsvpData.childrenCount}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value);
-                              // Handle NaN case properly
-                              const finalValue = isNaN(value) ? 0 : Math.max(0, value);
-                              setRsvpData(prev => ({ ...prev, childrenCount: finalValue }));
-                            }}
-                            onBlur={(e) => {
-                              // Ensure valid value on blur
-                              const value = parseInt(e.target.value);
-                              if (isNaN(value) || value < 0) {
-                                setRsvpData(prev => ({ ...prev, childrenCount: 0 }));
-                              }
-                            }}
-                            className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setRsvpData(prev => ({ 
-                              ...prev, 
-                              childrenCount: Math.min(10, prev.childrenCount + 1) 
-                            }))}
-                            className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        <Utensils className="w-4 h-4 inline mr-1" />
-                        Dietary Requirements
-                      </label>
-                      <Input
-                        value={rsvpData.dietaryRequirements}
-                        onChange={(e) => setRsvpData(prev => ({ ...prev, dietaryRequirements: e.target.value }))}
-                        placeholder="Any allergies or dietary needs?"
-                        className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                      />
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Message (Optional)
-                  </label>
-                  <Textarea
-                    value={rsvpData.message}
-                    onChange={(e) => setRsvpData(prev => ({ ...prev, message: e.target.value }))}
-                    placeholder={rsvpData.status === 'yes' ? "Can't wait to celebrate! 🎉" : "Sorry I'll miss the fun!"}
-                    rows={3}
-                    className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
-                  />
-                </div>
-
-                <Button
-                  onClick={submitRSVP}
-                  disabled={!rsvpData.guestName}
-                  className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transform hover:scale-105 transition-all duration-300 ${
-                    rsvpData.status === 'yes'
-                      ? 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
-                      : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
-                  }`}
-                >
-                  {rsvpData.status === 'yes' ? '🎉 Confirm Attendance' : '😢 Send Regrets'}
-                </Button>
-
-              </div>
-            </CardContent>
-          </Card>
+    <ModalContent>
+      <div className="space-y-4">
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Your Name *
+          </label>
+          <Input
+            value={rsvpData.guestName}
+            onChange={(e) => setRsvpData(prev => ({ ...prev, guestName: e.target.value }))}
+            placeholder="Enter your name"
+            className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+          />
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <Input
+              type="email"
+              value={rsvpData.email}
+              onChange={(e) => setRsvpData(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="your@email.com"
+              className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Phone
+            </label>
+            <Input
+              type="tel"
+              value={rsvpData.phone}
+              onChange={(e) => setRsvpData(prev => ({ ...prev, phone: e.target.value }))}
+              placeholder="Phone number"
+              className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+            />
+          </div>
+        </div>
+
+        {rsvpData.status === 'yes' && (
+          <>
+            {/* Improved number inputs with + - buttons for mobile */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Users className="w-4 h-4 inline mr-1" />
+                  Total Guests
+                </label>
+                <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
+                  <button
+                    type="button"
+                    onClick={() => setRsvpData(prev => ({ 
+                      ...prev, 
+                      guestCount: Math.max(1, prev.guestCount - 1) 
+                    }))}
+                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={rsvpData.guestCount}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      setRsvpData(prev => ({ ...prev, guestCount: Math.max(1, value) }));
+                    }}
+                    className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRsvpData(prev => ({ 
+                      ...prev, 
+                      guestCount: Math.min(20, prev.guestCount + 1) 
+                    }))}
+                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Baby className="w-4 h-4 inline mr-1" />
+                  Children
+                </label>
+                <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
+                  <button
+                    type="button"
+                    onClick={() => setRsvpData(prev => ({ 
+                      ...prev, 
+                      childrenCount: Math.max(0, prev.childrenCount - 1) 
+                    }))}
+                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="0"
+                    value={rsvpData.childrenCount}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      // Handle NaN case properly
+                      const finalValue = isNaN(value) ? 0 : Math.max(0, value);
+                      setRsvpData(prev => ({ ...prev, childrenCount: finalValue }));
+                    }}
+                    onBlur={(e) => {
+                      // Ensure valid value on blur
+                      const value = parseInt(e.target.value);
+                      if (isNaN(value) || value < 0) {
+                        setRsvpData(prev => ({ ...prev, childrenCount: 0 }));
+                      }
+                    }}
+                    className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRsvpData(prev => ({ 
+                      ...prev, 
+                      childrenCount: Math.min(10, prev.childrenCount + 1) 
+                    }))}
+                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Utensils className="w-4 h-4 inline mr-1" />
+                Dietary Requirements
+              </label>
+              <Input
+                value={rsvpData.dietaryRequirements}
+                onChange={(e) => setRsvpData(prev => ({ ...prev, dietaryRequirements: e.target.value }))}
+                placeholder="Any allergies or dietary needs?"
+                className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+              />
+            </div>
+          </>
+        )}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Message (Optional)
+          </label>
+          <Textarea
+            value={rsvpData.message}
+            onChange={(e) => setRsvpData(prev => ({ ...prev, message: e.target.value }))}
+            placeholder={rsvpData.status === 'yes' ? "Can't wait to celebrate! 🎉" : "Sorry I'll miss the fun!"}
+            rows={3}
+            className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+          />
+        </div>
+
+      </div>
+    </ModalContent>
+
+    <ModalFooter theme="fun">
+      <Button
+        onClick={submitRSVP}
+        disabled={!rsvpData.guestName}
+        className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg transform hover:scale-105 transition-all duration-300 ${
+          rsvpData.status === 'yes'
+            ? 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+            : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
+        }`}
+      >
+        {rsvpData.status === 'yes' ? '🎉 Confirm Attendance' : '😢 Send Regrets'}
+      </Button>
+    </ModalFooter>
+  </UniversalModal>
+)}
+
 
       {/* Discount Offer Modal */}
       {showDiscountOffer && (

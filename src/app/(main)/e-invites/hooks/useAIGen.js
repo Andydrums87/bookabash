@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { validateRequiredFields, getThemeElements } from '../utils/helperFunctions'
 import { themes } from '@/lib/themes'
 import { formatDateForDisplay } from '../utils/helperFunctions'
+import { useToast } from '@/components/ui/toast'
 
 export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
@@ -12,14 +13,22 @@ export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
   const [selectedAiOption, setSelectedAiOption] = useState(null)
   const [showAiOptions, setShowAiOptions] = useState(false)
 
+  // Helper function to get first name only
+  const getFirstNameOnly = (fullName) => {
+    if (!fullName) return ""
+    return fullName.split(' ')[0]
+  }
+
+  const { toast } = useToast()
   const date = formatDateForDisplay(inviteData.date)
-
-
 
   // Generate AI-powered invite
   const generateAIInvite = async () => {
     if (!validateRequiredFields(inviteData)) {
-      alert("Please fill in all party details before generating AI invite")
+      toast.warning("Please fill in all party details before generating AI invite", {
+        title: "Missing Information",
+        duration: 4000
+      })
       return
     }
 
@@ -48,7 +57,11 @@ export const useAIGen = (inviteData, selectedTheme, setGeneratedImage) => {
         themeName = themes[selectedTheme]?.name || "colorful kids party"
       }
 
-      const prompt = `Create a complete, high-quality 2D digital birthday party invitation for a ${themeName.toLowerCase()} theme. MAIN HEADING (large, prominent): "Join us for ${inviteData.childName}'s Birthday Party!"
+      // Extract first name only
+      const firstName = getFirstNameOnly(inviteData.childName)
+      console.log("Using first name:", firstName)
+
+      const prompt = `Create a complete, high-quality 2D digital birthday party invitation for a ${themeName.toLowerCase()} theme. MAIN HEADING (large, prominent): "Join us for ${firstName}'s Birthday Party!"
 
 PARTY DETAILS (clear and readable):
 📅 Date: ${date}
@@ -75,7 +88,7 @@ The invitation should look complete and ready to send, with all party informatio
         },
         body: JSON.stringify({
           prompt: prompt,
-          childName: inviteData.childName,
+          childName: firstName, // Send first name only
           date: date,
           time: inviteData.time,
           venue: inviteData.venue,
@@ -105,13 +118,20 @@ The invitation should look complete and ready to send, with all party informatio
         setGeneratedImage(JSON.stringify(aiInviteData))
         setUseAIGeneration(true)
         console.log("✅ AI invite generated successfully with theme:", partyTheme)
-        alert(`🎉 AI invite generated successfully using ${themeName} theme!`)
+        
+        toast.success(`AI invite generated successfully using ${themeName} theme!`, {
+          title: "🎉 Invitation Created",
+          duration: 5000
+        })
       } else {
         throw new Error(result.error || "Failed to generate AI invite")
       }
     } catch (error) {
       console.error("❌ Error generating AI invite:", error)
-      alert(`Failed to generate AI invite: ${error.message}`)
+      toast.error(`Failed to generate AI invite: ${error.message}`, {
+        title: "Generation Failed",
+        duration: 6000
+      })
     } finally {
       setIsGeneratingAI(false)
     }
@@ -120,7 +140,10 @@ The invitation should look complete and ready to send, with all party informatio
   // Generate 5 AI-powered invite options
   const generateAIOptions = async () => {
     if (!validateRequiredFields(inviteData)) {
-      alert("Please fill in all party details before generating AI options")
+      toast.warning("Please fill in all party details before generating AI options", {
+        title: "Missing Information",
+        duration: 4000
+      })
       return
     }
 
@@ -151,29 +174,23 @@ The invitation should look complete and ready to send, with all party informatio
         themeName = themes[selectedTheme]?.name || "colorful kids party"
       }
 
-      const referenceImageUrl = "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754315489/invite-ref_ic1e1w.png"
+      // Extract first name only
+      const firstName = getFirstNameOnly(inviteData.childName)
+      console.log("Using first name for options:", firstName)
+
+      // Simple prompt with first name only
       const prompt = 
-        `URGENT: Create a birthday party invitation with a ${themeName.toLowerCase()} theme.
+        `Create a vibrant ${themeName.toLowerCase()} themed birthday party invitation.
 
-**CRITICAL - COMPLETE THEME REPLACEMENT:**
+Include this information:
+- Title: "${firstName} is turning ${inviteData.age}!" (write as one sentence)
+- ${date}
+- ${inviteData.time}
+- ${inviteData.venue}
 
-- CREATE a bright, colorful ${themeName.toLowerCase()} theme instead
+Design: Bright, colorful ${themeName.toLowerCase()} theme with ${getThemeElements(partyTheme)}. Fun and festive. Portrait orientation.
 
-- REPLACE ALL decorations with ${themeName.toLowerCase()} elements only
-- This must look like a ${themeName.toLowerCase()} party invitation
-
-**EXACT TEXT AND POSITIONING:**
-- Main heading: "${inviteData.childName} is turning ${inviteData.age}!"
-- Date information layout: "${date}" on the LEFT, "PARTY TIME" in the CENTER circle/bubble, "${inviteData.time}" on the RIGHT
-- Venue: "${inviteData.venue}"
-
-**SPECIFIC LAYOUT REQUIREMENTS:**
-- Use the three-section layout for date/center-text/time (left-center-right)
-- Put celebratory text like "JOIN US" or "PARTY TIME" in the middle circular element
-- Date goes on the left side of the middle section
-- Time goes on the right side of the middle section
-
-**VISUAL STYLE:** Bright, cheerful ${themeName.toLowerCase()} theme with ${getThemeElements(partyTheme)}. Professional layout but 100% ${themeName.toLowerCase()} decorations.`
+Important: Use only the exact information provided. No extra text.`
 
       const generatePromises = Array.from({ length: 5 }, (_, index) =>
         fetch("/api/generate-invite", {
@@ -183,7 +200,7 @@ The invitation should look complete and ready to send, with all party informatio
           },
           body: JSON.stringify({
             prompt: prompt,
-            childName: inviteData.childName,
+            childName: firstName, // Send first name only
             date: date,
             time: inviteData.time,
             venue: inviteData.venue,
@@ -227,13 +244,20 @@ The invitation should look complete and ready to send, with all party informatio
         setAiOptions(successfulOptions)
         setShowAiOptions(true)
         setUseAIGeneration(true)
-        alert(`🎉 Generated ${successfulOptions.length} AI invite options! Choose your favorite.`)
+        
+        toast.success(`Generated ${successfulOptions.length} AI invite options! Choose your favorite.`, {
+          title: "🎉 Options Ready",
+          duration: 5000
+        })
       } else {
         throw new Error("All AI generation attempts failed")
       }
     } catch (error) {
       console.error("❌ Error generating AI options:", error)
-      alert(`Failed to generate AI invites: ${error.message}`)
+      toast.error(`Failed to generate AI invites: ${error.message}`, {
+        title: "Generation Failed",
+        duration: 6000
+      })
     } finally {
       setIsGeneratingAI(false)
     }

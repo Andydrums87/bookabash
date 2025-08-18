@@ -272,7 +272,7 @@ export default function DashboardWelcome({ onRefresh }) {
     
 
         {/* Fixed Snappy in Bottom Left */}
-        <div className="fixed bottom-0 left-0 z-20 pointer-events-none">
+        <div className="fixed bottom-0 left-10 z-20 pointer-events-none">
           <div className="relative group">
             {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] rounded-full blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>

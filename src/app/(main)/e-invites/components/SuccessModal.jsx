@@ -67,7 +67,7 @@ const SuccessModal = ({
           {/* Success Icon */}
           <div className="flex items-center justify-center mb-6">
             <div className="p-4 bg-green-100 rounded-full">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+              <CheckCircle className="w-8 h-8 text-teal-600" />
             </div>
           </div>
 

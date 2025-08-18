@@ -429,7 +429,7 @@ const handleSignOut = async () => {
                   placeholder="Search suppliers, categories, locations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 py-3 text-lg border-gray-300 focus:border-primary-500 focus:ring-primary-500 placeholder-text-xs"
+                  className="pl-12 pr-4 py-3 text-lg border-gray-300 focus:border-primary-500 focus:ring-primary-500 placeholder:text-sm"
                 />
               </div>
             </form>

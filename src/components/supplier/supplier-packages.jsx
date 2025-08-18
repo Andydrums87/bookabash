@@ -258,7 +258,7 @@ const PackageCard = ({
         {isInPlanPackage ? (
           <div className="mt-auto space-y-1 sm:space-y-2">
             <Button
-              className="w-full py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold bg-green-500 hover:bg-green-500 text-white cursor-not-allowed"
+              className="w-full py-2 sm:py-3 rounded-xl text-sm sm:text-base font-semibold bg-teal-500 hover:bg-teal-500 text-white cursor-not-allowed"
               disabled
             >
               <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
@@ -343,7 +343,7 @@ const PackageCard = ({
         {(isSelected || isInPlanPackage) && (
           <div
             className={`absolute top-2 sm:top-3 right-2 sm:right-3 rounded-full p-1 sm:p-1.5 shadow-md ${
-              isInPlanPackage ? "bg-green-500" : isReplacementMode ? "bg-orange-500" : "bg-primary"
+              isInPlanPackage ? "bg-teal-500" : isReplacementMode ? "bg-primary-500" : "bg-primary"
             } text-white transform transition-all duration-300 ${
               !isInPlanPackage ? "group-hover:scale-110 group-hover:rotate-12" : ""
             }`}
