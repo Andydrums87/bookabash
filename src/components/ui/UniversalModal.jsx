@@ -59,44 +59,43 @@ const UniversalModal = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
     >
       <div className={`
-        ${sizeClasses[size]} w-full max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl
-        ${themeClasses[theme]} ${className}
+        ${sizeClasses[size]} w-full max-h-[85vh] sm:max-h-[90vh] rounded-2xl shadow-2xl
+        ${themeClasses[theme]} ${className} flex flex-col
       `}>
         {/* Decorative elements for fun theme */}
         {theme === 'fun' && (
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
             <div className="absolute top-4 left-4 w-2 h-2 bg-[hsl(var(--primary-300))] rounded-full opacity-40 animate-bounce"></div>
             <div className="absolute top-8 right-6 w-1.5 h-1.5 bg-pink-400 rounded-full opacity-50 animate-pulse"></div>
             <Sparkles className="absolute top-6 right-12 w-3 h-3 text-yellow-400 opacity-40 animate-pulse" />
           </div>
         )}
 
-      
-      {/* Close button */}
-      <div className="relative">
-{showCloseButton && (
-  <button
-    onClick={onClose}
-    className={`absolute cursor-pointer top-4 right-4 p-1 rounded-full transition-colors z-20 ${
-      theme === 'fun' 
-        ? 'bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/30' 
-        : 'hover:bg-gray-100'
-    }`}
-    aria-label="Close modal"
-  >
-    <X className={`w-4 h-4 ${
-      theme === 'fun' ? 'text-white' : 'text-gray-500'
-    }`} />
-  </button>
-)}
-      </div>
-        <div className="relative z-10 h-full flex flex-col">
+        {/* Close button */}
+        {showCloseButton && (
+          <button
+            onClick={onClose}
+            className={`absolute cursor-pointer top-4 right-4 p-1 rounded-full transition-colors z-20 ${
+              theme === 'fun' 
+                ? 'bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/30' 
+                : 'hover:bg-gray-100'
+            }`}
+            aria-label="Close modal"
+          >
+            <X className={`w-4 h-4 ${
+              theme === 'fun' ? 'text-white' : 'text-gray-500'
+            }`} />
+          </button>
+        )}
+
+        {/* Main content container with proper flex layout */}
+        <div className="relative z-10 h-full flex flex-col min-h-0">
           {children}
         </div>
       </div>
@@ -130,7 +129,7 @@ const ModalHeader = ({
   }
 
   return (
-    <div className={`p-4 sm:p-6 flex-shrink-0 ${getThemeClasses()} ${className}`}>
+    <div className={`p-4 sm:p-6 flex-shrink-0 rounded-t-2xl ${getThemeClasses()} ${className}`}>
       <div className="flex items-center gap-4">
         {icon && (
           <div className={`p-2 rounded-xl ${theme === 'fun' ? 'bg-white/20' : 'bg-gray-100'}`}>
@@ -150,9 +149,9 @@ const ModalHeader = ({
   )
 }
 
-// Content Component
+// Content Component - This is the key fix!
 const ModalContent = ({ children, className = '' }) => (
-  <div className={`flex-1 overflow-y-auto p-4 sm:p-6 ${className}`}>
+  <div className={`flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 ${className}`}>
     {children}
   </div>
 )
@@ -170,12 +169,12 @@ const ModalFooter = ({
       case 'fun':
         return 'bg-white/90 backdrop-blur-sm border-t border-[hsl(var(--primary-200))]'
       default:
-        return 'border-t border-gray-200'
+        return 'border-t border-gray-200 bg-white'
     }
   }
 
   return (
-    <div className={`p-4 sm:p-6 flex-shrink-0 ${getThemeClasses()} ${className}`}>
+    <div className={`p-4 sm:p-6 flex-shrink-0 rounded-b-2xl ${getThemeClasses()} ${className}`}>
       {children}
     </div>
   )

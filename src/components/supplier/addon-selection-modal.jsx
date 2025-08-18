@@ -80,19 +80,20 @@ export default function AddonSelectionModal({
       size="lg" 
       theme="fun"
       showCloseButton={true}
-      className="relative"
+      className="relative flex flex-col"
     >
-      {/* Simplified Header */}
+      {/* Fixed Header */}
       <ModalHeader 
         title="Add Some Extras?"
         subtitle={`${selectedPackage.name} • £${selectedPackage.price}`}
         theme="fun"
         icon={<Plus className="w-5 h-5 text-white" />}
+        className="flex-shrink-0"
       />
 
-      {/* Content */}
-      <ModalContent>
-        <div className="space-y-6">
+      {/* Scrollable Content */}
+      <ModalContent className="flex-1">
+        <div className="space-y-6 pb-4">
           {/* Add-ons Grid */}
           {availableAddons.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,8 +177,8 @@ export default function AddonSelectionModal({
         </div>
       </ModalContent>
 
-      {/* Simple Footer */}
-      <ModalFooter theme="fun">
+      {/* Fixed Footer */}
+      <ModalFooter theme="fun" className="flex-shrink-0 border-t bg-white">
         <div className="flex gap-3 w-full">
           <Button
             variant="outline"

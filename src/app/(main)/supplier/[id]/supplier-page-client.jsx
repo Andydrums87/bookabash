@@ -389,7 +389,7 @@ const handleSelectNewDate = useCallback(() => {
 
 const getSelectedCalendarDate = useCallback(() => {
   if (!selectedDate || !currentMonth) {
-    console.log('❌ No selected date or current month:', { selectedDate, currentMonth })
+  
     return null
   }
   
@@ -557,18 +557,17 @@ useEffect(() => {
 }, [isLoaded, userTypeLoading])
 
 useEffect(() => {
-  console.log('🔍 === SINGLE REPLACEMENT CONTEXT CHECK ===')
+
   
   // 1. Check URL parameters
   const urlParams = new URLSearchParams(window.location.search)
   const fromParam = urlParams.get('from')
   
-  console.log('🔍 URL from parameter:', fromParam)
-  console.log('🔍 Current URL:', window.location.href)
+
   
   // 2. If coming from browse, clear everything and exit
   if (fromParam === 'browse') {
-    console.log('🚫 From browse - clearing all replacement context')
+
     setReplacementContext(null)
     sessionStorage.removeItem('replacementContext')
     sessionStorage.removeItem('shouldRestoreReplacementModal')
@@ -643,17 +642,7 @@ useEffect(() => {
 
 
 
-  
 
-  // ✅ FIX 4: Debug logging for replacement context
-  useEffect(() => {
-    if (replacementContext) {
-      console.log('🎯 Replacement context is set:', replacementContext)
-      console.log('🎯 Should show banner:', !!replacementContext.isReplacement)
-    } else {
-      console.log('❌ No replacement context found')
-    }
-  }, [replacementContext])
 
 
 
@@ -776,21 +765,21 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
 }, [supplier])
 
 
-useEffect(() => {
-  console.log('🔍 === DEBUGGING REPLACEMENT BANNER ===')
-  console.log('Current URL:', window.location.href)
-  console.log('Search params:', window.location.search)
+// useEffect(() => {
+//   console.log('🔍 === DEBUGGING REPLACEMENT BANNER ===')
+//   console.log('Current URL:', window.location.href)
+//   console.log('Search params:', window.location.search)
   
-  const urlParams = new URLSearchParams(window.location.search)
-  console.log('From parameter:', urlParams.get('from'))
+//   const urlParams = new URLSearchParams(window.location.search)
+//   console.log('From parameter:', urlParams.get('from'))
   
-  const storedContext = sessionStorage.getItem('replacementContext')
-  console.log('Session storage context:', storedContext)
+//   const storedContext = sessionStorage.getItem('replacementContext')
+//   console.log('Session storage context:', storedContext)
   
-  console.log('Current replacementContext state:', replacementContext)
-  console.log('Should show banner:', !!replacementContext?.isReplacement)
+//   console.log('Current replacementContext state:', replacementContext)
+//   console.log('Should show banner:', !!replacementContext?.isReplacement)
   
-}, [replacementContext])
+// }, [replacementContext])
 
 
 
