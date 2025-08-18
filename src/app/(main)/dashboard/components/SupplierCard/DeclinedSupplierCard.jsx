@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ConfirmationModal } from "@/components/ui/universalModal"
+import { ConfirmationModal } from "@/components/ui/UniversalModal.jsx"
 import { XCircle, RefreshCw } from "lucide-react"
 
 export default function DeclinedSupplierCard({
@@ -21,7 +21,7 @@ export default function DeclinedSupplierCard({
 
 
   const handleConfirmCancel = () => {
-    console.log('✅ User confirmed cancellation - proceeding')
+    console.log('✅ User confirmed cancellation - proceeding ')
     setShowCancelModal(false)
     if (handleCancelEnquiry) {
       handleCancelEnquiry(type)
