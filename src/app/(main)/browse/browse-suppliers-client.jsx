@@ -285,10 +285,10 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       });
       
       if (!categoryMatches) {
-        console.log(`❌ No match for supplier "${supplier.name}" with category "${supplier.category}" against selected "${selectedCategory}"`);
+
         return false;
       } else {
-        console.log(`✅ Match found for supplier "${supplier.name}" with category "${supplier.category}" against selected "${selectedCategory}"`);
+
       }
     }
     

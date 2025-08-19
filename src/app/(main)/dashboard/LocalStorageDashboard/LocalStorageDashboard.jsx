@@ -145,28 +145,9 @@ export default function LocalStorageDashboard() {
     balloons: partyPlan.balloons || null,
   }
 
-  // 🔍 DEBUG: Check what's in the suppliers object
-console.log('🔍 SUPPLIERS DEBUG:')
-Object.entries(suppliers).forEach(([type, supplier]) => {
-  if (supplier) {
-    console.log(`  ${type}:`, {
-      name: supplier.name,
-      selectedAddons: supplier.selectedAddons,
-      selectedAddonsLength: supplier.selectedAddons?.length || 0,
-      packageData: supplier.packageData,
-      hasSelectedAddons: !!supplier.selectedAddons,
-      allKeys: Object.keys(supplier)
-    })
-  }
-})
 
-// 🔍 DEBUG: Check what's in the global addons array
-console.log('🔍 GLOBAL ADDONS DEBUG:', {
-  addons: addons,
-  addonsLength: addons.length,
-  supplierAddons: addons.filter(addon => addon.supplierId),
-  standaloneAddons: addons.filter(addon => !addon.supplierId)
-})
+
+
 
   // NEW: Enhanced modal handlers
   const openSupplierModal = (category, theme = 'superhero') => {

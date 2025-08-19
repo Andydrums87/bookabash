@@ -9,22 +9,29 @@ export const useGiftRegistry = (partyId) => {
   const [error, setError] = useState(null);
 
   const loadRegistry = async () => {
-    if (!partyId) return;
+    if (!partyId) {
+      console.log('🚫 [useGiftRegistry] No party ID provided');
+      return;
+    }
     
     setLoading(true);
     setError(null);
     
     try {
-      partyDatabaseBackend.debugGiftItemsTable()
       const result = await partyDatabaseBackend.getPartyGiftRegistry(partyId);
       if (result.success) {
         setRegistry(result.registry);
         setRegistryItems(result.items);
+        console.log('✅ [useGiftRegistry] Registry loaded:', result.registry?.id || 'none');
       } else {
-        setError(result.error);
+        // Only set error if it's a real error, not just "no registry found"
+        if (result.error && !result.error.includes('not found')) {
+          setError(result.error);
+        }
+        console.log('ℹ️ [useGiftRegistry] No registry found (this is normal)');
       }
     } catch (err) {
-      console.error('Error loading gift registry:', err);
+      console.error('❌ [useGiftRegistry] Error loading gift registry:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -33,7 +40,7 @@ export const useGiftRegistry = (partyId) => {
 
   const createRegistry = async (registryData = {}) => {
     if (!partyId) return { success: false, error: 'No party ID' };
-    console.log("hello")
+
     
     try {
       const result = await partyDatabaseBackend.createGiftRegistry(partyId, registryData);

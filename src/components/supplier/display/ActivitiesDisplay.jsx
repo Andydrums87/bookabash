@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
-  console.log('🎪 ActivitiesDisplay received:', { supplier: supplier?.name, serviceDetails });
+ 
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {

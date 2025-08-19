@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 const FacePaintingDisplay = ({ supplier, serviceDetails }) => {
-  console.log('🎨 FacePaintingDisplay received:', { supplier: supplier?.name, serviceDetails });
+ 
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {

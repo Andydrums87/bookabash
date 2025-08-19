@@ -1480,30 +1480,30 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
   /**
    * Add custom item to registry
    */
-  async addCustomItemToRegistry(registryId, itemData) {
-    try {
-      const { data, error } = await supabase
-        .from('registry_items')
-        .insert({
-          registry_id: registryId,
-          gift_item_id: null, // Custom item
-          custom_name: itemData.name,
-          custom_price: itemData.price,
-          custom_description: itemData.description,
-          notes: itemData.notes || null,
-          priority: itemData.priority || 'medium',
-          quantity: itemData.quantity || 1
-        })
-        .select()
-        .single()
+  // async addCustomItemToRegistry(registryId, itemData) {
+  //   try {
+  //     const { data, error } = await supabase
+  //       .from('registry_items')
+  //       .insert({
+  //         registry_id: registryId,
+  //         gift_item_id: null, // Custom item
+  //         custom_name: itemData.name,
+  //         custom_price: itemData.price,
+  //         custom_description: itemData.description,
+  //         notes: itemData.notes || null,
+  //         priority: itemData.priority || 'medium',
+  //         quantity: itemData.quantity || 1
+  //       })
+  //       .select()
+  //       .single()
       
-      if (error) throw error
-      return { success: true, registryItem: data }
-    } catch (error) {
-      console.error('❌ Error adding custom item to registry:', error)
-      return { success: false, error: error.message }
-    }
-  }
+  //     if (error) throw error
+  //     return { success: true, registryItem: data }
+  //   } catch (error) {
+  //     console.error('❌ Error adding custom item to registry:', error)
+  //     return { success: false, error: error.message }
+  //   }
+  // }
   // Fix the registry items query - the table EXISTS, the JOIN is the problem
 
   async getRegistryById(registryId) {
@@ -1589,6 +1589,53 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
       };
     }
   }
+
+
+async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
+  try {
+    console.log('🎁 [Backend] Adding curated item to registry:', giftItemId);
+    
+    const registryItem = {
+      registry_id: registryId,
+      gift_item_id: giftItemId, // This links to the curated gift_items table
+      quantity: itemData.quantity || 1,
+      priority: itemData.priority || 'medium',
+      notes: itemData.notes || null
+    };
+    
+    const { data: newItem, error } = await supabase
+      .from('registry_items') // ✅ CORRECT TABLE NAME
+      .insert(registryItem)
+      .select(`
+        *,
+        gift_items(*)
+      `)
+      .single();
+    
+    if (error) {
+      console.error('❌ [Backend] Error adding curated item to registry:', error);
+      return {
+        success: false,
+        error: `Failed to add item to registry: ${error.message}`
+      };
+    }
+    
+    console.log('✅ [Backend] Curated item added to registry:', newItem.id);
+    
+    return {
+      success: true,
+      registryItem: newItem,
+      message: 'Item added to registry successfully'
+    };
+    
+  } catch (error) {
+    console.error('❌ [Backend] Exception in addCuratedItemToRegistry:', error);
+    return {
+      success: false,
+      error: `Failed to add item to registry: ${error.message}`
+    };
+  }
+}
 
 // Also fix the getPartyGiftRegistry method:
 async getPartyGiftRegistry(partyId) {
@@ -1677,37 +1724,37 @@ async getPartyGiftRegistry(partyId) {
 }
 
 
-// Debug function to check what's in your gift_items table
-async debugGiftItemsTable() {
-  try {
-    console.log('🔍 [DEBUG] Checking gift_items table...');
+// // Debug function to check what's in your gift_items table
+// async debugGiftItemsTable() {
+//   try {
+//     console.log('🔍 [DEBUG] Checking gift_items table...');
     
-    // Check if gift_items table exists and is readable
-    const { data: giftItems, error: giftItemsError } = await supabase
-      .from('gift_items')
-      .select('id, name')
-      .limit(5);
+//     // Check if gift_items table exists and is readable
+//     const { data: giftItems, error: giftItemsError } = await supabase
+//       .from('gift_items')
+//       .select('id, name')
+//       .limit(5);
     
-    console.log('📊 [DEBUG] Gift items sample:', giftItems);
-    console.log('❌ [DEBUG] Gift items error:', giftItemsError);
+//     console.log('📊 [DEBUG] Gift items sample:', giftItems);
+//     console.log('❌ [DEBUG] Gift items error:', giftItemsError);
     
-    // Check foreign key relationship
-    const { data: itemsWithGiftIds, error: fkError } = await supabase
-      .from('party_gift_registry_items')
-      .select('id, gift_item_id')
-      .not('gift_item_id', 'is', null)
-      .limit(5);
+//     // Check foreign key relationship
+//     const { data: itemsWithGiftIds, error: fkError } = await supabase
+//       .from('party_gift_registries')
+//       .select('id, gift_item_id')
+//       .not('gift_item_id', 'is', null)
+//       .limit(5);
     
-    console.log('📊 [DEBUG] Registry items with gift_item_id:', itemsWithGiftIds);
-    console.log('❌ [DEBUG] FK check error:', fkError);
+//     console.log('📊 [DEBUG] Registry items with gift_item_id:', itemsWithGiftIds);
+//     console.log('❌ [DEBUG] FK check error:', fkError);
     
-    return { giftItems, itemsWithGiftIds, errors: { giftItemsError, fkError } };
+//     return { giftItems, itemsWithGiftIds, errors: { giftItemsError, fkError } };
     
-  } catch (error) {
-    console.error('❌ [DEBUG] Exception in debugGiftItemsTable:', error);
-    return { error: error.message };
-  }
-}
+//   } catch (error) {
+//     console.error('❌ [DEBUG] Exception in debugGiftItemsTable:', error);
+//     return { error: error.message };
+//   }
+// }
 
 
 

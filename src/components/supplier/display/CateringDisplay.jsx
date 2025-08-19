@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 const CateringDisplay = ({ supplier, serviceDetails }) => {
-  console.log('🍰 CateringDisplay received:', { supplier: supplier?.name, serviceDetails });
+
 
   const isCakeSpecialist = serviceDetails?.cateringType?.toLowerCase().includes('cake') || 
                           serviceDetails?.cateringType?.toLowerCase().includes('baker');

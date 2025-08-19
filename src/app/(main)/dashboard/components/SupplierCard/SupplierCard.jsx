@@ -57,7 +57,7 @@ export default function SupplierCard({
 
   // ✅ FIXED: Enhanced addon collection that includes enquiry addons
   const supplierAddons = (() => {
-    console.log(`🔍 Getting addons for ${type} supplier:`, supplier?.name)
+    
     
     // Find the enquiry for this supplier type
     const enquiry = enquiries.find(e => e.supplier_category === type)
@@ -69,7 +69,7 @@ export default function SupplierCard({
         // Parse the addon_details JSON string
         const parsedAddons = JSON.parse(enquiry.addon_details)
         enquiryAddons = Array.isArray(parsedAddons) ? parsedAddons : []
-        console.log(`  📋 Found ${enquiryAddons.length} addons in enquiry:`, enquiryAddons.map(a => a.name))
+      
       } catch (error) {
         console.error(`❌ Error parsing addon_details for ${type}:`, error)
         
@@ -108,14 +108,7 @@ export default function SupplierCard({
       arr.findIndex(a => a.id === addon.id) === index
     )
     
-    console.log(`  ✅ Total unique addons for ${type}:`, {
-      enquiry: enquiryAddons.length,
-      global: globalAddons.length, 
-      package: packageAddons.length,
-      total: uniqueAddons.length,
-      addons: uniqueAddons.map(a => ({ name: a.name, price: a.price }))
-    })
-    
+
     return uniqueAddons
   })()
 

@@ -296,7 +296,7 @@ const checkSupplierAvailabilityOnDate = (supplier, date, timeSlot = null, durati
 
 // Enhanced filtering logic that gets party details for better availability checking
 const filteredSuppliers = useMemo(() => {
-  console.log(`🔍 Filtering suppliers for category: ${category}, party location: ${partyLocation}, distance: ${distance}`);
+
   
   // Get party details for more accurate availability checking
   const getPartyDetails = () => {
@@ -397,8 +397,7 @@ const filteredSuppliers = useMemo(() => {
     return true
   });
 
-  console.log(`📊 Filtering results: ${filtered.length}/${suppliers.length} suppliers match criteria`);
-  console.log(`📅 Availability filter active: ${availableOnly}, date: ${selectedDate}`);
+
 
   // Sorting logic (existing)
   if (partyLocation) {

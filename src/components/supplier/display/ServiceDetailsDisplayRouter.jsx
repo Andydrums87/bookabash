@@ -58,13 +58,13 @@ const detectCategory = (supplier) => {
     supplier?.serviceDetails?.artistType
   ].filter(Boolean).map(indicator => indicator?.toLowerCase());
 
-  console.log('🔍 Category detection indicators:', indicators);
+  
 
   // Venues
   if (indicators.some(i => 
     ['venue', 'venues', 'hall', 'function room', 'event space', 'party venue', 'community hall'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected: venues');
+
     return 'venues';
   }
 
@@ -72,7 +72,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['entertainment', 'entertainer', 'magician', 'clown', 'performer', 'character', 'princess', 'superhero'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected: entertainment');
+
     return 'entertainment';
   }
 
@@ -80,7 +80,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['catering', 'caterer', 'food', 'cake', 'baker', 'dessert', 'buffet'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected: catering');
+
     return 'catering';
   }
 
@@ -88,7 +88,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['face_painting', 'face painting', 'face painter', 'body painting'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected: face_painting');
+
     return 'face_painting';
   }
 
@@ -96,7 +96,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['bouncy', 'inflatable', 'soft play', 'activities', 'equipment'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected: activities');
+
     return 'activities';
   }
 
@@ -104,22 +104,17 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['decoration', 'balloon', 'styling', 'party planning'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected: decorations');
+
     return 'decorations';
   }
 
-  console.log('⚠️ No category match found, defaulting to basic');
+
   return 'basic';
 };
 
 const ServiceDetailsDisplayRouter = ({ supplier }) => {
   const serviceDetails = supplier?.serviceDetails;
-  
-  console.log('🔍 ServiceDetailsDisplayRouter received:', {
-    supplierName: supplier?.name,
-    category: supplier?.category,
-    hasServiceDetails: !!serviceDetails
-  });
+
   
   if (!serviceDetails) {
     return (

@@ -17,17 +17,7 @@ export default function AddonsSection({
     !addon.attachedToSupplier && 
     !addon.isSupplierAddon
   )
-  
-  console.log('🔍 AddonsSection Debug (Standalone Only):', {
-    totalAddons: addons.length,
-    standaloneAddons: standaloneAddons.length,
-    standaloneAddonsList: standaloneAddons.map(a => ({ 
-      id: a.id, 
-      name: a.name, 
-      isSupplierAddon: a.isSupplierAddon,
-      supplierId: a.supplierId 
-    }))
-  })
+ 
   
   // Don't render if no standalone addons
   if (standaloneAddons.length === 0) {

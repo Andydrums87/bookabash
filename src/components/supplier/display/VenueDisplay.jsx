@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 
 const VenueDisplay = ({ supplier, serviceDetails }) => {
-  console.log('🏢 VenueDisplay received:', { supplier: supplier?.name, serviceDetails });
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {

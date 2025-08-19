@@ -113,7 +113,7 @@ const PackageCard = ({
 
   // ✅ ENHANCED: Handle package selection with replacement context storage
   const handlePackageSelection = (packageId) => {
-    console.log('📦 Package selected:', packageId, 'in replacement mode:', isReplacementMode)
+
     
     // ✅ STORE: Package data in replacement context when selected
     if (isReplacementMode && packageId) {
@@ -284,7 +284,7 @@ const PackageCard = ({
                   onClick={(e) => {
                     e.stopPropagation()
                     // Don't call onAddToPlan in replacement mode - just show selection
-                    console.log('📦 Package selected for replacement preview')
+         
                   }}
                 >
                   Selected for Review

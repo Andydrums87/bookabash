@@ -89,7 +89,7 @@ const ServiceDetailsDisplayRouter = ({ supplier }) => {
       serviceDetails?.artistType
     ].filter(Boolean).map(indicator => indicator.toLowerCase());
     
-    console.log('🔍 ServiceDisplayRouter detecting from indicators:', indicators, 'for business:', supplier?.name);
+   
     
     // Check each category mapping
     for (const [category, keywords] of Object.entries(CATEGORY_MAPPINGS)) {
@@ -97,7 +97,7 @@ const ServiceDetailsDisplayRouter = ({ supplier }) => {
         if (keywords.some(keyword => 
           indicator.includes(keyword) || keyword.includes(indicator)
         )) {
-          console.log(`✅ Matched category "${category}" from indicator "${indicator}"`);
+        
           return category;
         }
       }
@@ -108,13 +108,13 @@ const ServiceDetailsDisplayRouter = ({ supplier }) => {
     if (businessName) {
       for (const [category, keywords] of Object.entries(CATEGORY_MAPPINGS)) {
         if (keywords.some(keyword => businessName.includes(keyword))) {
-          console.log(`✅ Matched category "${category}" from business name "${businessName}"`);
+         
           return category;
         }
       }
     }
     
-    console.log('⚠️ No category match found, defaulting to entertainment');
+
     return 'entertainment'; // Default fallback
   };
 
@@ -146,25 +146,13 @@ const ServiceDetailsDisplayRouter = ({ supplier }) => {
         return <BouncyCastleDisplay {...commonProps} />;
       
       default:
-        console.log(`🚨 Unknown category "${detectedCategory}", using EntertainerDisplay`);
+        
         return <EntertainerDisplay {...commonProps} />;
     }
   };
 
   return (
     <div className="service-details-display">
-      {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-3 bg-gray-100 rounded text-sm text-gray-600">
-          <strong>Display Debug:</strong> 
-          <br />• Supplier: {supplier?.name}
-          <br />• Category: {detectCategory()}
-          <br />• Raw Category: {supplier?.category}
-          <br />• Service Type: {supplier?.serviceType}
-          <br />• Has Service Details: {serviceDetails ? 'Yes' : 'No'}
-        </div>
-      )}
-      
       {getDisplayComponent()}
     </div>
   );
