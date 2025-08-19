@@ -1,7 +1,9 @@
+// Updated PartyDetailsForm - simplified without venue helpers
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Users, ChevronDown } from 'lucide-react'
+import { Users, ChevronDown, MapPin } from 'lucide-react'
 import { useState } from "react"
 import { formatDateForDisplay } from '../utils/helperFunctions'
 import { getHeadlineOptions, getHeadlineStyles, getHeadlineText } from '../utils/headlineUtils'
@@ -16,6 +18,7 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
     if (!fullName) return ""
     return fullName.split(' ')[0]
   }
+  
   const formatTimeForDisplay = (time24) => {
     if (!time24) return ""
     try {
@@ -142,8 +145,6 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
     }
   }
 
-  // Helper function to format time for 12-hour display
-
   return (
     <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
       <CardContent className="p-4 sm:p-6">
@@ -204,7 +205,6 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
                 placeholder="Party date (e.g., 27/08/2025)"
                 className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
               />
-             
             </div>
             
             <div>
@@ -217,20 +217,22 @@ const PartyDetailsForm = ({ inviteData, handleInputChange, selectedTheme, useAIG
                 placeholder="Party time (e.g., 2pm-4pm)"
                 className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
               />
-             
             </div>
           </div>
 
+          {/* SIMPLIFIED: Just use the venue from inviteData */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
               Venue *
             </label>
             <Input
-              value={inviteData.venue}
+              value={inviteData.venue || ''}
               onChange={(e) => handleInputChange("venue", e.target.value)}
-              placeholder="Party venue"
+              placeholder="Party venue (name and address)"
               className="border-2 border-gray-200 focus:border-primary-500 rounded-lg text-base"
             />
+          
           </div>
         </div>
 

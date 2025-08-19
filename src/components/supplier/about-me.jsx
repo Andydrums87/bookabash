@@ -8,6 +8,7 @@ import {
   Sparkles,
   MapPin,
   Mail,
+  User,
   MessageCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -33,63 +34,37 @@ export default function AboutMeComponent({ supplier }) {
   return (
     <Card className="bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] shadow-xl overflow-hidden">
       <CardContent className="p-0">
+   
         {/* Header Section with Profile Photo */}
-        <div className="relative bg-gradient-to-r from-primary-400 to-primary-600 px-8 py-12">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            {/* Profile Photo */}
-            <div className="relative">
+        <div className="relative bg-gradient-to-r from-primary-400 to-primary-600 py-5">
+        
+          <h2 className="text-2xl pl-10 font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <User className="w-5 h-5 text-pink-600" />
+          Meet the Snappy Supplier
+        </h2>
+  
+        </div>
+
+        {/* Bio Content */}
+        
+        <div className="p-8 bg-white">
+        <div className="relative flex items-center">
               <div className="w-32 h-32 rounded-full overflow-hidden ring-4 ring-white shadow-2xl bg-white">
-                {profilePhoto ? (
                   <img
                     src={profilePhoto}
                     alt={name}
                     className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-primary-200 flex items-center justify-center">
-                    <span className="text-4xl font-bold text-primary-600">
-                      {name ? name.charAt(0).toUpperCase() : '?'}
-                    </span>
-                  </div>
-                )}
+                  />  
               </div>
+              <h1 className="text-3xl text-gray-700 md:text-4xl font-bold">{name}</h1>
               {/* Super Supplier Badge */}
-              <div className="absolute -bottom-2 -right-2 bg-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white">
+              <div className="absolute -bottom-2 left-0 bg-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white">
                 ⭐ Super Supplier
               </div>
             </div>
 
-            {/* Name & Title */}
-            <div className="text-center md:text-left text-white">
-              <h1 className="text-3xl text-gray-700 md:text-4xl font-bold mb-2">{name}</h1>
-              <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                <Badge className="bg-primary-500 text-white hover:bg-[hsl(var(--primary-600))]">
-                  {supplier?.rating || 5.0} ⭐ ({supplier?.reviewCount || 42} reviews)
-                </Badge>
-                <Badge className="bg-primary-500 text-white border-white/30 hover:bg-[hsl(var(--primary-600))]">
-                  {supplier?.bookings || 74} bookings
-                </Badge>
-                <Badge className="bg-primary-500 text-white border-white/30 hover:bg-[hsl(var(--primary-600))]">
-                  📍 {supplier?.travelRadius || 11} mi travel
-                </Badge>
-              </div>
-              
-              {/* Contact Button */}
-              <Button 
-                size="lg" 
-                className="bg-white text-primary-600 hover:bg-primary-50 font-semibold px-8 shadow-lg"
-              >
-                <MessageCircle className="mr-2 h-5 w-5" />
-                MESSAGE SUPPLIER
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Bio Content */}
-        <div className="p-8 bg-white">
           {personalBio && Object.values(personalBio).some((value) => value) && (
-            <div className="space-y-8">
+            <div className="space-y-8 mt-5">
               {/* Stats Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {personalBio.yearsExperience && (

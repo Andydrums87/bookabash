@@ -79,7 +79,26 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
   const [loading, setLoading] = useState(false)
   
 
-
+  const mapCategoryForFiltering = (selectedCategoryId) => {
+    const categoryMapping = {
+      'all': 'all',
+      'entertainment': ['entertainment', 'entertainer', 'magician', 'clown', 'performer', 'character'],
+      'venues': ['venues', 'venue', 'hall', 'space'],
+      'catering': ['catering', 'food', 'cake', 'baker'],
+      'decorations': ['decorations', 'decoration', 'balloon', 'styling'],
+      'bouncy-castles': ['bouncy castles', 'bouncy castle', 'activities', 'inflatable', 'bouncy_castles', 'bouncy-castles'],
+      'face-painting': ['face painting', 'face painter', 'face_painting', 'face-painting'],
+      'party-bags': ['party bags', 'party-bags', 'gift bags', 'party_bags'],
+      'photography': ['photography', 'photographer', 'photo'],
+      'magicians': ['magician', 'magicians', 'magic', 'entertainment'],
+      'balloon-artists': ['balloon artist', 'balloon-artist', 'balloon_artist', 'entertainment'],
+      'character-visits': ['character visit', 'character-visit', 'character_visit', 'entertainment'],
+      'activities': ['activities', 'activity', 'bouncy castle', 'games']
+    };
+    
+    return categoryMapping[selectedCategoryId] || [selectedCategoryId];
+  };
+  
 
 
   const categories = [
@@ -114,13 +133,13 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png" // Decorations image
     },
     { 
-      id: "bouncy-castles", 
+      id: "activities", 
       name: "Bouncy Castles", 
       icon: <div className="text-sm">🏰</div>,
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png" // Bouncy castle image
     },
     { 
-      id: "face-painting", 
+      id: "facePainting", 
       name: "Face Painting", 
       icon: <Palette className="w-5 h-5" />,
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170767/hlz6iinsgj7abeu0nndx.png" // Face painting image
@@ -248,22 +267,42 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
     "Science show"
   ];
 
- 
-//   const { suppliers: backendSuppliers, loading: suppliersLoading, error } = useSuppliers();
-const filteredSuppliers = suppliers.filter((supplier) => {
-    // Category filter
-    if (selectedCategory !== "all" && supplier.category.toLowerCase() !== selectedCategory) return false;
+  const filteredSuppliers = suppliers.filter((supplier) => {
+    // Category filter with flexible matching
+    if (selectedCategory !== "all") {
+      const allowedCategories = mapCategoryForFiltering(selectedCategory);
+      const supplierCategory = supplier.category?.toLowerCase() || '';
+      
+      // Check if supplier category matches any of the allowed categories
+      const categoryMatches = allowedCategories.some(allowedCat => {
+        const allowedCatLower = allowedCat.toLowerCase();
+        return (
+          supplierCategory === allowedCatLower ||
+          supplierCategory.includes(allowedCatLower) ||
+          allowedCatLower.includes(supplierCategory) ||
+          // Handle different formats (spaces, hyphens, underscores)
+          supplierCategory.replace(/[-_\s]/g, '') === allowedCatLower.replace(/[-_\s]/g, '')
+        );
+      });
+      
+      if (!categoryMatches) {
+        console.log(`❌ No match for supplier "${supplier.name}" with category "${supplier.category}" against selected "${selectedCategory}"`);
+        return false;
+      } else {
+        console.log(`✅ Match found for supplier "${supplier.name}" with category "${supplier.category}" against selected "${selectedCategory}"`);
+      }
+    }
     
-    // Subcategory filter
+    // Subcategory filter (unchanged)
     if (subcategory !== "all" && supplier.subcategory !== subcategory) return false;
     
-    // Location filter
+    // Location filter (unchanged)
     if (selectedLocation && selectedLocation !== "") {
       const locationMatch = supplier.location.toLowerCase().includes(selectedLocation.toLowerCase().replace('-', ' '));
       if (!locationMatch) return false;
     }
     
-    // Price range filter
+    // Price range filter (unchanged)
     if (priceRange !== "all") {
       const price = supplier.priceFrom;
       switch (priceRange) {
@@ -281,8 +320,8 @@ const filteredSuppliers = suppliers.filter((supplier) => {
           break;
       }
     }
-    
-
+  
+    // Theme filter (unchanged)
     if (selectedThemes.length > 0) {
       const hasMatchingTheme = selectedThemes.some(selectedTheme => 
         supplier.themes && supplier.themes.includes(selectedTheme)
@@ -292,6 +331,7 @@ const filteredSuppliers = suppliers.filter((supplier) => {
     
     return true;
   });
+  
    // Enhanced search function
    const searchSuppliers = (suppliers, query) => {
     if (!query.trim()) return suppliers;

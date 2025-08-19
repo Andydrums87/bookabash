@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import SupplierCustomizationModal from './SupplierCustomizationModal'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
+import { LocationService } from '@/utils/locationService'
 import { 
   X, 
   Star, 
@@ -27,72 +28,7 @@ import Image from "next/image"
 import { useSuppliers } from '@/utils/mockBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
-class LocationService {
-  static getPostcodeArea(postcode) {
-    if (!postcode) return null;
-    const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
-    const areaMatch = cleaned.match(/^([A-Z]{1,2})/);
-    return areaMatch ? areaMatch[1] : null;
-  }
-  
-  static arePostcodesNearby(supplierPostcode, partyPostcode, maxDistance = 'district') {
-    if (!supplierPostcode || !partyPostcode) return true;
-    
-    // Handle descriptive locations (fallback for mock data)
-    const descriptiveLocations = [
-      'central london', 'london wide', 'greater london', 
-      'uk wide', 'london', 'nationwide'
-    ];
-    
-    const supplierLower = supplierPostcode.toLowerCase();
-    const partyLower = partyPostcode.toLowerCase();
-    
-    // If supplier serves wide areas, allow it (for mock data)
-    if (descriptiveLocations.some(desc => supplierLower.includes(desc))) {
 
-      return true;
-    }
-    
-    // Extract postcode areas
-    const supplierArea = this.getPostcodeArea(supplierPostcode);
-    const partyArea = this.getPostcodeArea(partyPostcode);
-    
-
-    
-    // Exact postcode match (highest priority)
-    if (supplierPostcode.toUpperCase().replace(/\s/g, '') === partyPostcode.toUpperCase().replace(/\s/g, '')) {
-
-      return true;
-    }
-    
-    // Same area match
-    if (supplierArea === partyArea) {
-
-      return true;
-    }
-    
-    // Adjacent areas (simplified for now)
-    const londonAdjacency = {
-      'SW': ['SE', 'W', 'TW', 'CR', 'SM'],
-      'SE': ['SW', 'E', 'BR', 'DA', 'TN'],
-      'W': ['SW', 'NW', 'TW', 'UB'],
-      'E': ['SE', 'N', 'IG', 'RM'],
-      'N': ['E', 'NW', 'EN', 'AL'],
-      'NW': ['N', 'W', 'HA', 'WD'],
-    };
-    
-    const isAdjacent = londonAdjacency[supplierArea]?.includes(partyArea) || 
-                      londonAdjacency[partyArea]?.includes(supplierArea);
-    
-    if (isAdjacent) {
-
-      return true;
-    }
-    
-
-    return false;
-  }
-}
 
 export default function SupplierSelectionModal({
   isOpen,
@@ -250,44 +186,6 @@ export default function SupplierSelectionModal({
       setAddingSupplier(null)
     }
   }
-
-  // Availability checking logic
-  const checkSupplierAvailabilityOnDate = (supplier, date) => {
-    if (!date) return true;
-    
-  
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    let checkDate;
-    try {
-      checkDate = new Date(date);
-      checkDate.setHours(0, 0, 0, 0);
-      
-      if (isNaN(checkDate.getTime())) {
-        console.log(`📅 Invalid date format: ${date}, assuming available`);
-        return true;
-      }
-    } catch (e) {
-      console.log(`📅 Invalid date format: ${date}, assuming available`);
-      return true;
-    }
-    
-    if (checkDate < today) {
-      console.log(`⏰ ${supplier.name}: Past date - unavailable`);
-      return false;
-    }
-
-    return true;
-  };
-
-  const selectedDate = useMemo(() => {
-    if (!date) return null;
-    if (date instanceof Date) return date;
-    return new Date(date);
-  }, [date]);
-
   const categoryMapping = useMemo(() => ({
     entertainment: ['Entertainment', 'Services', 'Entertainers', 'entertainment'],
     venue: ['Venues', 'venue'],
@@ -300,107 +198,301 @@ export default function SupplierSelectionModal({
     photography: ['Photography']
   }), []);
 
-  const filteredSuppliers = useMemo(() => {
- 
-    const filtered = suppliers.filter((supplier) => {
-      const targetCategories = Array.isArray(categoryMapping[category]) 
-        ? categoryMapping[category] 
-        : [categoryMapping[category]];
+  const selectedDate = useMemo(() => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    return new Date(date);
+  }, [date]);
+
+// Enhanced availability checking for SupplierSelectionModal
+// Replace the checkSupplierAvailabilityOnDate function with this enhanced version
+
+const checkSupplierAvailabilityOnDate = (supplier, date, timeSlot = null, duration = 2) => {
+  if (!date) {
+    console.log(`📅 ${supplier.name}: No date provided - assuming available`);
+    return true;
+  }
+  
+  console.log(`📅 Checking availability for ${supplier.name} on ${date}`);
+  
+  // Convert the check date to a Date object if it's a string
+  let checkDate;
+  if (typeof date === 'string') {
+    checkDate = new Date(date);
+  } else {
+    checkDate = date;
+  }
+  
+  // Check if date is in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (checkDate < today) {
+    console.log(`⏰ ${supplier.name}: Past date - unavailable`);
+    return false;
+  }
+
+  // Get supplier data (parse if it's a string)
+  let supplierData = supplier;
+  if (supplier.data && typeof supplier.data === 'string') {
+    try {
+      supplierData = { ...supplier, ...JSON.parse(supplier.data) };
+      console.log(`📋 ${supplier.name}: Parsed supplier data successfully`);
+    } catch (e) {
+      console.log(`⚠️ ${supplier.name}: Could not parse supplier data:`, e.message);
+    }
+  }
+
+  // SIMPLIFIED: Use the exact same logic as Browse Suppliers calendar
+  const isDateUnavailable = (date, supplierData) => {
+    if (!supplierData?.unavailableDates) return false;
     
-      if (!supplier.category) {
-        console.log(`❌ ${supplier.name}: No category defined`);
+    console.log(`📅 ${supplier.name}: Checking against unavailable dates:`, supplierData.unavailableDates);
+    
+    const result = supplierData.unavailableDates.some((unavailableDate) => {
+      const unavailableDateObj = new Date(unavailableDate);
+      const checkResult = unavailableDateObj.toDateString() === date.toDateString();
+      
+      console.log(`📅 ${supplier.name}: Comparing ${date.toDateString()} with ${unavailableDateObj.toDateString()} = ${checkResult}`);
+      
+      return checkResult;
+    });
+    
+    return result;
+  };
+
+  // Check if date is unavailable using the same logic as Browse Suppliers
+  if (isDateUnavailable(checkDate, supplierData)) {
+    console.log(`❌ ${supplier.name}: Date ${checkDate.toDateString()} is unavailable`);
+    return false;
+  }
+
+  // Check other availability rules (optional - can be simplified further)
+  if (supplierData.availability) {
+    const availability = supplierData.availability;
+    
+    // Check days of week if specified
+    if (availability.daysOfWeek && Array.isArray(availability.daysOfWeek) && availability.daysOfWeek.length > 0) {
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayOfWeek = dayNames[checkDate.getDay()];
+      
+      if (!availability.daysOfWeek.includes(dayOfWeek)) {
+        console.log(`❌ ${supplier.name}: ${dayOfWeek} not in available days - unavailable`);
         return false;
       }
+    }
     
-      const matchesCategory = targetCategories.some(cat => {
-        if (!cat) return false;
-        return supplier.category === cat || 
-               supplier.category?.toLowerCase() === cat.toLowerCase();
-      });
-    
-      if (!matchesCategory) return false;
-
-      if (availableOnly && selectedDate) {
-        const isAvailableOnDate = checkSupplierAvailabilityOnDate(supplier, selectedDate);
-        if (!isAvailableOnDate) return false;
+    // Check time slots if specified
+    if (timeSlot && availability.timeSlots && Array.isArray(availability.timeSlots) && availability.timeSlots.length > 0) {
+      if (!availability.timeSlots.includes(timeSlot)) {
+        console.log(`❌ ${supplier.name}: ${timeSlot} not in available time slots - unavailable`);
+        return false;
       }
-      
-      // UPDATED: Use proper location filtering with postcode matching
-      if (distance !== "all" && partyLocation) {
-        if (!supplier.location) {
-          console.log(`📍 ${supplier.name}: No location data - excluding`);
-          return false;
-        }
-        
-        // Use the LocationService for proper postcode matching
-        const distanceMap = {
-          "5": "exact",     // Very strict - same postcode area
-          "10": "district", // Same or adjacent areas  
-          "15": "wide",     // Broader London coverage
-          "all": "any"      // No filtering
+    }
+  }
+
+  console.log(`✅ ${supplier.name}: Available on ${checkDate.toDateString()}`);
+  return true;
+};
+
+// Enhanced filtering logic that gets party details for better availability checking
+const filteredSuppliers = useMemo(() => {
+  console.log(`🔍 Filtering suppliers for category: ${category}, party location: ${partyLocation}, distance: ${distance}`);
+  
+  // Get party details for more accurate availability checking
+  const getPartyDetails = () => {
+    try {
+      // Try to get party details from various sources
+      const partyDetails = localStorage.getItem('party_details');
+      if (partyDetails) {
+        const parsed = JSON.parse(partyDetails);
+        return {
+          timeSlot: parsed.timeSlot || (parsed.time && parsed.time.includes('am') ? 'morning' : 'afternoon'),
+          duration: parsed.duration || 2,
+          time: parsed.time
         };
-        
-        const maxDistance = distanceMap[distance] || "district";
-        const canServe = LocationService.arePostcodesNearby(
-          supplier.location, 
-          partyLocation, 
-          maxDistance
-        );
-        
-        if (!canServe) {
-      
-          return false;
-        }
-        
- 
       }
+    } catch (e) {
+      console.log('Could not get party details for availability checking');
+    }
+    return { timeSlot: 'afternoon', duration: 2 };
+  };
 
-      if (priceRange !== "all") {
-        const [min, max] = priceRange.split('-').map(p => p.replace('+', '').replace('£', ''))
-        if (max) {
-          if (supplier.priceFrom < parseInt(min) || supplier.priceFrom > parseInt(max)) return false
-        } else {
-          if (supplier.priceFrom < parseInt(min)) return false
-        }
-      }
-
-      if (ratingFilter !== "all") {
-        const minRating = parseFloat(ratingFilter.replace('+', ''))
-        if (supplier.rating < minRating) return false
-      }
-
-      return true
+  const partyDetails = getPartyDetails();
+  
+  const filtered = suppliers.filter((supplier) => {
+    const targetCategories = Array.isArray(categoryMapping[category]) 
+      ? categoryMapping[category] 
+      : [categoryMapping[category]];
+  
+    if (!supplier.category) {
+      console.log(`❌ ${supplier.name}: No category defined`);
+      return false;
+    }
+  
+    const matchesCategory = targetCategories.some(cat => {
+      if (!cat) return false;
+      return supplier.category === cat || 
+             supplier.category?.toLowerCase() === cat.toLowerCase();
     });
+  
+    if (!matchesCategory) return false;
 
-    // SORT by location relevance - exact matches first!
-    if (partyLocation) {
-      return filtered.sort((a, b) => {
-        // Exact postcode match gets highest priority
-        const aExact = a.location?.toUpperCase().replace(/\s/g, '') === partyLocation.toUpperCase().replace(/\s/g, '');
-        const bExact = b.location?.toUpperCase().replace(/\s/g, '') === partyLocation.toUpperCase().replace(/\s/g, '');
-        
-        if (aExact && !bExact) return -1;
-        if (bExact && !aExact) return 1;
-        
-        // Same area gets second priority
-        const aArea = LocationService.getPostcodeArea(a.location);
-        const bArea = LocationService.getPostcodeArea(b.location);
-        const partyArea = LocationService.getPostcodeArea(partyLocation);
-        
-        const aSameArea = aArea === partyArea;
-        const bSameArea = bArea === partyArea;
-        
-        if (aSameArea && !bSameArea) return -1;
-        if (bSameArea && !aSameArea) return 1;
-        
-        // Then by rating
-        return (b.rating || 0) - (a.rating || 0);
-      });
+    // ENHANCED: More comprehensive availability checking
+    if (availableOnly && selectedDate) {
+      const isAvailableOnDate = checkSupplierAvailabilityOnDate(
+        supplier, 
+        selectedDate, 
+        partyDetails.timeSlot, 
+        partyDetails.duration
+      );
+      if (!isAvailableOnDate) {
+        console.log(`❌ ${supplier.name}: Not available on ${selectedDate} for ${partyDetails.timeSlot} (${partyDetails.duration}h)`);
+        return false;
+      }
+    }
+    
+    // Location filtering (existing logic)
+    if (distance !== "all" && partyLocation) {
+      if (!supplier.location) {
+        console.log(`📍 ${supplier.name}: No location data - excluding`);
+        return false;
+      }
+      
+      const comparisonLocation = LocationService.getComparisonLocation(supplier.category, partyLocation);
+      const distanceMap = {
+        "5": "exact",
+        "10": "district", 
+        "15": "wide",
+        "all": "all"
+      };
+      
+      const maxDistance = distanceMap[distance] || "district";
+      const canServe = LocationService.arePostcodesNearby(
+        supplier.location, 
+        comparisonLocation, 
+        maxDistance
+      );
+      
+      if (!canServe) {
+        console.log(`❌ ${supplier.name}: Cannot serve location`);
+        return false;
+      }
     }
 
-    return filtered;
-  }, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping, partyLocation]);
+    // Other filters (price, rating, etc.)
+    if (priceRange !== "all") {
+      const [min, max] = priceRange.split('-').map(p => p.replace('+', '').replace('£', ''))
+      if (max) {
+        if (supplier.priceFrom < parseInt(min) || supplier.priceFrom > parseInt(max)) return false
+      } else {
+        if (supplier.priceFrom < parseInt(min)) return false
+      }
+    }
 
+    if (ratingFilter !== "all") {
+      const minRating = parseFloat(ratingFilter.replace('+', ''))
+      if (supplier.rating < minRating) return false
+    }
+
+    return true
+  });
+
+  console.log(`📊 Filtering results: ${filtered.length}/${suppliers.length} suppliers match criteria`);
+  console.log(`📅 Availability filter active: ${availableOnly}, date: ${selectedDate}`);
+
+  // Sorting logic (existing)
+  if (partyLocation) {
+    return filtered.sort((a, b) => {
+      const aComparisonLocation = LocationService.getComparisonLocation(a.category, partyLocation);
+      const bComparisonLocation = LocationService.getComparisonLocation(b.category, partyLocation);
+      
+      const aIsRealPostcode = LocationService.isValidPostcode(a.location);
+      const bIsRealPostcode = LocationService.isValidPostcode(b.location);
+      const aIsDescriptive = LocationService.isDescriptiveLocation(a.location);
+      const bIsDescriptive = LocationService.isDescriptiveLocation(b.location);
+      
+      if (aIsRealPostcode && bIsDescriptive) return -1;
+      if (bIsRealPostcode && aIsDescriptive) return 1;
+      
+      return (b.rating || 0) - (a.rating || 0);
+    });
+  }
+
+  return filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+}, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping, partyLocation]);
+
+// Add this debug function to see exactly what's happening
+const debugSupplierAvailability = (supplier, checkDate) => {
+  console.log('\n🔍 DEBUGGING AVAILABILITY FOR:', supplier.name);
+  console.log('📅 Check date:', checkDate);
+  console.log('📋 Supplier object keys:', Object.keys(supplier));
+  
+  // Check if supplier has data field
+  if (supplier.data) {
+    console.log('💾 Supplier has data field (type:', typeof supplier.data, ')');
+    
+    if (typeof supplier.data === 'string') {
+      try {
+        const parsedData = JSON.parse(supplier.data);
+        console.log('✅ Successfully parsed supplier data');
+        console.log('📋 Parsed data keys:', Object.keys(parsedData));
+        
+        // Check for unavailableDates
+        if (parsedData.unavailableDates) {
+          console.log('📅 Found unavailableDates:', parsedData.unavailableDates);
+          console.log('📅 Type:', typeof parsedData.unavailableDates);
+          console.log('📅 Is array:', Array.isArray(parsedData.unavailableDates));
+          
+          if (Array.isArray(parsedData.unavailableDates)) {
+            console.log('📅 Unavailable dates list:');
+            parsedData.unavailableDates.forEach((date, index) => {
+              console.log(`  ${index + 1}. ${date} (type: ${typeof date})`);
+            });
+            
+            // Test date normalization
+            const checkDateNormalized = checkDate; // Assuming this is already "YYYY-MM-DD"
+            console.log('📅 Check date normalized:', checkDateNormalized);
+            
+            parsedData.unavailableDates.forEach((unavailableDate, index) => {
+              if (unavailableDate.includes('T')) {
+                const datePart = unavailableDate.split('T')[0];
+                console.log(`📅 Unavailable date ${index + 1}: ${unavailableDate} → ${datePart}`);
+                console.log(`📅 Match with ${checkDateNormalized}?`, datePart === checkDateNormalized);
+              }
+            });
+          }
+        } else {
+          console.log('❌ No unavailableDates field found in parsed data');
+        }
+        
+        // Check other possible fields
+        ['busyDates', 'blockedDates'].forEach(field => {
+          if (parsedData[field]) {
+            console.log(`📅 Found ${field}:`, parsedData[field]);
+          }
+        });
+        
+      } catch (e) {
+        console.log('❌ Error parsing supplier data:', e.message);
+        console.log('💾 Raw data:', supplier.data.substring(0, 200) + '...');
+      }
+    } else {
+      console.log('📋 Data is not a string:', supplier.data);
+    }
+  } else {
+    console.log('❌ No data field found on supplier');
+  }
+  
+  // Check direct fields on supplier
+  ['unavailableDates', 'busyDates', 'blockedDates'].forEach(field => {
+    if (supplier[field]) {
+      console.log(`📅 Found ${field} directly on supplier:`, supplier[field]);
+    }
+  });
+};
+
+// Use this in your component temporarily:
+// debugSupplierAvailability(supplier, selectedDate);
 
   if (!isOpen) return null
 
@@ -747,10 +839,63 @@ export default function SupplierSelectionModal({
     );
   };
 
+  const AvailabilityStatus = ({ supplier, selectedDate, partyDetails }) => {
+    if (!selectedDate) {
+      return (
+        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+          📅 No date selected
+        </Badge>
+      );
+    }
+  
+    const isAvailable = checkSupplierAvailabilityOnDate(
+      supplier, 
+      selectedDate, 
+      partyDetails?.timeSlot, 
+      partyDetails?.duration
+    );
+  
+    if (isAvailable) {
+      return (
+        <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
+          ✅ Available
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-200">
+          ❌ Not Available
+        </Badge>
+      );
+    }
+  };
+
   // UPDATED SupplierCard with Quick Add
   const SupplierCard = ({ supplier }) => {
+    debugSupplierAvailability(supplier, selectedDate);
     const { navigateWithContext } = useContextualNavigation();
     const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
+    
+    // Get party details for availability checking
+    const getPartyDetails = () => {
+      try {
+        const partyDetails = localStorage.getItem('party_details');
+        if (partyDetails) {
+          const parsed = JSON.parse(partyDetails);
+          return {
+            timeSlot: parsed.timeSlot || (parsed.time && parsed.time.includes('am') ? 'morning' : 'afternoon'),
+            duration: parsed.duration || 2,
+            time: parsed.time
+          };
+        }
+      } catch (e) {
+        console.log('Could not get party details');
+      }
+      return { timeSlot: 'afternoon', duration: 2 };
+    };
+  
+    const partyDetails = getPartyDetails();
+    
     
     const handleViewDetails = () => {
       const modalState = {
@@ -815,12 +960,27 @@ export default function SupplierSelectionModal({
             <div className="text-sm font-bold text-gray-400">From £{supplier.priceFrom}</div>
           </div>
 
-          <div className="mb-3">
-            <Badge variant="default" className="text-[0.7rem] rounded-full bg-primary-200 text-primary-900 font-light">
-              {supplier.availability || "Available this weekend"}
-            </Badge>
-          </div>
-
+          {/* UPDATED: Enhanced availability display */}
+        <div className="mb-3 space-y-2">
+          <AvailabilityStatus 
+            supplier={supplier} 
+            selectedDate={selectedDate} 
+            partyDetails={partyDetails} 
+          />
+          
+          {/* Show additional availability info if available */}
+          {supplier.availability?.timeSlots && (
+            <div className="text-xs text-gray-500">
+              Available: {supplier.availability.timeSlots.join(', ')}
+            </div>
+          )}
+          
+          {supplier.availability?.maxDuration && (
+            <div className="text-xs text-gray-500">
+              Max duration: {supplier.availability.maxDuration}h
+            </div>
+          )}
+        </div>
           <div className="mt-auto pt-4 border-t border-gray-100">
             <div className="flex md:flex-col sm:flex-row gap-2">
               <Button 

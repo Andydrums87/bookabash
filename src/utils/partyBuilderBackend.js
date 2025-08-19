@@ -1,6 +1,7 @@
 // utils/partyBuilderBackend.js - Complete Enhanced Party Builder with Database Integration
 
 import { suppliersAPI } from './mockBackend';
+import { LocationService } from './locationService';
 // ✅ UPDATED: Replace localStorage backend with database backend
 import { partyDatabaseBackend } from './partyDatabaseBackend';
 
@@ -63,118 +64,7 @@ const THEMES = {
   }
 };
 
-// NEW: Location filtering service for UK postcodes
-class LocationService {
-  
-  // Extract postcode area from full postcode
-  static getPostcodeArea(postcode) {
-    if (!postcode) return null;
-    
-    // Clean postcode and extract area
-    const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
-    
-    // Match UK postcode patterns and extract area
-    const areaMatch = cleaned.match(/^([A-Z]{1,2})/);
-    return areaMatch ? areaMatch[1] : null;
-  }
-  
-  // Extract postcode district from full postcode  
-  static getPostcodeDistrict(postcode) {
-    if (!postcode) return null;
-    
-    const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
-    
-    // Match UK postcode patterns and extract district
-    const districtMatch = cleaned.match(/^([A-Z]{1,2}\d{1,2})/);
-    return districtMatch ? districtMatch[1] : null;
-  }
-  
-  // Check if two postcodes are in nearby areas
-  static arePostcodesNearby(supplierPostcode, partyPostcode, maxDistance = 'district') {
-    if (!supplierPostcode || !partyPostcode) return true; // Assume nearby if no data
-    
-    const supplierArea = this.getPostcodeArea(supplierPostcode);
-    const supplierDistrict = this.getPostcodeDistrict(supplierPostcode);
-    const partyArea = this.getPostcodeArea(partyPostcode);
-    const partyDistrict = this.getPostcodeDistrict(partyPostcode);
-    
-    console.log(`📍 Checking distance: ${supplierPostcode} (${supplierArea}/${supplierDistrict}) → ${partyPostcode} (${partyArea}/${partyDistrict})`);
-    
-    if (maxDistance === 'exact') {
-      // Same postcode district required
-      return supplierDistrict === partyDistrict;
-    } else if (maxDistance === 'district') {
-      // Same area or adjacent areas
-      return supplierArea === partyArea || this.areAreasAdjacent(supplierArea, partyArea);
-    } else if (maxDistance === 'wide') {
-      // London areas can serve each other, others more restricted
-      return this.canSupplierServeArea(supplierArea, partyArea);
-    }
-    
-    return true; // Default to allowing
-  }
-  
-  // Check if postcode areas are adjacent/nearby
-  static areAreasAdjacent(area1, area2) {
-    if (area1 === area2) return true;
-    
-    // London area adjacency map
-    const londonAdjacency = {
-      'SW': ['SE', 'W', 'TW', 'CR', 'SM'],
-      'SE': ['SW', 'E', 'BR', 'DA', 'TN'],
-      'W': ['SW', 'NW', 'TW', 'UB'],
-      'E': ['SE', 'N', 'IG', 'RM'],
-      'N': ['E', 'NW', 'EN', 'AL'],
-      'NW': ['N', 'W', 'HA', 'WD'],
-      'EC': ['E', 'SE', 'SW', 'W'], // Central London
-      'WC': ['SW', 'W', 'N', 'E'], // Central London
-    };
-    
-    // Outer London adjacency
-    const outerLondonAdjacency = {
-      'TW': ['SW', 'W', 'KT', 'TN'],
-      'CR': ['SW', 'SE', 'BR', 'RH'],
-      'BR': ['SE', 'CR', 'TN', 'DA'],
-      'HA': ['NW', 'UB', 'WD'],
-      'UB': ['W', 'HA', 'SL'],
-    };
-    
-    const adjacency = { ...londonAdjacency, ...outerLondonAdjacency };
-    
-    return adjacency[area1]?.includes(area2) || adjacency[area2]?.includes(area1) || false;
-  }
-  
-  // Broader area coverage rules
-  static canSupplierServeArea(supplierArea, partyArea) {
-    if (supplierArea === partyArea) return true;
-    
-    // Central London suppliers can serve most of London
-    const centralLondon = ['EC', 'WC', 'SW', 'SE', 'W', 'E', 'N', 'NW'];
-    if (centralLondon.includes(supplierArea) && centralLondon.includes(partyArea)) {
-      return true;
-    }
-    
-    // Check adjacency for outer areas
-    return this.areAreasAdjacent(supplierArea, partyArea);
-  }
-  
-  // Get service radius category based on supplier type
-  static getServiceRadiusForSupplier(supplier) {
-    const category = supplier.category?.toLowerCase();
-    const name = supplier.name?.toLowerCase() || '';
-    
-    // Different supplier types have different travel willingness
-    if (category === 'venues') {
-      return 'exact'; // Venues don't travel
-    } else if (category === 'entertainment' || name.includes('entertainer')) {
-      return 'wide'; // Entertainers travel further
-    } else if (category === 'catering') {
-      return 'district'; // Caterers moderate travel
-    } else {
-      return 'district'; // Default moderate travel
-    }
-  }
-}
+
 
 class PartyBuilderBackend {
 

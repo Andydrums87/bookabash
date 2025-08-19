@@ -46,7 +46,7 @@ export default function MobileSearchForm({
   };
 
   return (
-    <div className="md:hidden px-4 -mt-37 py-10 relative z-30 bg-primary-50" id="search-form">
+    <div className="md:hidden px-4 -mt-37 py-10 relative z-30 bg-primary-50 " id="search-form">
  <div className="text-center mb-16">
  <h2 className="text-5xl font-black text-gray-900 mb-3">
           Plan Your{" "}
@@ -59,7 +59,7 @@ export default function MobileSearchForm({
           In just 30 seconds! 
         </p>
         </div>
-         <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-6 shadow-2xl border border-[hsl(var(--primary-200))]">
+         <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-6 shadow-2xl border-[hsl(var(--primary-500))] border-2">
   <div className="space-y-6">
     
     {/* Event Date - STANDARDIZED */}
@@ -75,7 +75,7 @@ export default function MobileSearchForm({
           className={`
             w-full font-normal h-12 
             bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
-            hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
+            hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors 
             ${!formData.date && "text-gray-500"}
             ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
           `}
@@ -86,7 +86,7 @@ export default function MobileSearchForm({
             
  
           ) : (
-            <span className="ml-5">Select event date</span>
+            <span className="ml-5 text-gray-800">Select event date</span>
           )}
         </Button>
       </PopoverTrigger>
@@ -245,7 +245,7 @@ export default function MobileSearchForm({
     <Button
       type="submit"
       disabled={isSubmitting || !isFormValid()}
-      className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-lg font-bold py-4 px-6 rounded-full h-14 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+      className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-lg font-bold py-4 px-6 rounded-full h-14 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-80 disabled:cursor-not-allowed disabled:transform-none"
     >
       {isSubmitting ? (
         <div className="flex items-center justify-center">
@@ -253,7 +253,7 @@ export default function MobileSearchForm({
           Building Your Party...
         </div>
       ) : (
-        <div className="flex  items-center justify-center relative text-white font-bold">
+        <div className="flex items-center justify-center relative text-white font-bold">
           Plan My Party! <span className="text-2xl ml-2">🎉</span>
         </div>
       )}

@@ -18,6 +18,8 @@ const serviceTypes = [
   { id: "Photography", name: "Photography" },
   { id: "Decorations", name: "Decorations" },
   { id: "Activities", name: "Activities & Games" },
+  { id: "Face Painting", name: "Face Painting"},
+  { id: "Bouncy Castle", name: "Bouncy Castle"},
   { id: "other", name: "Other" },
 ]
 

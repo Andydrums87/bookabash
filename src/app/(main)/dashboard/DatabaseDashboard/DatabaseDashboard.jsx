@@ -1,4 +1,4 @@
-// DatabaseDashboard.jsx - Updated with proper phase detection
+// DatabaseDashboard.jsx - Updated with modal restoration functionality
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -7,18 +7,18 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+
 // Hooks
 import { usePartyData } from '../hooks/usePartyData'
 import { useReplacementManager } from '../hooks/useReplacementManager'
-import { usePartyPhase } from '../hooks/usePartyPhase' // Enhanced phase hook
-import { useContextualNavigation } from '@/hooks/useContextualNavigation'
+import { usePartyPhase } from '../hooks/usePartyPhase'
+import { useContextualNavigation } from '@/hooks/useContextualNavigation' // ✅ Already imported
 import { usePartyDetails } from "../hooks/usePartyDetails"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import { useBudgetManager } from "../hooks/useBudgetManager"
 import { useSupplierManager } from "../hooks/useSupplierManager"
 import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
-
 
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -32,34 +32,28 @@ import ReplacementManager from './components/ReplacementManager'
 import SupplierGrid from '../components/SupplierGrid'
 import PartyPhaseContent from '../components/PartyPhaseContent'
 import Sidebar from './components/Sidebar'
-
 import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
-
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import RealTimeNotifications from "./components/realTimeNotifications"
 import PartyReadyModal from "./components/PartyReadyModal"
 
-
-
 export default function DatabaseDashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { navigateWithContext } = useContextualNavigation()
+  const { navigateWithContext, getStoredModalState, clearModalState } = useContextualNavigation() // ✅ Already available
 
   const [isUpdating, setIsUpdating] = useState(false)
   const [sendingEnquiry, setSendingEnquiry] = useState(false)
   const [enquiryFeedback, setEnquiryFeedback] = useState(null)
-
   const [hasSeenPartyReadyModal, setHasSeenPartyReadyModal] = useState(false)
-
   const [hasCreatedInvites, setHasCreatedInvites] = useState(false)
   const [showSupplierAddedModal, setShowSupplierAddedModal] = useState(false)
   const [renderKey, setRenderKey] = useState(0)
-const [addedSupplierData, setAddedSupplierData] = useState(null)
-const [notification, setNotification] = useState(null)
+  const [addedSupplierData, setAddedSupplierData] = useState(null)
+  const [notification, setNotification] = useState(null)
 
   // MAIN PARTY DATA HOOK
   const {
@@ -82,11 +76,9 @@ const [notification, setNotification] = useState(null)
     themeLoaded
   } = usePartyData()
 
-
-
   const {
     partyPhase,
-    currentPhase, // ✅ This is what we need for EmptySupplierCard
+    currentPhase,
     visibleSuppliers,
     hasEnquiriesPending,
     enquiries,
@@ -95,39 +87,124 @@ const [notification, setNotification] = useState(null)
     loading: phaseLoading
   } = usePartyPhase(partyData, partyId)
 
-// Clean, separate functions for supplier selection
+  // ✅ MODAL STATE - Updated with restoration support
+  const [showSupplierModal, setShowSupplierModal] = useState(false)
+  const [modalConfig, setModalConfig] = useState({
+    category: '',
+    theme: '',
+    date: null,
+    filters: {}
+  })
 
-const handleSupplierSelection = async (supplierData) => {
-  const supplier = supplierData?.supplier || supplierData
-  const selectedPackage = supplierData?.package || null
-  
-  
-  
-  if (!supplier) {
-    console.error('❌ No supplier data provided')
-    return
+  // ✅ ENHANCED MODAL HANDLERS - Same as localStorage dashboard
+  const openSupplierModal = (category, theme = 'superhero') => {
+    console.log('🔓 Opening supplier modal:', { category, theme, currentPhase })
+    
+    setModalConfig({
+      category,
+      theme,
+      date: partyDetails?.date,
+      filters: {}
+    })
+    setShowSupplierModal(true)
   }
-  
-  try {
-    console.log('✅ Using Quick Add flow - show confirmation modal first')
-    await handleNormalSupplierAddition(supplier, selectedPackage)
-  } catch (error) {
-    console.error('💥 Error in supplier selection:', error)
-    setEnquiryFeedback(`❌ Failed to process ${supplier.name}: ${error.message}`)
+
+  const closeSupplierModal = () => {
+    console.log('🔒 Closing supplier modal')
+    setShowSupplierModal(false)
+    clearModalState() // ✅ Clear modal state when closing
   }
-}
 
+  // ✅ MODAL RESTORATION EFFECT - Same as localStorage dashboard
+  useEffect(() => {
+    const shouldRestoreModal = searchParams.get('restoreModal')
+    
+    if (shouldRestoreModal) {
+      const storedState = getStoredModalState()
+      
+      if (storedState) {
+        console.log('🔄 Restoring modal state:', storedState)
+        
+        setModalConfig({
+          category: storedState.category,
+          theme: storedState.theme,
+          date: storedState.date,
+          filters: storedState.filters || {}
+        })
+        
+        setShowSupplierModal(true)
+        
+        setTimeout(() => {
+          if (storedState.scrollPosition) {
+            window.scrollTo(0, storedState.scrollPosition)
+          }
+        }, 100)
+        
+        clearModalState()
+        window.history.replaceState({}, '', '/dashboard')
+      }
+    }
+  }, [searchParams, getStoredModalState, clearModalState])
 
-const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
-  console.log('📝 Quick Add for:', supplier.name, '- showing confirmation modal first')
-  
-  // DON'T add supplier to party plan yet - just show confirmation modal
-  // Only add when user confirms in modal
-  setAddedSupplierData({ supplier, selectedPackage })
-  setShowSupplierAddedModal(true)
-  closeSupplierModal()
-  setEnquiryFeedback(null)
-}
+  // ✅ CUSTOM EVENT LISTENER - Same as localStorage dashboard
+  useEffect(() => {
+    const handleRestoreModal = (event) => {
+      const { detail: modalState } = event
+      
+      if (modalState) {
+        console.log('🎯 Restoring modal via custom event:', modalState)
+        
+        setModalConfig({
+          category: modalState.category,
+          theme: modalState.theme,
+          date: modalState.date,
+          filters: modalState.filters || {}
+        })
+        
+        setShowSupplierModal(true)
+        
+        setTimeout(() => {
+          if (modalState.scrollPosition) {
+            window.scrollTo(0, modalState.scrollPosition)
+          }
+        }, 100)
+      }
+    }
+
+    window.addEventListener('restoreModal', handleRestoreModal)
+    return () => window.removeEventListener('restoreModal', handleRestoreModal)
+  }, [])
+
+  // Clean, separate functions for supplier selection
+  const handleSupplierSelection = async (supplierData) => {
+    const supplier = supplierData?.supplier || supplierData
+    const selectedPackage = supplierData?.package || null
+    
+    if (!supplier) {
+      console.error('❌ No supplier data provided')
+      return
+    }
+    
+    try {
+      console.log('✅ Using Quick Add flow - show confirmation modal first')
+      await handleNormalSupplierAddition(supplier, selectedPackage)
+    } catch (error) {
+      console.error('💥 Error in supplier selection:', error)
+      setEnquiryFeedback(`❌ Failed to process ${supplier.name}: ${error.message}`)
+    }
+  }
+
+  const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
+    console.log('📝 Quick Add for:', supplier.name, '- showing confirmation modal first')
+    
+    // DON'T add supplier to party plan yet - just show confirmation modal
+    // Only add when user confirms in modal
+    setAddedSupplierData({ supplier, selectedPackage })
+    setShowSupplierAddedModal(true)
+    closeSupplierModal() // ✅ This will now properly clear modal state
+    setEnquiryFeedback(null)
+  }
+
   const handleAutoEnquiryAddition = async (supplier, selectedPackage) => {
     console.log('🔄 Starting auto-enquiry addition for:', supplier.name)
     
@@ -142,13 +219,13 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
         supplier, 
         selectedPackage
       )
-  
+
       if (!addResult.success) {
         throw new Error(addResult.error)
       }
-  
+
       console.log('✅ Supplier added to party plan')
-  
+
       // Step 2: Immediately send enquiry (no modal)
       console.log('📧 Auto-sending enquiry...')
       const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
@@ -157,7 +234,7 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
         selectedPackage,
         `Added to expand party team for ${partyDetails?.child_name || 'child'}'s party`
       )
-  
+
       if (enquiryResult.success) {
         console.log('✅ Auto-enquiry sent successfully')
         
@@ -180,7 +257,7 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
         console.error('❌ Failed to send auto-enquiry:', enquiryResult.error)
         setEnquiryFeedback(`⚠️ ${supplier.name} added, but enquiry failed to send`)
       }
-  
+
     } catch (error) {
       console.error('💥 Error in auto-enquiry addition:', error)
       setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
@@ -188,7 +265,7 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
       setSendingEnquiry(false)
     }
   }
- 
+
   // Function to show pending enquiry modal (integrate with your existing modal system)
   const showPendingEnquiryModal = (supplier) => {
     // This should trigger your existing PendingEnquiryModal
@@ -202,8 +279,6 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
     // setShowPendingModal(true)
     // setPendingModalSupplier(supplier)
   }
-
-
 
   // Early return with specific error message if party ID is missing
   if (!loading && isSignedIn && !partyId) {
@@ -257,22 +332,21 @@ const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
     updateSuppliersForBudget
   } = useBudgetManager(totalCost, isUpdating, setIsUpdating)
 
-// 2. Fix the useReplacementManager call with all required parameters
-const {
-  replacements,
-  isProcessingRejection,
-  handleApproveReplacement,
-  handleViewSupplier,
-  handleDismissReplacement,
-  clearApprovedReplacements
-} = useReplacementManager(
-  partyId,                    // 1st parameter
-  partyDetails,              // 2nd parameter  
-  refreshPartyData,          // 3rd parameter
-  setNotification,           // 4th parameter - ADD THIS
-  null                       // 5th parameter - ADD THIS (currentSupplier)
-)
-
+  // Fix the useReplacementManager call with all required parameters
+  const {
+    replacements,
+    isProcessingRejection,
+    handleApproveReplacement,
+    handleViewSupplier,
+    handleDismissReplacement,
+    clearApprovedReplacements
+  } = useReplacementManager(
+    partyId,
+    partyDetails,
+    refreshPartyData,
+    setNotification,
+    null
+  )
 
   // Supplier management
   const removeSupplier = async (supplierType) => {
@@ -283,7 +357,7 @@ const {
     
     const result = await partyDatabaseBackend.removeSupplierFromParty(partyId, supplierType)
     if (result.success) {
-      refreshPartyData() // Refresh the party data
+      refreshPartyData()
       return { success: true }
     }
     return result
@@ -301,185 +375,145 @@ const {
   const allSuppliersConfirmed = confirmedSuppliers === totalSuppliers && totalSuppliers > 0
   const showSnappysParty = allSuppliersConfirmed || currentPhase === 'confirmed'
 
-
   const {
-
-
     handleDeleteSupplier,
     getSupplierDisplayName,
- 
   } = useSupplierManager(removeSupplier)
 
   // Add this function to your DatabaseDashboard.jsx
-const [isCancelling, setIsCancelling] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
-// Replace your handleModalSendEnquiry function with this:
-
-const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
-  setSendingEnquiry(true)
-  
-  try {
-    // ✅ Check sessionStorage for replacement context
-    const replacementContextString = sessionStorage.getItem('replacementContext')
-    let replacementContext = null
+  // Replace your handleModalSendEnquiry function with this:
+  const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
+    setSendingEnquiry(true)
     
-    if (replacementContextString) {
-      try {
-        replacementContext = JSON.parse(replacementContextString)
-        console.log('🔄 Found replacement context:', replacementContext)
-      } catch (error) {
-        console.error('❌ Error parsing replacement context:', error)
-      }
-    }
-
-    // STEP 1: Add supplier to party plan
-    console.log('📝 STEP 1: Adding supplier to party plan...')
-    const addResult = await partyDatabaseBackend.addSupplierToParty(
-      partyId,
-      supplier,
-      selectedPackage
-    )
-
-    if (!addResult.success) {
-      throw new Error(addResult.error)
-    }
-    
-    console.log('✅ STEP 1: Supplier added to party plan successfully')
-
-    // STEP 2: Send individual enquiry
-    console.log('📧 STEP 2: Sending individual enquiry...')
-    const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
-      partyId,
-      supplier,
-      selectedPackage,
-      `Quick enquiry for ${supplier.name}`
-    )
-
-    if (!enquiryResult.success) {
-      console.error('❌ Enquiry failed but supplier was added:', enquiryResult.error)
-      setEnquiryFeedback(`⚠️ ${supplier.name} added, but enquiry failed to send`)
-    } else {
-      console.log('✅ STEP 2: Enquiry sent successfully')
-    }
-
-    // ✅ STEP 3: If this was a replacement, mark old enquiry as processed
-    if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
-      console.log('🔄 === REPLACEMENT PROCESSING ===')
-      console.log('🔄 Replacement context:', replacementContext)
-      console.log('🔄 Party ID:', partyId)
-      console.log('🔄 Original supplier category:', replacementContext.originalSupplierCategory)
-      console.log('🔄 New supplier:', supplier.name)
+    try {
+      // ✅ Check sessionStorage for replacement context
+      const replacementContextString = sessionStorage.getItem('replacementContext')
+      let replacementContext = null
       
-      try {
-        const markResult = await partyDatabaseBackend.markReplacementAsProcessed(
-          partyId,
-          replacementContext.originalSupplierCategory,
-          supplier.id
-        )
-        
-        console.log('🔄 Mark replacement result:', markResult)
-        
-        if (markResult.success) {
-          console.log('✅ STEP 3: Replacement marked as processed successfully')
-        } else {
-          console.error('⚠️ STEP 3: Failed to mark replacement as processed:', markResult.error)
+      if (replacementContextString) {
+        try {
+          replacementContext = JSON.parse(replacementContextString)
+          console.log('🔄 Found replacement context:', replacementContext)
+        } catch (error) {
+          console.error('❌ Error parsing replacement context:', error)
         }
-      } catch (error) {
-        console.error('❌ STEP 3: Exception marking replacement as processed:', error)
+      }
+
+      // STEP 1: Add supplier to party plan
+      console.log('📝 STEP 1: Adding supplier to party plan...')
+      const addResult = await partyDatabaseBackend.addSupplierToParty(
+        partyId,
+        supplier,
+        selectedPackage
+      )
+
+      if (!addResult.success) {
+        throw new Error(addResult.error)
       }
       
-      // ✅ Clear the replacement context
-      sessionStorage.removeItem('replacementContext')
-      console.log('🧹 Cleared replacement context from sessionStorage')
-    } else {
-      console.log('ℹ️ Not a replacement flow - skipping replacement processing')
-    }
+      console.log('✅ STEP 1: Supplier added to party plan successfully')
 
-    // STEP 4: Close modal and refresh (unchanged)
-    console.log('🔄 STEP 4: Refreshing data and closing modal...')
-    await refreshPartyData()
-    setShowSupplierAddedModal(false)
-    setAddedSupplierData(null)
-    
-    // Show success banner
-    const currentUrl = new URL(window.location)
-    currentUrl.searchParams.set('enquiry_sent', 'true')
-    currentUrl.searchParams.set('enquiry_count', '1')
-    router.push(currentUrl.toString())
-    
-  } catch (error) {
-    console.error('❌ CRITICAL ERROR in handleModalSendEnquiry:', error)
-    setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
-  } finally {
-    console.log('🏁 FINAL STEP: Setting sendingEnquiry to false')
-    setSendingEnquiry(false)
-  }
-}
+      // STEP 2: Send individual enquiry
+      console.log('📧 STEP 2: Sending individual enquiry...')
+      const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+        partyId,
+        supplier,
+        selectedPackage,
+        `Quick enquiry for ${supplier.name}`
+      )
 
+      if (!enquiryResult.success) {
+        console.error('❌ Enquiry failed but supplier was added:', enquiryResult.error)
+        setEnquiryFeedback(`⚠️ ${supplier.name} added, but enquiry failed to send`)
+      } else {
+        console.log('✅ STEP 2: Enquiry sent successfully')
+      }
 
+      // ✅ STEP 3: If this was a replacement, mark old enquiry as processed
+      if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
+        console.log('🔄 === REPLACEMENT PROCESSING ===')
+        console.log('🔄 Replacement context:', replacementContext)
+        console.log('🔄 Party ID:', partyId)
+        console.log('🔄 Original supplier category:', replacementContext.originalSupplierCategory)
+        console.log('🔄 New supplier:', supplier.name)
+        
+        try {
+          const markResult = await partyDatabaseBackend.markReplacementAsProcessed(
+            partyId,
+            replacementContext.originalSupplierCategory,
+            supplier.id
+          )
+          
+          console.log('🔄 Mark replacement result:', markResult)
+          
+          if (markResult.success) {
+            console.log('✅ STEP 3: Replacement marked as processed successfully')
+          } else {
+            console.error('⚠️ STEP 3: Failed to mark replacement as processed:', markResult.error)
+          }
+        } catch (error) {
+          console.error('❌ STEP 3: Exception marking replacement as processed:', error)
+        }
+        
+        // ✅ Clear the replacement context
+        sessionStorage.removeItem('replacementContext')
+        console.log('🧹 Cleared replacement context from sessionStorage')
+      } else {
+        console.log('ℹ️ Not a replacement flow - skipping replacement processing')
+      }
 
-
-const handleCancelEnquiry = async (supplierType) => {
-  console.log('🚫 handleCancelEnquiry called with:', supplierType)
-  console.log('🔍 partyId:', partyId)
-  
-  if (isCancelling || !partyId) {
-    console.log('⚠️ Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
-    return
-  }
-  
-  setIsCancelling(true)
-  
-  try {
-    const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
-    
-    if (result.success) {
-      console.log('✅ Enquiry cancelled and supplier removed')
+      // STEP 4: Close modal and refresh (unchanged)
+      console.log('🔄 STEP 4: Refreshing data and closing modal...')
       await refreshPartyData()
-      setEnquiryFeedback(`✅ Request cancelled for ${supplierType}`)
-      setTimeout(() => setEnquiryFeedback(null), 3000)
-    } else {
-      throw new Error(result.error)
+      setShowSupplierAddedModal(false)
+      setAddedSupplierData(null)
+      
+      // Show success banner
+      const currentUrl = new URL(window.location)
+      currentUrl.searchParams.set('enquiry_sent', 'true')
+      currentUrl.searchParams.set('enquiry_count', '1')
+      router.push(currentUrl.toString())
+      
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in handleModalSendEnquiry:', error)
+      setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
+    } finally {
+      console.log('🏁 FINAL STEP: Setting sendingEnquiry to false')
+      setSendingEnquiry(false)
     }
-  } catch (error) {
-    console.error('❌ Error cancelling enquiry:', error)
-    setEnquiryFeedback(`❌ Failed to cancel request: ${error.message}`)
-    setTimeout(() => setEnquiryFeedback(null), 5000)
-  } finally {
-    setIsCancelling(false)
   }
-}
 
-// Make sure you're passing it to SupplierGrid:
-<SupplierGrid
-  // ... other props
-  handleCancelEnquiry={handleCancelEnquiry}  // ✅ Make sure this line exists
-/>
-
-  // Modal state
-  const [showSupplierModal, setShowSupplierModal] = useState(false)
-  const [modalConfig, setModalConfig] = useState({
-    category: '',
-    theme: '',
-    date: null,
-    filters: {}
-  })
-
-  const openSupplierModal = (category, theme = 'superhero') => {
-    console.log('🔓 Opening supplier modal:', { category, theme, currentPhase })
+  const handleCancelEnquiry = async (supplierType) => {
+    console.log('🚫 handleCancelEnquiry called with:', supplierType)
+    console.log('🔍 partyId:', partyId)
     
-    setModalConfig({
-      category,
-      theme,
-      date: partyDetails?.date,
-      filters: {}
-    })
-    setShowSupplierModal(true)
-  }
-
-  const closeSupplierModal = () => {
-    console.log('🔒 Closing supplier modal')
-    setShowSupplierModal(false)
+    if (isCancelling || !partyId) {
+      console.log('⚠️ Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
+      return
+    }
+    
+    setIsCancelling(true)
+    
+    try {
+      const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
+      
+      if (result.success) {
+        console.log('✅ Enquiry cancelled and supplier removed')
+        await refreshPartyData()
+        setEnquiryFeedback(`✅ Request cancelled for ${supplierType}`)
+        setTimeout(() => setEnquiryFeedback(null), 3000)
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('❌ Error cancelling enquiry:', error)
+      setEnquiryFeedback(`❌ Failed to cancel request: ${error.message}`)
+      setTimeout(() => setEnquiryFeedback(null), 5000)
+    } finally {
+      setIsCancelling(false)
+    }
   }
 
   // Welcome popup state
@@ -499,7 +533,6 @@ const handleCancelEnquiry = async (supplierType) => {
     }
   }, [searchParams, router])
 
-
   const handleModalClose = () => {
     console.log('🚪 User clicked "Maybe Later" - closing modal, no supplier added')
     setShowSupplierAddedModal(false)
@@ -512,9 +545,6 @@ const handleCancelEnquiry = async (supplierType) => {
   const handlePaymentReady = () => router.push('/payment/secure-party')
   const handleCreateInvites = () => window.location.href = "/e-invites"
 
-
-
-
   // Loading state
   if (loading || !themeLoaded || phaseLoading) {
     return (
@@ -522,7 +552,6 @@ const handleCancelEnquiry = async (supplierType) => {
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
           <p>Loading your party...</p>
-     
         </div>
       </div>
     )
@@ -552,88 +581,80 @@ const handleCancelEnquiry = async (supplierType) => {
     )
   }
 
-
-
   return (
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
-
-
       <ContextualBreadcrumb currentPage="dashboard"/>
+      
       {notification && (
-  <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-    notification.type === 'success' ? 'bg-green-500 text-white' : 
-    notification.type === 'error' ? 'bg-red-500 text-white' : 
-    'bg-blue-500 text-white'
-  }`}>
-    {notification.message}
-    <button 
-      onClick={() => setNotification(null)}
-      className="ml-2 text-white hover:text-gray-200"
-    >
-      ×
-    </button>
-  </div>
-)}
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+          notification.type === 'success' ? 'bg-green-500 text-white' : 
+          notification.type === 'error' ? 'bg-red-500 text-white' : 
+          'bg-blue-500 text-white'
+        }`}>
+          {notification.message}
+          <button 
+            onClick={() => setNotification(null)}
+            className="ml-2 text-white hover:text-gray-200"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
       <BookingConfirmedBanner 
         suppliers={visibleSuppliers}
         enquiries={enquiries}
         paymentDetails={{
-          depositAmount: totalCost * 0.2, // or however you calculate deposit
+          depositAmount: totalCost * 0.2,
           remainingBalance: totalCost * 0.8
         }}
       />
       <EnquirySuccessBanner />
       <EInvitesBanner 
-      partyId={partyId}
-      isBookingPending={currentPhase !== 'confirmed'} 
-      onCreateInvites={handleCreateInvites} 
-    />
+        partyId={partyId}
+        isBookingPending={currentPhase !== 'confirmed'} 
+        onCreateInvites={handleCreateInvites} 
+      />
+      
       {/* Supplier Added Confirmation Modal */}
-<SupplierAddedConfirmationModal
- isOpen={showSupplierAddedModal}
- onClose={handleModalClose}
- onSendEnquiry={handleModalSendEnquiry}
- supplier={addedSupplierData?.supplier}
- selectedPackage={addedSupplierData?.selectedPackage}
- partyDetails={partyDetails}
- isSending={sendingEnquiry}
- currentPhase={currentPhase}
- partyData={partyData}
- partyId={partyId}
- enquiries={enquiries}
- hasEnquiriesPending={hasEnquiriesPending}
-
-/>
+      <SupplierAddedConfirmationModal
+        isOpen={showSupplierAddedModal}
+        onClose={handleModalClose}
+        onSendEnquiry={handleModalSendEnquiry}
+        supplier={addedSupplierData?.supplier}
+        selectedPackage={addedSupplierData?.selectedPackage}
+        partyDetails={partyDetails}
+        isSending={sendingEnquiry}
+        currentPhase={currentPhase}
+        partyData={partyData}
+        partyId={partyId}
+        enquiries={enquiries}
+        hasEnquiriesPending={hasEnquiriesPending}
+      />
       
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
- 
+        <PartyHeader 
+          theme={partyTheme}
+          partyDetails={partyDetails}
+          onPartyDetailsChange={handlePartyDetailsUpdate}
+          dataSource={dataSource}
+          currentParty={currentParty}
+          isPaymentConfirmed={isPaymentConfirmed}
+          enquiries={enquiries}
+          isSignedIn={true}
+        />
 
-      <PartyHeader 
-  theme={partyTheme}
-  partyDetails={partyDetails}
-  onPartyDetailsChange={handlePartyDetailsUpdate}
-  // NEW: Add these props to support database time handling
-  dataSource={dataSource}           // 'database' or 'localStorage'
-  currentParty={currentParty}       // The full party object from database
-  // Existing props
-  isPaymentConfirmed={isPaymentConfirmed}
-  enquiries={enquiries}
-  isSignedIn={true}
+        {allSuppliersConfirmed && !hasSeenPartyReadyModal && !isPaymentConfirmed && (
+          <PartyReadyModal
+            isOpen={true}
+            onClose={() => setHasSeenPartyReadyModal(true)}
+            totalCost={totalCost}
+            depositAmount={Math.max(150, totalCost * 0.3)}
+            timeLeftMinutes={120}
+          />
+        )}
 
-/>
-
-
-{allSuppliersConfirmed && !hasSeenPartyReadyModal && !isPaymentConfirmed && (
-  <PartyReadyModal
-    isOpen={true}
-    onClose={() => setHasSeenPartyReadyModal(true)}
-    totalCost={totalCost}
-    depositAmount={Math.max(150, totalCost * 0.3)} // 30% deposit or £150 minimum
-    timeLeftMinutes={120}
-  />
-)}
-
-        {/* Supplier Selection Modal */}
+        {/* ✅ UPDATED: Supplier Selection Modal with Restoration Support */}
         <SupplierSelectionModal
           isOpen={showSupplierModal}
           onClose={closeSupplierModal}
@@ -646,10 +667,11 @@ const handleCancelEnquiry = async (supplierType) => {
           isAwaitingResponses={currentPhase === 'awaiting_responses'}
           partyLocation={partyDetails.location}
           partyData={partyData}
-          enquiries={enquiries}s
+          enquiries={enquiries}
           hasEnquiriesPending={hasEnquiriesPending}
+          isSignedIn={true}                    // ✅ Database users are signed in
+          currentPartyId={partyId}             // ✅ Pass the party ID
         />
-  
 
         {/* Replacement Manager - only if we have a party ID */}
         {partyId && (
@@ -664,10 +686,8 @@ const handleCancelEnquiry = async (supplierType) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           {/* Main Content */}
-          
           <main className="lg:col-span-2 space-y-8">
             {/* Supplier Grid - NOW WITH PROPER PHASE DETECTION */}
-            
             <SupplierGrid
               suppliers={suppliers}
               enquiries={enquiries}
@@ -678,16 +698,15 @@ const handleCancelEnquiry = async (supplierType) => {
               onAddSupplier={handleAddSupplier}
               partyId={partyId}
               isSignedIn={true}
-              currentPhase={currentPhase} // ✅ NOW PROPERLY PASSED
-              openSupplierModal={openSupplierModal} // ✅ Pass this down
+              currentPhase={currentPhase}
+              openSupplierModal={openSupplierModal}
               renderKey={renderKey}
               onPaymentReady={handlePaymentReady}
               paymentDetails={paymentDetails}
-              handleCancelEnquiry={handleCancelEnquiry} // Pass the cancel function
+              handleCancelEnquiry={handleCancelEnquiry}
             />
 
-    
-             <PartyPhaseContent
+            <PartyPhaseContent
               phase={partyPhase}
               suppliers={visibleSuppliers}
               enquiries={enquiries}
@@ -698,8 +717,6 @@ const handleCancelEnquiry = async (supplierType) => {
               partyDetails={partyDetails}
               hasCreatedInvites={partyData?.einvites?.status === 'completed'}
             />
-
-       
           </main>
 
           {/* Sidebar */}
@@ -710,46 +727,43 @@ const handleCancelEnquiry = async (supplierType) => {
             isPaymentConfirmed={isPaymentConfirmed}
             suppliers={visibleSuppliers}
             enquiries={enquiries}
-            timeRemaining={24} // You can calculate actual time remaining if needed
+            timeRemaining={24}
             onPaymentReady={handlePaymentReady}
             showPaymentCTA={true}
           />
         </div>
       </div>
 
-    
-
       {/* Modals */}
       <WelcomeDashboardPopup 
         isOpen={showWelcomePopup} 
         onClose={() => setShowWelcomePopup(false)}
       />
-<MobileBottomTabBar
-  suppliers={visibleSuppliers} // Use visibleSuppliers instead of suppliers
-  enquiries={enquiries}
-  totalCost={totalCost}
-  timeRemaining={24}
-  partyDetails={partyDetails}
-  onPaymentReady={handlePaymentReady}
-  isPaymentConfirmed={isPaymentConfirmed}
-  
-  // Pass the actual components as props
-  ProgressWidget={
-    <SnappysPresentParty
-      suppliers={visibleSuppliers}
-      enquiries={enquiries}
-      timeRemaining={24}
-      onPaymentReady={handlePaymentReady}
-      showPaymentCTA={true}
-      isPaymentComplete={isPaymentConfirmed}
-    />
-  }
-  CountdownWidget={
-    <CountdownWidget
-      partyDate={partyDetails?.date}
-    />
-  }
-/>
+      
+      <MobileBottomTabBar
+        suppliers={visibleSuppliers}
+        enquiries={enquiries}
+        totalCost={totalCost}
+        timeRemaining={24}
+        partyDetails={partyDetails}
+        onPaymentReady={handlePaymentReady}
+        isPaymentConfirmed={isPaymentConfirmed}
+        ProgressWidget={
+          <SnappysPresentParty
+            suppliers={visibleSuppliers}
+            enquiries={enquiries}
+            timeRemaining={24}
+            onPaymentReady={handlePaymentReady}
+            showPaymentCTA={true}
+            isPaymentComplete={isPaymentConfirmed}
+          />
+        }
+        CountdownWidget={
+          <CountdownWidget
+            partyDate={partyDetails?.date}
+          />
+        }
+      />
     </div>
   )
 }

@@ -302,7 +302,7 @@ const PackageCard = ({
                 }}
                 disabled={addToPlanButtonState.disabled}
               >
-                {addToPlanButtonState.text}
+                {addToPlanButtonState.text} 
               </Button>
             )}
             

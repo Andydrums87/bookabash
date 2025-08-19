@@ -18,7 +18,7 @@ import {
   Zap,
   Target
 } from 'lucide-react';
-import EnhancedThemesSection from '../EnchancedThemesSection';
+import EnhancedThemesSection from '../../dashboard/EnchancedThemesSection';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

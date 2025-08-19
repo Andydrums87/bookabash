@@ -31,6 +31,7 @@ const AIOnlyThemeSelection = ({
             <video 
               src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1755549617/GM7kil-hKfMk20WMnXZQn_output_glkjnb.mp4"
               autoPlay
+              poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755548857/ChatGPT_Image_Aug_18_2025_09_27_29_PM_diq49r.png"
               loop
               muted
               playsInline

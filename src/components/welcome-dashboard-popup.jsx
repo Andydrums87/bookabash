@@ -405,7 +405,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10 h-12 text-base font-medium border-2 border-gray-200 focus:border-primary-500 rounded-xl"
+                      className="pl-10 h-12 text-base font-medium border-2 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl"
                       placeholder="e.g. Emma"
                       autoFocus
                     />
@@ -473,8 +473,8 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
           </>
         ) : (
           // Step 2: Simple Celebration (uses existing child data if available)
-          <div className="relative overflow-hidden ">
-            <div className="absolute inset-0"></div>
+          <div className="relative overflow-hidden bg-gray-50">
+  
             
             <div className="relative z-10 p-6 pt-6">
               <DialogHeader className=" pb-6">
@@ -483,45 +483,39 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                 </DialogTitle>
               </DialogHeader>
 
-              {/* Show appropriate message based on source */}
-              {isAlaCarteUser && existingChildData ? (
-                <div className="flex justify-center mb-4 sm:mb-6">
-                  <div className="text-center">
-                    <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-4 inline-block">
-                      ✅ {existingChildData.firstName}'s supplier successfully added!
-                    </div>
-                    {/* <p className="text-lg text-gray-700 font-medium mb-4">
-                      Your party planning dashboard is ready to help you add more suppliers and manage everything!
-                    </p> */}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-center mb-4 sm:mb-6">
-                  <p className="text-lg text-gray-700 font-medium">
-                    Your party planning dashboard is loaded and ready to go!
-                  </p>
-                </div>
-              )}
-
+             
               {/* Big Snappy with Confetti - smaller on mobile */}
               <div className="flex justify-center mb-4 sm:mb-8">
                 <div className="relative">
-                  <Image
+                  {/* <Image
                     src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
                     alt="Snappy celebrating"
                     width={250}
                     height={250}
                     className="md:w-[250px] md:h-[250px] w-[200px] h-[200px] drop-shadow-2xl"
-                  />
-                  {/* Floating confetti around Snappy - smaller on mobile */}
-                  <div className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 text-2xl sm:text-3xl animate-bounce">🎊</div>
-                  <div className="absolute -top-1 -right-4 sm:-top-2 sm:-right-6 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.2s' }}>🎉</div>
-                  <div className="absolute top-6 -left-6 sm:top-8 sm:-left-8 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.4s' }}>✨</div>
-                  <div className="absolute top-3 -right-3 sm:top-4 sm:-right-4 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.6s' }}>🎈</div>
-                  <div className="absolute -bottom-1 -left-4 sm:-bottom-2 sm:-left-6 text-xl sm:text-2xl animate-bounce" style={{ animationDelay: '0.8s' }}>🎊</div>
-                  <div className="absolute -bottom-3 -right-1 sm:-bottom-4 sm:-right-2 text-2xl sm:text-3xl animate-bounce" style={{ animationDelay: '1s' }}>🎉</div>
-                  <div className="absolute top-1/2 -left-8 sm:-left-10 text-lg sm:text-xl animate-bounce" style={{ animationDelay: '1.2s' }}>⭐</div>
-                  <div className="absolute top-1/3 -right-6 sm:-right-8 text-lg sm:text-xl animate-bounce" style={{ animationDelay: '1.4s' }}>💫</div>
+                  /> */}
+                      <video 
+              src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1755604981/output_12_rlx7kt.mp4"
+              autoPlay
+              poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
+              loop
+              muted
+              playsInline
+              className="md:w-[250px] md:h-[250px] w-[200px] h-[200px]"
+              onError={() => console.log('Video failed to load')}
+            >
+              {/* Fallback if video doesn't work */}
+              <div className="w-full h-96 flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-2xl">
+                <div className="text-8xl animate-spin mb-6">🪄</div>
+                <p className="text-2xl font-black text-[hsl(var(--primary-600))] animate-pulse">
+                  Snappy's Working His Magic...
+                </p>
+                <p className="text-lg text-gray-600 mt-2 animate-pulse">
+                  Creating amazing invitations just for you!
+                </p>
+              </div>
+            </video>
+      
                 </div>
               </div>
 

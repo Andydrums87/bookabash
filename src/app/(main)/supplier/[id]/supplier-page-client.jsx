@@ -28,6 +28,7 @@ import SupplierUnavailableModal from "@/components/supplier/supplier-unavailable
 
 
 import SupplierServiceDetails from "@/components/supplier/supplier-service-details"
+import ServiceDetailsDisplayRouter from "@/components/supplier/display/ServiceDetailsDisplayRouter"
 import SupplierPortfolioGallery from "@/components/supplier/supplier-portfolio-gallery"
 import SupplierCredentials from "@/components/supplier/supplier-credentials"
 import SupplierQuickStats from "@/components/supplier/supplier-quick-stats"
@@ -1616,13 +1617,13 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
         if (!selectedDate) {
           return {
             disabled: false,
-            className: "bg-teal-500 hover:bg-teal-600 text-white",
+            className: "bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white",
             text: "📅 Pick a Date First"
           }
         } else {
           return {
             disabled: false,
-            className: "bg-primary-500 hover:bg-primary-600 text-white",
+            className: "bg-primary-500 hover:bg-[hsl(var(--primary-600))]  text-white",
             text: "Book This Supplier"
           }
         }
@@ -1891,7 +1892,7 @@ if (userTypeLoading) {
     currentMonth={currentMonth}
     onClearDate={() => setSelectedDate(null)}
   />
-            <SupplierServiceDetails supplier={supplier} />
+    <ServiceDetailsDisplayRouter supplier={supplier} />
             <SupplierPortfolioGallery 
               portfolioImages={supplier?.portfolioImages || []} 
               portfolioVideos={supplier?.portfolioVideos || []}

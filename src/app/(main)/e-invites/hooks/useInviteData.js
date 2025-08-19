@@ -8,10 +8,55 @@ export const useInviteData = () => {
   const [inviteData, setInviteData] = useState(DEFAULT_INVITE_DATA)
   const [generatedImage, setGeneratedImage] = useState(null)
 
-  // Helper function to extract venue name from party plan
   const getVenueName = (partyPlan, fallbackLocation) => {
     try {
       console.log("🏢 Extracting venue from party plan:", partyPlan)
+      
+      // NEW: Check for venue with full address details (your current data structure)
+      if (partyPlan?.venue?.originalSupplier?.serviceDetails?.location?.fullAddress) {
+        const venue = partyPlan.venue
+        const fullAddress = venue.originalSupplier.serviceDetails.location.fullAddress
+        const postcode = venue.originalSupplier.serviceDetails.location.postcode
+        const venueName = venue.originalSupplier.name || venue.name
+        
+        console.log("✅ Found venue with full address:")
+        console.log("  - Name:", venueName)
+        console.log("  - Address:", fullAddress)
+        console.log("  - Postcode:", postcode)
+        
+        // Clean up the address (replace newlines with commas)
+        const cleanAddress = fullAddress.replace(/\n/g, ', ').replace(/,\s*,/g, ',').trim()
+        
+        // Build complete address with postcode
+        const completeAddress = postcode && !cleanAddress.includes(postcode) 
+          ? `${cleanAddress}, ${postcode}`
+          : cleanAddress
+        
+        const fullVenue = `${venueName.trim()}, ${completeAddress}`
+        console.log("✅ Complete venue string:", fullVenue)
+        
+        return fullVenue
+      }
+      
+      // Fallback: Check for venue with owner address
+      if (partyPlan?.venue?.originalSupplier?.owner?.address) {
+        const venue = partyPlan.venue
+        const ownerAddress = venue.originalSupplier.owner.address
+        const venueName = venue.originalSupplier.name || venue.name
+        
+        const addressParts = [
+          ownerAddress.street,
+          ownerAddress.city,
+          ownerAddress.postcode
+        ].filter(Boolean)
+        
+        if (addressParts.length > 0) {
+          const fullAddress = addressParts.join(', ')
+          const fullVenue = `${venueName.trim()}, ${fullAddress}`
+          console.log("✅ Found venue with owner address:", fullVenue)
+          return fullVenue
+        }
+      }
       
       // Check if party_plan has venue supplier information
       if (partyPlan?.venue?.supplier_name) {

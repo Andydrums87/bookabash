@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useSupplierDashboard } from "@/utils/mockBackend"
-import ServiceSpecificDetails from "../dashboard/components/EntertainerServiceDetails"
+import ServiceSpecificDetails from "./components/EntertainerServiceDetails"
+import ServiceDetailsRouter from "../ServiceDetailsRouter"
 import {
   AlertCircle,
   Eye,
@@ -24,12 +25,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { useSupplier } from "@/hooks/useSupplier"
-import DebugAIAssistant from "../DebugAIAssistant"
-
 
 
 
@@ -86,96 +84,134 @@ const CoverPhotoContent = ({ currentSupplier, supplierData, supplier, packages, 
     }
   }, [supplierData?.coverPhoto, supplierData?.image, supplierData?.name]);
 
-  const handleCoverPhotoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+ // 4. Add error handling to the upload function
+const handleCoverPhotoUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
 
-    console.log('📷 Uploading cover photo to Cloudinary...');
-    setUploadingCover(true);
+  // Validate file size (e.g., max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File size too large. Please choose an image under 5MB.');
+    return;
+  }
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'portfolio_images');
-      
-      const response = await fetch('https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Cloudinary upload failed: ${response.statusText}`);
-      }
-      
-      const cloudinaryData = await response.json();
-      console.log('✅ Cover photo upload successful:', cloudinaryData.secure_url);
-      
-      // Update state
-      setCoverPhoto(cloudinaryData.secure_url);
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file.');
+    return;
+  }
 
-      // Save just the cover photo directly
-      await handleSaveGallery({ coverPhoto: cloudinaryData.secure_url });
-      
-    } catch (error) {
-      console.error('❌ Cover photo upload failed:', error);
-      alert(`Failed to upload cover photo: ${error.message}`);
-    } finally {
-      setUploadingCover(false);
-      if (coverPhotoInputRef.current) {
-        coverPhotoInputRef.current.value = '';
-      }
+  console.log('📷 Uploading cover photo to Cloudinary...');
+  setUploadingCover(true);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'portfolio_images');
+    
+    const response = await fetch('https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Cloudinary upload failed: ${response.statusText}`);
     }
-  };
+    
+    const cloudinaryData = await response.json();
+    console.log('✅ Cover photo upload successful:', cloudinaryData.secure_url);
+    
+    // Update state
+    setCoverPhoto(cloudinaryData.secure_url);
 
-  const handleSaveGallery = async (galleryData) => {
-    setLocalSaving(true);
+    // Save just the cover photo directly
+    await handleSaveGallery({ coverPhoto: cloudinaryData.secure_url });
+    
+  } catch (error) {
+    console.error('❌ Cover photo upload failed:', error);
+    alert(`Failed to upload cover photo: ${error.message}`);
+    
+    // Reset file input
+    if (coverPhotoInputRef.current) {
+      coverPhotoInputRef.current.value = '';
+    }
+  } finally {
+    setUploadingCover(false);
+  }
+};
+
+// 3. Fix the handleSaveGallery function to ensure packages are passed
+const handleSaveGallery = async (galleryData) => {
+  setLocalSaving(true);
+  
+  try {
+    console.log('💾 Saving cover photo:', galleryData);
+    
+    if (!updateProfile || !supplierData || !supplier) {
+      throw new Error('Required functions not available');
+    }
+    
+    // ✅ Create the updated data WITH the cover photo
+    const updatedSupplierData = {
+      ...supplierData,
+      coverPhoto: galleryData.coverPhoto,
+      image: galleryData.coverPhoto // Also update the image field
+    };
+
+    console.log('🔍 Cover photo save debug:', {
+      businessId: supplier.id,
+      businessName: supplierData?.name,
+      newCoverPhoto: galleryData.coverPhoto
+    });
+
+    // ✅ FIXED: Pass packages explicitly - use empty array if not available
+    const currentPackages = packages || supplierData?.packages || [];
+    const result = await updateProfile(updatedSupplierData, currentPackages, supplier.id);
+    
+    if (result.success) {
+      console.log('✅ Cover photo saved successfully');
+      
+      // Trigger supplier updated event
+      window.dispatchEvent(new CustomEvent('supplierUpdated', { 
+        detail: { supplierId: result.supplier.id } 
+      }));
+      
+      setLocalSaveSuccess(true);
+      setTimeout(() => setLocalSaveSuccess(false), 3000);
+      
+      return { success: true };
+    } else {
+      throw new Error(result.error || 'Failed to save cover photo');
+    }
+  } catch (error) {
+    console.error('❌ Failed to save cover photo:', error);
+    alert(`Failed to save cover photo: ${error.message}`);
+    throw error;
+  } finally {
+    setLocalSaving(false);
+  }
+};
+
+const handleRemoveCoverPhoto = async () => {
+  if (confirm('Are you sure you want to remove the cover photo?')) {
+    console.log('🗑️ Removing cover photo...');
+    
+    // Update local state immediately for UI feedback
+    const previousCoverPhoto = coverPhoto;
+    setCoverPhoto(null);
     
     try {
-      console.log('💾 Saving cover photo:', galleryData);
-      
-      if (!updateProfile || !supplierData || !supplier) {
-        throw new Error('Required functions not available');
-      }
-      
-      // ✅ Create the updated data WITH the cover photo
-      const updatedSupplierData = {
-        ...supplierData,
-        coverPhoto: galleryData.coverPhoto,
-        image: galleryData.coverPhoto // Also update the image field
-      };
-  
-      console.log('🔍 Cover photo save debug:', {
-        businessId: supplier.id,
-        businessName: supplierData?.name,
-        newCoverPhoto: galleryData.coverPhoto
-      });
-  
-      // ✅ Use the UPDATED data and pass empty array for packages (cover photo doesn't need packages)
-      const result = await updateProfile(updatedSupplierData, [], supplier.id);
-      
-      if (result.success) {
-        console.log('✅ Cover photo saved successfully');
-        
-        // Trigger supplier updated event
-        window.dispatchEvent(new CustomEvent('supplierUpdated', { 
-          detail: { supplierId: result.supplier.id } 
-        }));
-        
-        setLocalSaveSuccess(true);
-        setTimeout(() => setLocalSaveSuccess(false), 3000);
-        
-        return { success: true };
-      } else {
-        throw new Error(result.error || 'Failed to save cover photo');
-      }
+      // Save the removal to database
+      await handleSaveGallery({ coverPhoto: null });
+      console.log('✅ Cover photo removed successfully');
     } catch (error) {
-      console.error('❌ Failed to save cover photo:', error);
-      alert(`Failed to save cover photo: ${error.message}`);
-      throw error;
-    } finally {
-      setLocalSaving(false);
+      console.error('❌ Failed to remove cover photo:', error);
+      // Revert local state if save failed
+      setCoverPhoto(previousCoverPhoto);
+      alert(`Failed to remove cover photo: ${error.message}`);
     }
-  };
+  }
+};
 
   return (
     <div className="">
@@ -214,27 +250,30 @@ const CoverPhotoContent = ({ currentSupplier, supplierData, supplier, packages, 
             {coverPhoto ? (
               <>
                 <img
-                  src={coverPhoto | "/placeholder.png"}
+                  src={coverPhoto || "/placeholder.png"}
                   alt="Cover photo"
                   className="md:w-[1000px] h-[400px] object-cover"
                 />
                 <div className="absolute top-2 right-2">
-                  <button
-                    type="button"
-                    onClick={() => setCoverPhoto(null)}
-                    className="bg-red-500 hover:bg-red-600 text-white p-1 rounded text-xs"
-                    title="Remove cover photo"
-                  >
-                    🗑️
-                  </button>
+                <div className="absolute top-2 right-2">
+  <button
+    type="button"
+    onClick={handleRemoveCoverPhoto}  // ✅ Now actually removes and saves
+    className="bg-red-500 hover:bg-red-600 text-white p-1 rounded text-xs disabled:opacity-50"
+    title="Remove cover photo"
+    disabled={localSaving || uploadingCover}
+  >
+    {localSaving ? '...' : '🗑️'}
+  </button>
+</div>
                 </div>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-[400px] text-gray-400">
+              <div className="flex flex-col items-center justify-center h-[400px]  text-gray-400">
                 <img
                   src="/placeholder.png"
                   alt="Default cover"
-                  className="w-[70%] h-full object-cover"
+                  className="h-full w-[800px]"
                 />
               </div>
             )}
@@ -597,7 +636,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-primary-50 ">
-       {/* AI Assistant Trigger Card */}
+
     
       <div className="max-w-7xl mx-auto">
         {/* Header with status - Mobile Optimized */}
@@ -640,7 +679,7 @@ useEffect(() => {
                   <Alert className="border-blue-200 bg-blue-50">
                     <CheckCircle className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800 text-sm">
-                      <strong>Welcome to BookABash!</strong> Your account has been created. Add some details and service
+                      <strong>Welcome to PartySnap!</strong> Your account has been created. Add some details and service
                       packages below, then click "Save Changes" to go live on the marketplace.
                     </AlertDescription>
                   </Alert>
@@ -768,15 +807,14 @@ useEffect(() => {
         <div className="p-4 sm:p-6 pt-0">
           {/* Service Specific Details - Mobile Optimized */}
           <div className="mt-6">
-            <ServiceSpecificDetails
-              serviceType={supplierData?.serviceType}
-              serviceDetails={supplierData?.serviceDetails || {}}
-              supplierData={supplierData}
-              currentBusiness={currentBusiness}
-              onUpdate={handleServiceDetailsUpdate}
-              onSave={handleServiceDetailsSave}
-              saving={saving}
-            />
+          <ServiceDetailsRouter
+  serviceType={supplierData?.business_type || supplierData?.serviceType}
+  serviceDetails={supplierData?.serviceDetails || {}}
+  supplierData={supplierData}
+  currentBusiness={currentBusiness}
+  onUpdate={handleServiceDetailsUpdate}
+  saving={saving}
+/>
           </div>
  
     {/* AI Assistant Modal */}
