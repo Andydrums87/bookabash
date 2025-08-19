@@ -86,19 +86,18 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       'venues': ['venues', 'venue', 'hall', 'space'],
       'catering': ['catering', 'food', 'cake', 'baker'],
       'decorations': ['decorations', 'decoration', 'balloon', 'styling'],
-      'bouncy-castles': ['bouncy castles', 'bouncy castle', 'activities', 'inflatable', 'bouncy_castles', 'bouncy-castles'],
+      'bouncy-castles': ['bouncy castles', 'bouncy castle', 'activities', 'inflatable', 'bouncy_castles', 'bouncy-castles'], // ✅ UPDATED: new key
       'face-painting': ['face painting', 'face painter', 'face_painting', 'face-painting'],
       'party-bags': ['party bags', 'party-bags', 'gift bags', 'party_bags'],
       'photography': ['photography', 'photographer', 'photo'],
       'magicians': ['magician', 'magicians', 'magic', 'entertainment'],
       'balloon-artists': ['balloon artist', 'balloon-artist', 'balloon_artist', 'entertainment'],
       'character-visits': ['character visit', 'character-visit', 'character_visit', 'entertainment'],
-      'activities': ['activities', 'activity', 'bouncy castle', 'games']
+      'activities': ['activities', 'activity', 'bouncy castle', 'games'] // ✅ KEPT: This mapping stays
     };
     
     return categoryMapping[selectedCategoryId] || [selectedCategoryId];
   };
-  
 
 
   const categories = [
@@ -106,79 +105,79 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       id: "all", 
       name: "All", 
       icon: <Sparkles className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg" // Party essentials image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg"
     },
     { 
       id: "entertainment", 
       name: "Entertainment", 
       icon: <Music className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png" // Activities image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png"
     },
     { 
       id: "venues", 
       name: "Venues", 
       icon: <Building className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg" // Venue image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg"
     },
     { 
       id: "catering", 
       name: "Catering", 
       icon: <Utensils className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg" // Food image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg"
     },
     { 
       id: "decorations", 
       name: "Decorations", 
       icon: <Palette className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png" // Decorations image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png"
     },
     { 
-      id: "activities", 
+      id: "bouncy-castles", // ✅ CHANGED: was "activities", now unique
       name: "Bouncy Castles", 
       icon: <div className="text-sm">🏰</div>,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png" // Bouncy castle image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png"
     },
     { 
       id: "facePainting", 
       name: "Face Painting", 
       icon: <Palette className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170767/hlz6iinsgj7abeu0nndx.png" // Face painting image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170767/hlz6iinsgj7abeu0nndx.png"
     },
     { 
       id: "party-bags", 
       name: "Party Bags", 
       icon: <Gift className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482131/daniel-alvasd-QJlg2KSl0fU-unsplash_vm4acf.jpg" // Party bags image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482131/daniel-alvasd-QJlg2KSl0fU-unsplash_vm4acf.jpg"
     },
     { 
       id: "photography", 
       name: "Photography", 
       icon: <Camera className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png" // Photography image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png"
     },
     { 
       id: "magicians", 
       name: "Magicians", 
       icon: <div className="text-sm">🎩</div>,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753435484/zivotubsexikuudyl55r.jpg" // Magician image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753435484/zivotubsexikuudyl55r.jpg"
     },
     { 
       id: "balloon-artists", 
       name: "Balloon Artists", 
       icon: <div className="text-sm">🎈</div>,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170776/i8mfc16v3vk4inj0esvv.jpg" // Balloon artist image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170776/i8mfc16v3vk4inj0esvv.jpg"
     },
     { 
       id: "character-visits", 
       name: "Character Visits", 
       icon: <div className="text-sm">🦸</div>,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854552/kfhncxpa58uyrtrjpq2z.jpg" // Character visits image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854552/kfhncxpa58uyrtrjpq2z.jpg"
     },
     { 
-      id: "activities", 
+      id: "activities", // ✅ KEPT: This one stays as "activities"
       name: "Activities", 
       icon: <Gamepad2 className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png" // Activities image
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png"
     },
   ]
 
