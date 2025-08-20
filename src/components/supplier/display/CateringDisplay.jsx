@@ -1,25 +1,87 @@
 // components/supplier/display/CateringDisplay.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   ChefHat,
   Users,
   Clock,
+  Info,
   Heart,
   Award,
   Shield,
   Utensils,
   Sparkles,
   Star,
-  CheckCircle
+  CheckCircle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 const CateringDisplay = ({ supplier, serviceDetails }) => {
 
+  // State for expandable sections
+  const [showAllCuisines, setShowAllCuisines] = useState(false);
+  const [showAllFlavors, setShowAllFlavors] = useState(false);
+  const [showAllSpecialties, setShowAllSpecialties] = useState(false);
+  const [showAllDietary, setShowAllDietary] = useState(false);
 
   const isCakeSpecialist = serviceDetails?.cateringType?.toLowerCase().includes('cake') || 
                           serviceDetails?.cateringType?.toLowerCase().includes('baker');
+
+  // Helper function to render expandable badge list
+  const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
+    if (!items?.length) return null;
+    
+    const displayItems = showAll ? items : items.slice(0, maxInitial);
+    const hasMore = items.length > maxInitial;
+    
+    return (
+      <div className="mb-6">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
+          {icon && <span className="w-4 h-4">{icon}</span>}
+          {title}
+          {items.length > 0 && (
+            <span className="text-sm text-gray-500 font-normal">({items.length})</span>
+          )}
+        </h4>
+        
+        <div className="space-y-3">
+          {/* Grid layout for better organization */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {displayItems.map((item, index) => (
+              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center`}>
+                {item}
+              </Badge>
+            ))}
+          </div>
+          
+          {/* Show more/less button */}
+          {hasMore && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAll(!showAll)}
+              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+            >
+              {showAll ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-1" />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-1" />
+                  Show {items.length - maxInitial} more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {
@@ -29,7 +91,7 @@ const CateringDisplay = ({ supplier, serviceDetails }) => {
         <h4 className="font-semibold text-gray-900 mb-3">Age Groups We Cater For</h4>
         <div className="flex flex-wrap gap-2">
           {ageGroups.map((age, index) => (
-            <Badge key={index} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
+            <Badge key={index} variant="outline" className="text-slate-700 border-slate-300 bg-slate-50">
               {age}
             </Badge>
           ))}
@@ -45,18 +107,18 @@ const CateringDisplay = ({ supplier, serviceDetails }) => {
       <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
+            <Sparkles className="w-5 h-5 text-primary-600" />
             Add-on Services
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
             {addOnServices.map((addon, index) => (
-              <div key={index} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div key={index} className="p-4 bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-100 transition-colors cursor-pointer">
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-purple-900">{addon.name}</h4>
-                  <span className="font-bold text-purple-700">£{addon.price}</span>
+                  <h4 className="font-semibold text-gray-900">{addon.name}</h4>
+                  <span className="font-bold text-teal-600">£{addon.price}</span>
                 </div>
                 {addon.description && (
-                  <p className="text-purple-800 text-sm">{addon.description}</p>
+                  <p className="text-gray-700 text-sm">{addon.description}</p>
                 )}
               </div>
             ))}
@@ -68,11 +130,30 @@ const CateringDisplay = ({ supplier, serviceDetails }) => {
 
   return (
     <div className="space-y-6">
+        {/* About Us Section */}
+        {serviceDetails.aboutUs && (
+        <Card className="border-gray-300">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Info className="w-5 h-5 text-orange-600" />
+              About Us
+            </h2>
+            
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+              <div className="prose prose-gray max-w-none">
+                <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">
+                  {serviceDetails.aboutUs}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Catering/Cake Service Details */}
       <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <ChefHat className="w-5 h-5 text-orange-600" />
+            <ChefHat className="w-5 h-5 text-primary-600" />
             {isCakeSpecialist ? 'Cake Services' : 'Catering Services'}
           </h2>
           
@@ -118,67 +199,48 @@ const CateringDisplay = ({ supplier, serviceDetails }) => {
             )}
           </div>
 
-          {/* Food-specific sections */}
-          {!isCakeSpecialist && serviceDetails.cuisineTypes?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Utensils className="w-4 h-4" />
-                Cuisine Types
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.cuisineTypes.map((cuisine, index) => (
-                  <Badge key={index} variant="outline" className="text-orange-700 border-orange-300 bg-orange-50">
-                    {cuisine}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Food-specific sections with expandable layout */}
+          {!isCakeSpecialist && renderExpandableBadges(
+            serviceDetails.cuisineTypes,
+            "Cuisine Types",
+            <Utensils className="w-4 h-4" />,
+            "text-primary-700 border-[hsl(var(--primary-300))] bg-primary-50",
+            showAllCuisines,
+            setShowAllCuisines,
+            6
           )}
 
-          {/* Cake-specific sections */}
-          {isCakeSpecialist && serviceDetails.cakeFlavors?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3">Available Cake Flavors</h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.cakeFlavors.map((flavor, index) => (
-                  <Badge key={index} variant="outline" className="text-pink-700 border-pink-300 bg-pink-50">
-                    {flavor}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Cake-specific sections with expandable layout */}
+          {isCakeSpecialist && renderExpandableBadges(
+            serviceDetails.cakeFlavors,
+            "Available Cake Flavors",
+            <Heart className="w-4 h-4" />,
+            "text-pink-700 border-pink-300 bg-pink-50",
+            showAllFlavors,
+            setShowAllFlavors,
+            6
           )}
 
-          {serviceDetails.specialties?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Star className="w-4 h-4" />
-                Specialties
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.specialties.map((specialty, index) => (
-                  <Badge key={index} variant="outline" className="text-orange-700 border-orange-300 bg-orange-50">
-                    {specialty}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Specialties with expandable layout */}
+          {renderExpandableBadges(
+            serviceDetails.specialties,
+            "Specialties",
+            <Star className="w-4 h-4" />,
+            "text-teal-700 border-teal-300 bg-teal-50",
+            showAllSpecialties,
+            setShowAllSpecialties,
+            6
           )}
 
-          {serviceDetails.dietaryOptions?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Heart className="w-4 h-4" />
-                Dietary Options
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.dietaryOptions.map((diet, index) => (
-                  <Badge key={index} variant="outline" className="text-green-700 border-green-300 bg-green-50">
-                    {diet}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Dietary Options with expandable layout */}
+          {renderExpandableBadges(
+            serviceDetails.dietaryOptions,
+            "Dietary Options",
+            <Heart className="w-4 h-4" />,
+            "text-green-700 border-green-300 bg-green-50",
+            showAllDietary,
+            setShowAllDietary,
+            6
           )}
 
           {renderAgeGroups(serviceDetails.ageGroups)}
@@ -251,7 +313,7 @@ const CateringDisplay = ({ supplier, serviceDetails }) => {
                   
                   {serviceDetails.equipment.needsPower !== undefined && (
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <CheckCircle className={`w-5 h-5 ${serviceDetails.equipment.needsPower ? 'text-orange-600' : 'text-green-600'}`} />
+                      <CheckCircle className={`w-5 h-5 ${serviceDetails.equipment.needsPower ? 'text-primary-600' : 'text-green-600'}`} />
                       <span className="text-gray-700">
                         {serviceDetails.equipment.needsPower ? 'Requires power supply at venue' : 'No power supply needed'}
                       </span>

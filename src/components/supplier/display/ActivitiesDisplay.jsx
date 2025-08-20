@@ -1,7 +1,8 @@
 // components/supplier/display/ActivitiesDisplay.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Zap,
   Shield,
@@ -15,11 +16,70 @@ import {
   Award,
   Sparkles,
   Home,
-  MapPin
+  MapPin,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
- 
+  
+  // State for expandable sections
+  const [showAllThemes, setShowAllThemes] = useState(false);
+  const [showAllTypes, setShowAllTypes] = useState(false);
+  const [showAllCapacities, setShowAllCapacities] = useState(false);
+
+  // Helper function to render expandable badge list
+  const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
+    if (!items?.length) return null;
+    
+    const displayItems = showAll ? items : items.slice(0, maxInitial);
+    const hasMore = items.length > maxInitial;
+    
+    return (
+      <div className="mb-6">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
+          {icon && <span className="w-4 h-4">{icon}</span>}
+          {title}
+          {items.length > 0 && (
+            <span className="text-sm text-gray-500 font-normal">({items.length})</span>
+          )}
+        </h4>
+        
+        <div className="space-y-3">
+          {/* Grid layout for better organization */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {displayItems.map((item, index) => (
+              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center`}>
+                {item}
+              </Badge>
+            ))}
+          </div>
+          
+          {/* Show more/less button */}
+          {hasMore && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAll(!showAll)}
+              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+            >
+              {showAll ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-1" />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-1" />
+                  Show {items.length - maxInitial} more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {
@@ -29,7 +89,7 @@ const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
         <h4 className="font-semibold text-gray-900 mb-3">Suitable Age Groups</h4>
         <div className="flex flex-wrap gap-2">
           {ageGroups.map((age, index) => (
-            <Badge key={index} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
+            <Badge key={index} variant="outline" className="text-slate-700 border-slate-300 bg-slate-50">
               {age}
             </Badge>
           ))}
@@ -45,18 +105,18 @@ const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
       <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
+            <Sparkles className="w-5 h-5 text-primary-600" />
             Add-on Services
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
             {addOnServices.map((addon, index) => (
-              <div key={index} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div key={index} className="p-4 bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-100 transition-colors cursor-pointer">
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-purple-900">{addon.name}</h4>
-                  <span className="font-bold text-purple-700">£{addon.price}</span>
+                  <h4 className="font-semibold text-gray-900">{addon.name}</h4>
+                  <span className="font-bold text-teal-600">£{addon.price}</span>
                 </div>
                 {addon.description && (
-                  <p className="text-purple-800 text-sm">{addon.description}</p>
+                  <p className="text-gray-700 text-sm">{addon.description}</p>
                 )}
               </div>
             ))}
@@ -72,7 +132,7 @@ const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
       <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-purple-600" />
+            <Zap className="w-5 h-5 text-teal-600" />
             Equipment & Services
           </h2>
           
@@ -115,49 +175,37 @@ const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
             )}
           </div>
 
-          {serviceDetails.castleTypes?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Home className="w-4 h-4" />
-                Equipment Types
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.castleTypes.map((type, index) => (
-                  <Badge key={index} variant="outline" className="text-purple-700 border-purple-300 bg-purple-50">
-                    {type}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Equipment Types with expandable layout */}
+          {renderExpandableBadges(
+            serviceDetails.castleTypes,
+            "Equipment Types",
+            <Home className="w-4 h-4" />,
+            "text-teal-700 border-teal-300 bg-teal-50",
+            showAllTypes,
+            setShowAllTypes,
+            6
           )}
 
-          {serviceDetails.themes?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3">Available Themes</h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.themes.map((theme, index) => (
-                  <Badge key={index} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
-                    {theme}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Themes with expandable layout */}
+          {renderExpandableBadges(
+            serviceDetails.themes,
+            "Available Themes",
+            <Sparkles className="w-4 h-4" />,
+            "text-primary-700 border-[hsl(var(--primary-300))] bg-primary-50",
+            showAllThemes,
+            setShowAllThemes,
+            8
           )}
 
-          {serviceDetails.capacities?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                Capacity Options
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.capacities.map((capacity, index) => (
-                  <Badge key={index} variant="outline" className="text-green-700 border-green-300 bg-green-50">
-                    {capacity}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* Capacity Options with expandable layout */}
+          {renderExpandableBadges(
+            serviceDetails.capacities,
+            "Capacity Options",
+            <Users className="w-4 h-4" />,
+            "text-green-700 border-green-300 bg-green-50",
+            showAllCapacities,
+            setShowAllCapacities,
+            6
           )}
 
           {renderAgeGroups(serviceDetails.ageGroups)}
@@ -198,7 +246,7 @@ const ActivitiesDisplay = ({ supplier, serviceDetails }) => {
                   <h4 className="font-semibold text-gray-900 mb-3">Suitable Surfaces</h4>
                   <div className="flex flex-wrap gap-2">
                     {serviceDetails.setupRequirements.surfaceTypes.map((surface, index) => (
-                      <Badge key={index} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
+                      <Badge key={index} variant="outline" className="text-slate-700 border-slate-300 bg-slate-50">
                         {surface}
                       </Badge>
                     ))}

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import confetti from "canvas-confetti" // ADD: Import confetti for dashboard
 
 // UI Components
 import { Button } from "@/components/ui/button"
@@ -19,7 +20,6 @@ import PartyHeader from "../components/ui/PartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
-
 
 // NEW: Updated imports for unified card system
 import SupplierCard from "../components/SupplierCard/SupplierCard" // Our new unified card system
@@ -51,12 +51,14 @@ export default function LocalStorageDashboard() {
 
   // Refs
   const welcomePopupShownRef = useRef(false)
+  const confettiTriggeredRef = useRef(false) // NEW: Track if confetti has been triggered
 
   // State
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
+  const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false) // NEW: Track when welcome is completed
 
   // NEW: Modal restoration state
   const [showSupplierModal, setShowSupplierModal] = useState(false)
@@ -104,7 +106,7 @@ export default function LocalStorageDashboard() {
     partyDetails,
     partyTheme,
     themeLoaded,
-    handleNameSubmit,
+    handleNameSubmit: originalHandleNameSubmit, // Rename to avoid conflict
     handlePartyDetailsUpdate
   } = usePartyDetails()
 
@@ -145,9 +147,58 @@ export default function LocalStorageDashboard() {
     balloons: partyPlan.balloons || null,
   }
 
+  // NEW: Enhanced name submit handler with confetti trigger
+  const handleNameSubmit = (nameData) => {
+    console.log('🎉 Welcome form completed, setting up confetti trigger')
+    originalHandleNameSubmit(nameData)
+    setWelcomeJustCompleted(true) // Flag that welcome was just completed
+  }
 
-
-
+  // NEW: Confetti effect when welcome popup closes after completion
+  useEffect(() => {
+    if (welcomeJustCompleted && !showWelcomePopup && !confettiTriggeredRef.current) {
+      console.log('🎊 Triggering confetti celebration on dashboard!')
+      
+      confettiTriggeredRef.current = true // Prevent multiple triggers
+      
+      const timeout = setTimeout(() => {
+        // More celebratory confetti for the dashboard
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#ff6b35', '#f7931e', '#ffd23f', '#06d6a0', '#118ab2', '#073b4c']
+        })
+        
+        // Second burst after a delay
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            spread: 90,
+            origin: { y: 0.7 },
+            colors: ['#ff6b35', '#f7931e', '#ffd23f']
+          })
+        }, 300)
+        
+        // Third burst for extra celebration
+        setTimeout(() => {
+          confetti({
+            particleCount: 80,
+            spread: 110,
+            origin: { y: 0.8 },
+            colors: ['#06d6a0', '#118ab2', '#073b4c']
+          })
+        }, 600)
+      }, 500)
+      
+      // Reset the flag after animation
+      setTimeout(() => {
+        setWelcomeJustCompleted(false)
+      }, 2000)
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [welcomeJustCompleted, showWelcomePopup])
 
   // NEW: Enhanced modal handlers
   const openSupplierModal = (category, theme = 'superhero') => {
@@ -195,16 +246,6 @@ export default function LocalStorageDashboard() {
             
             // ✅ Call addAddon with the supplier ID as second parameter
             await handleAddAddon(addon, supplier.id)
-            
-            // Alternative approach - call addAddon directly with properly tagged addon:
-            // await addAddon({
-            //   ...addon,
-            //   supplierId: supplier.id,
-            //   supplierName: supplier.name,
-            //   attachedToSupplier: true,
-            //   isSupplierAddon: true,
-            //   addedAt: new Date().toISOString()
-            // })
           }
         }
         
@@ -309,8 +350,6 @@ export default function LocalStorageDashboard() {
   }, [searchParams, router])
 
   const handleAddAddon = async (addon, supplierId = null) => {
-
-    
     if (hasAddon(addon.id)) {
       console.log('🔍 HANDLEADDADDON DEBUG - Addon already exists, returning early')
       return
@@ -379,6 +418,7 @@ export default function LocalStorageDashboard() {
       console.error("💥 Error removing addon:", error)
     }
   }
+
   // Navigation handlers
   const handleAddSupplier = () => {
     navigateWithContext('/browse', 'dashboard')
@@ -510,10 +550,9 @@ export default function LocalStorageDashboard() {
                 </div>
               </div>
 
-       <div className="md:block hidden">
-       <AddonsSectionWrapper suppliers={suppliers}  />
-       </div>
-      
+              <div className="md:block hidden">
+                <AddonsSectionWrapper suppliers={suppliers}  />
+              </div>
               
               {/* Recommended Add-ons */}
               <div className="md:block hidden w-screen pr-6 md:pr-20">
@@ -538,26 +577,15 @@ export default function LocalStorageDashboard() {
                 </Button>
               </div>
               <div className="md:hidden block">
-              <ReferFriend />
+                <ReferFriend />
               </div>
-           
             </main>
 
             {/* Sidebar */}
             <aside className="hidden lg:block space-y-6">
-          
-                <BudgetControls {...budgetControlProps} />
-         
-              
+              <BudgetControls {...budgetControlProps} />
               <CountdownWidget partyDate={partyDetails.date} />
-{/*               
-              <PartyExcitementMeter 
-                suppliers={suppliers}
-                totalCost={totalCost}
-                budget={tempBudget}
-              /> */}
               <ReferFriend  />
-            
             </aside>
           </div>
         </div>
@@ -614,18 +642,16 @@ export default function LocalStorageDashboard() {
         isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
       />
 
-   
-        <div className="md:hidden fixed bottom-5 right-4 z-40">
-          <button 
-            onClick={handleAddSupplier}
-            className="bg-primary-400 hover:bg-[hsl(var(--primary-600))] w-10 h-10 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        </div>
-  
+      <div className="md:hidden fixed bottom-5 right-4 z-40">
+        <button 
+          onClick={handleAddSupplier}
+          className="bg-primary-400 hover:bg-[hsl(var(--primary-600))] w-10 h-10 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+      </div>
     </div>
   )
 }

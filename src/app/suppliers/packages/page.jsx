@@ -35,75 +35,63 @@ const Packages = () => {
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
   const { saving, updateProfile } = useSupplierDashboard()
 
-  // Default packages for new suppliers
-  const initialPackages = [
-    {
-      id: "pkg1",
-      name: "Basic Fun Package",
-      description:
-        "Our entry-level package perfect for small gatherings. Includes one entertainer, basic balloon modelling, and fun party games to keep the little ones engaged.",
-      price: 150,
-      priceType: "flat",
-      duration: "1 hour",
-      whatsIncluded: ["1 Entertainer", "Basic balloon modelling", "Party games"],
-      imageUrl: "/placeholder.svg?height=300&width=400&text=Basic+Fun",
-    },
-    {
-      id: "pkg2",
-      name: "Ultimate Party Package",
-      description:
-        "The all-inclusive package for an unforgettable event. Features two entertainers, advanced balloon modelling, a captivating magic show, face painting, and a music system.",
-      price: 300,
-      priceType: "flat",
-      duration: "2 hours",
-      whatsIncluded: ["2 Entertainers", "Advanced balloon modelling", "Magic show", "Face painting", "Music system"],
-      imageUrl: "/placeholder.svg?height=300&width=400&text=Ultimate+Party",
-    },
-    {
-      id: "pkg3",
-      name: "Princess Dream Package",
-      description:
-        "A magical experience with a real-life princess! Includes themed games, storytelling, and a special crowning ceremony for the birthday child.",
-      price: 220,
-      priceType: "flat",
-      duration: "1.5 hours",
-      whatsIncluded: ["Princess Entertainer", "Themed Games", "Storytelling", "Crowning Ceremony"],
-      imageUrl: "/placeholder.svg?height=300&width=400&text=Princess+Dream",
-    },
-  ]
+
 
   const [packages, setPackages] = useState([])
 
-  // ✅ Reset form state when business switches
+
   useEffect(() => {
-    if (currentBusiness?.id && !loading) {
-      console.log('🔄 Packages page updating for business:', currentBusiness?.name);
+    console.log('🎯 Main useEffect triggered')
+    console.log('  - currentBusiness?.id:', currentBusiness?.id)
+    console.log('  - loading:', loading)
+    console.log('  - supplierData:', !!supplierData)
+    
+    // ✅ FIXED: Handle both multi-business AND single business scenarios
+    const shouldLoad = !loading && supplierData && (
+      // Multi-business mode: wait for currentBusiness
+      (currentBusiness?.id) ||
+      // Single business mode: no currentBusiness needed
+      (!currentBusiness && supplierData)
+    )
+    
+    if (shouldLoad) {
+      console.log('✅ Conditions met, proceeding with package loading')
+      const businessName = currentBusiness?.name || supplierData?.name || 'Primary Business'
+      console.log('🔄 Packages page updating for business:', businessName);
       
       // Reset any form-specific state here
       setSaveSuccess(false);
       setIsPackageFormOpen(false);
       setEditingPackage(null);
       
-      // Load packages specific to this business
-      if (supplierData) {
-        console.log("📦 Loading packages from supplier data for business:", currentBusiness?.name, supplierData.packages)
-        
-        // Check if this is a completely new supplier (no packages property at all)
-        const isNewSupplier = !supplierData.hasOwnProperty('packages') || supplierData.packages === undefined
-        
-        if (isNewSupplier) {
-          // First time loading - use initial packages
-          console.log("📦 New supplier detected, using initial packages")
-          setPackages(initialPackages)
-        } else {
-          // Existing supplier - use their packages (even if empty array)
-          console.log("📦 Existing supplier, using saved packages:", supplierData.packages)
-          setPackages(supplierData.packages || [])
-        }
+      // Load packages from supplier data
+      console.log("📦 SupplierData exists, checking packages...")
+      console.log("📦 Raw supplierData.packages:", supplierData.packages)
+      console.log("📦 Type of packages:", typeof supplierData.packages)
+      console.log("📦 Is array?:", Array.isArray(supplierData.packages))
+      
+      const packagesToLoad = supplierData.packages || []
+      console.log("📦 Packages to load:", packagesToLoad)
+      console.log("📦 Number of packages:", packagesToLoad.length)
+      
+      setPackages(packagesToLoad)
+      
+      if (packagesToLoad.length > 0) {
+        console.log("📦 Package details:")
+        packagesToLoad.forEach((pkg, index) => {
+          console.log(`  ${index + 1}. ${pkg.name} - £${pkg.price} (ID: ${pkg.id})`)
+        })
+      } else {
+        console.log("📦 No packages found in supplier data")
       }
+    } else {
+      console.log('❌ Conditions not met:')
+      console.log('  - Not loading?:', !loading)
+      console.log('  - Has supplierData?:', !!supplierData)
+      console.log('  - Has business ID?:', !!currentBusiness?.id)
+      console.log('  - Single business mode?:', !currentBusiness && !!supplierData)
     }
-  }, [currentBusiness?.id, loading, supplierData])
-  
+  }, [currentBusiness?.id, loading, supplierData]) // Keep the same dependencies
   // Save packages to backend
   const savePackagesToBackend = async (updatedPackages) => {
     setLocalSaving(true)
@@ -122,7 +110,7 @@ const Packages = () => {
       console.log("💾 Updated supplier data for business:", currentBusiness?.name, updatedSupplierData)
       
       // ✅ Pass the business ID to save to the correct business
-      const result = await updateProfile(updatedSupplierData, updatedPackages, supplier.id)
+      const result = await updateProfile(supplierData, packages, supplier.id)
 
       if (result.success) {
         console.log("✅ Packages saved successfully for business:", currentBusiness?.name)

@@ -1,7 +1,8 @@
 // components/supplier/display/EntertainerDisplay.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
   Users, 
   User, 
@@ -12,11 +13,17 @@ import {
   Sparkles,
   Star,
   Heart,
-  Zap
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from "lucide-react";
 
 const EntertainerDisplay = ({ supplier, serviceDetails }) => {
 
+  // State for expandable sections
+  const [showAllThemes, setShowAllThemes] = useState(false);
+  const [showAllStyles, setShowAllStyles] = useState(false);
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {
@@ -26,7 +33,7 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
         <h4 className="font-semibold text-gray-900 mb-3">Age Groups</h4>
         <div className="flex flex-wrap gap-2">
           {ageGroups.map((age, index) => (
-            <Badge key={index} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
+            <Badge key={index} variant="outline" className="text-slate-700 border-slate-300 bg-slate-50">
               {age}
             </Badge>
           ))}
@@ -35,36 +42,175 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
     );
   };
 
-  // Helper function to render add-on services
-  const renderAddOnServices = (addOnServices) => {
-    if (!addOnServices?.length) return null;
+  // Helper function to render expandable badge list
+  const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
+    if (!items?.length) return null;
+    
+    const displayItems = showAll ? items : items.slice(0, maxInitial);
+    const hasMore = items.length > maxInitial;
+    
     return (
-      <Card className="border-gray-300">
-        <CardContent className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            Add-on Services
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {addOnServices.map((addon, index) => (
-              <div key={index} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-purple-900">{addon.name}</h4>
-                  <span className="font-bold text-purple-700">£{addon.price}</span>
-                </div>
-                {addon.description && (
-                  <p className="text-purple-800 text-sm">{addon.description}</p>
-                )}
-              </div>
+      <div className="mb-6">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
+          {icon && <span className="w-4 h-4">{icon}</span>}
+          {title}
+          {items.length > 0 && (
+            <span className="text-sm text-gray-500 font-normal">({items.length})</span>
+          )}
+        </h4>
+        
+        <div className="space-y-3">
+          {/* Grid layout for better organization */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {displayItems.map((item, index) => (
+              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center`}>
+                {item}
+              </Badge>
             ))}
           </div>
-        </CardContent>
-      </Card>
+          
+          {/* Show more/less button */}
+          {hasMore && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAll(!showAll)}
+              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+            >
+              {showAll ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-1" />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 mr-1" />
+                  Show {items.length - maxInitial} more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
     );
   };
 
+  // Alternative: Categorized themes helper
+  const renderCategorizedThemes = (themes) => {
+    if (!themes?.length) return null;
+
+    // Group themes by category (you could expand this logic)
+    const categories = {
+      'Characters': themes.filter(theme => 
+        ['Princess', 'Pirate', 'Disney Princess', 'DC Heroes', 'Fairy'].includes(theme)
+      ),
+      'Adventure': themes.filter(theme => 
+        ['Animal Safari', 'Jungle Safari', 'Deep Sea', 'Space', 'Dinosaur'].includes(theme)
+      ),
+      'Learning': themes.filter(theme => 
+        ['Mad Scientist', 'Science Lab', 'Robot Building', 'Engineering'].includes(theme)
+      ),
+      'Fantasy': themes.filter(theme => 
+        ['Fairy Tale', 'Frozen', 'Fairy'].includes(theme)
+      ),
+      'Sports & Active': themes.filter(theme => 
+        ['Sports'].includes(theme)
+      )
+    };
+
+    // Remove empty categories and collect uncategorized
+    const filledCategories = Object.entries(categories).filter(([_, items]) => items.length > 0);
+    const categorizedThemes = filledCategories.flatMap(([_, items]) => items);
+    const uncategorized = themes.filter(theme => !categorizedThemes.includes(theme));
+
+    return (
+      <div className="mb-6">
+        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
+          <Star className="w-4 h-4" />
+          Available Themes
+          <span className="text-sm text-gray-500 font-normal">({themes.length})</span>
+        </h4>
+        
+        <div className="space-y-4">
+          {filledCategories.map(([category, categoryThemes]) => (
+            <div key={category}>
+              <h5 className="text-sm font-medium text-gray-700 mb-2">{category}</h5>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pl-2">
+                {categoryThemes.map((theme, index) => (
+                  <Badge key={index} variant="outline" className="text-primary-700 border-primary-300 bg-primary-50 justify-center text-center">
+                    {theme}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {uncategorized.length > 0 && (
+            <div>
+              <h5 className="text-sm font-medium text-gray-700 mb-2">Other Themes</h5>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pl-2">
+                {uncategorized.map((theme, index) => (
+                  <Badge key={index} variant="outline" className="text-primary-700 border-primary-300 bg-primary-50 justify-center text-center">
+                    {theme}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+ // Helper function to render add-on services
+ const renderAddOnServices = (addOnServices) => {
+  if (!addOnServices?.length) return null;
+  return (
+    <Card className="border-gray-300">
+      <CardContent className="p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary-600" />
+          Add-on Services
+        </h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          {addOnServices.map((addon, index) => (
+            <div key={index} className="p-4 bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-200 transition-colors cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-semibold text-gray-900">{addon.name}</h4>
+                <span className="font-bold text-teal-600">£{addon.price}</span>
+              </div>
+              {addon.description && (
+                <p className="text-gray-900 text-sm">{addon.description}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
   return (
     <div className="space-y-6">
+         {/* About Us Section */}
+         {serviceDetails.aboutUs && (
+        <Card className="border-gray-300">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Info className="w-5 h-5 text-orange-600" />
+              About Us
+            </h2>
+            
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+              <div className="prose prose-gray max-w-none">
+                <p className="text-gray-700 leading-relaxed text-base whitespace-pre-line">
+                  {serviceDetails.aboutUs}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Entertainment Details */}
       <Card className="border-gray-300">
         <CardContent className="p-6">
@@ -126,37 +272,32 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
             )}
           </div>
 
-          {serviceDetails.performanceStyle?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Zap className="w-4 h-4" />
-                Performance Styles
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.performanceStyle.map((style, index) => (
-                  <Badge key={index} variant="outline" className="text-purple-700 border-purple-300 bg-purple-50">
-                    {style}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* IMPROVED: Performance Styles with expandable layout */}
+          {renderExpandableBadges(
+            serviceDetails.performanceStyle,
+            "Performance Styles",
+            <Zap className="w-4 h-4" />,
+            "text-teal-700 border-teal-300 bg-teal-50",
+            showAllStyles,
+            setShowAllStyles,
+            6
           )}
 
-          {serviceDetails.themes?.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-                <Star className="w-4 h-4" />
-                Available Themes
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {serviceDetails.themes.map((theme, index) => (
-                  <Badge key={index} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">
-                    {theme}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+          {/* IMPROVED: Themes - Choose one of these approaches */}
+          
+          {/* Option 1: Simple expandable grid */}
+          {renderExpandableBadges(
+            serviceDetails.themes,
+            "Available Themes",
+            <Star className="w-4 h-4" />,
+            "text-primary-700 border-[hsl(var(--primary-300))] bg-primary-50",
+            showAllThemes,
+            setShowAllThemes,
+            8
           )}
+
+          {/* Option 2: Categorized themes (uncomment to use instead) */}
+          {/* {renderCategorizedThemes(serviceDetails.themes)} */}
 
           {renderAgeGroups(serviceDetails.ageGroups)}
 
@@ -178,6 +319,8 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
           )}
         </CardContent>
       </Card>
+
+
 
       {/* Personal Bio */}
       {serviceDetails.personalBio && Object.keys(serviceDetails.personalBio).some(key => serviceDetails.personalBio[key]) && (
@@ -238,7 +381,7 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
         <Card className="border-gray-300">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5 text-green-600" />
+              <Target className="w-5 h-5 text-teal-600" />
               Performance Requirements
             </h2>
             
@@ -262,8 +405,8 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
                   <h4 className="font-semibold text-gray-900 mb-2">Power Supply</h4>
                   <p className={`text-sm px-3 py-1 rounded-full inline-block ${
                     serviceDetails.performanceSpecs.powerRequired 
-                      ? 'bg-orange-100 text-orange-800' 
-                      : 'bg-green-100 text-green-800'
+                      ? 'bg-primary-100 text-primary-800' 
+                      : 'bg-teal-100 text-teal-800'
                   }`}>
                     {serviceDetails.performanceSpecs.powerRequired ? 'Required' : 'Not required'}
                   </p>
@@ -275,8 +418,8 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
                   <h4 className="font-semibold text-gray-900 mb-2">Adult Supervision</h4>
                   <p className={`text-sm px-3 py-1 rounded-full inline-block ${
                     serviceDetails.performanceSpecs.supervisionRequired 
-                      ? 'bg-orange-100 text-orange-800' 
-                      : 'bg-green-100 text-green-800'
+                      ? 'bg-primary-100 text-primary-800' 
+                      : 'bg-teal-100 text-teal-800'
                   }`}>
                     {serviceDetails.performanceSpecs.supervisionRequired 
                       ? 'Required during performance' 

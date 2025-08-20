@@ -25,6 +25,37 @@ export default function SupplierSignInPage() {
 
   const prefilledEmail = searchParams.get('email')
 
+  const generateBusinessSlug = (businessName) => {
+    const baseSlug = businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+    const timestamp = Date.now().toString().slice(-6)
+    return `${baseSlug}-${timestamp}`
+  }
+  
+  const getThemesFromServiceType = (serviceType) => {
+    const themeMapping = {
+      'magician': ['magic', 'superhero', 'general'],
+      'clown': ['circus', 'comedy', 'general'],
+      'entertainer': ['general', 'superhero', 'princess'],
+      'Entertainment': ['general', 'superhero', 'princess'],
+      'dj': ['music', 'dance', 'general'],
+      'musician': ['music', 'taylor-swift', 'general'],
+      'face-painting': ['general', 'superhero', 'princess'],
+      'Face Painting': ['general', 'superhero', 'princess'],
+      'decorations': ['general'],
+      'Decorations': ['general'],
+      'venue': ['general'],
+      'Venues': ['general'],
+      'catering': ['general'],
+      'Catering': ['general']
+    }
+    return themeMapping[serviceType] || ['general']
+  }
+
   useEffect(() => {
     if (prefilledEmail) {
       setEmail(prefilledEmail)
@@ -131,56 +162,555 @@ export default function SupplierSignInPage() {
     }
   }
 
+  const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
+    console.log('🎯 Creating default packages for:', serviceType, 'theme:', theme)
+    
+    const packageTemplates = {
+      'entertainment': {
+        'superhero': [
+          {
+            id: "superhero-basic",
+            name: "Superhero Training Academy",
+            price: 180,
+            duration: "1 hour",
+            priceType: "flat",
+            features: [
+              "Superhero character visit",
+              "Basic training activities", 
+              "Hero certificate ceremony",
+              "Photo opportunities"
+            ],
+            description: "Transform your party into a superhero training academy with exciting activities and character interaction."
+          },
+          {
+            id: "superhero-premium",
+            name: "Ultimate Hero Mission",
+            price: 300,
+            duration: "1.5 hours", 
+            priceType: "flat",
+            features: [
+              "2 superhero characters",
+              "Mission-based games",
+              "Face painting",
+              "Hero training obstacles",
+              "Villain defeat ceremony",
+              "Take-home hero badges"
+            ],
+            description: "The complete superhero experience with multiple characters, interactive missions, and memorable takeaways."
+          }
+        ],
+        'princess': [
+          {
+            id: "princess-basic",
+            name: "Royal Princess Visit",
+            price: 170,
+            duration: "1 hour",
+            priceType: "flat", 
+            features: [
+              "Princess character visit",
+              "Royal storytelling",
+              "Simple princess games",
+              "Crowning ceremony"
+            ],
+            description: "A magical princess visit filled with enchanting stories and royal activities."
+          },
+          {
+            id: "princess-deluxe",
+            name: "Enchanted Royal Ball",
+            price: 290,
+            duration: "1.5 hours",
+            priceType: "flat",
+            features: [
+              "Princess character",
+              "Royal dress-up activities", 
+              "Princess makeovers",
+              "Royal dancing lessons",
+              "Magic wand ceremony",
+              "Princess photo session"
+            ],
+            description: "Transform your party into a magical royal ball with dress-up, dancing, and princess makeovers."
+          }
+        ],
+        'general': [
+          {
+            id: "entertainment-standard",
+            name: "Fun Party Entertainment",
+            price: 160,
+            duration: "1 hour",
+            priceType: "flat",
+            features: [
+              "Professional entertainer",
+              "Interactive games",
+              "Music and dancing",
+              "Balloon modelling"
+            ],
+            description: "High-energy entertainment perfect for keeping children engaged and having fun."
+          },
+          {
+            id: "entertainment-deluxe", 
+            name: "Ultimate Party Experience",
+            price: 280,
+            duration: "2 hours",
+            priceType: "flat",
+            features: [
+              "Lead entertainer + assistant",
+              "Themed games and activities",
+              "Face painting",
+              "Balloon creations",
+              "Music system included",
+              "Party games coordination"
+            ],
+            description: "Complete entertainment package with multiple entertainers and varied activities for an unforgettable party."
+          }
+        ]
+      },
+  
+      'venue': [
+        {
+          id: "venue-basic",
+          name: "2-Hour Party Venue",
+          price: 200,
+          duration: "2 hours",
+          priceType: "flat",
+          features: [
+            "Private party room",
+            "Tables and chairs setup",
+            "Basic decorations included",
+            "Kitchen access"
+          ],
+          description: "Perfect party space with everything you need for a memorable celebration."
+        },
+        {
+          id: "venue-premium",
+          name: "All-Day Celebration",
+          price: 400,
+          duration: "4 hours",
+          priceType: "flat",
+          features: [
+            "Extended venue hire",
+            "Premium room decorations",
+            "Sound system included",
+            "Dedicated party coordinator",
+            "Catering preparation area",
+            "Photo backdrop setup"
+          ],
+          description: "Complete venue package with extended time and premium amenities for the ultimate party experience."
+        }
+      ],
+  
+      'catering': [
+        {
+          id: "catering-basic",
+          name: "Party Essentials",
+          price: 12,
+          duration: "Per child",
+          priceType: "per_child",
+          features: [
+            "Sandwiches & wraps",
+            "Crisps and snacks",
+            "Juice boxes",
+            "Birthday cake",
+            "Paper plates & napkins"
+          ],
+          description: "Everything you need for a delicious party meal that kids will love."
+        },
+        {
+          id: "catering-deluxe",
+          name: "Premium Party Feast",
+          price: 18,
+          duration: "Per child",
+          priceType: "per_child",
+          features: [
+            "Hot food buffet",
+            "Healthy snack options",
+            "Premium drinks selection",
+            "Custom themed birthday cake",
+            "Fresh fruit platter",
+            "Party bags included"
+          ],
+          description: "Delicious hot food and premium treats for an unforgettable party dining experience."
+        }
+      ],
+  
+      'facePainting': [
+        {
+          id: "facepainting-basic",
+          name: "Fun Face Painting",
+          price: 120,
+          duration: "1 hour",
+          priceType: "flat",
+          features: [
+            "Professional face painter",
+            "Basic designs & characters",
+            "Safe, washable paints",
+            "Up to 15 children"
+          ],
+          description: "Transform children into their favorite characters with professional face painting."
+        },
+        {
+          id: "facepainting-premium",
+          name: "Ultimate Face Art Studio",
+          price: 200,
+          duration: "2 hours",
+          priceType: "flat",
+          features: [
+            "Professional face painting artist",
+            "Detailed character designs",
+            "Glitter and gem additions",
+            "Temporary tattoos",
+            "Up to 25 children",
+            "Take-home stickers"
+          ],
+          description: "Professional face art with detailed designs and special effects for an amazing transformation experience."
+        }
+      ],
+  
+      'activities': [
+        {
+          id: "activities-basic",
+          name: "Fun Party Activities",
+          price: 150,
+          duration: "1.5 hours",
+          priceType: "flat",
+          features: [
+            "Organized party games",
+            "Craft activities",
+            "Basic equipment included",
+            "Activity coordinator"
+          ],
+          description: "Engaging activities and games to keep children entertained throughout the party."
+        },
+        {
+          id: "activities-premium",
+          name: "Adventure Activity Zone",
+          price: 280,
+          duration: "2.5 hours",
+          priceType: "flat",
+          features: [
+            "Multiple activity stations",
+            "Themed craft workshops",
+            "Interactive team games",
+            "Take-home creations",
+            "Professional activity leaders",
+            "All materials included"
+          ],
+          description: "Complete activity experience with multiple stations and professional coordination for maximum fun."
+        }
+      ],
+  
+      'partyBags': [
+        {
+          id: "partybags-basic",
+          name: "Classic Party Bags",
+          price: 5,
+          duration: "Per bag",
+          priceType: "per_bag",
+          features: [
+            "Themed party bag",
+            "Small toys and treats",
+            "Stickers and pencils",
+            "Sweet treats"
+          ],
+          description: "Traditional party bags filled with fun treats and small toys for party guests."
+        },
+        {
+          id: "partybags-premium",
+          name: "Deluxe Party Bags",
+          price: 12,
+          duration: "Per bag",
+          priceType: "per_bag",
+          features: [
+            "Premium themed bags",
+            "Quality toys and games",
+            "Personalized items",
+            "Healthy snack options",
+            "Activity sheets",
+            "Special keepsake item"
+          ],
+          description: "Premium party bags with high-quality items and personalized touches that guests will treasure."
+        }
+      ],
+  
+      'decorations': [
+        {
+          id: "decorations-basic",
+          name: "Party Decoration Package",
+          price: 80,
+          duration: "Setup included",
+          priceType: "flat",
+          features: [
+            "Themed banners and signs",
+            "Table decorations",
+            "Basic balloon arrangements",
+            "Party streamers"
+          ],
+          description: "Beautiful themed decorations to transform your party space with color and excitement."
+        },
+        {
+          id: "decorations-premium",
+          name: "Complete Party Transformation",
+          price: 180,
+          duration: "Setup & takedown",
+          priceType: "flat",
+          features: [
+            "Premium themed decorations",
+            "Balloon arches and sculptures",
+            "Photo backdrop setup",
+            "Table centerpieces",
+            "Lighting effects",
+            "Setup and takedown service"
+          ],
+          description: "Complete venue transformation with premium decorations and professional setup for a stunning party atmosphere."
+        }
+      ],
+  
+      'balloons': [
+        {
+          id: "balloons-basic",
+          name: "Balloon Decorations",
+          price: 60,
+          duration: "Delivery included",
+          priceType: "flat",
+          features: [
+            "Themed balloon bunches",
+            "Number balloons",
+            "Basic balloon arrangements",
+            "Delivery to venue"
+          ],
+          description: "Colorful balloon decorations to add fun and festivity to your party celebration."
+        },
+        {
+          id: "balloons-premium",
+          name: "Balloon Extravaganza",
+          price: 150,
+          duration: "Setup included",
+          priceType: "flat",
+          features: [
+            "Custom balloon arches",
+            "Balloon sculptures",
+            "Themed balloon arrangements",
+            "Giant number balloons",
+            "Professional setup service",
+            "Helium balloons for guests"
+          ],
+          description: "Spectacular balloon displays with custom designs and professional installation for maximum visual impact."
+        }
+      ],
+  
+      'photography': [
+        {
+          id: "photography-basic",
+          name: "Party Photography",
+          price: 250,
+          duration: "2 hours",
+          priceType: "flat",
+          features: [
+            "Professional photographer",
+            "Candid party moments",
+            "50+ edited photos",
+            "Digital gallery delivery"
+          ],
+          description: "Capture all the special moments of your party with professional photography."
+        },
+        {
+          id: "photography-premium",
+          name: "Complete Photo Experience",
+          price: 400,
+          duration: "3 hours",
+          priceType: "flat",
+          features: [
+            "Professional photographer",
+            "Posed and candid shots",
+            "100+ edited photos",
+            "Print package included",
+            "Photo booth setup",
+            "Same-day preview gallery"
+          ],
+          description: "Comprehensive photography package with photo booth and professional editing for lasting memories."
+        }
+      ]
+    }
+  
+    // Handle entertainment with themes
+    if (serviceType === 'entertainment' && packageTemplates.entertainment[theme]) {
+      return packageTemplates.entertainment[theme]
+    }
+    
+    // Handle entertainment with general theme
+    if (serviceType === 'entertainment') {
+      return packageTemplates.entertainment.general
+    }
+    
+    // Handle other service types
+    if (packageTemplates[serviceType]) {
+      return packageTemplates[serviceType]
+    }
+    
+    // Fallback generic packages
+    return [
+      {
+        id: "standard-basic",
+        name: "Standard Service",
+        price: 150,
+        duration: "1-2 hours",
+        priceType: "flat",
+        features: [
+          "Professional service",
+          "All equipment included",
+          "Setup and coordination"
+        ],
+        description: `Quality ${serviceType} service for your party celebration.`
+      },
+      {
+        id: "standard-premium",
+        name: "Premium Service",
+        price: 250,
+        duration: "2-3 hours", 
+        priceType: "flat",
+        features: [
+          "Enhanced professional service",
+          "Premium equipment",
+          "Extended time",
+          "Additional coordination"
+        ],
+        description: `Enhanced ${serviceType} service with premium features for an exceptional party experience.`
+      }
+    ]
+  }
+  
+
   // Helper function to create supplier from draft
   const createSupplierFromDraft = async (user, draft) => {
-    // Same logic as your other createSupplierFromDraft functions
-    const supplierData = {
-      name: draft.business_name,
-      businessName: draft.business_name,
-      serviceType: draft.supplier_type,
-      category: draft.supplier_type,
-      location: draft.postcode,
-      owner: {
-        name: draft.your_name || user.user_metadata?.full_name,
-        email: user.email,
-        phone: draft.phone || user.user_metadata?.phone || ""
-      },
-      contactInfo: {
-        email: user.email,
-        phone: draft.phone || user.user_metadata?.phone || "",
-        postcode: draft.postcode
-      },
-      description: "New supplier - profile setup in progress",
-      businessDescription: "New supplier - profile setup in progress",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      onboardingCompleted: true,
-      createdFrom: "supplier_signin"
+    try {
+      console.log('🏗️ Creating supplier from draft with smart packages...')
+      
+      // ✅ NEW: Import and use the smart packages function
+      // (You'll need to make sure getDefaultPackagesForServiceType is accessible here)
+      
+      // ✅ NEW: Generate smart default packages
+      const serviceType = draft.supplier_type
+      const defaultPackages = getDefaultPackagesForServiceType(serviceType, 'general')
+      
+      console.log('📦 Generated packages for', serviceType, ':', defaultPackages.length, 'packages')
+      
+      // ✅ NEW: Calculate pricing from packages
+      const hasPackages = defaultPackages.length > 0
+      const priceFrom = hasPackages ? Math.min(...defaultPackages.map(p => p.price)) : 0
+      const priceUnit = hasPackages ? (defaultPackages[0].priceType === 'per_child' ? 'per child' : 
+                                      defaultPackages[0].priceType === 'per_bag' ? 'per bag' : 'per event') : 'per event'
+  
+      const supplierData = {
+        name: draft.business_name,
+        businessName: draft.business_name,
+        serviceType: draft.supplier_type,
+        category: draft.supplier_type,
+        subcategory: draft.supplier_type,
+        location: draft.postcode,
+        
+        // ✅ NEW: Add smart pricing
+        priceFrom: priceFrom,
+        priceUnit: priceUnit,
+        
+        owner: {
+          name: draft.your_name || user.user_metadata?.full_name,
+          email: user.email,
+          phone: draft.phone || user.user_metadata?.phone || ""
+        },
+        contactInfo: {
+          email: user.email,
+          phone: draft.phone || user.user_metadata?.phone || "",
+          postcode: draft.postcode
+        },
+        
+        // ✅ NEW: Better description based on packages
+        description: hasPackages ? 
+          `Professional ${serviceType.toLowerCase()} services with ${defaultPackages.length} package option${defaultPackages.length > 1 ? 's' : ''} available.` :
+          "New supplier - profile setup in progress",
+        businessDescription: "New supplier - profile setup in progress",
+        
+        // ✅ NEW: Add smart default packages
+        packages: defaultPackages,
+        
+        // ✅ NEW: Add proper badges
+        badges: hasPackages ? ["New Provider", "Packages Available"] : ["New Provider"],
+        
+        // ✅ NEW: Set complete status based on packages
+        isComplete: hasPackages,
+        
+        // ✅ NEW: Add missing fields that packages need
+        image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(draft.business_name),
+        rating: 0,
+        reviewCount: 0,
+        bookingCount: 0,
+        availability: "Contact for availability",
+        themes: getThemesFromServiceType(draft.supplier_type),
+        portfolioImages: [],
+        portfolioVideos: [],
+        
+        // ✅ NEW: Add working hours and availability
+        workingHours: {
+          Monday: { active: true, start: "09:00", end: "17:00" },
+          Tuesday: { active: true, start: "09:00", end: "17:00" },
+          Wednesday: { active: true, start: "09:00", end: "17:00" },
+          Thursday: { active: true, start: "09:00", end: "17:00" },
+          Friday: { active: true, start: "09:00", end: "17:00" },
+          Saturday: { active: true, start: "10:00", end: "16:00" },
+          Sunday: { active: false, start: "10:00", end: "16:00" },
+        },
+        unavailableDates: [],
+        busyDates: [],
+        availabilityNotes: "",
+        advanceBookingDays: 7,
+        maxBookingDays: 365,
+        
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        onboardingCompleted: true,
+        createdFrom: "supplier_signin"
+      }
+  
+      // ✅ NEW: Enhanced supplier record with proper structure
+      const supplierRecord = {
+        auth_user_id: user.id,
+        business_name: draft.business_name,
+        business_type: 'primary',
+        is_primary: true,
+        parent_business_id: null,
+        business_slug: generateBusinessSlug(draft.business_name), // You'll need this helper
+        data: supplierData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+  
+      console.log('💾 Inserting supplier with packages:', {
+        businessName: supplierData.name,
+        serviceType: supplierData.serviceType,
+        packagesCount: supplierData.packages.length,
+        priceFrom: supplierData.priceFrom,
+        isComplete: supplierData.isComplete
+      })
+  
+      const { error: insertError } = await supabase
+        .from("suppliers")
+        .insert(supplierRecord)
+  
+      if (insertError) {
+        console.error("❌ Failed to create supplier:", insertError)
+        throw new Error("Failed to create supplier profile. Please contact support.")
+      }
+  
+      // Clean up draft
+      await supabase
+        .from("onboarding_drafts")
+        .delete()
+        .eq("email", user.email)
+  
+      console.log("✅ Supplier profile created from draft with", defaultPackages.length, "packages!")
+      
+    } catch (error) {
+      console.error('💥 Error in createSupplierFromDraft:', error)
+      throw error
     }
-
-    const supplierRecord = {
-      auth_user_id: user.id,
-      data: supplierData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    const { error: insertError } = await supabase
-      .from("suppliers")
-      .insert(supplierRecord)
-
-    if (insertError) {
-      console.error("❌ Failed to create supplier:", insertError)
-      throw new Error("Failed to create supplier profile. Please contact support.")
-    }
-
-    // Clean up draft
-    await supabase
-      .from("onboarding_drafts")
-      .delete()
-      .eq("email", user.email)
-
-    console.log("✅ Supplier profile created from draft")
   }
 
   return (

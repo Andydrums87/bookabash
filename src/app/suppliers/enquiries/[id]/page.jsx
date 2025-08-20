@@ -22,6 +22,8 @@ import {
   ArrowLeft,
   Send,
   PoundSterling,
+  Package,
+  Building,
 } from "lucide-react"
 import Link from "next/link"
 import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
@@ -281,8 +283,11 @@ export default function EnquiryDetailsPage() {
 
   // ✅ SAFE VARIABLE DECLARATIONS - Only after we know enquiry exists
   const party = enquiry.parties
+
   const customer = party?.users
   const specialReqs = parseSpecialRequests(enquiry.special_requests)
+
+  console.log(enquiry)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
@@ -371,7 +376,7 @@ export default function EnquiryDetailsPage() {
                   </div>
 
                   <div className="p-4 bg-gray-50 rounded-xl">
-                    <label className="text-sm font-medium text-gray-600 uppercase tracking-wide">Location</label>
+                    <label className="text-sm font-medium text-gray-600 uppercase tracking-wide">Customer Address</label>
                     <p className="flex items-center gap-2 text-lg font-semibold text-gray-900 mt-1">
                       <MapPin className="w-4 h-4 text-gray-500" />
                       {party?.location}
@@ -404,11 +409,36 @@ export default function EnquiryDetailsPage() {
                   </div>
 
                   <div className="p-4 bg-gray-50 rounded-xl">
-                    <label className="text-sm font-medium text-gray-600 uppercase tracking-wide">Budget</label>
-                    <p className="flex items-center gap-2 text-xl font-bold text-primary-600 mt-1">
-                      <PoundSterling className="w-5 h-5" />
-                      {party?.budget}
+                    <label className="text-sm font-medium text-gray-600 uppercase tracking-wide">Selected Package</label>
+                    <p className="flex items-center gap-2 text-lg font-semibold text-primary-600 mt-1">
+                      <Package className="w-4 h-4 text-primary-500" />
+                      {enquiry.package_id ? enquiry.package_id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Package TBD'}
                     </p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <label className="text-sm font-medium text-gray-600 uppercase tracking-wide">Proposed Venue</label>
+                    <p className="text-xs text-gray-500 mb-2">Subject to change</p>
+                    {party?.party_plan?.venue ? (
+                      <div className="flex items-start gap-2">
+                        <Building className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                        <div>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {party.party_plan.venue.name}
+                          </p>
+                          {party.party_plan.venue.originalSupplier?.location && (
+                            <p className="text-sm text-gray-600">
+                              {party.party_plan.venue.originalSupplier.location}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                        <Building className="w-4 h-4 text-gray-500" />
+                        Venue TBD
+                      </p>
+                    )}
                   </div>
 
                   {party?.time_preference && (

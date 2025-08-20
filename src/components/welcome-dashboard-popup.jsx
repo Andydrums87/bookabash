@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { User, Cake, DollarSign, Mail, Sparkles, Heart, Plus, ArrowRight, Star } from "lucide-react"
 import Image from "next/image"
-import confetti from "canvas-confetti"
+// REMOVED: confetti import
 
 // Choose your favorite variation - just uncomment the one you want to use:
 
@@ -317,31 +317,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
     }
   }, [isOpen, onNameSubmit])
 
-  useEffect(() => {
-    if (isOpen && step === 2) {
-      const timeout = setTimeout(() => {
-        // More celebratory confetti for the simplified version
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#ff6b35', '#f7931e', '#ffd23f', '#06d6a0', '#118ab2', '#073b4c']
-        })
-        
-        // Second burst after a delay
-        setTimeout(() => {
-          confetti({
-            particleCount: 80,
-            spread: 90,
-            origin: { y: 0.7 },
-            colors: ['#ff6b35', '#f7931e', '#ffd23f']
-          })
-        }, 300)
-      }, 500)
-      
-      return () => clearTimeout(timeout)
-    }
-  }, [isOpen, step])
+  // REMOVED: Confetti effect from here - moved to dashboard
 
   const handleNameSubmit = () => {
     if (firstName.trim() && childAge) {
@@ -474,8 +450,6 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
         ) : (
           // Step 2: Simple Celebration (uses existing child data if available)
           <div className="relative overflow-hidden bg-gray-50">
-  
-            
             <div className="relative z-10 p-6 pt-6">
               <DialogHeader className=" pb-6">
                 <DialogTitle className="text-4xl text-start font-black text-gray-900 leading-tight">
@@ -483,39 +457,30 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
                 </DialogTitle>
               </DialogHeader>
 
-             
-              {/* Big Snappy with Confetti - smaller on mobile */}
+              {/* Big Snappy with Video - smaller on mobile */}
               <div className="flex justify-center mb-4 sm:mb-8">
                 <div className="relative">
-                  {/* <Image
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png"
-                    alt="Snappy celebrating"
-                    width={250}
-                    height={250}
-                    className="md:w-[250px] md:h-[250px] w-[200px] h-[200px] drop-shadow-2xl"
-                  /> */}
-                      <video 
-              src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1755604981/output_12_rlx7kt.mp4"
-              autoPlay
-              poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
-              loop
-              muted
-              playsInline
-              className="md:w-[250px] md:h-[250px] w-[200px] h-[200px]"
-              onError={() => console.log('Video failed to load')}
-            >
-              {/* Fallback if video doesn't work */}
-              <div className="w-full h-96 flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-2xl">
-                <div className="text-8xl animate-spin mb-6">🪄</div>
-                <p className="text-2xl font-black text-[hsl(var(--primary-600))] animate-pulse">
-                  Snappy's Working His Magic...
-                </p>
-                <p className="text-lg text-gray-600 mt-2 animate-pulse">
-                  Creating amazing invitations just for you!
-                </p>
-              </div>
-            </video>
-      
+                  <video 
+                    src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1755604981/output_12_rlx7kt.mp4"
+                    autoPlay
+                    poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png"
+                    loop
+                    muted
+                    playsInline
+                    className="md:w-[250px] md:h-[250px] w-[200px] h-[200px]"
+                    onError={() => console.log('Video failed to load')}
+                  >
+                    {/* Fallback if video doesn't work */}
+                    <div className="w-full h-96 flex flex-col items-center justify-center bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-2xl">
+                      <div className="text-8xl animate-spin mb-6">🪄</div>
+                      <p className="text-2xl font-black text-[hsl(var(--primary-600))] animate-pulse">
+                        Snappy's Working His Magic...
+                      </p>
+                      <p className="text-lg text-gray-600 mt-2 animate-pulse">
+                        Creating amazing invitations just for you!
+                      </p>
+                    </div>
+                  </video>
                 </div>
               </div>
 

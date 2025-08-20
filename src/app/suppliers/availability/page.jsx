@@ -99,7 +99,7 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
         ...availabilityData,
       }
       // ✅ Add the business ID to save to the correct business
-      const result = await updateProfile(updatedSupplierData, packages, supplier.id)
+      const result = await updateProfile(updatedSupplierData, null, supplier.id)
       if (result.success) {
         console.log("✅ Availability saved successfully for business:", supplierData?.name)
         return result

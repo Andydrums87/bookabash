@@ -555,7 +555,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
           </Button>
 
           {/* Divider */}
-          <div className="relative my-6">
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-200" />
             </div>
@@ -570,7 +570,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               variant="outline"
               onClick={() => handleOAuthAuth("google")}
               disabled={loading || oauthLoading}
-              className="h-11"
+              className="h-11 border-gray-300"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -589,7 +589,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               variant="outline"
               onClick={() => handleOAuthAuth("facebook")}
               disabled={loading || oauthLoading}
-              className="h-11"
+              className="h-11 border-gray-300"
             >
               {oauthLoading === "facebook" ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -605,8 +605,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
       </ModalContent>
 
       {/* Footer */}
-      <ModalFooter theme="fun">
-        <div className="text-center text-sm text-gray-600">
+    
+        <div className="text-center text-sm text-gray-600 pb-2">
           {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
           <button
             onClick={switchMode}
@@ -616,7 +616,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
             {isSignUp ? "Sign In" : "Create Account"}
           </button>
         </div>
-      </ModalFooter>
+
     </UniversalModal>
   )
 }

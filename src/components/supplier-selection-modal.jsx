@@ -48,7 +48,7 @@ export default function SupplierSelectionModal({
   // NEW: Initialize state with restored filters or defaults
   const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
   const [ratingFilter, setRatingFilter] = useState(initialFilters.ratingFilter || "all")
-  const [distance, setDistance] = useState(initialFilters.distance || "10")
+  const [distance, setDistance] = useState(initialFilters.distance || "all")
   const [availableOnly, setAvailableOnly] = useState(initialFilters.availableOnly || false)
   const [addingSupplier, setAddingSupplier] = useState(null)
   const [selectedPackageId, setSelectedPackageId] = useState('premium')
@@ -67,7 +67,7 @@ export default function SupplierSelectionModal({
       console.log('🔄 Applying restored filters:', initialFilters)
       setPriceRange(initialFilters.priceRange || "all")
       setRatingFilter(initialFilters.ratingFilter || "all")
-      setDistance(initialFilters.distance || "10")
+      setDistance(initialFilters.distance || "all")
       setAvailableOnly(initialFilters.availableOnly || false)
     }
   }, [initialFilters])

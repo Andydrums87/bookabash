@@ -224,7 +224,7 @@ const Settings = () => {
 
       console.log('💾 Updated supplier data:', updatedSupplierData);
 
-      const result = await updateProfile(updatedSupplierData, supplierData.packages || []);
+      const result = await updateProfile(updatedSupplierData, null, updatedSupplierData.id);
       
       if (result.success) {
         console.log('✅ Settings saved successfully');

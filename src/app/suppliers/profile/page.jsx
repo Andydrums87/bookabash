@@ -32,38 +32,7 @@ import { useSupplier } from "@/hooks/useSupplier"
 
 
 // Default packages for new suppliers
-const initialPackages = [
-  {
-    id: "pkg1",
-    name: "Basic Fun Package",
-    description: "Our entry-level package perfect for small gatherings. Includes one entertainer, basic balloon modelling, and fun party games to keep the little ones engaged.",
-    price: 150,
-    priceType: "flat",
-    duration: "1 hour",
-    whatsIncluded: ["1 Entertainer", "Basic balloon modelling", "Party games"],
-    imageUrl: "/placeholder.svg?height=300&width=400&text=Basic+Fun",
-  },
-  {
-    id: "pkg2",
-    name: "Ultimate Party Package",
-    description: "The all-inclusive package for an unforgettable event. Features two entertainers, advanced balloon modelling, a captivating magic show, face painting, and a music system.",
-    price: 300,
-    priceType: "flat",
-    duration: "2 hours",
-    whatsIncluded: ["2 Entertainers", "Advanced balloon modelling", "Magic show", "Face painting", "Music system"],
-    imageUrl: "/placeholder.svg?height=300&width=400&text=Ultimate+Party",
-  },
-  {
-    id: "pkg3",
-    name: "Princess Dream Package",
-    description: "A magical experience with a real-life princess! Includes themed games, storytelling, and a special crowning ceremony for the birthday child.",
-    price: 220,
-    priceType: "flat",
-    duration: "1.5 hours",
-    whatsIncluded: ["Princess Entertainer", "Themed Games", "Storytelling", "Crowning Ceremony"],
-    imageUrl: "/placeholder.svg?height=300&width=400&text=Princess+Dream",
-  },
-]
+const initialPackages = []
 
 const CoverPhotoContent = ({ currentSupplier, supplierData, supplier, packages, updateProfile, saving }) => {
   const [coverPhoto, setCoverPhoto] = useState(null);
@@ -165,8 +134,8 @@ const handleSaveGallery = async (galleryData) => {
     });
 
     // ✅ FIXED: Pass packages explicitly - use empty array if not available
-    const currentPackages = packages || supplierData?.packages || [];
-    const result = await updateProfile(updatedSupplierData, currentPackages, supplier.id);
+    // const currentPackages = packages || supplierData?.packages || [];
+    const result = await updateProfile(updatedSupplierData, null, supplier.id)
     
     if (result.success) {
       console.log('✅ Cover photo saved successfully');
@@ -567,7 +536,7 @@ const applyAISuggestions = () => {
     }
 
     try {
-      const result = await updateProfile(supplierData, packages, supplier.id, supplierData)
+      const result = await updateProfile(supplierData, null, supplier.id)
 
       if (result.success && result.supplier) {
         setSaveSuccess(true)
