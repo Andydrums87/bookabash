@@ -68,7 +68,7 @@ export default function SupplierResponseTimer({
 
   const isUrgent = timeRemaining.hours < 2
   const urgencyColor = isUrgent ? 'text-red-600' : 'text-amber-800'
-  const urgencyBg = isUrgent ? 'bg-red-50' : 'bg-amber-50'
+  const urgencyBg = isUrgent ? 'bg-red-50' : 'bg-primary-50'
 
   return (
     <div className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'} ${urgencyBg} ${compact ? 'px-2 py-1' : 'px-3 py-2'} rounded-lg`}>
@@ -78,7 +78,7 @@ export default function SupplierResponseTimer({
           {timeRemaining.hours}h {timeRemaining.minutes}m left
         </span>
         {!compact && (
-          <p className={`text-xs ${isUrgent ? 'text-red-500' : 'text-amber-600'} mt-1 `}>
+          <p className={`text-xs ${isUrgent ? 'text-gray-900' : 'text-gray-600'} mt-1 `}>
             {isUrgent 
               ? `${supplierName} should respond soon` 
               : `${supplierName} has until tomorrow`

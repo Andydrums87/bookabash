@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CalendarDays, Trash2, Check, Clock, Save, Settings, CalendarIcon, Info } from "lucide-react"
+import { CalendarDays, Trash2, Check, Clock, Save, Settings, Calendar as CalendarIcon, Info, Building2, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,9 +13,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { startOfDay } from "date-fns"
 import { useSupplier } from "@/hooks/useSupplier"
+import { useBusiness } from "@/contexts/BusinessContext" // 👈 ADD THIS
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
-
 
 // Helper functions
 const formatDate = (date) => {
@@ -43,13 +43,18 @@ const isBefore = (date1, date2) => {
 
 const AvailabilityContent = () => {
   const { supplier, supplierData, setSupplierData, loading, error, refresh } = useSupplier()
+  const { currentBusiness, getPrimaryBusiness, businesses } = useBusiness() // 👈 ADD THIS
   const { saving, updateProfile } = useSupplierDashboard()
-  const [packages, setPackages] = useState([])
-  // In your AvailabilityContent component, add this with your other useState declarations:
-const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
-  const currentSupplier = supplierData
+  
+  // 🔧 NEW: Get primary business for shared availability
+  const primaryBusiness = getPrimaryBusiness()
+  const isPrimaryBusiness = currentBusiness?.isPrimary || false
+  const availabilitySource = primaryBusiness || currentBusiness // Fallback to current if no primary
+  
+  // 🔧 NEW: Use primary business data for availability
+  const currentSupplier = availabilitySource?.data || supplierData
 
-  // State declarations
+  // State declarations - these will sync with primary business
   const [workingHours, setWorkingHours] = useState({
     Monday: { active: true, start: "09:00", end: "17:00" },
     Tuesday: { active: true, start: "09:00", end: "17:00" },
@@ -68,9 +73,11 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
   const [maxBookingDays, setMaxBookingDays] = useState(365)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  // Load data from currentSupplier
+  // 🔧 UPDATED: Load data from primary business (shared availability)
   useEffect(() => {
     if (currentSupplier) {
+      console.log("📅 Loading availability data from:", isPrimaryBusiness ? "current business" : "primary business")
+      
       if (currentSupplier.workingHours) {
         setWorkingHours(currentSupplier.workingHours)
       }
@@ -90,42 +97,54 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
         setMaxBookingDays(currentSupplier.maxBookingDays)
       }
     }
-  }, [currentSupplier])
+  }, [currentSupplier, isPrimaryBusiness])
 
-  const handleSaveAvailability = async (availabilityData) => {
+  // 🔧 UPDATED: Save to primary business (shared across all businesses)
+  const handleSave = async () => {
     try {
-      const updatedSupplierData = {
-        ...supplierData,
-        ...availabilityData,
+      if (!primaryBusiness) {
+        throw new Error("No primary business found. Cannot save shared availability.")
       }
-      // ✅ Add the business ID to save to the correct business
-      const result = await updateProfile(updatedSupplierData, null, supplier.id)
+
+      console.log("💾 Saving shared availability to primary business:", primaryBusiness.name)
+
+      const availabilityData = {
+        workingHours: workingHours,
+        unavailableDates: unavailableDates.map((date) => date.toISOString()),
+        busyDates: busyDates.map((date) => date.toISOString()),
+        availabilityNotes: availabilityNotes,
+        advanceBookingDays: Number(advanceBookingDays),
+        maxBookingDays: Number(maxBookingDays),
+      }
+
+      // Create updated primary business data
+      const updatedPrimaryData = {
+        ...primaryBusiness.data, // Keep existing primary business data
+        ...availabilityData, // Update availability fields
+        updatedAt: new Date().toISOString()
+      }
+      
+      console.log("🔍 Saving availability data to primary business:", updatedPrimaryData.name)
+      
+      // Save to primary business (this will affect all themed businesses)
+      const result = await updateProfile(updatedPrimaryData, null, primaryBusiness.id)
+      
       if (result.success) {
-        console.log("✅ Availability saved successfully for business:", supplierData?.name)
-        return result
+        console.log("✅ Shared availability saved successfully")
+        
+        // Update local state
+        setSupplierData(updatedPrimaryData)
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 3000)
+        
+        // Refresh business data to ensure all businesses have latest availability
+        refresh()
       } else {
         throw new Error(result.error)
       }
     } catch (error) {
-      console.error("❌ Failed to save availability:", error)
-      throw error
-    }
-  }
-  const handleSave = async () => {
-    try {
-      const availabilityData = {
-        workingHours,
-        unavailableDates: unavailableDates.map((date) => date.toISOString()),
-        busyDates: busyDates.map((date) => date.toISOString()),
-        availabilityNotes,
-        advanceBookingDays,
-        maxBookingDays,
-      }
-      await handleSaveAvailability(availabilityData)
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 3000)
-    } catch (error) {
-      console.error("Failed to save availability:", error)
+      console.error("❌ Failed to save shared availability:", error)
+      alert("Failed to save availability: " + error.message)
     }
   }
 
@@ -250,38 +269,53 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
   return (
     <div className="min-h-screen bg-primary-50">
       <div className="max-w-7xl mx-auto">
+        {/* 🆕 NEW: Shared Availability Info Banner */}
+        <div className="p-4 sm:p-6 pb-0">
+          <Alert className="border-blue-200 bg-blue-50 mb-6">
+            <Users className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <strong>Shared Availability:</strong> These settings apply to all your businesses ({businesses?.length || 0} total). 
+              Changes made here will affect availability across all your themed services.
+              {!isPrimaryBusiness && (
+                <span className="block mt-1 text-sm">
+                  Currently viewing from: <strong>{currentBusiness?.name}</strong> • 
+                  Editing: <strong>{primaryBusiness?.name}</strong> (Primary)
+                </span>
+              )}
+            </AlertDescription>
+          </Alert>
+        </div>
+
         {/* Success Alert */}
         {saveSuccess && (
           <div className="p-4">
             <Alert className="border-emerald-200 bg-emerald-50 shadow-lg animate-in slide-in-from-top-2 duration-300">
               <Check className="h-5 w-5 text-emerald-600" />
               <AlertDescription className="text-emerald-800 font-medium">
-                Availability settings saved successfully!
+                Shared availability settings saved successfully across all businesses!
               </AlertDescription>
             </Alert>
           </div>
         )}
 
-        {/* Header - Mobile Optimized */}
+        {/* Header - Updated to show shared context */}
         <div className="p-4 sm:p-6">
           <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
             <div className="space-y-1">
               <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">
-                Availability Settings
+                Shared Availability Settings
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">Manage when customers can book your services</p>
+              <p className="text-sm sm:text-base text-gray-600">
+                Manage when customers can book any of your services • Applies to all {businesses?.length || 0} businesses
+              </p>
             </div>
-  <div className="absolute right-10 top-22">
-  <GlobalSaveButton 
-  position="responsive"
-  onSave={handleSave}
-  isLoading={saving}
-
-/>
-  </div>
-
-
-
+            <div className="absolute right-10 top-22">
+              <GlobalSaveButton 
+                position="responsive"
+                onSave={handleSave}
+                isLoading={saving}
+              />
+            </div>
           </div>
         </div>
 
@@ -316,16 +350,16 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
             </TabsList>
           </div>
 
-          {/* Working Hours Tab - Mobile Optimized */}
+          {/* Working Hours Tab */}
           <TabsContent value="hours" className="p-4 sm:p-6 space-y-6">
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">Weekly Schedule</h3>
                 <p className="text-sm sm:text-base text-gray-600 mb-4">
-                  Set your availability for each day of the week
+                  Set your availability for each day of the week (applies to all businesses)
                 </p>
 
-                {/* Quick Templates - Mobile Optimized */}
+                {/* Quick Templates */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-6">
                   <Button
                     variant="outline"
@@ -354,7 +388,7 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
                 </div>
               </div>
 
-              {/* Days List - Mobile Optimized */}
+              {/* Days List */}
               <div className="space-y-3">
                 {Object.entries(workingHours).map(([day, hours]) => (
                   <div
@@ -408,16 +442,18 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
             </div>
           </TabsContent>
 
-          {/* Calendar Tab - Mobile Optimized */}
+          {/* Calendar Tab */}
           <TabsContent value="calendar" className="p-4 sm:p-6">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Calendar */}
               <div className="xl:col-span-2 bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <div className="mb-6">
                   <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">Block Specific Dates</h3>
-                  <p className="text-sm sm:text-base text-gray-600 mb-4">Click on dates to mark them as unavailable</p>
+                  <p className="text-sm sm:text-base text-gray-600 mb-4">
+                    Click on dates to mark them as unavailable across all businesses
+                  </p>
 
-                  {/* Quick Actions - Mobile Optimized */}
+                  {/* Quick Actions */}
                   <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-4">
                     <Button
                       variant="outline"
@@ -468,7 +504,7 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
                   />
                 </div>
 
-                {/* Legend - Mobile Optimized */}
+                {/* Legend */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-500 rounded"></div>
@@ -485,7 +521,7 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
                 </div>
               </div>
 
-              {/* Blocked Dates List - Mobile Optimized */}
+              {/* Blocked Dates List */}
               <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">Blocked Dates</h3>
                 <Badge variant="secondary" className="bg-red-100 text-red-700 mb-4">
@@ -525,11 +561,13 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
             </div>
           </TabsContent>
 
-          {/* Settings Tab - Mobile Optimized */}
+          {/* Settings Tab */}
           <TabsContent value="settings" className="p-4 sm:p-6">
             <div className="max-w-2xl bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">Booking Rules</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">Configure how customers can book your services</p>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">Shared Booking Rules</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                Configure how customers can book any of your services (applies to all businesses)
+              </p>
 
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -577,6 +615,7 @@ const [syncAcrossBusinesses, setSyncAcrossBusinesses] = useState(true)
                     placeholder="Add any special notes about your availability that customers should know..."
                     className="w-full mt-1 p-3 border border-gray-300 rounded-md text-sm h-24 resize-none focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))]"
                   />
+                  <p className="text-xs text-gray-500 mt-1">These notes will appear on all your business listings</p>
                 </div>
               </div>
             </div>

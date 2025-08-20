@@ -447,78 +447,256 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
   //     return { success: false, error: error.message }
   //   }
   // }
-  async addSupplierToParty(partyId, supplier, selectedPackage = null) {
-    // ✅ DEFENSIVE: Ensure category exists and is valid
-    if (!supplier.category) {
-      console.error('❌ No category provided for supplier:', supplier)
-      throw new Error(`Supplier category is required but missing for ${supplier.name}`)
+// Enhanced addSupplierToParty function to handle cake customization
+async addSupplierToParty(partyId, supplier, selectedPackage = null) {
+  // ✅ DEFENSIVE: Ensure category exists and is valid
+  if (!supplier.category) {
+    console.error('❌ No category provided for supplier:', supplier)
+    throw new Error(`Supplier category is required but missing for ${supplier.name}`)
+  }
+       
+  try {
+    // Get current party
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single()
+       
+    if (fetchError) throw fetchError
+       
+    const currentPlan = party.party_plan || {}
+           
+    // Determine supplier category
+    const supplierType = this.mapCategoryToSupplierType(supplier.category)
+           
+    if (!supplierType) {
+      throw new Error(`Unknown supplier category: ${supplier.category}`)
     }
+
+    // ✅ ENHANCED: Extract cake customization data if present
+    const cakeCustomization = selectedPackage?.cakeCustomization || null
+    const packageType = selectedPackage?.packageType || 'standard'
+    const supplierTypeEnhanced = selectedPackage?.supplierType || 'standard'
+
+    console.log('🎂 Processing supplier with potential cake customization:', {
+      supplierName: supplier.name,
+      packageType,
+      supplierTypeEnhanced,
+      hasCakeCustomization: !!cakeCustomization,
+      cakeData: cakeCustomization
+    })
+       
+    // ✅ ENHANCED: Create supplier data with cake customization
+    const supplierData = {
+      id: supplier.id,
+      name: supplier.name,
+      description: supplier.description,
+      price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
+      status: "pending",
+      image: supplier.image,
+      category: supplier.category, // ✅ Explicitly preserve category
+      priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
+      addedAt: new Date().toISOString(),
+      packageId: selectedPackage?.id || null,
+      
+      // ✅ NEW: Add cake customization data
+      packageType: packageType,
+      supplierType: supplierTypeEnhanced,
+      cakeCustomization: cakeCustomization,
+      
+      // ✅ ENHANCED: Package details with customization
+      packageData: selectedPackage ? {
+        ...selectedPackage,
+        // Preserve all cake customization in package data too
+        cakeCustomization: cakeCustomization,
+        packageType: packageType,
+        supplierType: supplierTypeEnhanced
+      } : null,
+      
+      originalSupplier: {
+        ...supplier,
+        category: supplier.category // ✅ Preserve in original too
+      }
+    }
+
+    // ✅ ENHANCED: Add cake-specific display data for dashboard
+    if (cakeCustomization) {
+      supplierData.displayInfo = {
+        flavor: cakeCustomization.flavorName,
+        message: cakeCustomization.message,
+        childName: cakeCustomization.childName,
+        childAge: cakeCustomization.childAge,
+        isCakeOrder: true
+      }
+      
+      // Update description to include cake details for dashboard display
+      supplierData.description = `${supplierData.description || supplier.name} - ${cakeCustomization.flavorName} flavor cake with personalized message`
+      
+      console.log('🎂 Added cake customization to supplier data:', {
+        flavor: cakeCustomization.flavorName,
+        message: cakeCustomization.message,
+        updatedDescription: supplierData.description
+      })
+    }
+       
+    // Update the plan
+    currentPlan[supplierType] = supplierData
+       
+    // Save updated plan
+    const result = await this.updatePartyPlan(partyId, currentPlan)
+           
+    if (result.success) {
+      console.log('✅ Supplier added to party plan with customization data')
+         
+      return {
+        success: true,
+        supplierType,
+        supplier: supplierData,
+        party: result.party,
+        enquiry: null,
+        cakeCustomization: cakeCustomization // Return cake data for confirmation
+      }
+    } else {
+      throw new Error(result.error)
+    }
+     
+  } catch (error) {
+    console.error('❌ Error adding supplier to party:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Enhanced sendIndividualEnquiry function to include cake customization in enquiry
+async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMessage = '') {
+  try {
+    console.log('📧 Sending individual enquiry:', {
+      partyId,
+      supplierName: supplier.name,
+      supplierId: supplier.id,
+      packageId: selectedPackage?.id,
+      hasCakeCustomization: !!selectedPackage?.cakeCustomization
+    })
+
+    // ✅ EMERGENCY FIX: Add category if missing
+    if (!supplier.category) {
+      console.log('🚨 EMERGENCY: supplier.category is undefined in sendIndividualEnquiry, adding it')
+      supplier.category = 'Entertainment'
+      console.log('🔧 Fixed supplier.category for enquiry:', supplier.category)
+    }
+     
+    // Get party details for enquiry context
+    const { data: party, error: partyError } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('id', partyId)
+      .single()
+             
+    if (partyError) {
+      console.error('❌ Error fetching party for enquiry:', partyError)
+      throw partyError
+    }
+       
+    // Determine supplier category for enquiry
+    const supplierCategory = this.mapCategoryToSupplierType(supplier.category)
+    if (!supplierCategory) {
+      throw new Error(`Cannot map supplier category: ${supplier.category}`)
+    }
+       
+    // Get any existing add-ons that might be relevant
+    const partyPlan = party.party_plan || {}
+    const allAddons = partyPlan.addons || []
+           
+    // Filter add-ons that might be relevant to this supplier
+    const relevantAddons = allAddons.filter(addon => 
+      !addon.supplierId || // General add-ons
+      addon.supplierId === supplier.id || 
+      addon.supplierName === supplier.name
+    )
+       
+    console.log(`📦 Found ${relevantAddons.length} relevant add-ons for enquiry`)
+       
+    // Calculate quoted price (supplier + package + relevant add-ons)
+    const supplierPrice = selectedPackage ? selectedPackage.price : supplier.priceFrom || 0
+    const addonsPrice = relevantAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+    const totalQuotedPrice = supplierPrice + addonsPrice
+
+    // ✅ ENHANCED: Build enquiry message with cake customization
+    let enquiryMessage = customMessage || `Individual enquiry for ${party.child_name || 'child'}'s ${party.theme || 'themed'} party`
     
-    try {
-      // Get current party
-      const { data: party, error: fetchError } = await supabase
-        .from('parties')
-        .select('party_plan')
-        .eq('id', partyId)
-        .single()
-  
-      if (fetchError) throw fetchError
-  
-      const currentPlan = party.party_plan || {}
+    // Add cake customization details to enquiry message
+    if (selectedPackage?.cakeCustomization) {
+      const cake = selectedPackage.cakeCustomization
+      enquiryMessage += `\n\n🎂 CAKE CUSTOMIZATION DETAILS:\n`
+      enquiryMessage += `- Flavor: ${cake.flavorName}\n`
+      enquiryMessage += `- Message: "${cake.message}"\n`
+      enquiryMessage += `- Child: ${cake.childName}, Age ${cake.childAge}\n`
       
-      // Determine supplier category
-      const supplierType = this.mapCategoryToSupplierType(supplier.category)
+      console.log('🎂 Added cake customization to enquiry message')
+    }
+       
+    // ✅ ENHANCED: Create enquiry data with cake customization
+    const enquiryData = {
+      party_id: partyId,
+      supplier_id: supplier.id,
+      supplier_category: supplierCategory,
+      package_id: selectedPackage?.id || null,
+      addon_ids: relevantAddons.length > 0 ? relevantAddons.map(a => a.id) : null,
+      addon_details: relevantAddons.length > 0 ? JSON.stringify(relevantAddons) : null,
+      message: enquiryMessage,
+      special_requests: party.special_requirements || null,
+      quoted_price: totalQuotedPrice,
+      status: 'pending',
+      created_at: new Date().toISOString(),
       
-      if (!supplierType) {
-        throw new Error(`Unknown supplier category: ${supplier.category}`)
-      }
-  
-      // ✅ PRESERVE: Category in supplier data
-      const supplierData = {
-        id: supplier.id,
-        name: supplier.name,
-        description: supplier.description,
-        price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
-        status: "pending",
-        image: supplier.image,
-        category: supplier.category, // ✅ Explicitly preserve category
-        priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
-        addedAt: new Date().toISOString(),
-        packageId: selectedPackage?.id || null,
-        originalSupplier: {
-          ...supplier,
-          category: supplier.category // ✅ Preserve in original too
-        }
-      }
-  
-      // Update the plan
-      currentPlan[supplierType] = supplierData
-  
-      // Save updated plan
-      const result = await this.updatePartyPlan(partyId, currentPlan)
-      
-      if (result.success) {
-        // ✅ REMOVED: Automatic enquiry creation - let caller decide
-        // const enquiryResult = await this.createEnquiry(partyId, { ... })
-        
-        console.log('✅ Supplier added to party plan (no enquiry created)')
-  
-        return { 
-          success: true, 
-          supplierType,
-          supplier: supplierData,
-          party: result.party,
-          enquiry: null // ✅ No enquiry created automatically
-        }
-      } else {
-        throw new Error(result.error)
-      }
-  
-    } catch (error) {
-      console.error('❌ Error adding supplier to party:', error)
-      return { success: false, error: error.message }
+      // ✅ NEW: Add cake customization data to enquiry
+      customization_data: selectedPackage?.cakeCustomization ? JSON.stringify({
+        type: 'cake',
+        details: selectedPackage.cakeCustomization,
+        packageType: selectedPackage.packageType,
+        supplierType: selectedPackage.supplierType
+      }) : null
+    }
+       
+    console.log('📤 Creating individual enquiry with customization:', enquiryData)
+       
+    // Insert enquiry
+    const { data: newEnquiry, error: insertError } = await supabase
+      .from('enquiries')
+      .insert(enquiryData)
+      .select(`
+        *,
+        suppliers:supplier_id (
+          id,
+          business_name,
+          data
+        )
+      `)
+      .single()
+       
+    if (insertError) {
+      console.error('❌ Error creating individual enquiry:', insertError)
+      throw insertError
+    }
+       
+    console.log('✅ Individual enquiry created successfully with cake customization:', newEnquiry.id)
+       
+    return {
+      success: true,
+      enquiry: newEnquiry,
+      message: `Enquiry sent to ${supplier.name}${selectedPackage?.cakeCustomization ? ' with cake customization' : ''}`,
+      quotedPrice: totalQuotedPrice,
+      cakeCustomization: selectedPackage?.cakeCustomization || null
+    }
+     
+  } catch (error) {
+    console.error('❌ Error sending individual enquiry:', error)
+    return {
+      success: false,
+      error: error.message
     }
   }
+}
   /**
    * ENHANCED Add addon to party plan
    */

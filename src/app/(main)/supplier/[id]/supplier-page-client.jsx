@@ -25,6 +25,7 @@ import SupplierSidebar from "@/components/supplier/supplier-sidebar"
 import MobileBookingBar from "@/components/supplier/mobile-booking-bar"
 import AlaCarteModal from "../components/AddToCartModal"
 import SupplierUnavailableModal from "@/components/supplier/supplier-unavailable-modal"
+import SupplierPackagesRouter from "@/components/supplier/packages/SupplierPackagesRouter"
 
 
 import SupplierServiceDetails from "@/components/supplier/supplier-service-details"
@@ -39,121 +40,6 @@ import PendingEnquiryModal from "@/components/supplier/PendingEnquiryModal"
 
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
-
-const UserDetectionDebugger = () => {
-  const [localStorageData, setLocalStorageData] = useState({})
-  const [authUser, setAuthUser] = useState(null)
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setAuthUser(user)
-    }
-    checkAuth()
-  }, [])
-  
-  useEffect(() => {
-    const checkStorage = () => {
-      setLocalStorageData({
-        partyPlan: localStorage.getItem('user_party_plan'),
-        partyDetails: localStorage.getItem('party_details'),
-        hasValidPlan: hasValidPartyPlanDebug()
-      })
-    }
-    
-    checkStorage()
-    const interval = setInterval(checkStorage, 1000)
-    return () => clearInterval(interval)
-  }, [])
-  
-  // Get the actual behavior
-  const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-  const buttonState = getAddToPartyButtonState(selectedPackageId)
-  
-  return (
-    <div className="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border z-50 max-w-sm text-xs">
-      <div className="flex justify-between items-center mb-2">
-        <h4 className="font-bold text-sm">🔍 User Detection Debug</h4>
-        <button onClick={() => setDebugMode(false)} className="text-red-500">×</button>
-      </div>
-      
-      <div className="space-y-2">
-        {/* Auth Status */}
-        <div className="bg-gray-50 p-2 rounded">
-          <div className="font-semibold">Authentication:</div>
-          <div>User ID: <span className="font-mono">{authUser?.id || 'None'}</span></div>
-          <div>Email: <span className="font-mono">{authUser?.email || 'None'}</span></div>
-        </div>
-        
-        {/* Storage Status */}
-        <div className="bg-gray-50 p-2 rounded">
-          <div className="font-semibold">Local Storage:</div>
-          <div>Party Plan: <strong>{!!localStorageData.partyPlan ? 'Yes' : 'No'}</strong></div>
-          <div>Party Details: <strong>{!!localStorageData.partyDetails ? 'Yes' : 'No'}</strong></div>
-          <div>Has Valid Plan: <strong>{localStorageData.hasValidPlan ? 'Yes' : 'No'}</strong></div>
-        </div>
-        
-        {/* User Type Detection */}
-        <div className="bg-blue-50 p-2 rounded">
-          <div className="font-semibold">User Type Detection:</div>
-          <div>Loading: <strong>{loading ? 'Yes' : 'No'}</strong></div>
-          <div>User Type: <strong className="text-blue-600">{userType || 'null'}</strong></div>
-          <div>Data Source: <strong>{userContext?.dataSource || 'null'}</strong></div>
-          <div>Needs Date: <strong>{userContext?.needsDateSelection ? 'Yes' : 'No'}</strong></div>
-        </div>
-        
-        {/* Calendar State */}
-        <div className="bg-green-50 p-2 rounded">
-          <div className="font-semibold">Calendar State:</div>
-          <div>Selected Date: <strong>{selectedDate || 'None'}</strong></div>
-          <div>Current Month: <strong>{currentMonth?.getMonth() + 1}/{currentMonth?.getFullYear()}</strong></div>
-        </div>
-        
-        {/* Behavior Logic */}
-        <div className="bg-yellow-50 p-2 rounded">
-          <div className="font-semibold">Behavior Logic:</div>
-          <div>Show Date Picker: <strong>{behavior?.shouldShowDatePicker ? 'Yes' : 'No'}</strong></div>
-          <div>Show À La Carte: <strong>{behavior?.shouldShowAlaCarteModal ? 'Yes' : 'No'}</strong></div>
-          <div>Check Category: <strong>{behavior?.shouldCheckCategoryOccupation ? 'Yes' : 'No'}</strong></div>
-          <div>Send Enquiry: <strong>{behavior?.shouldSendEnquiry ? 'Yes' : 'No'}</strong></div>
-        </div>
-        
-        {/* Button State */}
-        <div className="bg-purple-50 p-2 rounded">
-          <div className="font-semibold">Button State:</div>
-          <div>Text: <strong className="text-purple-600">"{behavior?.buttonText}"</strong></div>
-          <div>Disabled: <strong>{behavior?.buttonDisabled ? 'Yes' : 'No'}</strong></div>
-          <div>Actual Text: <strong>"{typeof buttonState?.text === 'string' ? buttonState.text : 'JSX'}"</strong></div>
-          <div>Actual Disabled: <strong>{buttonState?.disabled ? 'Yes' : 'No'}</strong></div>
-        </div>
-        
-        {/* Actions */}
-        <div className="pt-2 border-t">
-          <button 
-            onClick={() => {
-              console.log('🔄 Manual behavior check:', behavior)
-              console.log('🔄 Manual button state:', buttonState)
-              console.log('🔄 Selected package ID:', selectedPackageId)
-              console.log('🔄 Packages:', packages)
-            }}
-            className="text-xs bg-blue-500 text-white px-2 py-1 rounded mr-2"
-          >
-            Log Details
-          </button>
-          <button 
-            onClick={() => {
-              localStorage.clear()
-              window.location.reload()
-            }}
-            className="text-xs bg-red-500 text-white px-2 py-1 rounded"
-          >
-            Clear & Reload
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 
 const SelectedDateBanner = ({ selectedDate, currentMonth, onClearDate }) => {
@@ -1232,6 +1118,10 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
       console.log('🔧 Cleanup completed')
     }
   }, [packages, selectedPackageId, supplier, backendSupplier, router])
+
+
+
+
   const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
     console.log('🚀 === HANDLE ADD TO PLAN START ===')
     console.log('🚀 userType:', userType)
@@ -1239,9 +1129,9 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
     console.log('🚀 skipAddonModal:', skipAddonModal)
     console.log('🚀 addonData:', addonData)
   
-    // Check if user has pending enquiries
-    if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-      console.log('🚫 User has pending enquiries - showing pending enquiry modal')
+    // Check if user has pending enquiries - ONLY for database users
+    if (userType === 'DATABASE_USER' && enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
+      console.log('🚫 Database user has pending enquiries - showing pending enquiry modal')
       setShowPendingEnquiryModal(true)
       return
     }
@@ -1358,8 +1248,8 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
       return
     }
     
-    // 5. CATEGORY OCCUPATION CHECK - For database users
-    if (behavior.shouldCheckCategoryOccupation && userContext.currentPartyId) {
+    // 5. CATEGORY OCCUPATION CHECK - ONLY for database users with current party ID
+    if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER' && userContext?.currentPartyId) {
       console.log('🔍 Checking category occupation for database user')
       try {
         const partyResult = await partyDatabaseBackend.getCurrentParty()
@@ -1395,6 +1285,15 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
         }
       } catch (error) {
         console.log('❌ Database check failed, continuing...', error)
+        // For database users, if the check fails, we should probably not proceed
+        if (userType === 'DATABASE_USER') {
+          setNotification({ 
+            type: "error", 
+            message: "Unable to verify party status. Please try again." 
+          })
+          setTimeout(() => setNotification(null), 3000)
+          return
+        }
       }
     }
     
@@ -1407,10 +1306,11 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
     }
   
     // 7. ADDON MODAL CHECK - Show addon modal if supplier has addons and we haven't skipped it
+    // BUT skip this if we already have addon data (coming from cake modal)
     const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
     const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
   
-    if (isEntertainer && hasAddons && !skipAddonModal) {
+    if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
       console.log('🎭 Showing addon modal (availability already checked)')
       setShowAddonModal(true)
       return
@@ -1424,15 +1324,19 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
   
     try {
       // Prepare package data
-      const packageToAdd = addonData || selectedPkg
+      const packageToAdd = addonData?.package || selectedPkg
       const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
       
       const enhancedPackage = {
-        ...packageToAdd.package || selectedPkg,
+        ...packageToAdd,
         addons: addonData?.addons || [],
         originalPrice: selectedPkg.price,
         totalPrice: finalPrice,
-        addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0
+        addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0,
+        // ✅ PRESERVE CAKE CUSTOMIZATION DATA
+        cakeCustomization: packageToAdd.cakeCustomization || null,
+        packageType: packageToAdd.packageType || 'standard',
+        supplierType: packageToAdd.supplierType || 'standard'
       }
   
       console.log('🎯 Enhanced package:', enhancedPackage)
@@ -1441,8 +1345,8 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
       let result
       setLoadingStep(1)
   
-      // 9. DATABASE USER FLOW
-      if (userType === 'DATABASE_USER' || userType === 'DATA_CONFLICT') {
+      // 9. DATABASE USER FLOW - Only for actual database users
+      if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
         console.log('📊 Database user - adding supplier to database')
         setProgress(50)
         
@@ -1472,8 +1376,8 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
         
         result = addResult
       }
-      // 10. LOCALSTORAGE USER FLOW
-      else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
+      // 10. LOCALSTORAGE USER FLOW - Default for non-database users
+      else {
         console.log('📦 LocalStorage user - adding supplier to localStorage')
         setProgress(50)
         setLoadingStep(2)
@@ -1508,19 +1412,27 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
   
       // 11. SUCCESS HANDLING
       if (result?.success) {
+        let successMessage = `${supplier.name} added to your party`
+        
+        // Add cake customization message if present
+        if (enhancedPackage.cakeCustomization) {
+          successMessage += ` with ${enhancedPackage.cakeCustomization.flavorName} flavor`
+        }
+        
+        // Add addon message if present
         const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
+        successMessage += addonMessage
         
         if (behavior.shouldSendEnquiry) {
-          setNotification({ 
-            type: "success", 
-            message: `${supplier.name} added and enquiry sent${addonMessage}!` 
-          })
+          successMessage += ' and enquiry sent!'
         } else {
-          setNotification({ 
-            type: "success", 
-            message: `${supplier.name} added to your party${addonMessage}!` 
-          })
+          successMessage += '!'
         }
+        
+        setNotification({ 
+          type: "success", 
+          message: successMessage 
+        })
         
         setTimeout(() => setNotification(null), 3000)
         await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -1837,7 +1749,7 @@ if (userTypeLoading) {
 
   return (
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
-      {debugMode && <UserDetectionDebugger />}
+
       <NotificationPopup notification={notification} />
 
  
@@ -1861,29 +1773,22 @@ if (userTypeLoading) {
         getAddToPartyButtonState={getAddToPartyButtonState}
         handleAddToPlan={handleAddToPlan}
       />
-<button 
-  onClick={() => setDebugMode(!debugMode)}
-  className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded-full z-50 shadow-lg"
-  title="Toggle Debug Mode"
->
-  🐛
-</button>
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           <main className="lg:col-span-2 space-y-8">
 
-            <SupplierPackages
-              packages={packages}
-              selectedPackageId={selectedPackageId}
-              setSelectedPackageId={setSelectedPackageId}
-              handleAddToPlan={handleAddToPlan}
-              getAddToPartyButtonState={getAddToPartyButtonState}
-
-              getSupplierInPartyDetails={getSupplierInPartyDetails}
-              onShowNotification={setNotification} // Make sure this is connected
-   
-              isReplacementMode={!!replacementContext?.isReplacement}
-            />
+          <SupplierPackagesRouter
+  supplier={supplier}
+  packages={packages}
+  selectedPackageId={selectedPackageId}
+  setSelectedPackageId={setSelectedPackageId}
+  handleAddToPlan={handleAddToPlan}
+  getAddToPartyButtonState={getAddToPartyButtonState}
+  getSupplierInPartyDetails={getSupplierInPartyDetails}
+  onShowNotification={setNotification}
+  isReplacementMode={!!replacementContext?.isReplacement}
+/>
 
 
             {/* NEW: Add selected date confirmation */}

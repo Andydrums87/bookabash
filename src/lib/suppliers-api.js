@@ -189,7 +189,7 @@ export function transformSupplierRecord(row) {
   const availabilityNotes = d.availabilityNotes ?? null;
   const advanceBookingDays = toNum(d.advanceBookingDays);
   const maxBookingDays = toNum(d.maxBookingDays);
-
+  const workingHours = (d.workingHours && typeof d.workingHours === "object") ? d.workingHours : null;
   const portfolioImages = Array.isArray(d.portfolioImages) ? d.portfolioImages : [];
   const portfolioVideos = Array.isArray(d.portfolioVideos) ? d.portfolioVideos : [];
   const badges = Array.isArray(d.badges) ? d.badges : [];
@@ -212,7 +212,7 @@ export function transformSupplierRecord(row) {
     rating,
     reviewCount,
     badges,
-
+    workingHours,
     availability,
     unavailableDates,
     busyDates,

@@ -16,6 +16,10 @@ export default function PaymentConfirmedSupplierCard({
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
   const displayPrice = supplier.totalPrice || supplier.price || 0
 
+  // 🎂 NEW: Extract cake customization data
+  const cakeCustomization = supplier?.packageData?.cakeCustomization
+  const isCakeSupplier = !!cakeCustomization
+
   return (
     <Card className={`overflow-hidden rounded-2xl shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""} 
       border-4 border-teal-500 paid-double-border`}>
@@ -48,6 +52,15 @@ export default function PaymentConfirmedSupplierCard({
           </Badge>
         </div>
 
+        {/* 🎂 NEW: Cake badge in bottom right */}
+        {isCakeSupplier && (
+          <div className="absolute bottom-4 right-4 z-10">
+            <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
+              🎂 {supplier.packageData?.name} • {cakeCustomization.flavorName}
+            </Badge>
+          </div>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
           <div className="text-white">
             <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
@@ -79,8 +92,6 @@ export default function PaymentConfirmedSupplierCard({
             <Badge className="bg-teal-500 text-white">Confirmed & Paid</Badge>
           </div>
 
-      
-
           {/* Contact Buttons */}
           {(() => {
             const owner = supplier?.originalSupplier?.owner;
@@ -92,9 +103,6 @@ export default function PaymentConfirmedSupplierCard({
             if (owner && (owner.email || owner.phone)) {
               return (
                 <div className="mb-5">
-                  {/* <p className="text-center text-sm text-teal-800 font-medium mb-4">
-                    📞 Contact {supplier.name} to arrange final details:
-                  </p> */}
                   <div className="flex gap-3">
                     {owner.email && (
                       <a
@@ -108,7 +116,7 @@ export default function PaymentConfirmedSupplierCard({
                     {owner.phone && (
                       <a
                         href={`tel:${formatPhone(owner.phone)}`}
-                        className="flex-1 bg-teal-500 hover:bg-tela-600 text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                        className="flex-1 bg-teal-500 hover:bg-teal-600 text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
                       >
                         <Phone className="w-4 h-4" />
                         Call
@@ -145,12 +153,6 @@ export default function PaymentConfirmedSupplierCard({
               </div>
             </div>
           )}
-
-          {/* <div className="bg-teal-100 border border-teal-300 rounded-lg p-4 text-center">
-            <p className="text-sm text-emerald-800 font-medium">
-              ✨ Deposit paid • Booking secured • Party guaranteed! ✨
-            </p>
-          </div> */}
         </div>
       </div>
 

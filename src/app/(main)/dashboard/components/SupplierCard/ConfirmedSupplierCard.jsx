@@ -17,6 +17,10 @@ export default function ConfirmedSupplierCard({
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
   const displayPrice = supplier.totalPrice || supplier.price || 0
 
+  // 🎂 NEW: Extract cake customization data
+  const cakeCustomization = supplier?.packageData?.cakeCustomization
+  const isCakeSupplier = !!cakeCustomization
+
   return (
     <Card className={`overflow-hidden rounded-2xl shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""} 
       border-4 border-sky-500 confirmed-glow`}>
@@ -49,6 +53,15 @@ export default function ConfirmedSupplierCard({
           </Badge>
         </div>
 
+        {/* 🎂 NEW: Cake badge in bottom right */}
+        {isCakeSupplier && (
+          <div className="absolute bottom-4 right-4 z-10">
+            <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
+              🎂 {supplier.packageData?.name} • {cakeCustomization.flavorName}
+            </Badge>
+          </div>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
           <div className="text-white">
             <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
@@ -80,15 +93,12 @@ export default function ConfirmedSupplierCard({
             <Badge className="bg-sky-500 text-white">Confirmed - Ready to Pay</Badge>
           </div>
 
-          {/* Confirmation message */}
-     
-
           {/* Time pressure indicator */}
           <div className="bg-white/70 border border-sky-200 rounded-lg p-3 mb-5 flex items-center gap-3">
             <Clock className="w-5 h-5 text-sky-600 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium text-sky-800">Payment due within 24 hours</p>
-              <p className="text-xs text-sky-600">Secure your spot before it's offered to someone else</p>
+              {/* <p className="text-xs text-sky-600">Secure your spot before it's offered to someone else</p> */}
             </div>
           </div>
 

@@ -79,7 +79,32 @@ export default function EnquiryDetailsPage() {
       setLoading(false)
     }
   }
-
+// Add this helper function near the top with your other helper functions
+const getCakeCustomizationData = (enquiry) => {
+  try {
+    // Check if there's customization data stored directly in the enquiry
+    if (enquiry.customization_data) {
+      const customizationData = typeof enquiry.customization_data === "string" 
+        ? JSON.parse(enquiry.customization_data) 
+        : enquiry.customization_data
+      
+      if (customizationData.type === 'cake') {
+        return customizationData.details
+      }
+    }
+    
+    // Fallback: Check party plan for cake customization
+    const party = enquiry.parties
+    if (party?.party_plan?.catering?.packageData?.cakeCustomization) {
+      return party.party_plan.catering.packageData.cakeCustomization
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error parsing cake customization data:', error)
+    return null
+  }
+}
   const formatDate = (dateString) => {
     if (!dateString) return "Date TBD"
     try {
@@ -228,6 +253,8 @@ export default function EnquiryDetailsPage() {
     }
     return colors[status] || colors.pending
   }
+
+  
 
   if (loading) {
     return (
@@ -482,6 +509,146 @@ export default function EnquiryDetailsPage() {
               )}
             </CardContent>
           </Card>
+{/* NEW: Cake Customization Section */}
+{(() => {
+    const cakeData = getCakeCustomizationData(enquiry)
+    const isCateringEnquiry = enquiry.supplier_category === 'catering'
+    
+    return (
+      cakeData && isCateringEnquiry && (
+        <Card className="border-2 border-pink-200">
+          <CardHeader className="py-8 bg-gradient-to-r from-pink-50 to-pink-100">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center">
+                <span className="text-xl">🎂</span>
+              </div>
+              Cake Customization Details
+            </CardTitle>
+            <CardDescription className="text-base">
+              Special cake customization requested by the customer
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="p-4 bg-pink-50 rounded-xl border border-pink-200">
+                  <label className="text-sm font-medium text-pink-600 uppercase tracking-wide">
+                    Selected Package
+                  </label>
+                  <p className="text-xl font-bold text-gray-900 mt-1">
+                    {enquiry.package_id ? 
+                      enquiry.package_id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                      'Custom Package'
+                    }
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Cake specialist service
+                  </p>
+                </div>
+
+                <div className="p-4 bg-pink-50 rounded-xl border border-pink-200">
+                  <label className="text-sm font-medium text-pink-600 uppercase tracking-wide">
+                    Cake Flavor
+                  </label>
+                  <p className="text-xl font-bold text-pink-700 mt-1">
+                    {cakeData.flavorName || cakeData.flavor || 'Custom Flavor'}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Customer's selected flavor
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-pink-50 rounded-xl border border-pink-200">
+                  <label className="text-sm font-medium text-pink-600 uppercase tracking-wide">
+                    Child Details
+                  </label>
+                  <p className="text-lg font-semibold text-gray-900 mt-1">
+                    {cakeData.childName || party?.child_name}, {cakeData.childAge || party?.child_age} years old
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    For cake personalization
+                  </p>
+                </div>
+
+                <div className="p-4 bg-pink-50 rounded-xl border border-pink-200">
+                  <label className="text-sm font-medium text-pink-600 uppercase tracking-wide">
+                    Cake Message
+                  </label>
+                  <div className="mt-2 p-3 bg-white rounded-lg border border-pink-200">
+                    <p className="text-lg font-semibold text-gray-900 italic">
+                      "{cakeData.message || 'Happy Birthday!'}"
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Message to write on the cake
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional cake info */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-pink-50 to-orange-50 rounded-xl border border-pink-200">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-sm">🎂</span>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-pink-900 mb-2">Cake Specialist Order Summary</h4>
+                  <div className="space-y-1 text-sm">
+                    <p className="text-pink-800">
+                      <strong>Flavor:</strong> {cakeData.flavorName || cakeData.flavor}
+                    </p>
+                    <p className="text-pink-800">
+                      <strong>Message:</strong> "{cakeData.message}"
+                    </p>
+                    <p className="text-pink-800">
+                      <strong>For:</strong> {cakeData.childName}, Age {cakeData.childAge}
+                    </p>
+                    {cakeData.customizationType && (
+                      <p className="text-pink-800">
+                        <strong>Service Type:</strong> {cakeData.customizationType.replace('_', ' ')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="mt-3 p-2 bg-white rounded border border-pink-200">
+                    <p className="text-xs text-pink-700 font-medium">
+                      💡 This order includes professional cake decoration and custom message writing
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quoted price breakdown for cake */}
+            <div className="mt-6 p-4 bg-white rounded-xl border-2 border-pink-200">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <PoundSterling className="w-5 h-5 text-pink-500" />
+                Cake Order Pricing
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700">Base Package ({enquiry.package_id || 'Custom'})</span>
+                  <span className="font-semibold">£{enquiry.quoted_price}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Includes: {cakeData.flavorName} flavor + custom message</span>
+                  <span>Included</span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span className="text-pink-700">Total Quoted:</span>
+                    <span className="text-pink-700">£{enquiry.quoted_price}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    )
+  })()}
 
           {/* Customer Contact */}
           <Card className="">

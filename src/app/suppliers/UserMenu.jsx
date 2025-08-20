@@ -40,37 +40,71 @@ export function UserMenu() {
 
   
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    
-    try {
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        console.error('Logout error:', error)
-        throw error
-      }
-
-      // Clear any additional local storage if needed
-      // localStorage.removeItem('someAppSpecificData')
-      
-      // Redirect to login page
-      router.push('/signin')
-      // Or redirect to home page
-      // router.push('/')
-      
-      // Refresh the router to ensure auth state is updated
-      router.refresh()
-      
-    } catch (error) {
-      console.error('Logout error:', error)
-      // You might want to show a toast notification here
-      alert('There was an error logging out. Please try again.')
-    } finally {
-      setIsLoggingOut(false)
-    }
-  }
+                   const handleLogout = async () => {
+                    setIsLoggingOut(true)
+                    
+                    try {
+                      console.log("🚪 Starting complete logout process...")
+                      
+                      // 1. Sign out from Supabase completely
+                      const { error } = await supabase.auth.signOut({ scope: 'global' })
+                      
+                      if (error) {
+                        console.error('❌ Supabase logout error:', error)
+                        throw error
+                      }
+                  
+                      console.log("✅ Supabase session cleared")
+                  
+                      // 2. Clear any local storage items
+                      if (typeof window !== 'undefined') {
+                        // Clear Supabase session from localStorage
+                        const keys = Object.keys(localStorage)
+                        keys.forEach(key => {
+                          if (key.startsWith('sb-') || key.includes('supabase')) {
+                            localStorage.removeItem(key)
+                          }
+                        })
+                        
+                        // Clear any app-specific data
+                        localStorage.removeItem('supplier-data')
+                        localStorage.removeItem('user-data')
+                        localStorage.removeItem('auth-token')
+                        
+                        console.log("🧹 Local storage cleared")
+                      }
+                  
+                      // 3. Clear session storage too
+                      if (typeof window !== 'undefined' && window.sessionStorage) {
+                        const sessionKeys = Object.keys(sessionStorage)
+                        sessionKeys.forEach(key => {
+                          if (key.startsWith('sb-') || key.includes('supabase')) {
+                            sessionStorage.removeItem(key)
+                          }
+                        })
+                        console.log("🧹 Session storage cleared")
+                      }
+                  
+                      // 4. Force reload the page to ensure all state is cleared
+                      console.log("🔄 Forcing page reload to clear all state...")
+                      window.location.href = '/suppliers/onboarding'
+                      
+                    } catch (error) {
+                      console.error('❌ Complete logout error:', error)
+                      
+                      // If there's an error, still try to clear everything and redirect
+                      if (typeof window !== 'undefined') {
+                        // Force clear everything
+                        localStorage.clear()
+                        sessionStorage.clear()
+                        
+                        // Force redirect
+                        window.location.href = '/suppliers/onboarding'
+                      }
+                    } finally {
+                      setIsLoggingOut(false)
+                    }
+                  }
 
   const handleLogoutClick = () => {
     const confirmed = window.confirm('Are you sure you want to logout?')

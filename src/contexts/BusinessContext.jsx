@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useContext, createContext } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useRouter, usePathname } from 'next/navigation';
 
 // Create Business Context
 const BusinessContext = createContext();
@@ -11,11 +12,37 @@ export const BusinessProvider = ({ children }) => {
   const [businesses, setBusinesses] = useState([]);
   const [ownerInfo, setOwnerInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false); // 🆕 Add switching state
+  
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // 🆕 Helper function to get stored business ID
+  const getStoredBusinessId = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedBusinessId');
+    }
+    return null;
+  };
+
+  // 🆕 Helper function to store business ID
+  const storeBusinessId = (businessId) => {
+    if (typeof window !== 'undefined') {
+      if (businessId) {
+        localStorage.setItem('selectedBusinessId', businessId);
+        console.log("💾 Stored business ID:", businessId);
+      } else {
+        localStorage.removeItem('selectedBusinessId');
+        console.log("🗑️ Removed stored business ID");
+      }
+    }
+  };
 
   // Load all businesses for the current owner
   const loadBusinesses = async () => {
     try {
       console.log('🏢 Loading businesses for owner...');
+      setLoading(true); // 🆕 Set loading state
       
       // Get current authenticated user
       const { data: userResult, error: userErr } = await supabase.auth.getUser();
@@ -54,6 +81,7 @@ export const BusinessProvider = ({ children }) => {
         setBusinesses([]);
         setCurrentBusiness(null);
         setOwnerInfo(null);
+        storeBusinessId(null); // 🆕 Clear stored ID
         setLoading(false);
         return;
       }
@@ -102,11 +130,24 @@ export const BusinessProvider = ({ children }) => {
 
       setBusinesses(businessList);
       
-      // Set primary business as current if none selected
-      if (businessList.length > 0 && !currentBusiness) {
-        const primary = businessList.find(b => b.isPrimary) || businessList[0];
-        setCurrentBusiness(primary);
-        console.log('🏢 Set current business to:', primary.name);
+      // 🆕 Enhanced current business selection
+      let selectedBusiness = null;
+      const storedId = getStoredBusinessId();
+      
+      if (storedId) {
+        selectedBusiness = businessList.find(b => b.id === storedId);
+        console.log("🎯 Found stored business:", selectedBusiness?.name);
+      }
+      
+      if (!selectedBusiness) {
+        selectedBusiness = businessList.find(b => b.isPrimary) || businessList[0];
+        console.log("🏆 Using fallback business:", selectedBusiness?.name);
+      }
+
+      if (selectedBusiness) {
+        setCurrentBusiness(selectedBusiness);
+        storeBusinessId(selectedBusiness.id);
+        console.log('🏢 Set current business to:', selectedBusiness.name);
       }
       
     } catch (error) {
@@ -190,7 +231,7 @@ export const BusinessProvider = ({ children }) => {
       await loadBusinesses();
 
       // Switch to the new business
-      switchBusiness(newBusiness.id);
+      await switchBusiness(newBusiness.id);
 
       return { success: true, business: newBusiness };
 
@@ -200,12 +241,22 @@ export const BusinessProvider = ({ children }) => {
     }
   };
 
-  // Switch between businesses
-  const switchBusiness = (businessId) => {
-    console.log('🔄 Switching to business:', businessId);
-    const business = businesses.find(b => b.id === businessId);
-    if (business) {
+  // 🆕 Enhanced switch between businesses with loading state
+  const switchBusiness = async (businessId) => {
+    try {
+      console.log('🔄 Switching to business:', businessId);
+      setSwitching(true); // 🆕 Set switching state
+
+      const business = businesses.find(b => b.id === businessId);
+      if (!business) {
+        throw new Error("Business not found");
+      }
+
+      // 🆕 Simulate loading time for UX (optional)
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       setCurrentBusiness(business);
+      storeBusinessId(businessId); // 🆕 Store the selection
       
       // Trigger refresh of supplier data for this business
       window.dispatchEvent(new CustomEvent('businessSwitched', { 
@@ -213,6 +264,15 @@ export const BusinessProvider = ({ children }) => {
       }));
       
       console.log('✅ Switched to:', business.name);
+
+      // 🆕 Force page refresh to ensure all components get new data
+      router.refresh();
+
+    } catch (error) {
+      console.error('❌ Error switching business:', error);
+      throw error;
+    } finally {
+      setSwitching(false); // 🆕 Clear switching state
     }
   };
 
@@ -241,9 +301,42 @@ export const BusinessProvider = ({ children }) => {
     };
   };
 
-  // Load businesses on mount
+  // 🆕 Load businesses on mount and when pathname changes
   useEffect(() => {
     loadBusinesses();
+  }, []);
+
+  // 🆕 Reload businesses when pathname changes (navigation)
+  useEffect(() => {
+    if (!loading && currentBusiness) {
+      console.log("📍 Path changed, refreshing business data...");
+      // Small delay to ensure page transition is complete
+      const timer = setTimeout(() => {
+        loadBusinesses();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pathname]);
+
+  // 🆕 Listen for auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔐 Auth state changed:", event);
+      
+      if (event === 'SIGNED_OUT') {
+        setBusinesses([]);
+        setCurrentBusiness(null);
+        setOwnerInfo(null);
+        setLoading(false);
+        setSwitching(false);
+        storeBusinessId(null);
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        loadBusinesses();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const value = {
@@ -252,6 +345,7 @@ export const BusinessProvider = ({ children }) => {
     businesses,
     ownerInfo,
     loading,
+    switching, // 🆕 Add switching state
     
     // Actions
     switchBusiness,

@@ -12,6 +12,7 @@ import Image from "next/image"
 import { usePathname } from 'next/navigation'
 import { UserMenu } from "./UserMenu"
 import { BusinessProvider } from "../../contexts/BusinessContext"
+import BusinessPageWrapper from "./dashboard/components/BusinessPageWrapper"
 
 // 👈 ADD THIS IMPORT
 import CompactBusinessSwitcher from "./dashboard/components/MutliBusinessDashboard"
@@ -154,13 +155,14 @@ export default function SupplierLayout({ children }) {
 </header>
 
           
-
-            {/* Main Content */}
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/20 ">
+{/* Main Content */}
+<main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/20 ">
             <div className="max-w-7xl mx-auto w-full">
-              {children}
-              </div>
-            </main>
+              <BusinessPageWrapper requiresBusiness={true}>
+                {children}
+              </BusinessPageWrapper>
+            </div>
+          </main>
           </div>
         </div>
       </Suspense>

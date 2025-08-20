@@ -1,11 +1,12 @@
-// Updated useSupplier hook - OPTIMIZED VERSION
+// Updated useSupplier hook - FIXED TO USE BusinessContext
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
-
-let businessSwitchTimeout = null
+import { useBusiness } from "@/contexts/BusinessContext" // 👈 CRUCIAL: Import BusinessContext
 
 export function useSupplier() {
-  const [currentBusiness, setCurrentBusiness] = useState(null)
+  // 🔧 FIX: Get currentBusiness from BusinessContext instead of local state
+  const { currentBusiness, switching } = useBusiness()
+  
   const [supplier, setSupplier] = useState(null)
   const [supplierData, setSupplierData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -25,6 +26,13 @@ export function useSupplier() {
       return
     }
 
+    // 🔧 FIX: Don't load if we don't have a business yet
+    if (!businessId) {
+      console.log("⏳ No business selected yet, waiting...")
+      setLoading(false)
+      return
+    }
+
     isLoadingRef.current = true
     lastBusinessIdRef.current = businessId
     setLoading(true)
@@ -37,94 +45,45 @@ export function useSupplier() {
       const userId = userResult?.user?.id
       if (!userId) throw new Error("No logged-in user")
 
-      console.log("🔍 useSupplier loading for user:", userId)
+      console.log("🔍 useSupplier loading for business:", currentBusiness.name, businessId)
 
-      // If we have a specific business selected, load that one
-      if (currentBusiness?.id) {
-        console.log("🏢 Loading specific business:", currentBusiness.name, currentBusiness.id)
+      // Load the specific business from the context
+      const { data: businessRow, error: businessErr } = await supabase
+        .from("suppliers")
+        .select(`
+          id,
+          business_name,
+          business_type,
+          is_primary,
+          parent_business_id,
+          created_from_theme,
+          business_slug,
+          data,
+          auth_user_id
+        `)
+        .eq("id", businessId)
+        .eq("auth_user_id", userId)
+        .single()
+
+      if (businessErr) throw businessErr
+
+      if (businessRow) {
+        setSupplier(businessRow)
+        const businessData = businessRow.data || {}
+        setSupplierData(businessData)
         
-        const { data: businessRow, error: businessErr } = await supabase
-          .from("suppliers")
-          .select(`
-            id,
-            business_name,
-            business_type,
-            is_primary,
-            parent_business_id,
-            created_from_theme,
-            business_slug,
-            data,
-            auth_user_id
-          `)
-          .eq("id", currentBusiness.id)
-          .eq("auth_user_id", userId)
-          .single()
-
-        if (businessErr) throw businessErr
-
-        if (businessRow) {
-          setSupplier(businessRow)
-          const businessData = businessRow.data || {}
-          setSupplierData(businessData)
-          
-          console.log("✅ Loaded specific business data:", businessRow.business_name)
-          
-          // ✅ Only dispatch event if data actually changed
-          if (supplier?.id !== businessRow.id) {
-            window.dispatchEvent(new CustomEvent('supplierDataChanged', { 
-              detail: { 
-                supplier: businessRow,
-                supplierData: businessData,
-                businessId: currentBusiness.id 
-              } 
-            }))
-          }
-        }
-      } else {
-        // Load user's primary business if no specific business selected
-        console.log("🏢 Loading primary business for user")
+        console.log("✅ Loaded business data for:", businessRow.business_name)
         
-        const { data: primaryBusiness, error: primaryErr } = await supabase
-          .from("suppliers")
-          .select(`
-            id,
-            business_name,
-            business_type,
-            is_primary,
-            parent_business_id,
-            created_from_theme,
-            business_slug,
-            data,
-            auth_user_id
-          `)
-          .eq("auth_user_id", userId)
-          .eq("is_primary", true)
-          .maybeSingle()
-
-        if (primaryErr) throw primaryErr
-
-        if (primaryBusiness) {
-          setSupplier(primaryBusiness)
-          const businessData = primaryBusiness.data || {}
-          setSupplierData(businessData)
-          console.log("✅ Loaded primary business:", primaryBusiness.business_name)
-          
-          // ✅ Only dispatch if data changed
-          if (supplier?.id !== primaryBusiness.id) {
-            window.dispatchEvent(new CustomEvent('supplierDataChanged', { 
-              detail: { 
-                supplier: primaryBusiness,
-                supplierData: businessData,
-                businessId: primaryBusiness.id 
-              } 
-            }))
-          }
-        } else {
-          console.log("❌ No primary business found")
-          setSupplier(null)
-          setSupplierData(null)
-        }
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('supplierDataChanged', { 
+          detail: { 
+            supplier: businessRow,
+            supplierData: businessData,
+            businessId: businessId 
+          } 
+        }))
       }
+
     } catch (err) {
       console.error("❌ Error fetching supplier:", err)
       setError(err.message)
@@ -134,22 +93,7 @@ export function useSupplier() {
       setLoading(false)
       isLoadingRef.current = false
     }
-  }, [currentBusiness?.id]) // ✅ Only depend on business ID, not the whole object
-
-  // ✅ Debounced business switch handler
-  const handleBusinessSwitch = useCallback((event) => {
-    console.log("🏢 Business switch requested:", event.detail.business.name)
-    
-    if (businessSwitchTimeout) {
-      clearTimeout(businessSwitchTimeout)
-    }
-    
-    businessSwitchTimeout = setTimeout(() => {
-      console.log("🏢 Applying business switch to:", event.detail.business.name)
-      setCurrentBusiness(event.detail.business)
-      lastBusinessIdRef.current = null // Reset to allow loading
-    }, 100)
-  }, [])
+  }, [currentBusiness?.id, currentBusiness?.name]) // 🔧 FIX: Depend on business from context
 
   // ✅ Memoized refresh function
   const refresh = useCallback(async () => {
@@ -158,23 +102,28 @@ export function useSupplier() {
     await loadSupplier()
   }, [loadSupplier])
 
-  // ✅ Business switch event listener - stable
+  // 🔧 UPDATED: Load supplier when currentBusiness changes from BusinessContext
   useEffect(() => {
-    window.addEventListener('businessSwitched', handleBusinessSwitch)
-    return () => {
-      window.removeEventListener('businessSwitched', handleBusinessSwitch)
-      if (businessSwitchTimeout) {
-        clearTimeout(businessSwitchTimeout)
-      }
-    }
-  }, [handleBusinessSwitch])
-
-  // ✅ Load supplier when business changes - but only when it actually changes
-  useEffect(() => {
-    if (currentBusiness?.id !== lastBusinessIdRef.current) {
+    if (currentBusiness?.id && currentBusiness.id !== lastBusinessIdRef.current) {
+      console.log("🏢 Business changed in context, loading data for:", currentBusiness.name)
       loadSupplier()
     }
   }, [currentBusiness?.id, loadSupplier])
+
+  // 🆕 ENHANCED: Listen for force refresh events
+  useEffect(() => {
+    const handleForceRefresh = (event) => {
+      console.log("🔄 Force refresh triggered, reloading supplier data...")
+      lastBusinessIdRef.current = null // Reset to force reload
+      loadSupplier()
+    }
+
+    window.addEventListener('forceComponentRefresh', handleForceRefresh)
+    return () => window.removeEventListener('forceComponentRefresh', handleForceRefresh)
+  }, [loadSupplier])
+
+  // 🔧 FIX: Remove the businessSwitched event listener since we're using context now
+  // The BusinessContext will handle the switching
 
   // ✅ Supplier update event listener - stable
   useEffect(() => {
@@ -187,14 +136,15 @@ export function useSupplier() {
     return () => window.removeEventListener('supplierUpdated', handleSupplierUpdate)
   }, [refresh])
 
-  // ✅ Reduce debug logging frequency
+  // ✅ Debug info
   const debugInfo = useMemo(() => ({
     currentBusinessId: currentBusiness?.id,
     currentBusinessName: currentBusiness?.name,
     supplierLoaded: !!supplier,
     supplierName: supplier?.business_name,
-    loading
-  }), [currentBusiness?.id, currentBusiness?.name, !!supplier, supplier?.business_name, loading])
+    loading,
+    switching
+  }), [currentBusiness?.id, currentBusiness?.name, !!supplier, supplier?.business_name, loading, switching])
 
   // ✅ Only log when debug info actually changes
   useEffect(() => {
@@ -206,7 +156,7 @@ export function useSupplier() {
     supplier, 
     supplierData, 
     setSupplierData, 
-    loading, 
+    loading: loading || switching, // 🔧 FIX: Include switching state
     error,
     refresh,
     currentBusiness,
@@ -216,5 +166,5 @@ export function useSupplier() {
     businessName: supplier?.business_name || supplierData?.name,
     isPrimaryBusiness: supplier?.is_primary || false,
     businessType: supplier?.business_type || 'primary'
-  }), [supplier, supplierData, loading, error, refresh, currentBusiness])
+  }), [supplier, supplierData, loading, switching, error, refresh, currentBusiness])
 }

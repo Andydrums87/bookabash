@@ -18,6 +18,22 @@ export default function SupplierAvailabilityCalendar({
   readOnly = false
 }) {
 
+  // ADD THIS LINE RIGHT AT THE TOP
+  console.log("🚀 COMPONENT RENDER:", { 
+    currentMonth: currentMonth?.toDateString(), 
+    supplierAdvanceDays: supplier?.advanceBookingDays,
+    today: new Date().toDateString()
+  })
+
+  // Also add this to see what the supplier data looks like
+  useEffect(() => {
+    console.log("🏢 SUPPLIER DEBUG:")
+    console.log("supplier:", supplier)
+    console.log("supplier.advanceBookingDays:", supplier?.advanceBookingDays)
+    console.log("supplier.workingHours:", supplier?.workingHours)
+    console.log("supplier keys:", supplier ? Object.keys(supplier) : 'no supplier')
+  }, [supplier])
+
   // Use a ref to track if we've already set the initial month
   const hasSetInitialMonth = useRef(false)
 
@@ -66,40 +82,117 @@ export default function SupplierAvailabilityCalendar({
   }
 
   const getDateStatus = (date, supplierData) => {
+    console.log("🔍 === ADVANCE BOOKING DEBUG ===")
+    console.log("🔍 Date being checked:", date.toDateString())
+    console.log("🔍 Supplier advanceBookingDays:", supplierData?.advanceBookingDays)
+    
+    // Normalize the input date to remove time components
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+    
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (date < today) return "past"
-
+    today.setHours(0, 0, 0, 0) // Reset time to start of day
+    
+    console.log("🔍 Today (normalized):", today.toDateString())
+    console.log("🔍 Check date (normalized):", checkDate.toDateString())
+  
+    // Check if date is in the past
+    if (checkDate < today) {
+      console.log("📅 Date is in the past")
+      return "past"
+    }
+  
+    // 🔧 FIX: Advance booking calculation
     const advanceDays = supplierData?.advanceBookingDays || 0
+    console.log("🔍 Advance booking days required:", advanceDays)
+    
+    if (advanceDays > 0) {
+      const minBookingDate = new Date(today)
+      minBookingDate.setDate(today.getDate() + advanceDays)
+      minBookingDate.setHours(0, 0, 0, 0) // Ensure we're comparing dates only
+      
+      console.log("🔍 Minimum booking date:", minBookingDate.toDateString())
+      console.log("🔍 Is date before minimum?", checkDate < minBookingDate)
+      console.log("🔍 Date comparison:", {
+        checkDate: checkDate.getTime(),
+        minBookingDate: minBookingDate.getTime(),
+        difference: minBookingDate.getTime() - checkDate.getTime()
+      })
+      
+      if (checkDate < minBookingDate) {
+        console.log("🚫 Date is within advance booking window - BLOCKED")
+        return "outside-window"
+      }
+    }
+  
+    // Check maximum booking window
     const maxDays = supplierData?.maxBookingDays || 365
-    const minBookingDate = new Date(today)
-    minBookingDate.setDate(today.getDate() + advanceDays)
-
     const maxBookingDate = new Date(today)
     maxBookingDate.setDate(today.getDate() + maxDays)
-
-    if (date < minBookingDate || date > maxBookingDate) return "outside-window"
-    if (isDateUnavailable(date, supplierData)) return "unavailable"
-    if (isDateBusy(date, supplierData)) return "busy"
+    maxBookingDate.setHours(0, 0, 0, 0)
+  
+    console.log("🔍 Maximum booking date:", maxBookingDate.toDateString())
     
-    if (!supplierData?.workingHours) return "available"
+    if (checkDate > maxBookingDate) {
+      console.log("🚫 Date is beyond maximum booking window")
+      return "outside-window"
+    }
+  
+    // Check unavailable dates
+    if (isDateUnavailable(checkDate, supplierData)) {
+      console.log("❌ Date is explicitly unavailable")
+      return "unavailable"
+    }
     
-    if (!isDayAvailable(date, supplierData)) return "closed"
+    // Check busy dates
+    if (isDateBusy(checkDate, supplierData)) {
+      console.log("⚠️ Date is busy")
+      return "busy"
+    }
+    
+    // Check working hours (when this gets fixed)
+    if (!supplierData?.workingHours) {
+      console.log("⚠️ No working hours data, defaulting to available")
+      return "available"
+    }
+    
+    const dayName = checkDate.toLocaleDateString("en-US", { weekday: "long" })
+    const dayWorkingHours = supplierData.workingHours[dayName]
+    
+    console.log("🕒 Working hours check:", {
+      dayName,
+      dayWorkingHours,
+      isActive: dayWorkingHours?.active
+    })
+    
+    if (!dayWorkingHours || !dayWorkingHours.active) {
+      console.log("🚫 Supplier is closed on this day")
+      return "closed"
+    }
+    
+    console.log("✅ Date is available")
     return "available"
   }
-
+  
   // NEW: Check if date is the party date - use memoized string comparison
   const isPartyDate = (date) => {
     if (!partyDateString) return false
     return date.toDateString() === partyDateString
   }
 
+
   const getDayStyle = (date, status, isSelected, isCurrentMonth) => {
+    console.log("🎨 STYLING DEBUG:", {
+      date: date.toDateString(),
+      status,
+      isSelected,
+      isCurrentMonth
+    })
+    
     if (!isCurrentMonth) return 'text-gray-400 cursor-not-allowed'
     
-    // NEW: Special styling for party date
-    if (isPartyDate(date)) {
+    // NEW: Special styling for party date (if applicable)
+    if (isPartyDate && isPartyDate(date)) {
       const partyDateStatus = status
       const baseStyle = 'border-2 border-blue-500 font-bold relative overflow-hidden'
       
@@ -107,6 +200,7 @@ export default function SupplierAvailabilityCalendar({
         case "available":
           return `${baseStyle} bg-blue-100 text-blue-900 shadow-md`
         case "unavailable":
+        case "outside-window": // Handle advance booking blocked dates
           return `${baseStyle} bg-red-100 text-red-800 line-through`
         case "busy":
           return `${baseStyle} bg-yellow-100 text-yellow-800`
@@ -132,26 +226,48 @@ export default function SupplierAvailabilityCalendar({
         return 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300'
       case "past":
         return 'text-gray-300 cursor-not-allowed line-through border-gray-200'
-      case "outside-window":
-        return 'text-gray-400 cursor-not-allowed opacity-70 border-gray-200'
+      case "outside-window": // 🔧 FIX: Make sure this case is handled
+        console.log("🚫 Applying outside-window styling")
+        return 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60 border-gray-200 line-through'
       default:
+        console.log("⚠️ Unknown status:", status)
         return 'text-gray-400 cursor-not-allowed border-gray-200'
     }
   }
+  // 🔧 TEST: Add this debug to verify the advance booking is working
+  // Add this temporarily to your calendar component:
+  
+  useEffect(() => {
+    if (supplier?.advanceBookingDays) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      console.log("🔍 ADVANCE BOOKING TEST:")
+      console.log("Today:", today.toDateString())
+      console.log("Advance days:", supplier.advanceBookingDays)
+      
+      // Test the next 10 days
+      for (let i = 0; i < 10; i++) {
+        const testDate = new Date(today)
+        testDate.setDate(today.getDate() + i)
+        const status = getDateStatus(testDate, supplier)
+        console.log(`Day +${i} (${testDate.toDateString()}):`, status)
+      }
+    }
+  }, [supplier])
 
-  // Memoize the calendar rendering to prevent unnecessary recalculations
   const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
     const firstDayIndex = getFirstDayOfMonth(currentMonth)
     const daysInMonthCount = getDaysInMonth(currentMonth)
     const days = []
-
+  
     // Empty cells for days before the month starts
     for (let i = 0; i < firstDayIndex; i++) {
       days.push(<div key={`empty-${i}`} className="h-12 w-full"></div>)
     }
-
+  
     // Days of the month
     for (let day = 1; day <= daysInMonthCount; day++) {
       const date = new Date(year, month, day)
@@ -160,18 +276,39 @@ export default function SupplierAvailabilityCalendar({
       const isCurrentMonth = true
       const styling = getDayStyle(date, status, isSelected, isCurrentMonth)
       const isPartyDay = isPartyDate(date)
-      const canClick = !readOnly && status === "available" && !isPartyDay
 
+       // 🔧 ADD: Debug each day creation
+    if (day >= 20 && day <= 27) {
+      console.log(`📅 Creating day ${day}:`, {
+        date: date.toDateString(),
+        year,
+        month,
+        day
+      })
+    }
+ 
+
+      // 🔧 FIX: Update the canClick logic
+      const canClick = !readOnly && 
+                      status === "available" && 
+                      !isPartyDay &&
+                      status !== "outside-window" &&  // 🔧 ADD THIS
+                      status !== "unavailable" &&
+                      status !== "busy" &&
+                      status !== "closed" &&
+                      status !== "past"
+
+  
       days.push(
         <button
           key={day}
           onClick={() => canClick ? setSelectedDate(day) : null}
           className={`h-12 w-full rounded-lg text-sm font-medium transition-all duration-200 border ${styling} relative`}
           title={isPartyDay ? `Your Party Date - ${status.replace("-", " ")}` : status.replace("-", " ")}
-          disabled={!canClick}
+          disabled={!canClick} // 🔧 MAKE SURE DISABLED ATTRIBUTE IS SET
         >
           {day}
-          {/* NEW: Party date indicator */}
+          {/* Party date indicator */}
           {isPartyDay && (
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full flex items-center justify-center">
               <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
@@ -187,6 +324,45 @@ export default function SupplierAvailabilityCalendar({
   const partyDateStatus = useMemo(() => {
     return partyDate ? getDateStatus(partyDate, supplier) : null
   }, [partyDate, supplier])
+
+  const handleDateSelect = (date) => {
+    if (!date) return
+    
+    const normalizedDate = startOfDay(date)
+    
+    // Check if date is in the past
+    if (isBefore(normalizedDate, startOfDay(new Date()))) {
+      console.log("🚫 Cannot select past date")
+      return
+    }
+    
+    // 🔧 ADD: Check if date is blocked by advance booking
+    const dateStatus = getDateStatus(normalizedDate, supplier)
+    console.log("🔍 Date selection check:", {
+      date: normalizedDate.toDateString(),
+      status: dateStatus
+    })
+    
+    if (dateStatus === "outside-window") {
+      console.log("🚫 Cannot select date within advance booking window")
+      return
+    }
+    
+    if (dateStatus === "unavailable" || dateStatus === "busy" || dateStatus === "closed") {
+      console.log("🚫 Cannot select unavailable date")
+      return
+    }
+    
+    // If we get here, the date is selectable
+    setUnavailableDates((prev) => {
+      const isAlreadyUnavailable = prev.some((d) => isDateEqual(d, normalizedDate))
+      if (isAlreadyUnavailable) {
+        return prev.filter((d) => !isDateEqual(d, normalizedDate))
+      } else {
+        return [...prev, normalizedDate]
+      }
+    })
+  }
 
   if (!supplier?.workingHours && !supplier?.unavailableDates) {
     return (

@@ -41,10 +41,7 @@ const Packages = () => {
 
 
   useEffect(() => {
-    console.log('🎯 Main useEffect triggered')
-    console.log('  - currentBusiness?.id:', currentBusiness?.id)
-    console.log('  - loading:', loading)
-    console.log('  - supplierData:', !!supplierData)
+ 
     
     // ✅ FIXED: Handle both multi-business AND single business scenarios
     const shouldLoad = !loading && supplierData && (
@@ -64,20 +61,15 @@ const Packages = () => {
       setIsPackageFormOpen(false);
       setEditingPackage(null);
       
-      // Load packages from supplier data
-      console.log("📦 SupplierData exists, checking packages...")
-      console.log("📦 Raw supplierData.packages:", supplierData.packages)
-      console.log("📦 Type of packages:", typeof supplierData.packages)
-      console.log("📦 Is array?:", Array.isArray(supplierData.packages))
+ 
       
       const packagesToLoad = supplierData.packages || []
-      console.log("📦 Packages to load:", packagesToLoad)
-      console.log("📦 Number of packages:", packagesToLoad.length)
+   
       
       setPackages(packagesToLoad)
       
       if (packagesToLoad.length > 0) {
-        console.log("📦 Package details:")
+
         packagesToLoad.forEach((pkg, index) => {
           console.log(`  ${index + 1}. ${pkg.name} - £${pkg.price} (ID: ${pkg.id})`)
         })

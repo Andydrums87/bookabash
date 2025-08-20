@@ -29,9 +29,14 @@ export default function AwaitingResponseSupplierCard({
       handleCancelEnquiry(type)
     }
   }
-   // ✅ Use totalPrice if available, otherwise fall back to price
-   const displayPrice = supplier.totalPrice || supplier.price || 0
-   const hasAddons = supplierAddons && supplierAddons.length > 0
+
+  // ✅ Use totalPrice if available, otherwise fall back to price
+  const displayPrice = supplier.totalPrice || supplier.price || 0
+  const hasAddons = supplierAddons && supplierAddons.length > 0
+
+  // 🎂 NEW: Extract cake customization data
+  const cakeCustomization = supplier?.packageData?.cakeCustomization
+  const isCakeSupplier = !!cakeCustomization
 
   return (
     <>
@@ -62,6 +67,15 @@ export default function AwaitingResponseSupplierCard({
           {/* Standard primary gradient overlay - consistent across all cards */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
+          {/* 🎂 NEW: Cake badge in bottom right */}
+          {isCakeSupplier && (
+            <div className="absolute bottom-4 right-4 z-10">
+              <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
+                🎂 {supplier.packageData?.name} • {cakeCustomization.flavorName}
+              </Badge>
+            </div>
+          )}
+
           {/* Bottom content overlay - supplier info */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
             <div className="text-white">
@@ -87,16 +101,10 @@ export default function AwaitingResponseSupplierCard({
         {/* Bottom Section: Standard neutral background */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 flex-1">
           <div className="p-5">
-            {/* Status header */}
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-200))] to-[hsl(var(--primary-300))] rounded-xl flex items-center justify-center shadow-sm">
-                <Clock className="w-5 h-5 text-[hsl(var(--primary-700))]" />
-              </div>
-              <span className="text-[hsl(var(--primary-700))] font-medium">Response expected within 24 hours</span>
-            </div>
-
+            {/* Simplified countdown header */}
             {enquirySentAt && (
-              <div className="mb-4">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                
                 <SupplierResponseTimer 
                   enquirySentAt={enquirySentAt}
                   supplierName={supplier.name}

@@ -37,6 +37,10 @@ export default function SelectedSupplierCard({
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
 
+  // 🎂 NEW: Extract cake customization data
+  const cakeCustomization = supplier?.packageData?.cakeCustomization
+  const isCakeSupplier = !!cakeCustomization
+  
   // ✅ Use totalPrice if available, otherwise fall back to price
   const displayPrice = supplier.totalPrice || supplier.price || 0
   const hasAddons = supplierAddons && supplierAddons.length > 0
@@ -66,7 +70,7 @@ export default function SelectedSupplierCard({
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
             <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm">
                   {type.charAt(0).toUpperCase() + type.slice(1)}
                 </Badge>
@@ -82,9 +86,20 @@ export default function SelectedSupplierCard({
               </button>
             </div>
 
+            {/* 🎂 NEW: Cake badge in bottom right */}
+            {isCakeSupplier && (
+              <div className="absolute bottom-4 right-4 z-10">
+                <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
+                  🎂 {supplier.packageData?.name} • {cakeCustomization.flavorName}
+                </Badge>
+              </div>
+            )}
+
             <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
               <div className="text-white">
-                <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">{supplier.name}</h3>
+                <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
+                  {supplier.name}
+                </h3>
                 <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
                 
                 <div className="flex items-center justify-between">
@@ -105,6 +120,7 @@ export default function SelectedSupplierCard({
 
       {/* Bottom section */}
       <div className="p-6 bg-white">
+
         {/* ✅ COMPACT Add-ons dropdown header */}
         {hasAddons && (
           <div className="mb-6">
