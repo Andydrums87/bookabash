@@ -75,7 +75,7 @@ export default function MobileSupplierNavigation({
       emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
       icon: <Palette className="w-5 h-5" />,
-      types: ["decorations", "balloons"],
+      types: ["decorations", "partyBags"],
     },
     {
       id: "addons", // ENHANCED: Proper addons section

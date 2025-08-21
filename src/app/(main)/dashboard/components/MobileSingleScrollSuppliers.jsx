@@ -41,7 +41,7 @@ const supplierSections = [
     subtitle: "Make it picture perfect", 
     emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
     image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
-    types: ["decorations", "balloons"],
+    types: ["decorations", "balloons", "partyBags"],
   },
 ]
 
