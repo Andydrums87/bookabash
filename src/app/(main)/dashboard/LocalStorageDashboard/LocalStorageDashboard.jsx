@@ -134,7 +134,7 @@ export default function LocalStorageDashboard() {
     cancelDeleteSupplier
   } = useSupplierManager(removeSupplier)
 
-  // ✅ PRODUCTION SAFE: Welcome popup detection
+  // ✅ PRODUCTION SAFE: Welcome popup detection with one-time-only logic
   useEffect(() => {
     if (!isMounted || !isClient) {
       console.log('⏸️ Dashboard: Waiting for client-side mount...')
@@ -156,6 +156,7 @@ export default function LocalStorageDashboard() {
       let partyDetailsData = null
       let hasPartyData = false
       let showWelcomeFlag = false
+      let welcomeCompleted = false
       
       try {
         // Check multiple localStorage keys
@@ -165,6 +166,10 @@ export default function LocalStorageDashboard() {
         const partyJustCreated = localStorage.getItem('party_just_created')
         const redirectWelcome = localStorage.getItem('redirect_welcome')
         
+        // ✅ NEW: Check if welcome was already completed
+        const welcomeCompletedFlag = localStorage.getItem('welcome_completed')
+        const welcomeCompletedSession = sessionStorage.getItem('welcome_completed')
+        
         if (welcomeTriggerData) {
           welcomeTrigger = JSON.parse(welcomeTriggerData)
         }
@@ -172,7 +177,14 @@ export default function LocalStorageDashboard() {
         if (partyDetailsRaw) {
           partyDetailsData = JSON.parse(partyDetailsRaw)
           hasPartyData = true
+          // Check if welcome was completed in party details
+          welcomeCompleted = partyDetailsData.welcomeCompleted === true
         }
+        
+        // Check multiple completion flags
+        welcomeCompleted = welcomeCompleted || 
+                          welcomeCompletedFlag === 'true' || 
+                          welcomeCompletedSession === 'true'
         
         showWelcomeFlag = showWelcomeRaw === 'true' || redirectWelcome === 'true'
         
@@ -181,7 +193,8 @@ export default function LocalStorageDashboard() {
           partyDetails: !!partyDetailsData,
           showWelcomeFlag,
           partyJustCreated: !!partyJustCreated,
-          redirectWelcome: !!redirectWelcome
+          redirectWelcome: !!redirectWelcome,
+          welcomeCompleted // ✅ NEW: Log completion status
         })
 
         // Update debug info
@@ -194,6 +207,7 @@ export default function LocalStorageDashboard() {
           partyDetails: !!partyDetailsData,
           showWelcomeFlag,
           hasPartyData,
+          welcomeCompleted, // ✅ NEW: Add to debug
           alreadyShown: welcomePopupShownRef.current,
           timestamp: new Date().toISOString()
         })
@@ -202,12 +216,12 @@ export default function LocalStorageDashboard() {
         console.error('❌ LocalStorage error:', storageError)
       }
       
-      // ✅ ENHANCED: Multiple conditions for showing welcome
+      // ✅ FIXED: Only show welcome if not completed and other conditions met
       const shouldShowWelcome = (
+        !welcomeCompleted && // ✅ NEW: Don't show if already completed
         (showWelcomeFromURL || 
          welcomeTrigger?.shouldShowWelcome || 
-         showWelcomeFlag ||
-         hasPartyData) && 
+         showWelcomeFlag) && // ✅ REMOVED: hasPartyData (too broad)
         !welcomePopupShownRef.current
       )
       
@@ -216,6 +230,7 @@ export default function LocalStorageDashboard() {
         welcomeTriggerFlag: welcomeTrigger?.shouldShowWelcome,
         showWelcomeFlag,
         hasPartyData,
+        welcomeCompleted, // ✅ NEW: Log completion status
         alreadyShown: welcomePopupShownRef.current,
         finalDecision: shouldShowWelcome
       })
@@ -257,7 +272,7 @@ export default function LocalStorageDashboard() {
           console.warn('⚠️ Cleanup error:', cleanupError)
         }
       } else {
-        console.log('❌ NOT showing welcome popup')
+        console.log('❌ NOT showing welcome popup', welcomeCompleted ? '(already completed)' : '')
       }
       
     } catch (error) {
@@ -304,7 +319,7 @@ export default function LocalStorageDashboard() {
     }
   }, [welcomeJustCompleted, showWelcomePopup, isMounted])
 
-  // ✅ ENHANCED: Name submit handler
+  // ✅ ENHANCED: Name submit handler with completion flags
   const handleNameSubmit = (nameData) => {
     console.log('🎉 Welcome form completed:', nameData)
     
@@ -315,8 +330,13 @@ export default function LocalStorageDashboard() {
       
       setWelcomeJustCompleted(true)
       
-      // Update party details
+      // ✅ CRITICAL: Set completion flags to prevent re-showing
       try {
+        // Set multiple completion flags for reliability
+        localStorage.setItem('welcome_completed', 'true')
+        sessionStorage.setItem('welcome_completed', 'true')
+        
+        // Update party details with completion flag
         const existingPartyDetails = localStorage.getItem('party_details')
         if (existingPartyDetails) {
           const parsed = JSON.parse(existingPartyDetails)
@@ -326,13 +346,16 @@ export default function LocalStorageDashboard() {
             firstName: nameData.firstName,
             lastName: nameData.lastName,
             childAge: nameData.childAge,
-            welcomeCompleted: true,
+            welcomeCompleted: true, // ✅ CRITICAL: Mark as completed
             welcomeCompletedAt: new Date().toISOString()
           }
           
           localStorage.setItem('party_details', JSON.stringify(updatedDetails))
-          console.log('📝 Updated party details with welcome data')
+          console.log('📝 Updated party details with welcome data and completion flag')
         }
+        
+        console.log('✅ Welcome completion flags set - popup will not show again')
+        
       } catch (updateError) {
         console.warn('⚠️ Error updating party details:', updateError)
       }

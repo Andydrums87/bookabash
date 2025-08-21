@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Camera, Trash2, Check, ImagePlus, Video, PlusCircle, Loader2, Info, Upload, User } from "lucide-react"
+import { Camera, Trash2, Check, ImagePlus, Video, PlusCircle, Loader2, Info, Upload, User, Users } from "lucide-react"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard } from "@/utils/mockBackend"
+import { useBusiness } from "@/contexts/BusinessContext" // 👈 ADD THIS
 
 const PortfolioGalleryTabContent = () => {
   const [portfolioImages, setPortfolioImages] = useState([])
@@ -31,6 +32,17 @@ const PortfolioGalleryTabContent = () => {
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
   const { saving, updateProfile } = useSupplierDashboard()
 
+  // 🔧 NEW: Import business context for shared logo
+  const { currentBusiness: contextBusiness, getPrimaryBusiness, businesses } = useBusiness()
+  
+  // 🔧 NEW: Get primary business for shared logo (same pattern as availability)
+  const primaryBusiness = getPrimaryBusiness()
+  const isPrimaryBusiness = currentBusiness?.isPrimary || false
+  const logoSource = primaryBusiness || currentBusiness // Fallback to current if no primary
+  
+  // 🔧 NEW: Use primary business data for logo
+  const currentSupplier = logoSource?.data || supplierData
+
   // ✅ Reset form state when business switches
   useEffect(() => {
     if (currentBusiness?.id && !loading) {
@@ -41,17 +53,22 @@ const PortfolioGalleryTabContent = () => {
       setEditingImage(null);
       setNewVideoUrl("");
       
-      // Load portfolio data specific to this business
+      // 🔧 UPDATED: Load portfolio data from current business, but logo from primary business
       if (supplierData) {
         console.log("📸 Loading portfolio data from supplierData for business:", currentBusiness?.name)
-        console.log("📸 Current avatar in supplierData:", supplierData.avatar)
         setPortfolioImages(supplierData.portfolioImages || [])
         setPortfolioVideos(supplierData.portfolioVideos || [])
         setCoverPhoto(supplierData.coverPhoto || null)
-        setLogoUrl(supplierData.avatar || null) // Load existing avatar
+      }
+      
+      // 🔧 NEW: Load shared logo from primary business (same pattern as availability)
+      if (currentSupplier) {
+        console.log("🎨 Loading shared logo from:", isPrimaryBusiness ? "current business" : "primary business")
+        console.log("🎨 Current logo in primary business:", currentSupplier.avatar)
+        setLogoUrl(currentSupplier.avatar || null)
       }
     }
-  }, [currentBusiness?.id, loading, supplierData])
+  }, [currentBusiness?.id, loading, supplierData, currentSupplier, isPrimaryBusiness])
 
   // Save portfolio to backend
   const handleSaveGallery = async (galleryData) => {
@@ -428,6 +445,8 @@ const PortfolioGalleryTabContent = () => {
               </AlertDescription>
             </Alert>
           )}
+
+      
           
           <div className="flex flex-col gap-2 sm:gap-3">
             <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">Upload Media</h2>
@@ -452,11 +471,15 @@ const PortfolioGalleryTabContent = () => {
               <div className="flex flex-col sm:flex-row items-start gap-6">
                 {/* Current Logo Display */}
                 <div className="flex flex-col items-center gap-4">
+                
+                  
                   <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-gray-200 shadow-lg rounded-3xl">
                     <AvatarImage
                       src={logoUrl || "/placeholder.png"}
                       alt="Business Logo"
                       className="rounded-2xl"
+                      onLoad={() => console.log("✅ Avatar image loaded successfully:", logoUrl)}
+                      onError={(e) => console.log("❌ Avatar image failed to load:", logoUrl, e)}
                     />
                     <AvatarFallback className="text-gray-700 bg-gray-100 text-2xl font-bold rounded-2xl">
                       <User className="w-8 h-8" />
