@@ -223,6 +223,7 @@ export default function SupplierProfilePage({ backendSupplier }) {
       category: backendSupplier.category,
       priceFrom: backendSupplier.priceFrom,
       priceUnit: backendSupplier.priceUnit,
+      avatar: backendSupplier.avatar,
       badges: backendSupplier.badges || [],
       availability: backendSupplier.availability,
       packages: backendSupplier.packages || [],

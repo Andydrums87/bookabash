@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import confetti from "canvas-confetti" // ADD: Import confetti for dashboard
+import confetti from "canvas-confetti"
 
 // UI Components
 import { Button } from "@/components/ui/button"
@@ -21,19 +21,21 @@ import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
 
-// NEW: Updated imports for unified card system
-import SupplierCard from "../components/SupplierCard/SupplierCard" // Our new unified card system
-import MobileSupplierNavigation from "../components/MobileSupplierNavigation" // New mobile nav
+// Supplier Components
+import SupplierCard from "../components/SupplierCard/SupplierCard"
+import MobileSupplierNavigation from "../components/MobileSupplierNavigation"
 
+// Addon Components
 import AddonsSection from "../components/AddonsSection"
 import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from '../components/AddonProviderWrapper'
 import AddonDetailsModal from "@/components/AddonDetailsModal"
 
-// Existing Components
+// Other Components
 import BudgetControls from "@/components/budget-controls"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import RecommendedAddons from "@/components/recommended-addons"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
+import ReferFriend from "@/components/ReferFriend"
 
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
@@ -41,26 +43,31 @@ import { usePartyDetails } from '../hooks/usePartyDetails'
 import { useSupplierManager } from '../hooks/useSupplierManager'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
-import ReferFriend from "@/components/ReferFriend"
 
 export default function LocalStorageDashboard() {
-  // Router and search params
+  // Router and navigation
   const router = useRouter()
   const searchParams = useSearchParams()
   const { navigateWithContext, getStoredModalState, clearModalState } = useContextualNavigation()
 
-  // Refs
+  // ✅ PRODUCTION SAFETY: Core state management
+  const [isMounted, setIsMounted] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+  
+  // Refs for tracking
   const welcomePopupShownRef = useRef(false)
-  const confettiTriggeredRef = useRef(false) // NEW: Track if confetti has been triggered
+  const confettiTriggeredRef = useRef(false)
 
-  // State
+  // Welcome popup state
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
+  const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false)
+
+  // General state
   const [isUpdating, setIsUpdating] = useState(false)
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
-  const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false) // NEW: Track when welcome is completed
 
-  // NEW: Modal restoration state
+  // Modal state
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [modalConfig, setModalConfig] = useState({
     category: '',
@@ -69,24 +76,17 @@ export default function LocalStorageDashboard() {
     filters: {}
   })
 
-  // Add handler for addon clicks
-  const handleAddonClick = (addon) => {
-    console.log('🎯 Addon clicked:', addon)
-    setSelectedAddon(addon)
-    setIsAddonModalOpen(true)
-  }
+  // Debug state (remove in production)
+  const [debugInfo, setDebugInfo] = useState({})
 
-  const handleAddonModalClose = () => {
-    setIsAddonModalOpen(false)
-    setSelectedAddon(null)
-  }
+  // ✅ PRODUCTION SAFETY: Mount detection
+  useEffect(() => {
+    setIsMounted(true)
+    setIsClient(typeof window !== 'undefined')
+    console.log('🔧 Dashboard: Component mounted')
+  }, [])
 
-  const handleAddAddonFromModal = async (addon) => {
-    await handleAddAddon(addon)
-    // Modal will close itself after showing success state
-  }
-
-  // Use your existing party plan hook
+  // Hooks - only run after mounting
   const {
     partyPlan, 
     loading: planLoading, 
@@ -96,17 +96,16 @@ export default function LocalStorageDashboard() {
     removeSupplier,
     addAddon,
     removeAddon,
-    addSupplier,         // ✅ Make sure this is imported
+    addSupplier,
     hasAddon,
     removeAddonFromSupplier,
   } = usePartyPlan()
 
-  // Other hooks
   const {
     partyDetails,
     partyTheme,
     themeLoaded,
-    handleNameSubmit: originalHandleNameSubmit, // Rename to avoid conflict
+    handleNameSubmit: originalHandleNameSubmit,
     handlePartyDetailsUpdate
   } = usePartyDetails()
 
@@ -125,9 +124,9 @@ export default function LocalStorageDashboard() {
     setLoadingCards,
     suppliersToDelete,
     showDeleteConfirm,
-    selectedSupplierModal, // This might be the old modal state
+    selectedSupplierModal,
     getSupplierDisplayName,
-    openSupplierModal: originalOpenSupplierModal, // Rename to avoid conflict
+    openSupplierModal: originalOpenSupplierModal,
     closeSupplierModal: originalCloseSupplierModal,
     handleSupplierSelection: originalHandleSupplierSelection,
     handleDeleteSupplier,
@@ -135,34 +134,145 @@ export default function LocalStorageDashboard() {
     cancelDeleteSupplier
   } = useSupplierManager(removeSupplier)
 
-  // Create suppliers object from party plan
-  const suppliers = {
-    venue: partyPlan.venue || null,
-    entertainment: partyPlan.entertainment || null,
-    catering: partyPlan.catering || null,
-    facePainting: partyPlan.facePainting || null,
-    activities: partyPlan.activities || null,
-    partyBags: partyPlan.partyBags || null,
-    decorations: partyPlan.decorations || null,
-    balloons: partyPlan.balloons || null,
-  }
-
-  // NEW: Enhanced name submit handler with confetti trigger
-  const handleNameSubmit = (nameData) => {
-    console.log('🎉 Welcome form completed, setting up confetti trigger')
-    originalHandleNameSubmit(nameData)
-    setWelcomeJustCompleted(true) // Flag that welcome was just completed
-  }
-
-  // NEW: Confetti effect when welcome popup closes after completion
+  // ✅ PRODUCTION SAFE: Welcome popup detection
   useEffect(() => {
-    if (welcomeJustCompleted && !showWelcomePopup && !confettiTriggeredRef.current) {
-      console.log('🎊 Triggering confetti celebration on dashboard!')
+    if (!isMounted || !isClient) {
+      console.log('⏸️ Dashboard: Waiting for client-side mount...')
+      return
+    }
+
+    console.log('🔍 Dashboard: Starting welcome popup detection...')
+    
+    try {
+      // Check URL parameters
+      const showWelcomeFromURL = searchParams.get("show_welcome") === "true"
+      const sourceFromURL = searchParams.get("source")
+      const timestampFromURL = searchParams.get("t")
       
-      confettiTriggeredRef.current = true // Prevent multiple triggers
+      console.log('📊 URL Check:', { showWelcomeFromURL, sourceFromURL, timestampFromURL })
+
+      // Check localStorage with error handling
+      let welcomeTrigger = null
+      let partyDetailsData = null
+      let hasPartyData = false
+      let showWelcomeFlag = false
       
-      const timeout = setTimeout(() => {
-        // More celebratory confetti for the dashboard
+      try {
+        // Check multiple localStorage keys
+        const welcomeTriggerData = localStorage.getItem('welcome_trigger')
+        const partyDetailsRaw = localStorage.getItem('party_details')
+        const showWelcomeRaw = localStorage.getItem('show_welcome_popup')
+        const partyJustCreated = localStorage.getItem('party_just_created')
+        const redirectWelcome = localStorage.getItem('redirect_welcome')
+        
+        if (welcomeTriggerData) {
+          welcomeTrigger = JSON.parse(welcomeTriggerData)
+        }
+        
+        if (partyDetailsRaw) {
+          partyDetailsData = JSON.parse(partyDetailsRaw)
+          hasPartyData = true
+        }
+        
+        showWelcomeFlag = showWelcomeRaw === 'true' || redirectWelcome === 'true'
+        
+        console.log('💾 LocalStorage Check:', {
+          welcomeTrigger: !!welcomeTrigger,
+          partyDetails: !!partyDetailsData,
+          showWelcomeFlag,
+          partyJustCreated: !!partyJustCreated,
+          redirectWelcome: !!redirectWelcome
+        })
+
+        // Update debug info
+        setDebugInfo({
+          mounted: isMounted,
+          isClient,
+          showWelcomeFromURL,
+          sourceFromURL,
+          welcomeTrigger: !!welcomeTrigger,
+          partyDetails: !!partyDetailsData,
+          showWelcomeFlag,
+          hasPartyData,
+          alreadyShown: welcomePopupShownRef.current,
+          timestamp: new Date().toISOString()
+        })
+        
+      } catch (storageError) {
+        console.error('❌ LocalStorage error:', storageError)
+      }
+      
+      // ✅ ENHANCED: Multiple conditions for showing welcome
+      const shouldShowWelcome = (
+        (showWelcomeFromURL || 
+         welcomeTrigger?.shouldShowWelcome || 
+         showWelcomeFlag ||
+         hasPartyData) && 
+        !welcomePopupShownRef.current
+      )
+      
+      console.log('🎯 Welcome popup decision:', {
+        showWelcomeFromURL,
+        welcomeTriggerFlag: welcomeTrigger?.shouldShowWelcome,
+        showWelcomeFlag,
+        hasPartyData,
+        alreadyShown: welcomePopupShownRef.current,
+        finalDecision: shouldShowWelcome
+      })
+      
+      if (shouldShowWelcome) {
+        console.log('🎉 SHOWING WELCOME POPUP!')
+        
+        // Use setTimeout for production safety
+        setTimeout(() => {
+          setShowWelcomePopup(true)
+          welcomePopupShownRef.current = true
+        }, 200)
+
+        // Clean up URL parameters
+        try {
+          const currentPath = window.location.pathname
+          const newSearchParams = new URLSearchParams(searchParams.toString())
+          newSearchParams.delete("show_welcome")
+          newSearchParams.delete("source")
+          newSearchParams.delete("t")
+          
+          const newURL = newSearchParams.toString() ? 
+            `${currentPath}?${newSearchParams.toString()}` : 
+            currentPath
+          
+          router.replace(newURL, { scroll: false })
+        } catch (urlError) {
+          console.warn('⚠️ URL cleanup error:', urlError)
+        }
+        
+        // Clean up localStorage triggers
+        try {
+          localStorage.removeItem('welcome_trigger')
+          localStorage.removeItem('show_welcome_popup')
+          localStorage.removeItem('party_just_created')
+          localStorage.removeItem('redirect_welcome')
+          console.log('🧹 Cleaned up welcome triggers')
+        } catch (cleanupError) {
+          console.warn('⚠️ Cleanup error:', cleanupError)
+        }
+      } else {
+        console.log('❌ NOT showing welcome popup')
+      }
+      
+    } catch (error) {
+      console.error('💥 Welcome popup detection error:', error)
+    }
+  }, [isMounted, isClient, searchParams, router])
+
+  // ✅ PRODUCTION SAFE: Confetti effect
+  useEffect(() => {
+    if (welcomeJustCompleted && !showWelcomePopup && !confettiTriggeredRef.current && isMounted) {
+      console.log('🎊 Triggering confetti celebration!')
+      
+      confettiTriggeredRef.current = true
+      
+      const triggerConfetti = () => {
         confetti({
           particleCount: 150,
           spread: 70,
@@ -170,7 +280,6 @@ export default function LocalStorageDashboard() {
           colors: ['#ff6b35', '#f7931e', '#ffd23f', '#06d6a0', '#118ab2', '#073b4c']
         })
         
-        // Second burst after a delay
         setTimeout(() => {
           confetti({
             particleCount: 100,
@@ -180,7 +289,6 @@ export default function LocalStorageDashboard() {
           })
         }, 300)
         
-        // Third burst for extra celebration
         setTimeout(() => {
           confetti({
             particleCount: 80,
@@ -189,18 +297,52 @@ export default function LocalStorageDashboard() {
             colors: ['#06d6a0', '#118ab2', '#073b4c']
           })
         }, 600)
-      }, 500)
+      }
       
-      // Reset the flag after animation
-      setTimeout(() => {
-        setWelcomeJustCompleted(false)
-      }, 2000)
-      
-      return () => clearTimeout(timeout)
+      setTimeout(triggerConfetti, 500)
+      setTimeout(() => setWelcomeJustCompleted(false), 2000)
     }
-  }, [welcomeJustCompleted, showWelcomePopup])
+  }, [welcomeJustCompleted, showWelcomePopup, isMounted])
 
-  // NEW: Enhanced modal handlers
+  // ✅ ENHANCED: Name submit handler
+  const handleNameSubmit = (nameData) => {
+    console.log('🎉 Welcome form completed:', nameData)
+    
+    try {
+      if (typeof originalHandleNameSubmit === 'function') {
+        originalHandleNameSubmit(nameData)
+      }
+      
+      setWelcomeJustCompleted(true)
+      
+      // Update party details
+      try {
+        const existingPartyDetails = localStorage.getItem('party_details')
+        if (existingPartyDetails) {
+          const parsed = JSON.parse(existingPartyDetails)
+          const updatedDetails = {
+            ...parsed,
+            childName: nameData.childName,
+            firstName: nameData.firstName,
+            lastName: nameData.lastName,
+            childAge: nameData.childAge,
+            welcomeCompleted: true,
+            welcomeCompletedAt: new Date().toISOString()
+          }
+          
+          localStorage.setItem('party_details', JSON.stringify(updatedDetails))
+          console.log('📝 Updated party details with welcome data')
+        }
+      } catch (updateError) {
+        console.warn('⚠️ Error updating party details:', updateError)
+      }
+      
+    } catch (error) {
+      console.error('💥 Error in handleNameSubmit:', error)
+    }
+  }
+
+  // Modal handlers
   const openSupplierModal = (category, theme = 'superhero') => {
     console.log('🔓 Opening supplier modal:', { category, theme })
     
@@ -220,41 +362,28 @@ export default function LocalStorageDashboard() {
   }
 
   const handleSupplierSelection = async (supplierData) => {
-    console.log('✅ Supplier selected in localStorage dashboard:', supplierData)
+    console.log('✅ Supplier selected:', supplierData)
     
     try {
-      // Extract the supplier and package info
-      const { supplier, package: selectedPackage, addons: selectedAddons = [], autoEnquiry = false } = supplierData
+      const { supplier, package: selectedPackage, addons: selectedAddons = [] } = supplierData
       
       if (!supplier) {
         console.error('❌ No supplier data provided')
         return
       }
   
-      // For localStorage, we use the addSupplier function from usePartyPlan hook
       const result = await addSupplier(supplier, selectedPackage)
       
       if (result.success) {
-        console.log('✅ Supplier added to localStorage successfully!')
+        console.log('✅ Supplier added successfully!')
         
-        // ✅ FIXED: Add any selected addons with proper supplier properties
         if (selectedAddons && selectedAddons.length > 0) {
-          console.log('🔧 Adding supplier addons:', selectedAddons)
-          
           for (const addon of selectedAddons) {
-            console.log('🔧 Processing addon:', addon)
-            
-            // ✅ Call addAddon with the supplier ID as second parameter
             await handleAddAddon(addon, supplier.id)
           }
         }
         
-        // Close modal after successful addition
         closeSupplierModal()
-        
-        // Optional: Show success message
-        console.log(`🎉 ${supplier.name} has been added to your party plan!`)
-        
       } else {
         console.error('❌ Failed to add supplier:', result.error)
       }
@@ -263,9 +392,11 @@ export default function LocalStorageDashboard() {
       console.error('💥 Error in handleSupplierSelection:', error)
     }
   }
-  
-  // NEW: Modal restoration effect
+
+  // Modal restoration effects
   useEffect(() => {
+    if (!isMounted) return
+    
     const shouldRestoreModal = searchParams.get('restoreModal')
     
     if (shouldRestoreModal) {
@@ -293,10 +424,11 @@ export default function LocalStorageDashboard() {
         window.history.replaceState({}, '', '/dashboard')
       }
     }
-  }, [searchParams, getStoredModalState, clearModalState])
+  }, [isMounted, searchParams, getStoredModalState, clearModalState])
 
-  // NEW: Listen for custom modal restoration events
   useEffect(() => {
+    if (!isMounted) return
+    
     const handleRestoreModal = (event) => {
       const { detail: modalState } = event
       
@@ -322,41 +454,31 @@ export default function LocalStorageDashboard() {
 
     window.addEventListener('restoreModal', handleRestoreModal)
     return () => window.removeEventListener('restoreModal', handleRestoreModal)
-  }, [])
+  }, [isMounted])
 
-  // Budget control props
-  const budgetControlProps = {
-    totalSpent: totalCost,
-    tempBudget,
-    setTempBudget,
-    budgetPercentage,
-    getBudgetCategory,
-    isUpdating,
-    showAdvancedControls,
-    setShowAdvancedControls,
+  // Addon handlers
+  const handleAddonClick = (addon) => {
+    console.log('🎯 Addon clicked:', addon)
+    setSelectedAddon(addon)
+    setIsAddonModalOpen(true)
   }
 
-  // Welcome popup handling
-  useEffect(() => {
-    if (searchParams.get("show_welcome") === "true" && !welcomePopupShownRef.current) {
-      setShowWelcomePopup(true)
-      welcomePopupShownRef.current = true
+  const handleAddonModalClose = () => {
+    setIsAddonModalOpen(false)
+    setSelectedAddon(null)
+  }
 
-      const currentPath = window.location.pathname
-      const newSearchParams = new URLSearchParams(searchParams.toString())
-      newSearchParams.delete("show_welcome")
-      router.replace(`${currentPath}?${newSearchParams.toString()}`, { scroll: false })
-    }
-  }, [searchParams, router])
+  const handleAddAddonFromModal = async (addon) => {
+    await handleAddAddon(addon)
+  }
 
   const handleAddAddon = async (addon, supplierId = null) => {
     if (hasAddon(addon.id)) {
-      console.log('🔍 HANDLEADDADDON DEBUG - Addon already exists, returning early')
+      console.log('🔍 Addon already exists, returning early')
       return
     }
     
     try {
-      // ✅ FIXED: Preserve existing supplier properties from addon, only override if not present
       const finalSupplierId = addon.supplierId || supplierId
       const finalSupplierName = addon.supplierName || (finalSupplierId ? suppliers[finalSupplierId]?.name : 'General')
       
@@ -364,12 +486,12 @@ export default function LocalStorageDashboard() {
         ...addon,
         supplierId: finalSupplierId,
         supplierName: finalSupplierName,
-        attachedToSupplier: !!finalSupplierId,  // ✅ Add this flag
-        isSupplierAddon: !!finalSupplierId,     // ✅ Add this flag
+        attachedToSupplier: !!finalSupplierId,
+        isSupplierAddon: !!finalSupplierId,
         addedAt: new Date().toISOString()
       }
       
-      console.log('🔧 Final addon being added:', addonWithSupplier)
+      console.log('🔧 Adding addon:', addonWithSupplier)
       
       const result = await addAddon(addonWithSupplier)
       
@@ -385,15 +507,11 @@ export default function LocalStorageDashboard() {
 
   const handleRemoveAddon = async (addonId) => {
     try {
-      console.log('🗑️ Attempting to remove addon:', addonId)
+      console.log('🗑️ Removing addon:', addonId)
       
-      // First try the regular remove (for global addons)
       let result = await removeAddon(addonId)
       
       if (!result.success) {
-        console.log('🔄 Not found in global addons, checking supplier addons...')
-        
-        // If not found in global addons, try each supplier
         const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons']
         
         for (const supplierType of supplierTypes) {
@@ -401,7 +519,6 @@ export default function LocalStorageDashboard() {
           if (supplier && supplier.selectedAddons) {
             const hasAddon = supplier.selectedAddons.some(addon => addon.id === addonId)
             if (hasAddon) {
-              console.log(`🎯 Found addon in ${supplierType}, removing...`)
               result = await removeAddonFromSupplier(supplierType, addonId)
               break
             }
@@ -424,19 +541,36 @@ export default function LocalStorageDashboard() {
     navigateWithContext('/browse', 'dashboard')
   }
 
-  // NEW: Helper functions for unified card system
-  const getEnquiryStatus = (type) => {
-    // LocalStorage dashboard is always in "selected" state (no enquiries)
-    return null
+  // Helper functions
+  const getEnquiryStatus = (type) => null
+  const getEnquiryTimestamp = (type) => null
+
+  // Create suppliers object
+  const suppliers = {
+    venue: partyPlan.venue || null,
+    entertainment: partyPlan.entertainment || null,
+    catering: partyPlan.catering || null,
+    facePainting: partyPlan.facePainting || null,
+    activities: partyPlan.activities || null,
+    partyBags: partyPlan.partyBags || null,
+    decorations: partyPlan.decorations || null,
+    balloons: partyPlan.balloons || null,
   }
 
-  const getEnquiryTimestamp = (type) => {
-    // No enquiry timestamps in localStorage dashboard
-    return null
+  // Budget control props
+  const budgetControlProps = {
+    totalSpent: totalCost,
+    tempBudget,
+    setTempBudget,
+    budgetPercentage,
+    getBudgetCategory,
+    isUpdating,
+    showAdvancedControls,
+    setShowAdvancedControls,
   }
 
-  // Loading state
-  if (!themeLoaded || planLoading) {
+  // ✅ PRODUCTION SAFETY: Don't render until mounted and data loaded
+  if (!isMounted || !themeLoaded || planLoading) {
     return (
       <div className="min-h-screen bg-primary-50 flex items-center justify-center">
         <div className="text-center">
@@ -448,9 +582,35 @@ export default function LocalStorageDashboard() {
   }
 
   return (
-    <div className={`${showWelcomePopup ? "blur-sm opacity-50" : "" }min-h-screen overflow-hidden`}>
+    <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
+      
+      {/* ✅ DEBUG: Temporary debug info (remove in production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          background: 'rgba(0,0,0,0.8)', 
+          color: 'white', 
+          padding: '10px', 
+          borderRadius: '5px', 
+          fontSize: '12px', 
+          zIndex: 9999,
+          maxWidth: '300px'
+        }}>
+          <strong>Debug Info:</strong><br/>
+          Mounted: {debugInfo.mounted ? 'Yes' : 'No'}<br/>
+          Client: {debugInfo.isClient ? 'Yes' : 'No'}<br/>
+          URL Welcome: {debugInfo.showWelcomeFromURL ? 'Yes' : 'No'}<br/>
+          Storage Trigger: {debugInfo.welcomeTrigger ? 'Yes' : 'No'}<br/>
+          Party Data: {debugInfo.partyDetails ? 'Yes' : 'No'}<br/>
+          Popup Shown: {debugInfo.alreadyShown ? 'Yes' : 'No'}<br/>
+          Show Popup: {showWelcomePopup ? 'Yes' : 'No'}<br/>
+        </div>
+      )}
+
       <AddonProvider
         addAddon={handleAddAddon}
         removeAddon={handleRemoveAddon}
@@ -474,8 +634,7 @@ export default function LocalStorageDashboard() {
             {/* Main Content */}
             <main className="lg:col-span-2 space-y-8">
               <div className="hidden md:flex justify-between mb-4 items-start">
-                {/* Left: Snappy + Heading */}
-                <div className="flex justfy-center">
+                <div className="flex justify-center">
                   <Image
                     src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
                     alt="Snappy the Alligator"
@@ -493,14 +652,13 @@ export default function LocalStorageDashboard() {
                   </div>
                 </div>
 
-                {/* Right: Add Supplier Button */}
                 <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
                   <Plus className="w-4 h-4" />
                   Add Supplier
                 </Button>
               </div>
 
-              {/* NEW: Unified Responsive Supplier Grid */}
+              {/* Supplier Grid */}
               <div className="w-full">
                 {/* Desktop Grid */}
                 <div className="hidden md:grid md:grid-cols-3 gap-6">
@@ -516,18 +674,17 @@ export default function LocalStorageDashboard() {
                       getSupplierDisplayName={getSupplierDisplayName}
                       addons={addons}
                       handleRemoveAddon={handleRemoveAddon}
-                      enquiryStatus={getEnquiryStatus(type)} // Always null for localStorage
-                      enquirySentAt={getEnquiryTimestamp(type)} // Always null for localStorage
-                      isSignedIn={false} // LocalStorage = not signed in
-                      isPaymentConfirmed={false} // LocalStorage = planning phase
-                      enquiries={[]} // No enquiries in localStorage
-                      // NEW: LocalStorage is always in planning phase
+                      enquiryStatus={getEnquiryStatus(type)}
+                      enquirySentAt={getEnquiryTimestamp(type)}
+                      isSignedIn={false}
+                      isPaymentConfirmed={false}
+                      enquiries={[]}
                       currentPhase="planning"
                     />
                   ))}
                 </div>
 
-                {/* NEW: Mobile Navigation */}
+                {/* Mobile Navigation */}
                 <div className="md:hidden">
                   <MobileSupplierNavigation
                     suppliers={suppliers}
@@ -540,21 +697,19 @@ export default function LocalStorageDashboard() {
                     handleRemoveAddon={handleRemoveAddon}
                     getEnquiryStatus={getEnquiryStatus}
                     getEnquiryTimestamp={getEnquiryTimestamp}
-                    isPaymentConfirmed={false} // LocalStorage = planning phase
-                    enquiries={[]} // No enquiries in localStorage
-                    // NEW: Don't show party tasks in localStorage dashboard (selected state)
+                    isPaymentConfirmed={false}
+                    enquiries={[]}
                     showPartyTasks={false}
-                    currentPhase="planning" // LocalStorage is always planning phase
+                    currentPhase="planning"
                     partyTasksStatus={{}}
                   />
                 </div>
               </div>
 
               <div className="md:block hidden">
-                <AddonsSectionWrapper suppliers={suppliers}  />
+                <AddonsSectionWrapper suppliers={suppliers} />
               </div>
               
-              {/* Recommended Add-ons */}
               <div className="md:block hidden w-screen pr-6 md:pr-20">
                 <RecommendedAddonsWrapper 
                   context="dashboard" 
@@ -576,6 +731,7 @@ export default function LocalStorageDashboard() {
                   Get Help
                 </Button>
               </div>
+              
               <div className="md:hidden block">
                 <ReferFriend />
               </div>
@@ -585,7 +741,7 @@ export default function LocalStorageDashboard() {
             <aside className="hidden lg:block space-y-6">
               <BudgetControls {...budgetControlProps} />
               <CountdownWidget partyDate={partyDetails.date} />
-              <ReferFriend  />
+              <ReferFriend />
             </aside>
           </div>
         </div>
@@ -601,7 +757,7 @@ export default function LocalStorageDashboard() {
         </div>
       )}
 
-      {/* UPDATED: New Modal with Restoration Support */}
+      {/* Modals */}
       <SupplierSelectionModal
         isOpen={showSupplierModal}
         onClose={closeSupplierModal}
@@ -611,20 +767,26 @@ export default function LocalStorageDashboard() {
         initialFilters={modalConfig.filters}
         onSelectSupplier={handleSupplierSelection}
         partyLocation={partyDetails.location}
-        currentPhase="planning"                     // LocalStorage is always planning
-        isAwaitingResponses={false}                 // Never awaiting in localStorage
-        partyData={partyPlan}                       // Pass current party plan
-        enquiries={[]}                              // No enquiries in localStorage
-        hasEnquiriesPending={false}                 // Never pending in localStorage
-        isSignedIn={false}                          // LocalStorage users aren't signed in
-        currentPartyId={null}                       // No party ID for localStorage
+        currentPhase="planning"
+        isAwaitingResponses={false}
+        partyData={partyPlan}
+        enquiries={[]}
+        hasEnquiriesPending={false}
+        isSignedIn={false}
+        currentPartyId={null}
       />
 
-      <WelcomeDashboardPopup 
-        isOpen={showWelcomePopup} 
-        onClose={() => setShowWelcomePopup(false)}
-        onNameSubmit={handleNameSubmit}
-      />
+      {/* ✅ PRODUCTION SAFE: Welcome Popup */}
+      {isMounted && (
+        <WelcomeDashboardPopup 
+          isOpen={showWelcomePopup} 
+          onClose={() => {
+            console.log('🔒 Closing welcome popup')
+            setShowWelcomePopup(false)
+          }}
+          onNameSubmit={handleNameSubmit}
+        />
+      )}
 
       <DeleteConfirmDialog
         isOpen={!!showDeleteConfirm}
@@ -633,7 +795,6 @@ export default function LocalStorageDashboard() {
         onCancel={cancelDeleteSupplier}
       />
 
-      {/* Add the new Addon Details Modal */}
       <AddonDetailsModal
         isOpen={isAddonModalOpen}
         onClose={handleAddonModalClose}
@@ -642,6 +803,7 @@ export default function LocalStorageDashboard() {
         isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
       />
 
+      {/* Mobile Add Supplier Button */}
       <div className="md:hidden fixed bottom-5 right-4 z-40">
         <button 
           onClick={handleAddSupplier}

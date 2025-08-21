@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Camera, Trash2, Check, ImagePlus, Video, PlusCircle, Loader2, Info } from "lucide-react"
+import { Camera, Trash2, Check, ImagePlus, Video, PlusCircle, Loader2, Info, Upload, User } from "lucide-react"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 
@@ -16,12 +17,15 @@ const PortfolioGalleryTabContent = () => {
   const [portfolioImages, setPortfolioImages] = useState([])
   const [portfolioVideos, setPortfolioVideos] = useState([])
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
   const [editingImage, setEditingImage] = useState(null)
   const [newVideoUrl, setNewVideoUrl] = useState("")
   const [localSaving, setLocalSaving] = useState(false)
   const [localSaveSuccess, setLocalSaveSuccess] = useState(false)
   const fileInputRef = useRef(null)
-  const [coverPhoto, setCoverPhoto] = useState(null) // Declare coverPhoto variable
+  const logoInputRef = useRef(null)
+  const [coverPhoto, setCoverPhoto] = useState(null)
+  const [logoUrl, setLogoUrl] = useState(null) // New state for logo
 
   // ✅ Use business-aware hooks
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
@@ -40,9 +44,11 @@ const PortfolioGalleryTabContent = () => {
       // Load portfolio data specific to this business
       if (supplierData) {
         console.log("📸 Loading portfolio data from supplierData for business:", currentBusiness?.name)
+        console.log("📸 Current avatar in supplierData:", supplierData.avatar)
         setPortfolioImages(supplierData.portfolioImages || [])
         setPortfolioVideos(supplierData.portfolioVideos || [])
         setCoverPhoto(supplierData.coverPhoto || null)
+        setLogoUrl(supplierData.avatar || null) // Load existing avatar
       }
     }
   }, [currentBusiness?.id, loading, supplierData])
@@ -70,9 +76,13 @@ const PortfolioGalleryTabContent = () => {
         portfolioImages: galleryData.images,
         portfolioVideos: galleryData.videoLinks,
         coverPhoto: galleryData.coverPhoto,
+        image: galleryData.logoUrl, // Save logo as image (this is what backend handles)
+        avatar: galleryData.logoUrl, // Also set avatar for frontend compatibility
       }
 
-      console.log("💾 Updated supplier data for business:", currentBusiness?.name, updatedSupplierData)
+      console.log("💾 Updated supplier data for business:", currentBusiness?.name)
+      console.log("💾 Logo URL being saved as image:", galleryData.logoUrl)
+      console.log("💾 Full supplier data being sent:", JSON.stringify(updatedSupplierData, null, 2))
 
       // ✅ Pass the business ID to save to the correct business
       const result = await updateProfile(updatedSupplierData, null, supplier.id)
@@ -81,6 +91,7 @@ const PortfolioGalleryTabContent = () => {
         console.log("✅ Portfolio saved successfully for business:", currentBusiness?.name)
         setPortfolioImages(galleryData.images)
         setPortfolioVideos(galleryData.videoLinks)
+        setLogoUrl(galleryData.logoUrl)
 
         // Update local supplier data
         if (setSupplierData) {
@@ -89,6 +100,7 @@ const PortfolioGalleryTabContent = () => {
             portfolioImages: galleryData.images,
             portfolioVideos: galleryData.videoLinks,
             coverPhoto: galleryData.coverPhoto,
+            avatar: galleryData.logoUrl, // Update avatar field
           }))
         }
 
@@ -111,6 +123,100 @@ const PortfolioGalleryTabContent = () => {
       throw error
     } finally {
       setLocalSaving(false)
+    }
+  }
+
+  // Logo upload handler
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) {
+      console.log("❌ No file selected")
+      return
+    }
+
+    console.log("📤 Starting logo upload for business:", currentBusiness?.name)
+    console.log("📤 File details:", {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+    
+    setUploadingLogo(true)
+
+    try {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select a valid image file')
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File size must be less than 10MB')
+      }
+
+      // Create FormData for Cloudinary upload
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("upload_preset", "portfolio_images")
+
+      console.log("📤 FormData created, uploading to Cloudinary...")
+
+      // Upload to Cloudinary
+      const response = await fetch("https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      console.log("📤 Cloudinary response status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("❌ Cloudinary error response:", response.status, errorText)
+        throw new Error(`Cloudinary upload failed: ${response.status} - ${errorText}`)
+      }
+
+      const cloudinaryData = await response.json()
+      console.log("✅ Cloudinary logo upload successful:", cloudinaryData)
+
+      // Update logo URL state
+      const newLogoUrl = cloudinaryData.secure_url
+      console.log("📤 Setting logo URL:", newLogoUrl)
+      setLogoUrl(newLogoUrl)
+
+      // Auto-save after upload
+      console.log("📤 Auto-saving gallery data...")
+      const saveResult = await handleSaveGallery({
+        images: portfolioImages,
+        videoLinks: portfolioVideos,
+        coverPhoto: coverPhoto,
+        logoUrl: newLogoUrl,
+      })
+
+      console.log("✅ Logo upload and save completed:", saveResult)
+    } catch (error) {
+      console.error("❌ Logo upload failed:", error)
+      alert(`Failed to upload logo: ${error.message}`)
+    } finally {
+      setUploadingLogo(false)
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ""
+      }
+    }
+  }
+
+  // Delete logo handler
+  const handleDeleteLogo = async () => {
+    if (confirm("Are you sure you want to delete your logo?")) {
+      console.log("🗑️ Deleting logo for business:", currentBusiness?.name)
+      setLogoUrl(null)
+
+      // Auto-save after deletion
+      await handleSaveGallery({
+        images: portfolioImages,
+        videoLinks: portfolioVideos,
+        coverPhoto: coverPhoto,
+        logoUrl: null,
+      })
     }
   }
 
@@ -177,6 +283,7 @@ const PortfolioGalleryTabContent = () => {
         images: updatedImages,
         videoLinks: portfolioVideos,
         coverPhoto: coverPhoto,
+        logoUrl: logoUrl,
       })
 
       console.log("✅ Upload and save completed")
@@ -203,6 +310,7 @@ const PortfolioGalleryTabContent = () => {
         images: updatedImages,
         videoLinks: portfolioVideos,
         coverPhoto: coverPhoto,
+        logoUrl: logoUrl,
       })
     }
   }
@@ -241,6 +349,7 @@ const PortfolioGalleryTabContent = () => {
       images: portfolioImages,
       videoLinks: updatedVideos,
       coverPhoto: coverPhoto,
+      logoUrl: logoUrl,
     })
   }
 
@@ -255,6 +364,7 @@ const PortfolioGalleryTabContent = () => {
       images: portfolioImages,
       videoLinks: updatedVideos,
       coverPhoto: coverPhoto,
+      logoUrl: logoUrl,
     })
   }
 
@@ -299,6 +409,7 @@ const PortfolioGalleryTabContent = () => {
                 images: portfolioImages,
                 videoLinks: portfolioVideos,
                 coverPhoto: coverPhoto,
+                logoUrl: logoUrl,
               })
             }
             isLoading={saving}
@@ -324,6 +435,95 @@ const PortfolioGalleryTabContent = () => {
               Upload Images and Videos to make your profile stand out!
             </p>
           </div>
+        </div>
+
+        {/* Logo/Avatar Section - Mobile Optimized */}
+        <div className="p-4 sm:p-6 pt-0">
+          <Card className="shadow-sm">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col gap-3">
+                <CardTitle className="text-lg sm:text-xl">Business Logo</CardTitle>
+                <CardDescription className="text-sm sm:text-base">
+                  Upload your business logo. This will be displayed as your profile avatar.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="flex flex-col sm:flex-row items-start gap-6">
+                {/* Current Logo Display */}
+                <div className="flex flex-col items-center gap-4">
+                  <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-gray-200 shadow-lg rounded-3xl">
+                    <AvatarImage
+                      src={logoUrl || "/placeholder.png"}
+                      alt="Business Logo"
+                      className="rounded-2xl"
+                    />
+                    <AvatarFallback className="text-gray-700 bg-gray-100 text-2xl font-bold rounded-2xl">
+                      <User className="w-8 h-8" />
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {/* Logo Controls */}
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      className="rounded-xl"
+                      disabled={uploadingLogo}
+                      onClick={() => {
+                        console.log("📤 Logo upload button clicked")
+                        logoInputRef.current?.click()
+                      }}
+                    >
+                      {uploadingLogo ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      {logoUrl ? 'Change Logo' : 'Upload Logo'}
+                    </Button>
+                    
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      disabled={uploadingLogo}
+                    />
+                    
+                    {logoUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteLogo}
+                        className="text-red-500 hover:text-red-700 border-red-200 hover:border-red-300 rounded-xl"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Logo Tips */}
+                <div className="flex-1 text-sm bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                      <p className="font-medium text-blue-800">Logo Guidelines:</p>
+                    </div>
+                    <ul className="text-blue-700 space-y-1 text-xs sm:text-sm pl-2">
+                      <li>• Use a square aspect ratio (1:1) for best results</li>
+                      <li>• Minimum size: 400x400 pixels</li>
+                      <li>• PNG or JPG format with transparent background preferred</li>
+                      <li>• Keep it simple and recognizable at small sizes</li>
+                      <li>• Avoid text-heavy logos as they may be hard to read</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Photo Gallery Section - Mobile Optimized */}

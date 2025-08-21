@@ -41,6 +41,8 @@ export default function SupplierHeader({
   const smallImage1 = headerGalleryImages[1] // Will be top-right
   const smallImage2 = headerGalleryImages[2] // Will be bottom-right
 
+console.log(supplier)
+
   // Calculate remaining images for the bubble, after the main image and the two small ones
   const remainingImagesCount = Math.max(0, headerGalleryImages.length - 3)
 

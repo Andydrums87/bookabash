@@ -1042,6 +1042,7 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       portfolioVideos: updatedData.portfolioVideos !== undefined ? updatedData.portfolioVideos : (current.portfolioVideos || []),
       coverPhoto: updatedData.coverPhoto !== undefined ? updatedData.coverPhoto : current.coverPhoto,
       image: updatedData.coverPhoto !== undefined ? updatedData.coverPhoto : (updatedData.image !== undefined ? updatedData.image : current.image),
+      avatar: updatedData.avatar !== undefined ? updatedData.avatar : current.avatar,
 
       // Service details - Smart merging
       serviceDetails: updatedData.serviceDetails ? {

@@ -138,87 +138,138 @@ const isFormValid = () => {
     return { isValid, formatted }
   }
   
-  // 1. Updated Hero Form Handler (handleSearch)
-const handleSearch = async (e) => {
-  e.preventDefault()
-  if (isSubmitting) return
-
-   // Check if form is valid before submitting
-   if (!isFormValid()) {
-    // You could show a toast notification here or highlight invalid fields
-    console.log('Please fill in all required fields');
-    // Optionally scroll to first empty field or show an alert
-    alert('Please fill in all required fields before submitting.');
-    return;
-  }
-
-  try {
-    setIsSubmitting(true)
-    setTimeout(() => {
-      setShowPartyLoader(true)
-      setBuildingProgress(0)
-    }, 200)
-
-    // Updated to include new time slot fields
-    const partyDetails = {
-      date: formData.date,
-      theme: mapThemeValue(formData.theme),
-      guestCount: Number.parseInt(formData.guestCount),
-      location: mapPostcodeToLocation(formData.postcode), // Keep this as "London" 
-      postcode: formData.postcode, // Save the actual postcode
-      childName: formData.childName || "Your Child",
-      childAge: formData.childAge,
-
-      
-      // NEW: Time slot fields
-      timeSlot: formData.timeSlot || "afternoon", // "morning" or "afternoon"
-      duration: parseFloat(formData.duration) || 2, // Duration in hours
-      
-      // Legacy support - convert timeSlot to time for backwards compatibility
-      time: convertTimeSlotToLegacyTime(formData.timeSlot || "afternoon"),
-      
-      // Additional metadata for backend processing
-      timePreference: {
-        type: 'flexible', // Hero form always uses flexible timing
-        slot: formData.timeSlot || "afternoon",
-        duration: parseFloat(formData.duration) || 2,
-        specificTime: null // Hero form doesn't collect specific times
-      }
+  const handleSearch = async (e) => {
+    e.preventDefault()
+    if (isSubmitting) return
+  
+    setHasAttemptedSubmit(true)
+  
+    if (!isFormValid()) {
+      console.log('Form validation failed')
+      return;
     }
-
-    console.log("🎪 Submitting party with theme:", partyDetails.theme)
-    console.log("⏰ Time slot:", partyDetails.timeSlot, "Duration:", partyDetails.duration)
-
-    setBuildingProgress(15)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    setBuildingProgress(30)
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    setBuildingProgress(50)
-
-    const result = await buildParty(partyDetails)
-    setBuildingProgress(75)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    setBuildingProgress(90)
-    await new Promise((resolve) => setTimeout(resolve, 600))
-
-    if (result.success) {
-      setBuildingProgress(100)
-      console.log("✅ Party built successfully with time slot information!")
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      router.push("/dashboard?show_welcome=true")
-    } else {
-      console.error("Failed to build party:", result.error)
+  
+    try {
+      setIsSubmitting(true)
+      setTimeout(() => {
+        setShowPartyLoader(true)
+        setBuildingProgress(0)
+      }, 200)
+  
+      const partyDetails = {
+        date: formData.date,
+        theme: mapThemeValue(formData.theme),
+        guestCount: Number.parseInt(formData.guestCount),
+        location: mapPostcodeToLocation(formData.postcode),
+        postcode: formData.postcode,
+        childName: formData.childName || "Your Child",
+        childAge: formData.childAge,
+        timeSlot: formData.timeSlot || "afternoon",
+        duration: parseFloat(formData.duration) || 2,
+        time: convertTimeSlotToLegacyTime(formData.timeSlot || "afternoon"),
+        
+        // ✅ PRODUCTION: Enhanced metadata
+        source: 'homepage_form',
+        createdAt: new Date().toISOString(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        environment: process.env.NODE_ENV || 'development',
+        
+        timePreference: {
+          type: 'flexible',
+          slot: formData.timeSlot || "afternoon",
+          duration: parseFloat(formData.duration) || 2,
+          specificTime: null
+        }
+      }
+  
+      console.log("🎪 PRODUCTION: Submitting party with details:", partyDetails)
+  
+      setBuildingProgress(15)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setBuildingProgress(30)
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      setBuildingProgress(50)
+  
+      const result = await buildParty(partyDetails)
+      
+      setBuildingProgress(75)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setBuildingProgress(90)
+      await new Promise((resolve) => setTimeout(resolve, 600))
+  
+      if (result.success) {
+        setBuildingProgress(100)
+        console.log("✅ PRODUCTION: Party built successfully!")
+        
+        // ✅ PRODUCTION: Multiple welcome triggers for reliability
+        try {
+          // Method 1: URL parameter (existing)
+          console.log("📝 PRODUCTION: Setting welcome triggers...")
+          
+          // Method 2: Multiple localStorage keys for redundancy
+          const welcomeData = {
+            shouldShowWelcome: true,
+            partyCreated: true,
+            createdAt: new Date().toISOString(),
+            source: 'homepage_form',
+            environment: process.env.NODE_ENV || 'development',
+            childData: {
+              firstName: formData.childName?.split(' ')[0] || '',
+              lastName: formData.childName?.split(' ').slice(1).join(' ') || '',
+              childAge: formData.childAge
+            }
+          }
+          
+          // Set multiple flags for reliability
+          localStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
+          localStorage.setItem('show_welcome_popup', 'true')
+          localStorage.setItem('party_just_created', new Date().toISOString())
+          
+          // Method 3: Session storage as backup
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
+          }
+          
+          console.log("💾 PRODUCTION: Welcome triggers saved:", welcomeData)
+          
+        } catch (storageError) {
+          console.error("❌ PRODUCTION: Storage error:", storageError)
+        }
+        
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        
+        // ✅ PRODUCTION: More robust redirect with multiple methods
+        try {
+          // Method 1: Standard redirect with parameters
+          const redirectURL = "/dashboard?show_welcome=true&source=homepage&t=" + Date.now()
+          console.log("🔄 PRODUCTION: Redirecting to:", redirectURL)
+          
+          // Method 2: Set a flag before redirect
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem('redirect_welcome', 'true')
+          }
+          
+          router.push(redirectURL)
+          
+        } catch (redirectError) {
+          console.error("❌ PRODUCTION: Redirect error:", redirectError)
+          // Fallback redirect
+          window.location.href = "/dashboard?show_welcome=true"
+        }
+        
+      } else {
+        console.error("❌ PRODUCTION: Failed to build party:", result.error)
+        setIsSubmitting(false)
+        setShowPartyLoader(false)
+        setBuildingProgress(0)
+      }
+    } catch (error) {
+      console.error("💥 PRODUCTION: Error during party building:", error)
       setIsSubmitting(false)
       setShowPartyLoader(false)
       setBuildingProgress(0)
     }
-  } catch (error) {
-    console.error("Error during party building:", error)
-    setIsSubmitting(false)
-    setShowPartyLoader(false)
-    setBuildingProgress(0)
   }
-}
 
 // Helper function to convert time slot to legacy time format
 const convertTimeSlotToLegacyTime = (timeSlot) => {
