@@ -55,6 +55,14 @@ export default function DatabaseDashboard() {
   const [addedSupplierData, setAddedSupplierData] = useState(null)
   const [notification, setNotification] = useState(null)
 
+// Add this state variable at the top with your other state declarations:
+const [isClient, setIsClient] = useState(false)
+
+// Add this useEffect to detect client-side mounting (add near the top of your component):
+useEffect(() => {
+  setIsClient(typeof window !== 'undefined')
+}, [])
+
   // MAIN PARTY DATA HOOK
   const {
     partyData,
@@ -174,6 +182,8 @@ export default function DatabaseDashboard() {
     window.addEventListener('restoreModal', handleRestoreModal)
     return () => window.removeEventListener('restoreModal', handleRestoreModal)
   }, [])
+
+  
 
   // Clean, separate functions for supplier selection
   const handleSupplierSelection = async (supplierData) => {
@@ -507,19 +517,208 @@ export default function DatabaseDashboard() {
   // Welcome popup state
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const welcomePopupShownRef = useRef(false)
-
-  // Handle welcome popup
   useEffect(() => {
-    if (searchParams.get("show_welcome") === "true" && !welcomePopupShownRef.current) {
-      setShowWelcomePopup(true)
-      welcomePopupShownRef.current = true
-      
-      const currentPath = window.location.pathname
-      const newSearchParams = new URLSearchParams(searchParams.toString())
-      newSearchParams.delete("show_welcome")
-      router.replace(`${currentPath}?${newSearchParams.toString()}`, { scroll: false })
+    if (!isClient) return
+  
+    const handleScrollToSupplier = () => {
+      try {
+        // Check URL parameters for scroll hints
+        const scrollToSupplier = searchParams.get('scrollTo')
+        const lastAction = searchParams.get('action') 
+        const fromPage = searchParams.get('from')
+        const source = searchParams.get('source')
+        
+        console.log('📍 Scroll management check:', { 
+          scrollToSupplier, 
+          lastAction, 
+          fromPage, 
+          source,
+          showWelcomePopup, // Check welcome popup state
+          showSupplierAddedModal // Check supplier added modal state
+        })
+  
+        // Don't scroll if welcome popup or supplier added modal is showing
+        if (showWelcomePopup || showSupplierAddedModal) {
+          console.log('⏸️ Modal is showing, delaying scroll')
+          return
+        }
+  
+        if (scrollToSupplier && lastAction === 'supplier-added') {
+          // Scroll to the specific supplier card that was just added
+          console.log(`🎯 Scrolling to newly added supplier: ${scrollToSupplier}`)
+          
+          const scrollDelay = source === 'a_la_carte' ? 1000 : 500 // Longer delay for à la carte
+          
+          setTimeout(() => {
+            const element = document.getElementById(`supplier-${scrollToSupplier}`)
+            if (element) {
+              element.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+              })
+              console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
+            } else {
+              console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
+              // List all elements with supplier- prefix for debugging
+              const supplierElements = document.querySelectorAll('[id^="supplier-"]')
+              console.log('📋 Available supplier elements:', Array.from(supplierElements).map(el => el.id))
+              
+              // Fallback: scroll to top to at least show the added supplier
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+          }, scrollDelay)
+  
+          // Clean up URL parameters after scrolling
+          setTimeout(() => {
+            const newSearchParams = new URLSearchParams(searchParams.toString())
+            newSearchParams.delete('scrollTo')
+            newSearchParams.delete('action')
+            if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
+            
+            const newURL = newSearchParams.toString() ? 
+              `/dashboard?${newSearchParams.toString()}` : 
+              '/dashboard'
+            
+            router.replace(newURL, { scroll: false })
+          }, scrollDelay + 1000)
+          
+        } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
+          // Coming back from supplier pages without adding - go to top
+          console.log('📍 Returning from supplier page without adding - scrolling to top')
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+        
+      } catch (error) {
+        console.error('❌ Smart scroll error:', error)
+        // Fallback to top
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
     }
-  }, [searchParams, router])
+  
+    // Run scroll management after content loads
+    const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
+    
+    return () => clearTimeout(scrollTimeout)
+  }, [searchParams, router, showWelcomePopup, showSupplierAddedModal]) // ✅ Add modal dependencies
+  
+
+// Add this useEffect to detect client-side mounting (add near the top of your component):
+useEffect(() => {
+  setIsClient(typeof window !== 'undefined')
+}, [])
+
+// Add this useEffect to your DatabaseDashboard.jsx after the existing modal restoration effects
+
+// ✅ SCROLL-TO-SUPPLIER FUNCTIONALITY - Same as LocalStorage Dashboard
+useEffect(() => {
+  if (!isClient) return
+
+  const handleScrollToSupplier = () => {
+    try {
+      // Check URL parameters for scroll hints
+      const scrollToSupplier = searchParams.get('scrollTo')
+      const lastAction = searchParams.get('action') 
+      const fromPage = searchParams.get('from')
+      const source = searchParams.get('source')
+      
+      console.log('📍 Scroll management check:', { 
+        scrollToSupplier, 
+        lastAction, 
+        fromPage, 
+        source,
+        showWelcomePopup, // Check welcome popup state
+        showSupplierAddedModal // Check supplier added modal state
+      })
+
+      // Don't scroll if welcome popup or supplier added modal is showing
+      if (showWelcomePopup || showSupplierAddedModal) {
+        console.log('⏸️ Modal is showing, delaying scroll')
+        return
+      }
+
+      if (scrollToSupplier && lastAction === 'supplier-added') {
+        // Scroll to the specific supplier card that was just added
+        console.log(`🎯 Scrolling to newly added supplier: ${scrollToSupplier}`)
+        
+        const scrollDelay = source === 'a_la_carte' ? 1000 : 500 // Longer delay for à la carte
+        
+        setTimeout(() => {
+          const element = document.getElementById(`supplier-${scrollToSupplier}`)
+          if (element) {
+            element.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'nearest'
+            })
+            console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
+          } else {
+            console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
+            // List all elements with supplier- prefix for debugging
+            const supplierElements = document.querySelectorAll('[id^="supplier-"]')
+            console.log('📋 Available supplier elements:', Array.from(supplierElements).map(el => el.id))
+            
+            // Fallback: scroll to top to at least show the added supplier
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }
+        }, scrollDelay)
+
+        // Clean up URL parameters after scrolling
+        setTimeout(() => {
+          const newSearchParams = new URLSearchParams(searchParams.toString())
+          newSearchParams.delete('scrollTo')
+          newSearchParams.delete('action')
+          if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
+          
+          const newURL = newSearchParams.toString() ? 
+            `/dashboard?${newSearchParams.toString()}` : 
+            '/dashboard'
+          
+          router.replace(newURL, { scroll: false })
+        }, scrollDelay + 1000)
+        
+      } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
+        // Coming back from supplier pages without adding - go to top
+        console.log('📍 Returning from supplier page without adding - scrolling to top')
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      
+    } catch (error) {
+      console.error('❌ Smart scroll error:', error)
+      // Fallback to top
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  // Run scroll management after content loads
+  const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
+  
+  return () => clearTimeout(scrollTimeout)
+}, [searchParams, router, showWelcomePopup, showSupplierAddedModal]) // ✅ Add modal dependencies
+
+// ✅ ADDITIONAL: Handle scroll after modals close
+useEffect(() => {
+  if (!showWelcomePopup && !showSupplierAddedModal) {
+    // Check if we have pending scroll parameters
+    const scrollToSupplier = searchParams.get('scrollTo')
+    const lastAction = searchParams.get('action')
+    
+    if (scrollToSupplier && lastAction === 'supplier-added') {
+      console.log('🎉 Modals closed, now scrolling to added supplier:', scrollToSupplier)
+      
+      setTimeout(() => {
+        const element = document.getElementById(`supplier-${scrollToSupplier}`)
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          })
+        }
+      }, 500)
+    }
+  }
+}, [showWelcomePopup, showSupplierAddedModal, searchParams])
 
   const handleModalClose = () => {
     console.log('🚪 User clicked "Maybe Later" - closing modal, no supplier added')
@@ -555,6 +754,8 @@ export default function DatabaseDashboard() {
       isCalculated: true
     };
   };
+
+  
   
   // Update your getTotalPrice function in SupplierCard.jsx
   const getTotalPrice = () => {

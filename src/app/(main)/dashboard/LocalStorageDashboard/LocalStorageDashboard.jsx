@@ -319,6 +319,114 @@ export default function LocalStorageDashboard() {
     }
   }, [welcomeJustCompleted, showWelcomePopup, isMounted])
 
+  useEffect(() => {
+    if (!isMounted || !isClient) return
+  
+    const handleScrollToSupplier = () => {
+      try {
+        // Check URL parameters for scroll hints
+        const scrollToSupplier = searchParams.get('scrollTo')
+        const lastAction = searchParams.get('action') 
+        const fromPage = searchParams.get('from')
+        const source = searchParams.get('source')
+        
+        console.log('📍 Scroll management check:', { 
+          scrollToSupplier, 
+          lastAction, 
+          fromPage, 
+          source,
+          showWelcomePopup // Check welcome popup state
+        })
+  
+        // Don't scroll if welcome popup is showing
+        if (showWelcomePopup) {
+          console.log('⏸️ Welcome popup is showing, delaying scroll')
+          return
+        }
+  
+        if (scrollToSupplier && lastAction === 'supplier-added') {
+          // Scroll to the specific supplier card that was just added
+          console.log(`🎯 Scrolling to newly added supplier: ${scrollToSupplier}`)
+          
+          const scrollDelay = source === 'a_la_carte' ? 1000 : 500 // Longer delay for à la carte
+          
+          setTimeout(() => {
+            const element = document.getElementById(`supplier-${scrollToSupplier}`)
+            if (element) {
+              element.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+              })
+              console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
+            } else {
+              console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
+              // List all elements with supplier- prefix for debugging
+              const supplierElements = document.querySelectorAll('[id^="supplier-"]')
+              console.log('📋 Available supplier elements:', Array.from(supplierElements).map(el => el.id))
+              
+              // Fallback: scroll to top to at least show the added supplier
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+          }, scrollDelay)
+  
+          // Clean up URL parameters after scrolling
+          setTimeout(() => {
+            const newSearchParams = new URLSearchParams(searchParams.toString())
+            newSearchParams.delete('scrollTo')
+            newSearchParams.delete('action')
+            if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
+            
+            const newURL = newSearchParams.toString() ? 
+              `/dashboard?${newSearchParams.toString()}` : 
+              '/dashboard'
+            
+            router.replace(newURL, { scroll: false })
+          }, scrollDelay + 1000)
+          
+        } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
+          // Coming back from supplier pages without adding - go to top
+          console.log('📍 Returning from supplier page without adding - scrolling to top')
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+        
+      } catch (error) {
+        console.error('❌ Smart scroll error:', error)
+        // Fallback to top
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+  
+    // Run scroll management after content loads
+    const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
+    
+    return () => clearTimeout(scrollTimeout)
+  }, [isMounted, isClient, searchParams, router, showWelcomePopup]) // Add showWelcomePopup dependency
+  
+  // ✅ ADDITIONAL: Handle scroll after welcome popup closes
+  useEffect(() => {
+    if (!showWelcomePopup && isMounted && isClient) {
+      // Check if we have pending scroll parameters
+      const scrollToSupplier = searchParams.get('scrollTo')
+      const lastAction = searchParams.get('action')
+      
+      if (scrollToSupplier && lastAction === 'supplier-added') {
+        console.log('🎉 Welcome popup closed, now scrolling to added supplier:', scrollToSupplier)
+        
+        setTimeout(() => {
+          const element = document.getElementById(`supplier-${scrollToSupplier}`)
+          if (element) {
+            element.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'nearest'
+            })
+          }
+        }, 500)
+      }
+    }
+  }, [showWelcomePopup, isMounted, isClient, searchParams])
+
   // ✅ ENHANCED: Name submit handler with completion flags
   const handleNameSubmit = (nameData) => {
     console.log('🎉 Welcome form completed:', nameData)

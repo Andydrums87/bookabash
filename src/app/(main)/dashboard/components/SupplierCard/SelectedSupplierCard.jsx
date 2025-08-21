@@ -16,7 +16,8 @@ export default function SelectedSupplierCard({
   openSupplierModal,
   handleDeleteSupplier,
   handleRemoveAddon,
-  getSupplierDisplayName
+  getSupplierDisplayName,
+  onClick
 }) {
   const [showAddons, setShowAddons] = useState(false)
 
@@ -71,7 +72,7 @@ export default function SelectedSupplierCard({
   const typeConfig = getTypeConfig(type)
 
   return (
-    <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
+    <Card              onClick={onClick} className={`overflow-hidden  rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
       {/* Large background image with overlay */}
       <div className="relative h-64 w-full">
         {isLoading ? (
@@ -83,12 +84,13 @@ export default function SelectedSupplierCard({
                 src={supplier.image || supplier.imageUrl || `/placeholder.svg`}
                 alt={supplier.name}
                 fill
+   
                 className="object-cover"
                 sizes="(max-width: 1024px) 50vw, 33vw"
               />
             </div>
 
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
+            <div  className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
             <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
               <div className="flex items-center gap-2 flex-wrap">

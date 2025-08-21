@@ -10,6 +10,7 @@ import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import SupplierCustomizationModal from './SupplierCustomizationModal'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { LocationService } from '@/utils/locationService'
+import SwipeableSupplierCarousel from "./supplier/SwipableSupplierCarousel"
 import { 
   X, 
   Star, 
@@ -45,6 +46,7 @@ export default function SupplierSelectionModal({
   hasEnquiriesPending = false,
   partyId, // Add this too
 }) {
+
   // NEW: Initialize state with restored filters or defaults
   const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
   const [ratingFilter, setRatingFilter] = useState(initialFilters.ratingFilter || "all")
@@ -52,6 +54,7 @@ export default function SupplierSelectionModal({
   const [availableOnly, setAvailableOnly] = useState(initialFilters.availableOnly || false)
   const [addingSupplier, setAddingSupplier] = useState(null)
   const [selectedPackageId, setSelectedPackageId] = useState('premium')
+  const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
 
   // NEW: Customization modal state
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
@@ -872,6 +875,7 @@ const debugSupplierAvailability = (supplier, checkDate) => {
 
   // UPDATED SupplierCard with Quick Add
   const SupplierCard = ({ supplier }) => {
+
     debugSupplierAvailability(supplier, selectedDate);
     const { navigateWithContext } = useContextualNavigation();
     const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
@@ -897,22 +901,61 @@ const debugSupplierAvailability = (supplier, checkDate) => {
     const partyDetails = getPartyDetails();
     
     
-    const handleViewDetails = () => {
-      const modalState = {
-        isOpen: true,
-        category,
-        theme,
-        date,
-        filters: { priceRange, ratingFilter, distance, availableOnly },
-        scrollPosition: window.pageYOffset || document.documentElement.scrollTop
-      };
-      
-      navigateWithContext(`/supplier/${supplier.id}`, 'dashboard', modalState);
-    };
+ 
+// Updated handleViewDetails function with your exact prop names:
+const handleViewDetails = (supplier) => {
+  // Check if already clicked
+  if (clickedSuppliers.has(supplier.id)) {
+    console.log('❌ Supplier already being processed:', supplier.id)
+    return
+  }
+  
+  console.log('🚀 Starting navigation to supplier:', supplier.id)
+  
+  // Add to clicked set
+  setClickedSuppliers(prev => new Set([...prev, supplier.id]))
+  
+  try {
+    // Check if supplier ID exists
+    if (!supplier.id) {
+      throw new Error('No supplier ID found')
+    }
     
+    console.log('🔗 Navigating with context to supplier:', supplier.id)
+    
+    // Create modal state using your exact prop names
+    const modalState = {
+      category: category, // From your modal props
+      theme: theme, // From your modal props
+      date: date, // From your modal props
+      filters: initialFilters, // From your modal props
+      scrollPosition: window.pageYOffset,
+      selectedSupplierId: supplier.id,
+      returnAction: 'view-details'
+    }
+    
+    // Use setTimeout for visual feedback, then navigate
+    setTimeout(() => {
+      navigateWithContext(`/supplier/${supplier.id}`, 'dashboard', modalState)
+      console.log('✅ Navigation with context initiated')
+    }, 300)
+    
+  } catch (error) {
+    console.error('❌ Navigation error:', error)
+    
+    // Remove from clicked set on error
+    setClickedSuppliers(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(supplier.id)
+      return newSet
+    })
+    
+    alert(`Failed to open supplier profile. Error: ${error.message}`)
+  }
+}
     return (
       <Card className="border border-[hsl(var(--primary-200))] shadow-sm overflow-hidden rounded-lg flex flex-col">
-        <div className="relative w-full h-60 md:h-60">
+        {/* <div className="relative w-full h-60 md:h-60">
           <div
             className="relative w-64 h-64 mask-image mx-auto mt-5"
             style={{
@@ -943,8 +986,12 @@ const debugSupplierAvailability = (supplier, checkDate) => {
           <button className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10">
             <Heart className={`w-4 h-4`} />
           </button>
-        </div>
-        
+        </div> */}
+        <SwipeableSupplierCarousel 
+  supplier={supplier}
+  className="mb-4"
+  aspectRatio="aspect-[4/3]" // or "aspect-square", "aspect-[16/9]", etc.
+/>
         <CardContent className="p-4 flex-grow flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-lg font-semibold text-gray-900 leading-tight">{supplier.name}</h3>
@@ -983,14 +1030,44 @@ const debugSupplierAvailability = (supplier, checkDate) => {
         </div>
           <div className="mt-auto pt-4 border-t border-gray-100">
             <div className="flex md:flex-col sm:flex-row gap-2">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="flex-1 py-2 rounded-full bg-primary-100 border-none text-primary-900"
-                onClick={handleViewDetails}
-              >
-                View Details
-              </Button>
+         
+<Button
+  variant="outline" // or whatever variant you're using
+
+  onClick={(e) => {
+    // Visual scale feedback
+    const button = e.currentTarget
+    if (button && !clickedSuppliers.has(supplier.id)) {
+      button.style.transform = 'scale(0.95)'
+      button.style.transition = 'transform 0.1s ease'
+      
+      setTimeout(() => {
+        button.style.transform = ''
+        button.style.transition = 'transform 0.2s ease'
+      }, 100)
+    }
+    
+    // Call your handler
+    handleViewDetails(supplier)
+  }}
+  disabled={clickedSuppliers.has(supplier.id)}
+  className={`
+    transition-all duration-200
+    ${clickedSuppliers.has(supplier.id) 
+      ? 'opacity-75 cursor-wait bg-primary-100 text-primary-700' 
+      : 'hover:scale-105  rounded-full h-10 border-[hsl(var(--primary-500))] text-gray-700 active:scale-95'
+    }
+  `}
+>
+  {clickedSuppliers.has(supplier.id) ? (
+    <div className="flex items-center gap-2 rounded-full">
+      <div className="w-4 h-4 border-2 rounded-full border-[hsl(var(--primary-500))] border-t-transparent animate-spin"></div>
+      Opening...
+    </div>
+  ) : (
+    'View Details' // Your existing button text
+  )}
+</Button>
               {/* UPDATED: Quick Add Button */}
               <Button
                 size="lg"

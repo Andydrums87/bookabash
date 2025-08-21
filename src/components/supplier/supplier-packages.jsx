@@ -193,7 +193,10 @@ const PackageCard = ({
           </div>
         )}
      {pkg.image || pkg.imageUrl ? (
-          <div className="relative w-full ">
+          <div onClick={(e) => {
+            e.stopPropagation()
+            setShowModal(true)
+          }} className="relative w-full ">
                 
                  <div
                                  className="relative w-[90%] h-[280px] mask-image mx-auto"

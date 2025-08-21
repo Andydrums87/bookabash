@@ -1,7 +1,7 @@
-// Enhanced MobileSupplierNavigation with Scrollable List View
+// Enhanced MobileSupplierNavigation with Individual Supplier Tabs
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus } from "lucide-react"
+import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle } from "lucide-react"
 import SupplierCard from "./SupplierCard/SupplierCard"
 import Image from "next/image"
 import { AddonsSectionWrapper, RecommendedAddonsWrapper } from "../components/AddonProviderWrapper"
@@ -31,57 +31,95 @@ export default function MobileSupplierNavigation({
   const tabsRef = useRef(null)
   const contentRef = useRef(null)
 
-  // Enhanced supplier sections
-  const supplierSections = [
+  // Individual supplier types with their own tabs
+  const supplierTypes = [
     {
-      id: "essentials",
-      title: "Party Essentials",
-      name: "Party Essentials",
-      subtitle: "The must-haves for your party",
-      emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753868085/ChatGPT_Image_Jul_30_2025_10_34_38_AM_ue973s.png",
+      id: "venue",
+      type: "venue",
+      title: "Venue",
+      name: "Venue",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg",
       icon: <Building className="w-5 h-5" />,
-      types: ["venue", "entertainment"],
     },
     {
-      id: "activities", 
-      title: "Fun Activities",
-      name: "Fun Activities",
-      subtitle: "Keep the kids entertained",
-      emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869132/ChatGPT_Image_Jul_30__2025__10_50_40_AM-removebg_orq8w2.png",
+      id: "entertainment", 
+      type: "entertainment",
+      title: "Entertainment",
+      name: "Entertainment",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
       icon: <Music className="w-5 h-5" />,
-      types: ["facePainting", "activities"],
     },
     {
-      id: "treats",
-      title: "Yummy Treats", 
-      name: "Yummy Treats",
-      subtitle: "Food and party bags",
-      emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753870206/ChatGPT_Image_Jul_30_2025_11_09_59_AM_rx1pgs.png",
+      id: "catering",
+      type: "catering",
+      title: "Catering",
+      name: "Catering", 
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg",
       icon: <Utensils className="w-5 h-5" />,
-      types: ["catering", "cakes"],
     },
     {
-      id: "finishing",
-      title: "Finishing Touches",
-      name: "Finishing Touches", 
-      subtitle: "Make it picture perfect", 
-      emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
+      id: "cakes",
+      type: "cakes",
+      title: "Cakes",
+      name: "Cakes",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg",
+      icon: <Cake className="w-5 h-5" />,
+    },
+    {
+      id: "decorations",
+      type: "decorations",
+      title: "Decorations",
+      name: "Decorations",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
       icon: <Palette className="w-5 h-5" />,
-      types: ["decorations", "partyBags"],
+    },
+    {
+      id: "photography",
+      type: "photography", 
+      title: "Photography",
+      name: "Photography",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
+      icon: <Camera className="w-5 h-5" />,
+    },
+    {
+      id: "facePainting",
+      type: "facePainting",
+      title: "Face Painting",
+      name: "Face Painting",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      icon: <Palette className="w-5 h-5" />,
+    },
+    {
+      id: "activities",
+      type: "activities",
+      title: "Activities",
+      name: "Activities",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      icon: <Music className="w-5 h-5" />,
+    },
+    {
+      id: "partyBags",
+      type: "partyBags", 
+      title: "Party Bags",
+      name: "Party Bags",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
+      icon: <Gift className="w-5 h-5" />,
+    },
+    {
+      id: "bouncyCastle",
+      type: "bouncyCastle",
+      title: "Bouncy Castle", 
+      name: "Bouncy Castle",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      icon: <Castle className="w-5 h-5" />,
     },
     {
       id: "addons",
-      title: "Extras & Add-ons",
-      name: "Extras", 
-      subtitle: "Add-ons & special extras", 
-      emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753869447/ChatGPT_Image_Jul_30_2025_10_57_18_AM_xke5gz.png",
+      type: "addons",
+      title: "Add-ons",
+      name: "Add-ons", 
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
       icon: <Gift className="w-5 h-5" />,
-      types: ["addons"],
       isAddonSection: true,
     },
   ]
@@ -117,9 +155,33 @@ export default function MobileSupplierNavigation({
     return standaloneAddons + supplierAddons
   }
 
-  // Function to scroll to sections
-  const scrollToSection = (sectionId) => {
-    const element = document.getElementById(`section-${sectionId}`)
+  // Get all supplier types with their data for vertical listing
+  const getAllSuppliers = () => {
+    const allSuppliers = supplierTypes
+      .filter(st => !st.isAddonSection) // Exclude addons from main list
+      .map(supplierType => ({
+        ...supplierType,
+        supplier: suppliers[supplierType.type] || null,
+        enquiryStatus: getEnquiryStatus(supplierType.type)
+      }))
+
+    // Sort: Selected/Awaiting suppliers first, empty suppliers last
+    return allSuppliers.sort((a, b) => {
+      const aHasSupplier = !!a.supplier
+      const bHasSupplier = !!b.supplier
+      
+      // If A has supplier and B doesn't, A comes first
+      if (aHasSupplier && !bHasSupplier) return -1
+      // If B has supplier and A doesn't, B comes first  
+      if (!aHasSupplier && bHasSupplier) return 1
+      // If both have suppliers or both are empty, maintain original order
+      return 0
+    })
+  }
+
+  // Function to scroll to specific supplier type
+  const scrollToSupplier = (supplierTypeId) => {
+    const element = document.getElementById(`supplier-${supplierTypeId}`)
     if (element) {
       const offset = 120 // Account for sticky navigation
       const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
@@ -146,7 +208,7 @@ export default function MobileSupplierNavigation({
   // Auto-scroll tab navigation
   useEffect(() => {
     if (tabsRef.current) {
-      const tabWidth = 100
+      const tabWidth = 80
       const scrollPosition = activeTab * tabWidth - tabsRef.current.clientWidth / 2 + tabWidth / 2
       tabsRef.current.scrollTo({
         left: scrollPosition,
@@ -156,49 +218,14 @@ export default function MobileSupplierNavigation({
   }, [activeTab])
 
   // Handle tab selection and scrolling
-  const handleTabSelect = (index, sectionId) => {
+  const handleTabSelect = (index, supplierType) => {
     setActiveTab(index)
-    scrollToSection(sectionId)
-  }
-
-  // Render section content
-  const renderSectionContent = (section) => {
-    if (section.isAddonSection) {
-      return renderAddonsContent()
+    
+    if (supplierType.isAddonSection) {
+      scrollToSupplier('addons')
+    } else {
+      scrollToSupplier(supplierType.type)
     }
-
-    // Show ALL supplier types, not just the ones with suppliers selected
-    const sectionSuppliers = section.types.map(type => ({ 
-      type, 
-      supplier: suppliers[type] || null // Include null suppliers
-    }))
-
-    return (
-      <div className="space-y-4">
-        {sectionSuppliers.map(({ type, supplier }) => (
-          <SupplierCard
-            key={type}
-            type={type}
-            supplier={supplier} // This can be null for empty cards
-            loadingCards={loadingCards}
-            suppliersToDelete={suppliersToDelete}
-            openSupplierModal={openSupplierModal}
-            handleDeleteSupplier={handleDeleteSupplier}
-            getSupplierDisplayName={getSupplierDisplayName}
-            addons={addons}
-            handleRemoveAddon={handleRemoveAddon}
-            enquiryStatus={getEnquiryStatus(type)}
-            enquirySentAt={getEnquiryTimestamp(type)}
-            isSignedIn={true}
-            isPaymentConfirmed={isPaymentConfirmed}
-            enquiries={enquiries}
-            currentPhase={currentPhase}
-            handleCancelEnquiry={handleCancelEnquiry}
-            onPaymentReady={onPaymentReady}
-          />
-        ))}
-      </div>
-    )
   }
 
   // Render addons content
@@ -207,24 +234,22 @@ export default function MobileSupplierNavigation({
     
     if (addonCount === 0) {
       return (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-white to-teal-50 border-2 border-dashed border-teal-200 rounded-xl p-6 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Gift className="w-8 h-8 text-teal-600" />
-            </div>
-            <h3 className="font-bold text-gray-900 text-lg mb-2">No Add-ons Yet</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Enhance your party with amazing extras and add-ons!
-            </p>
-            <div className="flex justify-center">
-              <button 
-                onClick={() => console.log('Browse addons')}
-                className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Browse Add-ons
-              </button>
-            </div>
+        <div className="bg-gradient-to-br from-white to-teal-50 border-2 border-dashed border-teal-200 rounded-xl p-6 text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Gift className="w-8 h-8 text-teal-600" />
+          </div>
+          <h3 className="font-bold text-gray-900 text-lg mb-2">No Add-ons Yet</h3>
+          <p className="text-gray-600 text-sm mb-4">
+            Enhance your party with amazing extras and add-ons!
+          </p>
+          <div className="flex justify-center">
+            <button 
+              onClick={() => console.log('Browse addons')}
+              className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Browse Add-ons
+            </button>
           </div>
         </div>
       )
@@ -255,6 +280,8 @@ export default function MobileSupplierNavigation({
     )
   }
 
+  const sortedSuppliers = getAllSuppliers()
+
   return (
     <div className="w-full relative">
       {/* Sticky Tab Navigation */}
@@ -271,68 +298,60 @@ export default function MobileSupplierNavigation({
           <div className="px-4 py-4 relative z-10">
             <div className="overflow-x-auto scrollbar-hide" ref={tabsRef}>
               <div className="flex space-x-2 min-w-max pr-8">
-                {/* Supplier Section Tabs */}
-                {supplierSections.map((section, index) => {
+                {/* Individual Supplier Tabs */}
+                {supplierTypes.map((supplierType, index) => {
                   const isActive = activeTab === index
-                  
-                  // Updated content check - show indicator if ANY suppliers exist in section
-                  const hasContent = section.isAddonSection 
+                  const hasContent = supplierType.isAddonSection 
                     ? getAddonCount() > 0 
-                    : section.types.some((type) => suppliers[type])
-
-                  // Count how many suppliers are selected in this section
-                  const supplierCount = section.isAddonSection 
-                    ? getAddonCount()
-                    : section.types.filter(type => suppliers[type]).length
+                    : !!suppliers[supplierType.type]
 
                   return (
                     <button
-                      key={section.id}
-                      onClick={() => handleTabSelect(index, section.id)}
+                      key={supplierType.id}
+                      onClick={() => handleTabSelect(index, supplierType)}
                       className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
-                      style={{ minWidth: '70px' }}
+                      style={{ minWidth: '90px' }} // Increased from 70px
                     >
                       <div className="flex flex-col items-center">
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-hidden relative shadow-sm hover:shadow-md bg-gray-100">
+                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100"> {/* Increased from w-14 h-14 to w-20 h-20, mb-2 to mb-3 */}
                           <Image
-                            src={section.image}
-                            alt={section.name || section.title}
-                            width={56}
-                            height={56}
+                            src={supplierType.image}
+                            alt={supplierType.name}
+                            width={80} // Increased from 56
+                            height={80} // Increased from 56
                             className="w-full h-full object-cover rounded-full"
                             onError={(e) => {
-                              console.log(`Failed to load image for ${section.name}:`, section.emoji)
                               e.target.style.display = 'none'
                             }}
                           />
                           
-                          <div className={`absolute inset-0 flex items-center justify-center ${section.emoji ? 'hidden' : 'block'}`}>
-                            {section.icon}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6"> {/* Larger icon container */}
+                              {supplierType.icon}
+                            </div>
                           </div>
                           
                           {isActive && (
-                            <div className="absolute inset-0 bg-opacity-20 rounded-full border-2 border-[hsl(var(--primary-500))]"></div>
+                            <div className="absolute inset-0 bg-opacity-20 rounded-full border-4 border-[hsl(var(--primary-500))]"></div> 
                           )}
                           
                           {hasContent && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg">
-                              {section.isAddonSection && getAddonCount() > 0 && (
+                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg"> {/* Increased from w-4 h-4 to w-6 h-6 */}
+                              {supplierType.isAddonSection && getAddonCount() > 0 && (
                                 <div className="w-full h-full bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-[8px] font-bold">{getAddonCount()}</span>
+                                  <span className="text-white text-xs font-bold">{getAddonCount()}</span> {/* Increased from text-[8px] to text-xs */}
                                 </div>
                               )}
-                              {!section.isAddonSection && supplierCount > 0 && (
-                                <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-full flex items-center justify-center">
-                                  <span className="text-white text-[8px] font-bold">{supplierCount}</span>
-                                </div>
+                              {!supplierType.isAddonSection && (
+                                <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-full animate-pulse"></div>
                               )}
                             </div>
                           )}
                         </div>
                         
                         <div className="text-center">
-                          <p className={`text-xs font-semibold leading-tight ${isActive ? 'text-[hsl(var(--primary-700))]' : 'text-gray-700'}`}>
-                            {section.name || section.title}
+                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-[hsl(var(--primary-700))]' : 'text-gray-700'}`}> {/* Increased from text-xs to text-sm */}
+                            {supplierType.name}
                           </p>
                         </div>
                       </div>
@@ -356,27 +375,27 @@ export default function MobileSupplierNavigation({
                           key={task.id}
                           onClick={() => scrollToPartyTask(task.cardId)}
                           className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
-                          style={{ minWidth: '70px' }}
+                          style={{ minWidth: '90px' }} // Increased from 70px
                         >
                           <div className="flex flex-col items-center">
-                            <div className="w-14 h-14 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-hidden relative shadow-sm hover:shadow-md bg-gray-100">
+                            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100"> {/* Increased from w-14 h-14 to w-20 h-20, mb-2 to mb-3 */}
                               <Image
                                 src={task.image}
                                 alt={task.title}
-                                width={56}
-                                height={56}
+                                width={80} // Increased from 56
+                                height={80} // Increased from 56
                                 className="w-full h-full object-cover rounded-full"
                               />
                               
                               {isCompleted && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                                  <span className="text-white text-[8px] font-bold">✓</span>
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center"> {/* Increased from w-4 h-4 to w-6 h-6 */}
+                                  <span className="text-white text-xs font-bold">✓</span> {/* Increased from text-[8px] to text-xs */}
                                 </div>
                               )}
                               
                               {count > 0 && (
-                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
-                                  <span className="text-white text-[10px] font-bold">{count}</span>
+                                <div className="absolute -top-1 -right-1 w-7 h-7 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"> {/* Increased from w-5 h-5 to w-7 h-7 */}
+                                  <span className="text-white text-xs font-bold">{count}</span> {/* Increased from text-[10px] to text-xs */}
                                 </div>
                               )}
                               
@@ -386,7 +405,7 @@ export default function MobileSupplierNavigation({
                             </div>
                             
                             <div className="text-center">
-                              <p className="text-xs font-semibold leading-tight text-gray-700">
+                              <p className="text-sm font-semibold leading-tight text-gray-700"> {/* Increased from text-xs to text-sm */}
                                 {task.title}
                               </p>
                             </div>
@@ -404,43 +423,53 @@ export default function MobileSupplierNavigation({
         </div>
       </div>
 
-      {/* All Content Sections - Vertically Listed */}
-      <div className="space-y-8 px-4" ref={contentRef}>
-        {supplierSections.map((section) => {
-          // Check if section has content to show
-          const hasContent = section.isAddonSection 
-            ? getAddonCount() > 0 
-            : section.types.some((type) => suppliers[type])
+      {/* All Supplier Cards - Vertically Listed */}
+      <div className="space-y-4 px-4" ref={contentRef}>
+        {/* Regular Supplier Cards (sorted: selected first, empty last) */}
+        {sortedSuppliers.map((supplierType) => (
+          <div 
+            key={supplierType.type} 
+            id={`supplier-${supplierType.type}`} // ✅ CRITICAL: This ID enables scrolling
+            className="scroll-mt-32" // Account for sticky navigation
+          >
+            <SupplierCard
+              type={supplierType.type}
+              supplier={supplierType.supplier}
+              loadingCards={loadingCards}
+              suppliersToDelete={suppliersToDelete}
+              openSupplierModal={openSupplierModal}
+              handleDeleteSupplier={handleDeleteSupplier}
+              getSupplierDisplayName={getSupplierDisplayName}
+              addons={addons}
+              handleRemoveAddon={handleRemoveAddon}
+              enquiryStatus={supplierType.enquiryStatus}
+              enquirySentAt={getEnquiryTimestamp(supplierType.type)}
+              isSignedIn={true}
+              isPaymentConfirmed={isPaymentConfirmed}
+              enquiries={enquiries}
+              currentPhase={currentPhase}
+              handleCancelEnquiry={handleCancelEnquiry}
+              onPaymentReady={onPaymentReady}
+            />
+          </div>
+        ))}
 
-          // Show all sections, even empty ones, for better UX
-          return (
-            <div 
-              key={section.id} 
-              id={`section-${section.id}`}
-              className="scroll-mt-32" // Account for sticky navigation
-            >
-              {/* Section Header */}
-              <div className="mb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] flex items-center justify-center">
-                    {section.icon}
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">
-                      {section.title}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      {section.subtitle}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section Content */}
-              {renderSectionContent(section)}
-            </div>
-          )
-        })}
+        {/* Add-ons Section */}
+        <div 
+          id="supplier-addons" // ✅ CRITICAL: This ID enables scrolling to addons
+          className="scroll-mt-32"
+        >
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Gift className="w-5 h-5 text-purple-600" />
+              Add-ons & Extras
+            </h2>
+            <p className="text-sm text-gray-600">
+              Enhance your party with special extras
+            </p>
+          </div>
+          {renderAddonsContent()}
+        </div>
       </div>
 
       <style jsx>{`

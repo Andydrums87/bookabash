@@ -1,11 +1,11 @@
 "use client"
+import { useRouter } from 'next/navigation'
 import EmptySupplierCard from './EmptySupplierCard'
 import SelectedSupplierCard from './SelectedSupplierCard'
 import AwaitingResponseSupplierCard from './AwaitingResponseSupplierCard'
 import ConfirmedSupplierCard from './ConfirmedSupplierCard'
 import PaymentConfirmedSupplierCard from './PaymentConfirmedSupplierCard'
 import DeclinedSupplierCard from './DeclinedSupplierCard'
-
 
 export default function SupplierCard({
   type,
@@ -27,9 +27,40 @@ export default function SupplierCard({
   onPaymentReady,
   handleCancelEnquiry
 }) {
+  const router = useRouter()
+
   // Skip e-invites entirely - they're handled separately
   if (type === "einvites") {
     return null
+  }
+
+  // Simple click handler - navigate to supplier profile
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on buttons or if no supplier
+    if (!supplier || e.target.closest('button') || e.target.closest('a')) {
+      return
+    }
+
+    // Add visual feedback
+    const card = e.currentTarget
+    if (card) {
+      // Add a quick scale animation
+      card.style.transform = 'scale(0.95)'
+      card.style.transition = 'transform 0.1s ease'
+      
+      // Reset after animation
+      setTimeout(() => {
+        card.style.transform = ''
+        card.style.transition = 'transform 0.2s ease'
+      }, 100)
+    }
+
+    // Navigate to supplier profile after a short delay for visual feedback
+    setTimeout(() => {
+      if (supplier.id) {
+        router.push(`/supplier/${supplier.id}?from=dashboard`)
+      }
+    }, 150)
   }
 
   // Determine supplier state
@@ -59,8 +90,6 @@ export default function SupplierCard({
 
   // ✅ FIXED: Enhanced addon collection that includes enquiry addons
   const supplierAddons = (() => {
-    
-    
     // Find the enquiry for this supplier type
     const enquiry = enquiries.find(e => e.supplier_category === type)
     
@@ -109,7 +138,6 @@ export default function SupplierCard({
     const uniqueAddons = allAddons.filter((addon, index, arr) => 
       arr.findIndex(a => a.id === addon.id) === index
     )
-    
 
     return uniqueAddons
   })()
@@ -139,10 +167,7 @@ export default function SupplierCard({
   // Common props that all cards need
   const commonProps = {
     type,
-    supplier: {
-      ...supplier,
-      totalPrice // Add calculated total price
-    },
+    supplier,
     supplierAddons,
     isLoading,
     isDeleting,
@@ -155,12 +180,12 @@ export default function SupplierCard({
     isSignedIn,
     enquiries,
     onPaymentReady,
-    handleCancelEnquiry
+    handleCancelEnquiry,
+    onClick: handleCardClick // Add click handler
   }
 
   // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
-
 
   // Render the appropriate card component based on state
   switch (supplierState) {

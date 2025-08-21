@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   MapPin,
   Sparkles,
@@ -51,6 +51,7 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
   // Refs for scrolling
   const trendingScrollRef = useRef(null)
   const popularScrollRef = useRef(null)
+  const formContainerRef = useRef(null) // ✅ NEW: Ref for scroll target
 
   const handleFieldChange = (field, value) => {
     setFormData((prev) => ({
@@ -123,6 +124,45 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
       setLoaderProgress(0)
     }
   }
+
+  // ✅ NEW: Smooth scroll to top function
+  const scrollToTop = () => {
+    // Scroll the window to top
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+
+    // Also scroll the form container if it exists (for mobile)
+    if (formContainerRef.current) {
+      formContainerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }
+
+  // ✅ NEW: Enhanced step navigation with scroll
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1)
+      // Scroll to top after step change
+      setTimeout(scrollToTop, 100) // Small delay to ensure state update
+    }
+  }
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1)
+      // Scroll to top after step change  
+      setTimeout(scrollToTop, 100)
+    }
+  }
+
+  // ✅ NEW: Scroll to top when step changes (backup)
+  useEffect(() => {
+    scrollToTop()
+  }, [currentStep])
 
   // Budget category helper
   const getBudgetCategory = (budget) => {
@@ -272,18 +312,6 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
     { id: 'theme', title: 'Pick a Theme', icon: Sparkles }
   ];
 
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   return (
     <>
       <PartyBuilderLoader
@@ -379,7 +407,8 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* ✅ NEW: Add ref to form container for scroll targeting */}
+          <div ref={formContainerRef} className="max-w-4xl mx-auto px-4 py-8">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               
               {/* Step 1: Party Basics */}
@@ -859,42 +888,42 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
                 </div>
               )}
 
-            {/* Navigation */}
-  <div className="bg-gray-50 px-6 py-4 sm:px-8 flex justify-between items-center">
-    <button
-      type="button"
-      onClick={prevStep}
-      disabled={currentStep === 0}
-      className="px-4 py-2 text-gray-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:text-gray-800 transition-colors"
-    >
-      {currentStep > 0 ? 'Back' : ''}
-    </button>
+            {/* ✅ UPDATED: Navigation with scroll functionality */}
+            <div className="bg-gray-50 px-6 py-4 sm:px-8 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="px-4 py-2 text-gray-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:text-gray-800 transition-colors"
+              >
+                {currentStep > 0 ? 'Back' : ''}
+              </button>
 
-    <button
-      type="button"
-      onClick={currentStep === steps.length - 1 ? handleSubmit : nextStep}
-      disabled={
-        (currentStep === 0 && (!formData.date || !formData.guestCount || !formData.location)) ||
-        (currentStep === 1 && (!formData.startTime || !formData.duration)) || // Updated validation
-        isSubmitting
-      }
-      className="bg-primary-400 hover:bg-primary-500 text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
-    >
-      {isSubmitting ? (
-        <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-          Building Your Party...
-        </div>
-      ) : currentStep === steps.length - 1 ? (
-        'Create Magic ✨'
-      ) : (
-        <>
-          Continue
-          <ArrowRight className="w-4 h-4" />
-        </>
-      )}
-    </button>
-  </div>
+              <button
+                type="button"
+                onClick={currentStep === steps.length - 1 ? handleSubmit : nextStep}
+                disabled={
+                  (currentStep === 0 && (!formData.date || !formData.guestCount || !formData.location)) ||
+                  (currentStep === 1 && (!formData.startTime || !formData.duration)) ||
+                  isSubmitting
+                }
+                className="bg-primary-400 hover:bg-primary-500 text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                    Building Your Party...
+                  </div>
+                ) : currentStep === steps.length - 1 ? (
+                  'Create Magic ✨'
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
             </div>
 
             {/* Summary Card */}

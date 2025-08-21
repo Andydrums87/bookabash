@@ -852,7 +852,7 @@ export default function PartyHeader({
         <div className="relative px-4 md:p-10 text-white">
           <div className="space-y-3 md:space-y-6 ">
             {/* Theme Badge and Edit Button */}
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 md:gap-3">
                 <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-yellow-300 animate-pulse" />
                 <Badge className="bg-white/20 text-white border-white/30 px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold backdrop-blur-sm">
@@ -872,7 +872,7 @@ export default function PartyHeader({
                   <Edit className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-12 transition-transform duration-300" />
                 </Button>
               </div>
-            </div>
+            </div> */}
 
             {/* Party Title */}
             <div className="space-y-1 md:space-y-2">
