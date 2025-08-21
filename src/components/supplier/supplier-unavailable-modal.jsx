@@ -87,20 +87,22 @@ export default function SupplierUnavailableModal({
             </div>
           </div>
 
-          {/* Working hours info if available */}
-          {supplier.workingHours && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <h5 className="font-semibold text-gray-900 text-sm mb-2">Typical Working Hours:</h5>
-              <div className="text-sm text-gray-600 space-y-1">
-                {Object.entries(supplier.workingHours).map(([day, hours]) => (
-                  <div key={day} className="flex justify-between">
-                    <span className="capitalize">{day}:</span>
-                    <span>{hours === 'closed' ? 'Closed' : hours}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+       {/* Working hours info if available */}
+{supplier.workingHours && (
+  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+    <h5 className="font-semibold text-gray-900 text-sm mb-2">Typical Working Hours:</h5>
+    <div className="text-sm text-gray-600 space-y-1">
+      {Object.entries(supplier.workingHours).map(([day, hours]) => (
+        <div key={day} className="flex justify-between">
+          <span className="capitalize">{day}:</span>
+          <span>
+            {!hours.active ? 'Closed' : `${hours.start} - ${hours.end}`}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
         </div>
       </ModalContent>
 

@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 export default function AboutMeComponent({ supplier }) {
-const owner = supplier.owner.name
+const owner = supplier?.owner?.name
   const serviceDetails = supplier?.serviceDetails
   const serviceType = supplier?.category || supplier?.serviceType || "entertainment"
   

@@ -101,6 +101,7 @@ export function usePartyPhase(partyData, partyId) {
       partyBags: partyData.partyBags || null,
       decorations: partyData.decorations || null,
       balloons: partyData.balloons || null,
+      cakes: partyData.cakes || null
     }
 
     // console.log('🏗️ All suppliers from partyData:', Object.fromEntries(

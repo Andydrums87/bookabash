@@ -1,4 +1,4 @@
-// utils/partyBuilderBackend.js - Complete Enhanced Party Builder with Database Integration
+// utils/partyBuilderBackend.js - Enhanced Party Builder with Cakes Priority
 
 import { suppliersAPI } from './mockBackend';
 import { LocationService } from './locationService';
@@ -63,8 +63,6 @@ const THEMES = {
     priority: "character"
   }
 };
-
-
 
 class PartyBuilderBackend {
 
@@ -172,11 +170,12 @@ class PartyBuilderBackend {
 
       console.log('🎉 Selected themed suppliers:', selectedSuppliers);
 
-      // Create party plan for localStorage
+      // ✅ UPDATED: Create party plan with cakes instead of catering by default
       const partyPlan = {
         venue: selectedSuppliers.venue || null,
         entertainment: selectedSuppliers.entertainment || null,
-        catering: selectedSuppliers.catering || null,
+        cakes: selectedSuppliers.cakes || null, // ✅ CHANGED: cakes instead of catering
+        catering: selectedSuppliers.catering || null, // Still available but not priority
         facePainting: selectedSuppliers.facePainting || null,
         activities: selectedSuppliers.activities || null,
         partyBags: selectedSuppliers.partyBags || null,
@@ -253,7 +252,7 @@ class PartyBuilderBackend {
     }
   }
 
-  // UPDATED: Enhanced supplier selection with budget-based categories, availability and location filtering
+  // ✅ UPDATED: Enhanced supplier selection with cakes priority over catering
   selectSuppliersForParty({ 
     suppliers, 
     themedEntertainment, 
@@ -375,57 +374,58 @@ class PartyBuilderBackend {
       return available;
     };
     
-    // NEW: Budget-based category selection with large party enhancements
+    // ✅ UPDATED: Budget-based category selection with cakes priority and large party enhancements
     let budgetAllocation;
     let includedCategories;
     
     if (budget <= 500) {
-      // Essential Party - Core essentials only
-      includedCategories = ['venue', 'partyBags'];
+      // Essential Party - Core essentials only with cakes
+      includedCategories = ['venue', 'cakes', 'partyBags']; // ✅ CHANGED: cakes instead of catering
       budgetAllocation = {
-        venue: 0.60,        
+        venue: 0.55,        
         entertainment: 0.35, 
+        cakes: 0.05,        // ✅ NEW: Cakes allocation
         partyBags: 0.05     
       };
-      console.log('🎯 Essential Party Package: Venue + Entertainment + Party Bags');
+      console.log('🎯 Essential Party Package: Venue + Entertainment + Cakes + Party Bags');
     } else if (budget <= 700) {
-      // Complete Party - Add catering
-      includedCategories = ['venue', 'catering', 'partyBags'];
+      // Complete Party - Add themed cakes
+      includedCategories = ['venue', 'cakes', 'partyBags']; // ✅ CHANGED: cakes instead of catering
       budgetAllocation = {
-        venue: 0.40,        
+        venue: 0.35,        
         entertainment: 0.35, 
-        catering: 0.20,     
+        cakes: 0.25,        // ✅ CHANGED: More budget for themed cakes
         partyBags: 0.05     
       };
-      console.log('🎯 Complete Party Package: Venue + Entertainment + Catering + Party Bags');
+      console.log('🎯 Complete Party Package: Venue + Entertainment + Themed Cakes + Party Bags');
     } else {
-      // Premium Party - All categories
-      includedCategories = ['venue', 'catering', 'decorations', 'activities', 'partyBags'];
+      // Premium Party - All categories with cakes priority
+      includedCategories = ['venue', 'cakes', 'decorations', 'activities', 'partyBags']; // ✅ CHANGED: cakes instead of catering
       
       if (isLargeParty) {
         // Large party gets adjusted allocation to make room for soft play
         budgetAllocation = {
           venue: 0.25,
           entertainment: 0.25,  // Slightly reduced
-          catering: 0.20,
+          cakes: 0.15,          // ✅ CHANGED: Cakes instead of catering
           decorations: 0.08,    // Reduced
           activities: 0.15,     // Increased for soft play
           partyBags: 0.04,
-          softPlay: 0.03        // New category for large parties
+          softPlay: 0.08        // Increased soft play budget for large parties
         };
         includedCategories.push('softPlay');
-        console.log('🎪 Large Premium Party Package: All categories + Soft Play for 30+ guests');
+        console.log('🎪 Large Premium Party Package: All categories + Themed Cakes + Soft Play for 30+ guests');
       } else {
-        // Standard premium allocation
+        // Standard premium allocation with cakes
         budgetAllocation = {
           venue: 0.25,
           entertainment: 0.30,
-          catering: 0.25,
-          decorations: 0.10,
+          cakes: 0.20,          // ✅ CHANGED: Cakes instead of catering
+          decorations: 0.15,    // Increased for themed decorations
           activities: 0.06,
           partyBags: 0.04
         };
-        console.log('🎯 Premium Party Package: All categories included');
+        console.log('🎯 Premium Party Package: All categories with Themed Cakes included');
       }
     }
 
@@ -486,9 +486,64 @@ class PartyBuilderBackend {
       }
     }
 
-    // UPDATED: Process other categories with availability and location filtering
+    // ✅ UPDATED: Process other categories with availability and location filtering, prioritizing cakes
     includedCategories.forEach(category => {
       const categoryBudget = budget * budgetAllocation[category];
+      
+      // ✅ NEW: Special handling for cakes category with theme matching
+      if (category === 'cakes') {
+        console.log(`🎂 Looking for available themed cakes for "${theme}" theme (budget: £${Math.round(categoryBudget)})`);
+        
+        const cakeSuppliers = suppliers.filter(s => 
+          s.category === 'Cakes' &&
+          s.priceFrom <= categoryBudget * 1.3 // Allow slightly higher budget for themed cakes
+        );
+        
+        console.log(`🎂 Found ${cakeSuppliers.length} cake suppliers:`, 
+          cakeSuppliers.map(s => ({
+            name: s.name,
+            themes: s.themes,
+            category: s.category,
+            price: s.priceFrom
+          }))
+        );
+        
+        // Filter cakes by availability
+        const availableCakes = filterByAvailability(cakeSuppliers, 'cakes');
+        
+        if (availableCakes.length > 0) {
+          console.log(`🎂 About to score ${availableCakes.length} available cakes for theme "${theme}"`);
+          
+          const scoredCakes = availableCakes.map(supplier => {
+            console.log(`🎂 Scoring supplier: ${supplier.name} with themes: ${JSON.stringify(supplier.themes)}`);
+            const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
+            const totalScore = themeScore + 20; // Bonus for cake theme matching
+            console.log(`🎂 ${supplier.name}: Theme score = ${themeScore}, Total score = ${totalScore}`);
+            return {
+              ...supplier,
+              score: totalScore
+            };
+          }).sort((a, b) => b.score - a.score);
+          
+          console.log(`🏆 Top scored cakes:`, 
+            scoredCakes.slice(0, 3).map(s => ({
+              name: s.name,
+              score: s.score,
+              themes: s.themes
+            }))
+          );
+          
+          const bestCake = scoredCakes[0];
+          if (bestCake) {
+            selected.cakes = bestCake;
+            remainingBudget.value -= bestCake.priceFrom;
+            console.log(`🎂 Selected available themed cake: ${bestCake.name} (£${bestCake.priceFrom}) with score: ${bestCake.score}`);
+          }
+        } else {
+          console.log(`❌ No themed cakes available for this time/date within budget`);
+        }
+        return;
+      }
       
       // Special handling for soft play category
       if (category === 'softPlay') {
@@ -503,7 +558,7 @@ class PartyBuilderBackend {
           s.priceFrom <= categoryBudget * 1.2
         );
         
-        // NEW: Filter soft play by availability
+        // Filter soft play by availability
         const availableSoftPlay = filterByAvailability(softPlaySuppliers, 'soft play');
         
         if (availableSoftPlay.length > 0) {
@@ -531,7 +586,7 @@ class PartyBuilderBackend {
         s.priceFrom <= categoryBudget * 1.2
       );
       
-      // NEW: Filter by availability before scoring
+      // Filter by availability before scoring
       const availableCategorySuppliers = filterByAvailability(categorySuppliers, category);
       
       if (availableCategorySuppliers.length > 0) {
@@ -554,9 +609,10 @@ class PartyBuilderBackend {
     console.log(`\n🎊 Final available party selection for ${timeSlot} on ${date}:`);
     Object.entries(selected).forEach(([category, supplier]) => {
       const themeMatch = supplier.themes ? supplier.themes.includes(theme) ? '🎯' : '⚪' : '⚪';
+      const cakeIcon = category === 'cakes' ? '🎂' : '';
       const largePartyExtra = category === 'softPlay' ? '🎪' : '';
       const availabilityIcon = supplier.availability ? '✅' : '📝';
-      console.log(`${availabilityIcon}${themeMatch}${largePartyExtra} ${category}: ${supplier.name} (£${supplier.priceFrom})`);
+      console.log(`${availabilityIcon}${themeMatch}${cakeIcon}${largePartyExtra} ${category}: ${supplier.name} (£${supplier.priceFrom})`);
     });
     
     const totalCost = Object.values(selected).reduce((sum, supplier) => sum + supplier.priceFrom, 0);
@@ -570,6 +626,8 @@ class PartyBuilderBackend {
     if (isLargeParty) {
       console.log(`🎪 Large party enhancements: ${selected.softPlay ? 'Soft play included!' : 'No soft play available within budget'}`);
     }
+    
+    console.log(`🎂 Themed cakes: ${selected.cakes ? `${selected.cakes.name} included!` : 'No themed cakes available within budget'}`);
 
     return selected;
   }
@@ -652,12 +710,13 @@ class PartyBuilderBackend {
     }
   }
 
-  // Helper function to map dashboard categories to supplier categories
+  // ✅ UPDATED: Helper function to map dashboard categories to supplier categories
   mapCategoryToSupplierCategory(dashboardCategory) {
     const mapping = {
       venue: 'Venues',
       entertainment: 'Entertainment', 
       catering: 'Catering',
+      cakes: 'Cakes',               // ✅ NEW: Cakes mapping
       decorations: 'Decorations',
       activities: 'Activities',
       partyBags: 'Party Bags'

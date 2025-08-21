@@ -191,6 +191,7 @@ export default function SupplierSelectionModal({
     venue: ['Venues', 'venue'],
     venues: ['Venues', 'venue'],
     catering: ['Catering'],
+    cakes: ['Cakes'],
     activities: ['Activities'],
     facePainting: ['Face Painting'],
     partyBags: ['Party Bags'],

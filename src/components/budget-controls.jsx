@@ -12,7 +12,7 @@ export default function BudgetControls({
   setTempBudget,
   budgetPercentage,
   getBudgetCategory,
-isUpdating
+  isUpdating
 }) {
   // Add hydration state to prevent SSR mismatch
   const [isHydrated, setIsHydrated] = useState(false)

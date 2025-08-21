@@ -50,6 +50,7 @@ export default function PartyPlanSummary() {
       "partyBags",
       "decorations",
       "balloons",
+      "cakes"
     ]
   
     return supplierTypes

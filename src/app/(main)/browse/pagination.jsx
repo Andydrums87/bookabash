@@ -167,8 +167,9 @@ const SupplierCard = ({ supplier }) => {
           <div className="absolute bottom-3 right-3 z-10">
             <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-white/50">
               <div className="text-right">
+              <div className="text-xs text-gray-600">from</div>
                 <span className="text-lg font-black text-gray-900">£{supplier.priceFrom}</span>
-                <div className="text-xs text-gray-600">{supplier.priceUnit}</div>
+            
               </div>
             </div>
           </div>

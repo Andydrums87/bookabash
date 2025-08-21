@@ -835,6 +835,7 @@ export const suppliersAPI = {
           'dj': ['music', 'dance', 'general'],
           'musician': ['music', 'taylor-swift', 'general'],
           'face-painting': ['general', 'superhero', 'princess'],
+          'cakes' : ['cakes'],
           'decorations': ['general'],
           'venue': ['general'],
           'catering': ['general']

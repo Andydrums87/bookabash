@@ -2,14 +2,13 @@
 
 import { Button } from "@/components/ui/button"
 import { Heart, CheckCircle } from "lucide-react"
-import SupplierAvailabilityCalendar from "@/components/supplier/supplier-availability-calendar" // Import the calendar
+import SupplierAvailabilityCalendar from "@/components/supplier/supplier-availability-calendar"
 import { useFavorites } from "@/app/(main)/favorites/hooks/useFavoritesHook"
 
 export default function SupplierSidebar({
   supplier,
   packages,
   selectedPackageId,
-  // setSelectedPackageId, // Add if we want to change package from sidebar
   handleAddToPlan,
   getAddToPartyButtonState,
   currentMonth,
@@ -19,6 +18,10 @@ export default function SupplierSidebar({
   credentials,
   isFromDashboard = false,
   partyDate = null,
+  // ✅ UPDATED: Use openCakeModal function instead of individual state setters
+  openCakeModal,
+  showCakeModal,
+  isCakeSupplier = false
 }) {
 
   const { toggleFavorite, isFavorite } = useFavorites()
@@ -31,10 +34,63 @@ export default function SupplierSidebar({
   }
 
   const selectedPkgDetails = packages?.find((pkg) => pkg.id === selectedPackageId)
-
   const addToPlanButtonState = getAddToPartyButtonState(selectedPackageId)
 
-  // Added credentials prop
+  // ✅ ENHANCED: Check if selected package is customizable for cake suppliers
+  const isCustomizablePackage = (packageData) => {
+    if (!isCakeSupplier || !packageData) return false
+    
+    // For cake suppliers, default to customizable UNLESS explicitly set to non-customizable
+    if (packageData?.packageType === 'non-customizable' || packageData?.packageType === 'fixed') {
+      return false
+    }
+    
+    // Show customization for most cake packages
+    return packageData?.packageType === 'customizable' ||
+           packageData?.cakeCustomization ||
+           packageData?.name?.toLowerCase().includes('custom') ||
+           packageData?.features?.some(feature => 
+             feature.toLowerCase().includes('custom') || 
+             feature.toLowerCase().includes('personalized')
+           ) ||
+           !packageData?.packageType // Default to customizable if not specified
+  }
+
+  // ✅ FIXED: Sidebar add to plan with proper cake modal opening
+  const handleSidebarAddToPlan = () => {
+    console.log('🎂 Sidebar: Checking for cake customization need:', {
+      isCakeSupplier,
+      selectedPackageId,
+      selectedPackage: selectedPkgDetails?.name,
+      packageType: selectedPkgDetails?.packageType,
+      isCustomizable: isCustomizablePackage(selectedPkgDetails),
+      hasOpenCakeModal: !!openCakeModal
+    })
+
+    // Check if this is a customizable cake package
+    if (isCakeSupplier && selectedPkgDetails && openCakeModal) {
+      // For cake suppliers, we should show the modal for most packages
+      // unless it's explicitly a non-customizable package
+      const shouldShowModal = isCustomizablePackage(selectedPkgDetails)
+      
+      console.log('🎂 Sidebar: Should show modal?', shouldShowModal)
+      
+      if (shouldShowModal) {
+        console.log('🎂 Sidebar: Opening cake modal with package:', selectedPkgDetails.name)
+        openCakeModal(selectedPkgDetails)
+        return
+      } else {
+        console.log('🎂 Sidebar: Package marked as non-customizable, proceeding normally')
+      }
+    } else if (isCakeSupplier && !openCakeModal) {
+      console.warn('🎂 Sidebar: isCakeSupplier is true but openCakeModal function not provided')
+    }
+
+    // Otherwise, proceed with normal add to plan
+    console.log('➡️ Sidebar: Proceeding with regular add to plan')
+    handleAddToPlan()
+  }
+
   // Use the passed credentials prop if available, otherwise fallback to supplier.serviceDetails
   const verificationDocs =
     credentials?.map((cred) => ({ name: cred.title, verified: cred.verified })) ||
@@ -54,15 +110,22 @@ export default function SupplierSidebar({
           <h3 className="font-bold text-lg mb-1">Selected Package</h3>
           <p className="text-md text-gray-800 font-semibold mb-1">{selectedPkgDetails.name}</p>
           <p className="text-lg text-primary-600 font-bold mb-4">£{selectedPkgDetails.price}</p>
+          
+          
+          
+          {/* ✅ ENHANCED: Use custom handler instead of direct handleAddToPlan */}
           <Button
             className={`w-full py-3 text-base ${addToPlanButtonState.className}`}
-            onClick={() => handleAddToPlan()} // handleAddToPlan might not need packageId if it uses selectedPackageId from page
+            onClick={handleSidebarAddToPlan}
             disabled={addToPlanButtonState.disabled}
           >
-            {addToPlanButtonState.text}
+        
+              { addToPlanButtonState.text}
+            
           </Button>
         </div>
       )}
+
       {/* Availability Calendar Section */}
       {supplier && (
         <SupplierAvailabilityCalendar
@@ -94,7 +157,6 @@ export default function SupplierSidebar({
           </ul>
         </div>
       )}
-
 
       {/* Add to Favorites Button */}
       <div className="bg-white p-6 rounded-2xl shadow-sm">

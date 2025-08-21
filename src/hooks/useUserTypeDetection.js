@@ -104,19 +104,14 @@ export const useUserTypeDetection = () => {
         }
       }
     }, [])
-  
-    // Set initial state immediately
     useEffect(() => {
       const initial = getInitialUserType()
       setUserType(initial.type)
       setUserContext(initial.context)
       setLoading(initial.loading)
-  
-      // Then do the full async detection if needed
-      if (initial.type === 'LOCALSTORAGE_USER') {
-        // Check if they're actually signed in (this might upgrade them to a different type)
-        detectFullUserType()
-      }
+    
+      // Always check if user is signed in, regardless of initial type
+      detectFullUserType()  // ← REMOVE THE IF CONDITION
     }, [])
   
     const detectFullUserType = useCallback(async () => {

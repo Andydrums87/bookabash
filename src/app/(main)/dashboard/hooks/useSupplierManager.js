@@ -1,4 +1,4 @@
-// hooks/useSupplierManager.js - FIXED VERSION
+// hooks/useSupplierManager.js - Updated with cakes category
 "use client"
 
 import { useState } from "react"
@@ -19,6 +19,7 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
       venue: 'Venue',
       entertainment: 'Entertainment', 
       catering: 'Catering',
+      cakes: 'Cakes',  // 🎂 NEW: Add cakes display name
       facePainting: 'Face Painting & Activities',
       activities: 'Activities',
       partyBags: 'Party Bags',
@@ -89,7 +90,7 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
         
         console.log('✅ E-invite reset to default state');
       } else {
-        // Regular supplier removal for other types
+        // Regular supplier removal for other types (including cakes)
         if (removeSupplier) {
           const result = await removeSupplier(supplierType);
           if (result.success) {

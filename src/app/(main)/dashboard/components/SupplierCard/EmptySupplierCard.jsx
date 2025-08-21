@@ -27,6 +27,7 @@ export default function EmptySupplierCard({
       activities: "Activities",
       decorations: "Decorations",
       balloons: "Balloons",
+      cakes: "Cakes",
       partyBags: "Party Bags",
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)

@@ -63,6 +63,7 @@ const getAllSupplierSlots = () => {
     activities: suppliers.activities || null,
     partyBags: suppliers.partyBags || null,
     decorations: suppliers.decorations || null,
+    cakes: suppliers.cakes || null,
     balloons: suppliers.balloons || null,
   }
  

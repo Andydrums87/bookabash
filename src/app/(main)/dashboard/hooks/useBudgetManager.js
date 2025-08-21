@@ -59,7 +59,7 @@ export function useBudgetManager(totalCost = 0, isUpdating, setIsUpdating) {
     setIsUpdating(true)
     
     // Set loading state for supplier cards
-    const loadingSuppliers = ["venue", "entertainment", "catering", "facePainting", "partyBags"]
+    const loadingSuppliers = ["venue", "entertainment", "catering", "facePainting", "partyBags", "cakes"]
     // You'll need to pass setLoadingCards from parent component or manage it here
     
     try {

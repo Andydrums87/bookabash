@@ -471,7 +471,7 @@ const handleRemoveAddon = async (addonId) => {
       // ✅ FIXED: Only process real supplier types, NOT einvites
       const realSupplierTypes = [
         'venue', 'entertainment', 'catering', 'decorations', 
-        'facePainting', 'activities', 'partyBags', 'balloons'
+        'facePainting', 'activities', 'partyBags', 'balloons', 'cakes'
       ]
   
       realSupplierTypes.forEach((key) => {
@@ -488,6 +488,7 @@ const handleRemoveAddon = async (addonId) => {
             activities: <Music className="w-5 h-5" />,
             partyBags: <Palette className="w-5 h-5" />,
             balloons: <Palette className="w-5 h-5" />,
+            cakes: <Palette className="w-5 h-5" />,
           }
       
           suppliers.push({

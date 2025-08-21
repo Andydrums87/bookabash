@@ -37,8 +37,12 @@ const MobileBookingBar = ({
   isReplacementMode = false,
   replacementSupplierName = '',
   onReturnToReplacement = () => {},
-  // ✅ NEW: Add packages prop for complete package data
-  packages = []
+  packages = [],
+  
+  // ✅ UPDATED: Cake modal props
+  openCakeModal,
+  showCakeModal = false,
+  isCakeSupplier = false
 }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,6 +65,60 @@ const MobileBookingBar = ({
       hasSetInitialMonth.current = true
     }
   }, [isFromDashboard, partyDate])
+
+  // ✅ NEW: Check if selected package is customizable for cake suppliers
+  const isCustomizablePackage = (packageData) => {
+    if (!isCakeSupplier || !packageData) return false
+    
+    // For cake suppliers, default to customizable UNLESS explicitly set to non-customizable
+    if (packageData?.packageType === 'non-customizable' || packageData?.packageType === 'fixed') {
+      return false
+    }
+    
+    // Show customization for most cake packages
+    return packageData?.packageType === 'customizable' ||
+           packageData?.cakeCustomization ||
+           packageData?.name?.toLowerCase().includes('custom') ||
+           packageData?.features?.some(feature => 
+             feature.toLowerCase().includes('custom') || 
+             feature.toLowerCase().includes('personalized')
+           ) ||
+           !packageData?.packageType // Default to customizable if not specified
+  }
+
+  // ✅ FIXED: Mobile add to plan with proper cake modal opening
+  const handleMobileAddToPlan = () => {
+    console.log('🎂 Mobile: Checking for cake customization need:', {
+      isCakeSupplier,
+      selectedPackage: selectedPackage?.name,
+      packageType: selectedPackage?.packageType,
+      isCustomizable: isCustomizablePackage(selectedPackage),
+      hasOpenCakeModal: !!openCakeModal
+    })
+
+    // Check if this is a customizable cake package
+    if (isCakeSupplier && selectedPackage && openCakeModal) {
+      // For cake suppliers, show modal for most packages unless explicitly non-customizable
+      const shouldShowModal = isCustomizablePackage(selectedPackage)
+      
+      console.log('🎂 Mobile: Should show modal?', shouldShowModal)
+      
+      if (shouldShowModal) {
+        console.log('🎂 Mobile: Opening cake modal with package:', selectedPackage.name)
+        setIsModalOpen(false) // Close date modal if open
+        openCakeModal(selectedPackage)
+        return
+      } else {
+        console.log('🎂 Mobile: Package marked as non-customizable, proceeding normally')
+      }
+    } else if (isCakeSupplier && !openCakeModal) {
+      console.warn('🎂 Mobile: isCakeSupplier is true but openCakeModal function not provided')
+    }
+
+    // Otherwise, proceed with normal add to plan
+    console.log('➡️ Mobile: Proceeding with regular add to plan')
+    onAddToPlan()
+  }
 
   const handleApprove = () => {
     console.log('🐊 MOBILE APPROVE: Starting approval process')
@@ -410,10 +468,15 @@ const MobileBookingBar = ({
       };
     }
     
+    // ✅ NEW: Show different text for cake suppliers
+    const buttonText = isCakeSupplier && isCustomizablePackage(selectedPackage)
+      ? "🎂 Customize & Add"
+      : hasPartyPlan ? "Add to Plan" : "Book This Supplier"
+    
     return {
       disabled: false,
       className: "bg-primary-500 hover:bg-primary-600 text-white",
-      text: hasPartyPlan ? "Add to Plan" : "Book This Supplier"
+      text: buttonText
     };
   };
 
@@ -432,7 +495,8 @@ const MobileBookingBar = ({
     }
     
     setIsModalOpen(false);
-    onAddToPlan();
+    // ✅ ENHANCED: Use new handler that checks for cake modal
+    handleMobileAddToPlan();
   };
 
   const handleAddToPlan = () => {
@@ -443,7 +507,8 @@ const MobileBookingBar = ({
     }
     
     setIsModalOpen(false);
-    onAddToPlan();
+    // ✅ ENHANCED: Use new handler that checks for cake modal
+    handleMobileAddToPlan();
   };
 
   const handleSaveForLater = () => {
@@ -469,7 +534,7 @@ const MobileBookingBar = ({
     <>
       {/* ✅ ENHANCED: Replacement mode banner with better package display */}
    {/* ✅ REPLACEMENT MODE: Styled like regular booking bar */}
-{!showAddonModal && !isAddingToPlan && isReplacementMode && (
+{!showAddonModal && !isAddingToPlan && !showCakeModal && isReplacementMode && (
   <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
     <div className="px-4 py-3">
       <div className="flex items-center justify-between mb-2">
@@ -513,12 +578,18 @@ const MobileBookingBar = ({
 )}
 
       {/* ✅ NORMAL MODE: Show regular booking bar only */}
-      {!showAddonModal && !isAddingToPlan && !isReplacementMode && (
+      {!showAddonModal && !isAddingToPlan && !showCakeModal && !isReplacementMode && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="font-semibold text-gray-900 text-xs">{packageInfo.name}</p>
+                <p className="font-semibold text-gray-900 text-xs">
+                  {packageInfo.name}
+                  {/* ✅ NEW: Show cake indicator */}
+                  {isCakeSupplier && isCustomizablePackage(selectedPackage) && (
+                    <span className="ml-1">🎂</span>
+                  )}
+                </p>
                 <p className="text-sm text-gray-600">
                   {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
                   {selectedDate && (
@@ -730,7 +801,13 @@ const MobileBookingBar = ({
                   disabled={!isFromDashboard && !selectedDate}
                 >
                   <Plus className="w-5 h-5" />
-                  Add to Plan{' '}
+                  {/* ✅ NEW: Show cake text if applicable */}
+                  {isCakeSupplier && isCustomizablePackage(selectedPackage) ? (
+                    <>🎂 Customize & Add</>
+                  ) : (
+                    <>Add to Plan</>
+                  )}
+                  {' '}
                   {!isFromDashboard && selectedDate && `(${getSelectedDateDisplay()})`}
                   {isFromDashboard && partyDate && `(${partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`}
                 </button>

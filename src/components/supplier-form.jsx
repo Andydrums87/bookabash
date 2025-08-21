@@ -20,6 +20,7 @@ const serviceTypes = [
   { id: "Activities", name: "Activities & Games" },
   { id: "Face Painting", name: "Face Painting"},
   { id: "Bouncy Castle", name: "Bouncy Castle"},
+  { id: "Cakes", name: "Cakes & Desserts" },   
   { id: "other", name: "Other" },
 ]
 

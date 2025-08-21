@@ -28,6 +28,7 @@ export default function SelectedSupplierCard({
       venue: "Venue",
       entertainment: "Entertainment", 
       catering: "Catering",
+      cakes: "Cakes",           // 🎂 ADD: Cakes display name
       facePainting: "Face Painting",
       activities: "Activities",
       decorations: "Decorations",
@@ -39,7 +40,7 @@ export default function SelectedSupplierCard({
 
   // 🎂 NEW: Extract cake customization data
   const cakeCustomization = supplier?.packageData?.cakeCustomization
-  const isCakeSupplier = !!cakeCustomization
+  const isCakeSupplier = !!cakeCustomization || type === 'cakes'  // Also check if type is cakes
   
   // ✅ Use totalPrice if available, otherwise fall back to price
   const displayPrice = supplier.totalPrice || supplier.price || 0
@@ -48,6 +49,24 @@ export default function SelectedSupplierCard({
   // Calculate breakdown for display
   const basePrice = supplier.price || 0
   const addonsTotal = supplierAddons?.reduce((sum, addon) => sum + (addon.price || 0), 0) || 0
+
+  // 🎂 NEW: Get appropriate badge color and icon based on type
+  const getTypeConfig = (supplierType) => {
+    const configs = {
+      venue: { color: "bg-blue-500", icon: "🏛️" },
+      entertainment: { color: "bg-purple-500", icon: "🎭" },
+      catering: { color: "bg-orange-500", icon: "🍽️" },
+      cakes: { color: "bg-pink-500", icon: "🎂" },        // 🎂 ADD: Cakes config
+      facePainting: { color: "bg-green-500", icon: "🎨" },
+      activities: { color: "bg-yellow-500", icon: "🎪" },
+      decorations: { color: "bg-indigo-500", icon: "🎈" },
+      balloons: { color: "bg-cyan-500", icon: "🎈" },
+      partyBags: { color: "bg-red-500", icon: "🎁" }
+    }
+    return configs[supplierType] || { color: "bg-gray-500", icon: "📦" }
+  }
+
+  const typeConfig = getTypeConfig(type)
 
   return (
     <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
@@ -71,8 +90,8 @@ export default function SelectedSupplierCard({
 
             <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm">
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                <Badge className={`${typeConfig.color} text-white shadow-lg backdrop-blur-sm`}>
+                  {typeConfig.icon} {type.charAt(0).toUpperCase() + type.slice(1)}
                 </Badge>
                 <Badge className="bg-blue-500 text-white border-blue-400 shadow-lg backdrop-blur-sm">
                   Selected
@@ -86,11 +105,12 @@ export default function SelectedSupplierCard({
               </button>
             </div>
 
-            {/* 🎂 NEW: Cake badge in bottom right */}
-            {isCakeSupplier && (
+            {/* 🎂 UPDATED: Cake badge in bottom right - now shows for all cake suppliers */}
+            {(isCakeSupplier || type === 'cakes') && (
               <div className="absolute bottom-4 right-4 z-10">
                 <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
-                  🎂 {supplier.packageData?.name} • {cakeCustomization.flavorName}
+                  🎂 {supplier.packageData?.name || 'Custom Cake'} 
+                  {cakeCustomization?.flavorName && ` • ${cakeCustomization.flavorName}`}
                 </Badge>
               </div>
             )}

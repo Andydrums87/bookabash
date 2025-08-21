@@ -266,19 +266,7 @@ export default function DatabaseDashboard() {
     }
   }
 
-  // Function to show pending enquiry modal (integrate with your existing modal system)
-  const showPendingEnquiryModal = (supplier) => {
-    // This should trigger your existing PendingEnquiryModal
-    console.log('⏸️ Would show pending enquiry modal for:', supplier.name)
-    
-    // For now, just close the supplier modal
-    // You can integrate with your existing modal system here
-    closeSupplierModal()
-    
-    // Example: If you have a pending modal state
-    // setShowPendingModal(true)
-    // setPendingModalSupplier(supplier)
-  }
+
 
   // Early return with specific error message if party ID is missing
   if (!loading && isSignedIn && !partyId) {

@@ -12,7 +12,7 @@ import { Shield, Award, CheckCircle, AlertCircle, Calendar } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 
 import { usePartyPlan } from '@/utils/partyPlanBackend'
-
+import CakeCustomizationModal from "@/components/supplier/packages/CakeCustomizationModal"
 import AddonSelectionModal from "@/components/supplier/addon-selection-modal"
 import SupplierHeader from "@/components/supplier/supplier-header"
 import SupplierPackages from "@/components/supplier/supplier-packages"
@@ -39,8 +39,13 @@ import AboutMeComponent from "@/components/supplier/about-me"
 import PendingEnquiryModal from "@/components/supplier/PendingEnquiryModal"
 
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
-
-
+import { useSupplierData } from "../hooks/useSupplierData"
+import { useSupplierBooking } from "../hooks/useSupplierBooking"
+import { useSupplierAvailability } from "../hooks/useSupplierAvailability"
+import { useSupplierModals } from "../hooks/useSupplierModals"
+import { useSupplierEnquiries } from "../hooks/useSupplierEnquiries"
+import { useReplacementMode } from "../hooks/useReplacementMode"
+import { useSupplierNotifications } from "../hooks/useSupplierNotifications"
 
 const SelectedDateBanner = ({ selectedDate, currentMonth, onClearDate }) => {
   if (!selectedDate || !currentMonth) return null
@@ -144,179 +149,12 @@ export default function SupplierProfilePage({ backendSupplier }) {
 
   
   const [isLoaded, setIsLoaded] = useState(false)
-  const [selectedPackageId, setSelectedPackageId] = useState(null)
-  const [replacementContext, setReplacementContext] = useState(null)
-
-  const [debugMode, setDebugMode] = useState(false)
-  const [currentPartyId, setCurrentPartyId] = useState(null)
-  const [isAddingToPlan, setIsAddingToPlan] = useState(false)
-  const [loadingStep, setLoadingStep] = useState(0)
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
-  })
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [notification, setNotification] = useState(null)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
-  const [showAddonModal, setShowAddonModal] = useState(false)
-  const [selectedAddons, setSelectedAddons] = useState([])
-  const [showAlaCarteModal, setShowAlaCarteModal] = useState(false)
-  const [hasValidPlan, setHasValidPlan] = useState(false)
-  const [finalPackageData, setFinalPackageData] = useState(null)
-  const [progress, setProgress] = useState(0)
-  const [showPendingEnquiryModal, setShowPendingEnquiryModal] = useState(false)
-  const [showUnavailableModal, setShowUnavailableModal] = useState(false)
-  const [enquiryStatus, setEnquiryStatus] = useState({
-  isAwaiting: false,
-  pendingCount: 0,
-  enquiries: [],
-  loading: false
-})
 
+// 2. Call the data hook first (no selectedPackageId needed)
+const { supplier, packages: basePackages, portfolioImages, credentials, reviews, isCakeSupplier } = 
+  useSupplierData(backendSupplier)
 
-  // Memoized helper functions
-  const hasPartyDate = useCallback(() => {
-    try {
-      const partyDetails = localStorage.getItem('party_details')
-      if (!partyDetails) return false
-      const parsed = JSON.parse(partyDetails)
-      return !!(parsed.date)
-    } catch (error) {
-      return false
-    }
-  }, [])
-  
-  const getPartyDate = useCallback(() => {
-    try {
-      const partyDetails = localStorage.getItem('party_details')
-      if (!partyDetails) return null
-      const parsed = JSON.parse(partyDetails)
-      return parsed.date ? new Date(parsed.date) : null
-    } catch (error) {
-      return null
-    }
-  }, [])
-  
-  const isFromDashboard = useCallback(() => {
-    return navigationContext === 'dashboard' || hasPartyDate()
-  }, [navigationContext, hasPartyDate])
-
-
-  const supplier = useMemo(() => {
-    if (!backendSupplier) return null
-    return {
-      id: backendSupplier.id,
-      name: backendSupplier.name,
-      avatar: backendSupplier.avatar || "/placeholder.jpg",
-      rating: backendSupplier.rating,
-      reviewCount: backendSupplier.reviewCount,
-      location: backendSupplier.location,
-      activeSince: backendSupplier.activeSince || "2020",
-      description: backendSupplier.description,
-      verified: backendSupplier.verified || true,
-      highlyRated: backendSupplier.badges?.includes("Highly Rated") || false,
-      fastResponder: backendSupplier.fastResponder || true,
-      responseTime: backendSupplier.responseTime || "Within 2 hours",
-      phone: backendSupplier.phone || "+44 7123 456 789",
-      email: backendSupplier.email || "hello@" + backendSupplier.name?.toLowerCase().replace(/[^a-z0-9]/g, "") + ".co.uk",
-      image: backendSupplier.image || "/placeholder.jpg",
-      category: backendSupplier.category,
-      priceFrom: backendSupplier.priceFrom,
-      priceUnit: backendSupplier.priceUnit,
-      avatar: backendSupplier.avatar,
-      badges: backendSupplier.badges || [],
-      availability: backendSupplier.availability,
-      packages: backendSupplier.packages || [],
-      portfolioImages: backendSupplier.portfolioImages || [],
-      portfolioVideos: backendSupplier.portfolioVideos || [],
-      coverPhoto: backendSupplier.coverPhoto || backendSupplier.image || "/placeholder.jpg",
-      workingHours: backendSupplier.workingHours,
-      unavailableDates: backendSupplier.unavailableDates,
-      busyDates: backendSupplier.busyDates,
-      availabilityNotes: backendSupplier.availabilityNotes,
-      advanceBookingDays: backendSupplier.advanceBookingDays,
-      maxBookingDays: backendSupplier.maxBookingDays,
-      serviceDetails: backendSupplier?.serviceDetails,
-      stats: backendSupplier?.stats,
-      ownerName: backendSupplier?.ownerName,
-      owner: backendSupplier?.owner,
-    }
-  }, [backendSupplier])
-
-
-
-// Add handler functions for the unavailable modal:
-const handleSelectNewDate = useCallback(() => {
-  setShowUnavailableModal(false)
-  // Scroll to calendar
-  const calendarElement = document.getElementById('availability-calendar')
-  if (calendarElement) {
-    calendarElement.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'center'
-    })
-    
-    // Clear selected date to force new selection
-    setSelectedDate(null)
-    
-    // Add highlight effect
-    calendarElement.classList.add('ring-4', 'ring-blue-300', 'ring-opacity-75', 'transition-all', 'duration-500')
-    setTimeout(() => {
-      calendarElement?.classList.remove('ring-4', 'ring-blue-300', 'ring-opacity-75')
-    }, 3000)
-  }
-  
-  setNotification({ 
-    type: "info", 
-    message: "📅 Please select a different date when the supplier is available",
-    duration: 4000
-  })
-  setTimeout(() => setNotification(null), 4000)
-}, [])
-
-
-const getSelectedCalendarDate = useCallback(() => {
-  if (!selectedDate || !currentMonth) {
-  
-    return null
-  }
-  
-  try {
-    // Create the date object with local timezone (no UTC conversion)
-    const selectedDateObj = new Date(
-      currentMonth.getFullYear(), 
-      currentMonth.getMonth(), 
-      selectedDate
-    )
-    
-    // Use local date methods instead of toISOString() to avoid timezone issues
-    const year = selectedDateObj.getFullYear()
-    const month = String(selectedDateObj.getMonth() + 1).padStart(2, '0') // +1 because getMonth() is 0-based
-    const day = String(selectedDateObj.getDate()).padStart(2, '0')
-    
-    // Format as YYYY-MM-DD using local date components
-    const dateString = `${year}-${month}-${day}`
-    console.log('📅 Generated calendar date string:', dateString)
-    return dateString
-  } catch (error) {
-    console.error('❌ Error generating calendar date:', error)
-    return null
-  }
-}, [selectedDate, currentMonth])
-
-const handleViewAlternatives = useCallback(() => {
-  setShowUnavailableModal(false)
-  // Navigate to supplier search with same category and date filters
-  const searchParams = new URLSearchParams({
-    category: supplier.category || '',
-    date: getSelectedCalendarDate() || '',
-    available: 'true'
-  })
-  
-  router.push(`/suppliers?${searchParams.toString()}`)
-}, [supplier, getSelectedCalendarDate, router])
-  // Add this useEffect to get party ID:
- // ✅ GET: Current party ID on component mount
  useEffect(() => {
   const getPartyId = async () => {
     try {
@@ -343,1341 +181,49 @@ useEffect(() => {
 }, [userTypeLoading, backendSupplier])
 
 
-// NEW: Database-based enquiry checking
-const checkEnquiryStatus = useCallback(async () => {
+const modals = useSupplierModals()
+const replacement = useReplacementMode()
+const notifications = useSupplierNotifications()
+const availability = useSupplierAvailability(supplier)
+const enquiries = useSupplierEnquiries(userContext?.currentPartyId)
+const booking = useSupplierBooking(
+  supplier, 
+  basePackages,  // Pass the base packages
+  backendSupplier, 
+  userType, 
+  userContext, 
+  enquiries.enquiryStatus, 
+  availability.selectedDate,        // ← Use availability hook
+  availability.currentMonth,        // ← Use availability hook
+  availability.checkSupplierAvailability,  // ← Use availability hook
+  availability.getSelectedCalendarDate,    // ← Use availability hook
+  availability.getSelectedCalendarDate,
+  replacement.replacementContext  
+)
 
-  // Early return if no valid plan
- 
+const packages = booking.packages
 
-  try {
-    setEnquiryStatus(prev => ({ ...prev, loading: true }))
 
+
+  const handleAddToPlanWithModals = async (...args) => {
+    const result = await booking.handleAddToPlan(...args)
     
-    const { data: { user } } = await supabase.auth.getUser()
-
-
-    if (!user) {
-
-      setEnquiryStatus({
-        isAwaiting: false,
-        pendingCount: 0,
-        enquiries: [],
-        loading: false
-      })
-      return { canModifyPlan: true, reason: 'no_auth' }
-    }
-    
-    // FIX: Get the party ID first
-    const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
-
-
-
-    
-    if (!partyIdResult.success || !partyIdResult.partyId) {
-  
-      setEnquiryStatus({
-        isAwaiting: false,
-        pendingCount: 0,
-        enquiries: [],
-        loading: false
-      })
-      return { canModifyPlan: true, reason: 'no_party_id' }
-    }
-    
-
-    
-    // Check if party is awaiting responses
-
-
-       const awaitingResult = await partyDatabaseBackend.isPartyAwaitingResponses(partyIdResult.partyId)
-
-    if (awaitingResult.success) {
-  
-      
-      setEnquiryStatus({
-        isAwaiting: awaitingResult.isAwaiting,
-        pendingCount: awaitingResult.pendingCount || 0,
-        enquiries: awaitingResult.enquiries || [],
-        loading: false
-      })
-      
-      return {
-        canModifyPlan: !awaitingResult.isAwaiting,
-        reason: awaitingResult.isAwaiting ? 'awaiting_responses' : 'can_modify',
-        pendingCount: awaitingResult.pendingCount || 0
-      }
-    } else {
-      console.error('❌ Error checking enquiry status:', awaitingResult.error)
-      setEnquiryStatus({
-        isAwaiting: false,
-        pendingCount: 0,
-        enquiries: [],
-        loading: false
-      })
-      return { canModifyPlan: true, reason: 'error_default_allow' }
-    }
-    
-  } catch (error) {
-    console.error('❌ Exception checking enquiry status:', error)
-    setEnquiryStatus({
-      isAwaiting: false,
-      pendingCount: 0,
-      enquiries: [],
-      loading: false
-    })
-    return { canModifyPlan: true, reason: 'exception_default_allow' }
-  }
-}, [hasValidPlan])
-
-// Actually, even better - make it always run:
-// Try this:
-useEffect(() => {
-
-  checkEnquiryStatus()
-}, []) // Empty dependency array to run once on mount
-
-// OR try this to run it when the component is ready:
-useEffect(() => {
-  if (isLoaded && !userTypeLoading) {
-
-    checkEnquiryStatus()
-  }
-}, [isLoaded, userTypeLoading])
-
-useEffect(() => {
-
-  
-  // 1. Check URL parameters
-  const urlParams = new URLSearchParams(window.location.search)
-  const fromParam = urlParams.get('from')
-  
-
-  
-  // 2. If coming from browse, clear everything and exit
-  if (fromParam === 'browse') {
-
-    setReplacementContext(null)
-    sessionStorage.removeItem('replacementContext')
-    sessionStorage.removeItem('shouldRestoreReplacementModal')
-    sessionStorage.removeItem('modalShowUpgrade')
-    return
-  }
-  
-  // 3. Check session storage for replacement context
-  const storedContext = sessionStorage.getItem('replacementContext')
-  console.log('🔍 Stored context exists:', !!storedContext)
-  
-  if (storedContext) {
-    try {
-      const parsedContext = JSON.parse(storedContext)
-      console.log('✅ Setting replacement context:', parsedContext)
-      setReplacementContext(parsedContext)
-    } catch (error) {
-      console.error('❌ Error parsing replacement context:', error)
-      setReplacementContext(null)
-      sessionStorage.removeItem('replacementContext')
-    }
-  } else {
-    console.log('❌ No stored context, clearing replacement state')
-    setReplacementContext(null)
-  }
-}, []) // Empty dependency - run once on mount
-
-  // Add this to your SupplierProfilePage component
-useEffect(() => {
-  if (replacementContext?.isReplacement && supplier?.category) {
-    console.log('🏪 Storing current supplier data for replacement:', supplier)
-    
-    try {
-      const currentContext = sessionStorage.getItem('replacementContext')
-      if (currentContext) {
-        const parsedContext = JSON.parse(currentContext)
-        
-        const updatedContext = {
-          ...parsedContext,
-          currentSupplierData: {
-            id: supplier.id,
-            name: supplier.name,
-            category: supplier.category, // ✅ This is the key field
-            description: supplier.description,
-            price: supplier.priceFrom,
-            priceFrom: supplier.priceFrom,
-            image: supplier.image,
-            rating: supplier.rating,
-            reviewCount: supplier.reviewCount
-          },
-          lastUpdatedAt: new Date().toISOString()
-        }
-        
-        sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
-        console.log('💾 Stored current supplier data with category:', supplier.category)
-      }
-    } catch (error) {
-      console.error('❌ Error storing supplier data:', error)
+    if (result.showPendingEnquiry) {
+      modals.openPendingEnquiryModal()
+    } else if (result.showDatePicker) {
+      modals.handleModalFlow('showDatePicker')
+    } else if (result.showUnavailableModal) {
+      modals.handleModalFlow('showUnavailableModal', { unavailableDate: result.unavailableDate })
+    } else if (result.showAlaCarteModal) {
+      modals.openAlaCarteModal()
+    } else if (result.showAddonModal) {
+      modals.openAddonModal()
+    } else if (result.success) {
+      notifications.showSuccess(result.message)  // ← Use notifications hook
+    } else if (!result.success) {
+      notifications.showError(result.message)    // ← Use notifications hook
     }
   }
-}, [replacementContext, supplier])
-
-  const handleReturnToReplacement = useCallback(() => {
-    console.log('🔄 Returning to replacement flow from supplier profile')
-    
-    if (replacementContext?.returnUrl) {
-      router.push(replacementContext.returnUrl)
-    } else {
-      router.push('/dashboard')
-    }
-  }, [replacementContext, router])
-
-
-
-
-
-
-
-const hasEnquiriesPending = useCallback(() => {
-  return enquiryStatus.isAwaiting
-}, [enquiryStatus.isAwaiting])
-
-const getPendingEnquiriesCount = useCallback(() => {
-  return enquiryStatus.pendingCount
-}, [enquiryStatus.pendingCount])
-
-
-const checkSupplierAvailability = useCallback((dateToCheck) => {
-  console.log('🔍 === AVAILABILITY CHECK START ===')
-  console.log('🔍 Date to check:', dateToCheck)
-  console.log('🔍 Supplier name:', supplier?.name)
-  console.log('🔍 Supplier unavailable dates (raw):', supplier?.unavailableDates)
-  
-  if (!supplier || !dateToCheck) {
-    console.log('❌ No supplier or date to check')
-    return true
-  }
-  
-  try {
-    // Parse the date we're checking (user's party date)
-    const checkDate = new Date(dateToCheck + 'T12:00:00') // Add noon to avoid timezone edge cases
-    if (isNaN(checkDate.getTime())) {
-      console.log('❌ Invalid date to check:', dateToCheck)
-      return true
-    }
-    
-    console.log('🔍 Parsed check date:', checkDate)
-    console.log('🔍 Check date in London timezone:', checkDate.toLocaleDateString('en-GB'))
-    
-    // Check unavailable dates with timezone awareness
-    if (supplier.unavailableDates && supplier.unavailableDates.length > 0) {
-      console.log('🔍 Checking against unavailable dates...')
-      
-      const isUnavailable = supplier.unavailableDates.some((unavailableDate, index) => {
-        console.log(`🔍 [${index}] Checking unavailable date:`, unavailableDate)
-        
-        try {
-          // Parse the database timestamp
-          const unavailableDateTime = new Date(unavailableDate)
-          
-          if (isNaN(unavailableDateTime.getTime())) {
-            console.log(`❌ [${index}] Invalid unavailable date format:`, unavailableDate)
-            return false
-          }
-          
-          // Convert both dates to local date strings for comparison
-          const checkDateString = checkDate.toLocaleDateString('en-GB') // DD/MM/YYYY
-          const unavailableDateString = unavailableDateTime.toLocaleDateString('en-GB') // DD/MM/YYYY
-          
-          console.log(`🔍 [${index}] Comparing local dates:`)
-          console.log(`🔍 [${index}]   Check date: ${checkDateString}`)
-          console.log(`🔍 [${index}]   Unavailable: ${unavailableDateString}`)
-          
-          const isSameDate = checkDateString === unavailableDateString
-          
-          if (isSameDate) {
-            console.log(`❌ [${index}] MATCH FOUND! ${unavailableDate} matches ${dateToCheck}`)
-            console.log(`❌ [${index}] Database timestamp ${unavailableDate} = ${unavailableDateString} in London time`)
-          }
-          
-          return isSameDate
-        } catch (error) {
-          console.log(`❌ [${index}] Error parsing unavailable date:`, unavailableDate, error)
-          return false
-        }
-      })
-      
-      console.log(`🔍 Final unavailable check result: ${isUnavailable}`)
-      
-      if (isUnavailable) {
-        console.log(`❌ Supplier ${supplier.name} is UNAVAILABLE on ${dateToCheck}`)
-        return false
-      }
-    }
-    
-    // Check working hours
-    const dayOfWeek = checkDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
-    console.log(`🔍 Day of week: ${dayOfWeek}`)
-    
-    if (supplier.workingHours && supplier.workingHours[dayOfWeek]) {
-      const workingDay = supplier.workingHours[dayOfWeek]
-      if (!workingDay.active || workingDay.active === false) {
-        console.log(`❌ Supplier ${supplier.name} is not working on ${dayOfWeek}`)
-        return false
-      }
-    }
-    
-    // Check busy dates (similar timezone handling)
-    if (supplier.busyDates && supplier.busyDates.length > 0) {
-      const isBusy = supplier.busyDates.some(busyDate => {
-        try {
-          const busyDateTime = new Date(busyDate)
-          const checkDateString = checkDate.toLocaleDateString('en-GB')
-          const busyDateString = busyDateTime.toLocaleDateString('en-GB')
-          return checkDateString === busyDateString
-        } catch (error) {
-          console.log('❌ Error parsing busy date:', busyDate, error)
-          return false
-        }
-      })
-      
-      if (isBusy) {
-        console.log(`⚠️ Supplier ${supplier.name} is busy on ${dateToCheck} but might still be available`)
-        return true // Treat busy as available for now
-      }
-    }
-    
-    console.log(`✅ Supplier ${supplier.name} is AVAILABLE on ${dateToCheck}`)
-    return true
-    
-  } catch (error) {
-    console.error('❌ Error checking supplier availability:', error)
-    return true // Default to available on error
-  }
-}, [supplier])
-
-
-// useEffect(() => {
-//   console.log('🔍 === DEBUGGING REPLACEMENT BANNER ===')
-//   console.log('Current URL:', window.location.href)
-//   console.log('Search params:', window.location.search)
-  
-//   const urlParams = new URLSearchParams(window.location.search)
-//   console.log('From parameter:', urlParams.get('from'))
-  
-//   const storedContext = sessionStorage.getItem('replacementContext')
-//   console.log('Session storage context:', storedContext)
-  
-//   console.log('Current replacementContext state:', replacementContext)
-//   console.log('Should show banner:', !!replacementContext?.isReplacement)
-  
-// }, [replacementContext])
-
-
-
-  // Fix the party plan validation with stable reference
-  useEffect(() => {
-    const checkAndSetValidity = () => {
-      const isValid = hasValidPartyPlanDebug()
-      setHasValidPlan(prevValid => {
-        if (prevValid !== isValid) {
-          return isValid
-        }
-        return prevValid
-      })
-    }
-    
-    checkAndSetValidity()
-    
-    let timeoutId
-    const handleStorageChange = () => {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(checkAndSetValidity, 100)
-    }
-    
-    window.addEventListener('storage', handleStorageChange)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      clearTimeout(timeoutId)
-    }
-  }, [])
-
-  // Use the state value instead of calling the function
-  const hasValidPartyPlan = useCallback(() => hasValidPlan, [hasValidPlan])
-
-  // Memoized packages
-  const packages = useMemo(() => {
-    if (!supplier) return []
-    if (supplier.packages && supplier.packages.length > 0) {
-      return supplier.packages.map((pkg, index) => ({
-        id: pkg.id || `real-${index}`,
-        name: pkg.name,
-        price: pkg.price,
-        duration: pkg.duration,
-        image: pkg.image,
-        features: pkg.whatsIncluded || pkg.features || [],
-        popular: pkg.id === selectedPackageId || (!selectedPackageId && index === 0),
-        description: pkg.description,
-      }))
-    }
-    
-    const basePrice = supplier.priceFrom || 100
-    const priceUnit = supplier.priceUnit || "per event"
-    const category = supplier.category || "service"
-    const serviceName = category.toLowerCase()
-    
-    const defaultPackages = [
-      {
-        id: "basic",
-        name: "Basic Package",
-        price: Math.round(basePrice * 1.0),
-        duration: priceUnit,
-        features: ["Standard service", "Up to 15 children", "Basic setup"],
-        description: `Basic ${serviceName} package`,
-      },
-      {
-        id: "premium",
-        name: "Premium Package",
-        price: Math.round(basePrice * 1.5),
-        duration: priceUnit,
-        features: ["Enhanced service", "Professional setup", "Up to 25 children"],
-        description: `Enhanced ${serviceName} package`,
-      },
-      {
-        id: "deluxe",
-        name: "Deluxe Package",
-        price: Math.round(basePrice * 2.0),
-        duration: priceUnit,
-        features: ["Premium service", "Full setup & cleanup", "Up to 35 children"],
-        description: `Complete ${serviceName} package`,
-      },
-    ]
-    
-    return defaultPackages.map((pkg, index) => ({
-      ...pkg,
-      popular: pkg.id === selectedPackageId || (!selectedPackageId && index === 0),
-    }))
-  }, [supplier, selectedPackageId])
-
-  // Other memoized values (portfolio, credentials, reviews)
-  const portfolioImages = useMemo(() => {
-    const defaultImages = [
-      { id: "default-main", title: "Fun Party Main", image: `/placeholder.jpg`, alt: "Main party event image" },
-      { id: "default-small-1", title: "Kids Playing", image: `/placeholder.jpg`, alt: "Kids playing at party" },
-      { id: "default-small-2", title: "Party Games", image: `/placeholder.jpg`, alt: "Fun party games" },
-      { id: "default-extra-1", title: "Decorations", image: `/placeholder.jpg`, alt: "Colorful party decorations" },
-      { id: "default-extra-2", title: "Happy Children", image: `/placeholder.jpg`, alt: "Happy children celebrating" },
-      { id: "default-extra-3", title: "Birthday Cake", image: `/placeholder.jpg`, alt: "Birthday cake with candles" },
-    ]
-
-    if (supplier?.portfolioImages && supplier.portfolioImages.length > 0) {
-      const supplierProvidedImages = supplier.portfolioImages.map((img, index) => ({
-        id: img.id || `portfolio-${index}`,
-        title: img.title || `Portfolio Image ${index + 1}`,
-        image: img.image || img.src || `/placeholder.svg?height=400&width=300&query=portfolio+${index + 1}`,
-        description: img.description,
-        alt: img.alt || img.title || `Portfolio image ${index + 1}`,
-      }))
-      return [...supplierProvidedImages, ...defaultImages.slice(supplierProvidedImages.length)].slice(0, 6)
-    }
-    return defaultImages.slice(0, 6)
-  }, [supplier?.portfolioImages])
-
-  const credentials = useMemo(() => [
-    {
-      title: "DBS Certificate",
-      subtitle: "Enhanced - Valid until Dec 2025",
-      icon: <Shield className="w-5 h-5" />,
-      verified: supplier?.serviceDetails?.certifications?.dbsCertificate,
-    },
-    {
-      title: "Public Liability",
-      subtitle: "£2M Coverage - Valid",
-      icon: <Shield className="w-5 h-5" />,
-      verified: supplier?.serviceDetails?.certifications?.publicLiability,
-    },
-    {
-      title: "First Aid Certified",
-      subtitle: "Pediatric First Aid - 2024",
-      icon: <CheckCircle className="w-5 h-5" />,
-      verified: supplier?.serviceDetails?.certifications?.firstAid,
-    },
-    {
-      title: "ID Verified",
-      subtitle: "Identity confirmed",
-      icon: <Award className="w-5 h-5" />,
-      verified: supplier?.verified,
-    },
-  ].filter((cred) => cred.verified), [supplier?.serviceDetails?.certifications, supplier?.verified])
-
-  const reviews = useMemo(() => [
-    {
-      id: 1,
-      name: "Sarah T.",
-      avatar: "/andrew.jpg",
-      rating: 5,
-      date: "2 weeks ago",
-      text: "Absolutely fantastic! Made my son's 6th birthday unforgettable.",
-      images: ["/placeholder.jpg", "/placeholder.jpg"],
-    },
-    {
-      id: 2,
-      name: "Mike J.",
-      avatar: "/andrew.jpg",
-      rating: 5,
-      date: "1 month ago",
-      text: "Professional, punctual, and incredibly entertaining.",
-    },
-    {
-      id: 3,
-      name: "Emma D.",
-      avatar: "/andrew.jpg",
-      rating: 4,
-      date: "2 months ago",
-      text: "Great entertainment value. Kids loved it.",
-    },
-  ], [])
-
-    // Stable function references
-    const getSupplierInPartyDetails = useCallback(() => {
-        if (!supplier) return { inParty: false, currentPackage: null, supplierType: null }
-        
-        const isInAddons = hasAddon(supplier.id)
-        const mainSlots = ["venue", "entertainment", "catering", "facePainting", "activities", "partyBags"]
-        const supplierInMainSlot = mainSlots.find((slot) => partyPlan[slot]?.id === supplier.id)
-    
-        if (isInAddons) {
-          const addon = partyPlan.addons?.find((addon) => addon.id === supplier.id)
-          return {
-            inParty: true,
-            currentPackage: addon?.packageId || null,
-            supplierType: "addon",
-            currentSupplierData: addon,
-          }
-        }
-        
-        if (supplierInMainSlot) {
-          const supplierData = partyPlan[supplierInMainSlot]
-          return {
-            inParty: true,
-            currentPackage: supplierData?.packageId || null,
-            supplierType: supplierInMainSlot,
-            currentSupplierData: supplierData,
-          }
-        }
-        
-        return { inParty: false, currentPackage: null, supplierType: null }
-      }, [supplier, hasAddon, partyPlan])
-
-  useEffect(() => {
-    if (packages.length > 0 && !selectedPackageId) {
-      const partyDetails = getSupplierInPartyDetails()
-      
-      if (partyDetails.inParty && partyDetails.currentPackage) {
-        setSelectedPackageId(partyDetails.currentPackage)
-      } else {
-        setSelectedPackageId(packages[0].id)
-      }
-    }
-  }, [packages, selectedPackageId, getSupplierInPartyDetails])
-
-
-  const handleAlaCarteBooking = useCallback(async (partyDetails) => {
-  
-    if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-      console.log('🚫 User trying to add supplier - showing pending enquiry modal')
-      setShowPendingEnquiryModal(true)
-      return // Exit early
-    }
-  
-    try {
-      // Close modal first
-      setShowAlaCarteModal(false)
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Start loading states
-      setIsAddingToPlan(true)
-      setLoadingStep(0)
-      setProgress(10)
-  
-      // ✅ FIX 1: Validate required data
-      if (!partyDetails) {
-        throw new Error('No party details provided')
-      }
-  
-      if (!supplier) {
-        throw new Error('No supplier data available')
-      }
-  
-      // Get selected package
-      const selectedPkg = packages.find(pkg => pkg.id === selectedPackageId)
-      if (!selectedPkg) {
-        throw new Error('No package selected')
-      }
-      
-      console.log('📦 Selected package:', selectedPkg)
-      console.log('🏪 Supplier:', { id: supplier.id, name: supplier.name, category: supplier.category })
-      
-      setProgress(25)
-  
-      const enhancedPartyDetails = {
-        // Essential party info
-        childName: partyDetails.childName || 'Your Child',
-        childAge: parseInt(partyDetails.childAge) || 6,
-        date: partyDetails.date || new Date().toISOString().split('T')[0], // Fallback to today
-        time: partyDetails.time || '14:00',
-        location: partyDetails.location || 'London',
-        postcode: partyDetails.postcode || 'SW1A 1AA',
-        guestCount: parseInt(partyDetails.guestCount) || 10,
-        theme: partyDetails.theme || 'superhero',
-        
-        // Pricing
-        totalPrice: partyDetails.totalPrice || selectedPkg.price,
-        basePrice: partyDetails.basePrice || selectedPkg.price,
-        selectedAddons: partyDetails.selectedAddons || [],
-        
-        // Metadata
-        createdAt: new Date().toISOString(),
-        source: 'a_la_carte',
-        
-        // ✅ PRESERVE A-LA-CARTE SPECIFIC FIELDS - This was missing!
-        firstName: partyDetails.firstName, // Preserve first name
-        lastName: partyDetails.lastName,   // Preserve last name  
-        skipWelcomePopup: partyDetails.skipWelcomePopup, // Preserve skip flag
-        timeSlot: partyDetails.timeSlot,   // Preserve time slot
-        
-        // Add essential fields that might be missing
-        duration: partyDetails.duration || '2 hours',
-        budget: partyDetails.totalPrice || selectedPkg.price
-      }
-      
-      console.log('✨ Enhanced party details:', enhancedPartyDetails)
-  
-      setProgress(40)
-  
-      // ✅ FIX 4: Save party details with error handling
-      try {
-        localStorage.setItem('party_details', JSON.stringify(enhancedPartyDetails))
-        console.log('💾 Party details saved to localStorage')
-        
-        // Verify it was saved
-        const saved = localStorage.getItem('party_details')
-        if (!saved) {
-          throw new Error('Failed to save party details to localStorage')
-        }
-      } catch (storageError) {
-        console.error('❌ Storage error:', storageError)
-        throw new Error('Failed to save party details')
-      }
-  
-      setProgress(60)
-  
-      // ✅ FIX 5: Improved category mapping with debug
-      const getCategoryMapping = (category) => {
-        const mapping = {
-          'Entertainment': 'entertainment',
-          'Venues': 'venue',
-          'Venue': 'venue', 
-          'Catering': 'catering',
-          'Face Painting': 'facePainting',
-          'Activities': 'activities',
-          'Party Bags': 'partyBags',
-          'Decorations': 'decorations',
-          'Balloons': 'balloons',
-          'Photography': 'photography'
-        }
-        
-        const result = mapping[category] || 'entertainment'
-        console.log('🎯 Category mapping:', category, '→', result)
-        return result
-      }
-  
-      const supplierCategory = getCategoryMapping(supplier.category)
-  
-      // ✅ FIX 6: Create robust party plan structure
-      const partyPlan = {
-        // Initialize all possible slots
-        venue: null,
-        entertainment: null,
-        catering: null,
-        facePainting: null,
-        activities: null,
-        partyBags: null,
-        decorations: null,
-        balloons: null,
-        photography: null,
-        
-        // Add the selected supplier to correct category
-        [supplierCategory]: {
-          id: supplier.id,
-          name: supplier.name,
-          description: supplier.description || `${supplier.category} service`,
-          price: enhancedPartyDetails.totalPrice,
-          status: "confirmed", // ✅ FIX: Set as confirmed for à la carte
-          image: supplier.image || supplier.coverPhoto || supplier.avatar,
-          category: supplier.category,
-          priceUnit: supplier.priceUnit || "per event",
-          packageId: selectedPkg.id,
-          packageData: {
-            ...selectedPkg,
-            selectedAddons: enhancedPartyDetails.selectedAddons,
-            totalPrice: enhancedPartyDetails.totalPrice,
-            basePrice: enhancedPartyDetails.basePrice,
-            addonsPriceTotal: enhancedPartyDetails.totalPrice - enhancedPartyDetails.basePrice
-          },
-          selectedAddons: enhancedPartyDetails.selectedAddons,
-          totalPrice: enhancedPartyDetails.totalPrice,
-          basePrice: enhancedPartyDetails.basePrice,
-          addedAt: new Date().toISOString(),
-          originalSupplier: {
-            ...supplier,
-            // Include backend data if available
-            ...(backendSupplier || {})
-          },
-          // ✅ FIX 7: Add à la carte specific fields
-          bookingMethod: 'a_la_carte',
-          confirmed: true
-        },
-        
-    
-        
-        // Initialize empty addons array
-        addons: [],
-        
-        // ✅ FIX 8: Add metadata
-        createdAt: new Date().toISOString(),
-        source: 'a_la_carte',
-        theme: enhancedPartyDetails.theme
-      }
-  
-      console.log('🎪 Created party plan:')
-      console.log('  - Supplier category:', supplierCategory)
-      console.log('  - Supplier data:', partyPlan[supplierCategory])
-      console.log('  - Total slots filled:', Object.keys(partyPlan).filter(key => 
-        partyPlan[key] && typeof partyPlan[key] === 'object' && partyPlan[key].name
-      ).length)
-  
-      setProgress(80)
-  
-      // ✅ FIX 9: Save party plan with verification
-      try {
-        localStorage.setItem('user_party_plan', JSON.stringify(partyPlan))
-        console.log('💾 Party plan saved to localStorage')
-        
-        // Verify it was saved correctly
-        const savedPlan = localStorage.getItem('user_party_plan')
-        if (!savedPlan) {
-          throw new Error('Failed to save party plan to localStorage')
-        }
-        
-        const parsedPlan = JSON.parse(savedPlan)
-        if (!parsedPlan[supplierCategory] || !parsedPlan[supplierCategory].name) {
-          throw new Error('Party plan structure is incorrect after saving')
-        }
-        
-        console.log('✅ Party plan verified in localStorage')
-      } catch (storageError) {
-        console.error('❌ Storage error:', storageError)
-        throw new Error('Failed to save party plan')
-      }
-  
-      setProgress(95)
-  
-      // ✅ FIX 10: Success notification
-      const addonMessage = enhancedPartyDetails.selectedAddons?.length > 0 
-        ? ` with ${enhancedPartyDetails.selectedAddons.length} add-on${enhancedPartyDetails.selectedAddons.length > 1 ? 's' : ''}` 
-        : ''
-      
-      setNotification({ 
-        type: "success", 
-        message: `🎉 ${supplier.name} added to your party plan${addonMessage}!` 
-      })
-  
-      setProgress(100)
-      console.log('✅ À la carte booking completed successfully')
-  
-      // Wait for progress animation and notification
-      await new Promise(resolve => setTimeout(resolve, 1500))
-  
-      // ✅ FIX 11: Navigate with proper URL parameters
-      console.log('🚀 Navigating to dashboard with welcome flag')
-      router.push("/dashboard?show_welcome=true&source=a_la_carte")
-  
-    } catch (error) {
-      console.error("❌ Error in handleAlaCarteBooking:", error)
-      console.error("❌ Error stack:", error.stack)
-      
-      setNotification({ 
-        type: "error", 
-        message: `Failed to create party plan: ${error.message}. Please try again.` 
-      })
-      
-      // Clear notification after 5 seconds
-      setTimeout(() => setNotification(null), 5000)
-    } finally {
-      // ✅ FIX 12: Always clean up loading states
-      setIsAddingToPlan(false)
-      setProgress(0)
-      setLoadingStep(0)
-      console.log('🔧 Cleanup completed')
-    }
-  }, [packages, selectedPackageId, supplier, backendSupplier, router])
-
-
-
-
-  const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
-    console.log('🚀 === HANDLE ADD TO PLAN START ===')
-    console.log('🚀 userType:', userType)
-    console.log('🚀 selectedDate:', selectedDate)
-    console.log('🚀 skipAddonModal:', skipAddonModal)
-    console.log('🚀 addonData:', addonData)
-  
-    // Check if user has pending enquiries - ONLY for database users
-    if (userType === 'DATABASE_USER' && enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-      console.log('🚫 Database user has pending enquiries - showing pending enquiry modal')
-      setShowPendingEnquiryModal(true)
-      return
-    }
-  
-    // Basic validation
-    if (!supplier || !selectedPackageId) {
-      setNotification({ type: "error", message: "Please select a package first." })
-      setTimeout(() => setNotification(null), 3000)
-      return
-    }
-    
-    // Get behavior based on user type
-    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-    console.log('🚀 Behavior:', behavior)
-    
-    // 1. DATE PICKER FLOW - For anonymous/new users who need to select a date first
-    if (behavior.shouldShowDatePicker) {
-      console.log('📅 Showing date picker prompt')
-      const calendarElement = document.getElementById('availability-calendar')
-      if (calendarElement) {
-        calendarElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center',
-          inline: 'nearest'
-        })
-        
-        calendarElement.classList.add('ring-4', 'ring-orange-300', 'ring-opacity-75', 'transition-all', 'duration-500')
-        setTimeout(() => {
-          calendarElement?.classList.remove('ring-4', 'ring-orange-300', 'ring-opacity-75')
-        }, 2500)
-      }
-      
-      setNotification({ 
-        type: "info", 
-        message: "📅 Please select an available date from the calendar below first!",
-        duration: 4000
-      })
-      setTimeout(() => setNotification(null), 4000)
-      return
-    }
-  
-    // 2. AVAILABILITY CHECK #1 - For users with calendar selected dates
-    if (selectedDate && currentMonth) {
-      const dateString = getSelectedCalendarDate()
-      console.log('🔍 CALENDAR DATE AVAILABILITY CHECK')
-      console.log('🔍 selectedDate:', selectedDate)
-      console.log('🔍 currentMonth:', currentMonth)
-      console.log('🔍 dateString:', dateString)
-      
-      if (dateString) {
-        const isAvailable = checkSupplierAvailability(dateString)
-        console.log('🔍 Calendar date availability result:', isAvailable)
-        
-        if (!isAvailable) {
-          console.log('🚫 Supplier unavailable on calendar selected date - showing unavailable modal')
-          setShowUnavailableModal(true)
-          return
-        }
-      }
-    }
-  
-    // 3. AVAILABILITY CHECK #2 - For users with party dates from localStorage/database
-    if (!selectedDate && (userType === 'LOCALSTORAGE_USER' || userType === 'DATABASE_USER' || userType === 'MIGRATION_NEEDED')) {
-      let partyDateToCheck = null
-      
-      console.log('🔍 PARTY DATE AVAILABILITY CHECK')
-      console.log('🔍 userType:', userType)
-      
-      // For localStorage users, check party_details
-      if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
-        try {
-          const partyDetails = localStorage.getItem('party_details')
-          if (partyDetails) {
-            const parsed = JSON.parse(partyDetails)
-            partyDateToCheck = parsed.date
-            console.log('🔍 Party date from localStorage:', partyDateToCheck)
-          }
-        } catch (error) {
-          console.log('❌ Could not parse party details for date check:', error)
-        }
-      }
-      
-      // For database users, check their party data
-      if (userType === 'DATABASE_USER' && userContext?.partyData?.date) {
-        partyDateToCheck = userContext.partyData.date
-        console.log('🔍 Party date from database:', partyDateToCheck)
-      }
-      
-      if (partyDateToCheck) {
-        console.log('🔍 Checking availability for party date:', partyDateToCheck)
-        const isAvailable = checkSupplierAvailability(partyDateToCheck)
-        console.log('🔍 Party date availability result:', isAvailable)
-        
-        if (!isAvailable) {
-          console.log('🚫 Supplier unavailable on party date - showing unavailable modal')
-          // Set selectedDate temporarily for modal display
-          try {
-            const tempDate = new Date(partyDateToCheck + 'T12:00:00')
-            setSelectedDate(tempDate.getDate())
-            setCurrentMonth(new Date(tempDate.getFullYear(), tempDate.getMonth(), 1))
-          } catch (error) {
-            console.log('❌ Error setting temporary date for modal:', error)
-          }
-          setShowUnavailableModal(true)
-          return
-        }
-      }
-    }
-  
-    // 4. À LA CARTE FLOW - For anonymous users with selected dates
-    if (behavior.shouldShowAlaCarteModal) {
-      console.log('🎪 Opening à la carte modal for anonymous user with date')
-      setShowAlaCarteModal(true)
-      return
-    }
-    
-    // 5. CATEGORY OCCUPATION CHECK - ONLY for database users with current party ID
-    if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-      console.log('🔍 Checking category occupation for database user')
-      try {
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-        if (partyResult.success && partyResult.party?.party_plan) {
-          const dbPartyPlan = partyResult.party.party_plan
-          
-          const categoryMap = {
-            'Entertainment': 'entertainment',
-            'Venues': 'venue', 
-            'Catering': 'catering',
-            'Decorations': 'decorations',
-            'Party Bags': 'partyBags',
-            'Photography': 'photography',
-            'Activities': 'activities',
-            'Face Painting': 'facePainting'
-          }
-          
-          const slotName = categoryMap[supplier.category]
-          const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
-          
-          if (isSlotOccupied) {
-            console.log('🚫 Database user - category occupied, blocking')
-            setNotification({ 
-              type: "info", 
-              message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`,
-              duration: 4000
-            })
-            setTimeout(() => setNotification(null), 4000)
-            return
-          } else {
-            console.log('✅ Database user - category empty, proceeding with auto-enquiry')
-          }
-        }
-      } catch (error) {
-        console.log('❌ Database check failed, continuing...', error)
-        // For database users, if the check fails, we should probably not proceed
-        if (userType === 'DATABASE_USER') {
-          setNotification({ 
-            type: "error", 
-            message: "Unable to verify party status. Please try again." 
-          })
-          setTimeout(() => setNotification(null), 3000)
-          return
-        }
-      }
-    }
-    
-    // 6. PACKAGE VALIDATION
-    const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
-    if (!selectedPkg) {
-      setNotification({ type: "error", message: "Selected package not found." })
-      setTimeout(() => setNotification(null), 3000)
-      return
-    }
-  
-    // 7. ADDON MODAL CHECK - Show addon modal if supplier has addons and we haven't skipped it
-    // BUT skip this if we already have addon data (coming from cake modal)
-    const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
-    const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
-  
-    if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
-      console.log('🎭 Showing addon modal (availability already checked)')
-      setShowAddonModal(true)
-      return
-    }
-  
-    // 8. START ADDING PROCESS
-    console.log('🚀 Starting add to plan process')
-    setIsAddingToPlan(true)
-    setLoadingStep(0)
-    setProgress(10)
-  
-    try {
-      // Prepare package data
-      const packageToAdd = addonData?.package || selectedPkg
-      const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
-      
-      const enhancedPackage = {
-        ...packageToAdd,
-        addons: addonData?.addons || [],
-        originalPrice: selectedPkg.price,
-        totalPrice: finalPrice,
-        addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0,
-        // ✅ PRESERVE CAKE CUSTOMIZATION DATA
-        cakeCustomization: packageToAdd.cakeCustomization || null,
-        packageType: packageToAdd.packageType || 'standard',
-        supplierType: packageToAdd.supplierType || 'standard'
-      }
-  
-      console.log('🎯 Enhanced package:', enhancedPackage)
-      setProgress(30)
-  
-      let result
-      setLoadingStep(1)
-  
-      // 9. DATABASE USER FLOW - Only for actual database users
-      if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-        console.log('📊 Database user - adding supplier to database')
-        setProgress(50)
-        
-        const addResult = await partyDatabaseBackend.addSupplierToParty(
-          userContext.currentPartyId,
-          backendSupplier,
-          enhancedPackage
-        )
-        
-        setProgress(70)
-        setLoadingStep(2)
-        
-        if (addResult.success && behavior.shouldSendEnquiry) {
-          console.log('📧 Sending auto-enquiry for empty category')
-          setLoadingStep(3)
-          const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
-            userContext.currentPartyId,
-            backendSupplier,
-            enhancedPackage,
-            `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
-          )
-          
-          if (enquiryResult.success) {
-            console.log('✅ Auto-enquiry sent successfully')
-          }
-        }
-        
-        result = addResult
-      }
-      // 10. LOCALSTORAGE USER FLOW - Default for non-database users
-      else {
-        console.log('📦 LocalStorage user - adding supplier to localStorage')
-        setProgress(50)
-        setLoadingStep(2)
-        
-        const partyDetails = getSupplierInPartyDetails()
-        if (partyDetails.inParty) {
-          if (partyDetails.supplierType === "addon") {
-            await removeAddon(supplier.id)
-            result = await addSupplier(backendSupplier, enhancedPackage)
-          } else {
-            result = await addSupplier(backendSupplier, enhancedPackage)
-          }
-        } else {
-          const mainCategories = ["Venues", "Catering", "Party Bags", "Face Painting", "Activities", "Entertainment"]
-          if (mainCategories.includes(supplier.category || "")) {
-            result = await addSupplier(backendSupplier, enhancedPackage)
-          } else {
-            const addonDataToAdd = {
-              ...supplier,
-              price: finalPrice,
-              packageId: enhancedPackage.id,
-              selectedAddons: enhancedPackage.addons,
-              packageData: enhancedPackage
-            }
-            result = await addAddon(addonDataToAdd)
-          }
-        }
-      }
-  
-      setLoadingStep(4)
-      setProgress(100)
-  
-      // 11. SUCCESS HANDLING
-      if (result?.success) {
-        let successMessage = `${supplier.name} added to your party`
-        
-        // Add cake customization message if present
-        if (enhancedPackage.cakeCustomization) {
-          successMessage += ` with ${enhancedPackage.cakeCustomization.flavorName} flavor`
-        }
-        
-        // Add addon message if present
-        const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
-        successMessage += addonMessage
-        
-        if (behavior.shouldSendEnquiry) {
-          successMessage += ' and enquiry sent!'
-        } else {
-          successMessage += '!'
-        }
-        
-        setNotification({ 
-          type: "success", 
-          message: successMessage 
-        })
-        
-        setTimeout(() => setNotification(null), 3000)
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        
-        // Navigate based on context
-        if (navigationContext === "dashboard") {
-          navigateWithContext("/dashboard", "supplier-detail")
-        } else {
-          router.push("/dashboard")
-        }
-      } else {
-        throw new Error(result?.error || "Failed to add supplier")
-      }
-  
-    } catch (error) {
-      console.error("❌ Error in handleAddToPlan:", error)
-      setNotification({ 
-        type: "error", 
-        message: error.message || "Failed to add supplier. Please try again." 
-      })
-      setTimeout(() => setNotification(null), 3000)
-    } finally {
-      // 12. CLEANUP
-      setIsAddingToPlan(false)
-      setProgress(0)
-      setLoadingStep(0)
-      setShowAddonModal(false)
-      setSelectedAddons([])
-      setFinalPackageData(null)
-      console.log('🔧 handleAddToPlan cleanup completed')
-    }
-  }, [
-    userType, 
-    userContext, 
-    supplier, 
-    selectedPackageId, 
-    selectedDate, 
-    currentMonth,
-    packages, 
-    getSupplierInPartyDetails, 
-    addSupplier, 
-    addAddon, 
-    removeAddon, 
-    backendSupplier, 
-    navigationContext, 
-    navigateWithContext, 
-    router, 
-    checkSupplierAvailability, 
-    getSelectedCalendarDate,
-    enquiryStatus
-  ])
-
-  const getAddToPartyButtonState = useCallback((packageIdToCompare) => {
-    const currentPackageId = packageIdToCompare || selectedPackageId
-    const partyDetails = getSupplierInPartyDetails()
-    const isLoadingThisPackage = isAddingToPlan && selectedPackageId === currentPackageId
-    
-    // Handle loading state first
-    if (isLoadingThisPackage) {
-      return {
-        disabled: true,
-        className: "bg-gray-400",
-        text: (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            {partyDetails.inParty && partyDetails.currentPackage === currentPackageId ? "Updating..." : "Adding..."}
-          </>
-        ),
-      }
-    }
-    
-    // ✅ NEW: Check if we're in replacement mode
-    const urlParams = new URLSearchParams(window.location.search)
-    const isInReplacementMode = urlParams.get('from') === 'replacement' || !!replacementContext?.isReplacement
-    
-    // ✅ FIX: Skip date validation for replacement mode
-    if (isInReplacementMode) {
-      console.log('🔄 In replacement mode - skipping date validation')
-      return {
-        disabled: false,
-        className: "bg-primary-500 hover:bg-primary-600 text-white",
-        text: "Add to Plan"
-      }
-    }
-    
-    // Get behavior from user type detection
-    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-    
-    // ✅ EXISTING: Handle different user types correctly (only for non-replacement mode)
-    switch (userType) {
-      case 'ANONYMOUS':
-      case 'ERROR_FALLBACK':
-        // Only anonymous users need date selection flow
-        if (!selectedDate) {
-          return {
-            disabled: false,
-            className: "bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white",
-            text: "📅 Pick a Date First"
-          }
-        } else {
-          return {
-            disabled: false,
-            className: "bg-primary-500 hover:bg-[hsl(var(--primary-600))]  text-white",
-            text: "Book This Supplier"
-          }
-        }
-        
-      case 'LOCALSTORAGE_USER':
-      case 'MIGRATION_NEEDED':
-        // Show "In Plan" for localStorage users with the same package
-        if (partyDetails.inParty && partyDetails.currentPackage === currentPackageId) {
-          return {
-            disabled: true,
-            className: "bg-teal-500 hover:bg-teal-500 text-white cursor-not-allowed",
-            text: (
-              <>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                In Plan
-              </>
-            ),
-          }
-        } else {
-          return {
-            disabled: false,
-            className: "bg-primary-500 hover:bg-primary-600 text-white",
-            text: "Add to Plan"
-          }
-        }
-        
-      case 'DATABASE_USER':
-      case 'DATA_CONFLICT':
-        // Database users - always show "Add to Plan" (category check happens in handler)
-        return {
-          disabled: false,
-          className: "bg-primary-500 hover:bg-primary-600 text-white",
-          text: "Add to Plan"
-        }
-        
-      default:
-        // Unknown user type - check if package is selected
-        if (!currentPackageId) {
-          return {
-            disabled: true,
-            className: "bg-gray-300 text-gray-500 cursor-not-allowed",
-            text: "Select a Package",
-          }
-        }
-        
-        // Fallback to behavior text
-        return { 
-          disabled: behavior.buttonDisabled || false, 
-          className: behavior.buttonDisabled 
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-primary-500 hover:bg-primary-600 text-white", 
-          text: behavior.buttonText
-        }
-    }
-  }, [userType, userContext, supplier, selectedDate, selectedPackageId, getSupplierInPartyDetails, isAddingToPlan, replacementContext])
-  const ReplacementApproveButton = ({ 
-    selectedPackage, 
-    selectedPackageId, 
-    packages, 
-    replacementContext, 
-    router 
-  }) => {
-    const handleApprovePackage = () => {
-      console.log('✅ Approving package in replacement mode:', selectedPackageId)
-      
-      // Store the selected package info in replacement context
-      try {
-        const currentContext = sessionStorage.getItem('replacementContext')
-        if (currentContext) {
-          const parsedContext = JSON.parse(currentContext)
-          
-          // Get the selected package
-          const selectedPkg = packages.find((pkg) => pkg.id === selectedPackageId)
-          
-          // Update context with current package selection
-          const updatedContext = {
-            ...parsedContext,
-            selectedPackageId: selectedPackageId,
-            selectedPackageData: selectedPkg,
-            lastViewedAt: new Date().toISOString()
-          }
-          
-          console.log('💾 Updating replacement context with package:', updatedContext)
-          sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
-        }
-      } catch (error) {
-        console.error('❌ Error updating context with package:', error)
-      }
-      
-      // Set flags to restore modal in "upgraded" state and navigate back
-      sessionStorage.setItem('shouldRestoreReplacementModal', 'true')
-      sessionStorage.setItem('modalShowUpgrade', 'true')
-      
-      // Navigate back to dashboard
-      if (replacementContext?.returnUrl) {
-        router.push(replacementContext.returnUrl)
-      } else {
-        router.push('/dashboard')
-      }
-    }
-  
-    // Only show if we're in replacement mode
-    const urlParams = new URLSearchParams(window.location.search)
-    const isInReplacementMode = urlParams.get('from') === 'replacement' || !!replacementContext?.isReplacement
-    
-    if (!isInReplacementMode) return null
-  
-    return (
-      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-lg">🐊</span>
-            </div>
-            <div>
-              <h4 className="font-semibold text-orange-900 text-sm">
-                Replacement Selection
-              </h4>
-              <p className="text-sm text-orange-700">
-                {selectedPackage?.name} - £{selectedPackage?.price}
-              </p>
-            </div>
-          </div>
-          
-          <button
-            onClick={handleApprovePackage}
-            disabled={!selectedPackageId}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-              selectedPackageId 
-                ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm' 
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            ✅ Approve This Package
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-
 
 
 
@@ -1698,14 +244,13 @@ const checkSupplierAvailability = useCallback((dateToCheck) => {
     // })
     
     handleAddToPlan(true, addonData)
-  }, [supplier, addAddon, handleAddToPlan])
+  }, [supplier, addAddon, booking.handleAddToPlan])
   
   const handleAddonModalClose = useCallback(() => {
     setShowAddonModal(false)
     setSelectedAddons([])
     setFinalPackageData(null)
   }, [])
-
 
 
   if (hasLoadedOnce && (supplierError || !supplier)) {
@@ -1741,28 +286,20 @@ if (userTypeLoading) {
 }
 
 
-
-  // Compute these values once
-  const dashboardContext = isFromDashboard()
-  const userPartyDate = getPartyDate()
-
-
-
   return (
     <div className="bg-[#F4F5F7] min-h-screen font-sans">
 
-      <NotificationPopup notification={notification} />
+      <NotificationPopup notification={notifications.notification} />
 
  
-{/* Add the new unavailable modal */}
-<SupplierUnavailableModal
-      isOpen={showUnavailableModal}
-      onClose={() => setShowUnavailableModal(false)}
-      supplier={supplier}
-      selectedDate={getSelectedCalendarDate()}
-      onSelectNewDate={handleSelectNewDate}
-      onViewAlternatives={handleViewAlternatives}
-    />
+      <SupplierUnavailableModal
+  isOpen={modals.showUnavailableModal}
+  onClose={modals.closeUnavailableModal}  // ← Use modals hook
+  supplier={supplier}
+  selectedDate={availability.getSelectedCalendarDate()}
+  onSelectNewDate={() => modals.handleSelectNewDate(availability.setSelectedDate)}  // ← Pass the setter
+  onViewAlternatives={() => modals.handleViewAlternatives(supplier, availability.getSelectedCalendarDate, router)}  // ← Pass required params
+/>
       <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
 
 
@@ -1770,9 +307,9 @@ if (userTypeLoading) {
       <SupplierHeader
         supplier={supplier}
         portfolioImages={portfolioImages}
-        getSupplierInPartyDetails={getSupplierInPartyDetails}
-        getAddToPartyButtonState={getAddToPartyButtonState}
-        handleAddToPlan={handleAddToPlan}
+        getSupplierInPartyDetails={booking.getSupplierInPartyDetails}
+        getAddToPartyButtonState={booking.getAddToPartyButtonState}
+        handleAddToPlan={handleAddToPlanWithModals}
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1782,21 +319,21 @@ if (userTypeLoading) {
           <SupplierPackagesRouter
   supplier={supplier}
   packages={packages}
-  selectedPackageId={selectedPackageId}
-  setSelectedPackageId={setSelectedPackageId}
-  handleAddToPlan={handleAddToPlan}
-  getAddToPartyButtonState={getAddToPartyButtonState}
-  getSupplierInPartyDetails={getSupplierInPartyDetails}
-  onShowNotification={setNotification}
-  isReplacementMode={!!replacementContext?.isReplacement}
+  selectedPackageId={booking.selectedPackageId}
+  setSelectedPackageId={booking.setSelectedPackageId}
+  handleAddToPlan={booking.handleAddToPlan}
+  getAddToPartyButtonState={booking.getAddToPartyButtonState}
+  getSupplierInPartyDetails={booking.getSupplierInPartyDetails}
+  onShowNotification={notifications.setNotification}
+  isReplacementMode={replacement.isReplacementMode} 
 />
 
 
             {/* NEW: Add selected date confirmation */}
   <SelectedDateBanner 
-    selectedDate={selectedDate}
-    currentMonth={currentMonth}
-    onClearDate={() => setSelectedDate(null)}
+    selectedDate={availability.selectedDate}
+    currentMonth={availability.currentMonth}
+    onClearDate={() => availability.setSelectedDate(null)}
   />
     <ServiceDetailsDisplayRouter supplier={supplier} />
             <SupplierPortfolioGallery 
@@ -1814,16 +351,19 @@ if (userTypeLoading) {
             <SupplierSidebar
               supplier={supplier}
               packages={packages}
-              selectedPackageId={selectedPackageId}
-              handleAddToPlan={handleAddToPlan}
-              getAddToPartyButtonState={getAddToPartyButtonState}
-              currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
+              selectedPackageId={booking.selectedPackageId}
+              handleAddToPlan={handleAddToPlanWithModals}
+              getAddToPartyButtonState={booking.getAddToPartyButtonState}
+              currentMonth={availability.currentMonth}
+              setCurrentMonth={availability.setCurrentMonth}
+              selectedDate={availability.selectedDate}
+              setSelectedDate={availability.setSelectedDate}
               credentials={credentials}
-              isFromDashboard={dashboardContext}
-              partyDate={userPartyDate}
+              isFromDashboard={availability.isFromDashboard()}
+              partyDate={availability.getPartyDate()}
+              openCakeModal={modals.openCakeModal}
+              showCakeModal={modals.showCakeModal}
+              isCakeSupplier={isCakeSupplier}
             />
           </aside>
         </div>
@@ -1831,87 +371,98 @@ if (userTypeLoading) {
 
       <SupplierActionBar
         supplierPhoneNumber={supplier.phone}
-        getAddToPartyButtonState={() => getAddToPartyButtonState(selectedPackageId)}
-        handleAddToPlan={handleAddToPlan}
+        getAddToPartyButtonState={() => booking.getAddToPartyButtonState(selectedPackageId)}
+        handleAddToPlan={booking.handleAddToPlan}
       />
 
       <AddonSelectionModal
-        isOpen={showAddonModal}
+        isOpen={modals.showAddonModal}
         onClose={handleAddonModalClose}
         onConfirm={handleAddonConfirm}
         supplier={supplier}
-        selectedPackage={packages.find(pkg => pkg.id === selectedPackageId)}
+        selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
         isEntertainer={supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"}
       />
 
       <AddingToPlanModal
-        isAddingToPlan={isAddingToPlan}
-        loadingStep={loadingStep}
+        isAddingToPlan={booking.isAddingToPlan}
+        loadingStep={booking.loadingStep}
         theme={partyPlan?.theme || "default"}
-        progress={progress}
+        progress={booking.progress}
       />
+
+
 
 
 <MobileBookingBar 
-   selectedPackage={packages.find(pkg => pkg.id === selectedPackageId) || packages[0] || null}
-   supplier={supplier}
-   onAddToPlan={handleAddToPlan}
-   addToPlanButtonState={getAddToPartyButtonState(selectedPackageId)}
-   selectedDate={selectedDate}
-   currentMonth={currentMonth}
-   setSelectedDate={setSelectedDate}
-   setCurrentMonth={setCurrentMonth}
-   hasValidPartyPlan={hasValidPartyPlan}
-   isFromDashboard={dashboardContext}
-   partyDate={userPartyDate}
-   onSaveForLater={(data) => {
-     setNotification({ 
-       type: "success", 
-       message: `${supplier.name} saved for later!` 
-     });
-     setTimeout(() => setNotification(null), 3000);
-   }}
-   showAddonModal={showAddonModal}
-   setShowAddonModal={setShowAddonModal}
-   onAddonConfirm={handleAddonConfirm}
-   isAddingToPlan={isAddingToPlan}
-   hasEnquiriesPending={hasEnquiriesPending}
-   onShowPendingEnquiryModal={() => setShowPendingEnquiryModal(true)}
-   pendingCount={getPendingEnquiriesCount()}
-   isReplacementMode={!!replacementContext?.isReplacement}
-   replacementSupplierName={replacementContext?.supplierName || replacementContext?.newSupplierName || supplier?.name}
-   onReturnToReplacement={handleReturnToReplacement}
-   packages={packages}
-
+  selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId) || packages[0] || null}
+  supplier={supplier}
+  onAddToPlan={handleAddToPlanWithModals}
+  addToPlanButtonState={booking.getAddToPartyButtonState(booking.selectedPackageId)}
+  selectedDate={availability.selectedDate}
+  currentMonth={availability.currentMonth}
+  setSelectedDate={availability.setSelectedDate}
+  setCurrentMonth={availability.setCurrentMonth}
+  hasValidPartyPlan={availability.hasPartyDate}  // ← Use availability hook function
+  isFromDashboard={availability.isFromDashboard()}  // ← Call the function
+  partyDate={availability.getPartyDate()}  // ← Call the function
+  onSaveForLater={(data) => {
+    notifications.showSaveForLater(supplier.name)  // ← Use notifications hook
+  }}
+  showAddonModal={modals.showAddonModal}
+  setShowAddonModal={modals.setShowAddonModal}
+  onAddonConfirm={(addonData) => modals.handleAddonConfirm(addonData, handleAddToPlanWithModals)}  // ← Use modals hook handler
+  isAddingToPlan={booking.isAddingToPlan}
+  hasEnquiriesPending={enquiries.hasEnquiriesPending}
+  onShowPendingEnquiryModal={modals.openPendingEnquiryModal}  // ← Use modals hook
+  pendingCount={enquiries.getPendingEnquiriesCount()}
+  isReplacementMode={replacement.isReplacementMode}  // ← Use replacement hook
+  replacementSupplierName={replacement.replacementSupplierName}  // ← Use replacement hook
+  onReturnToReplacement={replacement.handleReturnToReplacement}  // ← Use replacement hook
+  packages={packages}
+  openCakeModal={modals.openCakeModal}
+  showCakeModal={modals.showCakeModal}
+  isCakeSupplier={isCakeSupplier}
 />
 
-      {/* Only render modal when it should be open AND we have valid data */}
-      {showAlaCarteModal && supplier && (
-        <AlaCarteModal
-          isOpen={showAlaCarteModal}
-          onClose={() => setShowAlaCarteModal(false)}
-          supplier={supplier}
-          selectedPackage={packages.find(pkg => pkg.id === selectedPackageId)}
-          onBuildFullParty={() => {
-            setShowAlaCarteModal(false)
-            router.push('/party-builder')
-          }}
-          onJustBookSupplier={handleAlaCarteBooking}
-          preSelectedDate={getSelectedCalendarDate()} 
-        />
-      )}
- <PendingEnquiryModal
-        isOpen={showPendingEnquiryModal}
-        onClose={() => setShowPendingEnquiryModal(false)}
-        supplier={supplier}
-        pendingCount={getPendingEnquiriesCount()}
-        enquiries={enquiryStatus.enquiries} // NEW: Pass actual enquiry data
-        estimatedResponseTime="24 hours"
-        onViewDashboard={() => {
-          setShowPendingEnquiryModal(false)
-          router.push('/dashboard')
-        }}
-      />
+
+{modals.showCakeModal && isCakeSupplier && modals.selectedPackageForCake && (
+ <CakeCustomizationModal
+ isOpen={modals.showCakeModal}
+ onClose={modals.closeCakeModal}
+ supplier={supplier}
+ selectedPackage={modals.selectedPackageForCake}
+ onConfirm={(enhancedPackage) => modals.handleCakeConfirm(enhancedPackage, handleAddToPlanWithModals)}
+/>
+)}
+
+
+{modals.showAlaCarteModal && supplier && (
+  <AlaCarteModal
+    isOpen={modals.showAlaCarteModal}
+    onClose={() => modals.setShowAlaCarteModal(false)}
+    supplier={supplier}
+    selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
+    onBuildFullParty={() => {
+      setShowAlaCarteModal(false)
+      router.push('/party-builder')
+    }}
+    onJustBookSupplier={booking.handleAlaCarteBookingEnhanced} // ✅ Use enhanced handler
+    preSelectedDate={availability.getSelectedCalendarDate()} 
+  />
+)}
+<PendingEnquiryModal
+  isOpen={modals.showPendingEnquiryModal}
+  onClose={modals.closePendingEnquiryModal}
+  supplier={supplier}
+  pendingCount={enquiries.getPendingEnquiriesCount()}
+  enquiries={enquiries.getPendingEnquiries()}
+  estimatedResponseTime="24 hours"
+  onViewDashboard={() => {
+    modals.closePendingEnquiryModal()
+    router.push('/dashboard')
+  }}
+/>
     </div>
   )
 }

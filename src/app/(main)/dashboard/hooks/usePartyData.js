@@ -308,6 +308,7 @@ export function usePartyData() {
     partyBags: partyData.partyBags || null,
     decorations: partyData.decorations || null,
     balloons: partyData.balloons || null,
+    cakes: partyData.cakes || null
   }
 
   return {

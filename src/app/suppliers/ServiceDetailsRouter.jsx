@@ -33,7 +33,19 @@ const ServiceDetailsRouter = ({
             currentBusiness={currentBusiness}
           />
         );
-      
+        case 'cakes':
+          case 'cake':
+          case 'baker':
+          case 'bakery':
+            return (
+              <CateringServiceDetails  // Can reuse the same component
+                serviceDetails={serviceDetails}
+                onUpdate={onUpdate}
+                saving={saving}
+                supplierData={supplierData}
+                currentBusiness={currentBusiness}
+              />
+            );
       case 'venues':
       case 'venue':
         return (

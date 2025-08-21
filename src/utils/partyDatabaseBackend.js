@@ -1440,6 +1440,7 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
       'Activities': 'activities',
       'Face Painting': 'facePainting',
       'Balloons': 'balloons',
+      'Cakes' : 'cakes',
       
       // Handle lowercase versions too
       'entertainment': 'entertainment',
@@ -1453,7 +1454,8 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
       'activities': 'activities',
       'face painting': 'facePainting',
       'facepainting': 'facePainting',
-      'balloons': 'balloons'
+      'balloons': 'balloons',
+      'cakes' : 'cakes'
     }
     
     const result = mapping[category] || mapping[category?.toLowerCase()] || null
@@ -2347,7 +2349,8 @@ getFallbackCategories(originalCategory) {
     'face painting': ['Face Painting', 'Entertainment', 'Activities'],
     'facePainting': ['Face Painting', 'Entertainment', 'Activities'],
     'party bags': ['Party Bags', 'Catering'],
-    'partyBags': ['Party Bags', 'Catering']
+    'partyBags': ['Party Bags', 'Catering'],
+    'cakes' : ['Cakes', 'cakes']
   }
   
   const fallbacks = categoryMappings[originalCategory?.toLowerCase()] || []
@@ -2360,7 +2363,8 @@ getFallbackCategories(originalCategory) {
     'Decorations', 
     'Activities', 
     'Face Painting', 
-    'Party Bags'
+    'Party Bags',
+    'Cakes'
   ]
   
   // Combine specific fallbacks with general ones, remove duplicates
@@ -2788,11 +2792,13 @@ mapCategoryToSupplierType(category) {
     'face painting': 'facePainting',
     'facepainting': 'facePainting',
     'balloons': 'balloons',
+    'cakes': 'cakes',
     
     // Supplier categories (title case from suppliers table) 
     'Entertainment': 'entertainment',
     'Venues': 'venue',
     'Catering': 'catering',
+    'Cakes': 'cakes',
     'Decorations': 'decorations',
     'Party Bags': 'partyBags',
     'Photography': 'photography',

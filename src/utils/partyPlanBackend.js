@@ -12,6 +12,7 @@ const CATEGORY_TYPE_MAP = {
     'Photography': 'photography',
     'Activities': 'activities',
     'Face Painting': 'facePainting',
+    'Cakes' : 'cakes'
 };
 
 // Then in your saveInviteToPartyPlan function:
@@ -53,6 +54,7 @@ const DEFAULT_PARTY_PLAN = {
   facePainting: null,
   activities: null,
   partyBags: null,
+  cakes: null,
   addons: []
 };
 
@@ -541,7 +543,7 @@ getTotalCost() {
   const plan = this.getPartyPlan();
   
   // Only include real supplier types, not einvites
-  const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+  const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes'];
   
   const supplierCost = realSupplierTypes
     .filter(type => plan[type] !== null && plan[type] !== undefined)

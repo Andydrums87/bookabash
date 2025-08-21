@@ -152,6 +152,7 @@ const ServiceDetailsDisplayRouter = ({ supplier }) => {
             case 'catering':
               return <CateringDisplay {...serviceOnlyProps} />;
             
+            
             case 'decorations':
               return <DecorationsDisplay {...serviceOnlyProps} />;
             

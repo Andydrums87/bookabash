@@ -65,7 +65,7 @@ export default function MobileSupplierNavigation({
       emoji: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753870206/ChatGPT_Image_Jul_30_2025_11_09_59_AM_rx1pgs.png",
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg",
       icon: <Utensils className="w-5 h-5" />,
-      types: ["catering", "partyBags"],
+      types: ["catering", "cakes"],
     },
     {
       id: "finishing",

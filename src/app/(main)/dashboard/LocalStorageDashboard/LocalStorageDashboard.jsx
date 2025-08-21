@@ -365,15 +365,29 @@ export default function LocalStorageDashboard() {
     }
   }
 
-  // Modal handlers
   const openSupplierModal = (category, theme = 'superhero') => {
     console.log('🔓 Opening supplier modal:', { category, theme })
+    
+    // Map frontend category to backend supplier type
+    const supplierTypeMapping = {
+      venue: 'Venues',
+      entertainment: 'Entertainment', 
+      catering: 'Catering',
+      cakes: 'Cakes',              // 🎂 Now searches for "Cakes" supplier type
+      facePainting: 'Face Painting',
+      activities: 'Activities',
+      decorations: 'Decorations',
+      // ... others
+    }
     
     setModalConfig({
       category,
       theme,
       date: partyDetails?.date,
-      filters: {}
+      filters: {
+        supplierType: supplierTypeMapping[category] || category,
+        categoryDisplay: category
+      }
     })
     setShowSupplierModal(true)
   }
@@ -578,6 +592,8 @@ export default function LocalStorageDashboard() {
     partyBags: partyPlan.partyBags || null,
     decorations: partyPlan.decorations || null,
     balloons: partyPlan.balloons || null,
+    cakes: partyPlan.cakes || null,        // 🎂 Just add this line
+
   }
 
   // Budget control props
@@ -609,30 +625,7 @@ export default function LocalStorageDashboard() {
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
       
-      {/* ✅ DEBUG: Temporary debug info (remove in production) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          position: 'fixed', 
-          top: '10px', 
-          right: '10px', 
-          background: 'rgba(0,0,0,0.8)', 
-          color: 'white', 
-          padding: '10px', 
-          borderRadius: '5px', 
-          fontSize: '12px', 
-          zIndex: 9999,
-          maxWidth: '300px'
-        }}>
-          <strong>Debug Info:</strong><br/>
-          Mounted: {debugInfo.mounted ? 'Yes' : 'No'}<br/>
-          Client: {debugInfo.isClient ? 'Yes' : 'No'}<br/>
-          URL Welcome: {debugInfo.showWelcomeFromURL ? 'Yes' : 'No'}<br/>
-          Storage Trigger: {debugInfo.welcomeTrigger ? 'Yes' : 'No'}<br/>
-          Party Data: {debugInfo.partyDetails ? 'Yes' : 'No'}<br/>
-          Popup Shown: {debugInfo.alreadyShown ? 'Yes' : 'No'}<br/>
-          Show Popup: {showWelcomePopup ? 'Yes' : 'No'}<br/>
-        </div>
-      )}
+  
 
       <AddonProvider
         addAddon={handleAddAddon}
