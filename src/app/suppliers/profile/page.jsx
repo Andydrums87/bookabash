@@ -612,16 +612,7 @@ useEffect(() => {
         <div className="p-4 sm:p-6">
           <div className="flex flex-col gap-4 lg:gap-6">
             
-            {/* ✅ Business Context Header */}
-            {currentBusiness && (
-              <Alert className="border-blue-200 bg-blue-50">
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Editing Profile:</strong> {currentBusiness.name} • {currentBusiness.serviceType} • {currentBusiness.theme}
-                  {currentBusiness.isPrimary && <span className="ml-2 text-blue-600 font-medium">• Primary Business</span>}
-                </AlertDescription>
-              </Alert>
-            )}
+           
 {/* Add debug modal here */}
 
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
@@ -680,12 +671,12 @@ useEffect(() => {
               {/* Action buttons - Mobile Optimized */}
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto lg:items-start">
                 {/* Global Save Button */}
-                <div className="order-1 sm:order-2">
+                <div className="absolute top-1 right-10">
                   <GlobalSaveButton position="responsive" onSave={handleSaveChanges} isLoading={saving} />
                 </div>
 
                 {/* Preview Profile Button */}
-                <div className="order-2 sm:order-1">
+                {/* <div className="order-2 sm:order-1">
                   {supplierData?.isComplete && (
                     <Button
                       variant="outline"
@@ -696,7 +687,7 @@ useEffect(() => {
                       Preview Profile
                     </Button>
                   )}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

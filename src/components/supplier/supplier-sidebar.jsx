@@ -115,9 +115,9 @@ export default function SupplierSidebar({
           
           {/* ✅ ENHANCED: Use custom handler instead of direct handleAddToPlan */}
           <Button
-            className={`w-full py-3 text-base ${addToPlanButtonState.className}`}
+            className={`w-full py-3 text-base ${getAddToPartyButtonState().className}`}
             onClick={handleSidebarAddToPlan}
-            disabled={addToPlanButtonState.disabled}
+            disabled={getAddToPartyButtonState().disabled}
           >
         
               { addToPlanButtonState.text}

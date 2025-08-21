@@ -538,22 +538,40 @@ addAddonToPlan(addon) {
     return () => eventEmitter.off('partyPlanUpdated', callback);
   }
 
-// ✅ FIXED: Calculate total cost excluding einvites
-getTotalCost() {
-  const plan = this.getPartyPlan();
-  
-  // Only include real supplier types, not einvites
-  const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes'];
-  
-  const supplierCost = realSupplierTypes
-    .filter(type => plan[type] !== null && plan[type] !== undefined)
-    .reduce((total, type) => total + (plan[type].price || 0), 0);
-  
-  const addonCost = (plan.addons || [])
-    .reduce((total, addon) => total + (addon.price || 0), 0);
-  
-  return supplierCost + addonCost;
-}
+  getTotalCost() {
+    const plan = this.getPartyPlan();
+    
+    // Get current guest count
+    let guestCount = 10;
+    try {
+      const partyDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
+      guestCount = parseInt(partyDetails.guestCount) || 10;
+    } catch (error) {
+      // Use fallback
+    }
+    
+    const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes'];
+    
+    const supplierCost = realSupplierTypes
+      .filter(type => plan[type] !== null && plan[type] !== undefined)
+      .reduce((total, type) => {
+        const supplier = plan[type];
+        
+        // Special handling for party bags - calculate based on current guest count
+        if (type === 'partyBags') {
+          const basePrice = supplier.packageData?.basePrice || supplier.pricePerBag || supplier.price || 5.00;
+          return total + (basePrice * guestCount);
+        }
+        
+        // Normal pricing for everything else
+        return total + (supplier.price || 0);
+      }, 0);
+    
+    const addonCost = (plan.addons || [])
+      .reduce((total, addon) => total + (addon.price || 0), 0);
+    
+    return supplierCost + addonCost;
+  }
   getAddons() {
     const plan = this.getPartyPlan();
     return plan.addons || [];

@@ -10,6 +10,11 @@ export const useReplacementMode = () => {
 
   // Initialize replacement context from URL and session storage
   useEffect(() => {
+    // ✅ FIX: Only run in browser environment
+    if (typeof window === 'undefined') {
+      return
+    }
+    
     console.log('🔄 Initializing replacement mode hook')
     
     // 1. Check URL parameters
@@ -50,6 +55,11 @@ export const useReplacementMode = () => {
 
   // Store current supplier data for replacement
   const storeCurrentSupplierData = useCallback((supplier) => {
+    // ✅ FIX: Check browser environment
+    if (typeof window === 'undefined') {
+      return
+    }
+    
     if (replacementContext?.isReplacement && supplier?.category) {
       console.log('🏪 Storing current supplier data for replacement:', supplier)
       
@@ -99,6 +109,11 @@ export const useReplacementMode = () => {
 
   // Check if currently in replacement mode
   const isReplacementMode = useCallback(() => {
+    // ✅ FIX: Check if we're in browser environment
+    if (typeof window === 'undefined') {
+      return false
+    }
+    
     const urlParams = new URLSearchParams(window.location.search)
     const isInReplacementMode = urlParams.get('from') === 'replacement' || !!replacementContext?.isReplacement
     return isInReplacementMode

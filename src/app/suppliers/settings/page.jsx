@@ -273,7 +273,7 @@ const Settings = () => {
         )}
 
         {/* Global Save Button - Mobile Optimized */}
-        <div className="absolute right-10">
+        <div className="absolute right-10 top-1">
           <GlobalSaveButton position="responsive" onSave={handleSaveSettings} isLoading={saving} />
         </div>
 

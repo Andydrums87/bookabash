@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Plus, X, Clock, Users, Star, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle, Plus, X, Clock, Users, Star, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react"
 
 const useIsMobile = (breakpoint = 640) => {
   const [isMobile, setIsMobile] = useState(false)
@@ -192,24 +192,38 @@ const PackageCard = ({
             Replacement
           </div>
         )}
-
-        {/* Enhanced Image Container - NO MASK, proper aspect ratio */}
-        <div className={`relative mx-auto mb-2 rounded-2xl overflow-hidden ${
-          isMobileView ? 'w-full h-32' : 'w-full h-40 md:h-48 mt-3'
-        }`}>
-          <Image
-            src={imageError ? "/placeholder.png" : (pkg.image || pkg.imageUrl || "/placeholder.png")}
-            alt={pkg.name || "package image"}
-            fill
-            className="object-contain group-hover:brightness-110 group-hover:scale-105 transition-all duration-300"
-            sizes={isMobileView ? "280px" : "(max-width: 640px) 96px, (max-width: 768px) 128px, 200px"}
-            onError={() => setImageError(true)}
-          />
-          
-          {/* Gradient overlay for better text readability if needed */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        </div>
-
+     {pkg.image || pkg.imageUrl ? (
+          <div className="relative w-full ">
+                
+                 <div
+                                 className="relative w-[90%] h-[280px] mask-image mx-auto"
+                                 style={{
+                                   WebkitMaskImage: 'url("/image.svg")',
+                                   WebkitMaskRepeat: 'no-repeat',
+                                   WebkitMaskSize: 'contain',
+                                   WebkitMaskPosition: 'center',
+                                   maskImage: 'url("/image.svg")',
+                                   maskRepeat: 'no-repeat',
+                                   maskSize: 'contain',
+                                   maskPosition: 'center',
+                                 }}
+                               >
+                                 <Image
+                                   src={
+                                     pkg.image || pkg.imageUrl || "/placeholder.png"
+                                   }
+                                   alt={pkg.name || "Package image"}
+                                   fill
+                                   className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                 />
+                               </div>
+               </div>
+ ) : (
+  <div className="w-full h-48 bg-muted flex items-center justify-center">
+    <ImageIcon className="h-16 w-16 text-gray-400" />
+  </div>
+)}
         {/* Title */}
         <h3 className={`font-bold text-gray-800 truncate mb-1 px-1 group-hover:text-gray-900 transition-colors duration-200 ${
           isMobileView ? 'text-base' : 'text-base sm:text-lg md:text-xl px-2'
@@ -222,27 +236,24 @@ const PackageCard = ({
           <p className={`font-bold text-primary group-hover:text-primary transition-colors duration-200 ${
             isMobileView ? 'text-lg' : 'text-base sm:text-lg'
           }`}>
-            £{pkg.price}
+            £{pkg.price} <span className="text-gray-400 text-xs">{pkg.duration}</span>
           </p>
           <div className={`flex items-center justify-center gap-2 text-gray-500 mt-1 ${
             isMobileView ? 'text-xs gap-1' : 'text-xs sm:text-sm gap-2 sm:gap-3'
           }`}>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              <span>{pkg.duration}</span>
-            </div>
-            <span className="capitalize">{pkg.priceType?.replace("_", " ")}</span>
+         
+        
           </div>
         </div>
 
         {/* Features - Show fewer on mobile */}
-        <div className={`flex flex-wrap justify-center items-center gap-1 mb-2 px-1 ${
+        {/* <div className={`flex flex-wrap justify-center items-center gap-1 mb-2 px-1 ${
           isMobileView ? 'gap-1 mb-3' : 'gap-1 sm:gap-2 mb-2 sm:mb-4 px-1 sm:px-2'
         }`}>
           {features.slice(0, visibleCount).map((feature, i) => (
             <span
               key={i}
-              className={`bg-[#fff0ee] text-gray-900 font-medium rounded-full group-hover:bg-[#ffebe8] group-hover:scale-105 transition-all duration-200 ${
+              className={`bg-primary-400 text-white font-medium rounded-full group-hover:bg-[hsl(var(--primary-500))] group-hover:scale-105 transition-all duration-200 ${
                 isMobileView ? 'text-xs px-2 py-1' : 'text-xs px-2 sm:px-2.5 py-1'
               }`}
             >
@@ -256,7 +267,7 @@ const PackageCard = ({
               +{extraCount} more
             </span>
           )}
-        </div>
+        </div> */}
 
         {/* Buttons with mobile-optimized sizing */}
         {isInPlanPackage ? (

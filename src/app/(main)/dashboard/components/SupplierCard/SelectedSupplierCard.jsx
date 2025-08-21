@@ -38,6 +38,8 @@ export default function SelectedSupplierCard({
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
 
+  
+
   // 🎂 NEW: Extract cake customization data
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization || type === 'cakes'  // Also check if type is cakes

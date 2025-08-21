@@ -146,7 +146,7 @@ console.log(supplier)
         {/* Content Section (Avatar, Name, Badges, Description) - Wrapped in a container */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6 w-full">
-            <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-lg -mt-16 md:-mt-20 flex-shrink-0 z-10 rounded-3xl">
+            <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white bg-white shadow-lg -mt-16 md:-mt-20 flex-shrink-0 z-10 rounded-3xl">
               <AvatarImage
                 src={supplier.avatar || "/placeholder.png"}
                 alt={supplier.name}

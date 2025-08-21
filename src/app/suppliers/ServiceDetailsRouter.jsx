@@ -6,6 +6,7 @@ import FacePaintingServiceDetails from './profile/components/FacePaintingService
 import CateringServiceDetails from './profile/components/CateringServiceDetails';
 import BouncyCastleServiceDetails from './profile/components/BouncyCastleServiceDetails';
 import DecorationsServiceDetails from './profile/components/DecorationsServiceDetails';
+import PartyBagsServiceDetails from './profile/components/PartyBagServiceDetails';
 
 
 const ServiceDetailsRouter = ({ 
@@ -33,6 +34,19 @@ const ServiceDetailsRouter = ({
             currentBusiness={currentBusiness}
           />
         );
+        case 'party bags':
+      case 'partybags':
+      case 'party_bags':
+        return (
+          <PartyBagsServiceDetails
+            serviceDetails={serviceDetails}
+            onUpdate={onUpdate}
+            saving={saving}
+            supplierData={supplierData}
+            currentBusiness={currentBusiness}
+          />
+        );
+        
         case 'cakes':
           case 'cake':
           case 'baker':

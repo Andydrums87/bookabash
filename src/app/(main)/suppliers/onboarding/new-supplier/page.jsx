@@ -15,7 +15,7 @@ import {
   Wrench,
   Star,
   ShieldCheck,
-  Zap,
+  Zap,  
   Rocket,
   PlayCircle,
 } from "lucide-react"

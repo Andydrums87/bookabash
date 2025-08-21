@@ -6,8 +6,10 @@ import ConfirmedSupplierCard from './ConfirmedSupplierCard'
 import PaymentConfirmedSupplierCard from './PaymentConfirmedSupplierCard'
 import DeclinedSupplierCard from './DeclinedSupplierCard'
 
+
 export default function SupplierCard({
   type,
+  partyDetails,
   supplier,
   loadingCards = [],
   suppliersToDelete = [],
@@ -112,14 +114,19 @@ export default function SupplierCard({
     return uniqueAddons
   })()
 
-  // ✅ FIXED: Calculate total price including enquiry addons
   const getTotalPrice = () => {
     if (!supplier) return 0
     
-    const basePrice = supplier.price || 0
-    const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+    let basePrice = supplier.price || 0
     
-   
+    // For party bags, multiply by guest count
+    if (supplier.category === 'Party Bags' || type === 'partyBags') {
+      const pricePerBag = supplier.packageData?.basePrice || supplier.price || 5.00
+      const guestCount = partyDetails?.guestCount || 10
+      basePrice = pricePerBag * guestCount
+    }
+    
+    const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
     
     return basePrice + addonsPrice
   }

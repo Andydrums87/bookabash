@@ -33,7 +33,7 @@ export function GlobalSaveButton({
   const getPositionClasses = () => {
     switch (position) {
       case "top-right":
-        return "fixed top-4 right-4 z-50"
+        return "fixed top-20 right-4 z-10"
       case "bottom-right":
         return "fixed bottom-4 right-4 z-50"
       case "bottom-center":
@@ -43,7 +43,7 @@ export function GlobalSaveButton({
       case "sticky-bottom":
         return "sticky bottom-4 ml-auto w-fit"
       case "responsive":
-        return "md:sticky md:top-4 md:ml-auto md:w-fit md:relative fixed bottom-4 right-4 z-50"
+        return "md:sticky md:top-30 md:ml-auto md:w-fit md:relative fixed bottom-4 right-8 z-50"
       case "inline":
       default:
         return ""

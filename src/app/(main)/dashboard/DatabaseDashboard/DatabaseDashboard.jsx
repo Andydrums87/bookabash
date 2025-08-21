@@ -532,7 +532,71 @@ export default function DatabaseDashboard() {
   const handleAddSupplier = () => navigateWithContext('/browse', 'dashboard')
   const handlePaymentReady = () => router.push('/payment/secure-party')
   const handleCreateInvites = () => window.location.href = "/e-invites"
-
+  const calculatePartyBagsDisplayPrice = (supplier, guestCount) => {
+    // Only calculate for party bags
+    if (supplier.category !== 'Party Bags' && supplier.type !== 'partyBags') {
+      return supplier.price;
+    }
+  
+    // Get base price per bag
+    const basePrice = supplier.packageData?.basePrice || 
+                     supplier.pricePerBag || 
+                     supplier.basePrice || 
+                     5.00; // fallback
+  
+    const guests = parseInt(guestCount) || 10; // fallback to 10
+    const totalPrice = basePrice * guests;
+  
+    return {
+      totalPrice,
+      basePrice,
+      guestCount: guests,
+      displayText: `${guests} bags × £${basePrice.toFixed(2)} = £${totalPrice.toFixed(2)}`,
+      isCalculated: true
+    };
+  };
+  
+  // Update your getTotalPrice function in SupplierCard.jsx
+  const getTotalPrice = () => {
+    if (!supplier) return 0
+    
+    // For party bags, calculate based on guest count
+    if (supplier.category === 'Party Bags' || type === 'partyBags') {
+      // Get guest count from various sources
+      let guestCount = null;
+      
+      // Try to get from partyDetails (both localStorage and database users)
+      if (typeof window !== 'undefined') {
+        try {
+          const partyDetails = localStorage.getItem('party_details');
+          if (partyDetails) {
+            const parsed = JSON.parse(partyDetails);
+            guestCount = parsed.guestCount;
+          }
+        } catch (error) {
+          console.log('Could not get guest count from localStorage');
+        }
+      }
+      
+      // Fallback to supplier's stored guest count or default
+      if (!guestCount) {
+        guestCount = supplier.guestCount || 10;
+      }
+      
+      const pricing = calculatePartyBagsDisplayPrice(supplier, guestCount);
+      
+      // Add addons to the calculated price
+      const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+      
+      return pricing.totalPrice + addonsPrice;
+    }
+    
+    // For other suppliers, use existing logic
+    const basePrice = supplier.price || 0;
+    const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+    
+    return basePrice + addonsPrice;
+  };
   // Loading state
   if (loading || !themeLoaded || phaseLoading) {
     return (

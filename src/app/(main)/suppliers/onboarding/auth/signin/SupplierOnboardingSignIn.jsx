@@ -35,7 +35,6 @@ export default function SupplierSignInPage() {
     const timestamp = Date.now().toString().slice(-6)
     return `${baseSlug}-${timestamp}`
   }
-  
   const getThemesFromServiceType = (serviceType) => {
     const themeMapping = {
       'magician': ['magic', 'superhero', 'general'],
@@ -51,7 +50,10 @@ export default function SupplierSignInPage() {
       'venue': ['general'],
       'Venues': ['general'],
       'catering': ['general'],
-      'Catering': ['general']
+      'Catering': ['general'],
+      'partybags': ['general', 'superhero', 'princess', 'unicorn', 'dinosaur', 'space', 'mermaid', 'pirate'],
+      'Party Bags': ['general', 'superhero', 'princess', 'unicorn', 'dinosaur', 'space', 'mermaid', 'pirate'],
+      'party bags': ['general', 'superhero', 'princess', 'unicorn', 'dinosaur', 'space', 'mermaid', 'pirate']
     }
     return themeMapping[serviceType] || ['general']
   }
@@ -398,38 +400,54 @@ export default function SupplierSignInPage() {
         }
       ],
   
-      'partyBags': [
-        {
-          id: "partybags-basic",
-          name: "Classic Party Bags",
-          price: 5,
-          duration: "Per bag",
-          priceType: "per_bag",
-          features: [
-            "Themed party bag",
-            "Small toys and treats",
-            "Stickers and pencils",
-            "Sweet treats"
-          ],
-          description: "Traditional party bags filled with fun treats and small toys for party guests."
-        },
-        {
-          id: "partybags-premium",
-          name: "Deluxe Party Bags",
-          price: 12,
-          duration: "Per bag",
-          priceType: "per_bag",
-          features: [
-            "Premium themed bags",
-            "Quality toys and games",
-            "Personalized items",
-            "Healthy snack options",
-            "Activity sheets",
-            "Special keepsake item"
-          ],
-          description: "Premium party bags with high-quality items and personalized touches that guests will treasure."
-        }
-      ],
+     'partyBags': [
+  {
+    id: "partybags-basic",
+    name: "Classic Party Bags",
+    price: 5,
+    duration: "Per bag",
+    priceType: "per_bag",
+    features: [
+      "Themed party bag",
+      "Small toys and treats",
+      "Stickers and pencils",
+      "Sweet treats"
+    ],
+    description: "Traditional party bags filled with fun treats and small toys for party guests."
+  },
+  {
+    id: "partybags-premium",
+    name: "Premium Party Bags",
+    price: 8,
+    duration: "Per bag",
+    priceType: "per_bag",
+    features: [
+      "Premium themed bags",
+      "Quality toys and games",
+      "Sticker sheets and activities",
+      "Healthy snack options",
+      "Activity sheets"
+    ],
+    description: "Enhanced party bags with better quality items and more variety that guests will love."
+  },
+  {
+    id: "partybags-luxury",
+    name: "Deluxe Party Bags",
+    price: 12,
+    duration: "Per bag",
+    priceType: "per_bag",
+    features: [
+      "Premium themed bags",
+      "Quality toys and games",
+      "Personalized items",
+      "Healthy snack options",
+      "Activity sheets",
+      "Special keepsake item"
+    ],
+    description: "Premium party bags with high-quality items and personalized touches that guests will treasure."
+  }
+],
+
   
       'decorations': [
         {
@@ -546,10 +564,28 @@ export default function SupplierSignInPage() {
       return packageTemplates[serviceType]
     }
     
+
+    const serviceTypeKey = Object.keys(packageTemplates).find(key => {
+      const lowerKey = key.toLowerCase();
+      const lowerServiceType = serviceType.toLowerCase();
+      
+      return lowerKey === lowerServiceType ||
+             lowerKey === lowerServiceType.replace(/\s+/g, '') ||
+             lowerKey === lowerServiceType.replace(/\s+/g, '_') ||
+             // 🎉 ADD PARTY BAGS MATCHING
+             (lowerKey === 'partybags' && (
+               lowerServiceType === 'party bags' ||
+               lowerServiceType === 'party_bags' ||
+               lowerServiceType === 'partybags'
+             ));
+    });
+    if (serviceTypeKey && packageTemplates[serviceTypeKey]) {
+      return packageTemplates[serviceTypeKey];
+    }  
     // Fallback generic packages
     return [
       {
-        id: "standard-basic",
+        id: "basic",
         name: "Standard Service",
         price: 150,
         duration: "1-2 hours",
@@ -562,7 +598,7 @@ export default function SupplierSignInPage() {
         description: `Quality ${serviceType} service for your party celebration.`
       },
       {
-        id: "standard-premium",
+        id: "premium",
         name: "Premium Service",
         price: 250,
         duration: "2-3 hours", 

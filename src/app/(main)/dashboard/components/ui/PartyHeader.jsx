@@ -3,10 +3,17 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Loader2 } from "lucide-react"
+import { Edit, Calendar, Users, MapPin, Sparkles, Clock, Loader2, Check, X } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar as CalendarPicker } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
 import EditPartyModal from "../Modals/EditPartyModal"
 import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
+// Import the UniversalModal components
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 
 // Utility functions
 const formatDateForDisplay = (dateInput) => {
@@ -147,14 +154,358 @@ const formatTimeRange = (startTime, duration = 2) => {
   return "2pm - 4pm"; // Fallback
 };
 
+// Date Edit Modal
+const DateEditModal = ({ isOpen, onClose, currentDate, onSave }) => {
+  const [selectedDate, setSelectedDate] = useState(currentDate || new Date());
+
+  const handleSave = () => {
+    onSave({ date: selectedDate });
+    onClose();
+  };
+
+  return (
+    <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
+      <ModalHeader 
+        title="Change Party Date" 
+        subtitle="Pick the perfect date for your celebration"
+        theme="fun"
+        icon={<Calendar className="w-6 h-6" />}
+      />
+      
+      <ModalContent>
+        <div className="space-y-4">
+          <CalendarPicker 
+            mode="single" 
+            selected={selectedDate} 
+            onSelect={setSelectedDate} 
+            className="rounded-md border w-full"
+          />
+        </div>
+      </ModalContent>
+
+      <ModalFooter theme="fun">
+        <div className="flex gap-3">
+          <Button 
+            onClick={onClose} 
+            variant="outline" 
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+          >
+            Save Date
+          </Button>
+        </div>
+      </ModalFooter>
+    </UniversalModal>
+  );
+};
+
+// Time Edit Modal
+const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onSave }) => {
+  const [startTime, setStartTime] = useState(currentStartTime || "14:00");
+  const [duration, setDuration] = useState(currentDuration || 2);
+
+  const timeOptions = [
+    { value: "09:00", label: "9am" },
+    { value: "10:00", label: "10am" },
+    { value: "11:00", label: "11am" },
+    { value: "12:00", label: "12pm" },
+    { value: "13:00", label: "1pm" },
+    { value: "14:00", label: "2pm" },
+    { value: "15:00", label: "3pm" },
+    { value: "16:00", label: "4pm" },
+    { value: "17:00", label: "5pm" },
+  ];
+
+  const durationOptions = [
+    { value: 1.5, label: "1½ hours" },
+    { value: 2, label: "2 hours" },
+    { value: 2.5, label: "2½ hours" },
+    { value: 3, label: "3 hours" },
+    { value: 3.5, label: "3½ hours" },
+    { value: 4, label: "4 hours" },
+  ];
+
+  const handleSave = () => {
+    onSave({ startTime, duration });
+    onClose();
+  };
+
+  return (
+    <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
+      <ModalHeader 
+        title="Change Party Time" 
+        subtitle="Set the perfect timing for your party"
+        theme="fun"
+        icon={<Clock className="w-6 h-6" />}
+      />
+      
+      <ModalContent>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Start Time</label>
+            <Select value={startTime} onValueChange={setStartTime}>
+              <SelectTrigger className="w-full pl-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {timeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Duration</label>
+            <Select value={duration.toString()} onValueChange={(value) => setDuration(parseFloat(value))}>
+              <SelectTrigger className="w-full pl-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {durationOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value.toString()}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Preview */}
+          <div className="bg-primary-50 rounded-lg p-3 border border-[hsl(var(--primary-200))]">
+            <div className="text-sm text-gray-500 font-medium">Party will run:</div>
+            <div className="font-bold text-gray-900">
+              {formatTimeForDisplay(startTime)} - {calculateEndTime(startTime, duration)}
+            </div>
+          </div>
+        </div>
+      </ModalContent>
+
+      <ModalFooter theme="fun">
+        <div className="flex gap-3">
+          <Button 
+            onClick={onClose} 
+            variant="outline" 
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+          >
+            Save Time
+          </Button>
+        </div>
+      </ModalFooter>
+    </UniversalModal>
+  );
+};
+
+// Age Edit Modal
+const AgeEditModal = ({ isOpen, onClose, currentAge, onSave }) => {
+  const [age, setAge] = useState(currentAge || 6);
+
+  const handleSave = () => {
+    onSave({ childAge: age });
+    onClose();
+  };
+
+  return (
+    <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
+      <ModalHeader 
+        title="Change Child's Age" 
+        subtitle="How old is the birthday star?"
+        theme="fun"
+        icon={<Users className="w-6 h-6" />}
+      />
+      
+      <ModalContent>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Age</label>
+            <Select value={age.toString()} onValueChange={(value) => setAge(parseInt(value))}>
+              <SelectTrigger className="w-full pl-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[2,3,4,5,6,7,8,9,10,11,12].map((ageOption) => (
+                  <SelectItem key={ageOption} value={ageOption.toString()}>
+                    {ageOption} years old
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </ModalContent>
+
+      <ModalFooter theme="fun">
+        <div className="flex gap-3">
+          <Button 
+            onClick={onClose} 
+            variant="outline" 
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+          >
+            Save Age
+          </Button>
+        </div>
+      </ModalFooter>
+    </UniversalModal>
+  );
+};
+
+// Guests Edit Modal
+const GuestsEditModal = ({ isOpen, onClose, currentGuestCount, onSave }) => {
+  const [guestCount, setGuestCount] = useState(currentGuestCount || "");
+
+  const guestOptions = [
+    { value: "5", label: "5 guests" },
+    { value: "10", label: "10 guests" },
+    { value: "15", label: "15 guests" },
+    { value: "20", label: "20 guests" },
+    { value: "25", label: "25 guests" },
+    { value: "30", label: "30+ guests" },
+  ];
+
+  const handleSave = () => {
+    onSave({ guestCount });
+    onClose();
+  };
+
+  return (
+    <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
+      <ModalHeader 
+        title="Change Guest Count" 
+        subtitle="How many friends are joining the party?"
+        theme="fun"
+        icon={<Users className="w-6 h-6" />}
+      />
+      
+      <ModalContent>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Number of Guests</label>
+            <Select value={guestCount} onValueChange={setGuestCount}>
+              <SelectTrigger className="w-full pl-2">
+                <SelectValue placeholder="Select guest count" />
+              </SelectTrigger>
+              <SelectContent>
+                {guestOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </ModalContent>
+
+      <ModalFooter theme="fun">
+        <div className="flex gap-3">
+          <Button 
+            onClick={onClose} 
+            variant="outline" 
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            disabled={!guestCount}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50"
+          >
+            Save Guest Count
+          </Button>
+        </div>
+      </ModalFooter>
+    </UniversalModal>
+  );
+};
+
+// Location Edit Modal
+const LocationEditModal = ({ isOpen, onClose, currentLocation, onSave }) => {
+  const [location, setLocation] = useState(currentLocation || "");
+
+  const handleSave = () => {
+    if (location.trim()) {
+      onSave({ location: location.trim() });
+      onClose();
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    }
+  };
+
+  return (
+    <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
+      <ModalHeader 
+        title="Change Party Location" 
+        subtitle="Where's the celebration happening?"
+        theme="fun"
+        icon={<MapPin className="w-6 h-6" />}
+      />
+      
+      <ModalContent>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Location/Postcode</label>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="e.g., SW1A 1AA"
+              className="w-full"
+            />
+          </div>
+        </div>
+      </ModalContent>
+
+      <ModalFooter theme="fun">
+        <div className="flex gap-3">
+          <Button 
+            onClick={onClose} 
+            variant="outline" 
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            disabled={!location.trim()}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50"
+          >
+            Save Location
+          </Button>
+        </div>
+      </ModalFooter>
+    </UniversalModal>
+  );
+};
+
 export default function PartyHeader({ 
   theme, 
   partyDetails, 
   onPartyDetailsChange, 
-  // NEW: Add dataSource and currentParty props to determine source
   dataSource = 'localStorage',
   currentParty = null,
-  // Budget props for mobile integration
   totalSpent = 0,
   tempBudget = 600,
   budgetControlProps = {},
@@ -163,10 +514,9 @@ export default function PartyHeader({
   isSignedIn = false,
   loading = false,
 }) {
-
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isBudgetExpanded, setIsBudgetExpanded] = useState(false)
+  const [editingModal, setEditingModal] = useState(null) // 'date', 'time', 'age', 'guests', 'location'
   const currentTheme = theme
 
   const isLocked = isSignedIn
@@ -271,6 +621,37 @@ export default function PartyHeader({
       onPartyDetailsChange(savedDetails);
     }
   };
+
+  // Handle modal edit save
+  const handleModalEditSave = (updates) => {
+    const savedDetails = savePartyDetails({ ...partyDetails, ...updates })
+    
+    if (onPartyDetailsChange) {
+      onPartyDetailsChange(savedDetails)
+    }
+    
+    setEditingModal(null)
+    
+    toast.success("Party details updated!", {
+      duration: 2000
+    })
+  }
+
+  // Handle card click
+  const handleCardClick = (cardType) => {
+    if (isLocked) {
+      toast.warning("Party details are locked once enquiries are sent to suppliers", {
+        title: "Party Details Locked",
+        description: "Contact support if you need to make changes.",
+        duration: 4000
+      })
+      return
+    }
+    
+    if (loading) return
+    
+    setEditingModal(cardType)
+  }
 
   const getModalPartyDetails = () => {
     const details = { ...partyDetails };
@@ -512,11 +893,16 @@ export default function PartyHeader({
               </p>
             </div>
 
+         
             {/* Mobile: Horizontal Scrolling Cards */}
             <div className="md:hidden">
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
                 {/* Date Card */}
-                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                <button
+                  onClick={() => handleCardClick('date')}
+                  className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center hover:bg-white/20 transition-colors text-left flex flex-col"
+                  disabled={loading || isLocked}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 bg-white/20 rounded-full">
                       <Calendar className="w-3 h-3" />
@@ -526,10 +912,14 @@ export default function PartyHeader({
                   <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
                     {displayDate}
                   </p>
-                </div>
+                </button>
 
                 {/* Time Card */}
-                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                <button
+                  onClick={() => handleCardClick('time')}
+                  className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center hover:bg-white/20 transition-colors text-left flex flex-col"
+                  disabled={loading || isLocked}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 bg-white/20 rounded-full">
                       <Clock className="w-3 h-3" />
@@ -539,10 +929,14 @@ export default function PartyHeader({
                   <p suppressHydrationWarning={true} className="font-bold text-xs leading-tight">
                     {displayTimeRange}
                   </p>
-                </div>
+                </button>
 
                 {/* Age Card */}
-                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                <button
+                  onClick={() => handleCardClick('age')}
+                  className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center hover:bg-white/20 transition-colors text-left flex flex-col"
+                  disabled={loading || isLocked}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 bg-white/20 rounded-full">
                       <Users className="w-3 h-3" />
@@ -552,10 +946,14 @@ export default function PartyHeader({
                   <p suppressHydrationWarning={true} className="font-bold text-sm">
                     {getChildAge()}
                   </p>
-                </div>
+                </button>
 
                 {/* Guests Card */}
-                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                <button
+                  onClick={() => handleCardClick('guests')}
+                  className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center hover:bg-white/20 transition-colors text-left flex flex-col"
+                  disabled={loading || isLocked}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 bg-white/20 rounded-full">
                       <Users className="w-3 h-3" />
@@ -565,10 +963,14 @@ export default function PartyHeader({
                   <p suppressHydrationWarning={true} className="font-bold text-sm">
                     {getGuestCount()}
                   </p>
-                </div>
+                </button>
 
                 {/* Location Card */}
-                <div className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center">
+                <button
+                  onClick={() => handleCardClick('location')}
+                  className="flex-shrink-0 w-32 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20 snap-center hover:bg-white/20 transition-colors text-left flex flex-col"
+                  disabled={loading || isLocked}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 bg-white/20 rounded-full">
                       <MapPin className="w-3 h-3" />
@@ -578,7 +980,7 @@ export default function PartyHeader({
                   <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
                     {getLocation()}
                   </p>
-                </div>
+                </button>
               </div>
               
               {/* Scroll indicator dots */}
@@ -593,38 +995,46 @@ export default function PartyHeader({
 
             {/* Desktop: Grid Layout */}
             <div className="hidden md:grid md:grid-cols-5 gap-4">
-              {/* Date */}
-              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Date Card */}
+              <button
+                onClick={() => handleCardClick('date')}
+                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                disabled={loading || isLocked}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Date</p>
                 </div>
-                <div className="space-y-0.5">
-                  <p suppressHydrationWarning={true} className="font-bold text-base leading-tight">
-                    {displayDate}
-                  </p>
-                </div>
-              </div>
+                <p suppressHydrationWarning={true} className="font-bold text-base leading-tight">
+                  {displayDate}
+                </p>
+              </button>
 
-              {/* Time */}
-              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Time Card */}
+              <button
+                onClick={() => handleCardClick('time')}
+                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                disabled={loading || isLocked}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <Clock className="w-5 h-5" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Time</p>
                 </div>
-                <div className="space-y-1">
-                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
-                    {displayTimeRange}
-                  </p>
-                </div>
-              </div>
+                <p suppressHydrationWarning={true} className="font-bold text-base leading-tight">
+                  {displayTimeRange}
+                </p>
+              </button>
 
-              {/* Age */}
-              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Age Card */}
+              <button
+                onClick={() => handleCardClick('age')}
+                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                disabled={loading || isLocked}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <Users className="w-5 h-5" />
@@ -634,10 +1044,14 @@ export default function PartyHeader({
                 <p suppressHydrationWarning={true} className="font-bold text-base">
                   {getChildAge()}
                 </p>
-              </div>
+              </button>
 
-              {/* Guests */}
-              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Guests Card */}
+              <button
+                onClick={() => handleCardClick('guests')}
+                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                disabled={loading || isLocked}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <Users className="w-5 h-5" />
@@ -647,10 +1061,14 @@ export default function PartyHeader({
                 <p suppressHydrationWarning={true} className="font-bold text-base">
                   {getGuestCount()}
                 </p>
-              </div>
+              </button>
 
-              {/* Location */}
-              <div className="flex flex-col space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+              {/* Location Card */}
+              <button
+                onClick={() => handleCardClick('location')}
+                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                disabled={loading || isLocked}
+              >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
                     <MapPin className="w-5 h-5" />
@@ -660,8 +1078,9 @@ export default function PartyHeader({
                 <p suppressHydrationWarning={true} className="font-bold text-base truncate">
                   {getLocation()}
                 </p>
-              </div>
+              </button>
             </div>
+         
           </div>
         </div>
 
@@ -669,7 +1088,44 @@ export default function PartyHeader({
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-300 to-secondary"></div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Modals */}
+      <DateEditModal
+        isOpen={editingModal === 'date'}
+        onClose={() => setEditingModal(null)}
+        currentDate={partyDetails?.date || (dataSource === 'database' ? new Date(currentParty?.party_date) : new Date())}
+        onSave={handleModalEditSave}
+      />
+
+      <TimeEditModal
+        isOpen={editingModal === 'time'}
+        onClose={() => setEditingModal(null)}
+        currentStartTime={dataSource === 'database' ? currentParty?.start_time : partyDetails?.startTime}
+        currentDuration={dataSource === 'database' ? currentParty?.duration : partyDetails?.duration}
+        onSave={handleModalEditSave}
+      />
+
+      <AgeEditModal
+        isOpen={editingModal === 'age'}
+        onClose={() => setEditingModal(null)}
+        currentAge={dataSource === 'database' ? currentParty?.child_age : partyDetails?.childAge}
+        onSave={handleModalEditSave}
+      />
+
+      <GuestsEditModal
+        isOpen={editingModal === 'guests'}
+        onClose={() => setEditingModal(null)}
+        currentGuestCount={dataSource === 'database' ? currentParty?.guest_count : partyDetails?.guestCount}
+        onSave={handleModalEditSave}
+      />
+
+      <LocationEditModal
+        isOpen={editingModal === 'location'}
+        onClose={() => setEditingModal(null)}
+        currentLocation={dataSource === 'database' ? currentParty?.location : partyDetails?.location}
+        onSave={handleModalEditSave}
+      />
+
+      {/* Full Edit Modal */}
       <EditPartyModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

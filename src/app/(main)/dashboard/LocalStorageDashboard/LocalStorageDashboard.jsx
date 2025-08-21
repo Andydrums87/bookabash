@@ -608,6 +608,7 @@ export default function LocalStorageDashboard() {
     setShowAdvancedControls,
   }
 
+  
   // ✅ PRODUCTION SAFETY: Don't render until mounted and data loaded
   if (!isMounted || !themeLoaded || planLoading) {
     return (
@@ -695,6 +696,7 @@ export default function LocalStorageDashboard() {
                       isSignedIn={false}
                       isPaymentConfirmed={false}
                       enquiries={[]}
+                      partyDetails={partyDetails}
                       currentPhase="planning"
                     />
                   ))}

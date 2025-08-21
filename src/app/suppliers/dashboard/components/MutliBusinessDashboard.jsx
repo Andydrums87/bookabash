@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useBusiness } from '@/contexts/BusinessContext';
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from '@/components/ui/UniversalModal';
 
 const CompactBusinessSwitcher = ({ className = "" }) => {
   const { 
@@ -23,28 +24,179 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    serviceType: 'entertainer',
-    theme: ''
+    serviceType: 'Entertainment',
+    theme: 'no-theme'
   });
   const [creating, setCreating] = useState(false);
   const [switchingTo, setSwitchingTo] = useState(null); // Track which business we're switching to
 
+  // Keep service types consistent with your onboarding flow
   const serviceTypes = [
-    { value: 'entertainer', label: 'Entertainment' },
-    { value: 'venue', label: 'Venue' },
-    { value: 'catering', label: 'Catering' },
-    { value: 'supplies', label: 'Party Supplies' },
-    { value: 'photography', label: 'Photography' },
-    { value: 'dj', label: 'DJ Services' }
+    { value: 'Entertainment', label: 'Entertainment' },
+    { value: 'Venues', label: 'Venues' },
+    { value: 'Catering', label: 'Catering' },
+    { value: 'Photography', label: 'Photography' },
+    { value: 'Decorations', label: 'Decorations' },
+    { value: 'Activities', label: 'Activities & Games' },
+    { value: 'Face Painting', label: 'Face Painting' },
+    { value: 'Bouncy Castle', label: 'Bouncy Castle' },
+    { value: 'Cakes', label: 'Cakes & Desserts' },
+    { value: 'Party Bags', label: 'Party Bags' },
+    { value: 'other', label: 'Other' }
   ];
 
+  // Expanded theme options - more comprehensive and organized
   const themeOptions = {
-    entertainer: ['princess', 'superhero', 'science', 'magic', 'pirate', 'fairy', 'dinosaur', 'space'],
-    supplies: ['party-bags', 'decorations', 'tableware', 'balloons', 'themes'],
-    venue: ['indoor', 'outdoor', 'community-hall', 'private-garden', 'commercial'],
-    catering: ['kids-menu', 'buffet', 'formal-dining', 'snacks', 'dietary-special'],
-    photography: ['event', 'portrait', 'action', 'candid', 'professional'],
-    dj: ['kids-parties', 'teen-parties', 'family-events', 'corporate', 'wedding']
+    'Entertainment': [
+      'Princess & Fairy Tales',
+      'Superhero Adventures', 
+      'Unicorns & Magic',
+      'Dinosaur Discovery',
+      'Space & Astronauts',
+      'Pirate Adventures',
+      'Jungle Safari',
+      'Under the Sea/Mermaid',
+      'Science & Experiments',
+      'Magic Shows',
+      'Circus & Clowns',
+      'Frozen/Ice Princess',
+      'Cars & Racing',
+      'Football & Sports',
+      'Dance & Music',
+      'Arts & Crafts',
+      'General/All Themes'
+    ],
+    'Party Bags': [
+      'Princess & Fairy Tales',
+      'Superhero Adventures',
+      'Unicorns & Magic', 
+      'Dinosaur Discovery',
+      'Space & Astronauts',
+      'Pirate Adventures',
+      'Jungle Safari',
+      'Under the Sea/Mermaid',
+      'Frozen/Ice Princess',
+      'Cars & Racing',
+      'Football & Sports',
+      'Rainbow & Colors',
+      'Animals & Pets',
+      'LOL Surprise',
+      'Minecraft',
+      'Paw Patrol',
+      'Harry Potter',
+      'General/Mixed Themes'
+    ],
+    'Venues': [
+      'Indoor Play Centers',
+      'Outdoor Gardens',
+      'Community Halls',
+      'Sports Centers', 
+      'Church Halls',
+      'Private Function Rooms',
+      'School Venues',
+      'Hotel Conference Rooms',
+      'Restaurant Private Rooms',
+      'Village Halls',
+      'General/All Types'
+    ],
+    'Catering': [
+      'Kids Party Food',
+      'Healthy Options',
+      'Themed Cakes',
+      'Buffet Style',
+      'Picnic Style',
+      'Formal Dining',
+      'Dietary Requirements',
+      'Vegan/Vegetarian',
+      'Allergy-Friendly',
+      'Birthday Cakes',
+      'General/All Types'
+    ],
+    'Decorations': [
+      'Balloon Decorations',
+      'Themed Decorations',
+      'Table Styling',
+      'Backdrop & Photo Booths',
+      'Balloon Arches',
+      'Centerpieces',
+      'Outdoor Decorations',
+      'Lighting & Effects',
+      'Floral Arrangements',
+      'Event Styling',
+      'General/All Types'
+    ],
+    'Photography': [
+      'Party Photography',
+      'Portrait Sessions',
+      'Action & Candid',
+      'Photo Booth Services',
+      'Event Coverage',
+      'Family Photography',
+      'Professional Prints',
+      'Digital Galleries',
+      'Same-Day Edits',
+      'Video Services',
+      'General/All Types'
+    ],
+    'Face Painting': [
+      'Character Designs',
+      'Animal Faces',
+      'Fantasy & Magic',
+      'Sports Themes',
+      'Glitter & Gems',
+      'Temporary Tattoos',
+      'Body Art',
+      'Quick Designs',
+      'Detailed Artwork',
+      'All Ages',
+      'General/All Types'
+    ],
+    'Activities': [
+      'Craft Activities',
+      'Games & Competitions',
+      'Sports Activities',
+      'Team Building',
+      'Educational Fun',
+      'Creative Workshops',
+      'Outdoor Activities',
+      'Indoor Games',
+      'Themed Activities',
+      'Age-Specific',
+      'General/All Types'
+    ],
+    'Bouncy Castle': [
+      'Indoor Inflatables',
+      'Outdoor Inflatables',
+      'Themed Bouncy Castles',
+      'Obstacle Courses',
+      'Slides & Combos',
+      'Soft Play Equipment',
+      'Ball Pits',
+      'Interactive Games',
+      'Water Features',
+      'All Weather',
+      'General/All Types'
+    ],
+    'Cakes': [
+      'Birthday Cakes',
+      'Themed Cakes',
+      'Cupcakes & Treats',
+      'Wedding Cakes',
+      'Custom Designs',
+      'Vegan Options',
+      'Gluten-Free',
+      'Allergy-Friendly',
+      'Celebration Cakes',
+      'Dessert Tables',
+      'General/All Types'
+    ],
+    'other': [
+      'Custom Service',
+      'Specialty Service',
+      'Unique Offering',
+      'Niche Market',
+      'General Service'
+    ]
   };
 
   const handleBusinessSwitch = async (businessId) => {
@@ -78,8 +230,8 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
 
   const handleCreateBusiness = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.serviceType || !formData.theme) {
-      alert('Please fill in all fields');
+    if (!formData.name || !formData.serviceType) {
+      alert('Please fill in business name and service type');
       return;
     }
 
@@ -87,16 +239,29 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
     try {
       console.log("🏗️ Creating new business:", formData);
       
-      await createNewBusiness(formData);
+      // Convert "no-theme" back to empty string for storage
+      const businessData = {
+        ...formData,
+        theme: formData.theme === 'no-theme' ? '' : formData.theme
+      };
+      
+      await createNewBusiness(businessData);
       
       console.log("✅ Business created successfully");
       setShowCreateForm(false);
-      setFormData({ name: '', serviceType: 'entertainer', theme: '' });
+      setFormData({ name: '', serviceType: 'Entertainment', theme: '' });
     } catch (error) {
       console.error('❌ Business creation failed:', error);
       alert('Failed to create business: ' + error.message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (!creating) {
+      setShowCreateForm(false);
+      setFormData({ name: '', serviceType: 'Entertainment', theme: 'no-theme' });
     }
   };
 
@@ -149,7 +314,8 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
                   </div>
                   {currentBusiness && (
                     <div className="text-xs text-gray-500 capitalize truncate">
-                      {currentBusiness.serviceType} • {currentBusiness.theme}
+                      {currentBusiness.serviceType}
+                      {currentBusiness.theme && ` • ${currentBusiness.theme}`}
                     </div>
                   )}
                 </div>
@@ -192,7 +358,8 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
                     <div>
                       <div className="font-medium">{business.name}</div>
                       <div className="text-xs text-gray-500 capitalize">
-                        {business.serviceType} • {business.theme}
+                        {business.serviceType}
+                        {business.theme && ` • ${business.theme}`}
                       </div>
                     </div>
                     {switchingTo === business.id && (
@@ -248,98 +415,109 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
         </div>
       )}
 
-      {/* Create New Business Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-md w-full m-4">
-            <CardHeader>
-              <CardTitle>Create New Themed Business</CardTitle>
-              <p className="text-sm text-gray-600">
-                Add a specialized business to target specific themes
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="businessName">Business Name</Label>
-                <Input
-                  id="businessName"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Sarah's Princess Parties"
-                  required
-                  disabled={creating}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="serviceType">Service Type</Label>
-                <Select 
-                  value={formData.serviceType} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, serviceType: value, theme: '' }))}
-                  disabled={creating}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {serviceTypes.map(type => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Create New Business Modal - Now using UniversalModal */}
+      <UniversalModal 
+        isOpen={showCreateForm} 
+        onClose={handleCloseModal}
+        size="md"
+        theme="fun"
+        preventOutsideClick={creating}
+        showCloseButton={!creating}
+      >
+        <ModalHeader
+          title="Create New Themed Business"
+          subtitle="Add a specialized business to target specific themes or markets"
+          icon={<Building2 className="w-6 h-6" />}
+          theme="fun"
+        />
+        
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="businessName">Business Name *</Label>
+              <Input
+                id="businessName"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Sarah's Princess Parties"
+                required
+                disabled={creating}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="serviceType">Service Type *</Label>
+              <Select 
+                value={formData.serviceType} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, serviceType: value, theme: 'no-theme' }))}
+                disabled={creating}
+              >
+                <SelectTrigger className="mt-2 w-full px-2 text-gray-600">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div>
-                <Label htmlFor="theme">Theme/Specialty</Label>
-                <Select 
-                  value={formData.theme} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, theme: value }))}
-                  disabled={creating}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a theme" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {themeOptions[formData.serviceType]?.map(theme => (
-                      <SelectItem key={theme} value={theme}>
-                        {theme.charAt(0).toUpperCase() + theme.slice(1).replace('-', ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label htmlFor="theme">Theme/Specialty (Optional)</Label>
+           
+              <Select 
+                value={formData.theme} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, theme: value }))}
+                disabled={creating}
+              >
+                <SelectTrigger className="w-full px-2 mt-2 text-gray-600">
+                  <SelectValue placeholder="Select a theme (optional)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  <SelectItem value="no-theme">No specific theme</SelectItem>
+                  {themeOptions[formData.serviceType]?.map(theme => (
+                    <SelectItem key={theme} value={theme}>
+                      {theme}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </ModalContent>
 
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowCreateForm(false)}
-                  className="flex-1"
-                  disabled={creating}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleCreateBusiness}
-                  className="flex-1"
-                  disabled={creating || !formData.name || !formData.serviceType || !formData.theme}
-                >
-                  {creating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create'
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <ModalFooter theme="fun">
+          <div className="flex gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCloseModal}
+              className="flex-1"
+              disabled={creating}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateBusiness}
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
+              disabled={creating || !formData.name || !formData.serviceType}
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Business'
+              )}
+            </Button>
+          </div>
+        </ModalFooter>
+      </UniversalModal>
     </>
   );
 };

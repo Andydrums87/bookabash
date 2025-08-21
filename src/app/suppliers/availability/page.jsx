@@ -269,22 +269,7 @@ const AvailabilityContent = () => {
   return (
     <div className="min-h-screen bg-primary-50">
       <div className="max-w-7xl mx-auto">
-        {/* 🆕 NEW: Shared Availability Info Banner */}
-        <div className="p-4 sm:p-6 pb-0">
-          <Alert className="border-blue-200 bg-blue-50 mb-6">
-            <Users className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              <strong>Shared Availability:</strong> These settings apply to all your businesses ({businesses?.length || 0} total). 
-              Changes made here will affect availability across all your themed services.
-              {!isPrimaryBusiness && (
-                <span className="block mt-1 text-sm">
-                  Currently viewing from: <strong>{currentBusiness?.name}</strong> • 
-                  Editing: <strong>{primaryBusiness?.name}</strong> (Primary)
-                </span>
-              )}
-            </AlertDescription>
-          </Alert>
-        </div>
+   
 
         {/* Success Alert */}
         {saveSuccess && (
@@ -309,7 +294,7 @@ const AvailabilityContent = () => {
                 Manage when customers can book any of your services • Applies to all {businesses?.length || 0} businesses
               </p>
             </div>
-            <div className="absolute right-10 top-22">
+            <div className="absolute right-10 top-1">
               <GlobalSaveButton 
                 position="responsive"
                 onSave={handleSave}

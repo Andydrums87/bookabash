@@ -227,30 +227,7 @@ const packages = booking.packages
 
 
 
-  const handleAddonConfirm = useCallback((addonData) => {
-    setSelectedAddons(addonData.addons)
-    setFinalPackageData(addonData)
-    setShowAddonModal(false)
 
-    // addonData.addons.forEach(addon => {
-    //   const enhancedAddon = {
-    //     ...addon,
-    //     supplierId: supplier?.id,
-    //     supplierName: supplier?.name,
-    //     packageId: addonData.package?.id,
-    //     addedAt: new Date().toISOString()
-    //   }
-    //   addAddon(enhancedAddon)
-    // })
-    
-    handleAddToPlan(true, addonData)
-  }, [supplier, addAddon, booking.handleAddToPlan])
-  
-  const handleAddonModalClose = useCallback(() => {
-    setShowAddonModal(false)
-    setSelectedAddons([])
-    setFinalPackageData(null)
-  }, [])
 
 
   if (hasLoadedOnce && (supplierError || !supplier)) {
@@ -375,15 +352,20 @@ if (userTypeLoading) {
         handleAddToPlan={booking.handleAddToPlan}
       />
 
-      <AddonSelectionModal
-        isOpen={modals.showAddonModal}
-        onClose={handleAddonModalClose}
-        onConfirm={handleAddonConfirm}
-        supplier={supplier}
-        selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
-        isEntertainer={supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"}
-      />
-
+<AddonSelectionModal
+  isOpen={modals.showAddonModal}
+  onClose={modals.closeAddonModal}
+  onConfirm={(addonData) => {
+    console.log('🎭 Addon modal data received:', addonData)
+    // Close the modal first
+    modals.closeAddonModal()
+    // Then call the add to plan with the addon data
+    handleAddToPlanWithModals(true, addonData)  // skipAddonModal=true, addonData=addonData
+  }}
+  supplier={supplier}
+  selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
+  isEntertainer={supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"}
+/>
       <AddingToPlanModal
         isAddingToPlan={booking.isAddingToPlan}
         loadingStep={booking.loadingStep}
