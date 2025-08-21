@@ -637,192 +637,188 @@ const MobileBookingBar = ({
         </div>
       )}
 
-      {/* ✅ BOOKING MODAL: Only show in normal mode */}
-      {isModalOpen && !isReplacementMode && (
-        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
-          <div className="bg-white w-full max-h-[90vh] rounded-t-3xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
-                {isFromDashboard ? 'Party Date Calendar' : selectedDate ? 'Change Date' : 'Pick Your Party Date'}
-              </h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-600" />
-              </button>
-            </div>
+{isModalOpen && !isReplacementMode && (
+  <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
+    <div className="bg-white w-full max-h-[90vh] rounded-t-3xl overflow-hidden flex flex-col">
+      {/* Modal Header - Fixed */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+        <h2 className="text-lg font-bold text-gray-900">
+          {isFromDashboard ? 'Party Date Calendar' : selectedDate ? 'Change Date' : 'Pick Your Party Date'}
+        </h2>
+        <button 
+          onClick={() => setIsModalOpen(false)}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X className="w-6 h-6 text-gray-600" />
+        </button>
+      </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto">
-              {/* Party date status banner */}
-              {isFromDashboard && partyDate && partyDateStatus && (
-                <div className={`mb-6 p-4 rounded-lg border-2 ${
-                  partyDateStatus === 'available' 
-                    ? 'bg-green-50 border-green-200' 
-                    : partyDateStatus === 'unavailable' 
-                    ? 'bg-red-50 border-red-200'
-                    : partyDateStatus === 'busy'
-                    ? 'bg-yellow-50 border-yellow-200'
-                    : 'bg-gray-50 border-gray-200'
+      {/* Modal Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4">
+          {/* Party date status banner */}
+          {isFromDashboard && partyDate && partyDateStatus && (
+            <div className={`mb-4 p-3 rounded-lg border-2 ${
+              partyDateStatus === 'available' 
+                ? 'bg-green-50 border-green-200' 
+                : partyDateStatus === 'unavailable' 
+                ? 'bg-red-50 border-red-200'
+                : partyDateStatus === 'busy'
+                ? 'bg-yellow-50 border-yellow-200'
+                : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  partyDateStatus === 'available' ? 'bg-green-200' : 
+                  partyDateStatus === 'unavailable' ? 'bg-red-200' :
+                  partyDateStatus === 'busy' ? 'bg-yellow-200' :
+                  'bg-gray-200'
                 }`}>
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      partyDateStatus === 'available' ? 'bg-green-200' : 
-                      partyDateStatus === 'unavailable' ? 'bg-red-200' :
-                      partyDateStatus === 'busy' ? 'bg-yellow-200' :
-                      'bg-gray-200'
-                    }`}>
-                      {partyDateStatus === 'available' ? (
-                        <Calendar className="w-4 h-4 text-green-700" />
-                      ) : (
-                        <Info className="w-4 h-4 text-gray-700" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className={`font-semibold mb-1 ${
-                        partyDateStatus === 'available' ? 'text-green-800' :
-                        partyDateStatus === 'unavailable' ? 'text-red-800' :
-                        partyDateStatus === 'busy' ? 'text-yellow-800' :
-                        'text-gray-800'
-                      }`}>
-                        Your Party Date: {partyDate.toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                      </h4>
-                      <p className={`text-sm ${
-                        partyDateStatus === 'available' ? 'text-green-700' :
-                        partyDateStatus === 'unavailable' ? 'text-red-700' :
-                        partyDateStatus === 'busy' ? 'text-yellow-700' :
-                        'text-gray-700'
-                      }`}>
-                        {partyDateStatus === 'available' && '✅ Available for booking!'}
-                        {partyDateStatus === 'unavailable' && '❌ Not available on this date'}
-                        {partyDateStatus === 'busy' && '⚠️ Already booked on this date'}
-                        {partyDateStatus === 'closed' && '🚫 Supplier is closed on this date'}
-                        {partyDateStatus === 'past' && '📅 This date has passed'}
-                        {partyDateStatus === 'outside-window' && '📋 Outside booking window'}
-                      </p>
-                      {isFromDashboard && (
-                        <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
-                          <Lock className="w-3 h-3" />
-                          Date set in your party plan
-                        </p>
-                      )}
-                    </div>
+                  {partyDateStatus === 'available' ? (
+                    <Calendar className="w-3 h-3 text-green-700" />
+                  ) : (
+                    <Info className="w-3 h-3 text-gray-700" />
+                  )}
+                </div>
+                <div>
+                  <h4 className={`font-semibold text-sm mb-1 ${
+                    partyDateStatus === 'available' ? 'text-green-800' :
+                    partyDateStatus === 'unavailable' ? 'text-red-800' :
+                    partyDateStatus === 'busy' ? 'text-yellow-800' :
+                    'text-gray-800'
+                  }`}>
+                    Your Party Date: {partyDate.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </h4>
+                  <p className={`text-xs ${
+                    partyDateStatus === 'available' ? 'text-green-700' :
+                    partyDateStatus === 'unavailable' ? 'text-red-700' :
+                    partyDateStatus === 'busy' ? 'text-yellow-700' :
+                    'text-gray-700'
+                  }`}>
+                    {partyDateStatus === 'available' && '✅ Available for booking!'}
+                    {partyDateStatus === 'unavailable' && '❌ Not available on this date'}
+                    {partyDateStatus === 'busy' && '⚠️ Already booked on this date'}
+                    {partyDateStatus === 'closed' && '🚫 Supplier is closed on this date'}
+                    {partyDateStatus === 'past' && '📅 This date has passed'}
+                    {partyDateStatus === 'outside-window' && '📋 Outside booking window'}
+                  </p>
+                  {isFromDashboard && (
+                    <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      Date set in your party plan
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between mb-4">
+            <button 
+              onClick={prevMonth}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            </h3>
+            <button 
+              onClick={nextMonth}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1 mb-4">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center font-semibold text-gray-600 p-2 text-xs">
+                {day}
+              </div>
+            ))}
+            {calendarDays.map((day, index) => (
+              <button
+                key={index}
+                onClick={() => handleDateClick(day)}
+                className={`text-center p-2 rounded-lg text-sm font-medium transition-colors border ${getDayStyle(day)} relative`}
+                disabled={day.status !== 'available' || !day.isCurrentMonth || isFromDashboard || day.isPartyDay}
+                title={day.isPartyDay ? `Your Party Date - ${day.status.replace("-", " ")}` : day.status.replace("-", " ")}
+              >
+                {day.day}
+                {day.isPartyDay && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full flex items-center justify-center">
+                    <div className="w-1 h-1 bg-white rounded-full"></div>
                   </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Legend - Compact version */}
+          <div className="space-y-2 mb-4">
+            <h4 className="font-semibold text-gray-900 text-sm">Legend:</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {isFromDashboard && (
+                <div className="flex items-center gap-2 col-span-2">
+                  <div className="w-3 h-3 rounded border-2 border-blue-500 bg-blue-100 relative">
+                    <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                  </div>
+                  <span className="text-gray-600">Your Party Date</span>
                 </div>
               )}
-
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-6">
-                <button 
-                  onClick={prevMonth}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5 text-gray-600" />
-                </button>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                </h3>
-                <button 
-                  onClick={nextMonth}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5 text-gray-600" />
-                </button>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
+                <span className="text-gray-600">Available</span>
               </div>
-
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1 mb-6">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="text-center font-semibold text-gray-600 p-3 text-sm">
-                    {day}
-                  </div>
-                ))}
-                {calendarDays.map((day, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleDateClick(day)}
-                    className={`text-center p-3 rounded-lg text-sm font-medium transition-colors border ${getDayStyle(day)} relative`}
-                    disabled={day.status !== 'available' || !day.isCurrentMonth || isFromDashboard || day.isPartyDay}
-                    title={day.isPartyDay ? `Your Party Date - ${day.status.replace("-", " ")}` : day.status.replace("-", " ")}
-                  >
-                    {day.day}
-                    {day.isPartyDay && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
+                <span className="text-gray-600">Unavailable</span>
               </div>
-
-              {/* Legend */}
-              <div className="space-y-3 mb-6">
-                <h4 className="font-semibold text-gray-900">Legend:</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {isFromDashboard && (
-                    <div className="flex items-center gap-2 col-span-2">
-                      <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-100 relative">
-                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-600 rounded-full"></div>
-                      </div>
-                      <span className="text-gray-600">Your Party Date</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                    <span className="text-gray-600">Available</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-                    <span className="text-gray-600">Unavailable</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded"></div>
-                    <span className="text-gray-600">Busy/Booked</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-gray-200 border border-gray-300 rounded"></div>
-                    <span className="text-gray-600">Day Off</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
+                <span className="text-gray-600">Busy/Booked</span>
               </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button 
-                  onClick={handleAddToPlan}
-                  className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-4 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
-                  disabled={!isFromDashboard && !selectedDate}
-                >
-                  <Plus className="w-5 h-5" />
-                  {/* ✅ NEW: Show cake text if applicable */}
-                  {isCakeSupplier && isCustomizablePackage(selectedPackage) ? (
-                    <>🎂 Customize & Add</>
-                  ) : (
-                    <>Add to Plan</>
-                  )}
-                  {' '}
-                  {!isFromDashboard && selectedDate && `(${getSelectedDateDisplay()})`}
-                  {isFromDashboard && partyDate && `(${partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`}
-                </button>
-                <button 
-                  onClick={handleSaveForLater}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-4 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
-                >
-                  <Heart className="w-5 h-5" />
-                  Save for Later
-                </button>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gray-200 border border-gray-300 rounded"></div>
+                <span className="text-gray-600">Day Off</span>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Action Buttons - Fixed at bottom */}
+      <div className="p-4 border-t border-gray-100 bg-white flex-shrink-0">
+        <div className="space-y-3">
+          <button 
+            onClick={handleAddToPlan}
+            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-1 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+            disabled={!isFromDashboard && !selectedDate}
+          >
+            <Plus className="w-5 h-5" />
+            {/* ✅ NEW: Show cake text if applicable */}
+            {isCakeSupplier && isCustomizablePackage(selectedPackage) ? (
+              <>🎂 Customize & Add</>
+            ) : (
+              <>Add to Plan</>
+            )}
+            {' '}
+            {!isFromDashboard && selectedDate && `(${getSelectedDateDisplay()})`}
+            {isFromDashboard && partyDate && `(${partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`}
+          </button>
+         
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Add bottom padding to page content */}
       <style jsx>{`
