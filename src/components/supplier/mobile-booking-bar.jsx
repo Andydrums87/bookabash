@@ -66,6 +66,13 @@ const MobileBookingBar = ({
     }
   }, [isFromDashboard, partyDate])
 
+  const handlePendingEnquiryInfo = () => {
+    // Instead of blocking modal, just call the notification handler
+    if (onShowPendingEnquiryModal) {
+      onShowPendingEnquiryModal() // This now shows informational notification
+    }
+  }
+
   // ✅ NEW: Check if selected package is customizable for cake suppliers
   const isCustomizablePackage = (packageData) => {
     if (!isCakeSupplier || !packageData) return false
@@ -483,11 +490,11 @@ const MobileBookingBar = ({
   const buttonState = getButtonState();
 
   const handleMainButtonClick = () => {
-    if (hasEnquiriesPending && hasEnquiriesPending()) {
-      console.log('🚫 Mobile: Showing pending enquiry modal');
-      onShowPendingEnquiryModal();
-      return;
-    }
+    // if (hasEnquiriesPending && hasEnquiriesPending()) {
+    //   console.log('🚫 Mobile: Showing pending enquiry modal');
+    //   onShowPendingEnquiryModal();
+    //   return;
+    // }
     
     if (!isFromDashboard && (buttonState.requiresDate || !selectedDate)) {
       setIsModalOpen(true);
@@ -498,6 +505,20 @@ const MobileBookingBar = ({
     // ✅ ENHANCED: Use new handler that checks for cake modal
     handleMobileAddToPlan();
   };
+
+  const PendingEnquiryIndicator = () => {
+    if (!hasEnquiriesPending || !pendingCount) return null
+    
+    return (
+      <button
+        onClick={handlePendingEnquiryInfo}
+        className="flex items-center gap-1 px-2 py-1 bg-blue-100 hover:bg-blue-150 text-blue-700 rounded-md text-xs transition-colors"
+      >
+        <AlertCircle className="w-3 h-3" />
+        {pendingCount} pending
+      </button>
+    )
+  }
 
   const handleAddToPlan = () => {
     if (hasEnquiriesPending && hasEnquiriesPending()) {
@@ -572,6 +593,7 @@ const MobileBookingBar = ({
       >
         <CheckCircle className="w-5 h-5" />
         {selectedPackage ? `Approve ${selectedPackage.name}` : 'Select Package First'}
+        <PendingEnquiryIndicator />
       </button>
     </div>
   </div>

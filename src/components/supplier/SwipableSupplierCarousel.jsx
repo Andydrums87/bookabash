@@ -21,15 +21,16 @@ const SwipeableSupplierCarousel = ({
   const images = useMemo(() => {
     const imageList = []
     
-    // Add cover photo first (it's a direct URL string)
-    if (supplier?.coverPhoto) {
-      imageList.push(supplier.coverPhoto)
+    // Add cover photo first, with fallback to image field
+    const primaryImage = supplier?.coverPhoto || supplier?.image || supplier?.imageUrl
+    if (primaryImage) {
+      imageList.push(primaryImage)
     }
     
     // Add portfolio images (they are objects with src property)
     if (supplier?.portfolioImages && Array.isArray(supplier.portfolioImages)) {
       const portfolioImages = supplier.portfolioImages
-        .filter(img => img && img.src && img.src !== supplier.coverPhoto) // Filter by src property and remove duplicates
+        .filter(img => img && img.src && img.src !== primaryImage) // Filter by src property and remove duplicates
         .slice(0, 3) // Limit to 3 additional images
         .map(img => img.src) // Extract just the src URL string
       
@@ -38,11 +39,11 @@ const SwipeableSupplierCarousel = ({
     
     // Fallback if no images
     if (imageList.length === 0) {
-      imageList.push('/placeholder.png') // Add your placeholder image path
+      imageList.push('/placeholder.png') // Fallback to placeholder.png
     }
     
     return imageList
-  }, [supplier?.coverPhoto, supplier?.portfolioImages])
+  }, [supplier?.coverPhoto, supplier?.image, supplier?.imageUrl, supplier?.portfolioImages])
 
   const totalImages = images.length
 

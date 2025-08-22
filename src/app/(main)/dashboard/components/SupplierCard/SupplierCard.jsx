@@ -7,6 +7,7 @@ import ConfirmedSupplierCard from './ConfirmedSupplierCard'
 import PaymentConfirmedSupplierCard from './PaymentConfirmedSupplierCard'
 import DeclinedSupplierCard from './DeclinedSupplierCard'
 
+
 export default function SupplierCard({
   type,
   partyDetails,

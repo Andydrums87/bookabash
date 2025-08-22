@@ -11,6 +11,7 @@ import SupplierCustomizationModal from './SupplierCustomizationModal'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { LocationService } from '@/utils/locationService'
 import SwipeableSupplierCarousel from "./supplier/SwipableSupplierCarousel"
+import useDisableScroll from "@/hooks/useDisableScroll"
 import { 
   X, 
   Star, 
@@ -47,6 +48,7 @@ export default function SupplierSelectionModal({
   partyId, // Add this too
 }) {
 
+
   // NEW: Initialize state with restored filters or defaults
   const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
   const [ratingFilter, setRatingFilter] = useState(initialFilters.ratingFilter || "all")
@@ -64,6 +66,8 @@ export default function SupplierSelectionModal({
   const { suppliers, loading, error } = useSuppliers()
   const { addSupplier, removeSupplier, addAddon } = usePartyPlan()
 
+
+
   // NEW: Update filters when initialFilters change (for restoration)
   useEffect(() => {
     if (Object.keys(initialFilters).length > 0) {
@@ -74,6 +78,7 @@ export default function SupplierSelectionModal({
       setAvailableOnly(initialFilters.availableOnly || false)
     }
   }, [initialFilters])
+  
 
   // Handle Quick Add - simplified
   const handleQuickAdd = (supplier) => {
@@ -207,6 +212,8 @@ export default function SupplierSelectionModal({
     if (date instanceof Date) return date;
     return new Date(date);
   }, [date]);
+
+  
 
 // Enhanced availability checking for SupplierSelectionModal
 // Replace the checkSupplierAvailabilityOnDate function with this enhanced version
@@ -876,7 +883,7 @@ const debugSupplierAvailability = (supplier, checkDate) => {
   // UPDATED SupplierCard with Quick Add
   const SupplierCard = ({ supplier }) => {
 
-    debugSupplierAvailability(supplier, selectedDate);
+
     const { navigateWithContext } = useContextualNavigation();
     const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
     

@@ -1,4 +1,4 @@
-// components/ui/toast.jsx - The Toast Component
+// components/ui/toast.jsx - Improved Toast Component
 "use client"
 
 import { createContext, useContext, useState, useCallback } from 'react'
@@ -7,43 +7,51 @@ import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 // Toast Context
 const ToastContext = createContext()
 
-// Toast types and their configurations
+// Clean toast types with better styling
 const toastTypes = {
   success: {
     icon: CheckCircle,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]',
-    borderColor: 'border-[hsl(var(--primary-300))]',
-    iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-primary-500',
-    textColor: 'text-white',
-    shadowColor: 'shadow-[hsl(var(--primary-500))]/25 '  
+    bgColor: 'bg-white',
+    borderColor: 'border-green-200',
+    iconBg: 'bg-green-100',
+    iconColor: 'text-green-600',
+    titleColor: 'text-gray-900',
+    textColor: 'text-gray-700',
+    shadowColor: 'shadow-lg shadow-green-500/10',
+    accentColor: 'border-l-green-500'
   },
   error: {
     icon: AlertCircle,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]',
-    borderColor: 'border-[hsl(var(--primary-300))]',
-    iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-primary-500',
-    textColor: 'text-white',
-    shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
+    bgColor: 'bg-white',
+    borderColor: 'border-red-200',
+    iconBg: 'bg-red-100',
+    iconColor: 'text-red-600',
+    titleColor: 'text-gray-900',
+    textColor: 'text-gray-700',
+    shadowColor: 'shadow-lg shadow-red-500/10',
+    accentColor: 'border-l-red-500'
   },
   warning: {
     icon: AlertTriangle,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))]',
-    borderColor: 'border-[hsl(var(--primary-300))]',
-    iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-primary-500',
-    textColor: 'text-white',
-    shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
+    bgColor: 'bg-white',
+    borderColor: 'border-orange-200',
+    iconBg: 'bg-orange-100',
+    iconColor: 'text-orange-600',
+    titleColor: 'text-gray-900',
+    textColor: 'text-gray-700',
+    shadowColor: 'shadow-lg shadow-orange-500/10',
+    accentColor: 'border-l-orange-500'
   },
   info: {
     icon: Info,
-    bgGradient: 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]',
-    borderColor: 'border-[hsl(var(--primary-300))]',
-    iconBg: 'bg-[hsl(var(--primary-50))]',
-    iconColor: 'text-primary-500',
-    textColor: 'text-white',
-    shadowColor: 'shadow-[hsl(var(--primary-500))]/25'
+    bgColor: 'bg-white',
+    borderColor: 'border-blue-200',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+    titleColor: 'text-gray-900',
+    textColor: 'text-gray-700',
+    shadowColor: 'shadow-lg shadow-blue-500/10',
+    accentColor: 'border-l-blue-500'
   }
 }
 
@@ -54,27 +62,26 @@ function Toast({ toast, onRemove }) {
 
   return (
     <div className={`
-      ${config.bgGradient} ${config.textColor}
-      p-1 rounded-2xl shadow-xl ${config.shadowColor} border border-white/20
-      animate-in slide-in-from-right-full duration-500 ease-out
-      hover:shadow-2xl hover:scale-[1.02] transition-all duration-200
-      backdrop-blur-sm max-w-sm min-w-[320px]
+      ${config.bgColor} ${config.borderColor} ${config.shadowColor} ${config.accentColor}
+      border border-l-4 rounded-xl p-4 backdrop-blur-sm
+      animate-in slide-in-from-right-full duration-300 ease-out
+      hover:shadow-xl hover:scale-[1.02] transition-all duration-200
+      max-w-sm min-w-[320px] relative overflow-hidden
     `}>
-      {/* Inner content with white background */}
-      <div className="bg-primary-400 backdrop-blur-sm rounded-xl p-4 flex items-start gap-3">
-        {/* Icon with colored background */}
-        <div className={`${config.iconBg} p-2 rounded-lg flex-shrink-0 border border-${config.borderColor}`}>
+      <div className="flex items-start gap-3">
+        {/* Icon */}
+        <div className={`${config.iconBg} p-2 rounded-lg flex-shrink-0`}>
           <Icon className={`w-5 h-5 ${config.iconColor}`} />
         </div>
         
         {/* Content */}
         <div className="flex-1 min-w-0">
           {toast.title && (
-            <h4 className="font-bold text-gray-700 text-sm mb-1 leading-tight">
+            <h4 className={`font-semibold ${config.titleColor} text-sm mb-1 leading-tight`}>
               {toast.title}
             </h4>
           )}
-          <p className={`text-sm text-white leading-relaxed ${toast.title ? '' : 'font-medium'}`}>
+          <p className={`text-sm ${config.textColor} leading-relaxed ${toast.title ? '' : 'font-medium'}`}>
             {toast.message}
           </p>
         </div>
@@ -82,7 +89,7 @@ function Toast({ toast, onRemove }) {
         {/* Close button */}
         <button 
           onClick={() => onRemove(toast.id)}
-          className="text-white cursor-pointer hover:text-gray-600 ml-2 flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+          className="text-gray-400 hover:text-gray-600 flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -90,15 +97,125 @@ function Toast({ toast, onRemove }) {
       
       {/* Progress bar for auto-dismiss */}
       {toast.duration && (
-        <div className="h-1 bg-white/20 rounded-b-2xl overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100">
           <div 
-            className="h-full bg-white/60 animate-pulse"
+            className={`h-full transition-all ease-linear ${
+              toast.type === 'success' ? 'bg-green-500' :
+              toast.type === 'error' ? 'bg-red-500' :
+              toast.type === 'warning' ? 'bg-orange-500' :
+              'bg-blue-500'
+            }`}
             style={{
               animation: `shrink ${toast.duration}ms linear forwards`
             }}
           />
         </div>
       )}
+    </div>
+  )
+}
+
+// Alternative: Minimal Style
+function MinimalToast({ toast, onRemove }) {
+  const config = toastTypes[toast.type] || toastTypes.info
+  const Icon = config.icon
+
+  return (
+    <div className={`
+      bg-white border ${config.borderColor} rounded-xl p-4 shadow-xl
+      animate-in slide-in-from-right-full duration-300 ease-out
+      hover:shadow-2xl transition-all duration-200
+      max-w-sm min-w-[320px] backdrop-blur-sm
+    `}>
+      <div className="flex items-center gap-3">
+        {/* Colored dot instead of icon background */}
+        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+          toast.type === 'success' ? 'bg-green-500' :
+          toast.type === 'error' ? 'bg-red-500' :
+          toast.type === 'warning' ? 'bg-orange-500' :
+          'bg-blue-500'
+        }`} />
+        
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {toast.title && (
+            <h4 className="font-semibold text-gray-900 text-sm mb-0.5">
+              {toast.title}
+            </h4>
+          )}
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {toast.message}
+          </p>
+        </div>
+        
+        {/* Close button */}
+        <button 
+          onClick={() => onRemove(toast.id)}
+          className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Modern Style with Snappy branding
+function SnappyToast({ toast, onRemove }) {
+  const config = toastTypes[toast.type] || toastTypes.info
+  const Icon = config.icon
+
+  return (
+    <div className={`
+      bg-white border border-gray-200 rounded-2xl p-4 shadow-xl
+      animate-in slide-in-from-right-full duration-300 ease-out
+      hover:shadow-2xl transition-all duration-200
+      max-w-sm min-w-[320px] relative overflow-hidden
+    `}>
+      {/* Colored top border */}
+      <div className={`absolute top-0 left-0 right-0 h-1 ${
+        toast.type === 'success' ? 'bg-green-500' :
+        toast.type === 'error' ? 'bg-red-500' :
+        toast.type === 'warning' ? 'bg-orange-500' :
+        'bg-[hsl(var(--primary-500))]'
+      }`} />
+      
+      <div className="flex items-start gap-3 pt-1">
+        {/* Icon with Snappy colors */}
+        <div className={`p-2 rounded-xl flex-shrink-0 ${
+          toast.type === 'success' ? 'bg-green-50' :
+          toast.type === 'error' ? 'bg-red-50' :
+          toast.type === 'warning' ? 'bg-orange-50' :
+          'bg-[hsl(var(--primary-50))]'
+        }`}>
+          <Icon className={`w-5 h-5 ${
+            toast.type === 'success' ? 'text-green-600' :
+            toast.type === 'error' ? 'text-red-600' :
+            toast.type === 'warning' ? 'text-orange-600' :
+            'text-[hsl(var(--primary-600))]'
+          }`} />
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {toast.title && (
+            <h4 className="font-semibold text-gray-900 text-sm mb-1">
+              {toast.title}
+            </h4>
+          )}
+          <p className="text-sm text-gray-700 leading-relaxed">
+            {toast.message}
+          </p>
+        </div>
+        
+        {/* Close button */}
+        <button 
+          onClick={() => onRemove(toast.id)}
+          className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -138,7 +255,10 @@ function ToastContainer({ toasts, removeToast }) {
       
       <div className="toast-container">
         {toasts.map(toast => (
-          <Toast 
+          // Choose your preferred style:
+          <SnappyToast  // Recommended for your app
+          // <Toast      // Clean with left border
+          // <MinimalToast // Minimal with colored dot
             key={toast.id} 
             toast={toast} 
             onRemove={removeToast}
@@ -149,7 +269,7 @@ function ToastContainer({ toasts, removeToast }) {
   )
 }
 
-// Toast Provider Component
+// Toast Provider Component (unchanged)
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
 
@@ -193,7 +313,7 @@ export function ToastProvider({ children }) {
   )
 }
 
-// Hook to use toast
+// Hook to use toast (unchanged)
 export function useToast() {
   const context = useContext(ToastContext)
   if (!context) {
@@ -201,59 +321,3 @@ export function useToast() {
   }
   return context
 }
-
-// Usage Examples:
-/*
-1. Wrap your app with ToastProvider in layout.js or _app.js:
-
-import { ToastProvider } from '@/components/ui/toast'
-
-export default function RootLayout({ children }) {
-  return (
-    <html>
-      <body>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </body>
-    </html>
-  )
-}
-
-2. Use in any component:
-
-import { useToast } from '@/components/ui/toast'
-
-function MyComponent() {
-  const { toast } = useToast()
-
-  const handleClick = () => {
-    // Different toast types
-    toast.success("Party details saved!")
-    toast.error("Cannot edit while awaiting responses")
-    toast.warning("Please fill all required fields")
-    toast.info("New update available")
-    
-    // With custom options
-    toast.error("Custom error", {
-      title: "Error Title",
-      duration: 6000
-    })
-  }
-}
-
-3. For your PartyHeader use case:
-
-const { toast } = useToast()
-
-const handleEditClick = () => {
-  if (hasEnquiriesPending) {
-    toast.warning("Cannot edit party details while awaiting supplier responses", {
-      title: "Party Details Locked",
-      duration: 4000
-    })
-  } else {
-    setIsEditModalOpen(true)
-  }
-}
-*/

@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Gift, X, ChevronDown, ChevronUp } from "lucide-react"
+import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
+import { useCheckIfNewlyAdded } from "@/hooks/useCheckIfNewlyAdded"
+
 
 export default function SelectedSupplierCard({
   type,
@@ -20,6 +23,13 @@ export default function SelectedSupplierCard({
   onClick
 }) {
   const [showAddons, setShowAddons] = useState(false)
+
+  const isNewlyAdded = useCheckIfNewlyAdded(type)
+  
+  const handleAnimationComplete = () => {
+    console.log(`🎉 Animation completed for ${supplier?.name || type}`)
+  }
+
 
   const getDisplayName = (supplierType) => {
     if (getSupplierDisplayName) {
@@ -72,7 +82,10 @@ export default function SelectedSupplierCard({
   const typeConfig = getTypeConfig(type)
 
   return (
-    <Card              onClick={onClick} className={`overflow-hidden  rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
+    <MicroConfettiWrapper 
+    isNewlyAdded={isNewlyAdded}
+    onAnimationComplete={handleAnimationComplete}>
+    <Card  onClick={onClick} className={`overflow-hidden  rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
       {/* Large background image with overlay */}
       <div className="relative h-64 w-full">
         {isLoading ? (
@@ -205,5 +218,6 @@ export default function SelectedSupplierCard({
         </Button>
       </div>
     </Card>
+    </MicroConfettiWrapper>
   )
 }

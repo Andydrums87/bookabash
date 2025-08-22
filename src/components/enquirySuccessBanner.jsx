@@ -116,18 +116,12 @@ export default function EnquirySuccessBanner() {
                   <div className="flex flex-col sm:flex-row gap-3 mt-4">
                     <Button 
                       className="bg-teal-600 hover:bg-teal-700 text-white"
-                      onClick={() => router.push('/e-invites')}
+                      onClick={() => router.push('/e-invites/create')}
                     >
                       <Mail className="w-4 h-4 mr-2" />
                       Create Invitations
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="border-green-300 text-teal-700 hover:bg-teal-100"
-                      onClick={() => router.push('/dashboard')}
-                    >
-                      View Party Status
-                    </Button>
+                  
                   </div>
                 </div>
                 

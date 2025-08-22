@@ -34,6 +34,7 @@ export const useSupplierBooking = (
   const [progress, setProgress] = useState(0)
   const [finalPackageData, setFinalPackageData] = useState(null)
 
+
   const getCategoryMappingForScroll = useCallback((category) => {
     const mapping = {
       'Entertainment': 'entertainment',
@@ -107,239 +108,20 @@ export const useSupplierBooking = (
     }
   }, [packages, selectedPackageId, getSupplierInPartyDetails])
 
-// Replace your existing handleAlaCarteBooking function with this:
 
-const handleAlaCarteBooking = useCallback(async (partyDetails) => {
-  if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-    console.log('🚫 User trying to add supplier - showing pending enquiry modal')
-    return { showPendingEnquiry: true }
-  }
-
-  try {
-    // Validation
-    if (!partyDetails) {
-      throw new Error('No party details provided')
-    }
-
-    if (!supplier) {
-      throw new Error('No supplier data available')
-    }
-
-    // Get selected package
-    const selectedPkg = packagesWithPopular.find(pkg => pkg.id === selectedPackageId)
-    if (!selectedPkg) {
-      throw new Error('No package selected')
-    }
-    
-    console.log('📦 Selected package:', selectedPkg)
-    console.log('🏪 Supplier:', { id: supplier.id, name: supplier.name, category: supplier.category })
-    
-    setIsAddingToPlan(true)
-    setProgress(25)
-
-    const enhancedPartyDetails = {
-      // Essential party info
-      childName: partyDetails.childName || 'Your Child',
-      childAge: parseInt(partyDetails.childAge) || 6,
-      date: partyDetails.date || new Date().toISOString().split('T')[0],
-      time: partyDetails.time || '14:00',
-      location: partyDetails.location || 'London',
-      postcode: partyDetails.postcode || 'SW1A 1AA',
-      guestCount: parseInt(partyDetails.guestCount) || 10,
-      theme: partyDetails.theme || 'superhero',
-      
-      // Pricing
-      totalPrice: partyDetails.totalPrice || selectedPkg.price,
-      basePrice: partyDetails.basePrice || selectedPkg.price,
-      selectedAddons: partyDetails.selectedAddons || [],
-      
-      // Metadata
-      createdAt: new Date().toISOString(),
-      source: 'a_la_carte',
-      
-      // Preserve A-LA-CARTE specific fields
-      firstName: partyDetails.firstName,
-      lastName: partyDetails.lastName,
-      skipWelcomePopup: partyDetails.skipWelcomePopup,
-      timeSlot: partyDetails.timeSlot,
-      
-      // Add essential fields
-      duration: partyDetails.duration || '2 hours',
-      budget: partyDetails.totalPrice || selectedPkg.price
-    }
-    
-    console.log('✨ Enhanced party details:', enhancedPartyDetails)
-    setProgress(40)
-
-    // Save party details
-    try {
-      localStorage.setItem('party_details', JSON.stringify(enhancedPartyDetails))
-      console.log('💾 Party details saved to localStorage')
-      
-      const saved = localStorage.getItem('party_details')
-      if (!saved) {
-        throw new Error('Failed to save party details to localStorage')
-      }
-    } catch (storageError) {
-      console.error('❌ Storage error:', storageError)
-      throw new Error('Failed to save party details')
-    }
-
-    setProgress(60)
-
-    // Category mapping for scroll
-    const getCategoryMapping = (category) => {
-      const mapping = {
-        'Entertainment': 'entertainment',
-        'Venues': 'venue',
-        'Venue': 'venue', 
-        'Catering': 'catering',
-        'Face Painting': 'facePainting',
-        'Activities': 'activities',
-        'Party Bags': 'partyBags',
-        'Decorations': 'decorations',
-        'Balloons': 'balloons',
-        'Photography': 'photography',
-        'Cakes': 'cakes'
-      }
-      
-      const result = mapping[category] || 'entertainment'
-      console.log('🎯 Category mapping:', category, '→', result)
-      return result
-    }
-
-    const supplierCategory = getCategoryMapping(supplier.category)
-
-    // Create party plan structure
-    const partyPlan = {
-      // Initialize all possible slots
-      venue: null,
-      entertainment: null,
-      catering: null,
-      facePainting: null,
-      activities: null,
-      partyBags: null,
-      decorations: null,
-      balloons: null,
-      photography: null,
-      cakes: null,
-      
-      // Add the selected supplier to correct category
-      [supplierCategory]: {
-        id: supplier.id,
-        name: supplier.name,
-        description: supplier.description || `${supplier.category} service`,
-        price: enhancedPartyDetails.totalPrice,
-        status: "confirmed",
-        image: supplier.image || supplier.coverPhoto || supplier.avatar,
-        category: supplier.category,
-        priceUnit: supplier.priceUnit || "per event",
-        packageId: selectedPkg.id,
-        packageData: {
-          ...selectedPkg,
-          selectedAddons: enhancedPartyDetails.selectedAddons,
-          totalPrice: enhancedPartyDetails.totalPrice,
-          basePrice: enhancedPartyDetails.basePrice,
-          addonsPriceTotal: enhancedPartyDetails.totalPrice - enhancedPartyDetails.basePrice
-        },
-        selectedAddons: enhancedPartyDetails.selectedAddons,
-        totalPrice: enhancedPartyDetails.totalPrice,
-        basePrice: enhancedPartyDetails.basePrice,
-        addedAt: new Date().toISOString(),
-        originalSupplier: {
-          ...supplier,
-          ...(backendSupplier || {})
-        },
-        bookingMethod: 'a_la_carte',
-        confirmed: true
-      },
-      
-      // Initialize empty addons array
-      addons: [],
-      
-      // Add metadata
-      createdAt: new Date().toISOString(),
-      source: 'a_la_carte',
-      theme: enhancedPartyDetails.theme
-    }
-
-    console.log('🎪 Created party plan:', partyPlan)
-    setProgress(80)
-
-    // Save party plan
-    try {
-      localStorage.setItem('user_party_plan', JSON.stringify(partyPlan))
-      console.log('💾 Party plan saved to localStorage')
-      
-      const savedPlan = localStorage.getItem('user_party_plan')
-      if (!savedPlan) {
-        throw new Error('Failed to save party plan to localStorage')
-      }
-      
-      const parsedPlan = JSON.parse(savedPlan)
-      if (!parsedPlan[supplierCategory] || !parsedPlan[supplierCategory].name) {
-        throw new Error('Party plan structure is incorrect after saving')
-      }
-      
-      console.log('✅ Party plan verified in localStorage')
-    } catch (storageError) {
-      console.error('❌ Storage error:', storageError)
-      throw new Error('Failed to save party plan')
-    }
-
-    setProgress(95)
-
-    // Success
-    const addonMessage = enhancedPartyDetails.selectedAddons?.length > 0 
-      ? ` with ${enhancedPartyDetails.selectedAddons.length} add-on${enhancedPartyDetails.selectedAddons.length > 1 ? 's' : ''}` 
-      : ''
-    
-    setProgress(100)
-    console.log('✅ À la carte booking completed successfully')
-
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // ✅ NAVIGATE WITH SCROLL PARAMETERS
-    const dashboardUrl = `/dashboard?show_welcome=true&source=a_la_carte&scrollTo=${supplierCategory}&action=supplier-added`
-    console.log('🚀 À la carte - navigating to:', dashboardUrl)
-    router.push(dashboardUrl)
-
-    return { 
-      success: true, 
-      message: `🎉 ${supplier.name} added to your party plan${addonMessage}!` 
-    }
-
-  } catch (error) {
-    console.error("❌ Error in handleAlaCarteBooking:", error)
-    
-    return { 
-      success: false, 
-      message: `Failed to create party plan: ${error.message}. Please try again.` 
-    }
-  } finally {
-    setIsAddingToPlan(false)
-    setProgress(0)
-    setLoadingStep(0)
-    console.log('🔧 Cleanup completed')
-  }
-}, [packages, selectedPackageId, supplier, backendSupplier, router, enquiryStatus])
-
-// Replace your existing handleAddToPlan function with this:
 
 const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
-  // Check if user has pending enquiries - ONLY for database users
-  if (userType === 'DATABASE_USER' && enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-    console.log('🚫 Database user has pending enquiries - showing pending enquiry modal')
-    return { showPendingEnquiry: true }
-  }
 
-  // Basic validation
   if (!supplier || !selectedPackageId) {
     return { 
       success: false, 
       message: "Please select a package first." 
     }
   }
+  
+  // ✅ CHECK IF WE CAME FROM REVIEW-BOOK - IMPORTANT CHECK AT THE START
+  const urlParams = new URLSearchParams(window.location.search)
+  const fromReviewBook = urlParams.get('from') === 'review-book-missing'
   
   // Get behavior based on user type
   const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
@@ -472,9 +254,17 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
 
   // 8. START ADDING PROCESS
   console.log('🚀 Starting add to plan process')
-  setIsAddingToPlan(true)
-  setLoadingStep(0)
-  setProgress(10)
+  
+  // ✅ SKIP LOADING MODAL IF FROM REVIEW-BOOK (for faster UX)
+  const shouldShowLoadingModal = !fromReviewBook
+  
+  if (shouldShowLoadingModal) {
+    setIsAddingToPlan(true)
+    setLoadingStep(0)
+    setProgress(10)
+  } else {
+    console.log('🔄 Skipping loading modal for review-book flow')
+  }
 
   try {
     // Prepare package data
@@ -493,15 +283,15 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
     }
 
     console.log('🎯 Enhanced package:', enhancedPackage)
-    setProgress(30)
+    if (shouldShowLoadingModal) setProgress(30)
 
     let result
-    setLoadingStep(1)
+    if (shouldShowLoadingModal) setLoadingStep(1)
 
     // 9. DATABASE USER FLOW
     if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
       console.log('📊 Database user - adding supplier to database')
-      setProgress(50)
+      if (shouldShowLoadingModal) setProgress(50)
       
       const addResult = await partyDatabaseBackend.addSupplierToParty(
         userContext.currentPartyId,
@@ -509,17 +299,24 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
         enhancedPackage
       )
       
-      setProgress(70)
-      setLoadingStep(2)
+      if (shouldShowLoadingModal) setProgress(70)
+      if (shouldShowLoadingModal) setLoadingStep(2)
       
-      if (addResult.success && behavior.shouldSendEnquiry) {
-        console.log('📧 Sending auto-enquiry for empty category')
-        setLoadingStep(3)
+      // ✅ NEW: Always send enquiry if user has pending enquiries
+      // This ensures even when users can book, we still track enquiries
+      if (addResult.success && (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0))) {
+        console.log('📧 Sending auto-enquiry - either for empty category or user has pending enquiries')
+        if (shouldShowLoadingModal) setLoadingStep(3)
+        
+        const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
+          ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquir${enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}`
+          : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
+        
         const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
           userContext.currentPartyId,
           backendSupplier,
           enhancedPackage,
-          `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
+          enquiryReason
         )
         
         if (enquiryResult.success) {
@@ -532,8 +329,8 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
     // 10. LOCALSTORAGE USER FLOW
     else {
       console.log('📦 LocalStorage user - adding supplier to localStorage')
-      setProgress(50)
-      setLoadingStep(2)
+      if (shouldShowLoadingModal) setProgress(50)
+      if (shouldShowLoadingModal) setLoadingStep(2)
       
       const partyDetails = getSupplierInPartyDetails()
       if (partyDetails.inParty) {
@@ -560,10 +357,10 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       }
     }
 
-    setLoadingStep(4)
-    setProgress(100)
+    if (shouldShowLoadingModal) setLoadingStep(4)
+    if (shouldShowLoadingModal) setProgress(100)
 
-    // 11. SUCCESS HANDLING WITH SCROLL NAVIGATION
+    // 11. SUCCESS HANDLING WITH SMART NAVIGATION
     if (result?.success) {
       let successMessage = `${supplier.name} added to your party`
       
@@ -574,40 +371,72 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
       successMessage += addonMessage
       
-      if (behavior.shouldSendEnquiry) {
+      // ✅ NEW: Update message based on enquiry status
+      if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
         successMessage += ' and enquiry sent!'
       } else {
         successMessage += '!'
       }
       
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      // ✅ CATEGORY MAPPING FOR SCROLL
-      const categoryMap = {
-        'Entertainment': 'entertainment',
-        'Venues': 'venue', 
-        'Venue': 'venue',
-        'Catering': 'catering',
-        'Decorations': 'decorations',
-        'Party Bags': 'partyBags',
-        'Photography': 'photography',
-        'Activities': 'activities',
-        'Face Painting': 'facePainting',
-        'Cakes': 'cakes',
-        'Balloons': 'balloons'
+      // ✅ NEW: Show informational message about pending enquiries (non-blocking)
+      if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
+        // Store additional info for display
+        localStorage.setItem('recentBookingWithPendingEnquiries', JSON.stringify({
+          pendingCount: enquiryStatus.pendingCount,
+          addedSupplier: supplier.name,
+          timestamp: Date.now()
+        }))
       }
-
-      const supplierType = categoryMap[supplier.category] || 'entertainment'
-      console.log('🎯 Mapping category for scroll:', supplier.category, '→', supplierType)
       
-      // ✅ NAVIGATE WITH SCROLL PARAMETERS
-      const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
-      console.log('🚀 Navigating to:', dashboardUrl)
-      router.push(dashboardUrl)
+      // ✅ DIFFERENT WAIT TIMES BASED ON CONTEXT
+      const waitTime = fromReviewBook ? 500 : 1000 // Shorter wait for review-book
+      await new Promise((resolve) => setTimeout(resolve, waitTime))
+      
+      if (fromReviewBook) {
+        // Store success message for toast after navigation
+        localStorage.setItem('reviewBookToast', JSON.stringify({
+          type: 'success',
+          title: 'Supplier Added Successfully',
+          message: `${supplier.name} added to your party plan!`,
+          timestamp: Date.now()
+        }))
+        
+        // Navigate back to review-book step 4 with success indicator (forgotten step is now at index 4)
+        const reviewUrl = `/review-book?restore=step4&added=true&supplier=${encodeURIComponent(supplier.name)}`
+        console.log('🔄 Returning to review-book with added supplier:', reviewUrl)
+        router.push(reviewUrl)
+      } else {
+        // Normal dashboard navigation with scroll
+        const categoryMap = {
+          'Entertainment': 'entertainment',
+          'Venues': 'venue', 
+          'Venue': 'venue',
+          'Catering': 'catering',
+          'Decorations': 'decorations',
+          'Party Bags': 'partyBags',
+          'Photography': 'photography',
+          'Activities': 'activities',
+          'Face Painting': 'facePainting',
+          'Cakes': 'cakes',
+          'Balloons': 'balloons'
+        }
+
+        const supplierType = categoryMap[supplier.category] || 'entertainment'
+        console.log('🎯 Mapping category for scroll:', supplier.category, '→', supplierType)
+        
+        const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
+        console.log('🚀 Navigating to dashboard:', dashboardUrl)
+        router.push(dashboardUrl)
+      }
 
       return { 
         success: true, 
-        message: successMessage 
+        message: successMessage,
+        // ✅ NEW: Include enquiry info for UI updates
+        enquiryInfo: enquiryStatus.isAwaiting ? {
+          hasPendingEnquiries: true,
+          pendingCount: enquiryStatus.pendingCount
+        } : null
       }
     } else {
       throw new Error(result?.error || "Failed to add supplier")
@@ -620,9 +449,11 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       message: error.message || "Failed to add supplier. Please try again." 
     }
   } finally {
-    setIsAddingToPlan(false)
-    setProgress(0)
-    setLoadingStep(0)
+    if (shouldShowLoadingModal) {
+      setIsAddingToPlan(false)
+      setProgress(0)
+      setLoadingStep(0)
+    }
     setFinalPackageData(null)
     console.log('🔧 handleAddToPlan cleanup completed')
   }
@@ -644,8 +475,52 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
   router, 
   checkSupplierAvailability, 
   getSelectedCalendarDate,
-  enquiryStatus
+  enquiryStatus  // ✅ Keep this for non-blocking enquiry info
 ])
+
+// ✅ ALSO UPDATE handleAlaCarteBooking to remove blocking
+const handleAlaCarteBooking = useCallback(async (partyDetails) => {
+  // ❌ REMOVE THIS BLOCKING CHECK
+  // if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
+  //   console.log('🚫 User trying to add supplier - showing pending enquiry modal')
+  //   return { showPendingEnquiry: true }
+  // }
+
+  try {
+    // ... rest of the function remains the same
+    // Just remove the blocking check at the beginning
+    
+    // Validation
+    if (!partyDetails) {
+      throw new Error('No party details provided')
+    }
+
+    if (!supplier) {
+      throw new Error('No supplier data available')
+    }
+
+    // Get selected package
+    const selectedPkg = packagesWithPopular.find(pkg => pkg.id === selectedPackageId)
+    if (!selectedPkg) {
+      throw new Error('No package selected')
+    }
+    
+    // ... continue with rest of existing logic
+    
+  } catch (error) {
+    console.error("❌ Error in handleAlaCarteBooking:", error)
+    
+    return { 
+      success: false, 
+      message: `Failed to create party plan: ${error.message}. Please try again.` 
+    }
+  } finally {
+    setIsAddingToPlan(false)
+    setProgress(0)
+    setLoadingStep(0)
+    console.log('🔧 Cleanup completed')
+  }
+}, [packages, selectedPackageId, supplier, backendSupplier, router])  // ✅ Remove enquiryStatus dependency
 
   // Get button state
   const getAddToPartyButtonState = useCallback((packageIdToCompare) => {

@@ -42,24 +42,37 @@ export function ContextualBreadcrumb({
           // work out back target
           let backText = "Browse Suppliers"
           let action = () => router.push("/browse")
-  
+        
           if (navigationContext === "dashboard") {
             backText = "Dashboard"
             action = () => goBack(true)
           } else if (navigationContext === "favorites") {
             backText = "My Favorites"
             action = () => goBack()
+          } else if (navigationContext === "review-book-missing") {
+            // NEW: Handle navigation back to review book at step 4 (forgotten step)
+            backText = "Review & Book"
+            action = () => {
+              console.log('🔄 Navigating back to review-book step 4')
+              // Navigate back to review page and restore to step 4 (forgotten step)
+              const reviewState = {
+                step: 4,
+                stepId: 'forgotten',
+                timestamp: Date.now()
+              }
+              sessionStorage.setItem('reviewBookRestoreState', JSON.stringify(reviewState))
+              router.push("/review-book?restore=step4")
+            }
           }
-  
+        
           return {
             show: true,
             backText,
-            // 👇 show supplier name if we have it, else fall back
+            // show supplier name if we have it, else fall back
             currentText: supplierName || "Supplier Details",
             action,
           }
         }
-
       case "add-supplier":
         return {
           show: true,
@@ -97,7 +110,7 @@ export function ContextualBreadcrumb({
             action: goBack,
           }
 
-      case "review-book":
+      case "Review & Book":
         return {
           show: true,
           backText: "Dashboard",

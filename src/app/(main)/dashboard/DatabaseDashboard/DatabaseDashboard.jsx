@@ -19,6 +19,7 @@ import { useBudgetManager } from "../hooks/useBudgetManager"
 import { useSupplierManager } from "../hooks/useSupplierManager"
 import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
+import useDisableScroll from "@/hooks/useDisableScroll"
 
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -517,6 +518,9 @@ useEffect(() => {
   // Welcome popup state
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const welcomePopupShownRef = useRef(false)
+
+
+    useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
   useEffect(() => {
     if (!isClient) return
   
@@ -603,12 +607,11 @@ useEffect(() => {
   }, [searchParams, router, showWelcomePopup, showSupplierAddedModal]) // ✅ Add modal dependencies
   
 
-// Add this useEffect to detect client-side mounting (add near the top of your component):
 useEffect(() => {
   setIsClient(typeof window !== 'undefined')
 }, [])
 
-// Add this useEffect to your DatabaseDashboard.jsx after the existing modal restoration effects
+
 
 // ✅ SCROLL-TO-SUPPLIER FUNCTIONALITY - Same as LocalStorage Dashboard
 useEffect(() => {
@@ -696,7 +699,7 @@ useEffect(() => {
   return () => clearTimeout(scrollTimeout)
 }, [searchParams, router, showWelcomePopup, showSupplierAddedModal]) // ✅ Add modal dependencies
 
-// ✅ ADDITIONAL: Handle scroll after modals close
+
 useEffect(() => {
   if (!showWelcomePopup && !showSupplierAddedModal) {
     // Check if we have pending scroll parameters
@@ -730,7 +733,7 @@ useEffect(() => {
   // Navigation handlers
   const handleAddSupplier = () => navigateWithContext('/browse', 'dashboard')
   const handlePaymentReady = () => router.push('/payment/secure-party')
-  const handleCreateInvites = () => window.location.href = "/e-invites"
+  const handleCreateInvites = () => window.location.href = "/e-invites/create"
   const calculatePartyBagsDisplayPrice = (supplier, guestCount) => {
     // Only calculate for party bags
     if (supplier.category !== 'Party Bags' && supplier.type !== 'partyBags') {

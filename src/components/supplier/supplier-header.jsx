@@ -1,12 +1,229 @@
 "use client"
 
 import Image from "next/image"
+import { useMemo } from "react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, MapPin, Check, Clock, Calendar, CheckCircle, ImageIcon, XIcon } from "lucide-react"
+import { Star, MapPin, Check, Clock, Calendar, CheckCircle, ImageIcon, XIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+
+// Mobile Carousel Component
+const MobileImageCarousel = ({ images, supplier, onGalleryOpen }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [touchStart, setTouchStart] = useState(0)
+  const [touchEnd, setTouchEnd] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
+  // Prepare images for carousel
+  const carouselImages = useMemo(() => {
+    const imageList = []
+    
+    // Add main image first
+    const primaryImage = supplier?.coverPhoto || supplier?.image || supplier?.imageUrl
+    if (primaryImage) {
+      imageList.push({
+        image: primaryImage,
+        alt: `${supplier?.name} - Main image`,
+        isPrimary: true
+      })
+    }
+    
+    // Add portfolio images
+    if (images && images.length > 0) {
+      const portfolioImages = images
+        .filter(img => img.image !== primaryImage) // Remove duplicates
+        .slice(0, 8) // Limit to 8 additional images for performance
+      
+      imageList.push(...portfolioImages)
+    }
+    
+    // Fallback if no images
+    if (imageList.length === 0) {
+      imageList.push({
+        image: '/placeholder.png',
+        alt: 'Placeholder image',
+        isPrimary: true
+      })
+    }
+    
+    return imageList
+  }, [images, supplier])
+
+  const totalImages = carouselImages.length
+  const minSwipeDistance = 50
+
+  const onTouchStart = (e) => {
+    setTouchEnd(0)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+
+    if (isLeftSwipe && currentImageIndex < totalImages - 1) {
+      nextImage()
+    }
+    if (isRightSwipe && currentImageIndex > 0) {
+      prevImage()
+    }
+  }
+
+  const nextImage = () => {
+    if (isTransitioning) return
+    
+    setIsTransitioning(true)
+    setCurrentImageIndex(prev => {
+      const newIndex = prev < totalImages - 1 ? prev + 1 : prev
+      return newIndex
+    })
+    
+    setTimeout(() => setIsTransitioning(false), 300)
+  }
+
+  const prevImage = () => {
+    if (isTransitioning) return
+    
+    setIsTransitioning(true)
+    setCurrentImageIndex(prev => {
+      const newIndex = prev > 0 ? prev - 1 : prev
+      return newIndex
+    })
+    
+    setTimeout(() => setIsTransitioning(false), 300)
+  }
+
+  return (
+    <div className="relative h-75 sm:h-80 bg-gray-100 overflow-hidden">
+      {/* Images Container */}
+      <div 
+        className="flex h-full transition-transform duration-300 ease-in-out"
+        style={{
+          width: `${totalImages * 100}%`,
+          transform: `translateX(-${(currentImageIndex * 100) / totalImages}%)`,
+        }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {carouselImages.map((imageItem, index) => (
+          <div 
+            key={index}
+            className="relative h-full"
+            style={{ width: `${100 / totalImages}%` }}
+          >
+            <Image
+              src={imageItem.image || "/placeholder.png"}
+              alt={imageItem.alt || `Image ${index + 1}`}
+              fill
+              className="object-cover"
+              priority={index === 0}
+              onError={(e) => {
+                e.target.src = '/placeholder.png'
+              }}
+            />
+            
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation Arrows - Only show if more than 1 image */}
+      {totalImages > 1 && (
+        <>
+          {/* Left Arrow */}
+          <button
+            onClick={prevImage}
+            disabled={currentImageIndex === 0 || isTransitioning}
+            className={`
+              absolute left-3 top-1/2 -translate-y-1/2 z-10
+              w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/20
+              flex items-center justify-center
+              transition-all duration-200 hover:bg-black/70 hover:scale-110
+              disabled:opacity-0 disabled:pointer-events-none
+            `}
+          >
+            <ChevronLeft className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Right Arrow */}
+          <button
+            onClick={nextImage}
+            disabled={currentImageIndex === totalImages - 1 || isTransitioning}
+            className={`
+              absolute right-3 top-1/2 -translate-y-1/2 z-10
+              w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/20
+              flex items-center justify-center
+              transition-all duration-200 hover:bg-black/70 hover:scale-110
+              disabled:opacity-0 disabled:pointer-events-none
+            `}
+          >
+            <ChevronRight className="w-5 h-5 text-white" />
+          </button>
+        </>
+      )}
+
+      {/* Image Counter */}
+      {totalImages > 1 && (
+        <div className="absolute top-4 right-4 z-10">
+          <div className="bg-black/50 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full border border-white/20">
+            {currentImageIndex + 1} / {totalImages}
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Button */}
+      {totalImages > 3 && (
+        <div className="absolute bottom-4 right-4 z-10">
+          <Button
+            onClick={onGalleryOpen}
+            variant="secondary"
+            size="sm"
+            className="bg-white/90 hover:bg-white text-gray-800 rounded-full shadow-lg px-4 py-2"
+          >
+            <ImageIcon className="w-4 h-4 mr-2" /> 
+            View All ({totalImages})
+          </Button>
+        </div>
+      )}
+
+      {/* Dot Indicators - Only show if more than 1 image and less than 6 */}
+      {totalImages > 1 && totalImages <= 5 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+          <div className="flex justify-center space-x-2">
+            {carouselImages.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentImageIndex(index)}
+                disabled={isTransitioning}
+                className={`
+                  w-2 h-2 rounded-full transition-all duration-200
+                  ${index === currentImageIndex 
+                    ? 'bg-white scale-125' 
+                    : 'bg-white/60 hover:bg-white/80'
+                  }
+                `}
+                aria-label={`Go to image ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 
 export default function SupplierHeader({
   supplier,
@@ -41,8 +258,6 @@ export default function SupplierHeader({
   const smallImage1 = headerGalleryImages[1] // Will be top-right
   const smallImage2 = headerGalleryImages[2] // Will be bottom-right
 
-console.log(supplier)
-
   // Calculate remaining images for the bubble, after the main image and the two small ones
   const remainingImagesCount = Math.max(0, headerGalleryImages.length - 3)
 
@@ -52,7 +267,7 @@ console.log(supplier)
 
   return (
     <div className="bg-white border-b border-gray-200">
-      {/* Desktop Header Image Gallery */}
+      {/* Desktop Header Image Gallery - UNCHANGED */}
       <div className="hidden md:block h-[400px] lg:h-[450px] relative bg-rose-50 overflow-hidden p-2">
         <div className="flex gap-2 h-full">
           {/* Main Image (70%) */}
@@ -120,30 +335,16 @@ console.log(supplier)
       </div>
 
       <Sheet open={showGallerySheet} onOpenChange={setShowGallerySheet}>
-        {/* Mobile Header Image - Full width */}
-        <div className="md:hidden relative h-75 sm:h-80">
-          <Image
-            src={mainDisplayImage.image || "/placeholder.png"}
-            alt={mainDisplayImage.alt}
-            fill
-            className="object-cover rounded-b-3xl"
-            priority
+        {/* Mobile Header Image Carousel - NEW */}
+        <div className="md:hidden">
+          <MobileImageCarousel 
+            images={portfolioImages}
+            supplier={supplier}
+            onGalleryOpen={() => setShowGallerySheet(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-b-3xl" />
-          <div className="absolute bottom-4 right-4">
-            <SheetTrigger asChild>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="bg-white/90 hover:bg-white text-gray-800 rounded-full shadow-lg px-4 py-2"
-              >
-                <ImageIcon className="w-4 h-4 mr-2" /> View Gallery ({portfolioImages.length})
-              </Button>
-            </SheetTrigger>
-          </div>
         </div>
 
-        {/* Content Section (Avatar, Name, Badges, Description) - Wrapped in a container */}
+        {/* Content Section (Avatar, Name, Badges, Description) - UNCHANGED */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6 w-full">
             <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white bg-white shadow-lg -mt-16 md:-mt-20 flex-shrink-0 z-10 rounded-3xl">
@@ -218,11 +419,10 @@ console.log(supplier)
           </div>
         </div>
 
-        {/* Gallery Sheet with Close Button */}
+        {/* Gallery Sheet with Close Button - UNCHANGED */}
         <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col rounded-t-2xl">
           <SheetHeader className="p-4 border-b flex flex-row items-center justify-between">
             <SheetTitle>Portfolio Gallery ({portfolioImages.length})</SheetTitle>
-            {/* Close button for gallery sheet */}
             <Button 
               variant="ghost" 
               size="icon" 

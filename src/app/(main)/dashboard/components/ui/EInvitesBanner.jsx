@@ -10,6 +10,8 @@ export default function EInvitesBanner({
   isBookingPending = true, 
   onCreateInvites 
 }) {
+
+
   const [isVisible, setIsVisible] = useState(true)
   const [hasCreatedInvites, setHasCreatedInvites] = useState(false)
   const [isChecking, setIsChecking] = useState(true)

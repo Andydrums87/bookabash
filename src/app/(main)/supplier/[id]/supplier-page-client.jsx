@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useMemo, useEffect, use, useCallback } from "react"
+
 import { Button } from "@/components/ui/button"
 import { useContextualNavigation } from "@/hooks/useContextualNavigation"
-import { useSupplier } from "@/utils/mockBackend"
+
 import { useUserTypeDetection, getHandleAddToPlanBehavior } from '@/hooks/useUserTypeDetection'
 
 import { supabase } from "@/lib/supabase"
@@ -205,25 +206,67 @@ const packages = booking.packages
 
 
 
-  const handleAddToPlanWithModals = async (...args) => {
-    const result = await booking.handleAddToPlan(...args)
+const handleAddToPlanWithModals = async (...args) => {
+  const result = await booking.handleAddToPlan(...args)
+  
+  // ❌ REMOVE: No longer show pending enquiry modal as blocking
+  // if (result.showPendingEnquiry) {
+  //   modals.openPendingEnquiryModal()
+  // } else if ...
+  
+  // ✅ NEW: Handle results without blocking
+  if (result.showDatePicker) {
+    modals.handleModalFlow('showDatePicker')
+  } else if (result.showUnavailableModal) {
+    modals.handleModalFlow('showUnavailableModal', { unavailableDate: result.unavailableDate })
+  } else if (result.showAlaCarteModal) {
+    modals.openAlaCarteModal()
+  } else if (result.showAddonModal) {
+    modals.openAddonModal()
+  } else if (result.success) {
+    notifications.showSuccess(result.message)
     
-    if (result.showPendingEnquiry) {
-      modals.openPendingEnquiryModal()
-    } else if (result.showDatePicker) {
-      modals.handleModalFlow('showDatePicker')
-    } else if (result.showUnavailableModal) {
-      modals.handleModalFlow('showUnavailableModal', { unavailableDate: result.unavailableDate })
-    } else if (result.showAlaCarteModal) {
-      modals.openAlaCarteModal()
-    } else if (result.showAddonModal) {
-      modals.openAddonModal()
-    } else if (result.success) {
-      notifications.showSuccess(result.message)  // ← Use notifications hook
-    } else if (!result.success) {
-      notifications.showError(result.message)    // ← Use notifications hook
+    // ✅ NEW: Show informational notification about pending enquiries (non-blocking)
+    if (result.enquiryInfo?.hasPendingEnquiries) {
+      setTimeout(() => {
+        notifications.setNotification({
+          type: 'info',
+          title: 'Enquiries Pending',
+          message: `You have ${result.enquiryInfo.pendingCount} pending enquir${result.enquiryInfo.pendingCount === 1 ? 'y' : 'ies'}. You can continue planning while waiting for responses.`,
+          action: {
+            label: 'View Dashboard',
+            onClick: () => router.push('/dashboard?tab=enquiries')
+          },
+          duration: 8000 // Longer duration for informational message
+        })
+      }, 2000) // Show after success message
     }
+  } else if (!result.success) {
+    notifications.showError(result.message)
   }
+}
+
+// ✅ NEW: Show non-blocking pending enquiry info on page load
+useEffect(() => {
+  if (enquiries.enquiryStatus.isAwaiting && enquiries.enquiryStatus.pendingCount > 0) {
+    // Show informational banner about pending enquiries (non-blocking)
+    const timer = setTimeout(() => {
+      notifications.setNotification({
+        type: 'info',
+        title: 'Enquiries in Progress',
+        message: `You have ${enquiries.enquiryStatus.pendingCount} pending enquir${enquiries.enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}. You can continue adding suppliers while waiting for responses.`,
+        action: {
+          label: 'View All Enquiries',
+          onClick: () => router.push('/dashboard?tab=enquiries')
+        },
+        duration: 6000,
+        dismissible: true
+      })
+    }, 1500) // Show after page loads
+
+    return () => clearTimeout(timer)
+  }
+}, [enquiries.enquiryStatus, notifications, router])
 
 
 
@@ -280,7 +323,31 @@ if (userTypeLoading) {
       <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
 
 
-      
+      {/* NEW: Add informational banner about pending enquiries (non-blocking) */}
+      {enquiries.enquiryStatus.isAwaiting && enquiries.enquiryStatus.pendingCount > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <AlertCircle className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-blue-900 text-sm mb-1">
+                      Enquiries in Progress
+                    </h4>
+                    <p className="text-sm text-blue-700 mb-2">
+                      You have {enquiries.enquiryStatus.pendingCount} pending enquir{enquiries.enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}. 
+                      You can continue adding suppliers while waiting for responses.
+                    </p>
+                    <button
+                      onClick={() => router.push('/dashboard?tab=enquiries')}
+                      className="text-sm text-blue-800 hover:text-blue-900 underline font-medium"
+                    >
+                      View all enquiries →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
       <SupplierHeader
         supplier={supplier}
         portfolioImages={portfolioImages}
@@ -377,35 +444,47 @@ if (userTypeLoading) {
 
 
 <MobileBookingBar 
-  selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId) || packages[0] || null}
-  supplier={supplier}
-  onAddToPlan={handleAddToPlanWithModals}
-  addToPlanButtonState={booking.getAddToPartyButtonState(booking.selectedPackageId)}
-  selectedDate={availability.selectedDate}
-  currentMonth={availability.currentMonth}
-  setSelectedDate={availability.setSelectedDate}
-  setCurrentMonth={availability.setCurrentMonth}
-  hasValidPartyPlan={availability.hasPartyDate}  // ← Use availability hook function
-  isFromDashboard={availability.isFromDashboard()}  // ← Call the function
-  partyDate={availability.getPartyDate()}  // ← Call the function
-  onSaveForLater={(data) => {
-    notifications.showSaveForLater(supplier.name)  // ← Use notifications hook
-  }}
-  showAddonModal={modals.showAddonModal}
-  setShowAddonModal={modals.setShowAddonModal}
-  onAddonConfirm={(addonData) => modals.handleAddonConfirm(addonData, handleAddToPlanWithModals)}  // ← Use modals hook handler
-  isAddingToPlan={booking.isAddingToPlan}
-  hasEnquiriesPending={enquiries.hasEnquiriesPending}
-  onShowPendingEnquiryModal={modals.openPendingEnquiryModal}  // ← Use modals hook
-  pendingCount={enquiries.getPendingEnquiriesCount()}
-  isReplacementMode={replacement.isReplacementMode}  // ← Use replacement hook
-  replacementSupplierName={replacement.replacementSupplierName}  // ← Use replacement hook
-  onReturnToReplacement={replacement.handleReturnToReplacement}  // ← Use replacement hook
-  packages={packages}
-  openCakeModal={modals.openCakeModal}
-  showCakeModal={modals.showCakeModal}
-  isCakeSupplier={isCakeSupplier}
-/>
+        selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId) || packages[0] || null}
+        supplier={supplier}
+        onAddToPlan={handleAddToPlanWithModals}
+        addToPlanButtonState={booking.getAddToPartyButtonState(booking.selectedPackageId)}
+        selectedDate={availability.selectedDate}
+        currentMonth={availability.currentMonth}
+        setSelectedDate={availability.setSelectedDate}
+        setCurrentMonth={availability.setCurrentMonth}
+        hasValidPartyPlan={availability.hasPartyDate}
+        isFromDashboard={availability.isFromDashboard()}
+        partyDate={availability.getPartyDate()}
+        onSaveForLater={(data) => {
+          notifications.showSaveForLater(supplier.name)
+        }}
+        showAddonModal={modals.showAddonModal}
+        setShowAddonModal={modals.setShowAddonModal}
+        onAddonConfirm={(addonData) => modals.handleAddonConfirm(addonData, handleAddToPlanWithModals)}
+        isAddingToPlan={booking.isAddingToPlan}
+        hasEnquiriesPending={enquiries.hasEnquiriesPending}
+        onShowPendingEnquiryModal={() => {
+          // ✅ NEW: Instead of showing blocking modal, show informational notification
+          notifications.setNotification({
+            type: 'info',
+            title: 'Enquiries in Progress',
+            message: `You have ${enquiries.getPendingEnquiriesCount()} pending enquir${enquiries.getPendingEnquiriesCount() === 1 ? 'y' : 'ies'}. View them on your dashboard.`,
+            action: {
+              label: 'View Dashboard',
+              onClick: () => router.push('/dashboard?tab=enquiries')
+            },
+            duration: 6000
+          })
+        }}
+        pendingCount={enquiries.getPendingEnquiriesCount()}
+        isReplacementMode={replacement.isReplacementMode}
+        replacementSupplierName={replacement.replacementSupplierName}
+        onReturnToReplacement={replacement.handleReturnToReplacement}
+        packages={packages}
+        openCakeModal={modals.openCakeModal}
+        showCakeModal={modals.showCakeModal}
+        isCakeSupplier={isCakeSupplier}
+      />
 
 
 {modals.showCakeModal && isCakeSupplier && modals.selectedPackageForCake && (
@@ -433,18 +512,8 @@ if (userTypeLoading) {
     preSelectedDate={availability.getSelectedCalendarDate()} 
   />
 )}
-<PendingEnquiryModal
-  isOpen={modals.showPendingEnquiryModal}
-  onClose={modals.closePendingEnquiryModal}
-  supplier={supplier}
-  pendingCount={enquiries.getPendingEnquiriesCount()}
-  enquiries={enquiries.getPendingEnquiries()}
-  estimatedResponseTime="24 hours"
-  onViewDashboard={() => {
-    modals.closePendingEnquiryModal()
-    router.push('/dashboard')
-  }}
-/>
+
+
     </div>
   )
 }

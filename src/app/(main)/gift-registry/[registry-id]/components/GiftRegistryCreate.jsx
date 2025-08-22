@@ -65,8 +65,18 @@ export default function GiftRegistryShop() {
     reset  
   } = useEnhancedGiftProducts()
 
+  useEffect(() => {
+    console.log("Registry Items:", registryItems)
+    console.log("Sample registry item structure:", registryItems[0])
+    if (products.length > 0) {
+      console.log("Sample product structure:", products[0])
+    }
+  }, [registryItems, products])
+
   const handleAddToRegistry = async (product) => {
+    // Set loading state for this specific product
     setAddingItem(product.id)
+    
     try {
       let result
       if (product.source === "amazon") {
@@ -74,17 +84,50 @@ export default function GiftRegistryShop() {
       } else {
         result = await partyDatabaseBackend.addCuratedItemToRegistry(registryId, product.id, { priority: "medium" })
       }
+      
       if (result.success) {
+        // Add to local state immediately for instant feedback
         setRegistryItems((prev) => [...prev, result.registryItem])
+        
+        // Optional: Show a toast notification for success
+        // showToast({ 
+        //   type: 'success', 
+        //   message: `${product.name} added to registry!` 
+        // })
+        
+        console.log("Item successfully added to registry:", result.registryItem)
       } else {
         console.error("Failed to add item:", result.error)
+        
+        // Optional: Show error toast
+        // showToast({ 
+        //   type: 'error', 
+        //   message: 'Failed to add item. Please try again.' 
+        // })
       }
     } catch (error) {
       console.error("Error adding product:", error)
+      
+      // Optional: Show error toast
+      // showToast({ 
+      //   type: 'error', 
+      //   message: 'Something went wrong. Please try again.' 
+      // })
     } finally {
+      // Always clear loading state
       setAddingItem(null)
     }
   }
+
+  // Helper function to check if a product is already in the registry
+const isProductInRegistry = (productId) => {
+  return registryItems.some((item) => {
+    // Check both gift_item_id and custom matching
+    return item.gift_item_id === productId || 
+           item.gift_items?.id === productId ||
+           item.id === productId
+  })
+}
 
   const handleRemoveItem = async (itemId) => {
     try {
@@ -675,17 +718,36 @@ export default function GiftRegistryShop() {
             ) : sortedProducts.length > 0 ? (
               <>
                 <div className="grid gap-3 sm:gap-6 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {sortedProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      viewMode="grid" // Force grid on mobile
-                      onAddToRegistry={() => handleAddToRegistry(product)}
-                      onViewDetails={() => handleViewDetails(product)}
-                      isAdded={registryItems.some((item) => item.gift_item_id === product.id)}
-                      isLoading={addingItem === product.id}
-                    />
-                  ))}
+                {sortedProducts.map((product) => {
+  // Correct way to check if product is in registry
+  const isInRegistry = registryItems.some((item) => {
+    // For external products (Amazon), check external_product_id
+    if (item.external_product_id && product.id) {
+      return item.external_product_id === product.id
+    }
+    
+    // For curated products, check gift_item_id
+    if (item.gift_item_id && product.id) {
+      return item.gift_item_id === product.id
+    }
+    
+    // Fallback checks
+    return item.gift_items?.id === product.id || item.id === product.id
+  })
+  
+  return (
+    <ProductCard
+      key={product.id}
+      product={product}
+      viewMode="grid"
+      onAddToRegistry={() => handleAddToRegistry(product)}
+      onViewDetails={() => handleViewDetails(product)}
+      isAdded={isInRegistry}
+      isLoading={addingItem === product.id}
+    />
+  )
+})}
+
                 </div>
 
                 {/* Load More Button */}
@@ -845,7 +907,7 @@ export default function GiftRegistryShop() {
   )
 }
 
-// Product Card Component - Mobile Optimized
+
 function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdded, isLoading }) {
   return (
     <Card className="border border-gray-200 hover:border-[hsl(var(--primary-300))] hover:shadow-lg transition-all duration-200 bg-white group">
@@ -873,6 +935,13 @@ function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdde
             {product.discount && (
               <Badge className="bg-red-100 text-red-800 text-xs border-red-200">-{product.discount}%</Badge>
             )}
+            {/* Added to Registry Badge */}
+            {isAdded && (
+              <Badge className="bg-emerald-100 text-emerald-800 text-xs border-emerald-200 font-medium">
+                <Check className="w-3 h-3 mr-1" />
+                In Registry
+              </Badge>
+            )}
           </div>
 
           {/* Quick Add Button - Hidden on mobile for better UX */}
@@ -885,8 +954,10 @@ function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdde
               }}
               disabled={isAdded || isLoading}
               className={isAdded
-                ? "bg-emerald-500 text-white cursor-not-allowed"
-                : "bg-white text-gray-700 hover:bg-[hsl(var(--primary-50))] border border-gray-200"}
+                ? "bg-emerald-500 text-white cursor-not-allowed shadow-sm"
+                : isLoading 
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-white text-gray-700 hover:bg-[hsl(var(--primary-50))] border border-gray-200 shadow-sm"}
             >
               {isLoading ? (
                 <div className="w-4 h-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
@@ -897,6 +968,15 @@ function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdde
               )}
             </Button>
           </div>
+
+          {/* Loading Overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
+              <div className="bg-white rounded-full p-3 shadow-lg">
+                <div className="w-6 h-6 animate-spin rounded-full border-3 border-[hsl(var(--primary-500))] border-t-transparent" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Product Info - Mobile Optimized */}
@@ -933,24 +1013,28 @@ function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdde
             </div>
           </div>
 
-          {/* Add to Registry Button - Mobile Optimized */}
+          {/* Add to Registry Button - Enhanced with better visual feedback */}
           <Button
             onClick={onAddToRegistry}
             disabled={isAdded || isLoading}
-            className={`w-full ${isAdded
-              ? "bg-emerald-100 text-emerald-800 cursor-not-allowed hover:bg-emerald-100"
-              : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white"}`}
+            className={`w-full transition-all duration-300 ${
+              isAdded
+                ? "bg-emerald-500 hover:bg-emerald-500 text-white cursor-not-allowed shadow-sm ring-2 ring-emerald-200"
+                : isLoading 
+                ? "bg-gray-200 hover:bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white hover:shadow-md transform hover:scale-[1.02]"
+            }`}
             size="sm"
           >
             {isLoading ? (
               <>
-                <div className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
                 <span className="text-xs sm:text-sm">Adding...</span>
               </>
             ) : isAdded ? (
               <>
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="text-xs sm:text-sm">Added</span>
+                <span className="text-xs sm:text-sm font-medium">Added to Registry</span>
               </>
             ) : (
               <>
@@ -959,6 +1043,8 @@ function ProductCard({ product, viewMode, onAddToRegistry, onViewDetails, isAdde
               </>
             )}
           </Button>
+
+         
         </div>
       </CardContent>
     </Card>

@@ -163,33 +163,17 @@ const EInvitesPage = ({ onSaveSuccess }) => {
         case WIZARD_STEPS.CREATE_INVITE:
           return (
             <div className="max-w-7xl mx-auto">
-              {/* Mobile Layout: Preview First, then AI Generation */}
+              {/* Mobile Layout: Streamlined Flow */}
               <div className="lg:hidden space-y-6">
-
-  
-                {/* AI Generation - Mobile: Show after preview */}
+                {/* AI Generation */}
                 <AIOnlyThemeSelection
                   generateAIOptions={generateAIOptions}
                   isGeneratingAI={isGeneratingAI}
                   selectedAiOption={selectedAiOption}
                   inviteData={inviteData}
                 />
-                        {/* Preview - Mobile: Show first */}
-                        <PreviewAndActions
-                  useAIGeneration={true}
-                  selectedAiOption={selectedAiOption}
-                  inviteData={enhancedInviteData}
-                  selectedTheme={selectedTheme}
-                  generatedImage={generatedImage}
-                  saveButtonState={saveButtonState}
-                  saveInviteToPartyPlan={handleSaveInvite}
-                  copyShareableLink={copyShareableLink}
-                  generateShareableLink={generateShareableLink}
-                  hasUnsavedChanges={hasUnsavedChanges}
-                  themes={themes}
-                  onLayoutSave={() => {}}
-                />
                 
+                {/* Mobile-Optimized AI Options - Show immediately after generator */}
                 <AIOptionsSelection
                   showAiOptions={showAiOptions}
                   aiOptions={aiOptions}
@@ -197,13 +181,30 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   selectAiOption={selectAiOption}
                   generateAIOptions={generateAIOptions}
                   isGeneratingAI={isGeneratingAI}
-                  selectedTheme={selectedTheme}
-                  setSelectedTheme={setSelectedTheme}
                 />
-  
-                {/* Templates Coming Soon Card */}
+        
+                {/* Templates Coming Soon */}
                 <TemplatesComingSoon />
+        
+                {/* Preview - Only show if something is selected, at bottom */}
+                {selectedAiOption && (
+                  <div className="bg-white rounded-xl p-4 shadow-lg">
+                    <h3 className="text-lg font-bold mb-3 text-center">Your Selected Design</h3>
+                    <div className="flex justify-center">
+                      <div className="w-48 aspect-[3/4] rounded-lg overflow-hidden shadow-md">
+                        <img
+                          src={selectedAiOption.imageUrl}
+                          alt="Selected Design"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+        
+
+  
   
               {/* Desktop Layout: Side-by-side */}
               <div className="hidden lg:grid lg:grid-cols-3 gap-6">

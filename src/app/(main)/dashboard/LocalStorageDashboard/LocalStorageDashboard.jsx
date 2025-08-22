@@ -44,6 +44,8 @@ import { useSupplierManager } from '../hooks/useSupplierManager'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
+import useDisableScroll from "@/hooks/useDisableScroll"
+
 export default function LocalStorageDashboard() {
   // Router and navigation
   const router = useRouter()
@@ -67,7 +69,7 @@ export default function LocalStorageDashboard() {
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
 
-  // Modal state
+
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [modalConfig, setModalConfig] = useState({
     category: '',
@@ -75,9 +77,15 @@ export default function LocalStorageDashboard() {
     date: null,
     filters: {}
   })
-
   // Debug state (remove in production)
   const [debugInfo, setDebugInfo] = useState({})
+
+
+
+  useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
+
+
+
 
   // ✅ PRODUCTION SAFETY: Mount detection
   useEffect(() => {

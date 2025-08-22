@@ -1,277 +1,78 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import AuthModal from "@/components/AuthModal"
-import { Card, CardContent } from "@/components/ui/card"
-import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
-import {
-  CheckCircle,
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb";
+import AuthModal from "@/components/AuthModal";
+import SnappyEnquiryLoader from "./components/SnappyEnquiryLoader";
+import { useContextualNavigation } from '@/hooks/useContextualNavigation';
+import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestions';
+import { partyPlanBackend } from "@/utils/partyPlanBackend";
+import { useToast } from '@/components/ui/toast';
+import Image from 'next/image';
+
+import { 
+  Send, 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  Users, 
+  CheckCircle, 
+  ChevronDown, 
+  ChevronUp, 
+  Edit3,
+  User,
+  Phone,
+  Mail,
+  Heart,
+  MessageSquare,
+  Calculator,
+  Info,
+  Gift,
+  Package,
+  ArrowRight,
+  X,
+  Minimize2,
+  Maximize2,
+  Building,
   Music,
   Utensils,
-  Palette,
-  Building,
-  Info,
-  Send,
-  LogIn,
-  Clock,
-  Star,
-  Heart,
-  Sparkles,
-} from "lucide-react"
+  Palette
+} from 'lucide-react';
 import { useRouter } from "next/navigation"
-import RecommendedAddons from "@/components/recommended-addons"
-
-// Import the new components
-import PartySummaryCard from "./components/PartySummaryCard"
-import TotalPriceSummaryCard from "./components/TotalPriceSummaryCard"
-import SelectedSuppliersCard from "./components/SelectedSuppliersCard"
-import SelectedAddonsCard from "./components/SelectedAddonsCard"
-import ContactInformationForm from "./components/ContactInformationForm"
-import SpecialRequirementsForm from "./components/SpecialRequirementsForm"
-import AdditionalMessageForm from "./components/AdditionalMessageForm"
-import AddonDetailsModal from "@/components/AddonDetailsModal"
-import SnappyEnquiryLoader from "./components/SnappyEnquiryLoader"
 
 // Import auth and database functions
-import { supabase } from "@/lib/supabase"
-import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { supabase } from "@/lib/supabase";
+import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend";
 
-export function EnhancedURLDebugger() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [urlHistory, setUrlHistory] = useState([])
-  
-  useEffect(() => {
-    const currentInfo = {
-      timestamp: new Date().toISOString(),
-      fullUrl: window.location.href,
-      pathname: window.location.pathname,
-      search: window.location.search,
-      searchParamsEntries: Object.fromEntries(searchParams.entries()),
-      directUrlParams: Object.fromEntries(new URLSearchParams(window.location.search).entries()),
-      referrer: document.referrer
-    }
-    
-    setUrlHistory(prev => [...prev.slice(-4), currentInfo]) // Keep last 5 entries
-    console.log('🔍 URL Debug Info:', currentInfo)
-  }, [searchParams])
-  
-  return (
-    <Card className="border-red-200 bg-red-50 shadow-lg mb-6">
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-red-900 mb-2">🔍 Enhanced URL Debugger</h3>
-        
-        {/* Current URL Info */}
-        <div className="mb-4">
-          <h4 className="font-medium text-red-800 mb-1">Current URL:</h4>
-          <div className="text-sm space-y-1">
-            <div><strong>Full:</strong> {urlHistory[urlHistory.length - 1]?.fullUrl}</div>
-            <div><strong>Search:</strong> {urlHistory[urlHistory.length - 1]?.search || 'none'}</div>
-            <div><strong>useSearchParams:</strong> {JSON.stringify(urlHistory[urlHistory.length - 1]?.searchParamsEntries)}</div>
-            <div><strong>Direct parsing:</strong> {JSON.stringify(urlHistory[urlHistory.length - 1]?.directUrlParams)}</div>
-            <div><strong>Referrer:</strong> {urlHistory[urlHistory.length - 1]?.referrer || 'none'}</div>
-          </div>
-        </div>
-        
-        {/* URL History */}
-        {urlHistory.length > 1 && (
-          <div className="mb-4">
-            <h4 className="font-medium text-red-800 mb-1">Recent URL Changes:</h4>
-            <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
-              {urlHistory.slice(-5).map((entry, index) => (
-                <div key={index} className="border-l-2 border-red-300 pl-2">
-                  <div><strong>{entry.timestamp}</strong></div>
-                  <div>URL: {entry.fullUrl}</div>
-                  <div>Params: {JSON.stringify(entry.searchParamsEntries)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Test buttons */}
-        <div className="space-y-2">
-          <ParameterTests />
-          
-          <button 
-            onClick={() => {
-              console.log('🧪 Testing problematic URL...')
-              const testUrl = '/dashboard?enquiry_sent=true&enquiry_count=3'
-              console.log('Target:', testUrl)
-              window.location.href = testUrl
-            }}
-            className="bg-red-500 text-white px-3 py-1 rounded text-sm"
-          >
-            🧪 Test Problematic URL
-          </button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-export default function ReviewBookPage() {
-  const router = useRouter()
+export default function SnappyChatReviewPage() {
+  const router = useRouter();
   
   // State management
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedAddons, setSelectedAddons] = useState([])
-  const [isMigrating, setIsMigrating] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [user, setUser] = useState(null)
-  const [customerProfile, setCustomerProfile] = useState(null)
-  const [loadingProfile, setLoadingProfile] = useState(true)
-  const [partyDetails, setPartyDetails] = useState({})
-  const [selectedSuppliers, setSelectedSuppliers] = useState([])
-  const [authRequired, setAuthRequired] = useState(false) // New state for auth requirement
-  const [selectedAddon, setSelectedAddon] = useState(null)
-  const [loadingStep, setLoadingStep] = useState(0)
-  const [loadingError, setLoadingError] = useState(null)
-  const [supplierCount, setSupplierCount] = useState(0)
-  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
-  const [fullSupplierData, setFullSupplierData] = useState({})
+  const [currentStep, setCurrentStep] = useState(0);
+  const [showFinalCTA, setShowFinalCTA] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState(null);
+  const [customerProfile, setCustomerProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [partyDetails, setPartyDetails] = useState({});
+  const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+  const [selectedAddons, setSelectedAddons] = useState([]);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingError, setLoadingError] = useState(null);
+  const [supplierCount, setSupplierCount] = useState(0);
+  const [fullSupplierData, setFullSupplierData] = useState({});
 
-  useEffect(() => {
-    const originalError = console.error
-    console.error = (...args) => {
-      if (args[0]?.includes?.('AuthSessionMissingError')) {
-        console.trace('AUTH ERROR TRACE:')
-      }
-      originalError(...args)
-    }
-    
-    return () => {
-      console.error = originalError
-    }
-  }, [])
-
-    // Handle addon clicks to open modal
-    const handleAddonClick = (addon) => {
-      console.log('🎯 Review Book: Addon clicked:', addon)
-      setSelectedAddon(addon)
-      setIsAddonModalOpen(true)
-    }
-  
-    const handleAddonModalClose = () => {
-      setIsAddonModalOpen(false)
-      setSelectedAddon(null)
-    }
-
-     // Handle adding addon from modal
-  const handleAddAddonFromModal = async (addon) => {
-    console.log("🎁 Review Book: Adding addon from modal:", addon.name)
-    
-    try {
-      // Get existing party plan from localStorage
-      const existingPlan = JSON.parse(localStorage.getItem('party_plan') || '{}')
-      const existingAddons = existingPlan.addons || []
-      
-      // Check if already added
-      if (existingAddons.some(existing => existing.id === addon.id)) {
-        console.log("⚠️ Add-on already exists")
-        return { success: false, error: "Already added" }
-      }
-      
-      // Add the addon with additional metadata
-      const addonWithMetadata = {
-        ...addon,
-        addedAt: new Date().toISOString(),
-        addedFrom: 'review-book', // Track where it was added from
-        supplierName: 'Quick Add-on'
-      }
-      
-      const updatedAddons = [...existingAddons, addonWithMetadata]
-      
-      const updatedPlan = {
-        ...existingPlan,
-        addons: updatedAddons
-      }
-      
-      // Save back to localStorage
-      localStorage.setItem('party_plan', JSON.stringify(updatedPlan))
-      
-      // Trigger storage event so other components can react
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'party_plan',
-        newValue: JSON.stringify(updatedPlan)
-      }))
-      
-      console.log("✅ Add-on added successfully from review book modal!")
-      
-      // Optional: Update any local state if you're tracking addons in this component
-      // setYourLocalAddonsState(updatedAddons)
-      
-      return { success: true }
-      
-    } catch (error) {
-      console.error("❌ Error adding addon from review book:", error)
-      return { success: false, error: error.message }
-    }
-  }
-  const hasAddon = (addonId) => {
-    try {
-      const partyPlan = localStorage.getItem('party_plan')
-      const userPartyPlan = localStorage.getItem('user_party_plan')
-      
-      let addons = []
-      if (partyPlan) {
-        const planData = JSON.parse(partyPlan)
-        addons = planData.addons || []
-      } else if (userPartyPlan) {
-        const planData = JSON.parse(userPartyPlan)
-        addons = planData.addons || []
-      }
-      
-      const hasIt = addons.some(addon => addon.id === addonId)
-      console.log('🔍 DEBUG: hasAddon check for', addonId, ':', hasIt)
-      return hasIt
-    } catch {
-      return false
-    }
-  }
-// Add remove addon handler
-const handleRemoveAddon = async (addonId) => {
-  console.log("🗑️ Review Book: Removing addon:", addonId)
-  
-  try {
-    // Determine which localStorage key to use
-    const partyPlanExists = localStorage.getItem('party_plan')
-    const userPartyPlanExists = localStorage.getItem('user_party_plan')
-    const storageKey = partyPlanExists ? 'party_plan' : 'user_party_plan'
-    
-    const existingPlan = JSON.parse(localStorage.getItem(storageKey) || '{}')
-    const existingAddons = existingPlan.addons || []
-    
-    // Filter out the addon to remove
-    const updatedAddons = existingAddons.filter(addon => addon.id !== addonId)
-    
-    const updatedPlan = {
-      ...existingPlan,
-      addons: updatedAddons
-    }
-    
-    console.log("💾 Review Book: Saving updated plan without addon:", updatedPlan)
-    
-    // Save back to localStorage
-    localStorage.setItem(storageKey, JSON.stringify(updatedPlan))
-    
-    // Update local state immediately
-    setSelectedAddons(updatedAddons)
-    
-    // Trigger storage event for other components
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: storageKey,
-      newValue: JSON.stringify(updatedPlan)
-    }))
-    
-    console.log("✅ Review Book: Addon removed successfully!")
-    
-  } catch (error) {
-    console.error("❌ Review Book: Error removing addon:", error)
-  }
-}
-
+  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     parentName: "",
@@ -289,13 +90,13 @@ const handleRemoveAddon = async (addonId) => {
       sensoryFriendly: false,
     },
     additionalMessage: "",
-  })
-
+  });
+const { navigateWithContext} = useContextualNavigation()
   // Load data on mount
   useEffect(() => {
-    loadPartyDataFromLocalStorage()
-    checkAuthStatusAndLoadProfile()
-  }, [])
+    loadPartyDataFromLocalStorage();
+    checkAuthStatusAndLoadProfile();
+  }, []);
 
   // Show auth modal immediately if user is not signed in
   useEffect(() => {
@@ -304,24 +105,55 @@ const handleRemoveAddon = async (addonId) => {
       user: !!user, 
       authRequired, 
       showAuthModal 
-    })
+    });
     
     if (!loadingProfile && !user && !authRequired) {
-      console.log("🔐 User not authenticated, showing auth modal")
-      setAuthRequired(true)
-      setShowAuthModal(true)
+      console.log("🔐 User not authenticated, showing auth modal");
+      setAuthRequired(true);
+      setShowAuthModal(true);
     } else if (!loadingProfile && user && authRequired) {
-      console.log("✅ User authenticated, clearing auth requirement")
-      setAuthRequired(false)
-      setShowAuthModal(false)
+      console.log("✅ User authenticated, clearing auth requirement");
+      setAuthRequired(false);
+      setShowAuthModal(false);
     }
-  }, [loadingProfile, user, authRequired, showAuthModal])
+  }, [loadingProfile, user, authRequired, showAuthModal]);
 
+
+  useEffect(() => {
+    // Check if we need to restore to a specific step
+    const urlParams = new URLSearchParams(window.location.search)
+    const restoreParam = urlParams.get('restore')
+    const supplierAdded = urlParams.get('added')
+    const supplierName = urlParams.get('supplier')
+    
+    if (restoreParam === 'step4') {
+      const storedState = sessionStorage.getItem('reviewBookRestoreState')
+      
+      // Always restore to step 3 if the URL says so, even without stored state
+      console.log('🔄 Restoring to step 4 (forgotten step)')
+      setCurrentStep(4) // Set to step 3 (forgotten step) - array is 0-indexed so this is step 4
+      
+      // If we have supplier added info, show success
+      if (supplierAdded === 'true' && supplierName) {
+        console.log('✅ Supplier was added:', decodeURIComponent(supplierName))
+        // You can add a toast notification here if you have one
+        toast.success(`${decodeURIComponent(supplierName)} added to your party!`)
+      }
+      
+      // Clear stored state if it exists
+      if (storedState) {
+        sessionStorage.removeItem('reviewBookRestoreState')
+      }
+      
+      // Clean up URL
+      window.history.replaceState({}, '', '/review-book')
+    }
+  }, [])
 
   const loadPartyDataFromLocalStorage = () => {
     try {
       // Get party details
-      const details = JSON.parse(localStorage.getItem("party_details") || "{}")
+      const details = JSON.parse(localStorage.getItem("party_details") || "{}");
       
       // Format date for display
       const formatDateForDisplay = (dateInput) => {
@@ -353,7 +185,7 @@ const handleRemoveAddon = async (addonId) => {
         
         return `${day}${suffix} ${month}, ${year}`;
       };
-  
+
       const getDaySuffix = (day) => {
         if (day >= 11 && day <= 13) {
           return 'th';
@@ -365,87 +197,87 @@ const handleRemoveAddon = async (addonId) => {
           default: return 'th';
         }
       };
-  
+
       // Format time for display - prioritize startTime over timeSlot
       const formatTimeForDisplay = (details) => {
         // Priority 1: Check for startTime (new format)
         if (details.startTime) {
-          const duration = details.duration || 2
+          const duration = details.duration || 2;
           
           try {
             // Format start time
-            const [hours, minutes] = details.startTime.split(':')
-            const startDate = new Date()
-            startDate.setHours(parseInt(hours), parseInt(minutes || 0))
+            const [hours, minutes] = details.startTime.split(':');
+            const startDate = new Date();
+            startDate.setHours(parseInt(hours), parseInt(minutes || 0));
             
             const formattedStart = startDate.toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: minutes && minutes !== '00' ? '2-digit' : undefined,
               hour12: true,
-            })
+            });
             
             // Calculate end time
-            const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
+            const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000));
             const formattedEnd = endDate.toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
               hour12: true,
-            })
+            });
             
-            return `${formattedStart} - ${formattedEnd}`
+            return `${formattedStart} - ${formattedEnd}`;
           } catch (error) {
-            console.error('Error formatting startTime:', error)
-            return "TBD"
+            console.error('Error formatting startTime:', error);
+            return "TBD";
           }
         }
-  
+
         // Priority 2: Legacy time field (already formatted)
         if (details.time && details.time.includes('-')) {
-          return details.time
+          return details.time;
         }
-  
+
         // Priority 3: Convert legacy timeSlot to time range (backwards compatibility)
         if (details.timeSlot && details.duration) {
           const timeSlotTimes = {
             morning: "10:00",
             afternoon: "14:00"
-          }
+          };
           
-          const startTime = timeSlotTimes[details.timeSlot]
+          const startTime = timeSlotTimes[details.timeSlot];
           if (startTime) {
             try {
-              const [hours, minutes] = startTime.split(':')
-              const startDate = new Date()
-              startDate.setHours(parseInt(hours), parseInt(minutes))
+              const [hours, minutes] = startTime.split(':');
+              const startDate = new Date();
+              startDate.setHours(parseInt(hours), parseInt(minutes));
               
               const formattedStart = startDate.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true,
-              })
+              });
               
-              const endDate = new Date(startDate.getTime() + (details.duration * 60 * 60 * 1000))
+              const endDate = new Date(startDate.getTime() + (details.duration * 60 * 60 * 1000));
               const formattedEnd = endDate.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true,
-              })
+              });
               
-              return `${formattedStart} - ${formattedEnd}`
+              return `${formattedStart} - ${formattedEnd}`;
             } catch (error) {
-              console.error('Error converting timeSlot:', error)
+              console.error('Error converting timeSlot:', error);
             }
           }
         }
         
         // Priority 4: Legacy time field as-is
         if (details.time) {
-          return details.time
+          return details.time;
         }
         
-        return "TBD"
+        return "TBD";
       };
-  
+
       // Set formatted party details
       setPartyDetails({
         date: formatDateForDisplay(details.date),
@@ -461,21 +293,21 @@ const handleRemoveAddon = async (addonId) => {
         startTime: details.startTime,
         duration: details.duration,
         postcode: details.postcode
-      })
-  
-      // ✅ FIXED: Process party plan and EXCLUDE einvites
-      const partyPlan = JSON.parse(localStorage.getItem("user_party_plan") || "{}")
-      const suppliers = []
-      const fullSupplierData = {}
-  
-      // ✅ FIXED: Only process real supplier types, NOT einvites
+      });
+
+      // Process party plan and EXCLUDE einvites
+      const partyPlan = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
+      const suppliers = [];
+      const fullSupplierData = {};
+
+      // Only process real supplier types, NOT einvites
       const realSupplierTypes = [
         'venue', 'entertainment', 'catering', 'decorations', 
         'facePainting', 'activities', 'partyBags', 'balloons', 'cakes'
-      ]
-  
+      ];
+
       realSupplierTypes.forEach((key) => {
-        const supplier = partyPlan[key]
+        const supplier = partyPlan[key];
         
         // Only include if supplier exists and has a name
         if (supplier && supplier.name) {
@@ -489,7 +321,7 @@ const handleRemoveAddon = async (addonId) => {
             partyBags: <Palette className="w-5 h-5" />,
             balloons: <Palette className="w-5 h-5" />,
             cakes: <Palette className="w-5 h-5" />,
-          }
+          };
       
           suppliers.push({
             id: supplier.id || key,
@@ -499,77 +331,76 @@ const handleRemoveAddon = async (addonId) => {
             image: supplier.image || supplier.imageUrl || supplier.originalSupplier?.image,
             price: supplier.price,
             description: supplier.description,
-          })
+          });
           
-          fullSupplierData[key] = supplier
+          fullSupplierData[key] = supplier;
         }
-      })
-  
-      // ✅ FIXED: Clean up any einvites from localStorage if it exists
+      });
+
+      // Clean up any einvites from localStorage if it exists
       if (partyPlan.einvites) {
-        console.log('🧹 Removing einvites from user_party_plan during review load')
-        delete partyPlan.einvites
-        localStorage.setItem("user_party_plan", JSON.stringify(partyPlan))
+        console.log('🧹 Removing einvites from user_party_plan during review load');
+        delete partyPlan.einvites;
+        localStorage.setItem("user_party_plan", JSON.stringify(partyPlan));
       }
-  
+
       // Get add-ons from party plan
-      const addons = partyPlan.addons || []
-      setSelectedAddons(addons)
-      setSelectedSuppliers(suppliers)
-      setFullSupplierData(fullSupplierData)
-  
+      const addons = partyPlan.addons || [];
+      setSelectedAddons(addons);
+      setSelectedSuppliers(suppliers);
+      setFullSupplierData(fullSupplierData);
+
       console.log("📋 Loaded party data from localStorage:", {
         details,
         suppliers: suppliers.length,
         addons: addons.length,
         formattedDate: formatDateForDisplay(details.date),
         formattedTime: formatTimeForDisplay(details),
-        excludedEinvites: !!partyPlan.einvites // Shows if we cleaned up einvites
-      })
+        excludedEinvites: !!partyPlan.einvites
+      });
     } catch (error) {
-      console.error("❌ Error loading party data:", error)
+      console.error("❌ Error loading party data:", error);
     }
-  }
-  
+  };
 
   const checkAuthStatusAndLoadProfile = async () => {
     try {
-      setLoadingProfile(true)
-      console.log("🔍 Checking auth status...")
+      setLoadingProfile(true);
+      console.log("🔍 Checking auth status...");
       
       const {
         data: { user },
         error,
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      console.log("👤 Auth check result:", { user: !!user, error })
+      console.log("👤 Auth check result:", { user: !!user, error });
 
       if (user && !error) {
-        console.log("✅ Found authenticated user:", user.email)
+        console.log("✅ Found authenticated user:", user.email);
 
         // Check if this is a CUSTOMER (not a supplier)
         const { data: supplierRecord } = await supabase
           .from("suppliers")
           .select("id")
           .eq("auth_user_id", user.id)
-          .maybeSingle()
+          .maybeSingle();
 
         if (supplierRecord) {
           // This is a supplier account, not a customer - treat as not signed in
-          console.log("🔍 Detected supplier account, treating as not signed in for customer flow")
-          setUser(null)
-          setCustomerProfile(null)
-          setLoadingProfile(false)
-          return
+          console.log("🔍 Detected supplier account, treating as not signed in for customer flow");
+          setUser(null);
+          setCustomerProfile(null);
+          setLoadingProfile(false);
+          return;
         }
 
-        setUser(user)
+        setUser(user);
 
         // Get or create customer profile
-        const result = await partyDatabaseBackend.getCurrentUser()
+        const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
-          console.log("✅ Found customer profile:", result.user)
-          setCustomerProfile(result.user)
+          console.log("✅ Found customer profile:", result.user);
+          setCustomerProfile(result.user);
 
           // Auto-populate form with customer data
           setFormData((prev) => ({
@@ -577,44 +408,44 @@ const handleRemoveAddon = async (addonId) => {
             parentName: `${result.user.first_name || ""} ${result.user.last_name || ""}`.trim() || prev.parentName,
             email: result.user.email || user.email || prev.email,
             phoneNumber: result.user.phone || prev.phoneNumber,
-          }))
+          }));
 
-          console.log("✅ Form auto-populated with customer data")
+          console.log("✅ Form auto-populated with customer data");
         } else {
-          console.log("⚠️ No customer profile found, will create one during migration")
+          console.log("⚠️ No customer profile found, will create one during migration");
           // Still populate what we can from auth user
           setFormData((prev) => ({
             ...prev,
             email: user.email || prev.email,
             parentName: user.user_metadata?.full_name || prev.parentName,
             phoneNumber: user.user_metadata?.phone || prev.phoneNumber,
-          }))
+          }));
         }
       } else {
-        console.log("❌ No authenticated user found")
-        setUser(null)
-        setCustomerProfile(null)
+        console.log("❌ No authenticated user found");
+        setUser(null);
+        setCustomerProfile(null);
       }
     } catch (error) {
-      console.error("❌ Error checking auth status:", error)
-      setUser(null)
-      setCustomerProfile(null)
+      console.error("❌ Error checking auth status:", error);
+      setUser(null);
+      setCustomerProfile(null);
     } finally {
-      setLoadingProfile(false)
+      setLoadingProfile(false);
     }
-  }
+  };
 
   // Form handlers
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
   const handleCheckboxChange = (category, field, checked) => {
-    console.log('🔄 Checkbox clicked:', { category, field, checked })
-    console.log('📋 Current formData before update:', formData[category])
+    console.log('🔄 Checkbox clicked:', { category, field, checked });
+    console.log('📋 Current formData before update:', formData[category]);
     
     setFormData((prev) => {
       const updated = {
@@ -623,327 +454,232 @@ const handleRemoveAddon = async (addonId) => {
           ...prev[category],
           [field]: checked,
         },
-      }
+      };
       
-      console.log('✅ Updated formData:', updated[category])
-      return updated
-    })
-  }
-  
+      console.log('✅ Updated formData:', updated[category]);
+      return updated;
+    });
+  };
 
-
-  
   // Enhanced loading with debugging
   useEffect(() => {
     const loadAddons = () => {
       try {
         // Check both possible localStorage keys
-        const partyPlan = localStorage.getItem('party_plan')
-        const userPartyPlan = localStorage.getItem('user_party_plan')
+        const partyPlan = localStorage.getItem('party_plan');
+        const userPartyPlan = localStorage.getItem('user_party_plan');
         
         // Try party_plan first
-        let addons = []
+        let addons = [];
         if (partyPlan) {
-          const planData = JSON.parse(partyPlan)
-          addons = planData.addons || []
+          const planData = JSON.parse(partyPlan);
+          addons = planData.addons || [];
         }
         
         // If no addons, try user_party_plan
         if (addons.length === 0 && userPartyPlan) {
-          const userPlanData = JSON.parse(userPartyPlan)
-          addons = userPlanData.addons || []
+          const userPlanData = JSON.parse(userPartyPlan);
+          addons = userPlanData.addons || [];
         }
         
-        
-        setSelectedAddons(addons)
+        setSelectedAddons(addons);
       } catch (error) {
-        console.error('❌ DEBUG: Error loading addons:', error)
-        setSelectedAddons([])
+        console.error('❌ DEBUG: Error loading addons:', error);
+        setSelectedAddons([]);
       }
-    }
+    };
     
-    loadAddons()
+    loadAddons();
     
     // Enhanced storage listener
     const handleStorageChange = (e) => {
-      console.log('🔄 DEBUG: Storage change event:', e.key, e.newValue)
+      console.log('🔄 DEBUG: Storage change event:', e.key, e.newValue);
       if (e.key === 'party_plan' || e.key === 'user_party_plan') {
-        console.log('🔄 DEBUG: Party plan changed, reloading addons')
-        loadAddons()
+        console.log('🔄 DEBUG: Party plan changed, reloading addons');
+        loadAddons();
       }
-    }
+    };
     
-    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [])
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
-// Updated migration function to handle new time format
-const migratePartyToDatabase = async (authenticatedUser) => {
-  try {
-    setIsMigrating(true)
-    console.log("🔄 Starting party migration to database...")
+  // Updated migration function to handle new time format
+  const migratePartyToDatabase = async (authenticatedUser) => {
+    try {
+      setIsMigrating(true);
+      console.log("🔄 Starting party migration to database...");
 
-    // Get localStorage data
-    const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}")
-    const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}")
+      // Get localStorage data
+      const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}");
+      const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
 
-    console.log("📋 localStorage data:", { partyDetailsLS, partyPlanLS })
+      console.log("📋 localStorage data:", { partyDetailsLS, partyPlanLS });
 
-    // Ensure user profile exists (create if needed)
-    const userResult = await partyDatabaseBackend.createOrGetUser({
-      firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
-      lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
-      email: authenticatedUser.email,
-      phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
-      postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
-    })
+      // Ensure user profile exists (create if needed)
+      const userResult = await partyDatabaseBackend.createOrGetUser({
+        firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
+        lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
+        email: authenticatedUser.email,
+        phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
+        postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
+      });
 
-    if (!userResult.success) {
-      throw new Error(`Failed to create user profile: ${userResult.error}`)
-    }
-
-    console.log("✅ User profile ready:", userResult.user.id)
-
-    // Handle time data - prioritize new format
-    const getTimeData = () => {
-      // Priority 1: Check for startTime (new format)
-      if (partyDetailsLS.startTime) {
-        console.log("✅ Using new startTime format:", partyDetailsLS.startTime)
-        const endTime = calculateEndTime(partyDetailsLS.startTime, partyDetailsLS.duration || 2)
-        return {
-          time: partyDetailsLS.startTime, // Keep for backwards compatibility
-          startTime: partyDetailsLS.startTime, // New start_time column
-          endTime: endTime, // New end_time column
-          duration: partyDetailsLS.duration || 2,
-          timePreference: {
-            type: 'specific',
-            startTime: partyDetailsLS.startTime,
-            duration: partyDetailsLS.duration || 2,
-            endTime: endTime
-          }
-        }
+      if (!userResult.success) {
+        throw new Error(`Failed to create user profile: ${userResult.error}`);
       }
-      
-      // Priority 2: Legacy timeSlot format
-      if (partyDetailsLS.timeSlot) {
-        console.log("⚠️ Using legacy timeSlot format:", partyDetailsLS.timeSlot)
-        const timeSlotToTime = {
-          morning: "10:00",
-          afternoon: "14:00"
+
+      console.log("✅ User profile ready:", userResult.user.id);
+
+      // Helper function to calculate end time
+      const calculateEndTime = (startTime, duration) => {
+        try {
+          const [hours, minutes] = startTime.split(':');
+          const startDate = new Date();
+          startDate.setHours(parseInt(hours), parseInt(minutes || 0));
+          
+          const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000));
+          
+          return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+        } catch (error) {
+          console.error("Error calculating end time:", error);
+          return "16:00"; // Default fallback
         }
-        const startTime = timeSlotToTime[partyDetailsLS.timeSlot] || "14:00"
-        const endTime = calculateEndTime(startTime, partyDetailsLS.duration || 2)
-        
-        return {
-          time: startTime, // Keep for backwards compatibility
-          startTime: startTime, // New start_time column
-          endTime: endTime, // New end_time column
-          duration: partyDetailsLS.duration || 2,
-          timePreference: {
-            type: 'flexible',
-            slot: partyDetailsLS.timeSlot,
-            duration: partyDetailsLS.duration || 2,
-            startTime: startTime
-          }
-        }
-      }
-      
-      // Priority 3: Legacy time format
-      if (partyDetailsLS.time) {
-        console.log("⚠️ Using legacy time format:", partyDetailsLS.time)
-        // If it's already formatted (contains '-'), extract start time
-        if (partyDetailsLS.time.includes('-')) {
-          // Try to extract start time from "11am - 1pm" format
-          const timeMatch = partyDetailsLS.time.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)/i)
-          if (timeMatch) {
-            let hour = parseInt(timeMatch[1])
-            const minute = timeMatch[2] || '00'
-            const ampm = timeMatch[3].toLowerCase()
-            
-            if (ampm === 'pm' && hour !== 12) hour += 12
-            if (ampm === 'am' && hour === 12) hour = 0
-            
-            const rawStartTime = `${hour.toString().padStart(2, '0')}:${minute}`
-            const endTime = calculateEndTime(rawStartTime, partyDetailsLS.duration || 2)
-            
-            return {
-              time: rawStartTime, // Keep for backwards compatibility
-              startTime: rawStartTime, // New start_time column
-              endTime: endTime, // New end_time column
-              duration: partyDetailsLS.duration || 2,
-              timePreference: {
-                type: 'specific',
-                duration: partyDetailsLS.duration || 2
-              }
-            }
-          } else {
-            // Fallback if parsing fails
-            const endTime = calculateEndTime("14:00", partyDetailsLS.duration || 2)
-            return {
-              time: "14:00",
-              startTime: "14:00",
-              endTime: endTime,
-              duration: partyDetailsLS.duration || 2,
-              timePreference: {
-                type: 'specific',
-                duration: partyDetailsLS.duration || 2
-              }
-            }
-          }
-        } else {
-          // If it's raw time like "14:00", use it
-          const endTime = calculateEndTime(partyDetailsLS.time, partyDetailsLS.duration || 2)
+      };
+
+      // Handle time data - prioritize new format
+      const getTimeData = () => {
+        // Priority 1: Check for startTime (new format)
+        if (partyDetailsLS.startTime) {
+          console.log("✅ Using new startTime format:", partyDetailsLS.startTime);
+          const endTime = calculateEndTime(partyDetailsLS.startTime, partyDetailsLS.duration || 2);
           return {
-            time: partyDetailsLS.time, // Keep for backwards compatibility
-            startTime: partyDetailsLS.time, // New start_time column
+            time: partyDetailsLS.startTime, // Keep for backwards compatibility
+            startTime: partyDetailsLS.startTime, // New start_time column
             endTime: endTime, // New end_time column
             duration: partyDetailsLS.duration || 2,
             timePreference: {
               type: 'specific',
-              startTime: partyDetailsLS.time,
+              startTime: partyDetailsLS.startTime,
               duration: partyDetailsLS.duration || 2,
               endTime: endTime
             }
-          }
+          };
         }
-      }
-      
-      // Fallback
-      console.log("⚠️ No time data found, using default")
-      return {
-        time: "14:00", // Keep for backwards compatibility
-        startTime: "14:00", // New start_time column
-        endTime: "16:00", // New end_time column
-        duration: 2,
-        timePreference: {
-          type: 'flexible',
-          slot: 'afternoon',
+        
+        // Priority 2: Legacy timeSlot format
+        if (partyDetailsLS.timeSlot) {
+          console.log("⚠️ Using legacy timeSlot format:", partyDetailsLS.timeSlot);
+          const timeSlotToTime = {
+            morning: "10:00",
+            afternoon: "14:00"
+          };
+          const startTime = timeSlotToTime[partyDetailsLS.timeSlot] || "14:00";
+          const endTime = calculateEndTime(startTime, partyDetailsLS.duration || 2);
+          
+          return {
+            time: startTime, // Keep for backwards compatibility
+            startTime: startTime, // New start_time column
+            endTime: endTime, // New end_time column
+            duration: partyDetailsLS.duration || 2,
+            timePreference: {
+              type: 'flexible',
+              slot: partyDetailsLS.timeSlot,
+              duration: partyDetailsLS.duration || 2,
+              startTime: startTime
+            }
+          };
+        }
+        
+        // Fallback
+        console.log("⚠️ No time data found, using default");
+        return {
+          time: "14:00", // Keep for backwards compatibility
+          startTime: "14:00", // New start_time column
+          endTime: "16:00", // New end_time column
           duration: 2,
-          startTime: "14:00"
-        }
+          timePreference: {
+            type: 'flexible',
+            slot: 'afternoon',
+            duration: 2,
+            startTime: "14:00"
+          }
+        };
+      };
+
+      const timeData = getTimeData();
+      console.log("⏰ Final time data for database:", timeData);
+
+      // Create party in database with separate start/end times
+      const partyData = {
+        childName: partyDetailsLS.childName || "Your Child",
+        childAge: parseInt(partyDetailsLS.childAge) || 6,
+        date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
+        
+        // Legacy time field (keep for backwards compatibility)
+        time: timeData.time,
+        
+        // New separate time columns - try both naming conventions
+        startTime: timeData.startTime,   // camelCase
+        start_time: timeData.startTime,  // snake_case
+        endTime: timeData.endTime,       // camelCase  
+        end_time: timeData.endTime,      // snake_case
+        
+        duration: timeData.duration,
+        
+        guestCount: parseInt(formData.numberOfChildren?.split("-")[0]) || parseInt(partyDetailsLS.guestCount) || 15,
+        location: partyDetailsLS.location || "TBD",
+        postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
+        theme: partyDetailsLS.theme || "party",
+        budget: parseInt(partyDetailsLS.budget) || 600,
+        specialRequirements: formData.additionalMessage || "",
+        
+        // Time preference object
+        timePreference: timeData.timePreference
+      };
+
+      console.log("🎉 Creating party with time data:", {
+        startTime: timeData.startTime,
+        endTime: timeData.endTime,
+        duration: timeData.duration
+      });
+
+      console.log("🎉 Creating party with data:", partyData);
+      console.log("🎁 Add-ons being migrated:", partyPlanLS.addons?.length || 0);
+
+      const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS);
+
+      if (!createResult.success) {
+        throw new Error(`Failed to create party: ${createResult.error}`);
       }
+
+      console.log("✅ Party migrated successfully to database:", createResult.party.id);
+      return createResult.party;
+    } catch (error) {
+      console.error("❌ Migration failed:", error);
+      throw error;
+    } finally {
+      setIsMigrating(false);
     }
-
-    // Helper function to format time for database storage
-    const formatTimeForDatabase = (startTime, duration) => {
-      try {
-        const [hours, minutes] = startTime.split(':')
-        const startDate = new Date()
-        startDate.setHours(parseInt(hours), parseInt(minutes || 0))
-        
-        // Format start time
-        const formattedStart = startDate.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: minutes && minutes !== '00' ? '2-digit' : undefined,
-          hour12: true,
-        })
-        
-        // Calculate end time
-        const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
-        const formattedEnd = endDate.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
-          hour12: true,
-        })
-        
-        return `${formattedStart} - ${formattedEnd}`
-      } catch (error) {
-        console.error("Error formatting time for database:", error)
-        return startTime
-      }
-    }
-
-    // Helper function to calculate end time
-    const calculateEndTime = (startTime, duration) => {
-      try {
-        const [hours, minutes] = startTime.split(':')
-        const startDate = new Date()
-        startDate.setHours(parseInt(hours), parseInt(minutes || 0))
-        
-        const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000))
-        
-        return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
-      } catch (error) {
-        console.error("Error calculating end time:", error)
-        return "16:00" // Default fallback
-      }
-    }
-
-    const timeData = getTimeData()
-    console.log("⏰ Final time data for database:", timeData)
-
-    // Create party in database with separate start/end times
-    const partyData = {
-      childName: partyDetailsLS.childName || "Your Child",
-      childAge: parseInt(partyDetailsLS.childAge) || 6,
-      date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
-      
-      // Legacy time field (keep for backwards compatibility)
-      time: timeData.time,
-      
-      // New separate time columns - try both naming conventions
-      startTime: timeData.startTime,   // camelCase
-      start_time: timeData.startTime,  // snake_case
-      endTime: timeData.endTime,       // camelCase  
-      end_time: timeData.endTime,      // snake_case
-      
-      duration: timeData.duration,
-      
-      guestCount: parseInt(formData.numberOfChildren?.split("-")[0]) || parseInt(partyDetailsLS.guestCount) || 15,
-      location: partyDetailsLS.location || "TBD",
-      postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
-      theme: partyDetailsLS.theme || "party",
-      budget: parseInt(partyDetailsLS.budget) || 600,
-      specialRequirements: formData.additionalMessage || "",
-      
-      // Time preference object
-      timePreference: timeData.timePreference
-    }
-
-    console.log("🎉 Creating party with time data:", {
-      startTime: timeData.startTime,
-      endTime: timeData.endTime,
-      duration: timeData.duration
-    })
-
-    console.log("🎉 Creating party with data:", partyData)
-    console.log("🎁 Add-ons being migrated:", partyPlanLS.addons?.length || 0)
-
-    const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS)
-
-    if (!createResult.success) {
-      throw new Error(`Failed to create party: ${createResult.error}`)
-    }
-
-    console.log("✅ Party migrated successfully to database:", createResult.party.id)
-    return createResult.party
-  } catch (error) {
-    console.error("❌ Migration failed:", error)
-    throw error
-  } finally {
-    setIsMigrating(false)
-  }
-}
-
-
+  };
 
   const handleAuthSuccess = async (authenticatedUser, userData = null) => {
-    console.log("✅ Authentication successful, user can now access the review page")
-    console.log("👤 User data received:", userData)
+    console.log("✅ Authentication successful, user can now access the review page");
+    console.log("👤 User data received:", userData);
 
     // Close the modal and clear auth requirement
-    setShowAuthModal(false)
-    setAuthRequired(false)
+    setShowAuthModal(false);
+    setAuthRequired(false);
 
     // Update the user state
-    setUser(authenticatedUser)
+    setUser(authenticatedUser);
 
     // Prefill form with user data if provided
     if (userData) {
-      console.log("📝 Prefilling form with user data")
+      console.log("📝 Prefilling form with user data");
       setFormData((prev) => ({
         ...prev,
         parentName:
@@ -952,47 +688,47 @@ const migratePartyToDatabase = async (authenticatedUser) => {
             : userData.firstName || prev.parentName,
         email: userData.email || prev.email,
         phoneNumber: userData.phone || prev.phoneNumber,
-      }))
+      }));
     } else {
       // Fallback: try to get data from the authenticated user
-      const fullName = authenticatedUser.user_metadata?.full_name
+      const fullName = authenticatedUser.user_metadata?.full_name;
       setFormData((prev) => ({
         ...prev,
         parentName: fullName || prev.parentName,
         email: authenticatedUser.email || prev.email,
         phoneNumber: authenticatedUser.user_metadata?.phone || prev.phoneNumber,
-      }))
+      }));
     }
-  }
+  };
 
   const handleSubmitEnquiry = async () => {
-    console.log('🚀 handleSubmitEnquiry started')
+    console.log('🚀 handleSubmitEnquiry started');
     
     try {
-      setIsSubmitting(true)
-      setLoadingStep(1)
-      setLoadingError(null)
+      setIsSubmitting(true);
+      setLoadingStep(1);
+      setLoadingError(null);
       
       // Calculate supplier count for display
-      const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
+      const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
       const supplierCount = Object.values(partyPlan).filter(supplier => 
         supplier && typeof supplier === 'object' && supplier.name
-      ).length
+      ).length;
       
-      console.log('📊 Calculated supplier count:', supplierCount)
-      setSupplierCount(supplierCount)
-  
+      console.log('📊 Calculated supplier count:', supplierCount);
+      setSupplierCount(supplierCount);
+
       // Step 1: Migrate party to database
-      console.log("📤 Step 1: Migrating party to database...")
-      const migratedParty = await migratePartyToDatabase(user)
-      console.log("✅ Migration result:", migratedParty)
+      console.log("📤 Step 1: Migrating party to database...");
+      const migratedParty = await migratePartyToDatabase(user);
+      console.log("✅ Migration result:", migratedParty);
       
       // Move to step 2
-      setLoadingStep(2)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-  
+      setLoadingStep(2);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Step 2: Send enquiries to suppliers
-      console.log("📧 Step 2: Sending enquiries to suppliers...")
+      console.log("📧 Step 2: Sending enquiries to suppliers...");
       const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
         migratedParty.id,
         formData.additionalMessage,
@@ -1006,146 +742,230 @@ const migratePartyToDatabase = async (authenticatedUser) => {
             email: formData.email,
           },
         }),
-      )
-  
-      console.log('📋 Raw enquiryResult:', enquiryResult)
-  
+      );
+
+      console.log('📋 Raw enquiryResult:', enquiryResult);
+
       if (!enquiryResult.success) {
-        throw new Error(`Failed to send enquiries: ${enquiryResult.error}`)
+        throw new Error(`Failed to send enquiries: ${enquiryResult.error}`);
       }
-  
+
       // Calculate final count with fallbacks
-      const finalCount = enquiryResult.count || supplierCount || 4
-      console.log('🔢 Final enquiry count:', finalCount)
-  
-      console.log(`✅ Successfully sent ${finalCount} enquiries!`)
+      const finalCount = enquiryResult.count || supplierCount || 4;
+      console.log('🔢 Final enquiry count:', finalCount);
+
+      console.log(`✅ Successfully sent ${finalCount} enquiries!`);
       
       // Move to success step
-      setLoadingStep(3)
+      setLoadingStep(3);
       
       // Wait a moment to show success, then redirect
       setTimeout(() => {
-        console.log('🚀 Starting redirect process...')
+        console.log('🚀 Starting redirect process...');
         
         // Method 1: Try router.push first (more reliable)
         try {
-          const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`
-          console.log('🔗 Redirecting to:', redirectUrl)
+          const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`;
+          console.log('🔗 Redirecting to:', redirectUrl);
           
-          router.push(redirectUrl)
+          router.push(redirectUrl);
           
           // Fallback: If router doesn't work, use window.location
           setTimeout(() => {
             if (window.location.pathname.includes('review-book')) {
-              console.log('🔄 Router redirect didn\'t work, trying window.location...')
-              window.location.href = redirectUrl
+              console.log('🔄 Router redirect didn\'t work, trying window.location...');
+              window.location.href = redirectUrl;
             }
-          }, 500)
+          }, 500);
           
         } catch (error) {
-          console.error('❌ Router redirect failed:', error)
+          console.error('❌ Router redirect failed:', error);
           // Fallback to window.location
-          const fallbackUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`
-          window.location.href = fallbackUrl
+          const fallbackUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`;
+          window.location.href = fallbackUrl;
         }
         
-      }, 2000)
-  
+      }, 2000);
+
     } catch (error) {
-      console.error("❌ Submit enquiry failed:", error)
-      setLoadingError(error.message)
-      setIsSubmitting(false)
+      console.error("❌ Submit enquiry failed:", error);
+      setLoadingError(error.message);
+      setIsSubmitting(false);
     }
+  };
+
+  const totalPrice = selectedSuppliers.reduce((sum, supplier) => sum + (supplier.price || 0), 0);
+  const totalAddonsPrice = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+  const grandTotal = totalPrice + totalAddonsPrice;
+
+  const chatSteps = [
+    {
+      id: 'welcome',
+      snappyMessage: `You ready to get those Enquiries sent and make Theos day special?`,
+      hideInput: true
+    }, // Index 0 - Keep Snappy message
+    {
+      id: 'contact',
+      title: "Contact Details",
+      description: "Please confirm your contact information so suppliers can reach you easily.",
+      showContactFields: true
+    }, // Index 1 - No Snappy, direct form
+    {
+      id: 'dietary',
+      title: "Dietary Requirements",
+      description: "Any dietary requirements or accessibility needs we should mention to suppliers?",
+      showDietary: true
+    }, // Index 2 - No Snappy, direct form
+    {
+      id: 'message',
+      title: "Special Requests",
+      description: "Want to add any special requests or details about your party theme? (Optional)",
+      placeholder: "Any special requests, theme details, or important information...",
+      field: 'additionalMessage',
+      optional: true,
+      isTextarea: true
+    }, // Index 3 - No Snappy, direct form
+    {
+      id: 'forgotten',
+      title: "Anything Missing?",
+      description: "One last thing! Here are some popular extras you might want to add. (Optional)",
+      showMissingSuppliers: true,
+      optional: true
+    }, // Index 4 - No Snappy, direct form
+    {
+      id: 'complete',
+      snappyMessage: "Perfect! I've got everything ready. Let me show you the final details before we send this to your suppliers! 🚀",
+      hideInput: true,
+      isComplete: true
+    } // Index 5 - Keep Snappy message
+  ];
+
+// UK Mobile phone validation
+const validateUKMobile = (phone) => {
+  // Remove all non-digits
+  const cleaned = phone.replace(/\D/g, '')
+  
+  // UK mobile patterns
+  const ukMobilePattern = /^(?:(?:\+44)|(?:0))7\d{9}$/
+  const cleanedPattern = /^7\d{9}$/
+  
+  // Check various formats
+  if (ukMobilePattern.test(phone) || cleanedPattern.test(cleaned)) {
+    return { isValid: true, message: '' }
   }
   
+  return { 
+    isValid: false, 
+    message: 'Please enter a valid UK mobile number (e.g., 07123 456789)' 
+  }
+}
+
+// Format phone number for display
+const formatPhoneNumber = (phone) => {
+  const cleaned = phone.replace(/\D/g, '')
   
-  // ✅ ALTERNATIVE: More robust version with state management
-  const handleSubmitEnquiryRobust = async () => {
-    let enquiryCount = 0 // Initialize with default
-    
-    try {
-      setIsSubmitting(true)
-      setLoadingStep(1)
-      setLoadingError(null)
-      
-      // Calculate supplier count FIRST and store it
-      const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}')
-      const calculatedSupplierCount = Object.values(partyPlan).filter(supplier => 
-        supplier && typeof supplier === 'object' && supplier.name
-      ).length
-      
-      // Set initial count to calculated value
-      enquiryCount = calculatedSupplierCount || 4 // Fallback to 4 if 0
-      
-      console.log('📊 Calculated supplier count:', calculatedSupplierCount)
-      console.log('📊 Initial enquiry count:', enquiryCount)
-      
-      setSupplierCount(enquiryCount)
-  
-      // Step 1: Migrate party to database
-      console.log("📤 Step 1: Migrating party to database...")
-      const migratedParty = await migratePartyToDatabase(user)
-      
-      setLoadingStep(2)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-  
-      // Step 2: Send enquiries to suppliers
-      console.log("📧 Step 2: Sending enquiries to suppliers...")
-      const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-        migratedParty.id,
-        formData.additionalMessage,
-        JSON.stringify({
-          dietary: formData.dietaryRequirements,
-          accessibility: formData.accessibilityRequirements,
-          numberOfChildren: formData.numberOfChildren,
-          contactInfo: {
-            name: formData.parentName,
-            phone: formData.phoneNumber,
-            email: formData.email,
-          },
-        }),
-      )
-  
-      console.log('📋 Enquiry result:', enquiryResult)
-  
-      if (!enquiryResult.success) {
-        throw new Error(`Failed to send enquiries: ${enquiryResult.error}`)
-      }
-  
-      // ✅ UPDATE COUNT: Only if we got a valid count back
-      if (enquiryResult.count && enquiryResult.count > 0) {
-        enquiryCount = enquiryResult.count
-        console.log('✅ Updated count from result:', enquiryCount)
-      } else {
-        console.log('⚠️ Using fallback count:', enquiryCount)
-      }
-      
-      setLoadingStep(3)
-      
-    } catch (error) {
-      console.error("❌ Submit enquiry failed:", error)
-      setLoadingError(error.message)
-      setIsSubmitting(false)
-      return // Exit early
-    }
-    
-    // ✅ REDIRECT: This will always have a valid enquiryCount
-    setTimeout(() => {
-      console.log('🚀 Redirecting with count:', enquiryCount)
-      
-      // Final validation
-      const finalCount = enquiryCount > 0 ? enquiryCount : 4
-      const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}`
-      
-      console.log('🔗 Redirect URL:', redirectUrl)
-      window.location.href = redirectUrl
-    }, 2000)
+  if (cleaned.length === 11 && cleaned.startsWith('07')) {
+    return `${cleaned.slice(0, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`
+  }
+  if (cleaned.length === 10 && cleaned.startsWith('7')) {
+    return `07${cleaned.slice(1, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`
   }
   
+  return phone
+}
+
+// Add phone validation state
+const [phoneError, setPhoneError] = useState('')
+
+// Updated phone input handler
+const handlePhoneChange = (value) => {
+  setFormData(prev => ({
+    ...prev,
+    phoneNumber: value
+  }))
   
-  
+  if (value.length > 0) {
+    const validation = validateUKMobile(value)
+    setPhoneError(validation.isValid ? '' : validation.message)
+  } else {
+    setPhoneError('')
+  }
+}
+
+// Updated canProceed function
+const canProceed = () => {
+  const step = currentStepData
+  if (step.id === 'contact') {
+    const phoneValid = phoneError === '' && formData.phoneNumber.length > 0
+    return formData.parentName.length > 0 && phoneValid && formData.email.length > 0
+  }
+  return true
+}
+
+
+  const currentStepData = chatSteps[currentStep];
+
+  const handleNext = () => {
+    if (currentStep < chatSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+      
+      // Show final CTA when we reach the complete step
+      if (chatSteps[currentStep + 1].isComplete) {
+        setTimeout(() => {
+          setShowFinalCTA(true);
+        }, 1000);
+      }
+    }
+  };
+
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const updateNestedFormData = (category, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [field]: value
+      }
+    }));
+  };
+
+
+// Add this function to handle adding suppliers from the missing suppliers step
+const handleAddMissingSupplier = async (supplier, supplierType) => {
+  try {
+    console.log('🔄 Adding missing supplier:', supplier.name, 'to', supplierType);
+    
+    // Use your existing party plan backend to add the supplier
+    const result = partyPlanBackend.addSupplierToPlan(supplier);
+    
+    if (result.success) {
+      console.log('✅ Successfully added missing supplier');
+      
+      // Reload the party data to update the selectedSuppliers state
+      loadPartyDataFromLocalStorage();
+      
+      // Optional: Show a success message
+      // You could add a toast notification here if you have one
+      
+      return true;
+    } else {
+      console.error('❌ Failed to add supplier:', result.error);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error adding missing supplier:', error);
+    return false;
+  }
+};
+
   // Form validation - now only check required fields since user is always signed in
-  const isFormValid = formData.parentName && formData.email && selectedSuppliers.length > 0
+  const isFormValid = formData.parentName && formData.email && selectedSuppliers.length > 0;
 
   // Loading state - show loading until auth is resolved
   if (loadingProfile) {
@@ -1156,7 +976,7 @@ const migratePartyToDatabase = async (authenticatedUser) => {
           <p className="text-gray-600">Loading your profile...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // If user is not authenticated, show the page with auth modal
@@ -1167,177 +987,402 @@ const migratePartyToDatabase = async (authenticatedUser) => {
 
   return (
     <>
-            <div className="min-h-screen bg-primary-50">
-        <ContextualBreadcrumb currentPage="review-book" />
+      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
+        <ContextualBreadcrumb currentPage="Review & Book" />
 
+        <div className="max-w-2xl mx-auto p-4">
+          
+        
 
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Hero Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-400 rounded-full mb-4">
-            <Send className="w-8 h-8 text-white" />
+          {!showFinalCTA && (
+  <div className="space-y-6">
+    
+    {/* Progress Bar */}
+    <div className="mb-6">
+      <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+        <span>Step {currentStep + 1} of {chatSteps.length}</span>
+        <span>{Math.round(((currentStep + 1) / chatSteps.length) * 100)}% complete</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-3">
+        <div 
+          className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] h-3 rounded-full transition-all duration-300 shadow-sm"
+          style={{ width: `${((currentStep + 1) / chatSteps.length) * 100}%` }}
+        />
+      </div>
+    </div>
+
+    {/* CONDITIONAL RENDERING: Snappy Chat vs Direct Form */}
+    {currentStepData.snappyMessage ? (
+      // SNAPPY CHAT CARD (for welcome and final steps)
+      <Card className="border-2 border-[hsl(var(--primary-200))] bg-white shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] p-6 text-white">
+          <div className="flex items-center space-x-4">
+            <img 
+              src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755761506/kfrlxs2gy5zd2gadynhh.png" 
+              alt="Snappy"
+              className="w-16 h-16 object-contain bg-white rounded-full p-2"
+            />
+            <div>
+              <h3 className="text-xl font-bold">Snappy</h3>
+              <p className="text-primary-100">Your PartySnap Assistant</p>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3">Ready to Send Your Enquiry?</h1>
-          <p className="text-gray-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            We'll send your party requirements to all selected suppliers and they'll get back to you directly
-          </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Party Summary */}
-          <PartySummaryCard partyDetails={partyDetails} />
-
-          {/* Selected Suppliers */}
-          <SelectedSuppliersCard selectedSuppliers={selectedSuppliers} />
-
-          {/* Selected Add-ons */}
-          <SelectedAddonsCard 
-        selectedAddons={selectedAddons} 
-        suppliers={fullSupplierData}
-        onRemoveAddon={handleRemoveAddon}
-      />
-
-
-          {/* Contact Information */}
-          <ContactInformationForm 
-            formData={formData}
-            user={user}
-            customerProfile={customerProfile}
-            onInputChange={handleInputChange}
-          />
-
-          {/* Special Requirements */}
-          <SpecialRequirementsForm 
-            formData={formData}
-            onInputChange={handleInputChange}
-            onCheckboxChange={handleCheckboxChange}
-          />
-
-          {/* Additional Message */}
-          <AdditionalMessageForm 
-            formData={formData}
-            onInputChange={handleInputChange}
-          />
-            {/* ✅ NEW: Total Price Summary */}
-  <TotalPriceSummaryCard 
-    selectedSuppliers={selectedSuppliers}
-    selectedAddons={selectedAddons}
-    suppliers={fullSupplierData}
-  />
-
-          {/* What Happens Next */}
-          <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Info className="w-6 h-6 text-blue-600" />
+        <CardContent className="p-6">
+          <div className="mb-6">
+            <div className="bg-primary-50 rounded-2xl rounded-tl-sm p-6 border border-[hsl(var(--primary-200))]">
+              <p className="text-gray-800 text-lg font-medium leading-relaxed">
+                {currentStepData.snappyMessage}
+              </p>
+              
+              {currentStepData.hideInput && (
+                <div className="flex items-center space-x-1 mt-4 opacity-60">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                  <span className="text-sm text-gray-500 ml-2">Snappy is thinking...</span>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">What happens next?</h3>
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start space-x-2">
-                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <CheckCircle className="w-3 h-3 text-green-600" />
-                      </div>
-                      <span>
-                        Your enquiry will be sent to all <strong>{selectedSuppliers.length} selected suppliers</strong>
-                        {selectedAddons.length > 0 ? ` with ${selectedAddons.length} add-ons` : ""}
-                      </span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Clock className="w-3 h-3 text-blue-600" />
-                      </div>
-                      <span>
-                        Suppliers will contact you directly <strong>within 24 hours</strong>
-                      </span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Star className="w-3 h-3 text-purple-600" />
-                      </div>
-                      <span>Compare quotes and availability before making your final decision</span>
-                    </li>
-                    <li className="flex items-start space-x-2">
-                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Heart className="w-3 h-3 text-green-600" />
-                      </div>
-                      <span>
-                        <strong>PartySnap remains free</strong> for parents - no booking fees
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Add-ons */}
-          <div>
-          {/* <RecommendedAddons 
-          context="review" 
-          maxItems={4}
-          onAddonClick={handleAddonClick} // Use modal instead of onAddToCart
-          title="Quick Add-ons"
-        /> */}
-          </div>
-          <AddonDetailsModal
-        isOpen={isAddonModalOpen}
-        onClose={handleAddonModalClose}
-        addon={selectedAddon}
-        onAddToParty={handleAddAddonFromModal}
-        isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
-      />
-        {/* Add the loading modal */}
-        <SnappyEnquiryLoader
-        isOpen={isSubmitting}
-        currentStep={loadingStep}
-        supplierCount={supplierCount}
-        error={loadingError}
-        
-      />
-      
-
-
-          {/* Submit Button - Simplified since user is always signed in */}
-          <div className="space-y-4">
-            {/* <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 mb-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-green-800 font-semibold">Signed in as {user?.email}</p>
-                  <p className="text-xs text-green-700 mt-1">
-                    Ready to send enquiries to all {selectedSuppliers.length} suppliers!
-                    {customerProfile && (
-                      <span className="block mt-1">Contact info auto-filled from your profile</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div> */}
-
-            <Button
-              className="w-full bg-primary-500 hover:bg-primary-500 text-white py-4 sm:py-6 text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
-              onClick={handleSubmitEnquiry}
-              disabled={isSubmitting || isMigrating || !isFormValid}
-            >
-              {isSubmitting || isMigrating ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                  {isMigrating ? "Saving Party..." : "Sending Enquiry..."}
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5 mr-3" />
-                  Send Enquiry to All {selectedSuppliers.length} Suppliers
-                </>
               )}
-            </Button>
-
-            <p className="text-sm text-gray-500 text-center italic">*Magical, one celebration at a time. 🎉</p>
+            </div>
           </div>
+
+          <div className="flex justify-center pt-6 border-t border-gray-100">
+            <Button
+              onClick={handleNext}
+              className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white py-4 text-xl font-bold rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 px-12"
+            >
+              {currentStepData.isComplete ? "Show me the details! 🎉" : "Let's get started! 🚀"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    ) : (
+      // DIRECT FORM CARD (for input steps)
+      <Card className="border-2 border-[hsl(var(--primary-200))] bg-white shadow-xl overflow-hidden">
+        <CardContent className="p-8">
+          
+          {/* Step Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {currentStepData.title}
+            </h2>
+            <p className="text-gray-600 text-lg">
+              {currentStepData.description}
+            </p>
+          </div>
+
+          {/* Form Content */}
+          <div className="space-y-6 mb-8">
+            
+            {/* Contact Fields */}
+            {currentStepData.showContactFields && (
+              <div className="space-y-4 max-w-lg mx-auto">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Your name *</label>
+                  <Input
+                    placeholder="Your full name"
+                    value={formData.parentName}
+                    onChange={(e) => updateFormData('parentName', e.target.value)}
+                    className="h-14 text-lg border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-xl"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">UK Mobile number *</label>
+                  <Input
+                    placeholder="07123 456789"
+                    value={formData.phoneNumber}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    className={`h-14 text-lg border-2 rounded-xl ${
+                      phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[hsl(var(--primary-500))]'
+                    }`}
+                  />
+                  {phoneError && (
+                    <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email address *</label>
+                  <Input
+                    placeholder="your.email@example.com"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    className="h-14 text-lg border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-xl text-gray-900"
+                    disabled={!!user}
+                  />
+                  {user && (
+                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed as you're signed in</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Dietary Requirements */}
+            {currentStepData.showDietary && (
+              <div className="max-w-2xl mx-auto">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-800 text-center">Dietary Requirements</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { key: "vegetarian", label: "Vegetarian options needed", icon: "🥗" },
+                      { key: "vegan", label: "Vegan options needed", icon: "🌱" },
+                      { key: "glutenFree", label: "Gluten-free options needed", icon: "🌾" },
+                      { key: "nutAllergy", label: "Nut allergy considerations", icon: "🥜" }
+                    ].map((item) => (
+                      <div
+                        key={item.key}
+                        className="flex items-center space-x-3 p-4 bg-gradient-to-r from-gray-50 to-[hsl(var(--primary-50))] rounded-xl border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] transition-all duration-200 cursor-pointer"
+                        onClick={() => updateNestedFormData('dietaryRequirements', item.key, !formData.dietaryRequirements[item.key])}
+                      >
+                        <Checkbox
+                          checked={formData.dietaryRequirements[item.key]}
+                          className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] w-5 h-5"
+                        />
+                        <span className="text-xl">{item.icon}</span>
+                        <label className="text-sm font-medium cursor-pointer flex-1">
+                          {item.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-200">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 text-center">Accessibility Needs</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {[
+                        { key: "wheelchairAccessible", label: "Wheelchair accessible venue needed", icon: "♿" },
+                        { key: "sensoryFriendly", label: "Sensory-friendly environment", icon: "🤫" }
+                      ].map((item) => (
+                        <div
+                          key={item.key}
+                          className="flex items-center space-x-3 p-4 bg-gradient-to-r from-gray-50 to-[hsl(var(--primary-50))] rounded-xl border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] transition-all duration-200 cursor-pointer"
+                          onClick={() => updateNestedFormData('accessibilityRequirements', item.key, !formData.accessibilityRequirements[item.key])}
+                        >
+                          <Checkbox
+                            checked={formData.accessibilityRequirements[item.key]}
+                            className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] w-5 h-5"
+                          />
+                          <span className="text-xl">{item.icon}</span>
+                          <label className="text-sm font-medium cursor-pointer flex-1">
+                            {item.label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Message Textarea */}
+            {currentStepData.field === 'additionalMessage' && (
+              <div className="max-w-lg mx-auto">
+                <Textarea
+                  placeholder={currentStepData.placeholder}
+                  value={formData.additionalMessage}
+                  onChange={(e) => updateFormData('additionalMessage', e.target.value)}
+                  className="min-h-[120px] text-lg border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-xl p-4"
+                  autoFocus
+                />
+                <div className="text-center mt-3">
+                  <Badge className="bg-green-100 text-green-700 border border-green-300">
+                    💡 Completely optional - skip if you want!
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {/* Missing Suppliers */}
+            {currentStepData.showMissingSuppliers && (
+              <div>
+                <MissingSuppliersSuggestions 
+                  partyPlan={fullSupplierData}
+                  onAddSupplier={handleAddMissingSupplier}
+                  showTitle={false}
+                  currentStep={currentStep}
+                  navigateWithContext={navigateWithContext}
+                  toast={toast}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+            {currentStep > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(currentStep - 1)}
+                className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold"
+              >
+                ← Back
+              </Button>
+            )}
+            
+            <div className={currentStep === 0 ? "w-full" : "ml-auto"}>
+              <Button
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-8 py-3 text-lg font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
+              >
+                {currentStepData.optional ? '⏭️ Skip this' : 'Continue ✨'}
+                {!currentStepData.optional && <ArrowRight className="w-5 h-5 ml-2" />}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )}
+  </div>
+)}
+
+{showFinalCTA && (
+  <div className="animate-in slide-in-from-bottom duration-500">
+    <Card className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      {/* Clean Header */}
+      <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] p-6 text-white">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+            <span className="text-2xl">🎉</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">Ready to Book Your Party!</h2>
+            <p className="text-white/90">Send enquiries to {selectedSuppliers.length} suppliers</p>
+          </div>
+        </div>
+      </div>
+
+      <CardContent className="p-6">
+        {/* Party Summary Header */}
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            {partyDetails.childName}'s {partyDetails.theme} Party
+          </h3>
+          
+          {/* Minimal Party Details */}
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              <span>{partyDetails.date}</span>
+            </div>
+            <span className="text-gray-300">•</span>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              <span>{partyDetails.time}</span>
+            </div>
+            <span className="text-gray-300">•</span>
+            <div className="flex items-center gap-1">
+              <MapPin className="w-4 h-4" />
+              <span>{partyDetails.location}</span>
+            </div>
+            <span className="text-gray-300">•</span>
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              <span>Age {partyDetails.age}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Suppliers Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-lg font-bold text-gray-900">Your Selected Suppliers</h4>
+            <Badge className="bg-[hsl(var(--primary-500))] text-white px-3 py-1 rounded-full">
+              {selectedSuppliers.length}
+            </Badge>
+          </div>
+          
+          <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
+            {selectedSuppliers.map(supplier => (
+              <div key={supplier.id} className="flex justify-between items-center bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <Image
+                      src={supplier.image || '/placeholder.svg'}
+                      alt={supplier.name}
+                      width={40}
+                      height={40}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-gray-900 truncate">{supplier.name}</div>
+                    <div className="text-sm text-gray-500">({supplier.category})</div>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text-[hsl(var(--primary-600))] text-lg">£{supplier.price || 0}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add-ons Section */}
+          {selectedAddons.length > 0 && (
+            <div className="mt-4">
+              <h5 className="font-semibold text-gray-800 mb-2 text-sm">Add-ons & Extras:</h5>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                {selectedAddons.map(addon => (
+                  <div key={addon.id} className="flex justify-between items-center text-sm">
+                    <span className="text-gray-700">{addon.name}</span>
+                    <span className="font-semibold text-[hsl(var(--primary-600))]">£{addon.price || 0}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Total Cost */}
+        <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl p-4 mb-6 border border-[hsl(var(--primary-200))]">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold text-[hsl(var(--primary-900))]">Total Party Cost:</span>
+            <span className="text-3xl font-black text-[hsl(var(--primary-600))]">£{grandTotal}</span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex  gap-4 mb-4">
+          <Button
+            variant="outline"
+            onClick={() => setShowFinalCTA(false)}
+            className="flex-1 w-10 text-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-50 py-3 font-semibold rounded-xl"
+          >
+            ← Back
+          </Button>
+          
+          <Button
+            onClick={handleSubmitEnquiry}
+            disabled={isSubmitting}
+            className="flex-2 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white py-3 text-sm font-bold rounded-xl shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <div className="w-5 h-5 mr-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Sending Enquiries...
+              </div>
+            ) : (
+              <div className="flex items-center justify-center">
+                <Send className="w-5 h-5 mr-2" />
+                Send to All {selectedSuppliers.length} Suppliers 🚀
+              </div>
+            )}
+          </Button>
+        </div>
+        
+        {/* Footer text */}
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+          <span>🔒</span>
+          <span>Free for parents • No booking fees • Suppliers respond within 24 hours</span>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+)}
         </div>
       </div>
 
@@ -1353,10 +1398,10 @@ const migratePartyToDatabase = async (authenticatedUser) => {
           onClose={() => {
             // If auth is required, don't allow closing - redirect to dashboard instead
             if (authRequired) {
-              console.log("🔙 Auth required but modal closed, redirecting to dashboard")
-              router.push('/dashboard')
+              console.log("🔙 Auth required but modal closed, redirecting to dashboard");
+              router.push('/dashboard');
             } else {
-              setShowAuthModal(false)
+              setShowAuthModal(false);
             }
           }}
           onSuccess={handleAuthSuccess}
@@ -1365,32 +1410,13 @@ const migratePartyToDatabase = async (authenticatedUser) => {
         />
       )}
 
-      {/* Loading Overlay */}
-      {(isSubmitting || isMigrating) && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-sm sm:max-w-md mx-auto text-center w-full shadow-2xl">
-            <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">
-              {isMigrating ? "Saving Your Party" : "Sending Your Enquiry"}
-            </h3>
-            <p className="text-gray-600 text-sm sm:text-base">
-              {isMigrating ? "Creating your party profile..." : "We're contacting all your selected suppliers..."}
-            </p>
-            <div className="mt-4 flex items-center justify-center space-x-1">
-              <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"></div>
-              <div
-                className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"
-                style={{ animationDelay: "0.1s" }}
-              ></div>
-              <div
-                className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Add the loading modal */}
+      <SnappyEnquiryLoader
+        isOpen={isSubmitting}
+        currentStep={loadingStep}
+        supplierCount={supplierCount}
+        error={loadingError}
+      />
     </>
-  )
+  );
 }
