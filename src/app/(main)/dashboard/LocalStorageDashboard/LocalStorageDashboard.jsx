@@ -68,6 +68,7 @@ export default function LocalStorageDashboard() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
+  const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('venue')
 
 
   const [showSupplierModal, setShowSupplierModal] = useState(false)
@@ -343,7 +344,7 @@ export default function LocalStorageDashboard() {
           lastAction, 
           fromPage, 
           source,
-          showWelcomePopup // Check welcome popup state
+          showWelcomePopup
         })
   
         // Don't scroll if welcome popup is showing
@@ -353,10 +354,12 @@ export default function LocalStorageDashboard() {
         }
   
         if (scrollToSupplier && lastAction === 'supplier-added') {
-          // Scroll to the specific supplier card that was just added
-          console.log(`🎯 Scrolling to newly added supplier: ${scrollToSupplier}`)
+          // For mobile: Switch to the correct tab instead of scrolling
+          console.log(`🎯 Setting active mobile tab to: ${scrollToSupplier}`)
+          setActiveMobileSupplierType(scrollToSupplier)
           
-          const scrollDelay = source === 'a_la_carte' ? 1000 : 500 // Longer delay for à la carte
+          // For desktop: Still scroll to the element
+          const scrollDelay = source === 'a_la_carte' ? 1000 : 500
           
           setTimeout(() => {
             const element = document.getElementById(`supplier-${scrollToSupplier}`)
@@ -369,16 +372,12 @@ export default function LocalStorageDashboard() {
               console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
             } else {
               console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
-              // List all elements with supplier- prefix for debugging
-              const supplierElements = document.querySelectorAll('[id^="supplier-"]')
-              console.log('📋 Available supplier elements:', Array.from(supplierElements).map(el => el.id))
-              
-              // Fallback: scroll to top to at least show the added supplier
+              // For mobile, the tab switch is enough
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }
           }, scrollDelay)
   
-          // Clean up URL parameters after scrolling
+          // Clean up URL parameters after handling
           setTimeout(() => {
             const newSearchParams = new URLSearchParams(searchParams.toString())
             newSearchParams.delete('scrollTo')
@@ -400,16 +399,14 @@ export default function LocalStorageDashboard() {
         
       } catch (error) {
         console.error('❌ Smart scroll error:', error)
-        // Fallback to top
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
   
-    // Run scroll management after content loads
     const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
-    
     return () => clearTimeout(scrollTimeout)
-  }, [isMounted, isClient, searchParams, router, showWelcomePopup]) // Add showWelcomePopup dependency
+  }, [isMounted, isClient, searchParams, router, showWelcomePopup])
+  
   
   // ✅ ADDITIONAL: Handle scroll after welcome popup closes
   useEffect(() => {
@@ -723,7 +720,10 @@ export default function LocalStorageDashboard() {
     showAdvancedControls,
     setShowAdvancedControls,
   }
-
+  const handleMobileSupplierTabChange = (supplierType) => {
+    console.log('🔄 Mobile tab changed to:', supplierType)
+    setActiveMobileSupplierType(supplierType)
+  }
   
   // ✅ PRODUCTION SAFETY: Don't render until mounted and data loaded
   if (!isMounted || !themeLoaded || planLoading) {
@@ -820,23 +820,26 @@ export default function LocalStorageDashboard() {
 
                 {/* Mobile Navigation */}
                 <div className="md:hidden">
-                  <MobileSupplierNavigation
-                    suppliers={suppliers}
-                    loadingCards={loadingCards}
-                    suppliersToDelete={suppliersToDelete}
-                    openSupplierModal={openSupplierModal}
-                    handleDeleteSupplier={handleDeleteSupplier}
-                    getSupplierDisplayName={getSupplierDisplayName}
-                    addons={addons}
-                    handleRemoveAddon={handleRemoveAddon}
-                    getEnquiryStatus={getEnquiryStatus}
-                    getEnquiryTimestamp={getEnquiryTimestamp}
-                    isPaymentConfirmed={false}
-                    enquiries={[]}
-                    showPartyTasks={false}
-                    currentPhase="planning"
-                    partyTasksStatus={{}}
-                  />
+                <MobileSupplierNavigation
+    suppliers={suppliers}
+    loadingCards={loadingCards}
+    suppliersToDelete={suppliersToDelete}
+    openSupplierModal={openSupplierModal}
+    handleDeleteSupplier={handleDeleteSupplier}
+    getSupplierDisplayName={getSupplierDisplayName}
+    addons={addons}
+    handleRemoveAddon={handleRemoveAddon}
+    getEnquiryStatus={getEnquiryStatus}
+    getEnquiryTimestamp={getEnquiryTimestamp}
+    isPaymentConfirmed={false}
+    enquiries={[]}
+    showPartyTasks={false}
+    currentPhase="planning"
+    partyTasksStatus={{}}
+    // NEW PROPS:
+    activeSupplierType={activeMobileSupplierType}
+    onSupplierTabChange={handleMobileSupplierTabChange}
+  />
                 </div>
               </div>
 

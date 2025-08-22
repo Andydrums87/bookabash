@@ -1,4 +1,4 @@
-// Fixed MobileSupplierNavigation.jsx - Remove AddonContext dependencies
+// Updated MobileSupplierNavigation.jsx - Single supplier card view per tab
 
 "use client"
 import { useState, useEffect, useRef } from "react"
@@ -27,11 +27,12 @@ export default function MobileSupplierNavigation({
   handleCancelEnquiry,
   onAddonClick = null,
   showRecommendedAddons = true,
-  onPaymentReady
+  onPaymentReady,
+  // NEW: Props for handling tab changes and scrolling
+  onSupplierTabChange,
+  activeSupplierType // NEW: Externally controlled active tab
 }) {
-  const [activeTab, setActiveTab] = useState(0)
   const tabsRef = useRef(null)
-  const contentRef = useRef(null)
 
   // Individual supplier types with their own tabs
   const supplierTypes = [
@@ -115,16 +116,22 @@ export default function MobileSupplierNavigation({
       image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
       icon: <Castle className="w-5 h-5" />,
     },
-    {
-      id: "addons",
-      type: "addons",
-      title: "Add-ons",
-      name: "Add-ons", 
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
-      icon: <Gift className="w-5 h-5" />,
-      isAddonSection: true,
-    },
+    // {
+    //   id: "addons",
+    //   type: "addons",
+    //   title: "Add-ons",
+    //   name: "Add-ons", 
+    //   image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
+    //   icon: <Gift className="w-5 h-5" />,
+    //   isAddonSection: true,
+    // },
   ]
+
+  // Use external activeSupplierType if provided, otherwise use internal state
+  const [internalActiveTab, setInternalActiveTab] = useState(0)
+  const activeTab = activeSupplierType !== undefined ? 
+    supplierTypes.findIndex(st => st.type === activeSupplierType) : 
+    internalActiveTab
 
   // Party tasks
   const partyTasks = [
@@ -157,56 +164,6 @@ export default function MobileSupplierNavigation({
     return standaloneAddons + supplierAddons
   }
 
-  // Get all supplier types with their data for vertical listing
-  const getAllSuppliers = () => {
-    const allSuppliers = supplierTypes
-      .filter(st => !st.isAddonSection) // Exclude addons from main list
-      .map(supplierType => ({
-        ...supplierType,
-        supplier: suppliers[supplierType.type] || null,
-        enquiryStatus: getEnquiryStatus(supplierType.type)
-      }))
-
-    // Sort: Selected/Awaiting suppliers first, empty suppliers last
-    return allSuppliers.sort((a, b) => {
-      const aHasSupplier = !!a.supplier
-      const bHasSupplier = !!b.supplier
-      
-      // If A has supplier and B doesn't, A comes first
-      if (aHasSupplier && !bHasSupplier) return -1
-      // If B has supplier and A doesn't, B comes first  
-      if (!aHasSupplier && bHasSupplier) return 1
-      // If both have suppliers or both are empty, maintain original order
-      return 0
-    })
-  }
-
-  // Function to scroll to specific supplier type
-  const scrollToSupplier = (supplierTypeId) => {
-    const element = document.getElementById(`supplier-${supplierTypeId}`)
-    if (element) {
-      const offset = 120 // Account for sticky navigation
-      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-      window.scrollTo({
-        top: elementPosition - offset,
-        behavior: 'smooth'
-      })
-    }
-  }
-
-  // Function to scroll to party task cards
-  const scrollToPartyTask = (cardId) => {
-    const element = document.getElementById(cardId)
-    if (element) {
-      const offset = 120
-      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset
-      window.scrollTo({
-        top: elementPosition - offset,
-        behavior: 'smooth'
-      })
-    }
-  }
-
   // Auto-scroll tab navigation
   useEffect(() => {
     if (tabsRef.current) {
@@ -219,14 +176,16 @@ export default function MobileSupplierNavigation({
     }
   }, [activeTab])
 
-  // Handle tab selection and scrolling
+  // Handle tab selection
   const handleTabSelect = (index, supplierType) => {
-    setActiveTab(index)
+    if (activeSupplierType === undefined) {
+      // Internal state management
+      setInternalActiveTab(index)
+    }
     
-    if (supplierType.isAddonSection) {
-      scrollToSupplier('addons')
-    } else {
-      scrollToSupplier(supplierType.type)
+    // Notify parent component about tab change
+    if (onSupplierTabChange) {
+      onSupplierTabChange(supplierType.type)
     }
   }
 
@@ -294,7 +253,11 @@ export default function MobileSupplierNavigation({
     )
   }
 
-  const sortedSuppliers = getAllSuppliers()
+  // Get the currently active supplier type
+  const activeSupplierTypeData = supplierTypes[activeTab]
+  const currentSupplier = activeSupplierTypeData?.isAddonSection ? 
+    null : 
+    suppliers[activeSupplierTypeData?.type]
 
   return (
     <div className="w-full relative">
@@ -346,7 +309,7 @@ export default function MobileSupplierNavigation({
                           </div>
                           
                           {isActive && (
-                            <div className="absolute inset-0 bg-opacity-20 rounded-full border-4 border-[hsl(var(--primary-500))]"></div> 
+                            <div className="absolute inset-0 rounded-full border-5 border-teal-500 shadow-lg"></div> 
                           )}
                           
                           {hasContent && (
@@ -364,7 +327,7 @@ export default function MobileSupplierNavigation({
                         </div>
                         
                         <div className="text-center">
-                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-[hsl(var(--primary-700))]' : 'text-gray-700'}`}>
+                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-teal-700 font-bold' : 'text-gray-700'}`}>
                             {supplierType.name}
                           </p>
                         </div>
@@ -387,7 +350,10 @@ export default function MobileSupplierNavigation({
                       return (
                         <button
                           key={task.id}
-                          onClick={() => scrollToPartyTask(task.cardId)}
+                          onClick={() => {
+                            // You can implement party task navigation here if needed
+                            console.log('Party task clicked:', task.id)
+                          }}
                           className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
                           style={{ minWidth: '90px' }}
                         >
@@ -437,18 +403,28 @@ export default function MobileSupplierNavigation({
         </div>
       </div>
 
-      {/* All Supplier Cards - Vertically Listed */}
-      <div className="space-y-4 px-4" ref={contentRef}>
-        {/* Regular Supplier Cards (sorted: selected first, empty last) */}
-        {sortedSuppliers.map((supplierType) => (
-          <div 
-            key={supplierType.type} 
-            id={`supplier-${supplierType.type}`}
-            className="scroll-mt-32"
-          >
+      {/* ✅ NEW: Single Supplier Card Content */}
+      <div className="px-4">
+        {activeSupplierTypeData?.isAddonSection ? (
+          // Show Add-ons Section
+          <div>
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-purple-600" />
+                Add-ons & Extras
+              </h2>
+              <p className="text-sm text-gray-600">
+                Enhance your party with special extras
+              </p>
+            </div>
+            {renderAddonsContent()}
+          </div>
+        ) : (
+          // Show Single Supplier Card
+          <div className="transition-all duration-300 ease-in-out">
             <SupplierCard
-              type={supplierType.type}
-              supplier={supplierType.supplier}
+              type={activeSupplierTypeData.type}
+              supplier={currentSupplier}
               loadingCards={loadingCards}
               suppliersToDelete={suppliersToDelete}
               openSupplierModal={openSupplierModal}
@@ -456,8 +432,8 @@ export default function MobileSupplierNavigation({
               getSupplierDisplayName={getSupplierDisplayName}
               addons={addons}
               handleRemoveAddon={handleRemoveAddon}
-              enquiryStatus={supplierType.enquiryStatus}
-              enquirySentAt={getEnquiryTimestamp(supplierType.type)}
+              enquiryStatus={getEnquiryStatus(activeSupplierTypeData.type)}
+              enquirySentAt={getEnquiryTimestamp(activeSupplierTypeData.type)}
               isSignedIn={true}
               isPaymentConfirmed={isPaymentConfirmed}
               enquiries={enquiries}
@@ -466,24 +442,7 @@ export default function MobileSupplierNavigation({
               onPaymentReady={onPaymentReady}
             />
           </div>
-        ))}
-
-        {/* Add-ons Section */}
-        <div 
-          id="supplier-addons"
-          className="scroll-mt-32"
-        >
-          <div className="mb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Gift className="w-5 h-5 text-purple-600" />
-              Add-ons & Extras
-            </h2>
-            <p className="text-sm text-gray-600">
-              Enhance your party with special extras
-            </p>
-          </div>
-          {renderAddonsContent()}
-        </div>
+        )}
       </div>
 
       <style jsx>{`
