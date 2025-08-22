@@ -1,10 +1,12 @@
-// Enhanced MobileSupplierNavigation with Individual Supplier Tabs
+// Fixed MobileSupplierNavigation.jsx - Remove AddonContext dependencies
+
 "use client"
 import { useState, useEffect, useRef } from "react"
 import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle } from "lucide-react"
 import SupplierCard from "./SupplierCard/SupplierCard"
 import Image from "next/image"
-import { AddonsSectionWrapper, RecommendedAddonsWrapper } from "../components/AddonProviderWrapper"
+import AddonsSection from "./AddonsSection"
+import RecommendedAddons from "@/components/recommended-addons"
 
 export default function MobileSupplierNavigation({
   suppliers,
@@ -228,7 +230,14 @@ export default function MobileSupplierNavigation({
     }
   }
 
-  // Render addons content
+  // ✅ FIXED: Simple addon handling without context
+  const handleAddAddon = async (addon) => {
+    console.log('🎁 Adding addon:', addon.name)
+    // For now, just log. You can implement actual logic here
+    // or pass a handler function as prop
+  }
+
+  // ✅ FIXED: Render addons content without context wrappers
   const renderAddonsContent = () => {
     const addonCount = getAddonCount()
     
@@ -257,8 +266,11 @@ export default function MobileSupplierNavigation({
 
     return (
       <div className="space-y-6">
-        <AddonsSectionWrapper 
+        {/* ✅ FIXED: Use direct AddonsSection component */}
+        <AddonsSection 
+          addons={addons}
           suppliers={suppliers}
+          handleRemoveAddon={handleRemoveAddon}
           className="bg-white rounded-xl border border-gray-200 p-4"
         />
 
@@ -268,9 +280,11 @@ export default function MobileSupplierNavigation({
               <Sparkles className="w-5 h-5 text-purple-600" />
               More Add-ons
             </h3>
-            <RecommendedAddonsWrapper 
+            {/* ✅ FIXED: Use direct RecommendedAddons component */}
+            <RecommendedAddons 
               context="mobile"
               maxItems={4}
+              onAddToCart={handleAddAddon}
               onAddonClick={onAddonClick}
               className="grid grid-cols-1 gap-3"
             />
@@ -310,15 +324,15 @@ export default function MobileSupplierNavigation({
                       key={supplierType.id}
                       onClick={() => handleTabSelect(index, supplierType)}
                       className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
-                      style={{ minWidth: '90px' }} // Increased from 70px
+                      style={{ minWidth: '90px' }}
                     >
                       <div className="flex flex-col items-center">
-                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100"> {/* Increased from w-14 h-14 to w-20 h-20, mb-2 to mb-3 */}
+                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100">
                           <Image
                             src={supplierType.image}
                             alt={supplierType.name}
-                            width={80} // Increased from 56
-                            height={80} // Increased from 56
+                            width={80}
+                            height={80}
                             className="w-full h-full object-cover rounded-full"
                             onError={(e) => {
                               e.target.style.display = 'none'
@@ -326,7 +340,7 @@ export default function MobileSupplierNavigation({
                           />
                           
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-6 h-6"> {/* Larger icon container */}
+                            <div className="w-6 h-6">
                               {supplierType.icon}
                             </div>
                           </div>
@@ -336,10 +350,10 @@ export default function MobileSupplierNavigation({
                           )}
                           
                           {hasContent && (
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg"> {/* Increased from w-4 h-4 to w-6 h-6 */}
+                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg">
                               {supplierType.isAddonSection && getAddonCount() > 0 && (
                                 <div className="w-full h-full bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">{getAddonCount()}</span> {/* Increased from text-[8px] to text-xs */}
+                                  <span className="text-white text-xs font-bold">{getAddonCount()}</span>
                                 </div>
                               )}
                               {!supplierType.isAddonSection && (
@@ -350,7 +364,7 @@ export default function MobileSupplierNavigation({
                         </div>
                         
                         <div className="text-center">
-                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-[hsl(var(--primary-700))]' : 'text-gray-700'}`}> {/* Increased from text-xs to text-sm */}
+                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-[hsl(var(--primary-700))]' : 'text-gray-700'}`}>
                             {supplierType.name}
                           </p>
                         </div>
@@ -375,27 +389,27 @@ export default function MobileSupplierNavigation({
                           key={task.id}
                           onClick={() => scrollToPartyTask(task.cardId)}
                           className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
-                          style={{ minWidth: '90px' }} // Increased from 70px
+                          style={{ minWidth: '90px' }}
                         >
                           <div className="flex flex-col items-center">
-                            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100"> {/* Increased from w-14 h-14 to w-20 h-20, mb-2 to mb-3 */}
+                            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100">
                               <Image
                                 src={task.image}
                                 alt={task.title}
-                                width={80} // Increased from 56
-                                height={80} // Increased from 56
+                                width={80}
+                                height={80}
                                 className="w-full h-full object-cover rounded-full"
                               />
                               
                               {isCompleted && (
-                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center"> {/* Increased from w-4 h-4 to w-6 h-6 */}
-                                  <span className="text-white text-xs font-bold">✓</span> {/* Increased from text-[8px] to text-xs */}
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">✓</span>
                                 </div>
                               )}
                               
                               {count > 0 && (
-                                <div className="absolute -top-1 -right-1 w-7 h-7 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"> {/* Increased from w-5 h-5 to w-7 h-7 */}
-                                  <span className="text-white text-xs font-bold">{count}</span> {/* Increased from text-[10px] to text-xs */}
+                                <div className="absolute -top-1 -right-1 w-7 h-7 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">{count}</span>
                                 </div>
                               )}
                               
@@ -405,7 +419,7 @@ export default function MobileSupplierNavigation({
                             </div>
                             
                             <div className="text-center">
-                              <p className="text-sm font-semibold leading-tight text-gray-700"> {/* Increased from text-xs to text-sm */}
+                              <p className="text-sm font-semibold leading-tight text-gray-700">
                                 {task.title}
                               </p>
                             </div>
@@ -429,8 +443,8 @@ export default function MobileSupplierNavigation({
         {sortedSuppliers.map((supplierType) => (
           <div 
             key={supplierType.type} 
-            id={`supplier-${supplierType.type}`} // ✅ CRITICAL: This ID enables scrolling
-            className="scroll-mt-32" // Account for sticky navigation
+            id={`supplier-${supplierType.type}`}
+            className="scroll-mt-32"
           >
             <SupplierCard
               type={supplierType.type}
@@ -456,7 +470,7 @@ export default function MobileSupplierNavigation({
 
         {/* Add-ons Section */}
         <div 
-          id="supplier-addons" // ✅ CRITICAL: This ID enables scrolling to addons
+          id="supplier-addons"
           className="scroll-mt-32"
         >
           <div className="mb-4">
