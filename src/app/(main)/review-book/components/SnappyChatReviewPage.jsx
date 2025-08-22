@@ -71,6 +71,8 @@ export default function SnappyChatReviewPage() {
   const [loadingError, setLoadingError] = useState(null);
   const [supplierCount, setSupplierCount] = useState(0);
   const [fullSupplierData, setFullSupplierData] = useState({});
+  const [hasAddedOnCurrentStep, setHasAddedOnCurrentStep] = useState(false);
+const [initialSupplierCount, setInitialSupplierCount] = useState(0);
 
   const { toast } = useToast()
 
@@ -149,6 +151,26 @@ const { navigateWithContext} = useContextualNavigation()
       window.history.replaceState({}, '', '/review-book')
     }
   }, [])
+  useEffect(() => {
+    if (currentStep === 4) { // Step 4 is the "forgotten/missing suppliers" step
+      setInitialSupplierCount(selectedSuppliers.length);
+      setHasAddedOnCurrentStep(false);
+    }
+  }, [currentStep]);
+  useEffect(() => {
+    if (currentStep === 4) { // Only track on the missing suppliers step
+      const currentCount = selectedSuppliers.length;
+      const hasAdded = currentCount > initialSupplierCount;
+      setHasAddedOnCurrentStep(hasAdded);
+      
+      console.log('📊 Supplier count tracking:', {
+        initial: initialSupplierCount,
+        current: currentCount,
+        hasAdded: hasAdded
+      });
+    }
+  }, [selectedSuppliers, currentStep, initialSupplierCount]);
+    
 
   const loadPartyDataFromLocalStorage = () => {
     try {
@@ -801,7 +823,7 @@ const { navigateWithContext} = useContextualNavigation()
   const chatSteps = [
     {
       id: 'welcome',
-      snappyMessage: `You ready to get those Enquiries sent and make Theos day special?`,
+   snappyMessage: `Your party is going to be incredible! Let's get these enquiries sent so your suppliers can start planning something truly special for ${partyDetails.childName || 'your little one'}! ✨`,
       hideInput: true
     }, // Index 0 - Keep Snappy message
     {
@@ -909,6 +931,12 @@ const canProceed = () => {
     if (currentStep < chatSteps.length - 1) {
       setCurrentStep(currentStep + 1);
       
+      // ✅ Scroll to top smoothly
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
       // Show final CTA when we reach the complete step
       if (chatSteps[currentStep + 1].isComplete) {
         setTimeout(() => {
@@ -917,6 +945,30 @@ const canProceed = () => {
       }
     }
   };
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      
+      // ✅ Scroll to top smoothly
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
+  
+  const handleShowFinalCTA = () => {
+    setShowFinalCTA(true);
+    
+    // ✅ Scroll to top when showing final summary
+    setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }, 100); // Small delay to ensure content is rendered
+  };
+  
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({
@@ -936,34 +988,81 @@ const canProceed = () => {
   };
 
 
-// Add this function to handle adding suppliers from the missing suppliers step
-const handleAddMissingSupplier = async (supplier, supplierType) => {
-  try {
-    console.log('🔄 Adding missing supplier:', supplier.name, 'to', supplierType);
-    
-    // Use your existing party plan backend to add the supplier
-    const result = partyPlanBackend.addSupplierToPlan(supplier);
-    
-    if (result.success) {
-      console.log('✅ Successfully added missing supplier');
+  const handleAddMissingSupplier = async (supplier, supplierType) => {
+    try {
+      console.log('🔄 Adding missing supplier:', supplier.name, 'to', supplierType);
       
-      // Reload the party data to update the selectedSuppliers state
-      loadPartyDataFromLocalStorage();
+      const result = partyPlanBackend.addSupplierToPlan(supplier);
       
-      // Optional: Show a success message
-      // You could add a toast notification here if you have one
-      
-      return true;
-    } else {
-      console.error('❌ Failed to add supplier:', result.error);
+      if (result.success) {
+        console.log('✅ Successfully added missing supplier');
+        
+        // Reload the party data to update the selectedSuppliers state
+        loadPartyDataFromLocalStorage();
+        
+        // ✅ Mark that user has added something on this step
+        setHasAddedOnCurrentStep(true);
+        
+        // Optional: Show success message
+        if (toast) {
+          toast.success(`${supplier.name} added to your party!`);
+        }
+        
+        // Scroll to top after adding supplier
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }, 200);
+        
+        return true;
+      } else {
+        console.error('❌ Failed to add supplier:', result.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error adding missing supplier:', error);
       return false;
     }
-  } catch (error) {
-    console.error('❌ Error adding missing supplier:', error);
-    return false;
+  };
+  
+  const getButtonText = (stepData) => {
+    // For the missing suppliers step (step 4)
+    if (stepData.id === 'forgotten') {
+      if (hasAddedOnCurrentStep) {
+        return 'Continue ✨'; // User added something
+      } else {
+        return '⏭️ Skip this'; // User hasn't added anything
+      }
+    }
+    
+    // For other optional steps
+    if (stepData.optional) {
+      return '⏭️ Skip this';
+    }
+    
+    // For required steps
+    return 'Continue ✨';
+  };
+// 6. DYNAMIC BUTTON ICON FUNCTION
+const getButtonIcon = (stepData) => {
+  // For the missing suppliers step
+  if (stepData.id === 'forgotten') {
+    if (hasAddedOnCurrentStep) {
+      return <ArrowRight className="w-4 h-4 ml-2" />; // Show arrow when continuing
+    } else {
+      return null; // No icon when skipping
+    }
   }
-};
-
+  
+  // For other steps
+  if (!stepData.optional) {
+    return <ArrowRight className="w-4 h-4 ml-2" />;
+  }
+  
+  return null;
+};  
   // Form validation - now only check required fields since user is always signed in
   const isFormValid = formData.parentName && formData.email && selectedSuppliers.length > 0;
 
@@ -1032,7 +1131,7 @@ const handleAddMissingSupplier = async (supplier, supplierType) => {
         <CardContent className="p-6">
           <div className="mb-6">
             <div className="bg-primary-50 rounded-2xl rounded-tl-sm p-6 border border-[hsl(var(--primary-200))]">
-              <p className="text-gray-800 text-lg font-medium leading-relaxed">
+            <p className="text-gray-900 text-lg font-bold leading-relaxed">
                 {currentStepData.snappyMessage}
               </p>
               
@@ -1077,124 +1176,120 @@ const handleAddMissingSupplier = async (supplier, supplierType) => {
           {/* Form Content */}
           <div className="space-y-6 mb-8">
             
-            {/* Contact Fields */}
-            {currentStepData.showContactFields && (
-              <div className="space-y-4 max-w-lg mx-auto">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Your name *</label>
-                  <Input
-                    placeholder="Your full name"
-                    value={formData.parentName}
-                    onChange={(e) => updateFormData('parentName', e.target.value)}
-                    className="h-14 text-lg border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-xl"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">UK Mobile number *</label>
-                  <Input
-                    placeholder="07123 456789"
-                    value={formData.phoneNumber}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    className={`h-14 text-lg border-2 rounded-xl ${
-                      phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[hsl(var(--primary-500))]'
-                    }`}
-                  />
-                  {phoneError && (
-                    <p className="text-red-500 text-sm mt-1">{phoneError}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email address *</label>
-                  <Input
-                    placeholder="your.email@example.com"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateFormData('email', e.target.value)}
-                    className="h-14 text-lg border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-xl text-gray-900"
-                    disabled={!!user}
-                  />
-                  {user && (
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed as you're signed in</p>
-                  )}
-                </div>
-              </div>
-            )}
+          {currentStepData.showContactFields && (
+  <div className="space-y-4 max-w-lg mx-auto">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Your name *</label>
+      <Input
+        placeholder="Your full name"
+        value={formData.parentName}
+        onChange={(e) => updateFormData('parentName', e.target.value)}
+        className="h-12 text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg"
+        autoFocus
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">UK Mobile number *</label>
+      <Input
+        placeholder="07123 456789"
+        value={formData.phoneNumber}
+        onChange={(e) => handlePhoneChange(e.target.value)}
+        className={`h-12 text-base border-2 rounded-lg ${
+          phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[hsl(var(--primary-500))]'
+        }`}
+      />
+      {phoneError && (
+        <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+      )}
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Email address *</label>
+      <Input
+        placeholder="your.email@example.com"
+        type="email"
+        value={formData.email}
+        onChange={(e) => updateFormData('email', e.target.value)}
+        className="h-12 text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg text-gray-900"
+        disabled={!!user}
+      />
+      {user && (
+        <p className="text-xs text-gray-500 mt-1">Email cannot be changed as you're signed in</p>
+      )}
+    </div>
+  </div>
+)}
 
-            {/* Dietary Requirements */}
-            {currentStepData.showDietary && (
-              <div className="max-w-2xl mx-auto">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-800 text-center">Dietary Requirements</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { key: "vegetarian", label: "Vegetarian options needed", icon: "🥗" },
-                      { key: "vegan", label: "Vegan options needed", icon: "🌱" },
-                      { key: "glutenFree", label: "Gluten-free options needed", icon: "🌾" },
-                      { key: "nutAllergy", label: "Nut allergy considerations", icon: "🥜" }
-                    ].map((item) => (
-                      <div
-                        key={item.key}
-                        className="flex items-center space-x-3 p-4 bg-gradient-to-r from-gray-50 to-[hsl(var(--primary-50))] rounded-xl border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] transition-all duration-200 cursor-pointer"
-                        onClick={() => updateNestedFormData('dietaryRequirements', item.key, !formData.dietaryRequirements[item.key])}
-                      >
-                        <Checkbox
-                          checked={formData.dietaryRequirements[item.key]}
-                          className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] w-5 h-5"
-                        />
-                        <span className="text-xl">{item.icon}</span>
-                        <label className="text-sm font-medium cursor-pointer flex-1">
-                          {item.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="pt-4 border-t border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-3 text-center">Accessibility Needs</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {[
-                        { key: "wheelchairAccessible", label: "Wheelchair accessible venue needed", icon: "♿" },
-                        { key: "sensoryFriendly", label: "Sensory-friendly environment", icon: "🤫" }
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          className="flex items-center space-x-3 p-4 bg-gradient-to-r from-gray-50 to-[hsl(var(--primary-50))] rounded-xl border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] transition-all duration-200 cursor-pointer"
-                          onClick={() => updateNestedFormData('accessibilityRequirements', item.key, !formData.accessibilityRequirements[item.key])}
-                        >
-                          <Checkbox
-                            checked={formData.accessibilityRequirements[item.key]}
-                            className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] w-5 h-5"
-                          />
-                          <span className="text-xl">{item.icon}</span>
-                          <label className="text-sm font-medium cursor-pointer flex-1">
-                            {item.label}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* Message Textarea */}
-            {currentStepData.field === 'additionalMessage' && (
-              <div className="max-w-lg mx-auto">
-                <Textarea
-                  placeholder={currentStepData.placeholder}
-                  value={formData.additionalMessage}
-                  onChange={(e) => updateFormData('additionalMessage', e.target.value)}
-                  className="min-h-[120px] text-lg border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-xl p-4"
-                  autoFocus
-                />
-                <div className="text-center mt-3">
-                  <Badge className="bg-green-100 text-green-700 border border-green-300">
-                    💡 Completely optional - skip if you want!
-                  </Badge>
-                </div>
-              </div>
-            )}
+{currentStepData.showDietary && (
+  <div className="max-w-2xl mx-auto">
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold text-gray-800 text-center">Dietary Requirements</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          { key: "vegetarian", label: "Vegetarian options needed", icon: "🥗" },
+          { key: "vegan", label: "Vegan options needed", icon: "🌱" },
+          { key: "glutenFree", label: "Gluten-free options needed", icon: "🌾" },
+          { key: "nutAllergy", label: "Nut allergy considerations", icon: "🥜" }
+        ].map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center space-x-3 p-3 bg-gradient-to-r from-gray-50 to-[hsl(var(--primary-50))] rounded-lg border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] transition-all duration-200 cursor-pointer"
+            onClick={() => updateNestedFormData('dietaryRequirements', item.key, !formData.dietaryRequirements[item.key])}
+          >
+            <Checkbox
+              checked={formData.dietaryRequirements[item.key]}
+              className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] w-5 h-5"
+            />
+            <span className="text-lg">{item.icon}</span>
+            <label className="text-sm font-medium cursor-pointer flex-1">
+              {item.label}
+            </label>
+          </div>
+        ))}
+      </div>
+      
+      <div className="pt-4 border-t border-gray-200">
+        <h4 className="text-lg font-semibold text-gray-800 mb-3 text-center">Accessibility Needs</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { key: "wheelchairAccessible", label: "Wheelchair accessible venue needed", icon: "♿" },
+            { key: "sensoryFriendly", label: "Sensory-friendly environment", icon: "🤫" }
+          ].map((item) => (
+            <div
+              key={item.key}
+              className="flex items-center space-x-3 p-3 bg-gradient-to-r from-gray-50 to-[hsl(var(--primary-50))] rounded-lg border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] transition-all duration-200 cursor-pointer"
+              onClick={() => updateNestedFormData('accessibilityRequirements', item.key, !formData.accessibilityRequirements[item.key])}
+            >
+              <Checkbox
+                checked={formData.accessibilityRequirements[item.key]}
+                className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] w-5 h-5"
+              />
+              <span className="text-lg">{item.icon}</span>
+              <label className="text-sm font-medium cursor-pointer flex-1">
+                {item.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+
+{currentStepData.field === 'additionalMessage' && (
+  <div className="max-w-lg mx-auto">
+    <Textarea
+      placeholder={currentStepData.placeholder}
+      value={formData.additionalMessage}
+      onChange={(e) => updateFormData('additionalMessage', e.target.value)}
+      className="min-h-[100px] placeholder:text-gray-400 placeholder:text-xs text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-lg p-3"
+      autoFocus
+    />
+    
+  </div>
+)}
+
 
             {/* Missing Suppliers */}
             {currentStepData.showMissingSuppliers && (
@@ -1213,25 +1308,29 @@ const handleAddMissingSupplier = async (supplier, supplierType) => {
 
           {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-            {currentStep > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-3 rounded-xl font-semibold"
-              >
-                ← Back
-              </Button>
-            )}
-            
+          {currentStep > 0 && (
+  <Button
+    variant="outline"
+    onClick={handleBack} // ✅ Use new handler
+    className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-medium text-base"
+  >
+    ← Back
+  </Button>
+)}
+
             <div className={currentStep === 0 ? "w-full" : "ml-auto"}>
-              <Button
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-8 py-3 text-lg font-bold rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200"
-              >
-                {currentStepData.optional ? '⏭️ Skip this' : 'Continue ✨'}
-                {!currentStepData.optional && <ArrowRight className="w-5 h-5 ml-2" />}
-              </Button>
+            <Button
+    onClick={handleNext}
+    disabled={!canProceed()}
+    className={`bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-6 py-2.5 text-base font-semibold rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 ${
+      hasAddedOnCurrentStep && currentStepData.id === 'forgotten' 
+        ? 'bg-primary-500 hover:bg-[hsl(var(--primary-600))]' // Different color when user added something
+        : ''
+    }`}
+  >
+    {getButtonText(currentStepData)}
+    {getButtonIcon(currentStepData)}
+  </Button>
             </div>
           </div>
         </CardContent>
@@ -1244,7 +1343,7 @@ const handleAddMissingSupplier = async (supplier, supplierType) => {
   <div className="animate-in slide-in-from-bottom duration-500">
     <Card className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
       {/* Clean Header */}
-      <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] p-6 text-white">
+      <div className="bg-primary-500 p-6 text-white">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
             <span className="text-2xl">🎉</span>
@@ -1296,89 +1395,101 @@ const handleAddMissingSupplier = async (supplier, supplierType) => {
             </Badge>
           </div>
           
-          <div className="bg-gray-50 rounded-xl p-4 space-y-3 max-h-64 overflow-y-auto">
-            {selectedSuppliers.map(supplier => (
-              <div key={supplier.id} className="flex justify-between items-center bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                    <Image
-                      src={supplier.image || '/placeholder.svg'}
-                      alt={supplier.name}
-                      width={40}
-                      height={40}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-gray-900 truncate">{supplier.name}</div>
-                    <div className="text-sm text-gray-500">({supplier.category})</div>
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="font-bold text-[hsl(var(--primary-600))] text-lg">£{supplier.price || 0}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div className="mb-6">
 
-          {/* Add-ons Section */}
-          {selectedAddons.length > 0 && (
-            <div className="mt-4">
-              <h5 className="font-semibold text-gray-800 mb-2 text-sm">Add-ons & Extras:</h5>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                {selectedAddons.map(addon => (
-                  <div key={addon.id} className="flex justify-between items-center text-sm">
-                    <span className="text-gray-700">{addon.name}</span>
-                    <span className="font-semibold text-[hsl(var(--primary-600))]">£{addon.price || 0}</span>
-                  </div>
-                ))}
-              </div>
+  
+  <div className="bg-gray-50 rounded-lg p-2 space-y-1.5 max-h-48 overflow-y-auto">
+    {selectedSuppliers.map(supplier => (
+      <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100">
+        <div className="flex items-center space-x-2 min-w-0 flex-1">
+          <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+            <Image
+              src={supplier.image || '/placeholder.svg'}
+              alt={supplier.name}
+              width={24}
+              height={24}
+              className="object-cover w-full h-full"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-gray-900 truncate text-xs">
+              {supplier.name}
             </div>
-          )}
+            <div className="text-xs text-gray-500 truncate">({supplier.category})</div>
+          </div>
+        </div>
+        <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
+          £{supplier.price || 0}
+        </div>
+      </div>
+    ))}
+    
+    {/* Inline Add-ons */}
+    {selectedAddons.map(addon => (
+      <div key={addon.id} className="flex justify-between items-center bg-blue-50 rounded-md p-2 border border-blue-100">
+        <div className="flex items-center space-x-2">
+          <div className="w-6 h-6 rounded-md bg-blue-200 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs">+</span>
+          </div>
+          <span className="text-xs text-gray-700 truncate">{addon.name}</span>
+        </div>
+        <span className="font-bold text-blue-600 text-xs">£{addon.price || 0}</span>
+      </div>
+    ))}
+  </div>
+</div>
+
+     
         </div>
 
         {/* Total Cost */}
-        <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl p-4 mb-6 border border-[hsl(var(--primary-200))]">
+        <div className="bg-teal-200 rounded-xl p-4 mb-6 border border-teal-400">
           <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-[hsl(var(--primary-900))]">Total Party Cost:</span>
-            <span className="text-3xl font-black text-[hsl(var(--primary-600))]">£{grandTotal}</span>
+            <span className="text-lg font-bold text-gray-700">Total Party Cost:</span>
+            <span className="text-3xl font-black text-gray-900">£{grandTotal}</span>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex  gap-4 mb-4">
-          <Button
-            variant="outline"
-            onClick={() => setShowFinalCTA(false)}
-            className="flex-1 w-10 text-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-50 py-3 font-semibold rounded-xl"
-          >
-            ← Back
-          </Button>
-          
-          <Button
-            onClick={handleSubmitEnquiry}
-            disabled={isSubmitting}
-            className="flex-2 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white py-3 text-sm font-bold rounded-xl shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center">
-                <div className="w-5 h-5 mr-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Sending Enquiries...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <Send className="w-5 h-5 mr-2" />
-                Send to All {selectedSuppliers.length} Suppliers 🚀
-              </div>
-            )}
-          </Button>
-        </div>
-        
-        {/* Footer text */}
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-          <span>🔒</span>
-          <span>Free for parents • No booking fees • Suppliers respond within 24 hours</span>
-        </div>
+        <div className="space-y-3 mb-4">
+  {/* Main CTA Button */}
+  <Button
+    onClick={handleSubmitEnquiry}
+    disabled={isSubmitting}
+    className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white py-4 px-6 text-base font-bold rounded-xl shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border-0"
+  >
+    {isSubmitting ? (
+      <div className="flex items-center justify-center">
+        <div className="w-5 h-5 mr-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+        <span>Sending Enquiries...</span>
+      </div>
+    ) : (
+      <div className="flex items-center justify-center">
+        <Send className="w-5 h-5 mr-3" />
+        <span>Send to All {selectedSuppliers.length} Suppliers 🚀</span>
+      </div>
+    )}
+  </Button>
+
+  {/* Secondary Button */}
+  <Button
+    variant="ghost"
+    onClick={() => {
+      setShowFinalCTA(false);
+      setCurrentStep(4);
+      setInitialSupplierCount(selectedSuppliers.length);
+      setHasAddedOnCurrentStep(false);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }}
+    className="w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 py-2 px-4 font-medium rounded-lg transition-all duration-200 text-sm"
+  >
+    ← Back 
+  </Button>
+</div>
+
+
+
       </CardContent>
     </Card>
   </div>

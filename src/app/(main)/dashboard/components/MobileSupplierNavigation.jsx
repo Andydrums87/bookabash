@@ -187,6 +187,19 @@ export default function MobileSupplierNavigation({
     if (onSupplierTabChange) {
       onSupplierTabChange(supplierType.type)
     }
+
+    // Scroll to the supplier card content area
+    setTimeout(() => {
+      const contentElement = document.getElementById('mobile-supplier-content')
+      if (contentElement) {
+        const offset = 140 // Account for sticky navigation
+        const elementPosition = contentElement.getBoundingClientRect().top + window.pageYOffset
+        window.scrollTo({
+          top: elementPosition - offset,
+          behavior: 'smooth'
+        })
+      }
+    }, 100) // Small delay to ensure tab change has processed
   }
 
   // ✅ FIXED: Simple addon handling without context
@@ -309,7 +322,7 @@ export default function MobileSupplierNavigation({
                           </div>
                           
                           {isActive && (
-                            <div className="absolute inset-0 rounded-full border-5 border-teal-500 shadow-lg"></div> 
+                            <div className="absolute inset-0 rounded-full border-4 border-teal-500 shadow-lg"></div> 
                           )}
                           
                           {hasContent && (
@@ -404,7 +417,7 @@ export default function MobileSupplierNavigation({
       </div>
 
       {/* ✅ NEW: Single Supplier Card Content */}
-      <div className="px-4">
+      <div className="px-4" id="mobile-supplier-content">
         {activeSupplierTypeData?.isAddonSection ? (
           // Show Add-ons Section
           <div>

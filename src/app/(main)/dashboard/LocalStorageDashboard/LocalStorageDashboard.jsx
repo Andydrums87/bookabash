@@ -328,109 +328,180 @@ export default function LocalStorageDashboard() {
     }
   }, [welcomeJustCompleted, showWelcomePopup, isMounted])
 
-  useEffect(() => {
-    if (!isMounted || !isClient) return
-  
-    const handleScrollToSupplier = () => {
-      try {
-        // Check URL parameters for scroll hints
-        const scrollToSupplier = searchParams.get('scrollTo')
-        const lastAction = searchParams.get('action') 
-        const fromPage = searchParams.get('from')
-        const source = searchParams.get('source')
-        
-        console.log('📍 Scroll management check:', { 
-          scrollToSupplier, 
-          lastAction, 
-          fromPage, 
-          source,
-          showWelcomePopup
-        })
-  
-        // Don't scroll if welcome popup is showing
-        if (showWelcomePopup) {
-          console.log('⏸️ Welcome popup is showing, delaying scroll')
-          return
-        }
-  
-        if (scrollToSupplier && lastAction === 'supplier-added') {
-          // For mobile: Switch to the correct tab instead of scrolling
-          console.log(`🎯 Setting active mobile tab to: ${scrollToSupplier}`)
-          setActiveMobileSupplierType(scrollToSupplier)
-          
-          // For desktop: Still scroll to the element
-          const scrollDelay = source === 'a_la_carte' ? 1000 : 500
-          
-          setTimeout(() => {
-            const element = document.getElementById(`supplier-${scrollToSupplier}`)
-            if (element) {
-              element.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'nearest'
-              })
-              console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
-            } else {
-              console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
-              // For mobile, the tab switch is enough
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }
-          }, scrollDelay)
-  
-          // Clean up URL parameters after handling
-          setTimeout(() => {
-            const newSearchParams = new URLSearchParams(searchParams.toString())
-            newSearchParams.delete('scrollTo')
-            newSearchParams.delete('action')
-            if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
-            
-            const newURL = newSearchParams.toString() ? 
-              `/dashboard?${newSearchParams.toString()}` : 
-              '/dashboard'
-            
-            router.replace(newURL, { scroll: false })
-          }, scrollDelay + 1000)
-          
-        } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
-          // Coming back from supplier pages without adding - go to top
-          console.log('📍 Returning from supplier page without adding - scrolling to top')
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-        
-      } catch (error) {
-        console.error('❌ Smart scroll error:', error)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-    }
-  
-    const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
-    return () => clearTimeout(scrollTimeout)
-  }, [isMounted, isClient, searchParams, router, showWelcomePopup])
-  
-  
-  // ✅ ADDITIONAL: Handle scroll after welcome popup closes
-  useEffect(() => {
-    if (!showWelcomePopup && isMounted && isClient) {
-      // Check if we have pending scroll parameters
+// 2. UNIFIED: Single scroll management effect
+useEffect(() => {
+  if (!isMounted || !isClient) return
+
+  const handleScrollToSupplier = () => {
+    try {
+      // Check URL parameters for scroll hints
       const scrollToSupplier = searchParams.get('scrollTo')
-      const lastAction = searchParams.get('action')
+      const lastAction = searchParams.get('action') 
+      const fromPage = searchParams.get('from')
+      const source = searchParams.get('source')
       
+      console.log('📍 Unified scroll management check:', { 
+        scrollToSupplier, 
+        lastAction, 
+        fromPage, 
+        source,
+        showWelcomePopup,
+        activeMobileSupplierType
+      })
+
+      // ✅ ALWAYS ensure scroll is unlocked first
+      const unlockScroll = () => {
+        document.body.style.overflow = 'unset'
+        document.documentElement.style.overflow = 'unset'
+        document.body.classList.remove('modal-open', 'overflow-hidden')
+        document.documentElement.classList.remove('modal-open', 'overflow-hidden')
+      }
+      
+      unlockScroll() // Immediate unlock
+
+      // Handle welcome popup scenario
+      if (showWelcomePopup) {
+        console.log('⏸️ Welcome popup is showing, scroll will be handled after close')
+        return
+      }
+
       if (scrollToSupplier && lastAction === 'supplier-added') {
-        console.log('🎉 Welcome popup closed, now scrolling to added supplier:', scrollToSupplier)
+        console.log(`🎯 Supplier added - handling navigation to: ${scrollToSupplier}`)
+        
+        // ✅ MOBILE: Switch to the correct tab
+        setActiveMobileSupplierType(scrollToSupplier)
+        
+        // ✅ UNIFIED: Handle both desktop and mobile scrolling
+        const scrollDelay = source === 'a_la_carte' ? 1000 : 500
         
         setTimeout(() => {
-          const element = document.getElementById(`supplier-${scrollToSupplier}`)
-          if (element) {
-            element.scrollIntoView({ 
+          // Ensure scroll is still unlocked
+          unlockScroll()
+          
+          // Try desktop scroll first
+          const desktopElement = document.getElementById(`supplier-${scrollToSupplier}`)
+          if (desktopElement && window.innerWidth >= 768) {
+            console.log(`🖥️ Desktop: Scrolling to supplier-${scrollToSupplier}`)
+            desktopElement.scrollIntoView({ 
               behavior: 'smooth',
               block: 'center',
               inline: 'nearest'
             })
+          } else {
+            // Mobile: Scroll to mobile content area
+            const mobileContent = document.getElementById('mobile-supplier-content')
+            if (mobileContent) {
+              console.log(`📱 Mobile: Scrolling to mobile content area`)
+              mobileContent.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start',
+                inline: 'nearest'
+              })
+            } else {
+              console.log(`📱 Mobile: Content area not found, scrolling to top`)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
           }
-        }, 500)
+        }, scrollDelay)
+
+        // Clean up URL parameters
+        setTimeout(() => {
+          const newSearchParams = new URLSearchParams(searchParams.toString())
+          newSearchParams.delete('scrollTo')
+          newSearchParams.delete('action')
+          if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
+          
+          const newURL = newSearchParams.toString() ? 
+            `/dashboard?${newSearchParams.toString()}` : 
+            '/dashboard'
+          
+          router.replace(newURL, { scroll: false })
+        }, scrollDelay + 1000)
+        
+      } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
+        // Coming back from supplier pages without adding
+        console.log('📍 Returning from supplier page without adding - scrolling to top')
+        setTimeout(() => {
+          unlockScroll()
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }, 100)
+      } else {
+        // General case - just ensure scroll is unlocked
+        setTimeout(unlockScroll, 100)
       }
+      
+    } catch (error) {
+      console.error('❌ Unified scroll error:', error)
+      // Emergency scroll unlock and top scroll
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [showWelcomePopup, isMounted, isClient, searchParams])
+  }
+
+  const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
+  return () => clearTimeout(scrollTimeout)
+}, [isMounted, isClient, searchParams, router, showWelcomePopup, activeMobileSupplierType])
+
+// 3. ✅ WELCOME POPUP: Handle scroll after welcome popup closes
+useEffect(() => {
+  if (!showWelcomePopup && isMounted && isClient) {
+    const scrollToSupplier = searchParams.get('scrollTo')
+    const lastAction = searchParams.get('action')
+    
+    if (scrollToSupplier && lastAction === 'supplier-added') {
+      console.log('🎉 Welcome popup closed, handling delayed scroll to:', scrollToSupplier)
+      
+      // Update mobile tab
+      setActiveMobileSupplierType(scrollToSupplier)
+      
+      setTimeout(() => {
+        // Ensure scroll is unlocked
+        document.body.style.overflow = 'unset'
+        document.documentElement.style.overflow = 'unset'
+        
+        // Try scrolling to the element
+        const desktopElement = document.getElementById(`supplier-${scrollToSupplier}`)
+        const mobileContent = document.getElementById('mobile-supplier-content')
+        
+        if (desktopElement && window.innerWidth >= 768) {
+          desktopElement.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          })
+        } else if (mobileContent) {
+          mobileContent.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+          })
+        }
+      }, 500)
+    }
+  }
+}, [showWelcomePopup, isMounted, isClient, searchParams])
+
+// 4. ✅ SAFETY NET: Global scroll unlock effect
+useEffect(() => {
+  const unlockScroll = () => {
+    document.body.style.overflow = 'unset'
+    document.documentElement.style.overflow = 'unset'
+    document.body.classList.remove('modal-open', 'overflow-hidden')
+    document.documentElement.classList.remove('modal-open', 'overflow-hidden')
+  }
+  
+  // Run immediately when modals change
+  unlockScroll()
+  
+  // Run again after a short delay as safety net
+  const timeoutId = setTimeout(unlockScroll, 100)
+  
+  return () => {
+    clearTimeout(timeoutId)
+    unlockScroll() // Cleanup on unmount
+  }
+}, [showSupplierModal, showWelcomePopup, isAddonModalOpen])
 
   // ✅ ENHANCED: Name submit handler with completion flags
   const handleNameSubmit = (nameData) => {
@@ -506,9 +577,27 @@ export default function LocalStorageDashboard() {
   }
 
   const closeSupplierModal = () => {
-    console.log('🔒 Closing supplier modal')
+    console.log('🔒 Closing supplier modal with cleanup')
     setShowSupplierModal(false)
     clearModalState()
+    
+    // ✅ Comprehensive scroll unlock
+    setTimeout(() => {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      
+      // Remove any modal-related classes
+      const classesToRemove = ['modal-open', 'overflow-hidden', 'no-scroll']
+      classesToRemove.forEach(className => {
+        document.body.classList.remove(className)
+        document.documentElement.classList.remove(className)
+      })
+      
+      // Force a style recalculation
+      document.body.offsetHeight
+      
+      console.log('✅ Scroll cleanup completed')
+    }, 50)
   }
 
   const handleSupplierSelection = async (supplierData) => {
@@ -533,7 +622,45 @@ export default function LocalStorageDashboard() {
           }
         }
         
+        // ✅ Map supplier category to mobile tab type
+        const supplierTypeMapping = {
+          'Venues': 'venue',
+          'Entertainment': 'entertainment', 
+          'Catering': 'catering',
+          'Cakes': 'cakes',
+          'Face Painting': 'facePainting',
+          'Activities': 'activities',
+          'Decorations': 'decorations',
+          'Photography': 'photography',
+          'Party Bags': 'partyBags',
+          'Bouncy Castle': 'bouncyCastle'
+        }
+        
+        const supplierType = supplierTypeMapping[supplier.category] || 'venue'
+        console.log('🎯 Setting mobile tab to:', supplierType)
+        setActiveMobileSupplierType(supplierType)
+        
         closeSupplierModal()
+        
+        // ✅ Force scroll unlock and smooth scroll to content
+        setTimeout(() => {
+          // Multi-level scroll unlock
+          document.body.style.overflow = 'unset'
+          document.documentElement.style.overflow = 'unset'
+          document.body.classList.remove('modal-open', 'overflow-hidden')
+          document.documentElement.classList.remove('modal-open', 'overflow-hidden')
+          
+          // Scroll to mobile content area for immediate feedback
+          const mobileContent = document.getElementById('mobile-supplier-content')
+          if (mobileContent && window.innerWidth < 768) {
+            mobileContent.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start',
+              inline: 'nearest'
+            })
+          }
+        }, 150)
+        
       } else {
         console.error('❌ Failed to add supplier:', result.error)
       }
@@ -542,6 +669,7 @@ export default function LocalStorageDashboard() {
       console.error('💥 Error in handleSupplierSelection:', error)
     }
   }
+  
 
   // Modal restoration effects
   useEffect(() => {
@@ -723,8 +851,14 @@ export default function LocalStorageDashboard() {
   const handleMobileSupplierTabChange = (supplierType) => {
     console.log('🔄 Mobile tab changed to:', supplierType)
     setActiveMobileSupplierType(supplierType)
+    
+    // Always ensure scroll is unlocked when changing tabs
+    setTimeout(() => {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      document.body.classList.remove('modal-open', 'overflow-hidden')
+    }, 50)
   }
-  
   // ✅ PRODUCTION SAFETY: Don't render until mounted and data loaded
   if (!isMounted || !themeLoaded || planLoading) {
     return (

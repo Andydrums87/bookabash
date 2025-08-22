@@ -22,7 +22,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
   const dashboardItems = [
     { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
     { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
-    { href: "/gift-registry", label: "Gift Registry", icon: Gift, description: "Gift wishlists" },
+    { href: "/gift-registry/manage", label: "Gift Registry", icon: Gift, description: "Gift wishlists" },
     { href: "/rsvps", label: "RSVP Management", icon: Users, description: "Track responses" },
   ]
 
