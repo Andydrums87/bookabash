@@ -29,6 +29,8 @@ export default function EnquiryOverviewSection() {
     }
   }
   const { supplier, supplierData, loading, error, currentBusiness } = useSupplier()
+
+
   
   // Force re-render when business changes
   const [forceRefresh, setForceRefresh] = useState(0)
@@ -49,6 +51,8 @@ export default function EnquiryOverviewSection() {
   
   // Use the existing hook with current business ID
   const { enquiries, loading: enquiriesLoading, error: enquiriesError } = useSupplierEnquiries(null, businessIdToUse, forceRefresh)
+  // ✅ ADD: Debug the raw enquiries from the hook
+
   const { leads, errors, summary } = useRobustEnquiryData(enquiries)
 
 
@@ -164,159 +168,255 @@ export default function EnquiryOverviewSection() {
                     <th className="text-left p-4 font-medium text-muted-foreground text-sm">Action</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {leads.map((lead) => (
-                    <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50">
-<td className="p-4 font-medium">
-  <div className="flex flex-col gap-1">
-    <div className="flex items-center gap-2">
-      {lead.service}
-      {!lead.processed && (
-        <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
-      )}
-    </div>
+         
+<tbody>
+  {leads.map((lead) => {
+
+    // ✅ NEW: Check if this is an auto-accepted deposit-paid enquiry
+    const isAutoAccepted = lead.auto_accepted || false
+    const isDepositPaid = isAutoAccepted && lead.status === 'accepted'
     
-    {/* Show package name if available */}
-    {lead.package_id && (
-      <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-        📦 Package: {lead.package_name || lead.package_id}
-      </div>
-    )}
-    
-    {(() => {
-  const addons = parseAddonDetails(lead.addon_details)
-  return addons.length > 0 && (
-    <div className="space-y-1">
-      <div className="flex items-center gap-1">
-        <Gift className="w-3 h-3 text-amber-500" />
-        <span className="text-xs text-amber-600 font-medium">
-          {addons.length} Add-on{addons.length !== 1 ? 's' : ''}:
-        </span>
-      </div>
-      <div className="pl-4 space-y-0.5">
-        {addons.slice(0, 2).map((addon, index) => (
-          <div key={addon.id || index} className="text-xs text-gray-600">
-            • {addon.name} (£{addon.price})
-            {addon.description && (
-              <span className="text-gray-400 ml-1">- {addon.description}</span>
+    return (
+      <tr 
+        key={lead.id} 
+        className={`border-b border-gray-100 hover:bg-gray-50 ${
+          isDepositPaid ? 'bg-red-50 border-red-200' : ''
+        }`}
+      >
+        <td className="p-4 font-medium">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              {/* ✅ NEW: Show urgent indicator */}
+              {isDepositPaid && (
+                <span className="text-red-600 font-bold">🚨</span>
+              )}
+              {lead.service}
+              {!lead.processed && (
+                <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
+              )}
+            </div>
+            
+            {/* ✅ NEW: Show deposit paid indicator */}
+            {isDepositPaid && (
+              <div className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded font-medium">
+                🚨 DEPOSIT PAID - URGENT RESPONSE NEEDED
+              </div>
+            )}
+            
+            {/* Show package name if available */}
+            {lead.package_id && (
+              <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                📦 Package: {lead.package_name || lead.package_id}
+              </div>
+            )}
+            
+            {/* Existing addon logic */}
+            {(() => {
+              const addons = parseAddonDetails(lead.addon_details)
+              return addons.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Gift className="w-3 h-3 text-amber-500" />
+                    <span className="text-xs text-amber-600 font-medium">
+                      {addons.length} Add-on{addons.length !== 1 ? 's' : ''}:
+                    </span>
+                  </div>
+                  <div className="pl-4 space-y-0.5">
+                    {addons.slice(0, 2).map((addon, index) => (
+                      <div key={addon.id || index} className="text-xs text-gray-600">
+                        • {addon.name} (£{addon.price})
+                        {addon.description && (
+                          <span className="text-gray-400 ml-1">- {addon.description}</span>
+                        )}
+                      </div>
+                    ))}
+                    {addons.length > 2 && (
+                      <div className="text-xs text-gray-500">
+                        ... and {addons.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-amber-600 font-medium">
+                    Total: £{addons.reduce((sum, addon) => sum + (addon.price || 0), 0)}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </td>
+        <td className="p-4 text-muted-foreground">{lead.lead}</td>
+        <td className="p-4 text-muted-foreground">{lead.date}</td>
+        <td className="p-4">
+          {/* ✅ NEW: Special status for deposit paid */}
+          {isDepositPaid ? (
+            <Badge className="bg-red-100 text-red-700 border-red-200 animate-pulse">
+              <span className="mr-1">🚨</span>
+              URGENT
+            </Badge>
+          ) : (
+            <Badge
+              variant={lead.status === "Replied" ? "default" : "secondary"}
+              className={`${
+                lead.status === "Replied"
+                  ? "bg-green-100 text-green-700 border-green-200"
+                  : "bg-orange-50 text-orange-600 border-orange-100"
+              }`}
+            >
+              {lead.status}
+            </Badge>
+          )}
+        </td>
+        <td className="p-4">
+          <div className="flex gap-2">
+            {/* ✅ NEW: Different buttons for urgent enquiries */}
+            {isDepositPaid ? (
+              <Link href={`/suppliers/enquiries/${lead.id}`}>
+                <Button
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                >
+                  🚨 RESPOND NOW
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </Button>
+                <Link href={`/suppliers/enquiries/${lead.id}`}>
+                  <Button
+                    size="sm"
+                    className="bg-primary-500 hover:bg-[hsl(var(--primary-700))] rounded-full text-xs text-white"
+                  >
+                    View enquiry
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
-        ))}
-        {addons.length > 2 && (
-          <div className="text-xs text-gray-500">
-            ... and {addons.length - 2} more
-          </div>
-        )}
-      </div>
-      <div className="text-xs text-amber-600 font-medium">
-        Total: £{addons.reduce((sum, addon) => sum + (addon.price || 0), 0)}
-      </div>
-    </div>
-  )
-})()}
-  </div>
-</td>
-                      <td className="p-4 text-muted-foreground">{lead.lead}</td>
-                      <td className="p-4 text-muted-foreground">{lead.date}</td>
-                      <td className="p-4">
-                        <Badge
-                          variant={lead.status === "Replied" ? "default" : "secondary"}
-                          className={`${
-                            lead.status === "Replied"
-                              ? "bg-green-100 text-green-700 border-green-200"
-                              : "bg-orange-50 text-orange-600 border-orange-100"
-                          }`}
-                        >
-                          {lead.status}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            Cancel
-                          </Button>
-                          <Link href={`/suppliers/enquiries/${lead.id}`}>
-                            <Button
-                              size="sm"
-                              className="bg-primary-500 hover:bg-[hsl(var(--primary-700))] rounded-full text-xs text-white"
-                            >
-                              View enquiry
-                            </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+        </td>
+      </tr>
+    )
+  })}
+</tbody>
               </table>
             </div>
           </div>
 
           {/* Mobile Card View */}
-          <div className="lg:hidden">
-            <div className="divide-y divide-gray-100">
-              {leads.map((lead) => (
-                <div key={lead.id} className="p-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                    <div className="space-y-1">
-                    <div className="space-y-1">
-  <h3 className="font-medium text-sm flex items-center gap-2">
-    {lead.service}
-    {!lead.processed && (
-      <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
-    )}
-  </h3>
-  {lead.addon_details && JSON.parse(lead.addon_details || '[]').length > 0 && (
-    <div className="flex items-center gap-1">
-      <Gift className="w-3 h-3 text-amber-500" />
-      <span className="text-xs text-amber-600 font-medium">
-        +{JSON.parse(lead.addon_details).length} add-on{JSON.parse(lead.addon_details).length !== 1 ? 's' : ''}
-      </span>
-      <span className="text-xs text-gray-500">
-        (£{JSON.parse(lead.addon_details).reduce((sum, addon) => sum + (addon.price || 0), 0)})
-      </span>
-    </div>
-  )}
-</div>
-                      <p className="text-sm text-muted-foreground">{lead.lead}</p>
-                      <p className="text-xs text-muted-foreground">{lead.date}</p>
-                    </div>
-                    <Badge
-                      variant={lead.status === "Replied" ? "default" : "secondary"}
-                      className={`w-fit ${
-                        lead.status === "Replied"
-                          ? "bg-green-100 text-green-700 border-green-200"
-                          : "bg-orange-50 text-orange-600 border-orange-100"
-                      }`}
-                    >
-                      {lead.status}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full sm:w-auto text-muted-foreground hover:text-foreground"
-                    >
-                      Cancel
-                    </Button>
-                    <Link href={`/suppliers/enquiries/${lead.id}`} className="w-full sm:w-auto">
-                      <Button
-                        size="sm"
-                        className="w-full sm:w-auto bg-primary-500 hover:bg-[hsl(var(--primary-700))] rounded-full text-xs text-white"
-                      >
-                        View enquiry
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
+          // In EnquiryOverviewSection.jsx - UPDATE the mobile card view
+<div className="lg:hidden">
+  <div className="divide-y divide-gray-100">
+    {leads.map((lead) => {
+      // ✅ NEW: Check if this is an auto-accepted deposit-paid enquiry
+      const isAutoAccepted = lead.auto_accepted || false
+      const isDepositPaid = isAutoAccepted && lead.status === 'accepted'
+      
+      return (
+        <div 
+          key={lead.id} 
+          className={`p-4 space-y-3 ${
+            isDepositPaid ? 'bg-red-50 border-l-4 border-red-500' : ''
+          }`}
+        >
+          {/* ✅ NEW: Urgent header for deposit paid */}
+          {isDepositPaid && (
+            <div className="bg-red-100 border border-red-200 rounded-lg p-2 mb-3">
+              <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
+                <span className="animate-pulse">🚨</span>
+                DEPOSIT PAID - URGENT RESPONSE NEEDED
+              </div>
             </div>
+          )}
+          
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+            <div className="space-y-1">
+              <div className="space-y-1">
+                <h3 className="font-medium text-sm flex items-center gap-2">
+                  {isDepositPaid && (
+                    <span className="text-red-600 font-bold">🚨</span>
+                  )}
+                  {lead.service}
+                  {!lead.processed && (
+                    <AlertTriangle className="w-4 h-4 text-yellow-500" title="Data quality issue" />
+                  )}
+                </h3>
+                {lead.addon_details && JSON.parse(lead.addon_details || '[]').length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Gift className="w-3 h-3 text-amber-500" />
+                    <span className="text-xs text-amber-600 font-medium">
+                      +{JSON.parse(lead.addon_details).length} add-on{JSON.parse(lead.addon_details).length !== 1 ? 's' : ''}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      (£{JSON.parse(lead.addon_details).reduce((sum, addon) => sum + (addon.price || 0), 0)})
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{lead.lead}</p>
+              <p className="text-xs text-muted-foreground">{lead.date}</p>
+            </div>
+            
+            {/* ✅ NEW: Special status badge for mobile */}
+            {isDepositPaid ? (
+              <Badge className="bg-red-100 text-red-700 border-red-200 animate-pulse w-fit">
+                <span className="mr-1">🚨</span>
+                URGENT
+              </Badge>
+            ) : (
+              <Badge
+                variant={lead.status === "Replied" ? "default" : "secondary"}
+                className={`w-fit ${
+                  lead.status === "Replied"
+                    ? "bg-green-100 text-green-700 border-green-200"
+                    : "bg-orange-50 text-orange-600 border-orange-100"
+                }`}
+              >
+                {lead.status}
+              </Badge>
+            )}
           </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* ✅ NEW: Different mobile buttons for urgent */}
+            {isDepositPaid ? (
+              <Link href={`/suppliers/enquiries/${lead.id}`} className="w-full">
+                <Button
+                  size="sm"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                >
+                  🚨 RESPOND NOW
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full sm:w-auto text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </Button>
+                <Link href={`/suppliers/enquiries/${lead.id}`} className="w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    className="w-full sm:w-auto bg-primary-500 hover:bg-[hsl(var(--primary-700))] rounded-full text-xs text-white"
+                  >
+                    View enquiry
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )
+    })}
+  </div>
+</div>
 
           {/* Empty State */}
           {leads.length === 0 && summary.total === 0 && (

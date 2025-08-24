@@ -84,143 +84,181 @@ export default function SupplierEnquiriesPage() {
     return icons[status] || icons.pending
   }
 
-  const EnquiryCard = ({ enquiry }) => {
-    const party = enquiry.parties
-    const customer = party?.users
+// In your supplier enquiries page - UPDATED EnquiryCard component
+const EnquiryCard = ({ enquiry }) => {
+  const party = enquiry.parties
+  const customer = party?.users
+  const isAutoAccepted = enquiry?.auto_accepted || false
+  const isDepositPaid = isAutoAccepted && enquiry?.status === 'accepted'
 
-    return (
-      <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {party?.child_name}'s {party?.theme} Party
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {customer?.first_name} {customer?.last_name}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+  return (
+    <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {party?.child_name}'s {party?.theme} Party
+              </h3>
+              <p className="text-sm text-gray-600">
+                {customer?.first_name} {customer?.last_name}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* ✅ UPDATED: Show urgent status for auto-accepted */}
+              {isDepositPaid ? (
+                <Badge className="bg-red-100 text-red-800 border-red-200">
+                  <span className="text-red-600 font-bold mr-1">🚨</span>
+                  DEPOSIT PAID - URGENT
+                </Badge>
+              ) : (
                 <Badge className={getStatusColor(enquiry.status)}>
                   {getStatusIcon(enquiry.status)}
                   <span className="ml-1 capitalize">{enquiry.status}</span>
                 </Badge>
-                {enquiry.status === 'pending' && (
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                )}
-              </div>
-            </div>
-
-            {/* Party Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 text-sm">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <span>{formatDate(party?.party_date)}</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span>{formatTime(party?.party_time)}</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  <span>{party?.guest_count} children (Age {party?.child_age})</span>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 text-sm">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  <span>{party?.location}</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm">
-                  <Mail className="w-4 h-4 text-gray-500" />
-                  <span>{customer?.email}</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm">
-                  <Phone className="w-4 h-4 text-gray-500" />
-                  <span>{customer?.phone || 'Not provided'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Service Details */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-gray-900">Service Requested</h4>
-                <span className="text-lg font-bold text-primary-600">
-                  £{enquiry.quoted_price}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span className="capitalize">{enquiry.supplier_category}</span>
-                {enquiry.package_id && (
-                  <span className="flex items-center gap-1">
-                    <Package className="w-4 h-4" />
-                    Package Selected
-                  </span>
-                )}
-                {enquiry.addon_ids && enquiry.addon_ids.length > 0 && (
-                  <span className="flex items-center gap-1">
-                    <Gift className="w-4 h-4" />
-                    {enquiry.addon_ids.length} Add-ons
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Message Preview */}
-            {enquiry.message && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <MessageSquare className="w-4 h-4 inline mr-2" />
-                  "{enquiry.message.substring(0, 100)}
-                  {enquiry.message.length > 100 ? '...' : ''}"
-                </p>
-              </div>
-            )}
-
-            {/* Response Section */}
-            {enquiry.supplier_response && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <h5 className="font-medium text-green-900 mb-1">Your Response:</h5>
-                <p className="text-sm text-green-800">{enquiry.supplier_response}</p>
-                {enquiry.final_price && (
-                  <p className="text-sm text-green-800 mt-1">
-                    <strong>Final Price: £{enquiry.final_price}</strong>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100">
-              <Button 
-                asChild 
-                className="bg-primary-500 hover:bg-primary-600 text-white"
-              >
-                <Link href={`/suppliers/enquiries/${enquiry.id}`}>
-                  View Full Details & Respond
-                </Link>
-              </Button>
-              
-              {enquiry.status === 'pending' && (
-                <Badge className="bg-yellow-100 text-yellow-800 self-start sm:self-center">
-                  Awaiting Your Response
-                </Badge>
               )}
               
-              <div className="text-xs text-gray-500 self-end sm:self-center sm:ml-auto">
-                Received {new Date(enquiry.created_at).toLocaleDateString()}
+              {/* Pulsing dot for urgent enquiries */}
+              {isDepositPaid && (
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              )}
+              {enquiry.status === 'pending' && !isDepositPaid && (
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              )}
+            </div>
+          </div>
+
+          {/* ✅ NEW: Special alert for auto-accepted enquiries */}
+          {isDepositPaid && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-800 font-medium">
+                🚨 PRIORITY: Customer paid £{Math.round(enquiry.quoted_price * 0.2)} deposit. 
+                Confirm availability within 2 hours or PartySnap will find replacement.
+              </p>
+            </div>
+          )}
+
+          {/* Party Details - existing code unchanged */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3 text-sm">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span>{formatDate(party?.party_date)}</span>
+              </div>
+              <div className="flex items-center space-x-3 text-sm">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <span>{formatTime(party?.party_time)}</span>
+              </div>
+              <div className="flex items-center space-x-3 text-sm">
+                <Users className="w-4 h-4 text-gray-500" />
+                <span>{party?.guest_count} children (Age {party?.child_age})</span>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3 text-sm">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                <span>{party?.location}</span>
+              </div>
+              <div className="flex items-center space-x-3 text-sm">
+                <Mail className="w-4 h-4 text-gray-500" />
+                <span>{customer?.email}</span>
+              </div>
+              <div className="flex items-center space-x-3 text-sm">
+                <Phone className="w-4 h-4 text-gray-500" />
+                <span>{customer?.phone || 'Not provided'}</span>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
+
+          {/* Service Details - existing code unchanged */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-gray-900">Service Requested</h4>
+              <span className="text-lg font-bold text-primary-600">
+                £{enquiry.quoted_price}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span className="capitalize">{enquiry.supplier_category}</span>
+              {enquiry.package_id && (
+                <span className="flex items-center gap-1">
+                  <Package className="w-4 h-4" />
+                  Package Selected
+                </span>
+              )}
+              {enquiry.addon_ids && enquiry.addon_ids.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <Gift className="w-4 h-4" />
+                  {enquiry.addon_ids.length} Add-ons
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Message Preview - existing code unchanged */}
+          {enquiry.message && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <MessageSquare className="w-4 h-4 inline mr-2" />
+                "{enquiry.message.substring(0, 100)}
+                {enquiry.message.length > 100 ? '...' : ''}"
+              </p>
+            </div>
+          )}
+
+          {/* Response Section - existing code unchanged */}
+          {enquiry.supplier_response && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <h5 className="font-medium text-green-900 mb-1">Your Response:</h5>
+              <p className="text-sm text-green-800">{enquiry.supplier_response}</p>
+              {enquiry.final_price && (
+                <p className="text-sm text-green-800 mt-1">
+                  <strong>Final Price: £{enquiry.final_price}</strong>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ✅ UPDATED: Actions with urgent styling */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100">
+            <Button 
+              asChild 
+              className={isDepositPaid 
+                ? "bg-red-600 hover:bg-red-700 text-white" 
+                : "bg-primary-500 hover:bg-primary-600 text-white"
+              }
+            >
+              <Link href={`/suppliers/enquiries/${enquiry.id}`}>
+                {/* ✅ UPDATED: Different button text for deposit-paid */}
+                {isDepositPaid 
+                  ? '🚨 URGENT: Confirm or Decline' 
+                  : 'View Full Details & Respond'
+                }
+              </Link>
+            </Button>
+            
+            {/* ✅ UPDATED: Different badge for deposit-paid */}
+            {isDepositPaid ? (
+              <Badge className="bg-red-100 text-red-800 self-start sm:self-center">
+                DEPOSIT PAID - RESPOND NOW
+              </Badge>
+            ) : enquiry.status === 'pending' ? (
+              <Badge className="bg-yellow-100 text-yellow-800 self-start sm:self-center">
+                Awaiting Your Response
+              </Badge>
+            ) : null}
+            
+            <div className="text-xs text-gray-500 self-end sm:self-center sm:ml-auto">
+              Received {new Date(enquiry.created_at).toLocaleDateString()}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
   if (loading) {
     return (

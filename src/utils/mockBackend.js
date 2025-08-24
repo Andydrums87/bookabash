@@ -1115,7 +1115,7 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       addOnServicesCount: merged.serviceDetails?.addOnServices?.length || 0
     })
 
-    // Save to database
+    // Save to database (PRIMARY BUSINESS)
     const { data: updated, error: updateError } = await supabase
       .from('suppliers')
       .update({ data: merged })
@@ -1128,12 +1128,81 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       throw updateError
     }
 
-    console.log("✅ Supplier updated successfully:", {
+    console.log("✅ Primary business updated successfully:", {
       id: updated.id,
       packagesCount: updated.data?.packages?.length || 0,
       isComplete: updated.data?.isComplete,
       addOnServicesCount: updated.data?.serviceDetails?.addOnServices?.length || 0
     })
+
+    // 🚨 CRITICAL FIX: Update all themed businesses if this is a primary business
+    if (row.is_primary) {
+      console.log('🔄 INHERITANCE: This is a primary business, updating themed businesses')
+      
+      try {
+        // Find all themed businesses that belong to this primary business
+        const { data: themedBusinesses, error: themedError } = await supabase
+          .from('suppliers')
+          .select('*')
+          .eq('parent_business_id', supplierId)
+          .eq('is_primary', false)
+
+        if (themedError) {
+          console.error('⚠️ INHERITANCE: Error fetching themed businesses:', themedError)
+          // Don't throw - primary business was updated successfully
+        } else {
+          console.log(`📋 INHERITANCE: Found ${themedBusinesses.length} themed businesses to update`)
+          
+          // Update each themed business with availability data
+          for (const themedBusiness of themedBusinesses) {
+            console.log(`🔄 INHERITANCE: Updating themed business: ${themedBusiness.business_name}`)
+            
+            const currentThemedData = themedBusiness.data || {}
+            
+            // Only copy availability-related data to themed businesses
+            const availabilityData = {
+              workingHours: merged.workingHours,
+              unavailableDates: merged.unavailableDates,
+              busyDates: merged.busyDates,
+              availabilityNotes: merged.availabilityNotes,
+              advanceBookingDays: merged.advanceBookingDays,
+              maxBookingDays: merged.maxBookingDays,
+              availabilityVersion: merged.availabilityVersion || '2.0',
+              lastUpdated: merged.updatedAt,
+              // Mark as inherited for debugging
+              _availabilityInheritedFrom: supplierId,
+              _availabilityInheritedAt: new Date().toISOString()
+            }
+            
+            const updatedThemedData = {
+              ...currentThemedData,
+              ...availabilityData,
+              updatedAt: new Date().toISOString()
+            }
+            
+            // Update the themed business
+            const { error: themedUpdateError } = await supabase
+              .from('suppliers')
+              .update({ data: updatedThemedData })
+              .eq('id', themedBusiness.id)
+            
+            if (themedUpdateError) {
+              console.error(`❌ INHERITANCE: Failed to update themed business ${themedBusiness.business_name}:`, themedUpdateError)
+              // Continue with other themed businesses
+            } else {
+              console.log(`✅ INHERITANCE: Successfully updated themed business: ${themedBusiness.business_name}`)
+            }
+          }
+          
+          console.log('✅ INHERITANCE: All themed businesses updated successfully')
+        }
+      } catch (inheritanceError) {
+        console.error('❌ INHERITANCE: Error in themed business update process:', inheritanceError)
+        // Don't throw - primary business was updated successfully, this is just inheritance
+      }
+    } else {
+      console.log('ℹ️ INHERITANCE: This is a themed business, no inheritance needed')
+    }
 
     return {
       success: true,
@@ -1148,7 +1217,6 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
     }
   }
 },
-
 
 }
 

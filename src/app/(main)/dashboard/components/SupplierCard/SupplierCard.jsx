@@ -1,3 +1,4 @@
+// SupplierCard.jsx - Fixed state logic for proper card flow
 "use client"
 import { useRouter } from 'next/navigation'
 import EmptySupplierCard from './EmptySupplierCard'
@@ -6,7 +7,7 @@ import AwaitingResponseSupplierCard from './AwaitingResponseSupplierCard'
 import ConfirmedSupplierCard from './ConfirmedSupplierCard'
 import PaymentConfirmedSupplierCard from './PaymentConfirmedSupplierCard'
 import DeclinedSupplierCard from './DeclinedSupplierCard'
-
+import DepositPaidSupplierCard from './DepositPaidSupplierCard'
 
 export default function SupplierCard({
   type,
@@ -64,32 +65,79 @@ export default function SupplierCard({
     }, 150)
   }
 
-  // Determine supplier state
   const getSupplierState = () => {
     if (!supplier) return "empty"
     
-    // Find the enquiry for this specific supplier
+    // Find the enquiry for this supplier
     const enquiry = enquiries.find(e => e.supplier_category === type)
     const thisSupplierPaymentStatus = enquiry?.payment_status
+    const isAutoAccepted = enquiry?.auto_accepted
+    const supplierManuallyAccepted = enquiry?.supplier_response_date && enquiry?.supplier_response
     
-    // FIXED: Only show payment_confirmed if THIS supplier was actually paid
-    if (enquiryStatus === "accepted" && thisSupplierPaymentStatus === "paid") {
+    console.log(`🔍 Supplier ${supplier.name} state check:`, {
+      enquiryStatus,
+      thisSupplierPaymentStatus,
+      isAutoAccepted,
+      supplierManuallyAccepted,
+      enquiryId: enquiry?.id,
+      supplierResponseDate: enquiry?.supplier_response_date,
+      supplierResponse: enquiry?.supplier_response
+    })
+
+    // ✅ CORRECTED LOGIC: The proper flow
+    
+    // Handle declined auto-accepted enquiries (hide them)
+    if (isAutoAccepted && enquiryStatus === "declined") {
+      console.log(`🚫 ${supplier.name}: Hiding declined auto-accepted enquiry`)
+      return "deposit_paid_confirmed" // Show as confirmed while handling replacement
+    }
+    
+    // 1. PAYMENT_CONFIRMED: Supplier manually accepted + paid
+    //    This is when supplier has responded to a deposit-paid booking
+    if (enquiryStatus === "accepted" && 
+        thisSupplierPaymentStatus === "paid" && 
+        supplierManuallyAccepted &&
+        !enquiry?.supplier_response?.includes('Auto-')) {
+      console.log(`✅ ${supplier.name}: PAYMENT_CONFIRMED (supplier manually confirmed + paid)`)
       return "payment_confirmed"
     }
     
+    // 2. DEPOSIT_PAID_CONFIRMED: Auto-accepted + paid but supplier hasn't manually confirmed
+    //    This means customer used instant booking, paid, but supplier hasn't responded yet
+    if (enquiryStatus === "accepted" && 
+        thisSupplierPaymentStatus === "paid" && 
+        (!supplierManuallyAccepted || enquiry?.supplier_response?.includes('Auto-'))) {
+      console.log(`💳 ${supplier.name}: DEPOSIT_PAID_CONFIRMED (deposit paid, awaiting supplier confirmation)`)
+      return "deposit_paid_confirmed"
+    }
+    
+    // 3. CONFIRMED: Accepted but not paid yet (either auto or manual)
+    //    This is when enquiry is accepted but customer hasn't paid deposit
+    if (enquiryStatus === "accepted" && 
+        (thisSupplierPaymentStatus === "unpaid" || !thisSupplierPaymentStatus)) {
+      console.log(`⏰ ${supplier.name}: CONFIRMED (accepted but not paid)`)
+      return "confirmed"
+    }
+    
+    // Handle other states
     if (!isSignedIn) return "selected"
     
     switch (enquiryStatus) {
-      case "pending": return "awaiting_response"
-      case "accepted": return "confirmed"  // Accepted but not paid yet
-      case "declined": return "declined"
-      default: return "selected"
+      case "pending": 
+        console.log(`⏳ ${supplier.name}: AWAITING_RESPONSE`)
+        return "awaiting_response"
+      case "declined": 
+        console.log(`❌ ${supplier.name}: DECLINED`)
+        return "declined"
+      default: 
+        console.log(`📝 ${supplier.name}: SELECTED (default)`)
+        return "selected"
     }
   }
 
   const supplierState = getSupplierState()
 
-  // ✅ FIXED: Enhanced addon collection that includes enquiry addons
+  // ✅ Enhanced addon collection that includes enquiry addons
   const supplierAddons = (() => {
     // Find the enquiry for this supplier type
     const enquiry = enquiries.find(e => e.supplier_category === type)
@@ -101,7 +149,6 @@ export default function SupplierCard({
         // Parse the addon_details JSON string
         const parsedAddons = JSON.parse(enquiry.addon_details)
         enquiryAddons = Array.isArray(parsedAddons) ? parsedAddons : []
-      
       } catch (error) {
         console.error(`❌ Error parsing addon_details for ${type}:`, error)
         
@@ -182,17 +229,18 @@ export default function SupplierCard({
     enquiries,
     onPaymentReady,
     handleCancelEnquiry,
-    onClick: handleCardClick // Add click handler
+    onClick: handleCardClick
   }
 
   // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
+  console.log(`🎯 Rendering ${supplierState} card for ${supplier?.name || type}`)
 
   // Render the appropriate card component based on state
   switch (supplierState) {
     case "empty":
       return <EmptySupplierCard {...commonProps} />
-
+      
     case "selected":
       return <SelectedSupplierCard {...commonProps} />
 
@@ -201,6 +249,9 @@ export default function SupplierCard({
 
     case "confirmed":
       return <ConfirmedSupplierCard {...commonProps} />
+
+    case "deposit_paid_confirmed":
+      return <DepositPaidSupplierCard {...commonProps} />
 
     case "payment_confirmed":
       return <PaymentConfirmedSupplierCard {...commonProps} />

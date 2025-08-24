@@ -187,19 +187,34 @@ const replacement = useReplacementMode()
 const notifications = useSupplierNotifications()
 const availability = useSupplierAvailability(supplier)
 const enquiries = useSupplierEnquiries(userContext?.currentPartyId)
+console.log('🔍 DEBUG: Availability functions check:', {
+  checkSupplierAvailability: typeof availability.checkSupplierAvailability,
+  migratedSupplier: !!availability.migratedSupplier,
+  selectedTimeSlot: availability.selectedTimeSlot,
+  isCurrentSelectionBookable: typeof availability.isCurrentSelectionBookable
+})
+
+// Also test the availability function directly:
+if (availability.checkSupplierAvailability) {
+  console.log('🔍 DIRECT TEST: Checking party date availability:', 
+    availability.checkSupplierAvailability('2025-10-09', 'afternoon')
+  )
+}
+
 const booking = useSupplierBooking(
   supplier, 
-  basePackages,  // Pass the base packages
+  basePackages,
   backendSupplier, 
   userType, 
   userContext, 
   enquiries.enquiryStatus, 
-  availability.selectedDate,        // ← Use availability hook
-  availability.currentMonth,        // ← Use availability hook
-  availability.checkSupplierAvailability,  // ← Use availability hook
-  availability.getSelectedCalendarDate,    // ← Use availability hook
+  availability.selectedDate,
+  availability.selectedTimeSlot,
+  availability.currentMonth,
+  availability.checkSupplierAvailability,
   availability.getSelectedCalendarDate,
-  replacement.replacementContext  
+  replacement.replacementContext,
+  availability.isCurrentSelectionBookable
 )
 
 const packages = booking.packages
@@ -392,23 +407,26 @@ if (userTypeLoading) {
           </main>
           
           <aside className="hidden md:block lg:col-span-1">
-            <SupplierSidebar
-              supplier={supplier}
-              packages={packages}
-              selectedPackageId={booking.selectedPackageId}
-              handleAddToPlan={handleAddToPlanWithModals}
-              getAddToPartyButtonState={booking.getAddToPartyButtonState}
-              currentMonth={availability.currentMonth}
-              setCurrentMonth={availability.setCurrentMonth}
-              selectedDate={availability.selectedDate}
-              setSelectedDate={availability.setSelectedDate}
-              credentials={credentials}
-              isFromDashboard={availability.isFromDashboard()}
-              partyDate={availability.getPartyDate()}
-              openCakeModal={modals.openCakeModal}
-              showCakeModal={modals.showCakeModal}
-              isCakeSupplier={isCakeSupplier}
-            />
+          <SupplierSidebar
+    supplier={supplier}
+    packages={packages}
+    selectedPackageId={booking.selectedPackageId}
+    handleAddToPlan={handleAddToPlanWithModals}
+    getAddToPartyButtonState={booking.getAddToPartyButtonState}
+    currentMonth={availability.currentMonth}
+    setCurrentMonth={availability.setCurrentMonth}
+    selectedDate={availability.selectedDate}
+    setSelectedDate={availability.setSelectedDate}
+    selectedTimeSlot={availability.selectedTimeSlot} // ✅ ADD THIS
+    setSelectedTimeSlot={availability.setSelectedTimeSlot} // ✅ ADD THIS
+    credentials={credentials}
+    isFromDashboard={availability.isFromDashboard()}
+    partyDate={availability.getPartyDate()}
+    partyTimeSlot={availability.getPartyTimeSlot()} // ✅ ADD THIS
+    openCakeModal={modals.openCakeModal}
+    showCakeModal={modals.showCakeModal}
+    isCakeSupplier={isCakeSupplier}
+  />
           </aside>
         </div>
       </div>
@@ -499,18 +517,18 @@ if (userTypeLoading) {
 
 
 {modals.showAlaCarteModal && supplier && (
-  <AlaCarteModal
-    isOpen={modals.showAlaCarteModal}
-    onClose={() => modals.setShowAlaCarteModal(false)}
-    supplier={supplier}
-    selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
-    onBuildFullParty={() => {
-      setShowAlaCarteModal(false)
-      router.push('/party-builder')
-    }}
-    onJustBookSupplier={booking.handleAlaCarteBookingEnhanced} // ✅ Use enhanced handler
-    preSelectedDate={availability.getSelectedCalendarDate()} 
-  />
+ <AlaCarteModal
+ isOpen={modals.showAlaCarteModal}
+ onClose={() => modals.setShowAlaCarteModal(false)}
+ supplier={supplier}
+ selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
+ onBuildFullParty={() => {
+   modals.setShowAlaCarteModal(false) // ✅ Fixed: use modals.setShowAlaCarteModal
+   router.push('/party-builder')
+ }}
+ onJustBookSupplier={booking.handleAlaCarteBooking} // ✅ Fixed: use correct function name
+ preSelectedDate={availability.getSelectedCalendarDate()} 
+/>
 )}
 
 

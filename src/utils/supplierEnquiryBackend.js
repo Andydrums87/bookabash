@@ -274,36 +274,167 @@ class SupplierEnquiryBackend {
   /**
    * Respond to enquiry (accept/decline)
    */
-  async respondToEnquiry(enquiryId, response, finalPrice = null, responseMessage = '') {
-    try {
-      const updateData = {
-        status: response, // 'accepted' or 'declined'
-        supplier_response: responseMessage,
-        supplier_response_date: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+// Updated respondToEnquiry function
+// In supplierEnquiryBackend.js - UPDATED respondToEnquiry function
+// In your supplierEnquiryBackend.js - Update the respondToEnquiry function
+
+async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isDepositPaid = false) {
+  try {
+    console.log('🎯 Supplier responding to enquiry:', {
+      enquiryId,
+      response,
+      finalPrice,
+      isDepositPaid,
+      messageLength: message?.length || 0
+    })
+
+    // First, get the current enquiry to check its state
+    const { data: currentEnquiry, error: fetchError } = await supabase
+      .from('enquiries')
+      .select('*')
+      .eq('id', enquiryId)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    console.log('📋 Current enquiry state:', {
+      status: currentEnquiry.status,
+      auto_accepted: currentEnquiry.auto_accepted,
+      payment_status: currentEnquiry.payment_status,
+      supplier_response: currentEnquiry.supplier_response
+    })
+
+    // ✅ KEY: Prepare the update data
+    const updateData = {
+      status: response,
+      supplier_response_date: new Date().toISOString(),
+      supplier_response: message || (response === 'accepted' 
+        ? 'Thank you for your enquiry! I can provide this service for your party.' 
+        : 'Thank you for your enquiry. Unfortunately, I am not available for this date.'),
+      updated_at: new Date().toISOString()
+    }
+
+    // Add final price if provided and accepting
+    if (response === 'accepted' && finalPrice) {
+      updateData.final_price = finalPrice
+    }
+
+    // ✅ CRITICAL: For deposit-paid bookings that are being accepted,
+    // we need to clear the auto_accepted flag to indicate manual confirmation
+    if (isDepositPaid && response === 'accepted' && currentEnquiry.auto_accepted) {
+      updateData.auto_accepted = false // ✅ This triggers the state change to PaymentConfirmedSupplierCard
+      console.log('✅ Clearing auto_accepted flag - supplier has manually confirmed')
+    }
+
+    // ✅ CRITICAL: For deposit-paid bookings that are being declined,
+    // we need special handling for immediate replacement
+    if (isDepositPaid && response === 'declined') {
+      updateData.replacement_requested = true
+      updateData.replacement_requested_at = new Date().toISOString()
+      console.log('🔄 Marking for immediate replacement - deposit was paid')
+    }
+
+    // Update the enquiry
+    const { data: updatedEnquiry, error: updateError } = await supabase
+      .from('enquiries')
+      .update(updateData)
+      .eq('id', enquiryId)
+      .select()
+      .single()
+
+    if (updateError) throw updateError
+
+    console.log('✅ Enquiry updated successfully:', {
+      id: updatedEnquiry.id,
+      status: updatedEnquiry.status,
+      auto_accepted: updatedEnquiry.auto_accepted,
+      payment_status: updatedEnquiry.payment_status
+    })
+
+    // ✅ ENHANCED: Send different notifications based on context
+    if (isDepositPaid) {
+      if (response === 'accepted') {
+        console.log('📧 Sending confirmation to customer - booking fully confirmed')
+        // Send email confirming the booking is locked in
+      } else {
+        console.log('🚨 Sending urgent replacement request to PartySnap team')
+        // Trigger immediate replacement workflow
       }
+    } else {
+      console.log('📧 Sending standard enquiry response to customer')
+      // Standard enquiry response workflow
+    }
 
-      if (finalPrice !== null) {
-        updateData.final_price = finalPrice
-      }
+    return {
+      success: true,
+      enquiry: updatedEnquiry,
+      message: `Enquiry ${response} successfully`
+    }
 
-      const { data: updatedEnquiry, error } = await supabase
-        .from('enquiries')
-        .update(updateData)
-        .eq('id', enquiryId)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      console.log(`✅ Enquiry ${response}:`, enquiryId)
-      return { success: true, enquiry: updatedEnquiry }
-
-    } catch (error) {
-      console.error('❌ Error responding to enquiry:', error)
-      return { success: false, error: error.message }
+  } catch (error) {
+    console.error('❌ Error responding to enquiry:', error)
+    return {
+      success: false,
+      error: error.message
     }
   }
+}
+
+// ✅ NEW: Alert PartySnap function
+async alertPartySnapUrgent(alertData) {
+  try {
+    // Method 1: Database alert record
+    const { error: dbError } = await supabase
+      .from('urgent_alerts')
+      .insert({
+        type: 'supplier_decline',
+        party_id: alertData.partyId,
+        enquiry_id: alertData.enquiryId,
+        severity: 'critical',
+        message: `🚨 URGENT: ${alertData.supplierCategory} supplier declined deposit-paid booking for ${alertData.partyName} on ${alertData.partyDate}`,
+        data: JSON.stringify(alertData),
+        created_at: new Date().toISOString()
+      })
+
+    if (dbError) {
+      console.error('❌ Failed to create database alert:', dbError)
+    }
+
+    // Method 2: Slack notification (if you have webhook)
+    if (process.env.SLACK_WEBHOOK_URL) {
+      try {
+        await fetch(process.env.SLACK_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: `🚨 CRITICAL: Supplier Declined Deposit-Paid Booking`,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*URGENT REPLACEMENT NEEDED*\n\n*Party:* ${alertData.partyName}\n*Date:* ${alertData.partyDate}\n*Category:* ${alertData.supplierCategory}\n*Customer:* ${alertData.customerName} (${alertData.customerEmail})\n\n*Supplier said:* "${alertData.supplierResponse}"\n\n*Action needed:* Find replacement supplier ASAP!`
+                }
+              }
+            ]
+          })
+        })
+      } catch (slackError) {
+        console.error('❌ Slack notification failed:', slackError)
+      }
+    }
+
+    // Method 3: Email notification (if you have email service)
+    // await sendUrgentEmailAlert(alertData)
+
+    console.log('✅ PartySnap urgent alert sent successfully')
+    return { success: true }
+
+  } catch (error) {
+    console.error('❌ Failed to alert PartySnap:', error)
+    return { success: false, error: error.message }
+  }
+}
 
   /**
    * Get single enquiry details

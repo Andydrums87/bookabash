@@ -723,8 +723,100 @@ const { navigateWithContext} = useContextualNavigation()
     }
   };
 
+  // const handleSubmitEnquiry = async () => {
+  //   console.log('🚀 handleSubmitEnquiry started');
+    
+  //   try {
+  //     setIsSubmitting(true);
+  //     setLoadingStep(1);
+  //     setLoadingError(null);
+      
+  //     // Calculate supplier count for display
+  //     const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
+  //     const supplierCount = Object.values(partyPlan).filter(supplier => 
+  //       supplier && typeof supplier === 'object' && supplier.name
+  //     ).length;
+      
+  //     console.log('📊 Calculated supplier count:', supplierCount);
+  //     setSupplierCount(supplierCount);
+
+  //     // Step 1: Migrate party to database
+  //     console.log("📤 Step 1: Migrating party to database...");
+  //     const migratedParty = await migratePartyToDatabase(user);
+  //     console.log("✅ Migration result:", migratedParty);
+      
+  //     // Move to step 2
+  //     setLoadingStep(2);
+  //     await new Promise(resolve => setTimeout(resolve, 1000));
+
+  //     // Step 2: Send enquiries to suppliers
+  //     console.log("📧 Step 2: Sending enquiries to suppliers...");
+  //     const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+  //       migratedParty.id,
+  //       formData.additionalMessage,
+  //       JSON.stringify({
+  //         dietary: formData.dietaryRequirements,
+  //         accessibility: formData.accessibilityRequirements,
+  //         numberOfChildren: formData.numberOfChildren,
+  //         contactInfo: {
+  //           name: formData.parentName,
+  //           phone: formData.phoneNumber,
+  //           email: formData.email,
+  //         },
+  //       }),
+  //     );
+
+  //     console.log('📋 Raw enquiryResult:', enquiryResult);
+
+  //     if (!enquiryResult.success) {
+  //       throw new Error(`Failed to send enquiries: ${enquiryResult.error}`);
+  //     }
+
+  //     // Calculate final count with fallbacks
+  //     const finalCount = enquiryResult.count || supplierCount || 4;
+  //     console.log('🔢 Final enquiry count:', finalCount);
+
+  //     console.log(`✅ Successfully sent ${finalCount} enquiries!`);
+      
+  //     // Move to success step
+  //     setLoadingStep(3);
+      
+  //     // Wait a moment to show success, then redirect
+  //     setTimeout(() => {
+  //       console.log('🚀 Starting redirect process...');
+        
+  //       // Method 1: Try router.push first (more reliable)
+  //       try {
+  //         const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`;
+  //         console.log('🔗 Redirecting to:', redirectUrl);
+          
+  //         router.push(redirectUrl);
+          
+  //         // Fallback: If router doesn't work, use window.location
+  //         setTimeout(() => {
+  //           if (window.location.pathname.includes('review-book')) {
+  //             console.log('🔄 Router redirect didn\'t work, trying window.location...');
+  //             window.location.href = redirectUrl;
+  //           }
+  //         }, 500);
+          
+  //       } catch (error) {
+  //         console.error('❌ Router redirect failed:', error);
+  //         // Fallback to window.location
+  //         const fallbackUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`;
+  //         window.location.href = fallbackUrl;
+  //       }
+        
+  //     }, 2000);
+
+  //   } catch (error) {
+  //     console.error("❌ Submit enquiry failed:", error);
+  //     setLoadingError(error.message);
+  //     setIsSubmitting(false);
+  //   }
+  // };
   const handleSubmitEnquiry = async () => {
-    console.log('🚀 handleSubmitEnquiry started');
+    console.log('🚀 handleSubmitEnquiry started (IMMEDIATE BOOKING FLOW)');
     
     try {
       setIsSubmitting(true);
@@ -739,7 +831,7 @@ const { navigateWithContext} = useContextualNavigation()
       
       console.log('📊 Calculated supplier count:', supplierCount);
       setSupplierCount(supplierCount);
-
+  
       // Step 1: Migrate party to database
       console.log("📤 Step 1: Migrating party to database...");
       const migratedParty = await migratePartyToDatabase(user);
@@ -748,12 +840,13 @@ const { navigateWithContext} = useContextualNavigation()
       // Move to step 2
       setLoadingStep(2);
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Step 2: Send enquiries to suppliers
-      console.log("📧 Step 2: Sending enquiries to suppliers...");
+  
+      // Step 2: ✅ UPDATED - Send enquiries AND auto-accept them
+      console.log("📧 Step 2: Sending enquiries and auto-accepting for immediate booking...");
+      
       const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
         migratedParty.id,
-        formData.additionalMessage,
+        "IMMEDIATE BOOKING - Customer proceeding to payment",
         JSON.stringify({
           dietary: formData.dietaryRequirements,
           accessibility: formData.accessibilityRequirements,
@@ -763,59 +856,41 @@ const { navigateWithContext} = useContextualNavigation()
             phone: formData.phoneNumber,
             email: formData.email,
           },
+          bookingType: 'immediate'
         }),
       );
-
-      console.log('📋 Raw enquiryResult:', enquiryResult);
-
+  
       if (!enquiryResult.success) {
         throw new Error(`Failed to send enquiries: ${enquiryResult.error}`);
       }
-
-      // Calculate final count with fallbacks
-      const finalCount = enquiryResult.count || supplierCount || 4;
-      console.log('🔢 Final enquiry count:', finalCount);
-
-      console.log(`✅ Successfully sent ${finalCount} enquiries!`);
+  
+      // ✅ NEW: Auto-accept all enquiries immediately
+      console.log("✅ Step 3: Auto-accepting all enquiries for immediate booking...");
+      const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(migratedParty.id);
       
-      // Move to success step
+      if (!autoAcceptResult.success) {
+        console.error("⚠️ Failed to auto-accept enquiries:", autoAcceptResult.error);
+        // Continue anyway - enquiries were sent
+      }
+  
+      // Move to success step (payment redirect)
       setLoadingStep(3);
       
-      // Wait a moment to show success, then redirect
+      // Brief success message, then redirect to payment
       setTimeout(() => {
-        console.log('🚀 Starting redirect process...');
+        console.log('🚀 Redirecting to payment with auto-accepted enquiries...');
         
-        // Method 1: Try router.push first (more reliable)
-        try {
-          const redirectUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`;
-          console.log('🔗 Redirecting to:', redirectUrl);
-          
-          router.push(redirectUrl);
-          
-          // Fallback: If router doesn't work, use window.location
-          setTimeout(() => {
-            if (window.location.pathname.includes('review-book')) {
-              console.log('🔄 Router redirect didn\'t work, trying window.location...');
-              window.location.href = redirectUrl;
-            }
-          }, 500);
-          
-        } catch (error) {
-          console.error('❌ Router redirect failed:', error);
-          // Fallback to window.location
-          const fallbackUrl = `/dashboard?success=true&enquiry_count=${finalCount}&timestamp=${Date.now()}`;
-          window.location.href = fallbackUrl;
-        }
+        const paymentUrl = `/payment/secure-party?party_id=${migratedParty.id}&suppliers=${supplierCount}`;
+        router.push(paymentUrl);
         
-      }, 2000);
-
+      }, 1500);
+  
     } catch (error) {
       console.error("❌ Submit enquiry failed:", error);
       setLoadingError(error.message);
       setIsSubmitting(false);
     }
   };
-
   const totalPrice = selectedSuppliers.reduce((sum, supplier) => sum + (supplier.price || 0), 0);
   const totalAddonsPrice = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
   const grandTotal = totalPrice + totalAddonsPrice;

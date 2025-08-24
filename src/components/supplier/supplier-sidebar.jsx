@@ -1,3 +1,5 @@
+// FIXED: SupplierSidebar with missing time slot props
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -15,10 +17,13 @@ export default function SupplierSidebar({
   setCurrentMonth,
   selectedDate,
   setSelectedDate,
+  // ✅ ADDED: Missing time slot props
+  selectedTimeSlot,
+  setSelectedTimeSlot,
   credentials,
   isFromDashboard = false,
   partyDate = null,
-  // ✅ UPDATED: Use openCakeModal function instead of individual state setters
+  partyTimeSlot = null, // ✅ ADDED: Party time slot
   openCakeModal,
   showCakeModal,
   isCakeSupplier = false
@@ -35,6 +40,12 @@ export default function SupplierSidebar({
 
   const selectedPkgDetails = packages?.find((pkg) => pkg.id === selectedPackageId)
   const addToPlanButtonState = getAddToPartyButtonState(selectedPackageId)
+
+  // ✅ ADDED: Time slot selection callback
+  const handleTimeSlotSelect = (date, timeSlot) => {
+    console.log('📅 Sidebar: Time slot selected:', { date, timeSlot })
+    // Additional logic if needed when time slot is selected
+  }
 
   // ✅ ENHANCED: Check if selected package is customizable for cake suppliers
   const isCustomizablePackage = (packageData) => {
@@ -111,22 +122,18 @@ export default function SupplierSidebar({
           <p className="text-md text-gray-800 font-semibold mb-1">{selectedPkgDetails.name}</p>
           <p className="text-lg text-primary-600 font-bold mb-4">£{selectedPkgDetails.price}</p>
           
-          
-          
           {/* ✅ ENHANCED: Use custom handler instead of direct handleAddToPlan */}
           <Button
             className={`w-full py-3 text-base ${getAddToPartyButtonState().className}`}
             onClick={handleSidebarAddToPlan}
             disabled={getAddToPartyButtonState().disabled}
           >
-        
-              { addToPlanButtonState.text}
-            
+            {addToPlanButtonState.text}
           </Button>
         </div>
       )}
 
-      {/* Availability Calendar Section */}
+      {/* ✅ FIXED: Availability Calendar Section with all required props */}
       {supplier && (
         <SupplierAvailabilityCalendar
           supplier={supplier}
@@ -134,9 +141,14 @@ export default function SupplierSidebar({
           setCurrentMonth={setCurrentMonth}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
+          selectedTimeSlot={selectedTimeSlot} // ✅ CRITICAL: Added missing prop
+          setSelectedTimeSlot={setSelectedTimeSlot} // ✅ CRITICAL: Added missing prop
+          onTimeSlotSelect={handleTimeSlotSelect} // ✅ CRITICAL: Added missing callback
           isFromDashboard={isFromDashboard}
           partyDate={partyDate}
+          partyTimeSlot={partyTimeSlot} // ✅ ADDED: Party time slot
           readOnly={isFromDashboard}
+          showTimeSlotSelection={!isFromDashboard} // ✅ ADDED: Enable modal when not from dashboard
         />
       )}
 
@@ -172,14 +184,13 @@ export default function SupplierSidebar({
           <Heart 
             className={`w-5 h-5 mr-2 transition-all duration-200 ${
               isSupplierFavorite 
-                ? 'fill-[hsl(vaR(--primary-500))] text-primary-500' 
+                ? 'fill-[hsl(var(--primary-500))] text-primary-500' 
                 : 'text-gray-500'
             }`} 
           />
           {isSupplierFavorite ? 'Remove from favorites' : 'Add to favorites'}
         </Button>
       </div>
-    
     </div>
   )
 }

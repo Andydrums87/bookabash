@@ -449,83 +449,261 @@ export default function PaymentPageContent() {
     },
   }
 
-  // Load party and user data
-  useEffect(() => {
-    const loadPaymentData = async () => {
-      try {
-        // Get current user
-        const userResult = await partyDatabaseBackend.getCurrentUser()
-        if (!userResult.success) {
-          router.push('/auth/signin?redirect=/payment')
-          return
-        }
-        setUser(userResult.user)
+  // // Load party and user data
+  // useEffect(() => {
+  //   const loadPaymentData = async () => {
+  //     try {
+  //       // Get current user
+  //       const userResult = await partyDatabaseBackend.getCurrentUser()
+  //       if (!userResult.success) {
+  //         router.push('/auth/signin?redirect=/payment')
+  //         return
+  //       }
+  //       setUser(userResult.user)
 
-        // Get current party from database
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-        if (!partyResult.success || !partyResult.party) {
-          // No database party - redirect back to dashboard
-          router.push('/dashboard')
-          return
-        }
+  //       // Get current party from database
+  //       const partyResult = await partyDatabaseBackend.getCurrentParty()
+  //       if (!partyResult.success || !partyResult.party) {
+  //         // No database party - redirect back to dashboard
+  //         router.push('/dashboard')
+  //         return
+  //       }
 
-        setPartyId(partyResult.party.id)
-        setPartyDetails({
-          childName: partyResult.party.child_name,
-          theme: partyResult.party.theme,
-          date: partyResult.party.party_date,
-          childAge: partyResult.party.child_age,
-          location: partyResult.party.location,
-          guestCount: partyResult.party.guest_count,
-          email: userResult.user.email,
-          parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
-        })
+  //       setPartyId(partyResult.party.id)
+  //       setPartyDetails({
+  //         childName: partyResult.party.child_name,
+  //         theme: partyResult.party.theme,
+  //         date: partyResult.party.party_date,
+  //         childAge: partyResult.party.child_age,
+  //         location: partyResult.party.location,
+  //         guestCount: partyResult.party.guest_count,
+  //         email: userResult.user.email,
+  //         parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
+  //       })
 
-        // Get confirmed suppliers from enquiries
-        const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
-        if (enquiriesResult.success) {
-          const confirmed = enquiriesResult.enquiries
-            .filter(enquiry => enquiry.status === 'accepted')
-            .map(enquiry => ({
-              id: enquiry.supplier_id,
-              category: enquiry.supplier_category,
-              price: enquiry.quoted_price || 0,
-              name: `${enquiry.supplier_category} Supplier`,
-              rating: 4.8,
-              image: '/placeholder-supplier.jpg'
-            }))
-          setConfirmedSuppliers(confirmed)
-        }
+  //       // Get confirmed suppliers from enquiries
+  //       const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
+  //       if (enquiriesResult.success) {
+  //         const confirmed = enquiriesResult.enquiries
+  //           .filter(enquiry => enquiry.status === 'accepted')
+  //           .map(enquiry => ({
+  //             id: enquiry.supplier_id,
+  //             category: enquiry.supplier_category,
+  //             price: enquiry.quoted_price || 0,
+  //             name: `${enquiry.supplier_category} Supplier`,
+  //             rating: 4.8,
+  //             image: '/placeholder-supplier.jpg'
+  //           }))
+  //         setConfirmedSuppliers(confirmed)
+  //       }
 
-      } catch (error) {
-        console.error('Error loading payment data:', error)
-        router.push('/dashboard')
-      } finally {
-        setLoading(false)
-      }
+  //     } catch (error) {
+  //       console.error('Error loading payment data:', error)
+  //       router.push('/dashboard')
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   }
+
+  //   loadPaymentData()
+  // }, [router])
+  // Load party and user data - UPDATED FOR IMMEDIATE BOOKING FLOW
+// Updated loadPaymentData function
+useEffect(() => {
+  // In PaymentPageContent.jsx - FIXED loadPaymentData
+const loadPaymentData = async () => {
+  try {
+    setLoading(true)
+    
+    // Get current user
+    const userResult = await partyDatabaseBackend.getCurrentUser()
+    if (!userResult.success) {
+      router.push('/auth/signin?redirect=/payment')
+      return
+    }
+    setUser(userResult.user)
+
+    // Get party ID from URL params
+    const urlParams = new URLSearchParams(window.location.search)
+    const partyIdFromUrl = urlParams.get('party_id')
+    
+    if (!partyIdFromUrl) {
+      console.error('❌ No party ID provided to payment page')
+      router.push('/dashboard')
+      return
     }
 
-    loadPaymentData()
-  }, [router])
+    // Get specific party by ID
+    const partyResult = await partyDatabaseBackend.getPartyById(partyIdFromUrl)
+    if (!partyResult.success || !partyResult.party) {
+      console.error('❌ Could not load party for payment:', partyIdFromUrl)
+      router.push('/dashboard')
+      return
+    }
+
+    const party = partyResult.party
+    setPartyId(party.id)
+    setPartyDetails({
+      id: party.id,
+      childName: party.child_name,
+      theme: party.theme,
+      date: party.party_date,
+      childAge: party.child_age,
+      location: party.location,
+      guestCount: party.guest_count,
+      email: userResult.user.email,
+      parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
+    })
+
+    // ✅ FIXED: Get enquiries and check for auto-accepted ones
+    const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(party.id)
+    
+    let confirmedSuppliers = []
+    
+    if (enquiriesResult.success && enquiriesResult.enquiries.length > 0) {
+      console.log('📋 Found enquiries, checking status...', enquiriesResult.enquiries)
+      
+      // ✅ FIXED: Look for enquiries that need payment (either old flow or new flow)
+      confirmedSuppliers = enquiriesResult.enquiries
+        .filter(enquiry => {
+          console.log(`Enquiry ${enquiry.id}: status=${enquiry.status}, payment_status=${enquiry.payment_status}`)
+          
+          // Old flow: accepted + unpaid
+          if (enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid') {
+            return true
+          }
+          
+          // ✅ NEW FLOW: auto-accepted (pending payment)
+          // These are enquiries that were just auto-accepted for immediate booking
+          if (enquiry.status === 'accepted' && !enquiry.payment_status) {
+            return true
+          }
+          
+          return false
+        })
+        .map(enquiry => ({
+          id: enquiry.supplier_id,
+          category: enquiry.supplier_category,
+          price: enquiry.quoted_price || 0,
+          name: `${enquiry.supplier_category} Supplier`,
+          rating: 4.8,
+          image: '/placeholder-supplier.jpg',
+          enquiry_id: enquiry.id
+        }))
+      
+      console.log(`✅ Found ${confirmedSuppliers.length} suppliers ready for payment`)
+    } 
+    
+    // ✅ FALLBACK: If no enquiries found, use party plan (shouldn't happen now)
+    if (confirmedSuppliers.length === 0) {
+      console.log('⚠️ No payment-ready enquiries found, using party plan as fallback')
+      const partyPlan = party.party_plan || {}
+      
+      confirmedSuppliers = Object.entries(partyPlan)
+        .filter(([key, supplier]) => 
+          supplier && 
+          typeof supplier === 'object' && 
+          supplier.name &&
+          !['einvites', 'addons'].includes(key)
+        )
+        .map(([category, supplier]) => ({
+          id: supplier.id,
+          name: supplier.name,
+          image: supplier.image || supplier.imageUrl || '/placeholder-supplier.jpg',
+          rating: supplier.rating || 4.8,
+          description: supplier.description || 'Professional service provider',
+          category: category,
+          price: supplier.price || 0,
+          status: 'immediate_booking'
+        }))
+    }
+    
+    console.log(`✅ Final suppliers for payment: ${confirmedSuppliers.length}`)
+    setConfirmedSuppliers(confirmedSuppliers)
+
+  } catch (error) {
+    console.error('❌ Error loading payment data:', error)
+    router.push('/dashboard')
+  } finally {
+    setLoading(false)
+  }
+}
+loadPaymentData()
+}, [router])
+
+  // const handlePaymentSuccess = async (paymentIntent) => {
+  //   try {
+  //     console.log('Payment successful:', paymentIntent.id)
+      
+  //     // UPDATE: Record the payment in your database
+  //     const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
+  //       payment_status: 'deposit_paid',
+  //       payment_intent_id: paymentIntent.id,
+  //       deposit_amount: depositAmount,
+  //       payment_date: new Date().toISOString()
+  //     })
+      
+  //     if (!updateResult.success) {
+  //       console.error('Failed to update payment status:', updateResult.error)
+  //     }
+      
+  //     // Redirect to success page
+  //     router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
+      
+  //   } catch (error) {
+  //     console.error('Error handling payment success:', error)
+  //   }
+  // }
+  // const handlePaymentSuccess = async (paymentIntent) => {
+  //   try {
+  //     // 1. Record payment (existing code stays)
+  //     const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
+  //       payment_status: 'deposit_paid',
+  //       payment_intent_id: paymentIntent.id,
+  //       deposit_amount: depositAmount,
+  //     })
+      
+  //     // 2. ✅ NEW: Create enquiries AFTER successful payment
+  //     const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+  //       partyId,
+  //       "Deposit paid - booking confirmed subject to availability",
+  //       JSON.stringify({ paymentIntent: paymentIntent.id, bookingType: 'immediate' })
+  //     )
+      
+  //     // 3. ✅ NEW: Mark enquiries as "deposit_paid" immediately
+  //     if (enquiryResult.success) {
+  //       const supplierCategories = confirmedSuppliers.map(s => s.category)
+  //       await partyDatabaseBackend.updateEnquiriesPaymentStatus(partyId, supplierCategories)
+  //     }
+      
+  //     // 4. Redirect to success (existing code)
+  //     router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
+      
+  //   } catch (error) {
+  //     console.error('Error handling payment success:', error)
+  //   }
+  // }
 
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
-      console.log('Payment successful:', paymentIntent.id)
-      
-      // UPDATE: Record the payment in your database
-      const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
+      // 1. Record payment (existing function)
+      await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
         payment_status: 'deposit_paid',
         payment_intent_id: paymentIntent.id,
         deposit_amount: depositAmount,
-        payment_date: new Date().toISOString()
       })
       
-      if (!updateResult.success) {
-        console.error('Failed to update payment status:', updateResult.error)
-      }
+      // 2. Create enquiries after payment (existing function)
+      await partyDatabaseBackend.sendEnquiriesToSuppliers(
+        partyId,
+        "PRIORITY BOOKING - Deposit paid, please confirm availability within 2 hours"
+      )
       
-      // Redirect to success page
-      router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
+      // 3. Skip admin task creation for now
+      // await createAdminTask(...) // <-- Skip this
+      
+      // 4. Redirect to dashboard with success
+      router.push(`/dashboard?booking=confirmed&payment_intent=${paymentIntent.id}`)
       
     } catch (error) {
       console.error('Error handling payment success:', error)

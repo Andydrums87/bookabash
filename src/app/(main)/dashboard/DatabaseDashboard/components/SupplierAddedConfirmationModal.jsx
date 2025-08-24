@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from '@/components/ui/UniversalModal.jsx'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Send, Clock, Users, Calendar, MapPin, X } from 'lucide-react'
+import { CheckCircle, CreditCard, Clock, Users, Calendar, MapPin, Shield } from 'lucide-react'
 
 export default function SupplierAddedConfirmationModal({
   isOpen,
@@ -13,18 +13,15 @@ export default function SupplierAddedConfirmationModal({
   selectedPackage,
   partyDetails,
   isSending = false,
-  partyId, // ✅ ADD THIS PROP
+  partyId,
 }) {
   if (!supplier) return null
 
-  const handleSendEnquiry = () => {
-
-    
+  const handleSecureBooking = () => {
     const partyId = partyDetails?.id
     
     if (!partyId) {
       console.error('❌ partyId is missing in partyDetails!')
-      console.error('❌ partyDetails structure:', partyDetails)
       return
     }
     
@@ -33,9 +30,7 @@ export default function SupplierAddedConfirmationModal({
       return
     }
     
-
-    
-    // ✅ FIXED: Pass all 3 parameters including partyId
+    // Call the same function but with updated messaging context
     onSendEnquiry(supplier, selectedPackage, partyId)
   }
 
@@ -53,16 +48,14 @@ export default function SupplierAddedConfirmationModal({
       showCloseButton={!isSending}
     >
       <ModalHeader 
-        title="Ready to Send Enquiry?"
-        subtitle={``}
+        title="Secure Your Booking?"
+        subtitle="Ready to confirm this supplier for your party?"
         theme="success"
-        icon={<CheckCircle className="w-6 h-6 text-teal-500" />}
+        icon={<Shield className="w-6 h-6 text-teal-500" />}
       />
 
       <ModalContent>
-        <div className="space-y-6 ">
-         
-
+        <div className="space-y-6">
           {/* Supplier details */}
           <div className="bg-gray-50 rounded-xl p-4">
             <div className="flex items-center space-x-4">
@@ -83,87 +76,64 @@ export default function SupplierAddedConfirmationModal({
             </div>
           </div>
 
-          {/* What happens next */}
-          {/* <div className="border border-blue-200 rounded-xl p-4 bg-blue-50">
-            <h4 className="font-semibold text-blue-900 mb-3">What happens when you send an enquiry?</h4>
+          {/* ✅ NEW: What happens next - Updated for immediate booking */}
+          <div className="border border-green-200 rounded-xl p-4 bg-green-50">
+            <h4 className="font-semibold text-green-900 mb-3">What happens when you secure this booking?</h4>
             <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3 text-blue-800">
-                <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center">
-                  <Send className="w-3 h-3 text-blue-700" />
+              <div className="flex items-center gap-3 text-green-800">
+                <div className="w-6 h-6 bg-green-200 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-3 h-3 text-green-700" />
                 </div>
-                <span>We'll send your party details to {supplier.name}</span>
+                <span><strong>{supplier.name} is immediately confirmed</strong> for your party</span>
               </div>
               
-              <div className="flex items-center gap-3 text-blue-800">
-                <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center">
-                  <Clock className="w-3 h-3 text-blue-700" />
+              <div className="flex items-center gap-3 text-green-800">
+                <div className="w-6 h-6 bg-green-200 rounded-full flex items-center justify-center">
+                  <Shield className="w-3 h-3 text-green-700" />
                 </div>
-                <span>They'll confirm availability within 24 hours</span>
+                <span>Your booking is <strong>secured and protected</strong></span>
               </div>
               
-              <div className="flex items-center gap-3 text-blue-800">
-                <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-3 h-3 text-blue-700" />
+              <div className="flex items-center gap-3 text-green-800">
+                <div className="w-6 h-6 bg-green-200 rounded-full flex items-center justify-center">
+                  <CreditCard className="w-3 h-3 text-green-700" />
                 </div>
-                <span>You can review their response before booking</span>
+                <span>Pay deposit to <strong>guarantee availability</strong></span>
               </div>
             </div>
-          </div> */}
-
-          {/* Party details that will be sent */}
-          {/* <div className="bg-gray-50 rounded-xl p-4">
-            <h4 className="font-semibold text-gray-700 mb-3">Party details to be sent:</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <span>{partyDetails?.date || 'Party date'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-gray-500" />
-                <span>Age {partyDetails?.childAge || '5'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-gray-500" />
-                <span>{partyDetails?.location || 'Party location'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-gray-500" />
-                <span>{partyDetails?.guestCount || '15'} guests</span>
-              </div>
-            </div>
-          </div> */}
+          </div>
         </div>
       </ModalContent>
 
       <ModalFooter theme="fun">
         <div className="flex flex-col gap-3">
-          {/* Primary action */}
+          {/* ✅ UPDATED: Primary action */}
           <Button
-            onClick={handleSendEnquiry}
+            onClick={handleSecureBooking}
             disabled={isSending}
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3"
           >
             {isSending ? (
               <div className="flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Sending Enquiry...</span>
+                <span>Securing Booking...</span>
               </div>
             ) : (
               <div className="flex items-center justify-center gap-2">
-                <Send className="w-4 h-4" />
-                <span>Send Enquiry Now</span>
+                <Shield className="w-4 h-4" />
+                <span>Secure Booking Now</span>
               </div>
             )}
           </Button>
           
-          {/* Secondary action - Updated text */}
+          {/* ✅ UPDATED: Secondary action */}
           {!isSending && (
             <Button
               onClick={handleNotYet}
               variant="outline"
               className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
             >
-              Not Yet - I'll Send Later
+              Not Yet - I'll Decide Later
             </Button>
           )}
         </div>

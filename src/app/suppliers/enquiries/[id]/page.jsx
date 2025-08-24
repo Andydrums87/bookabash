@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Calendar,
+  Eye,
   Users,
   MapPin,
   Clock,
@@ -215,44 +216,70 @@ const getCakeCustomizationData = (enquiry) => {
     setShowResponseForm(true)
   }
 
-  const submitResponse = async () => {
-    if (!response) return
+// In EnquiryDetailsPage.jsx - Update submitResponse function
+const submitResponse = async () => {
+  if (!response) return
 
-    try {
-      setResponding(true)
-      const result = await supplierEnquiryBackend.respondToEnquiry(
-        enquiryId,
-        response,
-        finalPrice ? Number.parseFloat(finalPrice) : null,
-        responseMessage,
-      )
+  try {
+    setResponding(true)
+    
+    // ✅ UPDATED: Enhanced response handling
+    const result = await supplierEnquiryBackend.respondToEnquiry(
+      enquiryId,
+      response,
+      finalPrice ? Number.parseFloat(finalPrice) : null,
+      responseMessage,
+      enquiry.payment_status === 'paid' // Pass deposit-paid status
+    )
 
-      if (result.success) {
-        // Reload enquiry to show updated status
-        await loadEnquiryDetails()
-        setShowResponseForm(false)
-        // Show success message
-        alert(`Enquiry ${response} successfully! The customer will be notified.`)
+    if (result.success) {
+      // Reload enquiry to show updated status
+      await loadEnquiryDetails()
+      setShowResponseForm(false)
+      
+      // ✅ UPDATED: Different success messages
+      if (enquiry.payment_status === 'paid' && response === 'declined') {
+        alert('PartySnap has been notified immediately. They will find a replacement supplier and handle all customer communication. Thank you for your honesty!')
+      } else if (enquiry.payment_status === 'paid' && response === 'accepted') {
+        alert('Perfect! The customer\'s party is confirmed. You\'ll receive final details closer to the date.')
       } else {
-        setError(result.error)
+        alert(`Enquiry ${response} successfully! The customer will be notified.`)
       }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setResponding(false)
+    } else {
+      setError(result.error)
     }
+  } catch (err) {
+    setError(err.message)
+  } finally {
+    setResponding(false)
   }
+}
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "bg-amber-50 text-amber-700 border-amber-200",
-      viewed: "bg-blue-50 text-blue-700 border-blue-200",
-      accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      declined: "bg-red-50 text-red-700 border-red-200",
-      expired: "bg-gray-50 text-gray-700 border-gray-200",
-    }
-    return colors[status] || colors.pending
+ // In your supplier enquiry list page - UPDATE getStatusColor function
+const getStatusColor = (status) => {
+  const colors = {
+    pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    deposit_paid: 'bg-red-100 text-red-800 border-red-200', // ✅ NEW: Urgent red for deposit paid
+    viewed: 'bg-blue-100 text-blue-800 border-blue-200',
+    accepted: 'bg-green-100 text-green-800 border-green-200',
+    declined: 'bg-red-100 text-red-800 border-red-200',
+    expired: 'bg-gray-100 text-gray-800 border-gray-200'
   }
+  return colors[status] || colors.pending
+}
+
+// UPDATE getStatusIcon function
+const getStatusIcon = (status) => {
+  const icons = {
+    pending: <Clock className="w-4 h-4" />,
+    deposit_paid: <span className="w-4 h-4 text-red-600 font-bold">🚨</span>, // ✅ NEW: Urgent icon
+    viewed: <Eye className="w-4 h-4" />,
+    accepted: <CheckCircle className="w-4 h-4" />,
+    declined: <XCircle className="w-4 h-4" />,
+    expired: <Clock className="w-4 h-4" />
+  }
+  return icons[status] || icons.pending
+}
 
   
 
@@ -320,54 +347,88 @@ const getCakeCustomizationData = (enquiry) => {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Enhanced Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              className="border-[hsl(var(--primary-200))] text-primary-700 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-300))] bg-transparent"
-            >
-              <Link href="/suppliers/enquiries">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Enquiries
-              </Link>
-            </Button>
-            <Badge className={`${getStatusColor(enquiry.status)} px-4 py-2 text-sm font-medium`}>
-              <span className="capitalize">{enquiry.status}</span>
-            </Badge>
-          </div>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-[hsl(var(--primary-100))] p-8">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                  {party?.child_name}'s {party?.theme} Party
-                </h1>
-                <div className="flex flex-wrap items-center gap-4 text-gray-600">
-                  <span className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    {customer?.first_name} {customer?.last_name}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Received{" "}
-                    {new Date(enquiry.created_at).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              </div>
+{/* Enhanced Header */}
+<div className="mb-10">
+  <div className="flex items-center gap-4 mb-6">
+    <Button
+      variant="outline"
+      size="sm"
+      asChild
+      className="border-[hsl(var(--primary-200))] text-primary-700 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-300))] bg-transparent"
+    >
+      <Link href="/suppliers/enquiries">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Enquiries
+      </Link>
+    </Button>
+    
+    {/* ✅ CLEAN: Single badge logic */}
+    {enquiry?.auto_accepted && enquiry?.status === 'accepted' ? (
+      <Badge className="bg-red-100 text-red-800 border-red-200 px-4 py-2 text-sm font-medium">
+        <span className="text-red-600 font-bold mr-1">🚨</span>
+        DEPOSIT PAID - URGENT
+      </Badge>
+    ) : (
+      <Badge className={`${getStatusColor(enquiry.status)} px-4 py-2 text-sm font-medium`}>
+        <span className="capitalize">{enquiry.status}</span>
+      </Badge>
+    )}
+    
+    {/* Pulsing dot for auto-accepted enquiries */}
+    {enquiry?.auto_accepted && enquiry?.status === 'accepted' && (
+      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+    )}
+  </div>
 
-              <div className="text-right">
-                <div className="text-4xl font-bold text-primary-600 mb-1">£{enquiry.quoted_price}</div>
-                <p className="text-sm text-gray-500">Total quoted price</p>
-              </div>
-            </div>
-          </div>
+  {/* ✅ CLEAN: Special alert for auto-accepted enquiries */}
+  {enquiry?.auto_accepted && enquiry?.status === 'accepted' && (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold">!</span>
         </div>
+        <div>
+          <h4 className="font-semibold text-red-900 mb-2">🚨 PRIORITY BOOKING - DEPOSIT PAID</h4>
+          <p className="text-red-800 text-sm">
+            Customer paid £{Math.round(enquiry.quoted_price * 0.2)} deposit. 
+            Confirm availability within 2 hours or PartySnap will find replacement.
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <div className="bg-white rounded-2xl shadow-lg border border-[hsl(var(--primary-100))] p-8">
+    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      <div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">
+          {party?.child_name}'s {party?.theme} Party
+        </h1>
+        <div className="flex flex-wrap items-center gap-4 text-gray-600">
+          <span className="flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            {customer?.first_name} {customer?.last_name}
+          </span>
+          <span className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Received{" "}
+            {new Date(enquiry.created_at).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+      </div>
+
+      <div className="text-right">
+        <div className="text-4xl font-bold text-primary-600 mb-1">£{enquiry.quoted_price}</div>
+        <p className="text-sm text-gray-500">Total quoted price</p>
+      </div>
+    </div>
+  </div>
+</div>
 
         <div className="space-y-8">
           {/* Party Details */}
@@ -855,28 +916,29 @@ const getCakeCustomizationData = (enquiry) => {
             </Card>
           )}
 
-          {/* Response Section */}
-          {enquiry.status === "accepted" || enquiry.status === "declined" ? (
-            <Card className="">
-              <CardHeader
-                className={`py-8 ${enquiry.status === "accepted" ? "bg-gradient-to-r from-emerald-50 to-emerald-100" : "bg-gradient-to-r from-red-50 to-red-100"}`}
-              >
-                <CardTitle
-                  className={`flex items-center gap-3 text-xl ${enquiry.status === "accepted" ? "text-emerald-800" : "text-red-800"}`}
-                >
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${enquiry.status === "accepted" ? "bg-emerald-500" : "bg-red-500"}`}
-                  >
-                    {enquiry.status === "accepted" ? (
-                      <CheckCircle className="w-5 h-5 text-white" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-white" />
-                    )}
-                  </div>
-                  Your Response
-                </CardTitle>
-                <CardDescription className="text-base">Your response has been sent to the customer</CardDescription>
-              </CardHeader>
+{(enquiry.status === "accepted" && !enquiry.auto_accepted) || enquiry.status === "declined" ? (
+  // Show "Your Response" section (already responded)
+  <Card className="">
+    <CardHeader
+      className={`py-8 ${enquiry.status === "accepted" ? "bg-gradient-to-r from-emerald-50 to-emerald-100" : "bg-gradient-to-r from-red-50 to-red-100"}`}
+    >
+      <CardTitle
+        className={`flex items-center gap-3 text-xl ${enquiry.status === "accepted" ? "text-emerald-800" : "text-red-800"}`}
+      >
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center ${enquiry.status === "accepted" ? "bg-emerald-500" : "bg-red-500"}`}
+        >
+          {enquiry.status === "accepted" ? (
+            <CheckCircle className="w-5 h-5 text-white" />
+          ) : (
+            <XCircle className="w-5 h-5 text-white" />
+          )}
+        </div>
+        Your Response
+      </CardTitle>
+      <CardDescription className="text-base">Your response has been sent to the customer</CardDescription>
+    </CardHeader>
+
               <CardContent className="p-8">
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -921,17 +983,38 @@ const getCakeCustomizationData = (enquiry) => {
                   <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
                     <Send className="w-5 h-5 text-white" />
                   </div>
-                  Respond to Enquiry
+                  {enquiry?.auto_accepted ? 'Confirm Deposit-Paid Booking' : 'Respond to Enquiry'}
                 </CardTitle>
-                <CardDescription className="text-base">Accept or decline this party booking request</CardDescription>
+                <CardDescription className="text-base"> {enquiry?.auto_accepted
+          ? '⚠️ URGENT: Customer has paid deposit. Confirm availability or request replacement within 2 hours.'
+          : 'Accept or decline this party booking request'
+        }</CardDescription>
               </CardHeader>
               <CardContent className="p-8">
                 {!showResponseForm ? (
                   <div className="space-y-6">
-                    <p className="text-gray-600 text-base">
-                      How would you like to respond to this party enquiry? The customer will be notified immediately of
-                      your decision.
-                    </p>
+        {enquiry?.auto_accepted ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold">!</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-yellow-900 mb-2">🚨 PRIORITY BOOKING - DEPOSIT PAID</h4>
+                  <p className="text-yellow-800 text-sm">
+                    The customer has already paid a £{Math.round(enquiry.quoted_price * 0.2)} deposit for this booking. 
+                    They believe their party is confirmed. If you cannot fulfill this booking, 
+                    <strong> PartySnap will immediately find a replacement</strong> and handle the customer communication.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-600 text-base">
+              How would you like to respond to this party enquiry? The customer will be notified immediately of your decision.
+            </p>
+          )}
+
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Button
@@ -939,7 +1022,7 @@ const getCakeCustomizationData = (enquiry) => {
                         className="bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-base font-semibold rounded-xl"
                       >
                         <CheckCircle className="w-5 h-5 mr-2" />
-                        Accept Enquiry
+                        {enquiry?.auto_accepted ? '✅ I Can Do This Booking' : 'Accept Enquiry'}
                       </Button>
 
                       <Button
@@ -948,7 +1031,7 @@ const getCakeCustomizationData = (enquiry) => {
                         className="border-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 py-4 text-base font-semibold rounded-xl"
                       >
                         <XCircle className="w-5 h-5 mr-2" />
-                        Decline Enquiry
+                        {enquiry?.auto_accepted ? '❌ I\'m Unavailable (Need Replacement)' : 'Decline Enquiry'}
                       </Button>
                     </div>
                   </div>

@@ -96,6 +96,8 @@ useEffect(() => {
     loading: phaseLoading
   } = usePartyPhase(partyData, partyId)
 
+
+
   // ✅ MODAL STATE - Updated with restoration support
   const [showSupplierModal, setShowSupplierModal] = useState(false)
   const [modalConfig, setModalConfig] = useState({
@@ -387,6 +389,38 @@ useEffect(() => {
     setSendingEnquiry(true)
     
     try {
+      console.log('🚀 Securing booking for:', supplier.name)
+    
+      // ✅ STEP 1: Add supplier to party plan (if not already there)
+      console.log('📝 STEP 1: Adding supplier to party plan...')
+      const addResult = await partyDatabaseBackend.addSupplierToParty(
+        partyId,
+        supplier,
+        selectedPackage
+      )
+  
+      if (!addResult.success) {
+        throw new Error(addResult.error)
+      }
+      
+      console.log('✅ STEP 1: Supplier added to party plan successfully')
+  
+      // ✅ STEP 2: Create AUTO-ACCEPTED enquiry for immediate booking
+      console.log('📧 STEP 2: Creating auto-accepted booking...')
+      const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+        partyId,
+        supplier,
+        selectedPackage,
+        `Immediate booking confirmed for ${supplier.name}`
+      )
+  
+      if (!enquiryResult.success) {
+        console.error('❌ Booking failed but supplier was added:', enquiryResult.error)
+        setEnquiryFeedback(`⚠️ ${supplier.name} added, but booking confirmation failed`)
+      } else {
+        console.log('✅ STEP 2: Booking confirmed successfully')
+      }
+  
       // ✅ Check sessionStorage for replacement context
       const replacementContextString = sessionStorage.getItem('replacementContext')
       let replacementContext = null
@@ -400,35 +434,6 @@ useEffect(() => {
         }
       }
 
-      // STEP 1: Add supplier to party plan
-      console.log('📝 STEP 1: Adding supplier to party plan...')
-      const addResult = await partyDatabaseBackend.addSupplierToParty(
-        partyId,
-        supplier,
-        selectedPackage
-      )
-
-      if (!addResult.success) {
-        throw new Error(addResult.error)
-      }
-      
-      console.log('✅ STEP 1: Supplier added to party plan successfully')
-
-      // STEP 2: Send individual enquiry
-      console.log('📧 STEP 2: Sending individual enquiry...')
-      const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
-        partyId,
-        supplier,
-        selectedPackage,
-        `Quick enquiry for ${supplier.name}`
-      )
-
-      if (!enquiryResult.success) {
-        console.error('❌ Enquiry failed but supplier was added:', enquiryResult.error)
-        setEnquiryFeedback(`⚠️ ${supplier.name} added, but enquiry failed to send`)
-      } else {
-        console.log('✅ STEP 2: Enquiry sent successfully')
-      }
 
       // ✅ STEP 3: If this was a replacement, mark old enquiry as processed
       if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
@@ -463,17 +468,17 @@ useEffect(() => {
         console.log('ℹ️ Not a replacement flow - skipping replacement processing')
       }
 
-      // STEP 4: Close modal and refresh (unchanged)
-      console.log('🔄 STEP 4: Refreshing data and closing modal...')
-      await refreshPartyData()
-      setShowSupplierAddedModal(false)
-      setAddedSupplierData(null)
+      // ✅ STEP 4: Close modal and show success
+    console.log('🎉 STEP 4: Booking secured - updating UI...')
+    await refreshPartyData()
+    setShowSupplierAddedModal(false)
+    setAddedSupplierData(null)
       
-      // Show success banner
-      const currentUrl = new URL(window.location)
-      currentUrl.searchParams.set('enquiry_sent', 'true')
-      currentUrl.searchParams.set('enquiry_count', '1')
-      router.push(currentUrl.toString())
+     // ✅ UPDATED: Show booking confirmation message
+     const currentUrl = new URL(window.location)
+     currentUrl.searchParams.set('booking_confirmed', 'true')
+     currentUrl.searchParams.set('supplier_name', encodeURIComponent(supplier.name))
+     router.push(currentUrl.toString())
       
     } catch (error) {
       console.error('❌ CRITICAL ERROR in handleModalSendEnquiry:', error)

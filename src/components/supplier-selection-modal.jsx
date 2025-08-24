@@ -24,13 +24,45 @@ import {
   DollarSign,
   Calendar,
   Plus,
-  Sparkles
+  Sparkles,
+  Clock,
+  Sun,
+  Moon
 } from "lucide-react"
 import Image from "next/image"
 import { useSuppliers } from '@/utils/mockBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
+// FIXED: Import centralized date helpers
+import { 
+  dateToLocalString, 
+  stringToLocalDate, 
+  getDateStringForComparison,
+  parseSupplierDate,
+  migrateDateArray,
+  isSameDay,
+  formatDate
+} from '@/utils/dateHelpers'
 
+// Time slot definitions - matching other components
+const TIME_SLOTS = {
+  morning: {
+    id: 'morning',
+    label: 'Morning',
+    defaultStart: '09:00',
+    defaultEnd: '13:00',
+    displayTime: '9am - 1pm',
+    icon: Sun
+  },
+  afternoon: {
+    id: 'afternoon', 
+    label: 'Afternoon',
+    defaultStart: '13:00',
+    defaultEnd: '17:00',
+    displayTime: '1pm - 5pm',
+    icon: Moon
+  }
+}
 
 export default function SupplierSelectionModal({
   isOpen,
@@ -39,17 +71,16 @@ export default function SupplierSelectionModal({
   theme,
   date,
   onSelectSupplier,
-  initialFilters = {}, // NEW: Add this prop
+  initialFilters = {},
   partyLocation = null,
   currentPhase = "planning",
   partyData = {},
   enquiries = [],
   hasEnquiriesPending = false,
-  partyId, // Add this too
+  partyId,
 }) {
 
-
-  // NEW: Initialize state with restored filters or defaults
+  // State with restored filters or defaults
   const [priceRange, setPriceRange] = useState(initialFilters.priceRange || "all")
   const [ratingFilter, setRatingFilter] = useState(initialFilters.ratingFilter || "all")
   const [distance, setDistance] = useState(initialFilters.distance || "all")
@@ -58,7 +89,7 @@ export default function SupplierSelectionModal({
   const [selectedPackageId, setSelectedPackageId] = useState('premium')
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
 
-  // NEW: Customization modal state
+  // Customization modal state
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [selectedSupplierForCustomization, setSelectedSupplierForCustomization] = useState(null)
 
@@ -66,9 +97,7 @@ export default function SupplierSelectionModal({
   const { suppliers, loading, error } = useSuppliers()
   const { addSupplier, removeSupplier, addAddon } = usePartyPlan()
 
-
-
-  // NEW: Update filters when initialFilters change (for restoration)
+  // Update filters when initialFilters change (for restoration)
   useEffect(() => {
     if (Object.keys(initialFilters).length > 0) {
       console.log('🔄 Applying restored filters:', initialFilters)
@@ -78,7 +107,261 @@ export default function SupplierSelectionModal({
       setAvailableOnly(initialFilters.availableOnly || false)
     }
   }, [initialFilters])
+
+  // FIXED: Migration helper for legacy supplier data
+  const getSupplierWithTimeSlots = (supplierData) => {
+    if (!supplierData) return null
+    
+    // If already has time slots, return as-is
+    if (supplierData.workingHours?.Monday?.timeSlots) {
+      return supplierData
+    }
+    
+    // Try to parse supplier data if it's a string
+    let parsedData = supplierData
+    if (supplierData.data && typeof supplierData.data === 'string') {
+      try {
+        const parsed = JSON.parse(supplierData.data)
+        parsedData = { ...supplierData, ...parsed }
+      } catch (e) {
+        console.log('Could not parse supplier data:', e.message)
+      }
+    }
+    
+    // Migrate legacy data on-the-fly for display
+    const migrated = { ...parsedData }
+    
+    if (parsedData.workingHours) {
+      migrated.workingHours = {}
+      Object.entries(parsedData.workingHours).forEach(([day, hours]) => {
+        migrated.workingHours[day] = {
+          active: hours.active,
+          timeSlots: {
+            morning: { 
+              available: hours.active, 
+              startTime: hours.start || "09:00", 
+              endTime: "13:00" 
+            },
+            afternoon: { 
+              available: hours.active, 
+              startTime: "13:00", 
+              endTime: hours.end || "17:00" 
+            }
+          }
+        }
+      })
+    }
+    
+    // FIXED: Migrate unavailable dates using centralized helper
+    if (parsedData.unavailableDates && Array.isArray(parsedData.unavailableDates)) {
+      migrated.unavailableDates = migrateDateArray(parsedData.unavailableDates)
+    }
+    
+    // FIXED: Migrate busy dates using centralized helper
+    if (parsedData.busyDates && Array.isArray(parsedData.busyDates)) {
+      migrated.busyDates = migrateDateArray(parsedData.busyDates)
+    }
+    
+    return migrated
+  }
+
+ // FIXED: Lenient time slot availability check
+const isTimeSlotAvailable = (supplier, date, timeSlot) => {
+  if (!supplier || !date) {
+    console.log(`✅ LENIENT: ${supplier?.name} - No date/supplier, assuming available`)
+    return true // Default to available
+  }
   
+  const migratedSupplier = getSupplierWithTimeSlots(supplier)
+  
+  if (!migratedSupplier) {
+    console.log(`✅ LENIENT: ${supplier.name} - No migrated data, assuming available`)
+    return true // Default to available
+  }
+  
+  try {
+    const checkDate = parseSupplierDate(date)
+    if (!checkDate) {
+      console.log(`✅ LENIENT: ${supplier.name} - Could not parse date, assuming available`)
+      return true // Default to available
+    }
+    
+    const dateString = dateToLocalString(checkDate)
+    const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
+    
+    console.log(`🔍 LENIENT: Checking ${supplier.name} for ${dateString} (${dayName}) - ${timeSlot}`)
+    
+    // LENIENT: Only check if we have working hours data
+    if (migratedSupplier.workingHours?.[dayName]) {
+      const workingDay = migratedSupplier.workingHours[dayName]
+      
+      // If day is explicitly marked as inactive, respect that
+      if (workingDay.active === false) {
+        console.log(`❌ LENIENT: ${supplier.name} - Day ${dayName} explicitly inactive`)
+        return false
+      }
+      
+      // If we have time slot data, check it
+      if (workingDay.timeSlots?.[timeSlot]) {
+        const slotAvailable = workingDay.timeSlots[timeSlot].available
+        if (slotAvailable === false) {
+          console.log(`❌ LENIENT: ${supplier.name} - Time slot ${timeSlot} explicitly unavailable`)
+          return false
+        }
+      }
+    }
+    
+    // LENIENT: Only block if explicitly unavailable
+    if (migratedSupplier.unavailableDates?.length > 0) {
+      const unavailableDate = migratedSupplier.unavailableDates.find(ud => {
+        const udDate = getDateStringForComparison(ud.date || ud)
+        return udDate === dateString
+      })
+      
+      if (unavailableDate) {
+        console.log(`🔍 LENIENT: ${supplier.name} - Found unavailable date entry:`, unavailableDate)
+        
+        // Legacy format - entire day blocked
+        if (typeof unavailableDate === 'string') {
+          console.log(`❌ LENIENT: ${supplier.name} - Legacy format, entire day unavailable`)
+          return false
+        }
+        
+        // New format - check specific time slots
+        if (unavailableDate.timeSlots?.includes(timeSlot)) {
+          console.log(`❌ LENIENT: ${supplier.name} - Time slot ${timeSlot} explicitly blocked`)
+          return false
+        }
+      }
+    }
+    
+    // LENIENT: Only block if explicitly busy
+    if (migratedSupplier.busyDates?.length > 0) {
+      const busyDate = migratedSupplier.busyDates.find(bd => {
+        const bdDate = getDateStringForComparison(bd.date || bd)
+        return bdDate === dateString
+      })
+      
+      if (busyDate) {
+        console.log(`🔍 LENIENT: ${supplier.name} - Found busy date entry:`, busyDate)
+        
+        // Legacy format - entire day blocked
+        if (typeof busyDate === 'string') {
+          console.log(`❌ LENIENT: ${supplier.name} - Legacy format, entire day busy`)
+          return false
+        }
+        
+        // New format - check specific time slots
+        if (busyDate.timeSlots?.includes(timeSlot)) {
+          console.log(`❌ LENIENT: ${supplier.name} - Time slot ${timeSlot} explicitly busy`)
+          return false
+        }
+      }
+    }
+    
+    // Default to available if no explicit blocks found
+    console.log(`✅ LENIENT: ${supplier.name} - No explicit blocks found, assuming available`)
+    return true
+    
+  } catch (error) {
+    console.error(`❌ LENIENT: Error checking ${supplier.name}, assuming available:`, error)
+    return true // Default to available on error
+  }
+}
+
+
+
+// FIXED: Much more lenient availability checking
+const checkSupplierAvailability = (supplier, date, timeSlot = null) => {
+  if (!date || !supplier) {
+    console.log(`✅ LENIENT: ${supplier?.name} - No date/supplier provided, assuming available`)
+    return { available: true, reason: 'no-data-provided' }
+  }
+  
+  console.log(`📅 LENIENT: Checking availability for ${supplier.name}`)
+  
+  // Convert the check date
+  let checkDate
+  if (typeof date === 'string') {
+    checkDate = parseSupplierDate(date)
+  } else {
+    checkDate = date
+  }
+  
+  if (!checkDate) {
+    console.log(`✅ LENIENT: ${supplier.name} - Could not parse date, assuming available`)
+    return { available: true, reason: 'date-parse-error' }
+  }
+  
+  // Only block past dates
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  if (checkDate < today) {
+    console.log(`❌ LENIENT: ${supplier.name} - Past date, unavailable`)
+    return { available: false, reason: 'past-date' }
+  }
+
+  // Get party time slot if not provided
+  if (!timeSlot) {
+    try {
+      const partyDetails = localStorage.getItem('party_details')
+      if (partyDetails) {
+        const parsed = JSON.parse(partyDetails)
+        timeSlot = parsed.timeSlot
+        
+        // Map from party time if timeSlot not explicitly set
+        if (!timeSlot && parsed.time) {
+          const timeStr = parsed.time.toLowerCase()
+          if (timeStr.includes('am') || 
+              timeStr.includes('9') || timeStr.includes('10') || 
+              timeStr.includes('11') || timeStr.includes('12')) {
+            timeSlot = 'morning'
+          } else if (timeStr.includes('pm') || timeStr.includes('1') || 
+                    timeStr.includes('2') || timeStr.includes('3') || 
+                    timeStr.includes('4') || timeStr.includes('5')) {
+            timeSlot = 'afternoon'
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Could not determine party time slot, will check generally')
+    }
+  }
+
+  // If we have a specific time slot, check it
+  if (timeSlot) {
+    const isSlotAvailable = isTimeSlotAvailable(supplier, checkDate, timeSlot)
+    const result = {
+      available: isSlotAvailable,
+      reason: isSlotAvailable ? 'available' : 'time-slot-blocked',
+      timeSlot: timeSlot,
+      checkedDate: dateToLocalString(checkDate)
+    }
+    
+    console.log(`📅 LENIENT: ${supplier.name} - Time slot ${timeSlot} result:`, result)
+    return result
+  }
+
+  // Fallback: check both morning and afternoon (lenient approach)
+  const morningAvailable = isTimeSlotAvailable(supplier, checkDate, 'morning')
+  const afternoonAvailable = isTimeSlotAvailable(supplier, checkDate, 'afternoon')
+  
+  // LENIENT: Consider available if either slot is available OR if no data exists
+  const anyAvailable = morningAvailable || afternoonAvailable
+  const availableSlots = []
+  if (morningAvailable) availableSlots.push('morning')
+  if (afternoonAvailable) availableSlots.push('afternoon')
+
+  const result = {
+    available: anyAvailable,
+    reason: anyAvailable ? 'slots-available' : 'all-slots-blocked',
+    availableSlots: availableSlots,
+    checkedDate: dateToLocalString(checkDate)
+  }
+
+  console.log(`📅 LENIENT: ${supplier.name} - General availability result:`, result)
+  return result
+}
 
   // Handle Quick Add - simplified
   const handleQuickAdd = (supplier) => {
@@ -94,10 +377,6 @@ export default function SupplierSelectionModal({
         partyId
       })
       
-      // Import your database backend at the top of the file
-      // import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
-      
-      // Call your backend to send individual enquiry
       const result = await partyDatabaseBackend.sendIndividualEnquiry(
         partyId, 
         supplier, 
@@ -118,13 +397,11 @@ export default function SupplierSelectionModal({
     }
   }
 
-  // NEW: Handle customization modal add to plan - with comprehensive debugging
+  // Handle customization modal add to plan
   const handleCustomizationAddToPlan = async (customizationData) => {
     const { supplier, package: selectedPackage, addons, totalPrice } = customizationData
     
     console.log('🔥 STEP 1 - Received customizationData:', customizationData)
-    console.log('🔥 STEP 1 - Addons array:', addons)
-    console.log('🔥 STEP 1 - Total price vs base price:', { totalPrice, basePrice: selectedPackage?.price })
     
     if (!supplier || !selectedPackage) {
       console.error("Missing supplier or package data")
@@ -134,7 +411,6 @@ export default function SupplierSelectionModal({
     try {
       setAddingSupplier(supplier.id)
       
-      // Create enhanced package in exact same format as supplier profile
       const enhancedPackage = {
         ...selectedPackage,
         addons: addons || [],
@@ -145,35 +421,12 @@ export default function SupplierSelectionModal({
       }
 
       console.log('🔥 STEP 2 - Enhanced package being sent to addSupplier:', enhancedPackage)
-      console.log('🔥 STEP 2 - Enhanced package addons:', enhancedPackage.addons)
-      console.log('🔥 STEP 2 - Enhanced package selectedAddons:', enhancedPackage.selectedAddons)
-      
-      // Call addSupplier with enhanced package
-      console.log('🔥 STEP 3 - Calling addSupplier with:', { 
-        supplierName: supplier.name, 
-        enhancedPackageKeys: Object.keys(enhancedPackage),
-        hasAddons: (enhancedPackage.addons || []).length > 0
-      })
       
       const result = await addSupplier(supplier, enhancedPackage)
       
-      console.log('🔥 STEP 4 - addSupplier result:', result)
+      console.log('🔥 STEP 3 - addSupplier result:', result)
       
       if (result.success) {
-        // Wait a moment then check localStorage
-        setTimeout(() => {
-          const savedPlan = localStorage.getItem('user_party_plan')
-          const parsedPlan = savedPlan ? JSON.parse(savedPlan) : null
-          console.log('🔥 STEP 5 - Final saved plan:', parsedPlan)
-          
-          if (parsedPlan?.entertainment) {
-            console.log('🔥 STEP 5 - Entertainment object:', parsedPlan.entertainment)
-            console.log('🔥 STEP 5 - Entertainment selectedAddons:', parsedPlan.entertainment.selectedAddons)
-            console.log('🔥 STEP 5 - Entertainment packageData:', parsedPlan.entertainment.packageData)
-            console.log('🔥 STEP 5 - Entertainment totalPrice:', parsedPlan.entertainment.totalPrice)
-          }
-        }, 500)
-        
         const addonMessage = addons?.length > 0 
           ? ` with ${addons.length} exciting add-on${addons.length > 1 ? 's' : ''}` 
           : ''
@@ -194,6 +447,7 @@ export default function SupplierSelectionModal({
       setAddingSupplier(null)
     }
   }
+
   const categoryMapping = useMemo(() => ({
     entertainment: ['Entertainment', 'Services', 'Entertainers', 'entertainment'],
     venue: ['Venues', 'venue'],
@@ -213,298 +467,227 @@ export default function SupplierSelectionModal({
     return new Date(date);
   }, [date]);
 
+  const filteredSuppliers = useMemo(() => {
   
-
-// Enhanced availability checking for SupplierSelectionModal
-// Replace the checkSupplierAvailabilityOnDate function with this enhanced version
-
-const checkSupplierAvailabilityOnDate = (supplier, date, timeSlot = null, duration = 2) => {
-  if (!date) {
-    console.log(`📅 ${supplier.name}: No date provided - assuming available`);
-    return true;
-  }
-  
-  console.log(`📅 Checking availability for ${supplier.name} on ${date}`);
-  
-  // Convert the check date to a Date object if it's a string
-  let checkDate;
-  if (typeof date === 'string') {
-    checkDate = new Date(date);
-  } else {
-    checkDate = date;
-  }
-  
-  // Check if date is in the past
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (checkDate < today) {
-    console.log(`⏰ ${supplier.name}: Past date - unavailable`);
-    return false;
-  }
-
-  // Get supplier data (parse if it's a string)
-  let supplierData = supplier;
-  if (supplier.data && typeof supplier.data === 'string') {
-    try {
-      supplierData = { ...supplier, ...JSON.parse(supplier.data) };
-      console.log(`📋 ${supplier.name}: Parsed supplier data successfully`);
-    } catch (e) {
-      console.log(`⚠️ ${supplier.name}: Could not parse supplier data:`, e.message);
-    }
-  }
-
-  // SIMPLIFIED: Use the exact same logic as Browse Suppliers calendar
-  const isDateUnavailable = (date, supplierData) => {
-    if (!supplierData?.unavailableDates) return false;
-    
-    console.log(`📅 ${supplier.name}: Checking against unavailable dates:`, supplierData.unavailableDates);
-    
-    const result = supplierData.unavailableDates.some((unavailableDate) => {
-      const unavailableDateObj = new Date(unavailableDate);
-      const checkResult = unavailableDateObj.toDateString() === date.toDateString();
-      
-      console.log(`📅 ${supplier.name}: Comparing ${date.toDateString()} with ${unavailableDateObj.toDateString()} = ${checkResult}`);
-      
-      return checkResult;
-    });
-    
-    return result;
-  };
-
-  // Check if date is unavailable using the same logic as Browse Suppliers
-  if (isDateUnavailable(checkDate, supplierData)) {
-    console.log(`❌ ${supplier.name}: Date ${checkDate.toDateString()} is unavailable`);
-    return false;
-  }
-
-  // Check other availability rules (optional - can be simplified further)
-  if (supplierData.availability) {
-    const availability = supplierData.availability;
-    
-    // Check days of week if specified
-    if (availability.daysOfWeek && Array.isArray(availability.daysOfWeek) && availability.daysOfWeek.length > 0) {
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const dayOfWeek = dayNames[checkDate.getDay()];
-      
-      if (!availability.daysOfWeek.includes(dayOfWeek)) {
-        console.log(`❌ ${supplier.name}: ${dayOfWeek} not in available days - unavailable`);
-        return false;
-      }
-    }
-    
-    // Check time slots if specified
-    if (timeSlot && availability.timeSlots && Array.isArray(availability.timeSlots) && availability.timeSlots.length > 0) {
-      if (!availability.timeSlots.includes(timeSlot)) {
-        console.log(`❌ ${supplier.name}: ${timeSlot} not in available time slots - unavailable`);
-        return false;
-      }
-    }
-  }
-
-  console.log(`✅ ${supplier.name}: Available on ${checkDate.toDateString()}`);
-  return true;
-};
-
-// Enhanced filtering logic that gets party details for better availability checking
-const filteredSuppliers = useMemo(() => {
-
-  
-  // Get party details for more accurate availability checking
-  const getPartyDetails = () => {
-    try {
-      // Try to get party details from various sources
-      const partyDetails = localStorage.getItem('party_details');
-      if (partyDetails) {
-        const parsed = JSON.parse(partyDetails);
-        return {
-          timeSlot: parsed.timeSlot || (parsed.time && parsed.time.includes('am') ? 'morning' : 'afternoon'),
-          duration: parsed.duration || 2,
-          time: parsed.time
-        };
-      }
-    } catch (e) {
-      console.log('Could not get party details for availability checking');
-    }
-    return { timeSlot: 'afternoon', duration: 2 };
-  };
-
-  const partyDetails = getPartyDetails();
-  
-  const filtered = suppliers.filter((supplier) => {
-    const targetCategories = Array.isArray(categoryMapping[category]) 
-      ? categoryMapping[category] 
-      : [categoryMapping[category]];
-  
-    if (!supplier.category) {
-      console.log(`❌ ${supplier.name}: No category defined`);
-      return false;
-    }
-  
-    const matchesCategory = targetCategories.some(cat => {
-      if (!cat) return false;
-      return supplier.category === cat || 
-             supplier.category?.toLowerCase() === cat.toLowerCase();
-    });
-  
-    if (!matchesCategory) return false;
-
-    // ENHANCED: More comprehensive availability checking
-    if (availableOnly && selectedDate) {
-      const isAvailableOnDate = checkSupplierAvailabilityOnDate(
-        supplier, 
-        selectedDate, 
-        partyDetails.timeSlot, 
-        partyDetails.duration
-      );
-      if (!isAvailableOnDate) {
-        console.log(`❌ ${supplier.name}: Not available on ${selectedDate} for ${partyDetails.timeSlot} (${partyDetails.duration}h)`);
-        return false;
-      }
-    }
-    
-    // Location filtering (existing logic)
-    if (distance !== "all" && partyLocation) {
-      if (!supplier.location) {
-        console.log(`📍 ${supplier.name}: No location data - excluding`);
-        return false;
-      }
-      
-      const comparisonLocation = LocationService.getComparisonLocation(supplier.category, partyLocation);
-      const distanceMap = {
-        "5": "exact",
-        "10": "district", 
-        "15": "wide",
-        "all": "all"
-      };
-      
-      const maxDistance = distanceMap[distance] || "district";
-      const canServe = LocationService.arePostcodesNearby(
-        supplier.location, 
-        comparisonLocation, 
-        maxDistance
-      );
-      
-      if (!canServe) {
-        console.log(`❌ ${supplier.name}: Cannot serve location`);
-        return false;
-      }
-    }
-
-    // Other filters (price, rating, etc.)
-    if (priceRange !== "all") {
-      const [min, max] = priceRange.split('-').map(p => p.replace('+', '').replace('£', ''))
-      if (max) {
-        if (supplier.priceFrom < parseInt(min) || supplier.priceFrom > parseInt(max)) return false
-      } else {
-        if (supplier.priceFrom < parseInt(min)) return false
-      }
-    }
-
-    if (ratingFilter !== "all") {
-      const minRating = parseFloat(ratingFilter.replace('+', ''))
-      if (supplier.rating < minRating) return false
-    }
-
-    return true
-  });
-
-
-
-  // Sorting logic (existing)
-  if (partyLocation) {
-    return filtered.sort((a, b) => {
-      const aComparisonLocation = LocationService.getComparisonLocation(a.category, partyLocation);
-      const bComparisonLocation = LocationService.getComparisonLocation(b.category, partyLocation);
-      
-      const aIsRealPostcode = LocationService.isValidPostcode(a.location);
-      const bIsRealPostcode = LocationService.isValidPostcode(b.location);
-      const aIsDescriptive = LocationService.isDescriptiveLocation(a.location);
-      const bIsDescriptive = LocationService.isDescriptiveLocation(b.location);
-      
-      if (aIsRealPostcode && bIsDescriptive) return -1;
-      if (bIsRealPostcode && aIsDescriptive) return 1;
-      
-      return (b.rating || 0) - (a.rating || 0);
-    });
-  }
-
-  return filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-}, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping, partyLocation]);
-
-// Add this debug function to see exactly what's happening
-const debugSupplierAvailability = (supplier, checkDate) => {
-  console.log('\n🔍 DEBUGGING AVAILABILITY FOR:', supplier.name);
-  console.log('📅 Check date:', checkDate);
-  console.log('📋 Supplier object keys:', Object.keys(supplier));
-  
-  // Check if supplier has data field
-  if (supplier.data) {
-    console.log('💾 Supplier has data field (type:', typeof supplier.data, ')');
-    
-    if (typeof supplier.data === 'string') {
+    const getPartyDetails = () => {
       try {
-        const parsedData = JSON.parse(supplier.data);
-        console.log('✅ Successfully parsed supplier data');
-        console.log('📋 Parsed data keys:', Object.keys(parsedData));
+        const partyDetails = localStorage.getItem('party_details');
+        if (partyDetails) {
+          const parsed = JSON.parse(partyDetails);
+          return {
+            timeSlot: parsed.timeSlot || (parsed.time && parsed.time.includes('am') ? 'morning' : 'afternoon'),
+            duration: parsed.duration || 2,
+            time: parsed.time
+          };
+        }
+      } catch (e) {
+        console.log('Could not get party details for availability checking');
+      }
+      return { timeSlot: 'afternoon', duration: 2 };
+    };
+  
+    const partyDetails = getPartyDetails();
+    console.log('🔍 LENIENT FILTERING: Using party details:', partyDetails)
+    
+    const filtered = suppliers.filter((supplier) => {
+      const targetCategories = Array.isArray(categoryMapping[category]) 
+        ? categoryMapping[category] 
+        : [categoryMapping[category]];
+    
+      if (!supplier.category) {
+        console.log(`❌ FILTERING: ${supplier.name} - No category defined`);
+        return false;
+      }
+    
+      const matchesCategory = targetCategories.some(cat => {
+        if (!cat) return false;
+        return supplier.category === cat || 
+               supplier.category?.toLowerCase() === cat.toLowerCase();
+      });
+    
+      if (!matchesCategory) return false;
+  
+      // LENIENT: Only filter by availability if user explicitly enabled it
+      if (availableOnly && selectedDate) {
+        console.log(`🔍 LENIENT FILTERING: Checking availability for ${supplier.name} (availableOnly is ON)`)
+        const availabilityResult = checkSupplierAvailability(supplier, selectedDate, partyDetails.timeSlot)
         
-        // Check for unavailableDates
-        if (parsedData.unavailableDates) {
-          console.log('📅 Found unavailableDates:', parsedData.unavailableDates);
-          console.log('📅 Type:', typeof parsedData.unavailableDates);
-          console.log('📅 Is array:', Array.isArray(parsedData.unavailableDates));
-          
-          if (Array.isArray(parsedData.unavailableDates)) {
-            console.log('📅 Unavailable dates list:');
-            parsedData.unavailableDates.forEach((date, index) => {
-              console.log(`  ${index + 1}. ${date} (type: ${typeof date})`);
-            });
-            
-            // Test date normalization
-            const checkDateNormalized = checkDate; // Assuming this is already "YYYY-MM-DD"
-            console.log('📅 Check date normalized:', checkDateNormalized);
-            
-            parsedData.unavailableDates.forEach((unavailableDate, index) => {
-              if (unavailableDate.includes('T')) {
-                const datePart = unavailableDate.split('T')[0];
-                console.log(`📅 Unavailable date ${index + 1}: ${unavailableDate} → ${datePart}`);
-                console.log(`📅 Match with ${checkDateNormalized}?`, datePart === checkDateNormalized);
-              }
-            });
-          }
+        // LENIENT: Only exclude if we're really sure they're unavailable
+        const isDefinitelyUnavailable = availabilityResult.reason === 'past-date' || 
+                                       availabilityResult.reason === 'time-slot-blocked' ||
+                                       availabilityResult.reason === 'all-slots-blocked'
+        
+        if (isDefinitelyUnavailable) {
+          console.log(`❌ LENIENT FILTERING: ${supplier.name} - Definitely unavailable (${availabilityResult.reason})`)
+          return false
         } else {
-          console.log('❌ No unavailableDates field found in parsed data');
+          console.log(`✅ LENIENT FILTERING: ${supplier.name} - Keeping (${availabilityResult.reason})`)
+        }
+      } else if (availableOnly) {
+        console.log(`✅ LENIENT FILTERING: ${supplier.name} - availableOnly ON but no date, keeping supplier`)
+      }
+      
+      // Other filters remain the same...
+      if (distance !== "all" && partyLocation) {
+        if (!supplier.location) {
+          console.log(`📍 FILTERING: ${supplier.name} - No location data, excluding`)
+          return false
         }
         
-        // Check other possible fields
-        ['busyDates', 'blockedDates'].forEach(field => {
-          if (parsedData[field]) {
-            console.log(`📅 Found ${field}:`, parsedData[field]);
-          }
-        });
+        const comparisonLocation = LocationService.getComparisonLocation(supplier.category, partyLocation)
+        const distanceMap = {
+          "5": "exact",
+          "10": "district", 
+          "15": "wide",
+          "all": "all"
+        }
         
-      } catch (e) {
-        console.log('❌ Error parsing supplier data:', e.message);
-        console.log('💾 Raw data:', supplier.data.substring(0, 200) + '...');
+        const maxDistance = distanceMap[distance] || "district"
+        const canServe = LocationService.arePostcodesNearby(
+          supplier.location, 
+          comparisonLocation, 
+          maxDistance
+        )
+        
+        if (!canServe) {
+          console.log(`❌ FILTERING: ${supplier.name} - Cannot serve location`)
+          return false
+        }
       }
-    } else {
-      console.log('📋 Data is not a string:', supplier.data);
-    }
-  } else {
-    console.log('❌ No data field found on supplier');
-  }
   
-  // Check direct fields on supplier
-  ['unavailableDates', 'busyDates', 'blockedDates'].forEach(field => {
-    if (supplier[field]) {
-      console.log(`📅 Found ${field} directly on supplier:`, supplier[field]);
+      if (priceRange !== "all") {
+        const [min, max] = priceRange.split('-').map(p => p.replace('+', '').replace('£', ''))
+        if (max) {
+          if (supplier.priceFrom < parseInt(min) || supplier.priceFrom > parseInt(max)) return false
+        } else {
+          if (supplier.priceFrom < parseInt(min)) return false
+        }
+      }
+  
+      if (ratingFilter !== "all") {
+        const minRating = parseFloat(ratingFilter.replace('+', ''))
+        if (supplier.rating < minRating) return false
+      }
+  
+      return true
+    });
+  
+    console.log(`🔍 LENIENT FILTERING: Final result - ${filtered.length} suppliers from ${suppliers.length} total`)
+    console.log(`🔍 LENIENT FILTERING: availableOnly is ${availableOnly ? 'ON' : 'OFF'}`)
+  
+    // Sorting logic remains the same...
+    if (partyLocation) {
+      return filtered.sort((a, b) => {
+        const aComparisonLocation = LocationService.getComparisonLocation(a.category, partyLocation);
+        const bComparisonLocation = LocationService.getComparisonLocation(b.category, partyLocation);
+        
+        const aIsRealPostcode = LocationService.isValidPostcode(a.location);
+        const bIsRealPostcode = LocationService.isValidPostcode(b.location);
+        const aIsDescriptive = LocationService.isDescriptiveLocation(a.location);
+        const bIsDescriptive = LocationService.isDescriptiveLocation(b.location);
+        
+        if (aIsRealPostcode && bIsDescriptive) return -1;
+        if (bIsRealPostcode && aIsDescriptive) return 1;
+        
+        return (b.rating || 0) - (a.rating || 0);
+      });
     }
-  });
-};
-
-// Use this in your component temporarily:
-// debugSupplierAvailability(supplier, selectedDate);
+  
+    return filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }, [suppliers, category, selectedDate, availableOnly, distance, priceRange, ratingFilter, categoryMapping, partyLocation]);
 
   if (!isOpen) return null
+
+  // FIXED: Enhanced AvailabilityStatus component with time slot support
+  const AvailabilityStatus = ({ supplier, selectedDate }) => {
+    if (!selectedDate) {
+      return (
+        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          No date selected
+        </Badge>
+      );
+    }
+
+    const getPartyTimeSlot = () => {
+      try {
+        const partyDetails = localStorage.getItem('party_details');
+        if (partyDetails) {
+          const parsed = JSON.parse(partyDetails);
+          let timeSlot = parsed.timeSlot;
+          
+          if (!timeSlot && parsed.time) {
+            const timeStr = parsed.time.toLowerCase();
+            if (timeStr.includes('am') || 
+                timeStr.includes('9') || timeStr.includes('10') || 
+                timeStr.includes('11') || timeStr.includes('12')) {
+              timeSlot = 'morning';
+            } else if (timeStr.includes('pm') || timeStr.includes('1') || 
+                      timeStr.includes('2') || timeStr.includes('3') || 
+                      timeStr.includes('4') || timeStr.includes('5')) {
+              timeSlot = 'afternoon';
+            }
+          }
+          
+          return timeSlot;
+        }
+      } catch (e) {
+        console.log('Could not get party time slot');
+      }
+      return null;
+    };
+  
+
+    const partyTimeSlot = getPartyTimeSlot();
+    const availabilityResult = checkSupplierAvailability(supplier, selectedDate, partyTimeSlot);
+
+    if (availabilityResult.available) {
+      const TimeSlotIcon = partyTimeSlot && TIME_SLOTS[partyTimeSlot]?.icon;
+      
+      return (
+        <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+          <Check className="w-3 h-3" />
+          Available
+          {TimeSlotIcon && partyTimeSlot && (
+            <span className="flex items-center gap-1 ml-1">
+              <TimeSlotIcon className="w-3 h-3" />
+              <span className="text-xs">{TIME_SLOTS[partyTimeSlot].label}</span>
+            </span>
+          )}
+        </Badge>
+      );
+    } else {
+      // LENIENT: Only show as unavailable if we're really sure
+      const isDefinitelyUnavailable = availabilityResult.reason === 'past-date' || 
+                                     availabilityResult.reason === 'time-slot-blocked' ||
+                                     availabilityResult.reason === 'all-slots-blocked'
+      
+      if (isDefinitelyUnavailable) {
+        const TimeSlotIcon = partyTimeSlot && TIME_SLOTS[partyTimeSlot]?.icon;
+        
+        return (
+          <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-200 flex items-center gap-1">
+            <X className="w-3 h-3" />
+            Unavailable
+            {TimeSlotIcon && partyTimeSlot && (
+              <span className="flex items-center gap-1 ml-1">
+                <TimeSlotIcon className="w-3 h-3" />
+                <span className="text-xs">{TIME_SLOTS[partyTimeSlot].label}</span>
+              </span>
+            )}
+          </Badge>
+        );
+      } else {
+        // Show as "Unknown" for unclear cases
+        return (
+          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-200 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Check Availability
+          </Badge>
+        );
+      }
+    }
+  };
 
   // Complete MobileFriendlyFilters component
   const MobileFriendlyFilters = ({
@@ -709,8 +892,8 @@ const debugSupplierAvailability = (supplier, checkDate) => {
               </Select>
             </div>
 
-            {/* Availability */}
-            {/* <div className="space-y-3">
+            {/* FIXED: Availability checkbox with better explanation */}
+            <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Date Availability
@@ -719,7 +902,7 @@ const debugSupplierAvailability = (supplier, checkDate) => {
               {selectedDate && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="text-sm text-blue-800">
-                    <strong>Selected Date:</strong> {selectedDate.toLocaleDateString('en-US', { 
+                    <strong>Party Date:</strong> {selectedDate.toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       month: 'long', 
                       day: 'numeric' 
@@ -732,23 +915,26 @@ const debugSupplierAvailability = (supplier, checkDate) => {
                 <Checkbox
                   id="available-only-mobile"
                   checked={availableOnly}
-                  onCheckedChange={(checked) => setAvailableOnly(Boolean(checked))}
+                  onCheckedChange={(checked) => {
+                    console.log('🔄 SELECTION: Availability filter toggled:', checked)
+                    setAvailableOnly(Boolean(checked))
+                  }}
                   className="data-[state=checked]:bg-primary-500"
                 />
                 <label 
                   htmlFor="available-only-mobile" 
                   className="text-sm font-medium text-gray-700 flex items-center"
                 >
-                  Only show suppliers available on {selectedDate ? 'selected date' : 'party date'}
+                  Only show available suppliers for {selectedDate ? 'selected date & time' : 'party date & time'}
                 </label>
               </div>
               
               {!selectedDate && (
                 <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
-                  ⚠️ No specific date provided. Using general availability.
+                  ⚠️ No specific date provided. Filter will use party plan date if available.
                 </div>
               )}
-            </div> */}
+            </div>
 
             {/* Apply/Clear Actions */}
             <div className="flex space-x-3 pt-2">
@@ -830,10 +1016,13 @@ const debugSupplierAvailability = (supplier, checkDate) => {
             <Checkbox
               id="available-only"
               checked={availableOnly}
-              onCheckedChange={(checked) => setAvailableOnly(Boolean(checked))}
+              onCheckedChange={(checked) => {
+                console.log('🔄 SELECTION: Desktop availability filter toggled:', checked)
+                setAvailableOnly(Boolean(checked))
+              }}
             />
             <label htmlFor="available-only" className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Available on {selectedDate ? 'date' : 'party date'}
+              Available on {selectedDate ? 'date & time' : 'party date & time'}
             </label>
           </div>
           
@@ -849,156 +1038,75 @@ const debugSupplierAvailability = (supplier, checkDate) => {
     );
   };
 
-  const AvailabilityStatus = ({ supplier, selectedDate, partyDetails }) => {
-    if (!selectedDate) {
-      return (
-        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
-          📅 No date selected
-        </Badge>
-      );
-    }
-  
-    const isAvailable = checkSupplierAvailabilityOnDate(
-      supplier, 
-      selectedDate, 
-      partyDetails?.timeSlot, 
-      partyDetails?.duration
-    );
-  
-    if (isAvailable) {
-      return (
-        <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200">
-          ✅ Available
-        </Badge>
-      );
-    } else {
-      return (
-        <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-200">
-          ❌ Not Available
-        </Badge>
-      );
-    }
-  };
-
-  // UPDATED SupplierCard with Quick Add
+  // FIXED: Updated SupplierCard with proper availability checking
   const SupplierCard = ({ supplier }) => {
-
-
     const { navigateWithContext } = useContextualNavigation();
-    const isAvailableOnDate = selectedDate ? checkSupplierAvailabilityOnDate(supplier, selectedDate) : true;
     
-    // Get party details for availability checking
-    const getPartyDetails = () => {
-      try {
-        const partyDetails = localStorage.getItem('party_details');
-        if (partyDetails) {
-          const parsed = JSON.parse(partyDetails);
-          return {
-            timeSlot: parsed.timeSlot || (parsed.time && parsed.time.includes('am') ? 'morning' : 'afternoon'),
-            duration: parsed.duration || 2,
-            time: parsed.time
-          };
-        }
-      } catch (e) {
-        console.log('Could not get party details');
+    const availabilityResult = selectedDate ? checkSupplierAvailability(supplier, selectedDate) : { available: true }
+     // LENIENT: Only consider definitely unavailable cases
+  const isDefinitelyUnavailable = availabilityResult.reason === 'past-date' || 
+  availabilityResult.reason === 'time-slot-blocked' ||
+  availabilityResult.reason === 'all-slots-blocked'
+  const isAvailableOnDate = !isDefinitelyUnavailable
+    
+    const handleViewDetails = (supplier) => {
+      // Check if already clicked
+      if (clickedSuppliers.has(supplier.id)) {
+        console.log('❌ Supplier already being processed:', supplier.id)
+        return
       }
-      return { timeSlot: 'afternoon', duration: 2 };
-    };
-  
-    const partyDetails = getPartyDetails();
-    
-    
- 
-// Updated handleViewDetails function with your exact prop names:
-const handleViewDetails = (supplier) => {
-  // Check if already clicked
-  if (clickedSuppliers.has(supplier.id)) {
-    console.log('❌ Supplier already being processed:', supplier.id)
-    return
-  }
-  
-  console.log('🚀 Starting navigation to supplier:', supplier.id)
-  
-  // Add to clicked set
-  setClickedSuppliers(prev => new Set([...prev, supplier.id]))
-  
-  try {
-    // Check if supplier ID exists
-    if (!supplier.id) {
-      throw new Error('No supplier ID found')
+      
+      console.log('🚀 Starting navigation to supplier:', supplier.id)
+      
+      // Add to clicked set
+      setClickedSuppliers(prev => new Set([...prev, supplier.id]))
+      
+      try {
+        // Check if supplier ID exists
+        if (!supplier.id) {
+          throw new Error('No supplier ID found')
+        }
+        
+        console.log('🔗 Navigating with context to supplier:', supplier.id)
+        
+        // Create modal state using your exact prop names
+        const modalState = {
+          category: category,
+          theme: theme,
+          date: date,
+          filters: initialFilters,
+          scrollPosition: window.pageYOffset,
+          selectedSupplierId: supplier.id,
+          returnAction: 'view-details'
+        }
+        
+        // Use setTimeout for visual feedback, then navigate
+        setTimeout(() => {
+          navigateWithContext(`/supplier/${supplier.id}`, 'dashboard', modalState)
+          console.log('✅ Navigation with context initiated')
+        }, 300)
+        
+      } catch (error) {
+        console.error('❌ Navigation error:', error)
+        
+        // Remove from clicked set on error
+        setClickedSuppliers(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(supplier.id)
+          return newSet
+        })
+        
+        alert(`Failed to open supplier profile. Error: ${error.message}`)
+      }
     }
-    
-    console.log('🔗 Navigating with context to supplier:', supplier.id)
-    
-    // Create modal state using your exact prop names
-    const modalState = {
-      category: category, // From your modal props
-      theme: theme, // From your modal props
-      date: date, // From your modal props
-      filters: initialFilters, // From your modal props
-      scrollPosition: window.pageYOffset,
-      selectedSupplierId: supplier.id,
-      returnAction: 'view-details'
-    }
-    
-    // Use setTimeout for visual feedback, then navigate
-    setTimeout(() => {
-      navigateWithContext(`/supplier/${supplier.id}`, 'dashboard', modalState)
-      console.log('✅ Navigation with context initiated')
-    }, 300)
-    
-  } catch (error) {
-    console.error('❌ Navigation error:', error)
-    
-    // Remove from clicked set on error
-    setClickedSuppliers(prev => {
-      const newSet = new Set(prev)
-      newSet.delete(supplier.id)
-      return newSet
-    })
-    
-    alert(`Failed to open supplier profile. Error: ${error.message}`)
-  }
-}
+
     return (
       <Card className="border border-[hsl(var(--primary-200))] shadow-sm overflow-hidden rounded-lg flex flex-col">
-        {/* <div className="relative w-full h-60 md:h-60">
-          <div
-            className="relative w-64 h-64 mask-image mx-auto mt-5"
-            style={{
-              WebkitMaskImage: 'url("/image.svg")',
-              WebkitMaskRepeat: 'no-repeat',
-              WebkitMaskSize: 'contain',
-              WebkitMaskPosition: 'center',
-              maskImage: 'url("/image.svg")',
-              maskRepeat: 'no-repeat',
-              maskSize: 'contain',
-              maskPosition: 'center',
-            }}
-          >
-            <Image
-              src={supplier.image || supplier.imageUrl || `/placeholder.png`}
-              alt={supplier.name}
-              fill
-              className="object-cover group-hover:brightness-110 transition-all duration-300"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-          </div>
-   
-          {supplier.badges && supplier.badges[0] && (
-            <Badge className="absolute top-3 left-3 bg-primary-100 text-primary-700 text-xs px-2 py-1 shadow-md">
-              {supplier.badges[0]}
-            </Badge>
-          )}
-          <button className="absolute top-4 right-4 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors z-10">
-            <Heart className={`w-4 h-4`} />
-          </button>
-        </div> */}
         <SwipeableSupplierCarousel 
-  supplier={supplier}
-  className="mb-4"
-  aspectRatio="aspect-[4/3]" // or "aspect-square", "aspect-[16/9]", etc.
-/>
+          supplier={supplier}
+          className="mb-4"
+          aspectRatio="aspect-[4/3]"
+        />
         <CardContent className="p-4 flex-grow flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <h3 className="text-lg font-semibold text-gray-900 leading-tight">{supplier.name}</h3>
@@ -1014,91 +1122,87 @@ const handleViewDetails = (supplier) => {
             <div className="text-sm font-bold text-gray-400">From £{supplier.priceFrom}</div>
           </div>
 
-          {/* UPDATED: Enhanced availability display */}
-        <div className="mb-3 space-y-2">
+          {/* FIXED: Enhanced availability display with time slot info */}
+          <div className="mb-3 space-y-2">
           <AvailabilityStatus 
             supplier={supplier} 
-            selectedDate={selectedDate} 
-            partyDetails={partyDetails} 
+            selectedDate={selectedDate}
           />
-          
-          {/* Show additional availability info if available */}
-          {supplier.availability?.timeSlots && (
-            <div className="text-xs text-gray-500">
-              Available: {supplier.availability.timeSlots.join(', ')}
-            </div>
-          )}
-          
-          {supplier.availability?.maxDuration && (
-            <div className="text-xs text-gray-500">
-              Max duration: {supplier.availability.maxDuration}h
-            </div>
-          )}
-        </div>
+            
+            {/* Show availability reason if debugging needed */}
+            {selectedDate && !isAvailableOnDate && (
+              <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                Reason: {availabilityResult.reason}
+              </div>
+            )}
+          </div>
+
           <div className="mt-auto pt-4 border-t border-gray-100">
             <div className="flex md:flex-col sm:flex-row gap-2">
-         
-<Button
-  variant="outline" // or whatever variant you're using
-
-  onClick={(e) => {
-    // Visual scale feedback
-    const button = e.currentTarget
-    if (button && !clickedSuppliers.has(supplier.id)) {
-      button.style.transform = 'scale(0.95)'
-      button.style.transition = 'transform 0.1s ease'
-      
-      setTimeout(() => {
-        button.style.transform = ''
-        button.style.transition = 'transform 0.2s ease'
-      }, 100)
-    }
-    
-    // Call your handler
-    handleViewDetails(supplier)
-  }}
-  disabled={clickedSuppliers.has(supplier.id)}
-  className={`
-    transition-all duration-200
-    ${clickedSuppliers.has(supplier.id) 
-      ? 'opacity-75 cursor-wait bg-primary-100 text-primary-700' 
-      : 'hover:scale-105  rounded-full h-10 border-[hsl(var(--primary-500))] text-gray-700 active:scale-95'
-    }
-  `}
->
-  {clickedSuppliers.has(supplier.id) ? (
-    <div className="flex items-center gap-2 rounded-full">
-      <div className="w-4 h-4 border-2 rounded-full border-[hsl(var(--primary-500))] border-t-transparent animate-spin"></div>
-      Opening...
-    </div>
-  ) : (
-    'View Details' // Your existing button text
-  )}
-</Button>
-              {/* UPDATED: Quick Add Button */}
               <Button
-                size="lg"
-                className="bg-primary-500 hover:bg-[hsl(var(--primary-700))] py-3 text-gray-100 flex-1 relative rounded-full"
-                onClick={() => handleQuickAdd(supplier)}
-                disabled={addingSupplier === supplier.id || (selectedDate && !isAvailableOnDate)}
+                variant="outline"
+                onClick={(e) => {
+                  // Visual scale feedback
+                  const button = e.currentTarget
+                  if (button && !clickedSuppliers.has(supplier.id)) {
+                    button.style.transform = 'scale(0.95)'
+                    button.style.transition = 'transform 0.1s ease'
+                    
+                    setTimeout(() => {
+                      button.style.transform = ''
+                      button.style.transition = 'transform 0.2s ease'
+                    }, 100)
+                  }
+                  
+                  handleViewDetails(supplier)
+                }}
+                disabled={clickedSuppliers.has(supplier.id)}
+                className={`
+                  transition-all duration-200
+                  ${clickedSuppliers.has(supplier.id) 
+                    ? 'opacity-75 cursor-wait bg-primary-100 text-primary-700' 
+                    : 'hover:scale-105 rounded-full h-10 border-[hsl(var(--primary-500))] text-gray-700 active:scale-95'
+                  }
+                `}
               >
-                {addingSupplier === supplier.id ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    Adding...
-                  </>
-                ) : selectedDate && !isAvailableOnDate ? (
-                  <>
-                    <X className="w-4 h-4 mr-2" />
-                    Not Available
-                  </>
+                {clickedSuppliers.has(supplier.id) ? (
+                  <div className="flex items-center gap-2 rounded-full">
+                    <div className="w-4 h-4 border-2 rounded-full border-[hsl(var(--primary-500))] border-t-transparent animate-spin"></div>
+                    Opening...
+                  </div>
                 ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Quick Add
-                  </>
+                  'View Details'
                 )}
               </Button>
+              
+              {/* FIXED: Quick Add Button with proper availability state */}
+              <Button
+              size="lg"
+              className={`py-3 flex-1 relative rounded-full transition-all duration-200 ${
+                isDefinitelyUnavailable
+                  ? 'bg-gray-400 hover:bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-gray-100'
+              }`}
+              onClick={() => handleQuickAdd(supplier)}
+              disabled={addingSupplier === supplier.id || isDefinitelyUnavailable}
+            >
+              {addingSupplier === supplier.id ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Adding...
+                </>
+              ) : isDefinitelyUnavailable ? (
+                <>
+                  <X className="w-4 h-4 mr-2" />
+                  Not Available
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Quick Add
+                </>
+              )}
+            </Button>
             </div>
           </div>
         </CardContent>
@@ -1116,7 +1220,15 @@ const handleViewDetails = (supplier) => {
               <h2 className="text-2xl font-bold text-white capitalize">
                 {category === 'facePainting' ? 'Activities' : category} Providers
               </h2>
-             
+              {selectedDate && (
+                <p className="text-primary-100 text-sm mt-1">
+                  For {selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              )}
             </div>
             <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
               <X className="w-5 h-5 text-white" />
@@ -1172,15 +1284,13 @@ const handleViewDetails = (supplier) => {
         </div>
       </div>
 
-           <SupplierCustomizationModal
+      <SupplierCustomizationModal
         isOpen={showCustomizationModal}
         onClose={() => {
-
           setShowCustomizationModal(false)
           setSelectedSupplierForCustomization(null)
         }}
         supplier={selectedSupplierForCustomization}
-        // onAddToPlan={handleCustomizationAddToPlan}
         isAdding={addingSupplier === selectedSupplierForCustomization?.id}
         onAddToPlan={onSelectSupplier} 
       />

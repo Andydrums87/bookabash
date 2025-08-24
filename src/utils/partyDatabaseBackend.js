@@ -334,36 +334,57 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
    * Add supplier to party plan
    */
 
-  async createEnquiry(partyId, enquiryData) {
-    try {
-      const { data: enquiry, error } = await supabase
-        .from('enquiries')
-        .insert({
-          party_id: partyId,
-          supplier_id: enquiryData.supplier_id,
-          supplier_category: enquiryData.supplier_category,
-          package_id: enquiryData.package_id || 'basic',
-          quoted_price: enquiryData.quoted_price,
-          status: enquiryData.status || 'pending',
-          payment_status: enquiryData.payment_status || 'unpaid',
-          special_requests: enquiryData.special_requests || '{}',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
-        })
-        .select()
-        .single()
-  
-      if (error) throw error
-  
-      console.log('✅ Enquiry created successfully:', enquiry)
-      return { success: true, enquiry }
-  
-    } catch (error) {
-      console.error('❌ Error creating enquiry:', error)
-      return { success: false, error: error.message }
+// In partyDatabaseBackend.js - Ensure createEnquiry creates accepted status:
+async createEnquiry(partyId, supplier, packageData, message = '', specialRequests = '') {
+  try {
+    console.log('🔧 createEnquiry - creating AUTO-ACCEPTED enquiry')
+    
+    const enquiryData = {
+      party_id: partyId,
+      supplier_id: supplier.id,
+      supplier_category: this.mapCategoryToSupplierType(supplier.category),
+      package_id: packageData.id,
+      quoted_price: packageData.totalPrice || packageData.price,
+      message: message,
+      special_requests: specialRequests,
+      
+      // ✅ CRITICAL: Create as accepted for immediate booking
+      status: 'accepted',
+      auto_accepted: true,
+      payment_status: 'unpaid',
+      
+      supplier_response_date: new Date().toISOString(),
+      supplier_response: 'Auto-confirmed for immediate booking - ready for deposit payment',
+      
+      addon_details: packageData.addons ? JSON.stringify(packageData.addons) : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     }
+
+    console.log('📝 Creating enquiry with status:', enquiryData.status)
+
+    const { data: enquiry, error } = await supabase
+      .from('enquiries')
+      .insert(enquiryData)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    console.log('✅ Created auto-accepted enquiry:', {
+      id: enquiry.id,
+      status: enquiry.status,
+      auto_accepted: enquiry.auto_accepted
+    })
+    
+    return { success: true, enquiry }
+
+  } catch (error) {
+    console.error('❌ Error creating enquiry:', error)
+    return { success: false, error: error.message }
   }
+}
   // async addSupplierToParty(partyId, supplier, selectedPackage = null) {
   //  // ✅ DEFENSIVE: Ensure category exists and is valid
   //  if (!supplier.category) {
@@ -493,7 +514,7 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
       name: supplier.name,
       description: supplier.description,
       price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
-      status: "pending",
+      status: "accepted",
       image: supplier.image,
       category: supplier.category, // ✅ Explicitly preserve category
       priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
@@ -1107,32 +1128,163 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
       return { success: false, error: error.message }
     }
   }
+// Auto-accept all pending enquiries for a party (for immediate booking flow)
+// In partyDatabaseBackend.js - UPDATED autoAcceptEnquiries function
+// In partyDatabaseBackend.js - FIXED autoAcceptEnquiries function
+async autoAcceptEnquiries(partyId) {
+  try {
+    console.log('✅ Auto-accepting enquiries for immediate booking:', partyId);
+    
+    const { data: updatedEnquiries, error } = await supabase
+      .from('enquiries')
+      .update({ 
+        // ✅ FIXED: Use standard 'accepted' status
+        status: 'accepted',
+        payment_status: 'unpaid', // Keep as unpaid so payment page finds them
+        supplier_response_date: new Date().toISOString(),
+        supplier_response: 'Auto-accepted for immediate booking - customer proceeding to payment',
+        auto_accepted: true, // ✅ NEW: Flag to identify auto-accepted enquiries
+        updated_at: new Date().toISOString()
+      })
+      .eq('party_id', partyId)
+      .eq('status', 'pending')
+      .select();
 
+    if (error) throw error;
 
-  async getEnquiriesForParty(partyId) {
-    try {
-      const { data: enquiries, error } = await supabase
-        .from('enquiries')
-        .select(`
-          *,
-          suppliers:supplier_id (
-            id,
-            business_name,
-            data
-          )
-        `)
-        .eq('party_id', partyId)
-        .order('created_at', { ascending: false })
+    console.log(`✅ Auto-accepted ${updatedEnquiries.length} enquiries`);
+    return { success: true, updatedEnquiries };
 
-      if (error) throw error
-
-      return { success: true, enquiries }
-
-    } catch (error) {
-      console.error('❌ Error getting enquiries for party:', error)
-      return { success: false, error: error.message }
-    }
+  } catch (error) {
+    console.error('❌ Error auto-accepting enquiries:', error);
+    return { success: false, error: error.message };
   }
+}
+
+// In partyDatabaseBackend.js - ADD this new function
+async autoAcceptSpecificEnquiry(enquiryId) {
+  try {
+    console.log('✅ Auto-accepting specific enquiry:', enquiryId)
+    
+    const { data: updatedEnquiry, error } = await supabase
+      .from('enquiries')
+      .update({ 
+        status: 'accepted',
+        payment_status: 'unpaid', // Ready for payment
+        auto_accepted: true,
+        supplier_response_date: new Date().toISOString(),
+        supplier_response: 'Auto-accepted for immediate booking - customer proceeding to payment',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', enquiryId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    console.log(`✅ Auto-accepted enquiry ${enquiryId}`)
+    return { success: true, enquiry: updatedEnquiry }
+
+  } catch (error) {
+    console.error('❌ Error auto-accepting specific enquiry:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+async getEnquiriesForParty(partyId) {
+  try {
+    console.log('📋 Fetching fresh enquiries for party:', partyId)
+    
+    // ✅ IMPORTANT: Add a timestamp to prevent caching
+    const timestamp = Date.now()
+    
+    const { data: enquiries, error } = await supabase
+      .from('enquiries')
+      .select(`
+        *,
+        suppliers:supplier_id (
+          id,
+          business_name,
+          data
+        )
+      `)
+      .eq('party_id', partyId)
+      .order('created_at', { ascending: false })
+      // ✅ Optional: Add a meaningless filter that changes each time to bust cache
+      .gte('created_at', '2020-01-01') // This doesn't change results but busts cache
+      
+    if (error) throw error
+
+    console.log(`✅ Fetched ${enquiries?.length || 0} enquiries from database`)
+    
+    // ✅ DEBUG: Log the auto_accepted status of each enquiry
+    enquiries?.forEach((enquiry) => {
+      console.log(`Enquiry ${enquiry.id} (${enquiry.supplier_category}):`, {
+        auto_accepted: enquiry.auto_accepted,
+        status: enquiry.status,
+        payment_status: enquiry.payment_status,
+        supplier_response_date: enquiry.supplier_response_date
+      })
+    })
+
+    return { success: true, enquiries: enquiries || [] }
+
+  } catch (error) {
+    console.error('❌ Error getting enquiries for party:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// ✅ ALSO: Make sure your supplier response update actually works:
+async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isDepositPaid = false) {
+  try {
+    console.log('🎯 Updating enquiry in database:', {
+      enquiryId,
+      response,
+      isDepositPaid,
+      willClearAutoAccepted: isDepositPaid && response === 'accepted'
+    })
+
+    const updateData = {
+      status: response,
+      supplier_response_date: new Date().toISOString(),
+      supplier_response: message || 'Supplier has responded',
+      updated_at: new Date().toISOString()
+    }
+
+    // ✅ CRITICAL: Clear auto_accepted when supplier manually accepts deposit-paid booking
+    if (isDepositPaid && response === 'accepted') {
+      updateData.auto_accepted = false
+      console.log('✅ Setting auto_accepted = false for manual confirmation')
+    }
+
+    if (response === 'accepted' && finalPrice) {
+      updateData.final_price = finalPrice
+    }
+
+    const { data: updatedEnquiry, error } = await supabase
+      .from('enquiries')
+      .update(updateData)
+      .eq('id', enquiryId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    console.log('✅ Database update successful:', {
+      id: updatedEnquiry.id,
+      auto_accepted: updatedEnquiry.auto_accepted,
+      status: updatedEnquiry.status,
+      payment_status: updatedEnquiry.payment_status
+    })
+
+    return { success: true, enquiry: updatedEnquiry }
+
+  } catch (error) {
+    console.error('❌ Error updating enquiry:', error)
+    return { success: false, error: error.message }
+  }
+}
   async hasPartyPendingEnquiries(partyId) {
     try {
       console.log('🔍 Checking for pending enquiries for party:', partyId);
@@ -1336,7 +1488,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
         message: customMessage || `Individual enquiry for ${party.child_name || 'child'}'s ${party.theme || 'themed'} party`,
         special_requests: party.special_requirements || null,
         quoted_price: totalQuotedPrice,
-        status: 'pending',
+        status: 'accepted',
         created_at: new Date().toISOString()
       }
   
