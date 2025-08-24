@@ -4,7 +4,7 @@
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Mail, Calendar } from "lucide-react"
+import { CheckCircle, Mail, Calendar, Gift } from "lucide-react"
 
 export default function DepositPaidSupplierCard({
   type,
