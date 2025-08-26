@@ -40,6 +40,8 @@ import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import ReferFriend from "@/components/ReferFriend"
 // Make sure you have this import
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
+import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
+import PartySummarySection from "../components/PartySummarySection"
 
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
@@ -522,51 +524,58 @@ useEffect(() => {
   }
 }, [showSupplierModal, showWelcomePopup, isAddonModalOpen])
 
-  // ✅ ENHANCED: Name submit handler with completion flags
-  const handleNameSubmit = (nameData) => {
-    console.log('🎉 Welcome form completed:', nameData)
+const handleNameSubmit = (nameData) => {
+  console.log('🎉 Welcome form completed:', nameData)
+  
+  try {
+    if (typeof originalHandleNameSubmit === 'function') {
+      originalHandleNameSubmit(nameData)
+    }
     
+    setWelcomeJustCompleted(true)
+    
+    // Set completion flags to prevent re-showing
     try {
-      if (typeof originalHandleNameSubmit === 'function') {
-        originalHandleNameSubmit(nameData)
-      }
+      localStorage.setItem('welcome_completed', 'true')
+      sessionStorage.setItem('welcome_completed', 'true')
       
-      setWelcomeJustCompleted(true)
-      
-      // ✅ CRITICAL: Set completion flags to prevent re-showing
-      try {
-        // Set multiple completion flags for reliability
-        localStorage.setItem('welcome_completed', 'true')
-        sessionStorage.setItem('welcome_completed', 'true')
-        
-        // Update party details with completion flag
-        const existingPartyDetails = localStorage.getItem('party_details')
-        if (existingPartyDetails) {
-          const parsed = JSON.parse(existingPartyDetails)
-          const updatedDetails = {
-            ...parsed,
-            childName: nameData.childName,
-            firstName: nameData.firstName,
-            lastName: nameData.lastName,
-            childAge: nameData.childAge,
-            welcomeCompleted: true, // ✅ CRITICAL: Mark as completed
-            welcomeCompletedAt: new Date().toISOString()
-          }
-          
-          localStorage.setItem('party_details', JSON.stringify(updatedDetails))
-          console.log('📝 Updated party details with welcome data and completion flag')
+      // Update party details with completion flag
+      const existingPartyDetails = localStorage.getItem('party_details')
+      if (existingPartyDetails) {
+        const parsed = JSON.parse(existingPartyDetails)
+        const updatedDetails = {
+          ...parsed,
+          childName: nameData.childName,
+          firstName: nameData.firstName,
+          lastName: nameData.lastName,
+          childAge: nameData.childAge,
+          welcomeCompleted: true,
+          welcomeCompletedAt: new Date().toISOString()
         }
         
-        console.log('✅ Welcome completion flags set - popup will not show again')
-        
-      } catch (updateError) {
-        console.warn('⚠️ Error updating party details:', updateError)
+        localStorage.setItem('party_details', JSON.stringify(updatedDetails))
+        console.log('📝 Updated party details with welcome data and completion flag')
       }
       
-    } catch (error) {
-      console.error('💥 Error in handleNameSubmit:', error)
+      console.log('✅ Welcome completion flags set - popup will not show again')
+      
+      // NEW: Start tour after confetti completes
+      setTimeout(() => {
+        const tourCompleted = localStorage.getItem('dashboard_tour_completed') === 'true'
+        if (!tourCompleted) {
+          console.log('🎯 Auto-starting tour after welcome completion')
+          startTour()
+        }
+      }, 3000) // Wait 3 seconds for confetti to finish
+      
+    } catch (updateError) {
+      console.warn('⚠️ Error updating party details:', updateError)
     }
+    
+  } catch (error) {
+    console.error('💥 Error in handleNameSubmit:', error)
   }
+}
 
   const openSupplierModal = (category, theme = 'superhero') => {
     console.log('🔓 Opening supplier modal:', { category, theme })
@@ -1082,6 +1091,7 @@ useEffect(() => {
     showPartyTasks={false}
     currentPhase="planning"
     partyTasksStatus={{}}
+    totalCost={totalCost}
     // NEW PROPS:
     activeSupplierType={activeMobileSupplierType}
     onSupplierTabChange={handleMobileSupplierTabChange}
@@ -1100,7 +1110,12 @@ useEffect(() => {
                   maxItems={4}
                   onAddonClick={handleAddonClick}
                 />
-              </div>
+              </div><PartySummarySection
+  partyDetails={partyDetails}
+  suppliers={suppliers}
+  totalCost={totalCost}
+  addons={addons}
+/>
 
               {/* Action Section */}
               <div className="flex flex-col sm:flex-row gap-4"  data-tour="review-book">
@@ -1108,7 +1123,7 @@ useEffect(() => {
                   className="flex-3 bg-primary rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-6 text-base font-semibold"
                   asChild
                 >
-                  <Link href="/review-book">Continue to Review & Book</Link>
+                  <Link href="/review-book">Let's Make this happen!</Link>
                 </Button>
               
                 <Button variant="ghost" className="sm:w-auto">
@@ -1200,11 +1215,22 @@ useEffect(() => {
           </svg>
         </button>
       </div>
+      <SimpleMobileBottomTabBar
+  suppliers={suppliers}
+  totalCost={totalCost}
+  partyDetails={partyDetails}
+  tempBudget={tempBudget}
+  budgetPercentage={budgetPercentage}
+  getBudgetCategory={getBudgetCategory}
+/>
       <SnappyDashboardTour
         isOpen={isTourActive}
         onMobileNavigationStepActive={handleMobileNavigationStepActive} 
         onClose={closeTour}
         onComplete={completeTour}
+        suppliers={suppliers} // Add this
+        partyDetails={partyDetails} // Add this  
+        totalCost={totalCost} // Add this
       />
     </div>
   )

@@ -378,32 +378,30 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       if (shouldShowLoadingModal) setProgress(70)
       if (shouldShowLoadingModal) setLoadingStep(2)
       
-      // Send enquiry if needed
-      if (addResult.success && (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0))) {
-        console.log('📧 Sending auto-enquiry')
-        if (shouldShowLoadingModal) setLoadingStep(3)
-        
-        const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
-          ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquir${enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}`
-          : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
-        
-        const enquiryPackage = {
-          ...enhancedPackage,
-          timeSlotRequested: bookingTimeSlot,
-          preferredTimeSlot: bookingTimeSlot
-        }
-        
-        const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
-          userContext.currentPartyId,
-          backendSupplier,
-          enquiryPackage,
-          enquiryReason
-        )
-        
-        if (enquiryResult.success) {
-          console.log('✅ Auto-enquiry sent successfully')
-        }
-      }
+// DON'T send enquiry - it will be sent after payment
+if (addResult.success) {
+  console.log('✅ Supplier added to party plan (enquiry will be sent after payment)')
+  
+  // Create accepted enquiry record but mark as unpaid
+  if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
+    if (shouldShowLoadingModal) setLoadingStep(3)
+    
+    const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
+      ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquir${enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}`
+      : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
+    
+      const enquiryResult = await partyDatabaseBackend.createUnpaidBookingRecord(
+        userContext.currentPartyId,
+        backendSupplier,
+        enhancedPackage,
+        enquiryReason
+      )
+    
+    if (enquiryResult.success) {
+      console.log('✅ Enquiry record created as accepted but unpaid')
+    }
+  }
+}
       
       result = addResult
     }

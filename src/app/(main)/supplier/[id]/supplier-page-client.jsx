@@ -201,7 +201,15 @@ useEffect(() => {
     getPartyData()
   }
 }, [userType, userTypeLoading])
+useEffect(() => {
+  // Scroll to top when component mounts or when supplier changes
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}, [backendSupplier?.id]) // Re-run when supplier ID changes
 
+// Alternative: If you want instant scroll without animation
+useEffect(() => {
+  window.scrollTo(0, 0)
+}, [backendSupplier?.id])
 
 const modals = useSupplierModals()
 const replacement = useReplacementMode()

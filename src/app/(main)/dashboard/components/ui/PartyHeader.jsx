@@ -495,7 +495,9 @@ export default function PartyHeader({
   loading = false,
   suppliers = {}, // NEW: Pass suppliers for availability checking
   partyId = null, // NEW: Pass party ID for database updates
-  onPartyRebuilt = null // NEW: Callback when party is rebuilt
+  onPartyRebuilt = null,// NEW: Callback when party is rebuilt
+  isCompact = false,
+  isLocked = false
 }) {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)

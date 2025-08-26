@@ -652,7 +652,7 @@ export default function SupplierAvailabilityCalendar({
                         >
                           <SlotIcon className="w-3 h-3" />
                           {TIME_SLOTS[slot].label}
-                          {partyTimeSlot === slot && ' (Your Party Time)'}
+                          {partyTimeSlot === slot && ''}
                         </Badge>
                       );
                     })}

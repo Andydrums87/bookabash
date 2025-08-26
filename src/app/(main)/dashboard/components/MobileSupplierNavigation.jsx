@@ -2,15 +2,17 @@
 
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle } from "lucide-react"
+import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle, Check } from "lucide-react"
 import SupplierCard from "./SupplierCard/SupplierCard"
 import Image from "next/image"
 import AddonsSection from "./AddonsSection"
 import RecommendedAddons from "@/components/recommended-addons"
 
+
 export default function MobileSupplierNavigation({
   suppliers,
   loadingCards = [],
+  totalCost,
   suppliersToDelete = [],
   openSupplierModal,
   handleDeleteSupplier,
@@ -349,7 +351,7 @@ export default function MobileSupplierNavigation({
 
   return (
     <div className="w-full relative">
-      
+
       {/* Sticky Tab Navigation */}
       <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
         <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
@@ -382,7 +384,7 @@ export default function MobileSupplierNavigation({
                       style={{ minWidth: '90px' }}
                     >
                       <div className="flex flex-col items-center">
-                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-hidden relative shadow-md hover:shadow-lg bg-gray-100">
+                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-visible relative shadow-md hover:shadow-lg bg-gray-100">
                           <Image
                             src={supplierType.image}
                             alt={supplierType.name}
@@ -405,18 +407,10 @@ export default function MobileSupplierNavigation({
                           )}
                           
                           {hasContent && (
-                            
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg">
-                              {supplierType.isAddonSection && getAddonCount() > 0 && (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">{getAddonCount()}</span>
-                                </div>
-                              )}
-                              {!supplierType.isAddonSection && (
-                                <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-full animate-pulse"></div>
-                              )}
-                            </div>
-                          )}
+  <div className="absolute top-0 right-0 w-5 h-5 bg-white rounded-full border-2 border-gray-200 shadow-lg flex items-center justify-center">
+    <Check className="w-3 h-3 text-green-600" />
+  </div>
+)}
                         </div>
                         
                         <div className="text-center">

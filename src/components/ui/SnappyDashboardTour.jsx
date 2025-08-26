@@ -74,29 +74,12 @@ export const SnappyDashboardTour = ({
   isOpen = false,
   onClose,
   onComplete,
-  onMobileNavigationStepActive 
+  onMobileNavigationStepActive // Add this prop
 }) => {
   const [currentStep, setCurrentStep] = useState(0)
   const [isScrolling, setIsScrolling] = useState(false)
   const [highlightedElement, setHighlightedElement] = useState(null)
   const [steps, setSteps] = useState([])
-
-
-  // Add this useEffect after your existing useEffects
-  useEffect(() => {
-    // Only run if we have the callback function and steps are loaded
-    if (!onMobileNavigationStepActive || !steps.length || currentStep < 0) return
-
-    const currentStepData = steps[currentStep]
-    if (!currentStepData) return
-
-    // Check if we're on the mobile navigation step
-    if (currentStepData.id === 'mobile-navigation-tabs') {
-      onMobileNavigationStepActive(true)
-    } else {
-      onMobileNavigationStepActive(false)
-    }
-  }, [currentStep, steps, onMobileNavigationStepActive])
   
   const tourSteps = [
     {
@@ -110,7 +93,7 @@ export const SnappyDashboardTour = ({
     {
       id: "mobile-navigation-tabs",
       title: "Navigation Tabs", 
-      content: "Tap these circles to explore different supplier types for your party! Each circle represents a different type of supplier like venue, entertainment, catering, etc. Swipe to see more supplier types!",
+      content: "Tap these circles to explore different supplier types for your party like venue, entertainment, cakes, etc. Swipe to see more supplier types!",
       snappyMessage: "Easy navigation!",
       targetSelector: "[data-tour='mobile-navigation-tabs']",
       scrollOffset: -20,
@@ -133,6 +116,15 @@ export const SnappyDashboardTour = ({
       targetSelector: "[data-tour='supplier-cards']",
       scrollOffset: -50,
       desktopOnly: true
+    },
+    {
+      id: "progress-overview",
+      title: "Your Party Team",
+      content: "Here's everything you've built so far! This shows all your selected suppliers and total cost. Your party is really taking shape!",
+      snappyMessage: "Look what you've built!",
+      targetSelector: "[data-tour='party-summary']",
+      scrollOffset: -100,
+      mobileOnly: false // Remove mobile-only since this applies to both desktop and mobile
     },
     {
       id: "change-supplier",
@@ -179,6 +171,21 @@ export const SnappyDashboardTour = ({
       scrollOffset: -50
     }
   ]
+
+  useEffect(() => {
+    // Only run if we have the callback function and steps are loaded
+    if (!onMobileNavigationStepActive || !steps.length || currentStep < 0) return
+  
+    const currentStepData = steps[currentStep]
+    if (!currentStepData) return
+  
+    // Check if we're on the mobile navigation step
+    if (currentStepData.id === 'mobile-navigation-tabs') {
+      onMobileNavigationStepActive(true)
+    } else {
+      onMobileNavigationStepActive(false)
+    }
+  }, [currentStep, steps, onMobileNavigationStepActive])
 
   // Get appropriate target selector based on screen size
   const getTargetSelector = (step) => {
@@ -380,6 +387,10 @@ export const SnappyDashboardTour = ({
       targetScroll = absoluteTop - 200
     } else if (step.id === 'mobile-supplier-cards') {
       targetScroll = absoluteTop - 80
+    } else if (step.id === 'progress-overview') {
+      // Scroll to show the party summary clearly
+      targetScroll = absoluteTop - 100
+    
     } else if (step.id === 'change-supplier') {
         // Mobile: scroll to absoluteTop + 60, Desktop: normal behavior
         targetScroll = isMobile ? absoluteTop + 60 : absoluteTop - 100
@@ -560,7 +571,11 @@ export const SnappyDashboardTour = ({
       
       {/* Tour bubble - responsive but not full width */}
       <div 
-        className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[9999] bg-white rounded-2xl shadow-2xl border-2 border-teal-200"
+        className={`fixed z-[9999] bg-white rounded-2xl shadow-2xl border-2 border-teal-200 ${
+          currentStepData.id === 'progress-overview' 
+            ? 'top-4 left-1/2 transform -translate-x-1/2' 
+            : 'bottom-6 left-1/2 transform -translate-x-1/2'
+        }`}
         style={{
           width: typeof window !== 'undefined' && window.innerWidth < 640 ? '260px' : '320px',
           maxWidth: 'calc(100vw - 2rem)'
@@ -637,13 +652,22 @@ export const SnappyDashboardTour = ({
           </div>
         </div>
         
-        {/* Pointing arrow */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
-          <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-white"></div>
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-[-1px]">
-            <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-teal-200"></div>
+        {/* Pointing arrow - changes direction based on position */}
+        {currentStepData.id === 'progress-overview' ? (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+            <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-t-[10px] border-transparent border-t-white"></div>
+            <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[1px]">
+              <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-t-[10px] border-transparent border-t-teal-200"></div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
+            <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-white"></div>
+            <div className="absolute left-1/2 transform -translate-x-1/2 top-[-1px]">
+              <div className="w-0 h-0 border-l-[10px] border-r-[10px] border-b-[10px] border-transparent border-b-teal-200"></div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )

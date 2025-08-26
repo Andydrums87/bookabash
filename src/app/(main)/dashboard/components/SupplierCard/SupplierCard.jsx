@@ -212,11 +212,10 @@ export default function SupplierCard({
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
 
-  // Common props that all cards need
   const commonProps = {
     type,
     supplier,
-    supplierAddons,
+    addons: supplierAddons, // ← Fix: ConfirmedSupplierCard expects 'addons' not 'supplierAddons'
     isLoading,
     isDeleting,
     openSupplierModal,
@@ -248,7 +247,7 @@ export default function SupplierCard({
       return <AwaitingResponseSupplierCard {...commonProps} />
 
     case "confirmed":
-      return <ConfirmedSupplierCard {...commonProps} />
+      return <ConfirmedSupplierCard  {...commonProps}  />
 
     case "deposit_paid_confirmed":
       return <DepositPaidSupplierCard {...commonProps} />

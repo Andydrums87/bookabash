@@ -1664,7 +1664,53 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
     }
   }
 
+// Add this to your partyDatabaseBackend
+async createUnpaidBookingRecord(partyId, supplier, packageData, reason = null) {
+  try {
+    console.log('Creating unpaid booking record (NO enquiry sent):', {
+      partyId,
+      supplierName: supplier.name,
+      packageId: packageData.id
+    });
 
+    // Insert ONLY the database record - no enquiry sending
+    const { data: enquiry, error } = await supabase
+      .from('enquiries')
+      .insert({
+        party_id: partyId,
+        supplier_id: supplier.id,
+        supplier_category: this.mapCategoryToSupplierType(supplier.category),
+        package_id: packageData.id,
+        quoted_price: packageData.totalPrice || packageData.price || 0,
+        final_price: packageData.totalPrice || packageData.price || 0,
+        message: reason || 'Supplier added - awaiting payment',
+        
+        // Key: accepted but unpaid, NO supplier communication
+        status: 'accepted',
+        payment_status: 'unpaid',
+        auto_accepted: true,
+        
+        // NO supplier_response or supplier_response_date - they haven't been contacted
+        supplier_response: null,
+        supplier_response_date: null,
+        
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('Booking record created (supplier not contacted)');
+    return { success: true, enquiry };
+
+  } catch (error) {
+    console.error('Error creating booking record:', error);
+    return { success: false, error: error.message };
+  }
+}
   /**
    * Get gift suggestions based on theme and age
    */

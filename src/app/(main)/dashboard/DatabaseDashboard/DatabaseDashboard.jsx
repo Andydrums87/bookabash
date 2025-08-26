@@ -984,7 +984,8 @@ useEffect(() => {
               paymentDetails={paymentDetails}
               handleCancelEnquiry={handleCancelEnquiry}
               activeSupplierType={activeMobileSupplierType}
-              onSupplierTabChange={handleMobileSupplierTabChange}
+              onSupplierTabChange={handleMobileSupplierTabChange}   
+
             />
 
             <PartyPhaseContent
