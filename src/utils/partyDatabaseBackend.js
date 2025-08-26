@@ -1344,7 +1344,29 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
     return total
   }
-
+  async updateParty(partyId, updates) {
+    try {
+      const { data: updatedParty, error } = await supabase
+        .from('parties')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', partyId)
+        .select()
+        .single()
+  
+      if (error) throw error
+  
+      console.log('✅ Party updated:', partyId)
+      return { success: true, party: updatedParty }
+  
+    } catch (error) {
+      console.error('❌ Error updating party:', error)
+      return { success: false, error: error.message }
+    }
+  }
+  
 
   async cancelEnquiryAndRemoveSupplier(partyId, supplierType) {
     try {

@@ -1,3 +1,4 @@
+// Updated PartyHeader.jsx - Complete Integration with Availability Modal
 "use client"
 
 import { useState } from "react"
@@ -12,10 +13,12 @@ import { format } from "date-fns"
 import EditPartyModal from "../Modals/EditPartyModal"
 import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
-// Import the UniversalModal components
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
+import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal"
 
-// Utility functions
+import { getDateStringForComparison } from '@/utils/dateHelpers'
+
+// Utility functions (keeping existing ones)
 const formatDateForDisplay = (dateInput) => {
   if (!dateInput) return null;
   
@@ -89,12 +92,8 @@ const formatTimeForDisplay = (timeInput) => {
   }
 };
 
-// NEW: Enhanced time range formatter that handles database times
 const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) => {
-  // If we have both database start_time and end_time, use those
   if (startTime && endTime) {
-    console.log('🕐 Using database times:', { startTime, endTime });
-    
     const formattedStart = formatTimeForDisplay(startTime);
     const formattedEnd = formatTimeForDisplay(endTime);
     
@@ -103,10 +102,7 @@ const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) =
     }
   }
   
-  // If we only have start_time, calculate end time using duration
   if (startTime) {
-    console.log('🕐 Using database start_time with calculated end:', { startTime, fallbackDuration });
-    
     const formattedStart = formatTimeForDisplay(startTime);
     const calculatedEnd = calculateEndTime(startTime, fallbackDuration);
     
@@ -115,8 +111,6 @@ const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) =
     }
   }
   
-  // Fallback to legacy format
-  console.log('🕐 Falling back to legacy time format');
   return "2pm - 4pm";
 };
 
@@ -138,20 +132,6 @@ const calculateEndTime = (startTime, duration = 2) => {
   } catch (error) {
     return null;
   }
-};
-
-// LEGACY: Keep for backwards compatibility with localStorage
-const formatTimeRange = (startTime, duration = 2) => {
-  if (!startTime) return "2pm - 4pm"; // Default fallback
-  
-  const formattedStartTime = formatTimeForDisplay(startTime);
-  const endTime = calculateEndTime(startTime, duration);
-  
-  if (formattedStartTime && endTime) {
-    return `${formattedStartTime} - ${endTime}`;
-  }
-  
-  return "2pm - 4pm"; // Fallback
 };
 
 // Date Edit Modal
@@ -278,7 +258,6 @@ const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onS
             </Select>
           </div>
 
-          {/* Preview */}
           <div className="bg-primary-50 rounded-lg p-3 border border-[hsl(var(--primary-200))]">
             <div className="text-sm text-gray-500 font-medium">Party will run:</div>
             <div className="font-bold text-gray-900">
@@ -513,12 +492,19 @@ export default function PartyHeader({
   enquiries = [],
   isSignedIn = false,
   loading = false,
+  suppliers = {}, // NEW: Pass suppliers for availability checking
+  partyId = null, // NEW: Pass party ID for database updates
+  onPartyRebuilt = null // NEW: Callback when party is rebuilt
 }) {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [editingModal, setEditingModal] = useState(null) // 'date', 'time', 'age', 'guests', 'location'
+  const [editingModal, setEditingModal] = useState(null)
+  
+  // NEW: Availability modal state
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
+  const [pendingChanges, setPendingChanges] = useState(null)
+  
   const currentTheme = theme
-
   const isLocked = isSignedIn
 
   const { toast } = useToast()
@@ -535,17 +521,15 @@ export default function PartyHeader({
     }
   }
 
-  // Helper functions for mobile vs desktop names
+  // Helper functions
   const getFirstName = () => {
     if (loading) return "Loading...";
     
-    // Database source: use child_name from currentParty
     if (dataSource === 'database' && currentParty?.child_name) {
       const nameParts = currentParty.child_name.split(' ');
       return nameParts[0];
     }
     
-    // localStorage source: use partyDetails
     if (partyDetails?.firstName) {
       return partyDetails.firstName;
     }
@@ -555,18 +539,16 @@ export default function PartyHeader({
       return nameParts[0];
     }
     
-    return "Emma"; // fallback
+    return "Emma";
   };
 
   const getFullName = () => {
     if (loading) return "Loading...";
     
-    // Database source: use child_name from currentParty
     if (dataSource === 'database' && currentParty?.child_name) {
       return currentParty.child_name;
     }
     
-    // localStorage source: construct from partyDetails
     if (partyDetails?.firstName || partyDetails?.lastName) {
       return `${partyDetails?.firstName || ''} ${partyDetails?.lastName || ''}`.trim();
     }
@@ -575,7 +557,7 @@ export default function PartyHeader({
       return partyDetails.childName;
     }
     
-    return "Emma"; // fallback
+    return "Emma";
   };
 
   const savePartyDetails = (details) => {
@@ -592,7 +574,7 @@ export default function PartyHeader({
       }
       
       if (details.startTime) {
-        processedDetails.displayTimeRange = formatTimeRange(details.startTime, details.duration);
+        processedDetails.displayTimeRange = formatTimeRangeFromDatabase(details.startTime, null, details.duration);
       }
       
       processedDetails.postcode = details.postcode ||
@@ -614,27 +596,118 @@ export default function PartyHeader({
     }
   };
 
-  const handleSavePartyDetails = (updatedDetails) => {
-    const savedDetails = savePartyDetails(updatedDetails);
-    
-    if (onPartyDetailsChange) {
-      onPartyDetailsChange(savedDetails);
+  // NEW: Check if changes affect supplier availability
+  const requiresAvailabilityCheck = (newDetails) => {
+    // Only check if we have suppliers and the changes affect availability
+    if (!suppliers || Object.keys(suppliers).length === 0) {
+      return false
     }
-  };
+    
+    const currentDate = getCurrentDate()
+    const currentTime = getCurrentTime()
+    const currentLocation = getCurrentLocation()
+    
+    // Check if date, time, or location changed
+    const dateChanged = newDetails.date && formatDateForDisplay(newDetails.date) !== formatDateForDisplay(currentDate)
+    const timeChanged = newDetails.startTime && newDetails.startTime !== currentTime
+    const locationChanged = newDetails.location && newDetails.location !== currentLocation
+    
+    return dateChanged || timeChanged || locationChanged
+  }
 
-  // Handle modal edit save
-  const handleModalEditSave = (updates) => {
-    const savedDetails = savePartyDetails({ ...partyDetails, ...updates })
+  // NEW: Get current values for comparison
+  const getCurrentDate = () => {
+    if (dataSource === 'database' && currentParty?.party_date) {
+      return new Date(currentParty.party_date)
+    }
+    return partyDetails?.date ? new Date(partyDetails.date) : new Date()
+  }
+
+  const getCurrentTime = () => {
+    if (dataSource === 'database' && currentParty?.start_time) {
+      return currentParty.start_time
+    }
+    return partyDetails?.startTime || '14:00'
+  }
+
+  const getCurrentLocation = () => {
+    if (dataSource === 'database' && currentParty?.location) {
+      return currentParty.location
+    }
+    return partyDetails?.location || ''
+  }
+
+  // NEW: Enhanced save handler with availability check
+  const handleSavePartyDetails = (updatedDetails) => {
+    // Check if availability check is needed
+    if (requiresAvailabilityCheck(updatedDetails)) {
+      console.log('Changes require availability check, showing modal...')
+      
+      // Store pending changes and show availability modal
+      setPendingChanges({
+        currentDetails: {
+          date: getCurrentDate(),
+          startTime: getCurrentTime(),
+          duration: partyDetails?.duration || 2,
+          location: getCurrentLocation(),
+          childName: getFullName(),
+          firstName: partyDetails?.firstName,
+          lastName: partyDetails?.lastName,
+          childAge: partyDetails?.childAge || 6,
+          theme: partyDetails?.theme || 'superhero',
+          guestCount: partyDetails?.guestCount || '10',
+          budget: partyDetails?.budget || 600,
+          specialRequirements: partyDetails?.specialRequirements || ''
+        },
+        newDetails: updatedDetails
+      })
+      
+      setShowAvailabilityModal(true)
+      return
+    }
+    
+    // No availability check needed, save directly
+    proceedWithSave(updatedDetails)
+  }
+
+  // NEW: Proceed with save after availability check (or direct save)
+  const proceedWithSave = (updatedDetails) => {
+    const savedDetails = savePartyDetails(updatedDetails)
     
     if (onPartyDetailsChange) {
       onPartyDetailsChange(savedDetails)
     }
     
-    setEditingModal(null)
-    
     toast.success("Party details updated!", {
       duration: 2000
     })
+  }
+
+  // NEW: Handle availability modal confirmation
+  const handleAvailabilityConfirm = (updatedDetails) => {
+    proceedWithSave(updatedDetails)
+    setShowAvailabilityModal(false)
+    setPendingChanges(null)
+  }
+
+  // NEW: Handle party rebuild from availability modal
+  const handlePartyRebuilt = (rebuildResults) => {
+    console.log('Party was rebuilt with new suppliers:', rebuildResults)
+    
+    // Notify parent component if callback provided
+    if (onPartyRebuilt) {
+      onPartyRebuilt(rebuildResults)
+    }
+    
+    toast.success("Party rebuilt with available suppliers!", {
+      duration: 3000
+    })
+  }
+
+  // Handle modal edit save
+  const handleModalEditSave = (updates) => {
+    handleSavePartyDetails({ ...partyDetails, ...updates })
+    setEditingModal(null)
   }
 
   // Handle card click
@@ -659,7 +732,6 @@ export default function PartyHeader({
     let firstName = details.firstName || "Snappy";
     let lastName = details.lastName || "";
     
-    // Handle database source
     if (dataSource === 'database' && currentParty?.child_name) {
       const nameParts = currentParty.child_name.split(' ');
       firstName = nameParts[0] || "Snappy";
@@ -672,7 +744,6 @@ export default function PartyHeader({
 
     let parsedDate = new Date();
     
-    // Handle database date
     if (dataSource === 'database' && currentParty?.party_date) {
       parsedDate = new Date(currentParty.party_date);
     } else if (details.date) {
@@ -698,7 +769,6 @@ export default function PartyHeader({
       }
     }
     
-    // Handle database times
     let startTime = "14:00";
     if (dataSource === 'database' && currentParty?.start_time) {
       startTime = currentParty.start_time;
@@ -730,16 +800,14 @@ export default function PartyHeader({
     return `${count} guests`;
   };
 
-  // NEW: Enhanced display value getters that handle database vs localStorage
+  // Display value getters
   const getDisplayDate = () => {
     if (loading) return "Loading...";
     
-    // Database source: use party_date from currentParty
     if (dataSource === 'database' && currentParty?.party_date) {
       return formatDateForDisplay(currentParty.party_date);
     }
     
-    // localStorage source: use existing logic
     return partyDetails?.displayDate || 
            formatDateForDisplay(partyDetails?.date) || 
            "14th June, 2025";
@@ -748,14 +816,7 @@ export default function PartyHeader({
   const getDisplayTimeRange = () => {
     if (loading) return "Loading...";
     
-    // Database source: use start_time and end_time from currentParty
     if (dataSource === 'database' && currentParty) {
-      console.log('🕐 Getting time range from database:', {
-        start_time: currentParty.start_time,
-        end_time: currentParty.end_time,
-        duration: currentParty.duration
-      });
-      
       return formatTimeRangeFromDatabase(
         currentParty.start_time, 
         currentParty.end_time, 
@@ -763,51 +824,55 @@ export default function PartyHeader({
       );
     }
     
-    // localStorage source: use existing logic
     return partyDetails?.displayTimeRange || 
-           formatTimeRange(partyDetails?.startTime, partyDetails?.duration) || 
+           formatTimeRangeFromDatabase(partyDetails?.startTime, null, partyDetails?.duration) || 
            "2pm - 4pm";
   };
 
   const getChildAge = () => {
     if (loading) return "Loading...";
     
-    // Database source
     if (dataSource === 'database' && currentParty?.child_age) {
       return `${currentParty.child_age} years`;
     }
     
-    // localStorage source
     return `${partyDetails?.childAge || 6} years`;
   };
 
   const getGuestCount = () => {
     if (loading) return "Loading...";
     
-    // Database source
     if (dataSource === 'database' && currentParty?.guest_count) {
       return formatGuestCount(currentParty.guest_count);
     }
     
-    // localStorage source
     return formatGuestCount(partyDetails?.guestCount);
   };
 
   const getLocation = () => {
     if (loading) return "Loading...";
     
-    // Database source
     if (dataSource === 'database' && currentParty?.location) {
       return currentParty.location;
     }
     
-    // localStorage source
     return partyDetails?.location || "W1A 1AA";
   };
 
-  // Get display values using the new functions
   const displayDate = getDisplayDate();
   const displayTimeRange = getDisplayTimeRange();
+
+  // Don't render until mounted and data loaded
+  if (!partyDetails || loading) {
+    return (
+      <div className="h-48 bg-primary-50 rounded-2xl animate-pulse flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Loading your party...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -851,29 +916,6 @@ export default function PartyHeader({
         {/* Content */}
         <div className="relative px-4 md:p-10 text-white">
           <div className="space-y-3 md:space-y-6 ">
-            {/* Theme Badge and Edit Button */}
-            {/* <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 md:gap-3">
-                <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-yellow-300 animate-pulse" />
-                <Badge className="bg-white/20 text-white border-white/30 px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold backdrop-blur-sm">
-                  {loading ? "Loading..." : (currentTheme?.name || currentTheme)} Party
-                </Badge>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleEditClick}
-                  disabled={loading}
-                  className="p-2 md:p-3 h-auto text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 hover:scale-110 group backdrop-blur-sm border border-white/20 disabled:opacity-50"
-                  title="Edit party details"
-                >
-                  <Edit className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-12 transition-transform duration-300" />
-                </Button>
-              </div>
-            </div> */}
-
             {/* Party Title */}
             <div className="space-y-1 md:space-y-2">
               <h1
@@ -893,7 +935,6 @@ export default function PartyHeader({
               </p>
             </div>
 
-         
             {/* Mobile: Horizontal Scrolling Cards */}
             <div className="md:hidden">
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
@@ -1080,13 +1121,30 @@ export default function PartyHeader({
                 </p>
               </button>
             </div>
-         
           </div>
         </div>
 
         {/* Bottom accent line */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-300 to-secondary"></div>
       </div>
+
+      {/* NEW: Supplier Availability Modal */}
+      {pendingChanges && (
+        <SupplierAvailabilityModal
+          isOpen={showAvailabilityModal}
+          onClose={() => {
+            setShowAvailabilityModal(false)
+            setPendingChanges(null)
+          }}
+          onConfirm={handleAvailabilityConfirm}
+          currentDetails={pendingChanges.currentDetails}
+          newDetails={pendingChanges.newDetails}
+          suppliers={suppliers}
+          partyId={partyId}
+          dataSource={dataSource}
+          onPartyRebuilt={handlePartyRebuilt}
+        />
+      )}
 
       {/* Edit Modals */}
       <DateEditModal

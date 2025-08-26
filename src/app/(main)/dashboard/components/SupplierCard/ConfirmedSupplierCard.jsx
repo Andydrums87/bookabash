@@ -1,23 +1,23 @@
-// ConfirmedSupplierCard.js - Amber/Gold themed for "Confirmed but not paid" state
+// ConfirmedSupplierCard.js - Updated to remove individual payment buttons
 "use client"
 
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Gift, CheckCircle, CreditCard, Clock } from "lucide-react"
+import { Gift, CheckCircle, Clock, Phone, Mail } from "lucide-react"
 
 export default function ConfirmedSupplierCard({
   type,
   supplier,
   addons = [],
   isDeleting = false,
-  onPaymentReady
+  showContactInfo = false // New prop to show contact details after payment
 }) {
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
   const displayPrice = supplier.totalPrice || supplier.price || 0
 
-  // 🎂 NEW: Extract cake customization data
+  // Extract cake customization data
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization
 
@@ -44,7 +44,7 @@ export default function ConfirmedSupplierCard({
           />
         </div>
 
-        {/* Standard gradient overlay - consistent across all cards */}
+        {/* Standard gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
         <div className="absolute top-4 left-4 right-16 flex items-start justify-start z-10">
@@ -53,7 +53,7 @@ export default function ConfirmedSupplierCard({
           </Badge>
         </div>
 
-        {/* 🎂 NEW: Cake badge in bottom right */}
+        {/* Cake badge in bottom right */}
         {isCakeSupplier && (
           <div className="absolute bottom-4 right-4 z-10">
             <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
@@ -83,28 +83,48 @@ export default function ConfirmedSupplierCard({
         </div>
       </div>
 
-      {/* Confirmed status section - amber/gold themed */}
+      {/* Confirmed status section - Updated without payment button */}
       <div className="bg-gradient-to-br from-sky-50 to-sky-100 border-t-2 border-sky-500">
         <div className="p-5">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-sky-200 to-sky-300 rounded-xl flex items-center justify-center shadow-sm">
               <CheckCircle className="w-5 h-5 text-sky-700" />
             </div>
-            <Badge className="bg-sky-500 text-white">Confirmed - Ready to Pay</Badge>
+            <Badge className="bg-sky-500 text-white">
+              {showContactInfo ? "Booked & Paid" : "Confirmed - Awaiting Payment"}
+            </Badge>
           </div>
 
-          {/* Time pressure indicator */}
-          <div className="bg-white/70 border border-sky-200 rounded-lg p-3 mb-5 flex items-center gap-3">
-            <Clock className="w-5 h-5 text-sky-600 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-sky-800">Payment due within 24 hours</p>
-              {/* <p className="text-xs text-sky-600">Secure your spot before it's offered to someone else</p> */}
+          {/* Show either payment reminder or contact info */}
+          {showContactInfo ? (
+            // After payment - show contact information
+            <div className="bg-white/70 border border-sky-200 rounded-lg p-3 mb-5">
+              <h4 className="font-medium text-sky-800 mb-2 text-center">Contact Details</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 text-sm text-sky-700">
+                  <Phone className="w-4 h-4" />
+                  <span>{supplier.phone || "Contact via platform"}</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-sm text-sky-700">
+                  <Mail className="w-4 h-4" />
+                  <span>{supplier.email || "Available after booking"}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            // Before payment - show payment reminder
+            <div className="bg-white/70 border border-sky-200 rounded-lg p-3 mb-5 flex items-center gap-3">
+              <Clock className="w-5 h-5 text-sky-600 flex-shrink-0" />
+              <div className="flex-1 text-center">
+                <p className="text-sm font-medium text-sky-800">Awaiting payment to secure booking</p>
+                <p className="text-xs text-sky-600">Use the main payment button to pay for all confirmed suppliers</p>
+              </div>
+            </div>
+          )}
 
           {/* Add-ons if present */}
           {supplierAddons.length > 0 && (
-            <div className="bg-white/70 rounded-lg p-4 mb-5">
+            <div className="bg-white/70 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-sky-800 mb-3 text-center flex items-center justify-center gap-2">
                 <Gift className="w-4 h-4 text-sky-600" />
                 Confirmed Add-ons ({supplierAddons.length}):
@@ -119,15 +139,6 @@ export default function ConfirmedSupplierCard({
               </div>
             </div>
           )}
-
-          {/* Payment button */}
-          <Button
-            onClick={onPaymentReady}
-            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 shadow-lg transform hover:scale-[1.02] transition-all duration-200"
-          >
-            <CreditCard className="w-4 h-4 mr-2" />
-            Pay Deposit Now
-          </Button>
         </div>
       </div>
 
@@ -143,7 +154,7 @@ export default function ConfirmedSupplierCard({
           left: -2px;
           right: -2px;
           bottom: -2px;
-          background: linear-gradient(45deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+          background: linear-gradient(45deg, rgba(14, 165, 233, 0.3), rgba(3, 105, 161, 0.3));
           border-radius: 1rem;
           z-index: -1;
           animation: glow-pulse 2s ease-in-out infinite alternate;

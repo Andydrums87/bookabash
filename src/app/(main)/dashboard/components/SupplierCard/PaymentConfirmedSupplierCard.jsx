@@ -1,4 +1,4 @@
-// PaymentConfirmedSupplierCard.js - Updated to match border styling pattern
+// PaymentConfirmedSupplierCard.js - Updated to use primary colors
 "use client"
 
 import Image from "next/image"
@@ -22,11 +22,11 @@ export default function PaymentConfirmedSupplierCard({
 
   return (
     <Card className={`overflow-hidden rounded-2xl shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""} 
-      border-4 border-teal-500 paid-double-border`}>
+      border-4 border-[hsl(var(--primary-500))] paid-double-border`}>
       
       {/* Success checkmark corner badge */}
       <div className="absolute top-4 right-4 z-10">
-        <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
+        <div className="w-8 h-8 bg-[hsl(var(--primary-500))] rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
           <CheckCircle2 className="w-5 h-5 text-white" />
         </div>
       </div>
@@ -47,7 +47,7 @@ export default function PaymentConfirmedSupplierCard({
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
         <div className="absolute top-4 left-4 right-16 flex items-start justify-start z-10">
-          <Badge className="bg-teal-500 text-white shadow-lg backdrop-blur-sm">
+          <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </Badge>
         </div>
@@ -82,14 +82,14 @@ export default function PaymentConfirmedSupplierCard({
         </div>
       </div>
 
-      {/* Payment confirmed status section - emerald themed */}
-      <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-t-2 border-teal-500">
+      {/* Payment confirmed status section - primary themed */}
+      <div className="bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] border-t-2 border-[hsl(var(--primary-500))]">
         <div className="p-5">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-200 to-teal-300 rounded-xl flex items-center justify-center shadow-sm">
-              <CheckCircle2 className="w-5 h-5 text-teal-700" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-200))] to-[hsl(var(--primary-300))] rounded-xl flex items-center justify-center shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-[hsl(var(--primary-700))]" />
             </div>
-            <Badge className="bg-teal-500 text-white">Confirmed & Paid</Badge>
+            <Badge className="bg-[hsl(var(--primary-500))] text-white">Confirmed & Paid</Badge>
           </div>
 
           {/* Contact Buttons */}
@@ -107,7 +107,7 @@ export default function PaymentConfirmedSupplierCard({
                     {owner.email && (
                       <a
                         href={`mailto:${owner.email}?subject=Party Booking Details - ${supplier.name}&body=Hi, I've just paid for your services through PartySnap. Could we please arrange the final details for my party?`}
-                        className="flex-1 bg-teal-500 hover:bg-teal-600 text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                        className="flex-1 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
                       >
                         <Mail className="w-4 h-4" />
                         Email
@@ -116,7 +116,7 @@ export default function PaymentConfirmedSupplierCard({
                     {owner.phone && (
                       <a
                         href={`tel:${formatPhone(owner.phone)}`}
-                        className="flex-1 bg-teal-500 hover:bg-teal-600 text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
+                        className="flex-1 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white px-4 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors shadow-lg"
                       >
                         <Phone className="w-4 h-4" />
                         Call
@@ -128,8 +128,8 @@ export default function PaymentConfirmedSupplierCard({
             }
 
             return (
-              <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-center mb-5">
-                <p className="text-teal-800 text-sm">
+              <div className="bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-xl p-3 text-center mb-5">
+                <p className="text-[hsl(var(--primary-800))] text-sm">
                   Contact details will be provided via email confirmation
                 </p>
               </div>
@@ -139,15 +139,15 @@ export default function PaymentConfirmedSupplierCard({
           {/* Add-ons if present */}
           {supplierAddons.length > 0 && (
             <div className="bg-white/70 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-semibold text-teal-800 mb-3 text-center flex items-center justify-center gap-2">
-                <Gift className="w-4 h-4 text-teal-600" />
+              <h4 className="text-sm font-semibold text-[hsl(var(--primary-800))] mb-3 text-center flex items-center justify-center gap-2">
+                <Gift className="w-4 h-4 text-[hsl(var(--primary-600))]" />
                 Included Add-ons ({supplierAddons.length}):
               </h4>
               <div className="space-y-2">
                 {supplierAddons.map((addon) => (
                   <div key={addon.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{addon.name}</span>
-                    <span className="font-medium text-teal-700">£{addon.price}</span>
+                    <span className="font-medium text-[hsl(var(--primary-700))]">£{addon.price}</span>
                   </div>
                 ))}
               </div>

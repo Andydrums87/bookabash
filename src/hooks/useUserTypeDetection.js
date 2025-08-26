@@ -3,127 +3,26 @@ import { supabase } from '@/lib/supabase'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
 export const useUserTypeDetection = () => {
-    const [userType, setUserType] = useState(null)
-    const [userContext, setUserContext] = useState({})
-    const [loading, setLoading] = useState(true)
-  
-    // Quick synchronous check first
-    const getInitialUserType = useCallback(() => {
-      if (typeof window === 'undefined') {
-        return { type: null, context: {}, loading: true }
-      }
-    
-      try {
-        const localPlan = localStorage.getItem('user_party_plan')
-        const localDetails = localStorage.getItem('party_details')
+  const [userType, setUserType] = useState(null)
+  const [userContext, setUserContext] = useState({})
+  const [loading, setLoading] = useState(true)
 
+  const detectUserType = useCallback(async () => {
+    try {
+      setLoading(true)
+      
+      // Step 1: Check authentication status first
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        console.log('User is signed in, checking database party...')
         
-        // ✅ STRICTER CHECK: Ensure localStorage has actual meaningful data
-        let hasRealSuppliers = false
-        if (localPlan && localPlan !== 'null' && localPlan !== '{}' && localPlan.length > 20) {
-          try {
-            const parsedPlan = JSON.parse(localPlan)
-            const supplierCategories = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography']
-            
-            hasRealSuppliers = supplierCategories.some(category => {
-              const supplier = parsedPlan[category]
-              return supplier && typeof supplier === 'object' && supplier.name && supplier.id
-            })
-            
-            // Also check addons
-            if (!hasRealSuppliers && parsedPlan.addons && parsedPlan.addons.length > 0) {
-              hasRealSuppliers = parsedPlan.addons.some(addon => addon && addon.name && addon.id)
-            }
-            
-        
-          } catch (e) {
-            console.log('  - Plan parse error:', e)
-          }
-        }
-        
-        // Check if party details has meaningful data
-        let hasRealDetails = false
-        if (localDetails && localDetails !== 'null' && localDetails !== '{}' && localDetails.length > 20) {
-          try {
-            const parsedDetails = JSON.parse(localDetails)
-            // Check for non-default values
-            hasRealDetails = !!(
-              (parsedDetails.childName && parsedDetails.childName !== 'Emma' && parsedDetails.childName !== 'Your Child') ||
-              parsedDetails.date ||
-              parsedDetails.postcode ||
-              (parsedDetails.guestCount && parsedDetails.guestCount > 0) ||
-              (parsedDetails.theme && parsedDetails.theme !== 'general' && parsedDetails.theme !== 'superhero')
-            )
-            
-
-          } catch (e) {
-            console.log('  - Details parse error:', e)
-          }
-        }
-        
-        const hasValidData = hasRealSuppliers || hasRealDetails
-
-    
-        if (!hasValidData) {
-
-          return {
-            type: 'ANONYMOUS',
-            context: {
-              needsDateSelection: true,
-              canModifyPlan: false,
-              dataSource: null,
-              showCalendarFlow: true
-            },
-            loading: false
-          }
-        } else {
-
-          return {
-            type: 'LOCALSTORAGE_USER',
-            context: {
-              needsDateSelection: false,
-              canModifyPlan: true,
-              dataSource: 'localStorage',
-              showCalendarFlow: false,
-              allowSupplierUpdates: true
-            },
-            loading: false
-          }
-        }
-      } catch (error) {
-        console.log('  - ERROR - setting ERROR_FALLBACK', error)
-        return {
-          type: 'ERROR_FALLBACK',
-          context: {
-            needsDateSelection: true,
-            canModifyPlan: false,
-            dataSource: null,
-            showCalendarFlow: true
-          },
-          loading: false
-        }
-      }
-    }, [])
-    useEffect(() => {
-      const initial = getInitialUserType()
-      setUserType(initial.type)
-      setUserContext(initial.context)
-      setLoading(initial.loading)
-    
-      // Always check if user is signed in, regardless of initial type
-      detectFullUserType()  // ← REMOVE THE IF CONDITION
-    }, [])
-  
-    const detectFullUserType = useCallback(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        
-        if (user) {
-          // User is signed in, check for database party
+        // Step 2: For signed-in users, check database party first
+        try {
           const partyResult = await partyDatabaseBackend.getCurrentParty()
-          const hasDatabaseParty = partyResult.success && !!partyResult.party
-  
-          if (hasDatabaseParty) {
+          
+          if (partyResult.success && partyResult.party) {
+            console.log('Database party found')
             setUserType('DATABASE_USER')
             setUserContext({
               needsDateSelection: false,
@@ -132,85 +31,143 @@ export const useUserTypeDetection = () => {
               showCalendarFlow: false,
               currentPartyId: partyResult.party.id,
               partyData: partyResult.party,
-              userId: user.id,
+              userId: session.user.id,
               allowSupplierUpdates: 'conditional'
             })
+            setLoading(false)
+            return
           } else {
+            console.log('No database party found, user needs migration')
+            // Check if they have localStorage data worth migrating
+            const hasLocalStorageData = checkLocalStorageData()
+            
             setUserType('MIGRATION_NEEDED')
-            setUserContext(prev => ({
-              ...prev,
-              userId: user.id,
-              needsMigration: true
-            }))
+            setUserContext({
+              needsDateSelection: !hasLocalStorageData,
+              canModifyPlan: hasLocalStorageData,
+              dataSource: hasLocalStorageData ? 'localStorage' : null,
+              showCalendarFlow: !hasLocalStorageData,
+              userId: session.user.id,
+              needsMigration: true,
+              allowSupplierUpdates: hasLocalStorageData ? true : false
+            })
+            setLoading(false)
+            return
           }
+        } catch (dbError) {
+          console.error('Database check failed:', dbError)
+          // Fallback to localStorage check for signed-in users
         }
-        // If no user, keep the existing ANONYMOUS or LOCALSTORAGE_USER type
-      } catch (error) {
-        console.error('Error in full user type detection:', error)
-        // Keep existing state on error
       }
-    }, [])
-  
-    return {
-      userType,
-      userContext,
-      loading,
-      refreshUserType: detectFullUserType
+      
+      // Step 3: For non-signed-in users or database errors, check localStorage
+      const hasLocalStorageData = checkLocalStorageData()
+      
+      if (hasLocalStorageData) {
+        console.log('Using localStorage data')
+        setUserType('LOCALSTORAGE_USER')
+        setUserContext({
+          needsDateSelection: false,
+          canModifyPlan: true,
+          dataSource: 'localStorage',
+          showCalendarFlow: false,
+          allowSupplierUpdates: true
+        })
+      } else {
+        console.log('No valid data found, anonymous user')
+        setUserType('ANONYMOUS')
+        setUserContext({
+          needsDateSelection: true,
+          canModifyPlan: false,
+          dataSource: null,
+          showCalendarFlow: true
+        })
+      }
+      
+    } catch (error) {
+      console.error('Error detecting user type:', error)
+      setUserType('ERROR_FALLBACK')
+      setUserContext({
+        needsDateSelection: true,
+        canModifyPlan: false,
+        dataSource: null,
+        showCalendarFlow: true
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Helper function to check localStorage data quality
+  const checkLocalStorageData = () => {
+    if (typeof window === 'undefined') return false
+    
+    try {
+      const localPlan = localStorage.getItem('user_party_plan')
+      const localDetails = localStorage.getItem('party_details')
+      
+      // Check party plan
+      let hasRealSuppliers = false
+      if (localPlan && localPlan !== 'null' && localPlan !== '{}' && localPlan.length > 20) {
+        try {
+          const parsedPlan = JSON.parse(localPlan)
+          const supplierCategories = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography']
+          
+          hasRealSuppliers = supplierCategories.some(category => {
+            const supplier = parsedPlan[category]
+            return supplier && typeof supplier === 'object' && supplier.name && supplier.id
+          })
+          
+          if (!hasRealSuppliers && parsedPlan.addons && parsedPlan.addons.length > 0) {
+            hasRealSuppliers = parsedPlan.addons.some(addon => addon && addon.name && addon.id)
+          }
+        } catch (e) {
+          console.log('Plan parse error:', e)
+        }
+      }
+      
+      // Check party details
+      let hasRealDetails = false
+      if (localDetails && localDetails !== 'null' && localDetails !== '{}' && localDetails.length > 20) {
+        try {
+          const parsedDetails = JSON.parse(localDetails)
+          hasRealDetails = !!(
+            (parsedDetails.childName && parsedDetails.childName !== 'Emma' && parsedDetails.childName !== 'Your Child') ||
+            parsedDetails.date ||
+            parsedDetails.postcode ||
+            (parsedDetails.guestCount && parsedDetails.guestCount > 0) ||
+            (parsedDetails.theme && parsedDetails.theme !== 'general' && parsedDetails.theme !== 'superhero')
+          )
+        } catch (e) {
+          console.log('Details parse error:', e)
+        }
+      }
+      
+      return hasRealSuppliers || hasRealDetails
+    } catch (error) {
+      console.error('Error checking localStorage:', error)
+      return false
     }
   }
-  
-  
-  export const getHandleAddToPlanBehavior = (userType, userContext, supplier, selectedDate) => {
-  
-    
-    switch (userType) {
-      case 'ANONYMOUS':
-      case 'ERROR_FALLBACK':
-        // Only anonymous users need to pick dates
-        if (!selectedDate) {
-          return {
-            shouldShowDatePicker: true,
-            shouldShowAlaCarteModal: false,
-            buttonText: "Pick a Date First",
-            buttonDisabled: false,
-            clickAction: 'scroll_to_calendar'
-          }
-        } else {
-          return {
-            shouldShowDatePicker: false,
-            shouldShowAlaCarteModal: true,
-            buttonText: "Book This Supplier",
-            buttonDisabled: false,
-            clickAction: 'open_modal'
-          }
-        }
-        
-      case 'LOCALSTORAGE_USER':
-      case 'MIGRATION_NEEDED':
-        // Users with localStorage data don't need to pick dates
-        return {
-          shouldShowDatePicker: false,
-          shouldShowAlaCarteModal: false,
-          buttonText: "Add to Plan",
-          buttonDisabled: false,
-          clickAction: 'add_to_plan'
-        }
-        
-      case 'DATABASE_USER':
-      case 'DATA_CONFLICT':
-        // Database users with existing parties don't need to pick dates
-        return {
-          shouldShowDatePicker: false,
-          shouldShowAlaCarteModal: false,
-          shouldCheckCategoryOccupation: true,
-          shouldSendEnquiry: true,
-          buttonText: "Add to Plan",
-          buttonDisabled: false,
-          clickAction: 'add_to_plan'
-        }
-        
-      default:
-        // Fallback for unknown user types - assume they need to pick a date
+
+  useEffect(() => {
+    detectUserType()
+  }, [detectUserType])
+
+  return {
+    userType,
+    userContext,
+    loading,
+    refreshUserType: detectUserType
+  }
+}
+
+export const getHandleAddToPlanBehavior = (userType, userContext, supplier, selectedDate) => {
+  switch (userType) {
+    case 'ANONYMOUS':
+    case 'ERROR_FALLBACK':
+      // Only anonymous users need to pick dates
+      if (!selectedDate) {
         return {
           shouldShowDatePicker: true,
           shouldShowAlaCarteModal: false,
@@ -218,6 +175,48 @@ export const useUserTypeDetection = () => {
           buttonDisabled: false,
           clickAction: 'scroll_to_calendar'
         }
-    }
+      } else {
+        return {
+          shouldShowDatePicker: false,
+          shouldShowAlaCarteModal: true,
+          buttonText: "Book This Supplier",
+          buttonDisabled: false,
+          clickAction: 'open_modal'
+        }
+      }
+      
+    case 'LOCALSTORAGE_USER':
+    case 'MIGRATION_NEEDED':
+      // Users with localStorage data don't need to pick dates
+      return {
+        shouldShowDatePicker: false,
+        shouldShowAlaCarteModal: false,
+        buttonText: "Add to Plan",
+        buttonDisabled: false,
+        clickAction: 'add_to_plan'
+      }
+      
+    case 'DATABASE_USER':
+    case 'DATA_CONFLICT':
+      // Database users with existing parties don't need to pick dates
+      return {
+        shouldShowDatePicker: false,
+        shouldShowAlaCarteModal: false,
+        shouldCheckCategoryOccupation: true,
+        shouldSendEnquiry: true,
+        buttonText: "Add to Plan",
+        buttonDisabled: false,
+        clickAction: 'add_to_plan'
+      }
+      
+    default:
+      // Fallback for unknown user types - assume they need to pick a date
+      return {
+        shouldShowDatePicker: true,
+        shouldShowAlaCarteModal: false,
+        buttonText: "Pick a Date First",
+        buttonDisabled: false,
+        clickAction: 'scroll_to_calendar'
+      }
   }
-  
+}

@@ -1415,159 +1415,159 @@ const getButtonIcon = (stepData) => {
 )}
 
 {showFinalCTA && (
-  <div className="animate-in slide-in-from-bottom duration-500">
-    <Card className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-      {/* Clean Header */}
-      <div className="bg-primary-500 p-6 text-white">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-            <span className="text-2xl">🎉</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">Ready to Book Your Party!</h2>
-            <p className="text-white/90">Send enquiries to {selectedSuppliers.length} suppliers</p>
-          </div>
-        </div>
-      </div>
+ <div className="animate-in slide-in-from-bottom duration-500">
+ <Card className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+   {/* Clean Header */}
+   <div className="bg-primary-500 p-6 text-white">
+     <div className="flex items-center gap-3 mb-2">
+       <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+         <span className="text-2xl">🎉</span>
+       </div>
+       <div>
+         <h2 className="text-2xl font-bold">Ready to Book Your Party!</h2>
+         <p className="text-white/90">Secure {selectedSuppliers.length} amazing suppliers</p>
+       </div>
+     </div>
+   </div>
 
-      <CardContent className="p-6">
-        {/* Party Summary Header */}
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            {partyDetails.childName}'s {partyDetails.theme} Party
-          </h3>
-          
-          {/* Minimal Party Details */}
-          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>{partyDetails.date}</span>
-            </div>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{partyDetails.time}</span>
-            </div>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{partyDetails.location}</span>
-            </div>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              <span>Age {partyDetails.age}</span>
-            </div>
-          </div>
-        </div>
+   <CardContent className="p-6">
+     {/* Party Summary Header */}
+     <div className="text-center mb-6">
+       <h3 className="text-xl font-bold text-gray-900 mb-4">
+         {partyDetails.childName}'s {partyDetails.theme} Party
+       </h3>
+       
+       {/* Minimal Party Details */}
+       <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
+         <div className="flex items-center gap-1">
+           <Calendar className="w-4 h-4" />
+           <span>{partyDetails.date}</span>
+         </div>
+         <span className="text-gray-300">•</span>
+         <div className="flex items-center gap-1">
+           <Clock className="w-4 h-4" />
+           <span>{partyDetails.time}</span>
+         </div>
+         <span className="text-gray-300">•</span>
+         <div className="flex items-center gap-1">
+           <MapPin className="w-4 h-4" />
+           <span>{partyDetails.location}</span>
+         </div>
+         <span className="text-gray-300">•</span>
+         <div className="flex items-center gap-1">
+           <Users className="w-4 h-4" />
+           <span>Age {partyDetails.age}</span>
+         </div>
+       </div>
+     </div>
 
-        {/* Suppliers Section */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-bold text-gray-900">Your Selected Suppliers</h4>
-            <Badge className="bg-[hsl(var(--primary-500))] text-white px-3 py-1 rounded-full">
-              {selectedSuppliers.length}
-            </Badge>
-          </div>
-          
-          <div className="mb-6">
+     {/* Suppliers Section */}
+     <div className="mb-6">
+       <div className="flex items-center justify-between mb-4">
+         <h4 className="text-lg font-bold text-gray-900">Your Dream Team</h4>
+         <Badge className="bg-[hsl(var(--primary-500))] text-white px-3 py-1 rounded-full">
+           {selectedSuppliers.length}
+         </Badge>
+       </div>
+       
+       <div className="mb-6">
+
+
+<div className="bg-gray-50 rounded-lg p-2 space-y-1.5 max-h-48 overflow-y-auto">
+ {selectedSuppliers.map(supplier => (
+   <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100">
+     <div className="flex items-center space-x-2 min-w-0 flex-1">
+       <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+         <Image
+           src={supplier.image || '/placeholder.svg'}
+           alt={supplier.name}
+           width={24}
+           height={24}
+           className="object-cover w-full h-full"
+         />
+       </div>
+       <div className="min-w-0 flex-1">
+         <div className="font-medium text-gray-900 truncate text-xs">
+           {supplier.name}
+         </div>
+         <div className="text-xs text-gray-500 truncate">({supplier.category})</div>
+       </div>
+     </div>
+     <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
+       £{supplier.price || 0}
+     </div>
+   </div>
+ ))}
+ 
+ {/* Inline Add-ons */}
+ {selectedAddons.map(addon => (
+   <div key={addon.id} className="flex justify-between items-center bg-blue-50 rounded-md p-2 border border-blue-100">
+     <div className="flex items-center space-x-2">
+       <div className="w-6 h-6 rounded-md bg-blue-200 flex items-center justify-center flex-shrink-0">
+         <span className="text-xs">+</span>
+       </div>
+       <span className="text-xs text-gray-700 truncate">{addon.name}</span>
+     </div>
+     <span className="font-bold text-blue-600 text-xs">£{addon.price || 0}</span>
+   </div>
+ ))}
+</div>
+</div>
 
   
-  <div className="bg-gray-50 rounded-lg p-2 space-y-1.5 max-h-48 overflow-y-auto">
-    {selectedSuppliers.map(supplier => (
-      <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100">
-        <div className="flex items-center space-x-2 min-w-0 flex-1">
-          <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-            <Image
-              src={supplier.image || '/placeholder.svg'}
-              alt={supplier.name}
-              width={24}
-              height={24}
-              className="object-cover w-full h-full"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium text-gray-900 truncate text-xs">
-              {supplier.name}
-            </div>
-            <div className="text-xs text-gray-500 truncate">({supplier.category})</div>
-          </div>
-        </div>
-        <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
-          £{supplier.price || 0}
-        </div>
-      </div>
-    ))}
-    
-    {/* Inline Add-ons */}
-    {selectedAddons.map(addon => (
-      <div key={addon.id} className="flex justify-between items-center bg-blue-50 rounded-md p-2 border border-blue-100">
-        <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-md bg-blue-200 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs">+</span>
-          </div>
-          <span className="text-xs text-gray-700 truncate">{addon.name}</span>
-        </div>
-        <span className="font-bold text-blue-600 text-xs">£{addon.price || 0}</span>
-      </div>
-    ))}
-  </div>
-</div>
+     </div>
 
-     
-        </div>
+     {/* Total Cost */}
+     <div className="bg-teal-200 rounded-xl p-4 mb-6 border border-teal-400">
+       <div className="flex justify-between items-center">
+         <span className="text-lg font-bold text-gray-700">Total Party Cost:</span>
+         <span className="text-3xl font-black text-gray-900">£{grandTotal}</span>
+       </div>
+     </div>
 
-        {/* Total Cost */}
-        <div className="bg-teal-200 rounded-xl p-4 mb-6 border border-teal-400">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-gray-700">Total Party Cost:</span>
-            <span className="text-3xl font-black text-gray-900">£{grandTotal}</span>
-          </div>
-        </div>
+     <div className="space-y-3 mb-4">
+{/* Main CTA Button */}
+<Button
+ onClick={handleSubmitEnquiry}
+ disabled={isSubmitting}
+ className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white py-4 px-6 text-base font-bold rounded-xl shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border-0"
+>
+ {isSubmitting ? (
+   <div className="flex items-center justify-center">
+     <div className="w-5 h-5 mr-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+     <span>Securing Your Suppliers...</span>
+   </div>
+ ) : (
+   <div className="flex items-center justify-center">
+     <Zap className="w-5 h-5 mr-3" />
+     <span>Book {selectedSuppliers.length} Suppliers Now! 🚀</span>
+   </div>
+ )}
+</Button>
 
-        <div className="space-y-3 mb-4">
-  {/* Main CTA Button */}
-  <Button
-    onClick={handleSubmitEnquiry}
-    disabled={isSubmitting}
-    className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white py-4 px-6 text-base font-bold rounded-xl shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border-0"
-  >
-    {isSubmitting ? (
-      <div className="flex items-center justify-center">
-        <div className="w-5 h-5 mr-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-        <span>Sending Enquiries...</span>
-      </div>
-    ) : (
-      <div className="flex items-center justify-center">
-        <Send className="w-5 h-5 mr-3" />
-        <span>Send to All {selectedSuppliers.length} Suppliers 🚀</span>
-      </div>
-    )}
-  </Button>
-
-  {/* Secondary Button */}
-  <Button
-    variant="ghost"
-    onClick={() => {
-      setShowFinalCTA(false);
-      setCurrentStep(4);
-      setInitialSupplierCount(selectedSuppliers.length);
-      setHasAddedOnCurrentStep(false);
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-    }}
-    className="w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 py-2 px-4 font-medium rounded-lg transition-all duration-200 text-sm"
-  >
-    ← Back 
-  </Button>
+{/* Secondary Button */}
+<Button
+ variant="ghost"
+ onClick={() => {
+   setShowFinalCTA(false);
+   setCurrentStep(4);
+   setInitialSupplierCount(selectedSuppliers.length);
+   setHasAddedOnCurrentStep(false);
+   setTimeout(() => {
+     window.scrollTo({ top: 0, behavior: 'smooth' });
+   }, 100);
+ }}
+ className="w-full text-gray-600 hover:text-gray-800 hover:bg-gray-100 py-2 px-4 font-medium rounded-lg transition-all duration-200 text-sm"
+>
+ ← Back 
+</Button>
 </div>
 
 
 
-      </CardContent>
-    </Card>
-  </div>
+   </CardContent>
+ </Card>
+</div>
 )}
         </div>
       </div>

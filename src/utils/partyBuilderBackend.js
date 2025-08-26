@@ -1,8 +1,7 @@
-// utils/partyBuilderBackend.js - Enhanced Party Builder with Cakes Priority
+// utils/partyBuilderBackend.js - Rewritten Party Builder with Reliable Supplier Selection
 
 import { suppliersAPI } from './mockBackend';
 import { LocationService } from './locationService';
-// ✅ UPDATED: Replace localStorage backend with database backend
 import { partyDatabaseBackend } from './partyDatabaseBackend';
 
 const THEMES = {
@@ -65,121 +64,472 @@ const THEMES = {
 };
 
 class PartyBuilderBackend {
-
-  // NEW: Smart budget defaulting based on guest count
+  
+  // Budget calculation based on guest count
   getDefaultBudgetForGuests(guestCount) {
     const guests = parseInt(guestCount);
     
-    // Budget calculations based on realistic per-person costs
-    let baseBudget;
-    
-    if (guests <= 5) {
-      baseBudget = 400;  // Small intimate party
-    } else if (guests <= 10) {
-      baseBudget = 500;  // Essential party
-    } else if (guests <= 15) {
-      baseBudget = 600;  // Complete party
-    } else if (guests <= 20) {
-      baseBudget = 700;  // Larger complete party
-    } else if (guests <= 25) {
-      baseBudget = 800;  // Premium party
-    } else {
-      baseBudget = 900;  // Large premium party
-    }
-    
-    console.log(`💡 Auto-calculated budget for ${guests} guests: £${baseBudget}`);
-    return baseBudget;
+    if (guests <= 5) return 400;
+    if (guests <= 10) return 500;
+    if (guests <= 15) return 600;
+    if (guests <= 20) return 700;
+    if (guests <= 25) return 800;
+    return 900;
   }
 
-  // UPDATED: Enhanced buildParty function with smart budget defaulting and location
+  // Comprehensive availability checking
+  checkSupplierAvailability(supplier, date, timeSlot) {
+    if (!supplier || !date) {
+      return { available: true, reason: 'no-date-provided', confidence: 'low' };
+    }
+    
+    try {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const dateString = date.toISOString().split('T')[0];
+      
+      // Check if supplier has any availability data
+      const hasAvailabilityData = !!(
+        supplier.workingHours || 
+        supplier.unavailableDates || 
+        supplier.busyDates ||
+        supplier.availability
+      );
+      
+      if (!hasAvailabilityData) {
+        return { available: true, reason: 'no-availability-data', confidence: 'medium' };
+      }
+      
+      // Check working hours
+      if (supplier.workingHours && supplier.workingHours[dayName]) {
+        const workingDay = supplier.workingHours[dayName];
+        
+        if (!workingDay.active) {
+          return { available: false, reason: 'closed-day', confidence: 'high' };
+        }
+        
+        if (workingDay.timeSlots && workingDay.timeSlots[timeSlot]) {
+          if (!workingDay.timeSlots[timeSlot].available) {
+            return { available: false, reason: 'time-slot-unavailable', confidence: 'high' };
+          }
+        }
+      }
+      
+      // Check unavailable dates
+      if (supplier.unavailableDates && Array.isArray(supplier.unavailableDates)) {
+        for (const ud of supplier.unavailableDates) {
+          const udDate = typeof ud === 'string' ? ud : ud.date;
+          const udDateClean = udDate.includes('T') ? udDate.split('T')[0] : udDate;
+          
+          if (udDateClean === dateString) {
+            if (typeof ud === 'string') {
+              return { available: false, reason: 'date-blocked', confidence: 'high' };
+            }
+            if (ud.timeSlots && ud.timeSlots.includes(timeSlot)) {
+              return { available: false, reason: 'time-slot-blocked', confidence: 'high' };
+            }
+          }
+        }
+      }
+      
+      // Check busy dates
+      if (supplier.busyDates && Array.isArray(supplier.busyDates)) {
+        for (const bd of supplier.busyDates) {
+          const bdDate = typeof bd === 'string' ? bd : bd.date;
+          const bdDateClean = bdDate.includes('T') ? bdDate.split('T')[0] : bdDate;
+          
+          if (bdDateClean === dateString) {
+            if (typeof bd === 'string') {
+              return { available: false, reason: 'date-busy', confidence: 'high' };
+            }
+            if (bd.timeSlots && bd.timeSlots.includes(timeSlot)) {
+              return { available: false, reason: 'time-slot-busy', confidence: 'high' };
+            }
+          }
+        }
+      }
+      
+      // Check new availability structure
+      if (supplier.availability) {
+        if (supplier.availability.timeSlots && supplier.availability.timeSlots.length > 0) {
+          if (!supplier.availability.timeSlots.includes(timeSlot)) {
+            return { available: false, reason: 'time-slot-not-supported', confidence: 'high' };
+          }
+        }
+        
+        if (supplier.availability.blockedDates && Array.isArray(supplier.availability.blockedDates)) {
+          const isBlocked = supplier.availability.blockedDates.some(blockedDateStr => {
+            const blockedDate = new Date(blockedDateStr);
+            return blockedDate.toDateString() === date.toDateString();
+          });
+          
+          if (isBlocked) {
+            return { available: false, reason: 'date-in-blocked-list', confidence: 'high' };
+          }
+        }
+      }
+      
+      return { available: true, reason: 'available', confidence: 'high' };
+      
+    } catch (error) {
+      console.error(`Error checking availability for ${supplier.name}:`, error);
+      return { available: true, reason: 'error-default', confidence: 'low' };
+    }
+  }
+
+  // Enhanced supplier scoring
+  scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2) {
+    let score = 50; // Base score
+    
+    try {
+      if (theme === 'no-theme') {
+        if (!supplier?.themes || supplier.themes.length === 0) {
+          score += 30;
+        }
+        if (supplier?.themes && supplier.themes.includes('general')) {
+          score += 40;
+        }
+      } else {
+        // Theme matching
+        if (supplier?.themes && Array.isArray(supplier.themes)) {
+          if (supplier.themes.includes(theme)) {
+            score += 50;
+          }
+        }
+        
+        if (supplier?.serviceDetails?.themes && Array.isArray(supplier.serviceDetails.themes)) {
+          if (supplier.serviceDetails.themes.includes(theme)) {
+            score += 30;
+          }
+        }
+        
+        // Name and description matching
+        if (supplier?.name && typeof supplier.name === 'string') {
+          const lowerName = supplier.name.toLowerCase();
+          const lowerTheme = theme?.toLowerCase() || '';
+          if (lowerName.includes(lowerTheme)) {
+            score += 20;
+          }
+        }
+        
+        if (supplier?.description && typeof supplier.description === 'string') {
+          const lowerDescription = supplier.description.toLowerCase();
+          const lowerTheme = theme?.toLowerCase() || '';
+          if (lowerDescription.includes(lowerTheme)) {
+            score += 10;
+          }
+        }
+      }
+      
+      // Rating bonus
+      if (supplier.rating) {
+        score += (supplier.rating * 2);
+      }
+      
+      return score;
+      
+    } catch (error) {
+      console.error('Error in scoreSupplierWithTheme:', error);
+      return 50;
+    }
+  }
+
+  // Location checking with fallback
+  checkSupplierLocation(supplier, partyLocation) {
+    if (!supplier.location || !partyLocation) {
+      return { canServe: true, reason: 'no-location-data', confidence: 'medium' };
+    }
+    
+    try {
+      const serviceRadius = LocationService.getServiceRadiusForSupplier(supplier);
+      const canServe = LocationService.arePostcodesNearby(supplier.location, partyLocation, serviceRadius);
+      
+      return {
+        canServe,
+        reason: canServe ? 'location-within-range' : 'location-too-far',
+        confidence: 'high'
+      };
+    } catch (error) {
+      console.warn(`Location check failed for ${supplier.name}:`, error);
+      return { canServe: true, reason: 'location-check-error', confidence: 'low' };
+    }
+  }
+
+  // Smart supplier filtering with guaranteed selection
+  selectBestSupplier(suppliers, category, theme, timeSlot, duration, date, location, categoryBudget) {
+    if (!suppliers || suppliers.length === 0) {
+      return { supplier: null, reason: 'no-suppliers-found' };
+    }
+    
+    console.log(`Selecting ${category} from ${suppliers.length} candidates (budget: £${categoryBudget})`);
+    
+    // Filter by budget first
+    const budgetFiltered = suppliers.filter(s => s.priceFrom <= categoryBudget * 1.3);
+    
+    if (budgetFiltered.length === 0) {
+      console.log(`No ${category} suppliers within budget range`);
+      return { supplier: null, reason: 'no-suppliers-in-budget' };
+    }
+    
+    // Score all suppliers
+    const scoredSuppliers = budgetFiltered.map(supplier => {
+      const availabilityCheck = this.checkSupplierAvailability(supplier, new Date(date), timeSlot);
+      const locationCheck = this.checkSupplierLocation(supplier, location);
+      const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
+      
+      // Calculate composite score
+      let compositeScore = themeScore;
+      
+      // Availability bonuses/penalties
+      if (availabilityCheck.available) {
+        compositeScore += availabilityCheck.confidence === 'high' ? 25 : 10;
+      } else {
+        compositeScore -= 30; // Penalty for unavailable
+      }
+      
+      // Location bonuses/penalties
+      if (locationCheck.canServe) {
+        compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
+      } else {
+        compositeScore -= 20;
+      }
+      
+      return {
+        ...supplier,
+        compositeScore,
+        themeScore,
+        availabilityCheck,
+        locationCheck,
+        isAvailable: availabilityCheck.available,
+        canServeLocation: locationCheck.canServe
+      };
+    });
+    
+    // Sort by composite score
+    const sorted = scoredSuppliers.sort((a, b) => b.compositeScore - a.compositeScore);
+    
+    // Try to find the best available supplier first
+    const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
+    
+    if (bestAvailable) {
+      console.log(`Selected available ${category}: ${bestAvailable.name} (score: ${bestAvailable.compositeScore})`);
+      return { 
+        supplier: bestAvailable, 
+        reason: 'best-available-match',
+        requiresConfirmation: false
+      };
+    }
+    
+    // Fallback: Best supplier regardless of availability
+    const bestFallback = sorted[0];
+    console.log(`Selected fallback ${category}: ${bestFallback.name} (score: ${bestFallback.compositeScore}) - needs confirmation`);
+    
+    return { 
+      supplier: {
+        ...bestFallback,
+        isFallbackSelection: true
+      }, 
+      reason: 'best-fallback-match',
+      requiresConfirmation: true,
+      availabilityIssue: !bestFallback.isAvailable,
+      locationIssue: !bestFallback.canServeLocation
+    };
+  }
+
+  // Improved supplier selection with guaranteed results
+  selectSuppliersForParty({
+    suppliers, 
+    themedEntertainment, 
+    theme, 
+    guestCount, 
+    location, 
+    budget, 
+    childAge,
+    timeSlot = 'afternoon',
+    duration = 2,
+    date
+  }) {
+    const selected = {};
+    let remainingBudget = budget;
+    const guests = parseInt(guestCount);
+    const isLargeParty = guests >= 30;
+    
+    console.log(`\nBuilding party for ${guests} guests, ${timeSlot} slot, £${budget} budget, ${theme} theme`);
+    
+    // Define budget allocation based on budget size
+    let budgetAllocation, includedCategories;
+    
+    if (budget <= 500) {
+      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
+      budgetAllocation = { venue: 0.45, entertainment: 0.35, cakes: 0.15, partyBags: 0.05 };
+    } else if (budget <= 700) {
+      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
+      budgetAllocation = { venue: 0.35, entertainment: 0.35, cakes: 0.25, partyBags: 0.05 };
+    } else {
+      includedCategories = ['venue', 'entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
+      if (isLargeParty) {
+        budgetAllocation = { venue: 0.25, entertainment: 0.25, cakes: 0.15, decorations: 0.08, activities: 0.15, partyBags: 0.04, softPlay: 0.08 };
+        includedCategories.push('softPlay');
+      } else {
+        budgetAllocation = { venue: 0.25, entertainment: 0.30, cakes: 0.20, decorations: 0.15, activities: 0.06, partyBags: 0.04 };
+      }
+    }
+    
+    console.log('Budget allocation:', budgetAllocation);
+    console.log('Included categories:', includedCategories);
+    
+    // 1. SELECT ENTERTAINMENT FIRST (theme priority)
+    const entertainmentBudget = budget * budgetAllocation.entertainment;
+    
+    if (themedEntertainment && themedEntertainment.length > 0) {
+      const entertainmentResult = this.selectBestSupplier(
+        themedEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget
+      );
+      
+      if (entertainmentResult.supplier) {
+        selected.entertainment = entertainmentResult.supplier;
+        remainingBudget -= entertainmentResult.supplier.priceFrom;
+        console.log(`Entertainment selected: ${entertainmentResult.supplier.name} (${entertainmentResult.reason})`);
+      }
+    }
+    
+    // Fallback to general entertainment if no themed entertainment selected
+    if (!selected.entertainment) {
+      const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
+      const entertainmentResult = this.selectBestSupplier(
+        generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget
+      );
+      
+      if (entertainmentResult.supplier) {
+        selected.entertainment = entertainmentResult.supplier;
+        remainingBudget -= entertainmentResult.supplier.priceFrom;
+        console.log(`General entertainment selected: ${entertainmentResult.supplier.name} (${entertainmentResult.reason})`);
+      }
+    }
+    
+    // 2. SELECT OTHER CATEGORIES
+    for (const category of includedCategories) {
+      if (category === 'entertainment') continue; // Already handled
+      
+      const categoryBudget = budget * budgetAllocation[category];
+      let categorySuppliers = [];
+      
+      if (category === 'cakes') {
+        categorySuppliers = suppliers.filter(s => s.category === 'Cakes');
+      } else if (category === 'softPlay') {
+        categorySuppliers = suppliers.filter(s => 
+          s.category === 'Activities' &&
+          (s.name.toLowerCase().includes('soft play') || 
+           s.name.toLowerCase().includes('bouncy castle') ||
+           s.name.toLowerCase().includes('inflatable'))
+        );
+      } else {
+        const mappedCategory = this.mapCategoryToSupplierCategory(category);
+        categorySuppliers = suppliers.filter(s => s.category === mappedCategory);
+      }
+      
+      if (categorySuppliers.length > 0) {
+        const result = this.selectBestSupplier(
+          categorySuppliers, category, theme, timeSlot, duration, date, location, categoryBudget
+        );
+        
+        if (result.supplier) {
+          selected[category] = result.supplier;
+          remainingBudget -= result.supplier.priceFrom;
+          console.log(`${category} selected: ${result.supplier.name} (${result.reason})`);
+        }
+      }
+    }
+    
+    // Summary
+    const totalCost = Object.values(selected).reduce((sum, supplier) => sum + (supplier.priceFrom || 0), 0);
+    const budgetUsed = Math.round((totalCost / budget) * 100);
+    
+    console.log(`\nParty selection complete:`);
+    console.log(`- Categories filled: ${Object.keys(selected).length}/${includedCategories.length}`);
+    console.log(`- Total cost: £${totalCost} (${budgetUsed}% of budget)`);
+    console.log(`- Fallback selections: ${Object.values(selected).filter(s => s.isFallbackSelection).length}`);
+    
+    return selected;
+  }
+
+  // Map dashboard categories to supplier categories
+  mapCategoryToSupplierCategory(dashboardCategory) {
+    const mapping = {
+      venue: 'Venues',
+      entertainment: 'Entertainment',
+      catering: 'Catering',
+      cakes: 'Cakes',
+      decorations: 'Decorations',
+      activities: 'Activities',
+      partyBags: 'Party Bags'
+    };
+    return mapping[dashboardCategory] || dashboardCategory;
+  }
+
+  // Main party building method
   async buildParty(partyDetails) {
     try {
       const {
-        date,
-        theme,
-        guestCount,
-        location,
-        budget, // This might be undefined from homepage form
-        childAge = 6,
-        childName = "Snappy The Crocodile",
-        firstName ="Snappy",
-        lastName = "The Crocodile",
-        timeSlot,
-        duration = 2,
-        time,
-        timePreference,
-        specificTime
+        date, theme, guestCount, location, budget,
+        childAge = 6, childName = "Snappy The Crocodile",
+        firstName = "Snappy", lastName = "The Crocodile",
+        timeSlot, duration = 2, time
       } = partyDetails;
 
-      // NEW: Smart budget handling
-      let finalBudget;
+      // Smart budget handling
+      let finalBudget = budget && budget > 0 ? budget : this.getDefaultBudgetForGuests(guestCount);
       
-      if (budget && budget > 0) {
-        // Budget explicitly set (from dashboard form)
-        finalBudget = budget;
-        console.log(`💰 Using explicit budget: £${finalBudget}`);
-      } else {
-        // No budget set (from homepage form) - calculate smart default
-        finalBudget = this.getDefaultBudgetForGuests(guestCount);
-        console.log(`🤖 Auto-calculated budget: £${finalBudget} for ${guestCount} guests`);
+      // Handle time slot conversion
+      let processedTimeSlot = timeSlot;
+      if (!timeSlot && time) {
+        const hour = parseInt(time.split(':')[0]);
+        processedTimeSlot = hour < 13 ? 'morning' : 'afternoon';
+      }
+      if (!processedTimeSlot) {
+        processedTimeSlot = 'afternoon';
       }
 
-      // Handle backwards compatibility for existing data
-      let processedTimeSlot = timeSlot;
-      let processedDuration = duration;
+      // Handle name processing
       let processedFirstName = firstName;
       let processedLastName = lastName;
-
       if (!firstName && !lastName && childName) {
         const nameParts = childName.split(' ');
         processedFirstName = nameParts[0] || "Snappy";
         processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
-        console.log(`🔄 Converted legacy childName "${childName}" to firstName: "${processedFirstName}", lastName: "${processedLastName}"`);
       }
 
-      if (!timeSlot && time) {
-        const hour = parseInt(time.split(':')[0]);
-        processedTimeSlot = hour < 13 ? 'morning' : 'afternoon';
-        console.log(`🔄 Converted legacy time ${time} to timeSlot: ${processedTimeSlot}`);
-      }
+      console.log(`Building party: ${processedFirstName} ${processedLastName}, ${guestCount} guests, £${finalBudget}, ${theme} theme, ${processedTimeSlot} slot`);
 
-      if (!processedTimeSlot) {
-        processedTimeSlot = 'afternoon';
-        console.log(`🔄 Defaulting to afternoon time slot`);
-      }
-
-      // Get all available suppliers
+      // Get suppliers
       const allSuppliers = await suppliersAPI.getAllSuppliers();
-      
-      // Get theme-specific entertainment first
       const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
       
-      // Score and select best suppliers for each category with theme priority
+      // Select suppliers
       const selectedSuppliers = this.selectSuppliersForParty({
         suppliers: allSuppliers,
         themedEntertainment,
         theme,
         guestCount,
         location,
-        budget: finalBudget, // Use the calculated budget
+        budget: finalBudget,
         childAge,
         timeSlot: processedTimeSlot,
-        duration: processedDuration,
+        duration,
         date
       });
 
-      console.log('🎉 Selected themed suppliers:', selectedSuppliers);
-
-      // ✅ UPDATED: Create party plan with cakes instead of catering by default
+      // Create party plan
       const partyPlan = {
-        venue: selectedSuppliers.venue || null,
-        entertainment: selectedSuppliers.entertainment || null,
-        cakes: selectedSuppliers.cakes || null, // ✅ CHANGED: cakes instead of catering
-        catering: selectedSuppliers.catering || null, // Still available but not priority
-        facePainting: selectedSuppliers.facePainting || null,
-        activities: selectedSuppliers.activities || null,
-        partyBags: selectedSuppliers.partyBags || null,
-        softPlay: selectedSuppliers.softPlay || null, // NEW: Soft play for large parties
+        venue: null,
+        entertainment: null,
+        cakes: null,
+        catering: null,
+        facePainting: null,
+        activities: null,
+        partyBags: null,
+        decorations: null,
+        balloons: null,
+        softPlay: null,
         einvites: {
           id: "digital-invites",
           name: "Digital Themed Invites",
@@ -194,7 +544,7 @@ class PartyBuilderBackend {
         addons: []
       };
 
-      // Convert supplier data to proper format
+      // Convert selected suppliers to party plan format
       Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
         if (supplier && partyPlan.hasOwnProperty(category)) {
           partyPlan[category] = {
@@ -202,34 +552,35 @@ class PartyBuilderBackend {
             name: supplier.name,
             description: supplier.description || '',
             price: supplier.priceFrom || 0,
-            status: "pending",
+            status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
             image: supplier.image || '',
             category: supplier.category || category,
             priceUnit: supplier.priceUnit || "per event",
             addedAt: new Date().toISOString(),
-            originalSupplier: supplier
+            originalSupplier: supplier,
+            isFallbackSelection: supplier.isFallbackSelection || false
           };
         }
       });
       
-      // Save enhanced party details to localStorage with calculated budget
+      // Save to localStorage
       const enhancedPartyDetails = {
         ...partyDetails,
-        budget: finalBudget, // Include the calculated budget
+        budget: finalBudget,
         timeSlot: processedTimeSlot,
-        duration: processedDuration,
+        duration,
         firstName: processedFirstName,
         lastName: processedLastName,
         childName: `${processedFirstName} ${processedLastName}`.trim(),
         time: time || this.convertTimeSlotToTime(processedTimeSlot),
         displayTimeSlot: this.formatTimeSlotForDisplay(processedTimeSlot),
-        displayDuration: this.formatDurationForDisplay(processedDuration)
+        displayDuration: this.formatDurationForDisplay(duration)
       };
 
       this.savePartyDetailsToLocalStorage(enhancedPartyDetails);
       this.savePartyPlanToLocalStorage(partyPlan);
 
-      console.log('✅ Party built and saved to localStorage with calculated budget and availability filtering');
+      console.log('Party built and saved successfully');
 
       return {
         success: true,
@@ -237,14 +588,15 @@ class PartyBuilderBackend {
         selectedSuppliers,
         totalCost: this.calculateTotalCost(partyPlan),
         theme: THEMES[theme] || { name: theme },
-        budget: finalBudget, // Return the calculated budget
+        budget: finalBudget,
         timeSlot: processedTimeSlot,
-        duration: processedDuration,
-        timeWindow: this.getTimeWindowForSlot(processedTimeSlot)
+        duration,
+        timeWindow: this.getTimeWindowForSlot(processedTimeSlot),
+        fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length
       };
 
     } catch (error) {
-      console.error('❌ Error building themed party:', error);
+      console.error('Error building party:', error);
       return {
         success: false,
         error: error.message
@@ -252,565 +604,62 @@ class PartyBuilderBackend {
     }
   }
 
-  // ✅ UPDATED: Enhanced supplier selection with cakes priority over catering
-  selectSuppliersForParty({ 
-    suppliers, 
-    themedEntertainment, 
-    theme, 
-    guestCount, 
-    location, 
-    budget, 
-    childAge,
-    timeSlot = 'afternoon',
-    duration = 2,
-    date
-  }) {
-    const selected = {};
-    const remainingBudget = { value: budget };
-    const guests = parseInt(guestCount);
-    
-    console.log(`🕐 Selecting suppliers for ${timeSlot} party (${duration} hours) with £${budget} budget for ${guests} guests`);
-    console.log(`📅 Party date: ${date}, Location: ${location}`);
-    
-    // NEW: Large party detection
-    const isLargeParty = guests >= 30;
-    if (isLargeParty) {
-      console.log('🎪 Large party detected (30+ guests) - including premium extras');
-    }
-
-    // NEW: Availability filtering helper function
-    const filterByAvailability = (supplierList, category) => {
-      const available = supplierList.filter(supplier => {
-        const hasAvailabilityData = supplier.availability && 
-          (supplier.availability.timeSlots || supplier.availability.maxDuration || supplier.availability.blockedDates);
-        
-        // If no availability data, assume available (for mock suppliers)
-        if (!hasAvailabilityData) {
-          console.log(`📝 ${supplier.name}: No availability data - assuming available (mock supplier)`);
-          
-          // Still check location for mock suppliers if they have location data
-          if (supplier.location && location) {
-            const serviceRadius = LocationService.getServiceRadiusForSupplier(supplier);
-            const canServe = LocationService.arePostcodesNearby(supplier.location, location, serviceRadius);
-            
-            if (!canServe) {
-              console.log(`❌ ${supplier.name}: Location too far (${supplier.location} → ${location})`);
-              return false;
-            } else {
-              console.log(`✅ ${supplier.name}: Can serve location (${supplier.location} → ${location})`);
-            }
-          }
-          
-          return true;
-        }
-        
-        // Check time slot availability
-        if (supplier.availability.timeSlots && supplier.availability.timeSlots.length > 0) {
-          if (!supplier.availability.timeSlots.includes(timeSlot)) {
-            console.log(`❌ ${supplier.name}: Not available for ${timeSlot} time slot`);
-            return false;
-          }
-        }
-        
-        // Check duration compatibility
-        if (supplier.availability.maxDuration && supplier.availability.maxDuration < duration) {
-          console.log(`❌ ${supplier.name}: Can't handle ${duration}h duration (max: ${supplier.availability.maxDuration}h)`);
-          return false;
-        }
-        
-        // Check date availability (blocked dates)
-        if (supplier.availability.blockedDates && date) {
-          const partyDate = new Date(date);
-          const blockedDates = supplier.availability.blockedDates.map(d => new Date(d));
-          
-          const isBlocked = blockedDates.some(blockedDate => 
-            blockedDate.toDateString() === partyDate.toDateString()
-          );
-          
-          if (isBlocked) {
-            console.log(`❌ ${supplier.name}: Not available on ${date} (blocked date)`);
-            return false;
-          }
-        }
-        
-        // NEW: Check location coverage
-        if (supplier.location && location) {
-          // Check if supplier has custom service areas defined
-          if (supplier.availability.serviceAreas && supplier.availability.serviceAreas.length > 0) {
-            const partyArea = LocationService.getPostcodeArea(location);
-            const canServeArea = supplier.availability.serviceAreas.includes(partyArea);
-            
-            if (!canServeArea) {
-              console.log(`❌ ${supplier.name}: Doesn't serve ${partyArea} area (serves: ${supplier.availability.serviceAreas.join(', ')})`);
-              return false;
-            }
-          } else {
-            // Use automatic distance checking
-            const serviceRadius = supplier.availability.serviceRadius || 
-              LocationService.getServiceRadiusForSupplier(supplier);
-            
-            const canServe = LocationService.arePostcodesNearby(
-              supplier.location, 
-              location, 
-              serviceRadius
-            );
-            
-            if (!canServe) {
-              console.log(`❌ ${supplier.name}: Location too far (${supplier.location} → ${location})`);
-              return false;
-            }
-          }
-          
-          console.log(`✅ ${supplier.name}: Can serve location (${supplier.location} → ${location})`);
-        } else {
-          console.log(`📍 ${supplier.name}: No location data - assuming can serve anywhere`);
-        }
-        
-        console.log(`✅ ${supplier.name}: Available for ${timeSlot} on ${date} at ${location}`);
-        return true;
-      });
-      
-      console.log(`🔍 Availability + Location filtering for ${category}: ${available.length}/${supplierList.length} suppliers available`);
-      return available;
-    };
-    
-    // ✅ UPDATED: Budget-based category selection with cakes priority and large party enhancements
-    let budgetAllocation;
-    let includedCategories;
-    
-    if (budget <= 500) {
-      // Essential Party - Core essentials only with cakes
-      includedCategories = ['venue', 'cakes', 'partyBags']; // ✅ CHANGED: cakes instead of catering
-      budgetAllocation = {
-        venue: 0.55,        
-        entertainment: 0.35, 
-        cakes: 0.05,        // ✅ NEW: Cakes allocation
-        partyBags: 0.05     
-      };
-      console.log('🎯 Essential Party Package: Venue + Entertainment + Cakes + Party Bags');
-    } else if (budget <= 700) {
-      // Complete Party - Add themed cakes
-      includedCategories = ['venue', 'cakes', 'partyBags']; // ✅ CHANGED: cakes instead of catering
-      budgetAllocation = {
-        venue: 0.35,        
-        entertainment: 0.35, 
-        cakes: 0.25,        // ✅ CHANGED: More budget for themed cakes
-        partyBags: 0.05     
-      };
-      console.log('🎯 Complete Party Package: Venue + Entertainment + Themed Cakes + Party Bags');
-    } else {
-      // Premium Party - All categories with cakes priority
-      includedCategories = ['venue', 'cakes', 'decorations', 'activities', 'partyBags']; // ✅ CHANGED: cakes instead of catering
-      
-      if (isLargeParty) {
-        // Large party gets adjusted allocation to make room for soft play
-        budgetAllocation = {
-          venue: 0.25,
-          entertainment: 0.25,  // Slightly reduced
-          cakes: 0.15,          // ✅ CHANGED: Cakes instead of catering
-          decorations: 0.08,    // Reduced
-          activities: 0.15,     // Increased for soft play
-          partyBags: 0.04,
-          softPlay: 0.08        // Increased soft play budget for large parties
-        };
-        includedCategories.push('softPlay');
-        console.log('🎪 Large Premium Party Package: All categories + Themed Cakes + Soft Play for 30+ guests');
-      } else {
-        // Standard premium allocation with cakes
-        budgetAllocation = {
-          venue: 0.25,
-          entertainment: 0.30,
-          cakes: 0.20,          // ✅ CHANGED: Cakes instead of catering
-          decorations: 0.15,    // Increased for themed decorations
-          activities: 0.06,
-          partyBags: 0.04
-        };
-        console.log('🎯 Premium Party Package: All categories with Themed Cakes included');
-      }
-    }
-
-    // PRIORITIZE ENTERTAINMENT FIRST (theme is most important)
-    const entertainmentBudget = budget * budgetAllocation.entertainment;
-
-    if (themedEntertainment.length > 0) {
-      console.log(`🎭 Checking availability for ${themedEntertainment.length} themed entertainment options...`);
-      
-      // NEW: Filter themed entertainment by availability first
-      const availableThemedEntertainment = filterByAvailability(themedEntertainment, 'themed entertainment');
-      
-      if (availableThemedEntertainment.length > 0) {
-        const scoredEntertainment = availableThemedEntertainment.map(supplier => ({
-          ...supplier,
-          score: this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration)
-        })).sort((a, b) => b.score - a.score);
-        
-        console.log(`🏆 Top available themed entertainment options:`, 
-          scoredEntertainment.slice(0, 3).map(s => ({
-            name: s.name,
-            themes: s.themes,
-            price: s.priceFrom,
-            score: s.score.toFixed(1)
-          }))
-        );
-        
-        const bestEntertainment = scoredEntertainment[0];
-        if (bestEntertainment && bestEntertainment.score > 0) {
-          selected.entertainment = bestEntertainment;
-          remainingBudget.value -= bestEntertainment.priceFrom;
-          console.log(`✅ Selected available themed entertainment: ${bestEntertainment.name} (£${bestEntertainment.priceFrom})`);
-        }
-      } else {
-        console.log('❌ No themed entertainment available for this time/date - trying general entertainment');
-      }
-    }
-    
-    // If no available themed entertainment, try general entertainment
-    if (!selected.entertainment) {
-      console.log('🔄 Checking general entertainment availability...');
-      const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
-      const availableGeneralEntertainment = filterByAvailability(generalEntertainment, 'general entertainment');
-      
-      if (availableGeneralEntertainment.length > 0) {
-        const scored = availableGeneralEntertainment.map(supplier => ({
-          ...supplier,
-          score: this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration)
-        })).sort((a, b) => b.score - a.score);
-        
-        if (scored[0]) {
-          selected.entertainment = scored[0];
-          remainingBudget.value -= scored[0].priceFrom;
-          console.log(`✅ Selected available general entertainment: ${scored[0].name} (£${scored[0].priceFrom})`);
-        }
-      } else {
-        console.log('❌ No entertainment available for this time/date - party will need manual entertainment booking');
-      }
-    }
-
-    // ✅ UPDATED: Process other categories with availability and location filtering, prioritizing cakes
-    includedCategories.forEach(category => {
-      const categoryBudget = budget * budgetAllocation[category];
-      
-      // ✅ NEW: Special handling for cakes category with theme matching
-      if (category === 'cakes') {
-        console.log(`🎂 Looking for available themed cakes for "${theme}" theme (budget: £${Math.round(categoryBudget)})`);
-        
-        const cakeSuppliers = suppliers.filter(s => 
-          s.category === 'Cakes' &&
-          s.priceFrom <= categoryBudget * 1.3 // Allow slightly higher budget for themed cakes
-        );
-        
-        console.log(`🎂 Found ${cakeSuppliers.length} cake suppliers:`, 
-          cakeSuppliers.map(s => ({
-            name: s.name,
-            themes: s.themes,
-            category: s.category,
-            price: s.priceFrom
-          }))
-        );
-        
-        // Filter cakes by availability
-        const availableCakes = filterByAvailability(cakeSuppliers, 'cakes');
-        
-        if (availableCakes.length > 0) {
-          console.log(`🎂 About to score ${availableCakes.length} available cakes for theme "${theme}"`);
-          
-          const scoredCakes = availableCakes.map(supplier => {
-            console.log(`🎂 Scoring supplier: ${supplier.name} with themes: ${JSON.stringify(supplier.themes)}`);
-            const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
-            const totalScore = themeScore + 20; // Bonus for cake theme matching
-            console.log(`🎂 ${supplier.name}: Theme score = ${themeScore}, Total score = ${totalScore}`);
-            return {
-              ...supplier,
-              score: totalScore
-            };
-          }).sort((a, b) => b.score - a.score);
-          
-          console.log(`🏆 Top scored cakes:`, 
-            scoredCakes.slice(0, 3).map(s => ({
-              name: s.name,
-              score: s.score,
-              themes: s.themes
-            }))
-          );
-          
-          const bestCake = scoredCakes[0];
-          if (bestCake) {
-            selected.cakes = bestCake;
-            remainingBudget.value -= bestCake.priceFrom;
-            console.log(`🎂 Selected available themed cake: ${bestCake.name} (£${bestCake.priceFrom}) with score: ${bestCake.score}`);
-          }
-        } else {
-          console.log(`❌ No themed cakes available for this time/date within budget`);
-        }
-        return;
-      }
-      
-      // Special handling for soft play category
-      if (category === 'softPlay') {
-        console.log(`🎪 Looking for available soft play for large party (budget: £${Math.round(categoryBudget)})`);
-        
-        const softPlaySuppliers = suppliers.filter(s => 
-          s.category === 'Activities' &&
-          (s.name.toLowerCase().includes('soft play') || 
-           s.name.toLowerCase().includes('bouncy castle') ||
-           s.name.toLowerCase().includes('inflatable') ||
-           s.description?.toLowerCase().includes('soft play')) &&
-          s.priceFrom <= categoryBudget * 1.2
-        );
-        
-        // Filter soft play by availability
-        const availableSoftPlay = filterByAvailability(softPlaySuppliers, 'soft play');
-        
-        if (availableSoftPlay.length > 0) {
-          const scoredSoftPlay = availableSoftPlay.map(supplier => ({
-            ...supplier,
-            score: this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration) + 10
-          })).sort((a, b) => b.score - a.score);
-          
-          const bestSoftPlay = scoredSoftPlay[0];
-          if (bestSoftPlay) {
-            selected.softPlay = bestSoftPlay;
-            remainingBudget.value -= bestSoftPlay.priceFrom;
-            console.log(`🎪 Selected available soft play: ${bestSoftPlay.name} (£${bestSoftPlay.priceFrom})`);
-          }
-        } else {
-          console.log(`❌ No soft play available for this time/date within budget`);
-        }
-        return;
-      }
-      
-      // Normal category processing with availability filtering
-      const mappedCategory = this.mapCategoryToSupplierCategory(category);
-      const categorySuppliers = suppliers.filter(s => 
-        this.mapCategoryToSupplierCategory(category) === s.category &&
-        s.priceFrom <= categoryBudget * 1.2
-      );
-      
-      // Filter by availability before scoring
-      const availableCategorySuppliers = filterByAvailability(categorySuppliers, category);
-      
-      if (availableCategorySuppliers.length > 0) {
-        const scoredSuppliers = availableCategorySuppliers.map(supplier => ({
-          ...supplier,
-          score: this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration)
-        })).sort((a, b) => b.score - a.score);
-        
-        const bestSupplier = scoredSuppliers[0];
-        if (bestSupplier) {
-          selected[category] = bestSupplier;
-          remainingBudget.value -= bestSupplier.priceFrom;
-          console.log(`✅ Selected available ${category}: ${bestSupplier.name} (£${bestSupplier.priceFrom})`);
-        }
-      } else {
-        console.log(`❌ No ${category} suppliers available for this time/date within budget`);
-      }
-    });
-
-    console.log(`\n🎊 Final available party selection for ${timeSlot} on ${date}:`);
-    Object.entries(selected).forEach(([category, supplier]) => {
-      const themeMatch = supplier.themes ? supplier.themes.includes(theme) ? '🎯' : '⚪' : '⚪';
-      const cakeIcon = category === 'cakes' ? '🎂' : '';
-      const largePartyExtra = category === 'softPlay' ? '🎪' : '';
-      const availabilityIcon = supplier.availability ? '✅' : '📝';
-      console.log(`${availabilityIcon}${themeMatch}${cakeIcon}${largePartyExtra} ${category}: ${supplier.name} (£${supplier.priceFrom})`);
-    });
-    
-    const totalCost = Object.values(selected).reduce((sum, supplier) => sum + supplier.priceFrom, 0);
-    const budgetUsed = Math.round((totalCost / budget) * 100);
-    console.log(`💰 Total available party cost: £${totalCost} / £${budget} (${budgetUsed}% of budget)`);
-    
-    const availabilityScore = Object.values(selected).filter(s => s.availability).length;
-    const totalSelected = Object.keys(selected).length;
-    console.log(`📅 Availability coverage: ${availabilityScore}/${totalSelected} suppliers have confirmed availability`);
-    
-    if (isLargeParty) {
-      console.log(`🎪 Large party enhancements: ${selected.softPlay ? 'Soft play included!' : 'No soft play available within budget'}`);
-    }
-    
-    console.log(`🎂 Themed cakes: ${selected.cakes ? `${selected.cakes.name} included!` : 'No themed cakes available within budget'}`);
-
-    return selected;
-  }
-
-  // UPDATED: Enhanced scoring function with time slot awareness
-  scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2) {
-    try {
-      let score = 0;
-
-      // Special handling for no-theme - prefer general suppliers
-      if (theme === 'no-theme') {
-        // Bonus for suppliers without specific themes (general suppliers)
-        if (!supplier?.themes || supplier.themes.length === 0) {
-          score += 30;
-        }
-        // Or suppliers that explicitly support "general" parties
-        if (supplier?.themes && supplier.themes.includes('general')) {
-          score += 40;
-        }
-      } else {
-        // Theme matching for specific themes
-        if (supplier?.themes && Array.isArray(supplier.themes)) {
-          if (supplier.themes.includes(theme)) {
-            score += 50;
-          }
-        }
-
-        if (supplier?.serviceDetails?.themes && Array.isArray(supplier.serviceDetails.themes)) {
-          if (supplier.serviceDetails.themes.includes(theme)) {
-            score += 30;
-          }
-        }
-
-        // Name and description matching
-        if (supplier?.name && typeof supplier.name === 'string') {
-          const lowerName = supplier.name.toLowerCase();
-          const lowerTheme = theme?.toLowerCase() || '';
-          
-          if (lowerName.includes(lowerTheme)) {
-            score += 20;
-          }
-        }
-
-        if (supplier?.description && typeof supplier.description === 'string') {
-          const lowerDescription = supplier.description.toLowerCase();
-          const lowerTheme = theme?.toLowerCase() || '';
-          
-          if (lowerDescription.includes(lowerTheme)) {
-            score += 10;
-          }
-        }
-      }
-
-      // Time slot availability bonus
-      if (supplier?.availability?.timeSlots) {
-        if (supplier.availability.timeSlots.includes(timeSlot)) {
-          score += 15;
-        }
-      }
-
-      // Duration compatibility bonus
-      if (supplier?.availability?.maxDuration) {
-        if (supplier.availability.maxDuration >= duration) {
-          score += 10;
-        }
-      }
-
-      // Time slot preference bonus
-      if (supplier?.preferences?.preferredTimeSlots) {
-        if (supplier.preferences.preferredTimeSlots.includes(timeSlot)) {
-          score += 5;
-        }
-      }
-
-      return score;
-
-    } catch (error) {
-      console.error('❌ Error in scoreSupplierWithTheme:', error);
-      return 0;
-    }
-  }
-
-  // ✅ UPDATED: Helper function to map dashboard categories to supplier categories
-  mapCategoryToSupplierCategory(dashboardCategory) {
-    const mapping = {
-      venue: 'Venues',
-      entertainment: 'Entertainment', 
-      catering: 'Catering',
-      cakes: 'Cakes',               // ✅ NEW: Cakes mapping
-      decorations: 'Decorations',
-      activities: 'Activities',
-      partyBags: 'Party Bags'
-    };
-    return mapping[dashboardCategory];
-  }
-
-  // Helper functions for time slot handling
+  // Utility methods
   convertTimeSlotToTime(timeSlot) {
-    const timeSlotDefaults = {
-      morning: '11:00',
-      afternoon: '14:00'
-    };
-    return timeSlotDefaults[timeSlot] || '14:00';
+    return timeSlot === 'morning' ? '11:00' : '14:00';
   }
 
   formatTimeSlotForDisplay(timeSlot) {
-    const displays = {
-      morning: 'Morning Party',
-      afternoon: 'Afternoon Party'
-    };
-    return displays[timeSlot] || 'Afternoon Party';
+    return timeSlot === 'morning' ? 'Morning Party' : 'Afternoon Party';
   }
 
   formatDurationForDisplay(duration) {
     if (!duration) return '2 hours';
-    
-    if (duration === Math.floor(duration)) {
-      return `${duration} hours`;
-    } else {
-      const hours = Math.floor(duration);
-      const minutes = (duration - hours) * 60;
-      
-      if (minutes === 30) {
-        return `${hours}½ hours`;
-      } else {
-        return `${hours}h ${minutes}m`;
-      }
-    }
+    return duration === Math.floor(duration) ? `${duration} hours` : `${Math.floor(duration)}h ${(duration % 1) * 60}m`;
   }
 
   getTimeWindowForSlot(timeSlot) {
-    const timeWindows = {
+    const windows = {
       morning: { start: '10:00', end: '13:00', label: '10am-1pm' },
       afternoon: { start: '13:00', end: '17:00', label: '1pm-4pm' }
     };
-    return timeWindows[timeSlot] || timeWindows.afternoon;
+    return windows[timeSlot] || windows.afternoon;
   }
 
-  // Helper functions for localStorage operations
   savePartyDetailsToLocalStorage(partyDetails) {
     try {
       localStorage.setItem('party_details', JSON.stringify(partyDetails));
-      console.log('💾 Party details saved to localStorage');
     } catch (error) {
-      console.error('❌ Error saving party details to localStorage:', error);
+      console.error('Error saving party details:', error);
     }
   }
 
   savePartyPlanToLocalStorage(partyPlan) {
     try {
       localStorage.setItem('user_party_plan', JSON.stringify(partyPlan));
-      console.log('💾 Party plan saved to localStorage');
     } catch (error) {
-      console.error('❌ Error saving party plan to localStorage:', error);
+      console.error('Error saving party plan:', error);
     }
   }
 
   calculateTotalCost(partyPlan) {
     let total = 0;
-    
-    // Add supplier costs
     Object.entries(partyPlan).forEach(([key, supplier]) => {
       if (supplier && supplier.price && key !== 'addons') {
         total += supplier.price;
       }
     });
-    
-    // Add addon costs
     if (partyPlan.addons) {
       partyPlan.addons.forEach(addon => {
-        if (addon && addon.price) {
-          total += addon.price;
-        }
+        if (addon && addon.price) total += addon.price;
       });
     }
-    
     return total;
   }
 
-  // ✅ UPDATED: Get party details from database first, fallback to localStorage
+  // Get party details (database first, localStorage fallback)
   async getPartyDetails() {
     try {
-      // Try to get from database first
       const currentPartyResult = await partyDatabaseBackend.getCurrentParty();
       if (currentPartyResult.success && currentPartyResult.party) {
         const party = currentPartyResult.party;
@@ -831,7 +680,6 @@ class PartyBuilderBackend {
       console.log('No database party found, checking localStorage...');
     }
 
-    // Fallback to localStorage
     try {
       const stored = localStorage.getItem('party_details');
       return stored ? JSON.parse(stored) : null;
@@ -842,30 +690,69 @@ class PartyBuilderBackend {
   }
 
   getThemeSuggestions(childAge) {
-    if (childAge <= 4) {
-      return ['unicorn', 'princess', 'dinosaur'];
-    } else if (childAge <= 7) {
-      return ['spiderman', 'princess', 'dinosaur', 'unicorn'];
-    } else if (childAge <= 10) {
-      return ['spiderman', 'taylor-swift', 'science', 'dinosaur'];
-    } else {
-      return ['taylor-swift', 'science', 'spiderman'];
+    if (childAge <= 4) return ['unicorn', 'princess', 'dinosaur'];
+    if (childAge <= 7) return ['spiderman', 'princess', 'dinosaur', 'unicorn'];
+    if (childAge <= 10) return ['spiderman', 'taylor-swift', 'science', 'dinosaur'];
+    return ['taylor-swift', 'science', 'spiderman'];
+  }
+
+  getAvailableThemes() {
+    return Object.keys(THEMES).map(key => ({ id: key, ...THEMES[key] }));
+  }
+
+  // Find available suppliers for replacement
+  async findAvailableSuppliers({ date, timeSlot, location, supplierType, excludeSupplierIds = [], budget, theme, guestCount }) {
+    try {
+      const allSuppliers = await suppliersAPI.getAllSuppliers();
+      const categorySuppliers = allSuppliers.filter(s => s.category === supplierType);
+      
+      const availableSuppliers = [];
+      const checkDate = date instanceof Date ? date : new Date(date);
+      
+      for (const supplier of categorySuppliers) {
+        if (excludeSupplierIds.includes(supplier.id)) continue;
+        
+        const availabilityResult = this.checkSupplierAvailability(supplier, checkDate, timeSlot);
+        const locationResult = this.checkSupplierLocation(supplier, location);
+        
+        if (availabilityResult.available && locationResult.canServe) {
+          availableSuppliers.push({
+            ...supplier,
+            availabilityReason: availabilityResult.reason,
+            matchScore: this.scoreSupplierWithTheme(supplier, theme, timeSlot, 2)
+          });
+        }
+      }
+      
+      availableSuppliers.sort((a, b) => b.matchScore - a.matchScore);
+      
+      return {
+        success: true,
+        suppliers: availableSuppliers,
+        totalFound: availableSuppliers.length
+      };
+      
+    } catch (error) {
+      console.error('Error finding available suppliers:', error);
+      return { success: false, error: error.message };
     }
   }
 
-  // Get available themes
-  getAvailableThemes() {
-    return Object.keys(THEMES).map(key => ({
-      id: key,
-      ...THEMES[key]
-    }));
+  async getSuppliersByCategory(categoryName, filters = {}) {
+    try {
+      const allSuppliers = await suppliersAPI.getAllSuppliers();
+      const categorySuppliers = allSuppliers.filter(s => s.category === categoryName);
+      return { success: true, suppliers: categorySuppliers };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 }
 
-// Create singleton instance
+// Export singleton instance
 export const partyBuilderBackend = new PartyBuilderBackend();
 
-// ✅ UPDATED: React hook for party building with database integration
+// React hook
 import { useState } from 'react';
 
 export function usePartyBuilder() {
@@ -886,7 +773,7 @@ export function usePartyBuilder() {
         return { success: false, error: result.error };
       }
     } catch (err) {
-      console.error('usePartyBuilder: Error:', err);
+      console.error('usePartyBuilder error:', err);
       setError(err.message);
       return { success: false, error: err.message };
     } finally {

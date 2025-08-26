@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import confetti from "canvas-confetti"
+import { useToast } from '@/components/ui/toast'
 
 // UI Components
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,7 @@ import PartyHeader from "../components/ui/PartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
-
+import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal"
 // Supplier Components
 import SupplierCard from "../components/SupplierCard/SupplierCard"
 import MobileSupplierNavigation from "../components/MobileSupplierNavigation"
@@ -51,6 +52,7 @@ export default function LocalStorageDashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { navigateWithContext, getStoredModalState, clearModalState } = useContextualNavigation()
+  const { toast } = useToast()
 
   // ✅ PRODUCTION SAFETY: Core state management
   const [isMounted, setIsMounted] = useState(false)
@@ -601,20 +603,64 @@ useEffect(() => {
   }
 
   const handleSupplierSelection = async (supplierData) => {
-    console.log('✅ Supplier selected:', supplierData)
+    console.log('Supplier selected:', supplierData)
     
     try {
       const { supplier, package: selectedPackage, addons: selectedAddons = [] } = supplierData
       
       if (!supplier) {
-        console.error('❌ No supplier data provided')
+        console.error('No supplier data provided')
         return
       }
   
+      // Check if this is part of a replacement flow
+      const replacementContext = sessionStorage.getItem('replacement_context')
+      
+      if (replacementContext) {
+        const context = JSON.parse(replacementContext)
+        
+        if (context.isReplacementFlow) {
+          // This is a replacement - show confirmation
+          toast.success(`Replaced ${context.originalSupplier.name} with ${supplier.name}`, {
+            duration: 4000
+          })
+          
+          // Clear the replacement context
+          sessionStorage.removeItem('replacement_context')
+          
+          // Check if there are more suppliers to replace
+          if (context.remainingReplacements && context.remainingReplacements.length > 0) {
+            const nextUnavailable = context.remainingReplacements[0]
+            
+            // Ask if user wants to replace the next unavailable supplier
+            toast.info(`Next: Find replacement for ${getSupplierDisplayName(nextUnavailable.type)}?`, {
+              duration: 5000,
+              action: {
+                label: 'Yes',
+                onClick: () => {
+                  // Store updated context
+                  sessionStorage.setItem('replacement_context', JSON.stringify({
+                    originalSupplier: nextUnavailable.supplier,
+                    supplierType: nextUnavailable.type,
+                    reason: nextUnavailable.reason,
+                    remainingReplacements: context.remainingReplacements.slice(1),
+                    isReplacementFlow: true
+                  }))
+                  
+                  // Open modal for next supplier
+                  openSupplierModal(nextUnavailable.type, currentDetails.theme)
+                }
+              }
+            })
+          }
+        }
+      }
+      
+      // Continue with normal supplier selection logic
       const result = await addSupplier(supplier, selectedPackage)
       
       if (result.success) {
-        console.log('✅ Supplier added successfully!')
+        console.log('Supplier added successfully!')
         
         if (selectedAddons && selectedAddons.length > 0) {
           for (const addon of selectedAddons) {
@@ -622,7 +668,6 @@ useEffect(() => {
           }
         }
         
-        // ✅ Map supplier category to mobile tab type
         const supplierTypeMapping = {
           'Venues': 'venue',
           'Entertainment': 'entertainment', 
@@ -637,20 +682,17 @@ useEffect(() => {
         }
         
         const supplierType = supplierTypeMapping[supplier.category] || 'venue'
-        console.log('🎯 Setting mobile tab to:', supplierType)
         setActiveMobileSupplierType(supplierType)
         
         closeSupplierModal()
         
-        // ✅ Force scroll unlock and smooth scroll to content
+        // Scroll handling
         setTimeout(() => {
-          // Multi-level scroll unlock
           document.body.style.overflow = 'unset'
           document.documentElement.style.overflow = 'unset'
           document.body.classList.remove('modal-open', 'overflow-hidden')
           document.documentElement.classList.remove('modal-open', 'overflow-hidden')
           
-          // Scroll to mobile content area for immediate feedback
           const mobileContent = document.getElementById('mobile-supplier-content')
           if (mobileContent && window.innerWidth < 768) {
             mobileContent.scrollIntoView({ 
@@ -662,11 +704,11 @@ useEffect(() => {
         }, 150)
         
       } else {
-        console.error('❌ Failed to add supplier:', result.error)
+        console.error('Failed to add supplier:', result.error)
       }
       
     } catch (error) {
-      console.error('💥 Error in handleSupplierSelection:', error)
+      console.error('Error in handleSupplierSelection:', error)
     }
   }
   
@@ -859,6 +901,49 @@ useEffect(() => {
       document.body.classList.remove('modal-open', 'overflow-hidden')
     }, 50)
   }
+
+  const handlePartyRebuilt = (rebuildResults) => {
+    console.log('Party rebuild result:', rebuildResults)
+    
+    if (rebuildResults.type === 'needs_replacements') {
+      // User wants to find replacements for unavailable suppliers
+      const unavailableSuppliers = rebuildResults.unavailableSuppliers
+      
+      // Open supplier selection modal for the first unavailable supplier
+      if (unavailableSuppliers.length > 0) {
+        const firstUnavailable = unavailableSuppliers[0]
+        
+        toast.info(`Finding replacement for ${getSupplierDisplayName(firstUnavailable.type)}: ${firstUnavailable.supplier.name}`, {
+          duration: 3000
+        })
+        
+        // Open your existing supplier modal for this category
+        openSupplierModal(firstUnavailable.type, currentDetails.theme)
+        
+        // Store context so you know this is a replacement flow
+        sessionStorage.setItem('replacement_context', JSON.stringify({
+          originalSupplier: firstUnavailable.supplier,
+          supplierType: firstUnavailable.type,
+          reason: firstUnavailable.reason,
+          remainingReplacements: unavailableSuppliers.slice(1), // Other suppliers that need replacement
+          isReplacementFlow: true
+        }))
+      }
+      
+    } else if (rebuildResults.type === 'replacements') {
+      // Direct replacement applied (if you implement auto-replacement later)
+      console.log('Replacements applied:', rebuildResults.replacements)
+      
+      // Update localStorage with new party plan
+      if (rebuildResults.partyPlan) {
+        localStorage.setItem('user_party_plan', JSON.stringify(rebuildResults.partyPlan))
+      }
+      
+      // Show success message
+      toast.success(`Party updated with ${rebuildResults.totalReplaceable} replacement supplier${rebuildResults.totalReplaceable !== 1 ? 's' : ''}`)
+    }
+  }
+  
   // ✅ PRODUCTION SAFETY: Don't render until mounted and data loaded
   if (!isMounted || !themeLoaded || planLoading) {
     return (
@@ -895,6 +980,9 @@ useEffect(() => {
               ...budgetControlProps,
               getBudgetCategory
             }}
+            suppliers={suppliers}
+            dataSource="localStorage"
+            onPartyRebuilt={handlePartyRebuilt} // Add this callback
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">

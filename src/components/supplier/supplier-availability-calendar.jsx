@@ -72,6 +72,26 @@ export default function SupplierAvailabilityCalendar({
     }
   }, [isFromDashboard, partyDate])
 
+  useEffect(() => {
+    if (isFromDashboard && partyDate && selectedDate === null) {
+      const partyDay = partyDate.getDate()
+      const partyMonth = partyDate.getMonth()
+      const currentMonthIndex = currentMonth.getMonth()
+      
+      // If viewing the party month, auto-select the party day
+      if (partyMonth === currentMonthIndex) {
+        console.log('🔄 CALENDAR: Auto-selecting party date:', partyDay)
+        setSelectedDate(partyDay)
+        
+        // Also auto-select the party time slot if available
+        if (partyTimeSlot && setSelectedTimeSlot) {
+          console.log('🔄 CALENDAR: Auto-selecting party time slot:', partyTimeSlot)
+          setSelectedTimeSlot(partyTimeSlot)
+        }
+      }
+    }
+  }, [isFromDashboard, partyDate, partyTimeSlot, selectedDate, currentMonth, setSelectedDate, setSelectedTimeSlot])
+
   // Migration helper for legacy supplier data
   const getSupplierWithTimeSlots = (supplierData) => {
     if (!supplierData) return null
@@ -130,11 +150,11 @@ export default function SupplierAvailabilityCalendar({
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
       
-      console.log(`🔍 CALENDAR: Checking time slot availability for ${dateString} (${dayName}) - ${timeSlot}`)
+    
       
       // CRITICAL FIX: Check if working hours exist at all
       if (!migratedSupplier.workingHours || Object.keys(migratedSupplier.workingHours).length === 0) {
-        console.log(`✅ CALENDAR: No working hours configured - defaulting to AVAILABLE`)
+
         return true // DEFAULT TO AVAILABLE when no working hours
       }
       
@@ -143,23 +163,23 @@ export default function SupplierAvailabilityCalendar({
       
       // CRITICAL FIX: Default to available if day not configured
       if (!workingDay) {
-        console.log(`✅ CALENDAR: Day ${dayName} not configured - defaulting to AVAILABLE`)
+
         return true // DEFAULT TO AVAILABLE when day not configured
       }
       
       if (!workingDay.active) {
-        console.log(`❌ CALENDAR: Day ${dayName} not active`)
+
         return false
       }
       
       // CRITICAL FIX: Default to available if time slot not configured
       if (!workingDay.timeSlots || !workingDay.timeSlots[timeSlot]) {
-        console.log(`✅ CALENDAR: Time slot ${timeSlot} not configured - defaulting to AVAILABLE`)
+  
         return true // DEFAULT TO AVAILABLE when time slot not configured
       }
       
       if (!workingDay.timeSlots[timeSlot].available) {
-        console.log(`❌ CALENDAR: Time slot ${timeSlot} not available in working hours`)
+
         return false
       }
       
@@ -195,7 +215,7 @@ export default function SupplierAvailabilityCalendar({
         }
       }
       
-      console.log(`✅ CALENDAR: Time slot ${timeSlot} is available for ${dateString}`)
+
       return true
     } catch (error) {
       console.error('❌ CALENDAR: Error checking time slot availability:', error)
@@ -356,40 +376,43 @@ export default function SupplierAvailabilityCalendar({
     }
   }
 
-  // Handle date click - now considers time slots
   const handleDateClick = (date, day) => {
-    console.log('🔍 MODAL DEBUG: Date clicked:', { date, day })
-    console.log('🔍 MODAL DEBUG: readOnly:', readOnly)
-    console.log('🔍 MODAL DEBUG: isPartyDate:', isPartyDate(date))
+    if (readOnly) {
+      return
+    }
     
-    if (readOnly || isPartyDate(date)) {
-      console.log('❌ MODAL DEBUG: Blocked by readOnly or isPartyDate')
+    // For dashboard users, only allow clicking the party date
+    if (isFromDashboard && !isPartyDate(date)) {
+      console.log('🚫 CALENDAR: Cannot select non-party date for dashboard users')
+      return
+    }
+    
+    // For dashboard users clicking party date, just ensure it's selected
+    if (isFromDashboard && isPartyDate(date)) {
+      setSelectedDate(day)
+      if (partyTimeSlot && setSelectedTimeSlot) {
+        setSelectedTimeSlot(partyTimeSlot)
+      }
       return
     }
     
     const status = getDateStatus(date)
-    console.log('🔍 MODAL DEBUG: Date status:', status)
     
     if (status !== "available" && status !== "partially-available") {
-      console.log('❌ MODAL DEBUG: Blocked by status')
       return
     }
     
     const availableSlots = getAvailableTimeSlots(date)
-    console.log('🔍 MODAL DEBUG: Available slots:', availableSlots)
     
     if (availableSlots.length === 0) {
-      console.log('❌ MODAL DEBUG: No available slots')
       return
     }
     
-    // Set the selected date first
-    console.log('✅ MODAL DEBUG: Setting selected date to:', day)
+    // Set the selected date
     setSelectedDate(day)
     
     // If only one slot available, auto-select it
     if (availableSlots.length === 1) {
-      console.log('✅ MODAL DEBUG: Auto-selecting single slot:', availableSlots[0])
       if (setSelectedTimeSlot) {
         setSelectedTimeSlot(availableSlots[0])
       }
@@ -399,50 +422,35 @@ export default function SupplierAvailabilityCalendar({
       return
     }
     
-    // CRITICAL DEBUG: Check showTimeSlotSelection prop
-    console.log('🔍 MODAL DEBUG: showTimeSlotSelection prop:', showTimeSlotSelection)
-    console.log('🔍 MODAL DEBUG: Multiple slots available:', availableSlots.length)
-    
     // If multiple slots and time slot selection is enabled, show picker
     if (showTimeSlotSelection && availableSlots.length > 1) {
-      console.log('✅ MODAL DEBUG: Showing time slot picker')
       setSelectedDateForSlots(date)
       setShowingTimeSlots(true)
     } else {
-      console.log('⚠️ MODAL DEBUG: Not showing picker - defaulting to afternoon')
       if (setSelectedTimeSlot) {
         setSelectedTimeSlot('afternoon')
       }
     }
   }
   const handleTimeSlotSelection = (timeSlot) => {
-    console.log('🕐 MODAL DEBUG: Time slot selected:', timeSlot)
-    console.log('🕐 MODAL DEBUG: setSelectedTimeSlot function exists:', !!setSelectedTimeSlot)
-    console.log('🕐 MODAL DEBUG: onTimeSlotSelect function exists:', !!onTimeSlotSelect)
-    console.log('🕐 MODAL DEBUG: selectedDateForSlots:', selectedDateForSlots)
+
     
     if (setSelectedTimeSlot) {
       setSelectedTimeSlot(timeSlot)
-      console.log('✅ MODAL DEBUG: Set selected time slot to:', timeSlot)
+  
     }
     
     if (onTimeSlotSelect && selectedDateForSlots) {
       onTimeSlotSelect(selectedDateForSlots, timeSlot)
-      console.log('✅ MODAL DEBUG: Called onTimeSlotSelect callback')
+ 
     }
     
     setShowingTimeSlots(false)
     setSelectedDateForSlots(null)
-    console.log('✅ MODAL DEBUG: Closed modal and cleared selectedDateForSlots')
+
   }
   
-  // DEBUGGING: Add this to check modal visibility
-  console.log('🔍 MODAL RENDER DEBUG:', {
-    showingTimeSlots,
-    selectedDateForSlots: !!selectedDateForSlots,
-    showTimeSlotSelection,
-    modalShouldShow: showingTimeSlots && selectedDateForSlots && showTimeSlotSelection
-  })
+  
 
   const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear()
@@ -459,7 +467,7 @@ export default function SupplierAvailabilityCalendar({
     // Days of the month
     for (let day = 1; day <= daysInMonthCount; day++) {
       const date = new Date(year, month, day)
-      const isSelected = selectedDate === day && !isFromDashboard
+      const isSelected = selectedDate === day || (isFromDashboard && isPartyDate(date))
       const status = getDateStatus(date)
       const isCurrentMonth = true
       const availableSlots = getAvailableTimeSlots(date)

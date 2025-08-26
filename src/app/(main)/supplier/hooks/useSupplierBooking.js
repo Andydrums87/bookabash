@@ -23,6 +23,7 @@ export const useSupplierBooking = (
   checkSupplierAvailability, // This should come from useSupplierAvailability hook
   getSelectedCalendarDate,
   replacementContext,
+  databasePartyData ,
   isCurrentSelectionBookable, // NEW: Check if current selection is valid
   migratedSupplier // NEW: Add migrated supplier data
 ) => {
@@ -110,509 +111,457 @@ export const useSupplierBooking = (
     }
   }, [packages, selectedPackageId, getSupplierInPartyDetails])
 
-  // UPDATED: Enhanced handleAddToPlan with time slot validation
-  const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
-    console.log('🚀 === HANDLE ADD TO PLAN START ===')
-    console.log('🚀 Input params:', { skipAddonModal, addonData })
-    console.log('🚀 Current state:', { selectedDate, selectedTimeSlot, currentMonth })
-    console.log('🚀 User type:', userType)
+// COMPLETELY REWRITTEN handleAddToPlan with correct date priority logic
+const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
+  console.log('🚀 === HANDLE ADD TO PLAN START ===')
+  console.log('🚀 Input params:', { skipAddonModal, addonData })
+  console.log('🚀 Current state:', { selectedDate, selectedTimeSlot, currentMonth })
+  console.log('🚀 User type:', userType)
+  console.log('🚀 Database party data:', databasePartyData)
 
-    if (!supplier || !selectedPackageId) {
-      console.log('❌ Missing supplier or package')
-      return { 
-        success: false, 
-        message: "Please select a package first." 
+  if (!supplier || !selectedPackageId) {
+    console.log('❌ Missing supplier or package')
+    return { 
+      success: false, 
+      message: "Please select a package first." 
+    }
+  }
+  
+  // CHECK IF WE CAME FROM REVIEW-BOOK
+  const urlParams = new URLSearchParams(window.location.search)
+  const fromReviewBook = urlParams.get('from') === 'review-book-missing'
+  console.log('🔍 From review book:', fromReviewBook)
+  
+  // Get behavior based on user type
+  const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
+  console.log('🚀 Behavior:', behavior)
+  
+  // 1. DATE PICKER FLOW (for users without parties)
+  if (behavior.shouldShowDatePicker) {
+    console.log('📅 Showing date picker prompt')
+    return { 
+      showDatePicker: true,
+      message: "📅 Please select an available date from the calendar below first!"
+    }
+  }
+
+  // 2. CRITICAL FIX: ALWAYS CHECK PARTY DATE FIRST FOR EXISTING PARTIES
+  // This is the core fix - check party date regardless of selected calendar date
+  
+  let partyDateToCheck = null
+  let partyTimeSlotToCheck = null
+  
+  // Extract party date and time slot based on user type
+  if (userType === 'DATABASE_USER' && databasePartyData) {
+    partyDateToCheck = databasePartyData.party_date || databasePartyData.date
+    partyTimeSlotToCheck = databasePartyData.time_slot || databasePartyData.timeSlot
+    
+    // Map from start_time/party_time if timeSlot not set
+    if (!partyTimeSlotToCheck) {
+      const timeField = databasePartyData.start_time || databasePartyData.party_time || databasePartyData.time
+      if (timeField) {
+        const hour = parseInt(timeField.toString().split(':')[0])
+        if (!isNaN(hour)) {
+          partyTimeSlotToCheck = hour < 13 ? 'morning' : 'afternoon'
+          console.log('🔍 DB: Mapped time', timeField, '→ slot:', partyTimeSlotToCheck)
+        }
       }
     }
     
-    // ✅ CHECK IF WE CAME FROM REVIEW-BOOK - IMPORTANT CHECK AT THE START
-    const urlParams = new URLSearchParams(window.location.search)
-    const fromReviewBook = urlParams.get('from') === 'review-book-missing'
-    console.log('🔍 From review book:', fromReviewBook)
-    
-    // Get behavior based on user type
-    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-    console.log('🚀 Behavior:', behavior)
-    
-    // 1. DATE PICKER FLOW
-    if (behavior.shouldShowDatePicker) {
-      console.log('📅 Showing date picker prompt')
-      return { 
-        showDatePicker: true,
-        message: "📅 Please select an available date from the calendar below first!"
-      }
-    }
-
-    // 2. TIME SLOT VALIDATION - FIXED
-    if (selectedDate && currentMonth) {
-      const dateString = getSelectedCalendarDate()
-      
-      if (dateString) {
-        // FIXED: Get the correct time slot for validation
-        let timeSlotForValidation = selectedTimeSlot
+    console.log('🔍 DB USER: Party info extracted:', {
+      party_date: partyDateToCheck,
+      time_slot: partyTimeSlotToCheck,
+      start_time: databasePartyData.start_time
+    })
+  } 
+  else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
+    try {
+      const partyDetails = localStorage.getItem('party_details')
+      if (partyDetails) {
+        const parsed = JSON.parse(partyDetails)
+        partyDateToCheck = parsed.date
+        partyTimeSlotToCheck = parsed.timeSlot
         
-        // If no time slot selected, try to get from party details
-        if (!timeSlotForValidation) {
-          try {
-            const partyDetails = localStorage.getItem('party_details')
-            if (partyDetails) {
-              const parsed = JSON.parse(partyDetails)
-              timeSlotForValidation = parsed.timeSlot
-              
-              // Map from party time if timeSlot not explicitly set
-              if (!timeSlotForValidation && parsed.time) {
-                const timeStr = parsed.time.toLowerCase()
-                console.log('🔍 BOOKING: Mapping party time to slot:', parsed.time)
-                
-                if (timeStr.includes('am') || 
-                    timeStr.includes('9') || timeStr.includes('10') || 
-                    timeStr.includes('11') || timeStr.includes('12')) {
-                  timeSlotForValidation = 'morning'
-                } else if (timeStr.includes('pm') || timeStr.includes('1') || 
-                          timeStr.includes('2') || timeStr.includes('3') || 
-                          timeStr.includes('4') || timeStr.includes('5')) {
-                  timeSlotForValidation = 'afternoon'
-                }
-                
-                console.log('🔍 BOOKING: Mapped to time slot:', timeSlotForValidation)
-              }
-            }
-          } catch (error) {
-            console.log('Could not determine party time slot for booking validation')
-          }
-        }
-        
-        console.log('🔍 BOOKING: Final time slot for validation:', timeSlotForValidation)
-        
-        // Enhanced availability check with time slot
-        const availabilityResult = checkSupplierAvailability(dateString, timeSlotForValidation)
-        console.log('🔍 BOOKING: Time slot availability result:', availabilityResult)
-        
-        // Add null check for availabilityResult
-        if (!availabilityResult || !availabilityResult.available) {
-          console.log('🚫 BOOKING: Supplier unavailable for selected date/time slot')
-          console.log('🚫 BOOKING: Checked date:', dateString, 'time slot:', timeSlotForValidation)
-          return { 
-            showUnavailableModal: true,
-            unavailableInfo: {
-              date: dateString,
-              timeSlot: timeSlotForValidation,
-              availableSlots: availabilityResult?.timeSlots || []
-            }
-          }
-        }
-        
-        // If partially available but no time slot selected, prompt for selection
-        if (availabilityResult.timeSlots && availabilityResult.timeSlots.length > 1 && !timeSlotForValidation) {
-          return {
-            showTimeSlotPicker: true,
-            message: "Please select a preferred time slot for your party",
-            availableSlots: availabilityResult.timeSlots
-          }
-        }
-      }
-    }
-
-    // 3. PARTY DATE AVAILABILITY CHECK - Enhanced with time slots
-    if (!selectedDate && (userType === 'LOCALSTORAGE_USER' || userType === 'DATABASE_USER' || userType === 'MIGRATION_NEEDED')) {
-      let partyDateToCheck = null
-      let partyTimeSlotToCheck = null
-      
-      // For localStorage users
-      if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
-        try {
-          const partyDetails = localStorage.getItem('party_details')
-          if (partyDetails) {
-            const parsed = JSON.parse(partyDetails)
-            partyDateToCheck = parsed.date
-            partyTimeSlotToCheck = parsed.timeSlot
-            
-            // FIXED: Map party time to time slot if not explicitly set
-            if (!partyTimeSlotToCheck && parsed.time) {
-              const timeStr = parsed.time.toLowerCase()
-              console.log('🔍 Mapping party time to slot:', parsed.time)
-              
-              // Map common time formats to slots
-              if (timeStr.includes('am') || 
-                  timeStr.includes('9') || timeStr.includes('10') || 
-                  timeStr.includes('11') || timeStr.includes('12')) {
-                partyTimeSlotToCheck = 'morning'
-              } else if (timeStr.includes('pm') || timeStr.includes('1') || 
-                        timeStr.includes('2') || timeStr.includes('3') || 
-                        timeStr.includes('4') || timeStr.includes('5')) {
-                partyTimeSlotToCheck = 'afternoon'
-              }
-              
-              console.log('🔍 Mapped to time slot:', partyTimeSlotToCheck)
-            }
-          }
-        } catch (error) {
-          console.log('❌ Could not parse party details for date check:', error)
-        }
-      }
-      
-      // For database users
-      if (userType === 'DATABASE_USER' && userContext?.partyData) {
-        partyDateToCheck = userContext.partyData.date
-        partyTimeSlotToCheck = userContext.partyData.timeSlot
-        
-        // Map from time if timeSlot not set
-        if (!partyTimeSlotToCheck && userContext.partyData.time) {
-          const timeStr = userContext.partyData.time.toLowerCase()
-          if (timeStr.includes('am') || timeStr.includes('morning')) {
+        if (!partyTimeSlotToCheck && parsed.time) {
+          const timeStr = parsed.time.toLowerCase()
+          if (timeStr.includes('am')) {
             partyTimeSlotToCheck = 'morning'
-          } else if (timeStr.includes('pm') || timeStr.includes('afternoon') || timeStr.includes('evening')) {
+          } else if (timeStr.includes('pm')) {
             partyTimeSlotToCheck = 'afternoon'
           }
         }
       }
-      
-      console.log('🔍 Party date check:', { partyDateToCheck, partyTimeSlotToCheck })
-      
-      if (partyDateToCheck) {
-        const availabilityResult = checkSupplierAvailability(partyDateToCheck, partyTimeSlotToCheck)
-        
-        // Add null check for availabilityResult
-        if (!availabilityResult || !availabilityResult.available) {
-          console.log('🚫 Supplier unavailable on party date/time')
-          return { 
-            showUnavailableModal: true,
-            unavailableDate: partyDateToCheck,
-            unavailableTimeSlot: partyTimeSlotToCheck,
-            availableSlots: availabilityResult?.timeSlots || []
-          }
-        }
-      }
-    }
-
-    // 4. BOOKING VALIDATION - Check if current selection is bookable
-    if (selectedDate && !isCurrentSelectionBookable()) {
-      console.log('🚫 Current date/time selection is not bookable')
-      return {
-        success: false,
-        message: "Selected date and time is not available. Please choose a different time slot."
-      }
-    }
-
-    // 5. À LA CARTE FLOW
-    if (behavior.shouldShowAlaCarteModal) {
-      console.log('🎪 Opening à la carte modal for anonymous user with date')
-      return { showAlaCarteModal: true }
+    } catch (error) {
+      console.log('❌ Could not parse localStorage party details')
     }
     
-    // 6. CATEGORY OCCUPATION CHECK - Database users
-    if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-      console.log('🔍 Checking category occupation for database user')
-      try {
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-        if (partyResult.success && partyResult.party?.party_plan) {
-          const dbPartyPlan = partyResult.party.party_plan
-          
-          const categoryMap = {
-            'Entertainment': 'entertainment',
-            'Venues': 'venue', 
-            'Catering': 'catering',
-            'Decorations': 'decorations',
-            'Party Bags': 'partyBags',
-            'Photography': 'photography',
-            'Activities': 'activities',
-            'Face Painting': 'facePainting',
-            'Cakes': 'cakes',   
-          }
-          
-          const slotName = categoryMap[supplier.category]
-          const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
-          
-          if (isSlotOccupied) {
-            console.log('🚫 Database user - category occupied, blocking')
-            return {
-              success: false,
-              message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`
-            }
-          }
-        }
-      } catch (error) {
-        console.log('❌ Database check failed, continuing...', error)
-        if (userType === 'DATABASE_USER') {
-          return { 
-            success: false,
-            message: "Unable to verify party status. Please try again." 
-          }
-        }
-      }
-    }
+    console.log('🔍 LS USER: Party info extracted:', {
+      party_date: partyDateToCheck,
+      time_slot: partyTimeSlotToCheck
+    })
+  }
+
+  // 3. PARTY DATE AVAILABILITY CHECK - THE CRITICAL CHECK
+  if (partyDateToCheck) {
+    console.log('🔍 ⭐ CRITICAL CHECK: Validating supplier availability on PARTY DATE')
+    console.log('🔍 ⭐ Party date:', partyDateToCheck)
+    console.log('🔍 ⭐ Party time slot:', partyTimeSlotToCheck)
+    console.log('🔍 ⭐ This should check Oct 4th, not Oct 9th!')
     
-    // 7. PACKAGE VALIDATION
-    const selectedPkg = packagesWithPopular.find((pkg) => pkg.id === selectedPackageId)
-    if (!selectedPkg) {
+    const partyDateAvailability = checkSupplierAvailability(partyDateToCheck, partyTimeSlotToCheck)
+    
+    console.log('🔍 ⭐ PARTY DATE availability result:', partyDateAvailability)
+    
+    // BLOCK if supplier unavailable on party date
+    if (!partyDateAvailability || !partyDateAvailability.available) {
+      console.log('🚫 ⭐ BLOCKING: Supplier unavailable on PARTY DATE')
+      console.log('🚫 This should show the unavailable modal!')
       return { 
-        success: false, 
-        message: "Selected package not found." 
+        showUnavailableModal: true,
+        unavailableDate: partyDateToCheck,
+        unavailableTimeSlot: partyTimeSlotToCheck,
+        availableSlots: partyDateAvailability?.timeSlots || [],
+        reason: 'party_date_unavailable'
       }
     }
-
-    // 8. ADDON MODAL CHECK
-    const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
-    const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
-
-    if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
-      console.log('🎭 Showing addon modal')
-      return { showAddonModal: true }
-    }
-
-    // 9. START ADDING PROCESS
-    console.log('🚀 Starting add to plan process')
     
-    // ✅ SKIP LOADING MODAL IF FROM REVIEW-BOOK (for faster UX)
-    const shouldShowLoadingModal = !fromReviewBook
-    
-    if (shouldShowLoadingModal) {
-      setIsAddingToPlan(true)
-      setLoadingStep(0)
-      setProgress(10)
-    } else {
-      console.log('🔄 Skipping loading modal for review-book flow')
-    }
+    console.log('✅ ⭐ PARTY DATE CHECK PASSED: Supplier available on party date')
+  }
 
-    try {
-      // Prepare package data with time slot information
-      const packageToAdd = addonData?.package || selectedPkg
-      const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
+  // 4. SELECTED CALENDAR DATE VALIDATION (only if different from party date)
+  if (selectedDate && currentMonth) {
+    const selectedCalendarDateString = getSelectedCalendarDate()
+    
+    if (selectedCalendarDateString && selectedCalendarDateString !== partyDateToCheck) {
+      console.log('🔍 SECONDARY: Calendar date differs from party date')
+      console.log('🔍 Calendar date:', selectedCalendarDateString, 'vs Party date:', partyDateToCheck)
       
-      const enhancedPackage = {
-        ...packageToAdd,
-        addons: addonData?.addons || [],
-        originalPrice: selectedPkg.price,
-        totalPrice: finalPrice,
-        addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0,
-        cakeCustomization: packageToAdd.cakeCustomization || null,
-        packageType: packageToAdd.packageType || 'standard',
-        supplierType: packageToAdd.supplierType || 'standard',
-        // NEW: Add time slot information
-        selectedTimeSlot: selectedTimeSlot,
-        selectedDate: selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null,
-        bookingTimeSlot: selectedTimeSlot || null
+      let calendarTimeSlot = selectedTimeSlot || partyTimeSlotToCheck
+      
+      const calendarDateAvailability = checkSupplierAvailability(selectedCalendarDateString, calendarTimeSlot)
+      
+      if (!calendarDateAvailability || !calendarDateAvailability.available) {
+        console.log('🚫 BLOCKING: Supplier unavailable on selected calendar date')
+        return { 
+          showUnavailableModal: true,
+          unavailableInfo: {
+            date: selectedCalendarDateString,
+            timeSlot: calendarTimeSlot,
+            availableSlots: calendarDateAvailability?.timeSlots || []
+          },
+          reason: 'calendar_date_unavailable'
+        }
       }
+    }
+  }
 
-      console.log('🎯 Enhanced package with time slot:', enhancedPackage)
-      if (shouldShowLoadingModal) setProgress(30)
-
-      let result
-      if (shouldShowLoadingModal) setLoadingStep(1)
-
-      // 10. DATABASE USER FLOW
-      if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-        console.log('📊 Database user - adding supplier to database')
-        if (shouldShowLoadingModal) setProgress(50)
+  // 5. À LA CARTE FLOW
+  if (behavior.shouldShowAlaCarteModal) {
+    console.log('🎪 Opening à la carte modal for anonymous user')
+    return { showAlaCarteModal: true }
+  }
+  
+  // 6. CATEGORY OCCUPATION CHECK
+  if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER' && userContext?.currentPartyId) {
+    console.log('🔍 Checking category occupation for database user')
+    try {
+      const partyResult = await partyDatabaseBackend.getCurrentParty()
+      if (partyResult.success && partyResult.party?.party_plan) {
+        const dbPartyPlan = partyResult.party.party_plan
         
-        const addResult = await partyDatabaseBackend.addSupplierToParty(
+        const categoryMap = {
+          'Entertainment': 'entertainment',
+          'Venues': 'venue', 
+          'Catering': 'catering',
+          'Decorations': 'decorations',
+          'Party Bags': 'partyBags',
+          'Photography': 'photography',
+          'Activities': 'activities',
+          'Face Painting': 'facePainting',
+          'Cakes': 'cakes',   
+        }
+        
+        const slotName = categoryMap[supplier.category]
+        const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
+        
+        if (isSlotOccupied) {
+          console.log('🚫 Database user - category occupied, blocking')
+          return {
+            success: false,
+            message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`
+          }
+        }
+      }
+    } catch (error) {
+      console.log('❌ Database check failed, continuing...', error)
+      if (userType === 'DATABASE_USER') {
+        return { 
+          success: false,
+          message: "Unable to verify party status. Please try again." 
+        }
+      }
+    }
+  }
+  
+  // 7. PACKAGE VALIDATION
+  const selectedPkg = packagesWithPopular.find((pkg) => pkg.id === selectedPackageId)
+  if (!selectedPkg) {
+    return { 
+      success: false, 
+      message: "Selected package not found." 
+    }
+  }
+
+  // 8. ADDON MODAL CHECK
+  const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
+  const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
+
+  if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
+    console.log('🎭 Showing addon modal')
+    return { showAddonModal: true }
+  }
+
+  // 9. START ADDING PROCESS
+  console.log('🚀 Starting add to plan process - all checks passed')
+  
+  const shouldShowLoadingModal = !fromReviewBook
+  
+  if (shouldShowLoadingModal) {
+    setIsAddingToPlan(true)
+    setLoadingStep(0)
+    setProgress(10)
+  }
+
+  try {
+    // Prepare package data with correct time slot information
+    const packageToAdd = addonData?.package || selectedPkg
+    const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
+    
+    // Use the party time slot for booking
+    const bookingTimeSlot = partyTimeSlotToCheck || selectedTimeSlot
+    const bookingDate = partyDateToCheck || (selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null)
+    
+    const enhancedPackage = {
+      ...packageToAdd,
+      addons: addonData?.addons || [],
+      originalPrice: selectedPkg.price,
+      totalPrice: finalPrice,
+      addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0,
+      cakeCustomization: packageToAdd.cakeCustomization || null,
+      packageType: packageToAdd.packageType || 'standard',
+      supplierType: packageToAdd.supplierType || 'standard',
+      // Use party date and time slot for booking
+      selectedTimeSlot: bookingTimeSlot,
+      selectedDate: bookingDate,
+      bookingTimeSlot: bookingTimeSlot,
+      partyDate: partyDateToCheck,
+      partyTimeSlot: partyTimeSlotToCheck
+    }
+
+    console.log('🎯 Enhanced package with correct party date/time:', enhancedPackage)
+    if (shouldShowLoadingModal) setProgress(30)
+
+    let result
+    if (shouldShowLoadingModal) setLoadingStep(1)
+
+    // 10. DATABASE USER FLOW
+    if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
+      console.log('📊 Database user - adding supplier to database')
+      if (shouldShowLoadingModal) setProgress(50)
+      
+      const addResult = await partyDatabaseBackend.addSupplierToParty(
+        userContext.currentPartyId,
+        backendSupplier,
+        enhancedPackage
+      )
+      
+      if (shouldShowLoadingModal) setProgress(70)
+      if (shouldShowLoadingModal) setLoadingStep(2)
+      
+      // Send enquiry if needed
+      if (addResult.success && (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0))) {
+        console.log('📧 Sending auto-enquiry')
+        if (shouldShowLoadingModal) setLoadingStep(3)
+        
+        const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
+          ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquir${enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}`
+          : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
+        
+        const enquiryPackage = {
+          ...enhancedPackage,
+          timeSlotRequested: bookingTimeSlot,
+          preferredTimeSlot: bookingTimeSlot
+        }
+        
+        const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
           userContext.currentPartyId,
           backendSupplier,
-          enhancedPackage
+          enquiryPackage,
+          enquiryReason
         )
         
-        if (shouldShowLoadingModal) setProgress(70)
-        if (shouldShowLoadingModal) setLoadingStep(2)
-        
-        // ✅ NEW: Always send enquiry if user has pending enquiries
-        // This ensures even when users can book, we still track enquiries
-        if (addResult.success && (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0))) {
-          console.log('📧 Sending auto-enquiry - either for empty category or user has pending enquiries')
-          if (shouldShowLoadingModal) setLoadingStep(3)
-          
-          const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
-            ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquir${enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}`
-            : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
-          
-          // Include time slot information in enquiry
-          const enquiryPackage = {
-            ...enhancedPackage,
-            timeSlotRequested: selectedTimeSlot,
-            preferredTimeSlot: selectedTimeSlot
-          }
-          
-          const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
-            userContext.currentPartyId,
-            backendSupplier,
-            enquiryPackage,
-            enquiryReason
-          )
-          
-          if (enquiryResult.success) {
-            console.log('✅ Auto-enquiry sent successfully with time slot info')
-          }
-        }
-        
-        result = addResult
-      }
-      // 11. LOCALSTORAGE USER FLOW
-      else {
-        console.log('📦 LocalStorage user - adding supplier to localStorage')
-        if (shouldShowLoadingModal) setProgress(50)
-        if (shouldShowLoadingModal) setLoadingStep(2)
-        
-        const partyDetails = getSupplierInPartyDetails()
-        if (partyDetails.inParty) {
-          if (partyDetails.supplierType === "addon") {
-            await removeAddon(supplier.id)
-            result = await addSupplier(backendSupplier, enhancedPackage)
-          } else {
-            result = await addSupplier(backendSupplier, enhancedPackage)
-          }
-        } else {
-          const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
-          if (mainCategories.includes(supplier.category || "")) {
-            result = await addSupplier(backendSupplier, enhancedPackage)
-          } else {
-            const addonDataToAdd = {
-              ...supplier,
-              price: finalPrice,
-              packageId: enhancedPackage.id,
-              selectedAddons: enhancedPackage.addons,
-              packageData: enhancedPackage,
-              // NEW: Include time slot data for addons too
-              selectedTimeSlot: selectedTimeSlot,
-              bookingTimeSlot: selectedTimeSlot
-            }
-            result = await addAddon(addonDataToAdd)
-          }
+        if (enquiryResult.success) {
+          console.log('✅ Auto-enquiry sent successfully')
         }
       }
-
-      if (shouldShowLoadingModal) setLoadingStep(4)
-      if (shouldShowLoadingModal) setProgress(100)
-
-      // 12. SUCCESS HANDLING WITH SMART NAVIGATION
-      if (result?.success) {
-        let successMessage = `${supplier.name} added to your party`
-        
-        // Add time slot to success message
-        if (selectedTimeSlot) {
-          const timeSlotLabel = selectedTimeSlot === 'morning' ? 'morning' : 'afternoon'
-          successMessage += ` for ${timeSlotLabel}`
-        }
-        
-        if (enhancedPackage.cakeCustomization) {
-          successMessage += ` with ${enhancedPackage.cakeCustomization.flavorName} flavor`
-        }
-        
-        const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
-        successMessage += addonMessage
-        
-        // ✅ NEW: Update message based on enquiry status
-        if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
-          successMessage += ' and enquiry sent!'
+      
+      result = addResult
+    }
+    // 11. LOCALSTORAGE USER FLOW
+    else {
+      console.log('📦 LocalStorage user - adding supplier to localStorage')
+      if (shouldShowLoadingModal) setProgress(50)
+      if (shouldShowLoadingModal) setLoadingStep(2)
+      
+      const partyDetails = getSupplierInPartyDetails()
+      if (partyDetails.inParty) {
+        if (partyDetails.supplierType === "addon") {
+          await removeAddon(supplier.id)
+          result = await addSupplier(backendSupplier, enhancedPackage)
         } else {
-          successMessage += '!'
-        }
-        
-        // ✅ NEW: Show informational message about pending enquiries (non-blocking)
-        if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
-          // Store additional info for display
-          localStorage.setItem('recentBookingWithPendingEnquiries', JSON.stringify({
-            pendingCount: enquiryStatus.pendingCount,
-            addedSupplier: supplier.name,
-            selectedTimeSlot: selectedTimeSlot,
-            timestamp: Date.now()
-          }))
-        }
-        
-        // ✅ DIFFERENT WAIT TIMES BASED ON CONTEXT
-        const waitTime = fromReviewBook ? 500 : 1000 // Shorter wait for review-book
-        await new Promise((resolve) => setTimeout(resolve, waitTime))
-        
-        if (fromReviewBook) {
-          // Store success message for toast after navigation
-          localStorage.setItem('reviewBookToast', JSON.stringify({
-            type: 'success',
-            title: 'Supplier Added Successfully',
-            message: `${supplier.name} added to your party plan!`,
-            timeSlot: selectedTimeSlot,
-            timestamp: Date.now()
-          }))
-          
-          // Navigate back to review-book step 4 with success indicator (forgotten step is now at index 4)
-          const reviewUrl = `/review-book?restore=step4&added=true&supplier=${encodeURIComponent(supplier.name)}`
-          console.log('🔄 Returning to review-book with added supplier:', reviewUrl)
-          router.push(reviewUrl)
-        } else {
-          // Normal dashboard navigation with scroll
-          const categoryMap = {
-            'Entertainment': 'entertainment',
-            'Venues': 'venue', 
-            'Venue': 'venue',
-            'Catering': 'catering',
-            'Decorations': 'decorations',
-            'Party Bags': 'partyBags',
-            'Photography': 'photography',
-            'Activities': 'activities',
-            'Face Painting': 'facePainting',
-            'Cakes': 'cakes',
-            'Balloons': 'balloons'
-          }
-
-          const supplierType = categoryMap[supplier.category] || 'entertainment'
-          console.log('🎯 Mapping category for scroll:', supplier.category, '→', supplierType)
-          
-          const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
-          console.log('🚀 Navigating to dashboard:', dashboardUrl)
-          router.push(dashboardUrl)
-        }
-
-        return { 
-          success: true, 
-          message: successMessage,
-          // ✅ NEW: Include enquiry info for UI updates
-          enquiryInfo: enquiryStatus.isAwaiting ? {
-            hasPendingEnquiries: true,
-            pendingCount: enquiryStatus.pendingCount
-          } : null,
-          timeSlotInfo: selectedTimeSlot ? {
-            selectedTimeSlot,
-            timeSlotLabel: selectedTimeSlot === 'morning' ? 'Morning' : 'Afternoon'
-          } : null
+          result = await addSupplier(backendSupplier, enhancedPackage)
         }
       } else {
-        throw new Error(result?.error || "Failed to add supplier")
+        const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
+        if (mainCategories.includes(supplier.category || "")) {
+          result = await addSupplier(backendSupplier, enhancedPackage)
+        } else {
+          const addonDataToAdd = {
+            ...supplier,
+            price: finalPrice,
+            packageId: enhancedPackage.id,
+            selectedAddons: enhancedPackage.addons,
+            packageData: enhancedPackage,
+            selectedTimeSlot: bookingTimeSlot,
+            bookingTimeSlot: bookingTimeSlot
+          }
+          result = await addAddon(addonDataToAdd)
+        }
+      }
+    }
+
+    if (shouldShowLoadingModal) setLoadingStep(4)
+    if (shouldShowLoadingModal) setProgress(100)
+
+    // 12. SUCCESS HANDLING
+    if (result?.success) {
+      let successMessage = `${supplier.name} added to your party`
+      
+      if (bookingTimeSlot) {
+        const timeSlotLabel = bookingTimeSlot === 'morning' ? 'morning' : 'afternoon'
+        successMessage += ` for ${timeSlotLabel}`
+      }
+      
+      if (enhancedPackage.cakeCustomization) {
+        successMessage += ` with ${enhancedPackage.cakeCustomization.flavorName} flavor`
+      }
+      
+      const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
+      successMessage += addonMessage
+      
+      if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
+        successMessage += ' and enquiry sent!'
+      } else {
+        successMessage += '!'
+      }
+      
+      if (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0) {
+        localStorage.setItem('recentBookingWithPendingEnquiries', JSON.stringify({
+          pendingCount: enquiryStatus.pendingCount,
+          addedSupplier: supplier.name,
+          selectedTimeSlot: bookingTimeSlot,
+          timestamp: Date.now()
+        }))
+      }
+      
+      const waitTime = fromReviewBook ? 500 : 1000
+      await new Promise((resolve) => setTimeout(resolve, waitTime))
+      
+      if (fromReviewBook) {
+        localStorage.setItem('reviewBookToast', JSON.stringify({
+          type: 'success',
+          title: 'Supplier Added Successfully',
+          message: `${supplier.name} added to your party plan!`,
+          timeSlot: bookingTimeSlot,
+          timestamp: Date.now()
+        }))
+        
+        const reviewUrl = `/review-book?restore=step4&added=true&supplier=${encodeURIComponent(supplier.name)}`
+        console.log('🔄 Returning to review-book:', reviewUrl)
+        router.push(reviewUrl)
+      } else {
+        const categoryMap = {
+          'Entertainment': 'entertainment',
+          'Venues': 'venue', 
+          'Venue': 'venue',
+          'Catering': 'catering',
+          'Decorations': 'decorations',
+          'Party Bags': 'partyBags',
+          'Photography': 'photography',
+          'Activities': 'activities',
+          'Face Painting': 'facePainting',
+          'Cakes': 'cakes',
+          'Balloons': 'balloons'
+        }
+
+        const supplierType = categoryMap[supplier.category] || 'entertainment'
+        const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
+        console.log('🚀 Navigating to dashboard:', dashboardUrl)
+        router.push(dashboardUrl)
       }
 
-    } catch (error) {
-      console.error("❌ Error in handleAddToPlan:", error)
       return { 
-        success: false, 
-        message: error.message || "Failed to add supplier. Please try again." 
+        success: true, 
+        message: successMessage,
+        enquiryInfo: enquiryStatus.isAwaiting ? {
+          hasPendingEnquiries: true,
+          pendingCount: enquiryStatus.pendingCount
+        } : null,
+        timeSlotInfo: bookingTimeSlot ? {
+          selectedTimeSlot: bookingTimeSlot,
+          timeSlotLabel: bookingTimeSlot === 'morning' ? 'Morning' : 'Afternoon'
+        } : null
       }
-    } finally {
-      if (shouldShowLoadingModal) {
-        setIsAddingToPlan(false)
-        setProgress(0)
-        setLoadingStep(0)
-      }
-      setFinalPackageData(null)
-      console.log('🔧 handleAddToPlan cleanup completed')
+    } else {
+      throw new Error(result?.error || "Failed to add supplier")
     }
-  }, [
-    userType, 
-    userContext, 
-    supplier, 
-    selectedPackageId, 
-    selectedDate, 
-    selectedTimeSlot, // NEW
-    currentMonth,
-    packages, 
-    getSupplierInPartyDetails, 
-    addSupplier, 
-    addAddon, 
-    removeAddon, 
-    backendSupplier, 
-    navigationContext, 
-    navigateWithContext, 
-    router, 
-    checkSupplierAvailability, 
-    getSelectedCalendarDate,
-    isCurrentSelectionBookable, // NEW
-    enquiryStatus
-  ])
+
+  } catch (error) {
+    console.error("❌ Error in handleAddToPlan:", error)
+    return { 
+      success: false, 
+      message: error.message || "Failed to add supplier. Please try again." 
+    }
+  } finally {
+    if (shouldShowLoadingModal) {
+      setIsAddingToPlan(false)
+      setProgress(0)
+      setLoadingStep(0)
+    }
+    setFinalPackageData(null)
+    console.log('🔧 handleAddToPlan cleanup completed')
+  }
+}, [
+  userType, 
+  userContext, 
+  supplier, 
+  selectedPackageId, 
+  selectedDate, 
+  selectedTimeSlot,
+  currentMonth,
+  packagesWithPopular, 
+  getSupplierInPartyDetails, 
+  addSupplier, 
+  addAddon, 
+  removeAddon, 
+  backendSupplier, 
+  router, 
+  checkSupplierAvailability, 
+  getSelectedCalendarDate,
+  isCurrentSelectionBookable,
+  enquiryStatus,
+  databasePartyData // CRITICAL: Must be in dependencies
+])
 
 // ✅ UPDATED: handleAlaCarteBooking with enhanced time slot support and availability checks
 const handleAlaCarteBooking = useCallback(async (partyDetails) => {
@@ -945,7 +894,6 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     const urlParams = new URLSearchParams(window.location.search)
     const isInReplacementMode = urlParams.get('from') === 'replacement' || !!replacementContext?.isReplacement
     
-    // Skip date validation for replacement mode
     if (isInReplacementMode) {
       return {
         disabled: false,
@@ -953,24 +901,61 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
         text: "Add to Plan"
       }
     }
+  
+    // Get party date and time slot for button text
+    let partyDateText = ''
+    let timeSlotText = ''
     
-    // Get behavior from user type detection
-    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-    
-    // NEW: Check time slot availability for current selection
+    // For database users
+    if (userType === 'DATABASE_USER' && userContext?.partyData) {
+      const partyDate = userContext.partyData.party_date || userContext.partyData.date
+      const partyTimeSlot = userContext.partyData.time_slot || userContext.partyData.timeSlot
+      
+      if (partyDate) {
+        const dateObj = new Date(partyDate)
+        partyDateText = ` (${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
+        
+        if (partyTimeSlot) {
+          const timeSlotLabel = partyTimeSlot === 'morning' ? 'AM' : 'PM'
+          timeSlotText = ` ${timeSlotLabel}`
+        }
+      }
+    }
+    // For localStorage users
+    else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
+      try {
+        const partyDetailsLS = localStorage.getItem('party_details')
+        if (partyDetailsLS) {
+          const parsed = JSON.parse(partyDetailsLS)
+          if (parsed.date) {
+            const dateObj = new Date(parsed.date)
+            partyDateText = ` (${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
+            
+            if (parsed.timeSlot || parsed.time) {
+              const timeSlot = parsed.timeSlot || (parsed.time?.toLowerCase().includes('am') ? 'morning' : 'afternoon')
+              const timeSlotLabel = timeSlot === 'morning' ? 'AM' : 'PM'
+              timeSlotText = ` ${timeSlotLabel}`
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Could not get party date from localStorage')
+      }
+    }
+  
+    // TIME SLOT VALIDATION for selected dates
     if (selectedDate && currentMonth) {
       const selectedDateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate)
       
-      // If we have a party with a specific time slot, check that time slot
       let requiredTimeSlot = selectedTimeSlot
       
       // For users with party plans, check their party time slot
       if (!requiredTimeSlot && (userType === 'LOCALSTORAGE_USER' || userType === 'DATABASE_USER')) {
         try {
           if (userType === 'LOCALSTORAGE_USER') {
-            const partyDetails = localStorage.getItem('party_details')
-            if (partyDetails) {
-              const parsed = JSON.parse(partyDetails)
+            const partyDetailsLS = localStorage.getItem('party_details')
+            if (partyDetailsLS) {
+              const parsed = JSON.parse(partyDetailsLS)
               requiredTimeSlot = parsed.timeSlot
             }
           } else if (userType === 'DATABASE_USER' && userContext?.partyData?.timeSlot) {
@@ -981,13 +966,12 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
         }
       }
       
-      // Check availability for the specific time slot or all slots
+      // Check availability for the specific time slot
       const availabilityResult = checkSupplierAvailability(
         selectedDateObj.toISOString().split('T')[0], 
         requiredTimeSlot
       )
       
-      // Add null check for availabilityResult
       if (!availabilityResult || !availabilityResult.available) {
         return {
           disabled: true,
@@ -1003,13 +987,13 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
         return {
           disabled: false,
           className: "bg-amber-500 hover:bg-amber-600 text-white",
-          text: "⏰ Choose Time Slot"
+          text: "Choose Time Slot"
         }
       }
     }
     
     // Check if current selection is not bookable
-    if (selectedDate && !isCurrentSelectionBookable()) {
+    if (selectedDate && typeof isCurrentSelectionBookable === 'function' && !isCurrentSelectionBookable()) {
       return {
         disabled: true,
         className: "bg-red-400 text-white cursor-not-allowed",
@@ -1017,59 +1001,69 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       }
     }
     
-    // ✅ FIX: Handle different user types correctly based on their actual state
+    // HANDLE DIFFERENT USER TYPES
     switch (userType) {
       case 'ANONYMOUS':
       case 'ERROR_FALLBACK':
-        // Only anonymous users need date selection flow
         if (!selectedDate) {
           return {
             disabled: false,
-            className: "bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white",
-            text: "📅 Pick a Date First"
+            className: "bg-primary-500 hover:bg-primary-600 text-white",
+            text: "Pick a Date First"
           }
         } else {
           return {
             disabled: false,
-            className: "bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white",
+            className: "bg-primary-500 hover:bg-primary-600 text-white",
             text: "Book This Supplier"
           }
         }
         
       case 'LOCALSTORAGE_USER':
       case 'MIGRATION_NEEDED':
-        // Show "In Plan" for localStorage users with the same package
+        // Show "In Plan" if already added with same package
         if (partyDetails.inParty && partyDetails.currentPackage === currentPackageId) {
           return {
             disabled: true,
-            className: "bg-teal-500 hover:bg-teal-500 text-white cursor-not-allowed",
+            className: "bg-teal-500 text-white cursor-not-allowed",
             text: (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
-                In Plan
+                In Plan{partyDateText}{timeSlotText}
               </>
             ),
           }
         } else {
-          // ✅ FIX: LocalStorage users with party plans don't need date selection
           return {
             disabled: false,
             className: "bg-primary-500 hover:bg-primary-600 text-white",
-            text: "Add to Plan"
+            text: `Add to Plan${partyDateText}${timeSlotText}`
           }
         }
         
       case 'DATABASE_USER':
       case 'DATA_CONFLICT':
-        // ✅ FIX: Database users never need date selection - they have party plans
-        return {
-          disabled: false,
-          className: "bg-primary-500 hover:bg-primary-600 text-white",
-          text: "Add to Plan"
+        // Show "In Plan" if already added with same package
+        if (partyDetails.inParty && partyDetails.currentPackage === currentPackageId) {
+          return {
+            disabled: true,
+            className: "bg-teal-500 text-white cursor-not-allowed",
+            text: (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                In Plan{partyDateText}{timeSlotText}
+              </>
+            ),
+          }
+        } else {
+          return {
+            disabled: false,
+            className: "bg-primary-500 hover:bg-primary-600 text-white",
+            text: `Add to Plan${partyDateText}${timeSlotText}`
+          }
         }
         
       default:
-        // Unknown user type - check if package is selected
         if (!currentPackageId) {
           return {
             disabled: true,
@@ -1078,21 +1072,10 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
           }
         }
         
-        // ✅ FIX: For unknown types, use behavior but don't force date selection for signed-in users
-        if (userType !== 'ANONYMOUS' && userType !== 'ERROR_FALLBACK') {
-          return {
-            disabled: false,
-            className: "bg-primary-500 hover:bg-primary-600 text-white",
-            text: "Add to Plan"
-          }
-        }
-        
-        return { 
-          disabled: behavior.buttonDisabled || false, 
-          className: behavior.buttonDisabled 
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-primary-500 hover:bg-primary-600 text-white", 
-          text: behavior.buttonText
+        return {
+          disabled: false,
+          className: "bg-primary-500 hover:bg-primary-600 text-white",
+          text: `Add to Plan${partyDateText}${timeSlotText}`
         }
     }
   }, [
@@ -1100,14 +1083,14 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     userContext, 
     supplier, 
     selectedDate, 
-    selectedTimeSlot, // NEW
+    selectedTimeSlot,
     selectedPackageId, 
     getSupplierInPartyDetails, 
     isAddingToPlan, 
     replacementContext,
     currentMonth,
     checkSupplierAvailability,
-    isCurrentSelectionBookable // NEW
+    isCurrentSelectionBookable
   ])
 
   return {

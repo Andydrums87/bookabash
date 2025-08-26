@@ -19,7 +19,9 @@ export default function SupplierGrid({
   partyId,
   openSupplierModal,
   renderKey,
-  handleCancelEnquiry
+  handleCancelEnquiry,
+  activeSupplierType,
+  onSupplierTabChange
 }) {
   
   // Supplier management
@@ -284,6 +286,8 @@ const getAllSupplierSlots = () => {
           }}
           handleCancelEnquiry={handleCancelEnquiry}
           onPaymentReady={onPaymentReady}
+          activeSupplierType={activeSupplierType}
+          onSupplierTabChange={onSupplierTabChange}
         />
       </div>
 

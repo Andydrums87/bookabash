@@ -184,6 +184,16 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       addedAt: new Date().toISOString(),
       packageId: selectedPackage?.id || null,
       originalSupplier: supplier,
+      unavailableDates: supplier.unavailableDates || [],
+      busyDates: supplier.busyDates || [],
+      workingHours: supplier.workingHours || null,
+      location: supplier.location,
+      contactInfo: supplier.contactInfo,
+      serviceDetails: supplier.serviceDetails,
+      maxBookingDays: supplier.maxBookingDays,
+      advanceBookingDays: supplier.advanceBookingDays,
+      availabilityNotes: supplier.availabilityNotes,
+      
       
       // ✅ NEW: Store the complete package data with add-ons
       packageData: selectedPackage || null,

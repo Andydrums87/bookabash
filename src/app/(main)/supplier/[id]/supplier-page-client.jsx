@@ -151,6 +151,8 @@ export default function SupplierProfilePage({ backendSupplier }) {
   
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [databasePartyData, setDatabasePartyData] = useState(null)
+  const [ currentPartyId, setCurrentPartyId] = useState(null)
 
 // 2. Call the data hook first (no selectedPackageId needed)
 const { supplier, packages: basePackages, portfolioImages, credentials, reviews, isCakeSupplier } = 
@@ -181,25 +183,36 @@ useEffect(() => {
   }
 }, [userTypeLoading, backendSupplier])
 
+useEffect(() => {
+  const getPartyData = async () => {
+    if (userType === 'DATABASE_USER') {
+      try {
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+        if (partyResult.success && partyResult.party) {
+          setDatabasePartyData(partyResult.party)
+        }
+      } catch (error) {
+        console.error('Error getting party data:', error)
+      }
+    }
+  }
+  
+  if (userType && !userTypeLoading) {
+    getPartyData()
+  }
+}, [userType, userTypeLoading])
+
 
 const modals = useSupplierModals()
 const replacement = useReplacementMode()
 const notifications = useSupplierNotifications()
-const availability = useSupplierAvailability(supplier)
+const availability = useSupplierAvailability(supplier, databasePartyData, userType)
 const enquiries = useSupplierEnquiries(userContext?.currentPartyId)
-console.log('🔍 DEBUG: Availability functions check:', {
-  checkSupplierAvailability: typeof availability.checkSupplierAvailability,
-  migratedSupplier: !!availability.migratedSupplier,
-  selectedTimeSlot: availability.selectedTimeSlot,
-  isCurrentSelectionBookable: typeof availability.isCurrentSelectionBookable
-})
 
-// Also test the availability function directly:
-if (availability.checkSupplierAvailability) {
-  console.log('🔍 DIRECT TEST: Checking party date availability:', 
-    availability.checkSupplierAvailability('2025-10-09', 'afternoon')
-  )
-}
+
+console.log('🔍 DIRECT TEST: Checking party date availability:', 
+  availability.checkSupplierAvailability(databasePartyData?.party_date, 'afternoon') // ← CORRECT DATE
+)
 
 const booking = useSupplierBooking(
   supplier, 
@@ -214,7 +227,8 @@ const booking = useSupplierBooking(
   availability.checkSupplierAvailability,
   availability.getSelectedCalendarDate,
   replacement.replacementContext,
-  availability.isCurrentSelectionBookable
+  availability.isCurrentSelectionBookable,
+  databasePartyData 
 )
 
 const packages = booking.packages
@@ -241,48 +255,11 @@ const handleAddToPlanWithModals = async (...args) => {
   } else if (result.success) {
     notifications.showSuccess(result.message)
     
-    // ✅ NEW: Show informational notification about pending enquiries (non-blocking)
-    if (result.enquiryInfo?.hasPendingEnquiries) {
-      setTimeout(() => {
-        notifications.setNotification({
-          type: 'info',
-          title: 'Enquiries Pending',
-          message: `You have ${result.enquiryInfo.pendingCount} pending enquir${result.enquiryInfo.pendingCount === 1 ? 'y' : 'ies'}. You can continue planning while waiting for responses.`,
-          action: {
-            label: 'View Dashboard',
-            onClick: () => router.push('/dashboard?tab=enquiries')
-          },
-          duration: 8000 // Longer duration for informational message
-        })
-      }, 2000) // Show after success message
-    }
+ 
   } else if (!result.success) {
     notifications.showError(result.message)
   }
 }
-
-// ✅ NEW: Show non-blocking pending enquiry info on page load
-useEffect(() => {
-  if (enquiries.enquiryStatus.isAwaiting && enquiries.enquiryStatus.pendingCount > 0) {
-    // Show informational banner about pending enquiries (non-blocking)
-    const timer = setTimeout(() => {
-      notifications.setNotification({
-        type: 'info',
-        title: 'Enquiries in Progress',
-        message: `You have ${enquiries.enquiryStatus.pendingCount} pending enquir${enquiries.enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}. You can continue adding suppliers while waiting for responses.`,
-        action: {
-          label: 'View All Enquiries',
-          onClick: () => router.push('/dashboard?tab=enquiries')
-        },
-        duration: 6000,
-        dismissible: true
-      })
-    }, 1500) // Show after page loads
-
-    return () => clearTimeout(timer)
-  }
-}, [enquiries.enquiryStatus, notifications, router])
-
 
 
 
@@ -304,7 +281,11 @@ useEffect(() => {
       </div>
     )
   }
-
+  console.log('Time slot debug:')
+  console.log('databasePartyData.start_time:', databasePartyData?.start_time)
+  console.log('databasePartyData.party_time:', databasePartyData?.party_time) 
+  console.log('getPartyTimeSlot():', availability.getPartyTimeSlot())
+  console.log('selectedTimeSlot:', availability.selectedTimeSlot)
   // UPDATE your loading check to include user type loading:
 if (userTypeLoading) {
   return (
@@ -338,31 +319,6 @@ if (userTypeLoading) {
       <ContextualBreadcrumb currentPage="supplier-detail" supplierName={backendSupplier?.name} />
 
 
-      {/* NEW: Add informational banner about pending enquiries (non-blocking) */}
-      {enquiries.enquiryStatus.isAwaiting && enquiries.enquiryStatus.pendingCount > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <AlertCircle className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-blue-900 text-sm mb-1">
-                      Enquiries in Progress
-                    </h4>
-                    <p className="text-sm text-blue-700 mb-2">
-                      You have {enquiries.enquiryStatus.pendingCount} pending enquir{enquiries.enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}. 
-                      You can continue adding suppliers while waiting for responses.
-                    </p>
-                    <button
-                      onClick={() => router.push('/dashboard?tab=enquiries')}
-                      className="text-sm text-blue-800 hover:text-blue-900 underline font-medium"
-                    >
-                      View all enquiries →
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
       <SupplierHeader
         supplier={supplier}
         portfolioImages={portfolioImages}
@@ -502,6 +458,8 @@ if (userTypeLoading) {
         openCakeModal={modals.openCakeModal}
         showCakeModal={modals.showCakeModal}
         isCakeSupplier={isCakeSupplier}
+        databasePartyData={databasePartyData} // Add this
+        userType={userType} // Add this
       />
 
 

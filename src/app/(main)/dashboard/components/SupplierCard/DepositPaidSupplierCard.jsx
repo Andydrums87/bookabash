@@ -1,10 +1,10 @@
-// DepositPaidSupplierCard.js - Using exact AwaitingResponseSupplierCard styling with new messaging
+// DepositPaidSupplierCard.js - Calm, confident styling similar to ConfirmedSupplierCard
 "use client"
 
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Mail, Calendar, Gift } from "lucide-react"
+import { CheckCircle, Gift, Clock } from "lucide-react"
 
 export default function DepositPaidSupplierCard({
   type,
@@ -23,16 +23,15 @@ export default function DepositPaidSupplierCard({
     <Card 
       className={`gap-0 overflow-hidden rounded-2xl shadow-xl transition-all duration-300 relative min-h-[480px] ${
         isDeleting ? "opacity-50 scale-95" : ""
-      } border-4 border-[hsl(var(--primary-400))] animate-pulse-border`}
+      } border-4 border-teal-500`}
       onClick={onClick}
     >
       
-      {/* Pulsing status badge - positioned outside the card */}
-      <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-20">
-        <Badge className="bg-primary-600 text-white px-4 py-1 text-sm font-medium animate-pulse shadow-lg">
-          <CheckCircle className="w-4 h-4 mr-2" />
-          Booking Secured
-        </Badge>
+      {/* Success checkmark corner badge - like ConfirmedSupplierCard */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
+          <CheckCircle className="w-5 h-5 text-white" />
+        </div>
       </div>
 
       {/* Top Section: Original supplier card with image background */}
@@ -50,6 +49,13 @@ export default function DepositPaidSupplierCard({
 
         {/* Standard primary gradient overlay - consistent across all cards */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
+
+        {/* Type badge in top left */}
+        <div className="absolute top-4 left-4 right-16 flex items-start justify-start z-10">
+          <Badge className="bg-teal-500 text-white shadow-lg backdrop-blur-sm">
+            {type?.charAt(0).toUpperCase() + type?.slice(1) || 'Supplier'}
+          </Badge>
+        </div>
 
         {/* 🎂 Cake badge in bottom right */}
         {isCakeSupplier && (
@@ -82,40 +88,39 @@ export default function DepositPaidSupplierCard({
         </div>
       </div>
 
-      {/* Bottom Section: Standard neutral background */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 flex-1">
+      {/* Bottom Section: Calm emerald theme like confirmed cards */}
+      <div className="bg-gradient-to-br from-teal-50 to-teal-100 border-t-2 border-teal-500 flex-1">
         <div className="p-5">
-        <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] border-2 border-[hsl(var(--primary-200))] rounded-lg p-4 w-full text-center">
-            
-              
-              <div className="text-sm text-primary-800 mb-3">
-                <span className="font-medium">Payment received</span> • <span className="font-medium">Spot reserved</span>
-              </div>
-              
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center justify-center gap-2 text-sm text-primary-700">
-                  <Mail className="w-4 h-4" />
-                  <span>
-                  Just sorting out the final details with <strong>{supplier.name}</strong> - you'll get their contact info shortly
-                  </span>
-                </div>
-              </div>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-200 to-teal-300 rounded-xl flex items-center justify-center shadow-sm">
+              <CheckCircle className="w-5 h-5 text-teal-700" />
+            </div>
+            <Badge className="bg-teal-500 text-white">Spot Reserved</Badge>
+          </div>
+
+          {/* Calm reassuring message */}
+          <div className="bg-white/70 border border-teal-200 rounded-lg p-4 mb-5 flex items-start gap-3">
+            <Clock className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-teal-800 mb-1">All set with {supplier.name}!</p>
+              <p className="text-xs text-teal-700">
+                Just getting their contact information ready for you - details arriving via email soon.
+              </p>
             </div>
           </div>
 
           {/* Add-ons if present */}
           {supplierAddons.length > 0 && (
-            <div className="bg-white/60 rounded-lg p-4 mb-5">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center flex items-center justify-center gap-2">
-                <Gift className="w-4 h-4 text-[hsl(var(--primary-600))]" />
-                Secured Add-ons ({supplierAddons.length}):
+            <div className="bg-white/60 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-teal-800 mb-3 text-center flex items-center justify-center gap-2">
+                <Gift className="w-4 h-4 text-teal-600" />
+                Reserved Add-ons ({supplierAddons.length}):
               </h4>
               <div className="space-y-2">
                 {supplierAddons.slice(0, 3).map((addon) => (
                   <div key={addon.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{addon.name}</span>
-                    <span className="font-medium text-gray-900">£{addon.price}</span>
+                    <span className="font-medium text-teal-700">£{addon.price}</span>
                   </div>
                 ))}
                 {supplierAddons.length > 3 && (
@@ -125,32 +130,15 @@ export default function DepositPaidSupplierCard({
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="flex justify-between items-center text-sm">
                   <span className="font-semibold text-gray-700">Add-ons Total:</span>
-                  <span className="font-bold text-[hsl(var(--primary-600))]">
+                  <span className="font-bold text-teal-600">
                     £{supplierAddons.reduce((sum, addon) => sum + addon.price, 0)}
                   </span>
                 </div>
               </div>
             </div>
           )}
-
-        
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes pulse-border {
-          0%, 100% {
-            border-color: hsl(var(--primary-400));
-          }
-          50% {
-            border-color: hsl(var(--primary-600));
-          }
-        }
-        
-        .animate-pulse-border {
-          animation: pulse-border 2s ease-in-out infinite;
-        }
-      `}</style>
     </Card>
   )
 }

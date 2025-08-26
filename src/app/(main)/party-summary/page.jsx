@@ -30,9 +30,14 @@ const PartyServiceCard = ({ service, onAction }) => {
 
   const statusConfig = getStatusConfig(service.status)
   const hasAddons = service.addons && service.addons.length > 0
+  const hasPendingPayment = service.price - service.amountPaid > 0
 
   return (
-    <Card className="shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+    <Card className={`shadow-sm border hover:shadow-md transition-all duration-300 ${
+      hasPendingPayment 
+        ? 'border-orange-300 shadow-orange-100 animate-pulse bg-gradient-to-br from-orange-50 to-white' 
+        : 'border-gray-200'
+    }`}>
       <CardContent className="p-4">
         {/* Header - Service name and status */}
         <div className="flex items-start justify-between mb-3">
@@ -44,7 +49,9 @@ const PartyServiceCard = ({ service, onAction }) => {
               {service.vendorName} • {service.category}
             </div>
           </div>
-          <Badge className={`${statusConfig.badge} font-medium px-3 py-1 rounded-full flex-shrink-0`}>
+          <Badge className={`${statusConfig.badge} font-medium px-3 py-1 rounded-full flex-shrink-0 ${
+            hasPendingPayment ? 'animate-pulse' : ''
+          }`}>
             {statusConfig.label}
           </Badge>
         </div>
@@ -67,15 +74,29 @@ const PartyServiceCard = ({ service, onAction }) => {
             )}
           </div>
           
-          {service.amountPaid < service.price && (
+          {hasPendingPayment && (
             <div className="text-right">
               <div className="text-sm text-gray-500">Remaining</div>
-              <div className="text-lg font-semibold text-orange-600">
+              <div className={`text-lg font-semibold text-orange-600 ${
+                hasPendingPayment ? 'animate-pulse' : ''
+              }`}>
                 £{service.price - service.amountPaid}
               </div>
             </div>
           )}
         </div>
+
+        {/* Pending payment alert */}
+        {hasPendingPayment && (
+          <div className="mb-4 p-3 bg-orange-100 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-orange-600" />
+              <span className="text-sm font-medium text-orange-700">
+                Payment Required: £{service.price - service.amountPaid}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Actions - simplified */}
         <div className="flex gap-2">

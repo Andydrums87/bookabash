@@ -35,6 +35,7 @@ import PartyPhaseContent from '../components/PartyPhaseContent'
 import Sidebar from './components/Sidebar'
 import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
+import OutstandingPaymentBanner from "./components/OutstandingPaymentModal"
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
@@ -55,7 +56,7 @@ export default function DatabaseDashboard() {
   const [renderKey, setRenderKey] = useState(0)
   const [addedSupplierData, setAddedSupplierData] = useState(null)
   const [notification, setNotification] = useState(null)
-
+  const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('venue')
 // Add this state variable at the top with your other state declarations:
 const [isClient, setIsClient] = useState(false)
 
@@ -201,6 +202,21 @@ useEffect(() => {
     try {
       console.log('✅ Using Quick Add flow - show confirmation modal first')
       await handleNormalSupplierAddition(supplier, selectedPackage)
+      const supplierTypeMapping = {
+        'Venues': 'venue',
+        'Entertainment': 'entertainment', 
+        'Catering': 'catering',
+        'Cakes': 'cakes',
+        'Face Painting': 'facePainting',
+        'Activities': 'activities',
+        'Decorations': 'decorations',
+        'Photography': 'photography',
+        'Party Bags': 'partyBags',
+        'Bouncy Castle': 'bouncyCastle'
+      }
+      
+      const supplierType = supplierTypeMapping[supplier.category] || 'venue'
+      setActiveMobileSupplierType(supplierType)
     } catch (error) {
       console.error('💥 Error in supplier selection:', error)
       setEnquiryFeedback(`❌ Failed to process ${supplier.name}: ${error.message}`)
@@ -280,7 +296,17 @@ useEffect(() => {
   }
 
 
-
+  const handleMobileSupplierTabChange = (supplierType) => {
+    console.log('Mobile tab changed to:', supplierType)
+    setActiveMobileSupplierType(supplierType)
+    
+    setTimeout(() => {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      document.body.classList.remove('modal-open', 'overflow-hidden')
+    }, 50)
+  }
+  
   // Early return with specific error message if party ID is missing
   if (!loading && isSignedIn && !partyId) {
     console.error('❌ CRITICAL: User is signed in but no party ID found!')
@@ -526,90 +552,7 @@ useEffect(() => {
 
 
     useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
-  useEffect(() => {
-    if (!isClient) return
-  
-    const handleScrollToSupplier = () => {
-      try {
-        // Check URL parameters for scroll hints
-        const scrollToSupplier = searchParams.get('scrollTo')
-        const lastAction = searchParams.get('action') 
-        const fromPage = searchParams.get('from')
-        const source = searchParams.get('source')
-        
-        console.log('📍 Scroll management check:', { 
-          scrollToSupplier, 
-          lastAction, 
-          fromPage, 
-          source,
-          showWelcomePopup, // Check welcome popup state
-          showSupplierAddedModal // Check supplier added modal state
-        })
-  
-        // Don't scroll if welcome popup or supplier added modal is showing
-        if (showWelcomePopup || showSupplierAddedModal) {
-          console.log('⏸️ Modal is showing, delaying scroll')
-          return
-        }
-  
-        if (scrollToSupplier && lastAction === 'supplier-added') {
-          // Scroll to the specific supplier card that was just added
-          console.log(`🎯 Scrolling to newly added supplier: ${scrollToSupplier}`)
-          
-          const scrollDelay = source === 'a_la_carte' ? 1000 : 500 // Longer delay for à la carte
-          
-          setTimeout(() => {
-            const element = document.getElementById(`supplier-${scrollToSupplier}`)
-            if (element) {
-              element.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'nearest'
-              })
-              console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
-            } else {
-              console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
-              // List all elements with supplier- prefix for debugging
-              const supplierElements = document.querySelectorAll('[id^="supplier-"]')
-              console.log('📋 Available supplier elements:', Array.from(supplierElements).map(el => el.id))
-              
-              // Fallback: scroll to top to at least show the added supplier
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }
-          }, scrollDelay)
-  
-          // Clean up URL parameters after scrolling
-          setTimeout(() => {
-            const newSearchParams = new URLSearchParams(searchParams.toString())
-            newSearchParams.delete('scrollTo')
-            newSearchParams.delete('action')
-            if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
-            
-            const newURL = newSearchParams.toString() ? 
-              `/dashboard?${newSearchParams.toString()}` : 
-              '/dashboard'
-            
-            router.replace(newURL, { scroll: false })
-          }, scrollDelay + 1000)
-          
-        } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
-          // Coming back from supplier pages without adding - go to top
-          console.log('📍 Returning from supplier page without adding - scrolling to top')
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-        
-      } catch (error) {
-        console.error('❌ Smart scroll error:', error)
-        // Fallback to top
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-    }
-  
-    // Run scroll management after content loads
-    const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
-    
-    return () => clearTimeout(scrollTimeout)
-  }, [searchParams, router, showWelcomePopup, showSupplierAddedModal]) // ✅ Add modal dependencies
+
   
 
 useEffect(() => {
@@ -618,115 +561,99 @@ useEffect(() => {
 
 
 
-// ✅ SCROLL-TO-SUPPLIER FUNCTIONALITY - Same as LocalStorage Dashboard
 useEffect(() => {
   if (!isClient) return
 
-  const handleScrollToSupplier = () => {
+  const handleScrollAndNavigation = () => {
     try {
-      // Check URL parameters for scroll hints
       const scrollToSupplier = searchParams.get('scrollTo')
       const lastAction = searchParams.get('action') 
       const fromPage = searchParams.get('from')
       const source = searchParams.get('source')
       
-      console.log('📍 Scroll management check:', { 
+      console.log('🔍 Database Dashboard Navigation Effect:', { 
         scrollToSupplier, 
         lastAction, 
         fromPage, 
         source,
-        showWelcomePopup, // Check welcome popup state
-        showSupplierAddedModal // Check supplier added modal state
+        showWelcomePopup,
+        showSupplierAddedModal,
+        currentActiveMobileType: activeMobileSupplierType
       })
 
-      // Don't scroll if welcome popup or supplier added modal is showing
-      if (showWelcomePopup || showSupplierAddedModal) {
-        console.log('⏸️ Modal is showing, delaying scroll')
-        return
-      }
-
       if (scrollToSupplier && lastAction === 'supplier-added') {
-        // Scroll to the specific supplier card that was just added
-        console.log(`🎯 Scrolling to newly added supplier: ${scrollToSupplier}`)
-        
-        const scrollDelay = source === 'a_la_carte' ? 1000 : 500 // Longer delay for à la carte
-        
-        setTimeout(() => {
-          const element = document.getElementById(`supplier-${scrollToSupplier}`)
-          if (element) {
-            element.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'center',
-              inline: 'nearest'
-            })
-            console.log(`✅ Scrolled to supplier: ${scrollToSupplier}`)
-          } else {
-            console.log(`❌ Supplier element not found: supplier-${scrollToSupplier}`)
-            // List all elements with supplier- prefix for debugging
-            const supplierElements = document.querySelectorAll('[id^="supplier-"]')
-            console.log('📋 Available supplier elements:', Array.from(supplierElements).map(el => el.id))
-            
-            // Fallback: scroll to top to at least show the added supplier
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }
-        }, scrollDelay)
+        // Always set the mobile tab immediately, regardless of modal state
+        console.log('🎯 SETTING MOBILE TAB TO:', scrollToSupplier)
+        setActiveMobileSupplierType(scrollToSupplier)
 
-        // Clean up URL parameters after scrolling
-        setTimeout(() => {
-          const newSearchParams = new URLSearchParams(searchParams.toString())
-          newSearchParams.delete('scrollTo')
-          newSearchParams.delete('action')
-          if (fromPage && fromPage !== 'dashboard') newSearchParams.delete('from')
+        // Only handle scrolling if no modals are showing
+        if (!showWelcomePopup && !showSupplierAddedModal) {
+          console.log('📱 Processing scroll for newly added supplier:', scrollToSupplier)
           
-          const newURL = newSearchParams.toString() ? 
-            `/dashboard?${newSearchParams.toString()}` : 
-            '/dashboard'
+          const scrollDelay = source === 'a_la_carte' ? 1000 : 500
           
-          router.replace(newURL, { scroll: false })
-        }, scrollDelay + 1000)
+          setTimeout(() => {
+            // Try desktop scroll first
+            const element = document.getElementById(`supplier-${scrollToSupplier}`)
+            if (element && window.innerWidth >= 768) {
+              console.log('🖥️ Desktop scrolling to element:', element)
+              element.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+              })
+            } else {
+              // Mobile fallback - scroll to mobile content area
+              const mobileContent = document.getElementById('mobile-supplier-content')
+              if (mobileContent) {
+                console.log('📱 Mobile scrolling to content area')
+                mobileContent.scrollIntoView({ 
+                  behavior: 'smooth',
+                  block: 'start',
+                  inline: 'nearest'
+                })
+              } else {
+                console.log('📱 Mobile content not found, scrolling to top')
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+            }
+          }, scrollDelay)
+
+          // Clean up URL parameters after scrolling
+          setTimeout(() => {
+            const newSearchParams = new URLSearchParams(searchParams.toString())
+            newSearchParams.delete('scrollTo')
+            newSearchParams.delete('action')
+            if (fromPage && fromPage !== 'dashboard') {
+              newSearchParams.delete('from')
+            }
+            
+            const newURL = newSearchParams.toString() ? 
+              `/dashboard?${newSearchParams.toString()}` : 
+              '/dashboard'
+            
+            router.replace(newURL, { scroll: false })
+          }, scrollDelay + 1000)
+        } else {
+          console.log('⏸️ Modals showing, tab set but scroll delayed')
+        }
         
       } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
-        // Coming back from supplier pages without adding - go to top
-        console.log('📍 Returning from supplier page without adding - scrolling to top')
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        console.log('📍 Returning from supplier page without adding')
+        if (!showWelcomePopup && !showSupplierAddedModal) {
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       }
       
     } catch (error) {
-      console.error('❌ Smart scroll error:', error)
-      // Fallback to top
+      console.error('❌ Navigation effect error:', error)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
-  // Run scroll management after content loads
-  const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
-  
+  const scrollTimeout = setTimeout(handleScrollAndNavigation, 200)
   return () => clearTimeout(scrollTimeout)
-}, [searchParams, router, showWelcomePopup, showSupplierAddedModal]) // ✅ Add modal dependencies
-
-
-useEffect(() => {
-  if (!showWelcomePopup && !showSupplierAddedModal) {
-    // Check if we have pending scroll parameters
-    const scrollToSupplier = searchParams.get('scrollTo')
-    const lastAction = searchParams.get('action')
-    
-    if (scrollToSupplier && lastAction === 'supplier-added') {
-      console.log('🎉 Modals closed, now scrolling to added supplier:', scrollToSupplier)
-      
-      setTimeout(() => {
-        const element = document.getElementById(`supplier-${scrollToSupplier}`)
-        if (element) {
-          element.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-          })
-        }
-      }, 500)
-    }
-  }
-}, [showWelcomePopup, showSupplierAddedModal, searchParams])
+}, [searchParams, router, showWelcomePopup, showSupplierAddedModal, activeMobileSupplierType, isClient])
 
   const handleModalClose = () => {
     console.log('🚪 User clicked "Maybe Later" - closing modal, no supplier added')
@@ -806,6 +733,103 @@ useEffect(() => {
     
     return basePrice + addonsPrice;
   };
+
+
+  const getOutstandingSupplierData = () => {
+    console.log('🔍 DEBUG: Starting payment calculation...')
+    console.log('🔍 Total enquiries:', enquiries.length)
+    console.log('🔍 Available supplier types:', Object.keys(visibleSuppliers))
+    
+    // Step 1: Find all enquiries that are accepted but not paid
+    const unpaidEnquiries = enquiries.filter(enquiry => {
+      const isAccepted = enquiry.status === 'accepted'
+      const isUnpaid = !enquiry.payment_status || enquiry.payment_status === 'unpaid'
+      
+      console.log(`🔍 Enquiry ${enquiry.supplier_category}:`, {
+        status: enquiry.status,
+        payment_status: enquiry.payment_status,
+        isAccepted,
+        isUnpaid,
+        include: isAccepted && isUnpaid
+      })
+      
+      return isAccepted && isUnpaid
+    })
+    
+    console.log('🔍 Found unpaid enquiries:', unpaidEnquiries.length)
+    
+    if (unpaidEnquiries.length === 0) {
+      console.log('✅ All enquiries paid or no accepted enquiries, returning empty')
+      return { suppliers: [], totalCost: 0, totalDeposit: 0 }
+    }
+    
+    // Step 2: Map unpaid enquiries to their supplier data
+    const outstandingSuppliers = unpaidEnquiries
+      .map(enquiry => {
+        const supplierType = enquiry.supplier_category
+        const supplier = visibleSuppliers[supplierType]
+        
+        console.log(`🔍 Looking for supplier data for ${supplierType}:`, {
+          found: !!supplier,
+          name: supplier?.name,
+          price: supplier?.price || supplier?.totalPrice
+        })
+        
+        if (!supplier) {
+          console.log(`⚠️ No supplier found in visibleSuppliers for: ${supplierType}`)
+          return null
+        }
+        
+        return { enquiry, supplierType, supplier }
+      })
+      .filter(Boolean) // Remove entries where supplier wasn't found
+    
+    console.log('🔍 Mapped to suppliers:', outstandingSuppliers.length)
+    
+    // Step 3: Calculate payment amounts
+    const paymentData = outstandingSuppliers.map(({ enquiry, supplierType, supplier }) => {
+      // Get the supplier price
+      const supplierPrice = supplier.totalPrice || supplier.price || 0
+      
+      // Calculate deposit (30% with £50 minimum, or use your specific logic)
+      const supplierDepositAmount = Math.max(50, Math.round(supplierPrice * 0.3))
+      
+      console.log(`💰 Payment calculation for ${supplierType}:`, {
+        supplierName: supplier.name,
+        totalPrice: supplierPrice,
+        depositAmount: supplierDepositAmount
+      })
+      
+      return {
+        type: supplierType,
+        name: supplier.name,
+        totalAmount: supplierPrice,
+        depositAmount: supplierDepositAmount,
+        enquiryId: enquiry.id
+      }
+    })
+    
+    // Step 4: Calculate totals
+    const totalOutstandingCost = paymentData.reduce((sum, item) => sum + item.totalAmount, 0)
+    const totalDepositAmount = paymentData.reduce((sum, item) => sum + item.depositAmount, 0)
+    
+    console.log('💳 Final outstanding payment calculation:', {
+      suppliers: paymentData.map(s => s.type),
+      supplierCount: paymentData.length,
+      totalCost: totalOutstandingCost,
+      totalDeposit: totalDepositAmount
+    })
+    
+    return {
+      suppliers: paymentData,
+      totalCost: totalOutstandingCost,
+      totalDeposit: totalDepositAmount
+    }
+  }
+  
+  
+  const outstandingData = getOutstandingSupplierData()
+
   // Loading state
   if (loading || !themeLoaded || phaseLoading) {
     return (
@@ -846,6 +870,7 @@ useEffect(() => {
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
       
+      
       {notification && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 
@@ -871,11 +896,11 @@ useEffect(() => {
         }}
       />
       <EnquirySuccessBanner />
-      <EInvitesBanner 
+      {/* <EInvitesBanner 
         partyId={partyId}
         isBookingPending={currentPhase !== 'confirmed'} 
         onCreateInvites={handleCreateInvites} 
-      />
+      /> */}
       
       {/* Supplier Added Confirmation Modal */}
       <SupplierAddedConfirmationModal
@@ -905,15 +930,8 @@ useEffect(() => {
           isSignedIn={true}
         />
 
-        {allSuppliersConfirmed && !hasSeenPartyReadyModal && !isPaymentConfirmed && (
-          <PartyReadyModal
-            isOpen={true}
-            onClose={() => setHasSeenPartyReadyModal(true)}
-            totalCost={totalCost}
-            depositAmount={Math.max(150, totalCost * 0.3)}
-            timeLeftMinutes={120}
-          />
-        )}
+
+
 
         {/* ✅ UPDATED: Supplier Selection Modal with Restoration Support */}
         <SupplierSelectionModal
@@ -965,6 +983,8 @@ useEffect(() => {
               onPaymentReady={handlePaymentReady}
               paymentDetails={paymentDetails}
               handleCancelEnquiry={handleCancelEnquiry}
+              activeSupplierType={activeMobileSupplierType}
+              onSupplierTabChange={handleMobileSupplierTabChange}
             />
 
             <PartyPhaseContent
@@ -977,6 +997,8 @@ useEffect(() => {
               onCreateInvites={handleCreateInvites}
               partyDetails={partyDetails}
               hasCreatedInvites={partyData?.einvites?.status === 'completed'}
+              totalOutstandingCost={outstandingData.totalDeposit}
+              outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
             />
           </main>
 
@@ -991,6 +1013,8 @@ useEffect(() => {
             timeRemaining={24}
             onPaymentReady={handlePaymentReady}
             showPaymentCTA={true}
+     totalOutstandingCost={outstandingData.totalDeposit}
+outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
           />
         </div>
       </div>
@@ -1009,6 +1033,9 @@ useEffect(() => {
         partyDetails={partyDetails}
         onPaymentReady={handlePaymentReady}
         isPaymentConfirmed={isPaymentConfirmed}
+        hasOutstandingPayments={outstandingData.suppliers.length > 0}
+        outstandingSuppliers={outstandingData.suppliers}
+        totalDepositAmount={outstandingData.totalDeposit}
         ProgressWidget={
           <SnappysPresentParty
             suppliers={visibleSuppliers}
@@ -1017,6 +1044,8 @@ useEffect(() => {
             onPaymentReady={handlePaymentReady}
             showPaymentCTA={true}
             isPaymentComplete={isPaymentConfirmed}
+            totalOutstandingCost={outstandingData.totalDeposit} // Pass the deposit amount
+  outstandingSuppliers={outstandingData.suppliers.map(s => s.type)} // Pass supplier types
           />
         }
         CountdownWidget={

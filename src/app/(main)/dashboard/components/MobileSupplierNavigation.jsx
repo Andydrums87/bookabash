@@ -31,7 +31,8 @@ export default function MobileSupplierNavigation({
   // NEW: Props for handling tab changes and scrolling
   onSupplierTabChange,
   activeSupplierType, // NEW: Externally controlled active tab
-  showFirstTimeHelp = false
+  showFirstTimeHelp = false,
+
 }) {
   const tabsRef = useRef(null)
 
@@ -273,11 +274,15 @@ export default function MobileSupplierNavigation({
     null : 
     suppliers[activeSupplierTypeData?.type]
 
+    console.log('📱 MobileSupplierNavigation received activeSupplierType:', activeSupplierType)
+console.log('📱 Current activeTab calculated as:', activeTab)
+console.log('📱 supplierTypes array:', supplierTypes.map(st => st.type))
+
   return (
     <div className="w-full relative">
       
       {/* Sticky Tab Navigation */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6">
+      <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6">
         <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
             {/* Snappy's Navigation Help */}
             {!showFirstTimeHelp && (
@@ -471,15 +476,13 @@ export default function MobileSupplierNavigation({
         )}
       </div>
 
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      <style jsx global>{`
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: 120px; /* Increased from 80px */
+    }
+  }
+`}</style>
     </div>
   )
 }

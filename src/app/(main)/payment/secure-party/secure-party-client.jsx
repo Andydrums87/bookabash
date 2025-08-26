@@ -24,8 +24,8 @@ import {
   Users, 
   Shield, 
   Lock,
-  Gift,
   ArrowLeft,
+  CreditCard,
   Sparkles
 } from 'lucide-react'
 
@@ -33,15 +33,11 @@ import {
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
-
-
 // Initialize Stripe with proper configuration
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
   locale: 'en-GB',
 })
 
-// Payment Form Component
-// Updated PaymentForm component with working Apple/Google Pay
 function PaymentForm({ 
   partyDetails, 
   confirmedSuppliers, 
@@ -54,6 +50,7 @@ function PaymentForm({
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false) // NEW STATE
   const [paymentError, setPaymentError] = useState(null)
   const [paymentRequest, setPaymentRequest] = useState(null)
   const [canMakePayment, setCanMakePayment] = useState(false)
@@ -92,7 +89,7 @@ function PaymentForm({
         requestPayerEmail: true,
       })
 
-      // ✅ UNCOMMENTED: Check if Apple Pay / Google Pay is available
+      // Check if Apple Pay / Google Pay is available
       pr.canMakePayment().then(result => {
         console.log('🔍 Payment Request API availability check:', result)
         if (result) {
@@ -130,7 +127,7 @@ function PaymentForm({
               },
               suppliers: confirmedSuppliers,
               addons,
-              paymentType: 'payment_request' // Indicate this is from Apple/Google Pay
+              paymentType: 'payment_request'
             }),
           })
 
@@ -140,7 +137,7 @@ function PaymentForm({
             throw new Error(backendError)
           }
 
-          // ✅ FIXED: Use confirmPayment instead of confirmCardPayment for Payment Request API
+          // Use confirmPayment instead of confirmCardPayment for Payment Request API
           const { error, paymentIntent } = await stripe.confirmPayment({
             elements,
             clientSecret,
@@ -160,6 +157,12 @@ function PaymentForm({
           if (paymentIntent.status === 'succeeded') {
             console.log('✅ Payment Request API payment successful:', paymentIntent.id)
             ev.complete('success')
+            
+            // IMMEDIATELY show redirecting state
+            setIsProcessing(false)
+            setIsRedirecting(true)
+            
+            // Call the success handler which will do backend work and redirect
             onPaymentSuccess(paymentIntent)
           } else {
             ev.complete('fail')
@@ -171,7 +174,6 @@ function PaymentForm({
           ev.complete('fail')
           setPaymentError(error.message)
           onPaymentError(error)
-        } finally {
           setIsProcessing(false)
         }
       })
@@ -237,6 +239,12 @@ function PaymentForm({
 
       if (paymentIntent.status === 'succeeded') {
         console.log('✅ Card payment successful:', paymentIntent.id)
+        
+        // IMMEDIATELY show redirecting state
+        setIsProcessing(false)
+        setIsRedirecting(true)
+        
+        // Call the success handler which will do backend work and redirect
         onPaymentSuccess(paymentIntent)
       }
 
@@ -244,7 +252,6 @@ function PaymentForm({
       console.error('❌ Card payment error:', error)
       setPaymentError(error.message)
       onPaymentError(error)
-    } finally {
       setIsProcessing(false)
     }
   }
@@ -257,151 +264,155 @@ function PaymentForm({
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-    {/* Apple Pay / Google Pay Button */}
-    {canMakePayment && paymentRequest && !isProcessing && (
-      <div className="space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-gray-600 mb-3">Quick & Secure Payment</p>
-          <div className="bg-white border border-gray-200 rounded-xl p-4">
-            <PaymentRequestButtonElement 
+    <div className="space-y-6">
+      {/* Apple Pay / Google Pay Button */}
+      {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && (
+        <div className="space-y-4">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-3">Quick & Secure Payment</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <PaymentRequestButtonElement 
+                options={{
+                  paymentRequest,
+                  style: {
+                    paymentRequestButton: {
+                      type: 'default',
+                      theme: 'dark',
+                      height: '48px',
+                    },
+                  },
+                }}
+                onReady={() => {
+                  console.log('✅ Payment Request Button ready')
+                }}
+                onClick={(event) => {
+                  console.log('👆 Payment Request Button clicked')
+                }}
+              />
+            </div>
+          </div>
+          
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-3 text-gray-500">Or pay with card</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Payment Form */}
+      <form onSubmit={handleCardPayment} className="space-y-4">
+        {/* Billing Details */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Your full name"
+              value={billingDetails.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              required
+              disabled={isProcessing || isRedirecting}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Postcode
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm uppercase"
+              placeholder="SW1A 1AA"
+              value={billingDetails.postalCode}
+              onChange={(e) => handleInputChange('postalCode', e.target.value.toUpperCase())}
+              maxLength="8"
+              required
+              disabled={isProcessing || isRedirecting}
+            />
+          </div>
+        </div>
+
+        {/* Card Element */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Card Details
+          </label>
+          <div className="p-3 border border-gray-300 rounded-md bg-white">
+            <CardElement 
               options={{
-                paymentRequest,
                 style: {
-                  paymentRequestButton: {
-                    type: 'default',
-                    theme: 'dark',
-                    height: '48px',
+                  base: {
+                    fontSize: '16px',
+                    color: '#374151',
+                    '::placeholder': {
+                      color: '#9ca3af',
+                    },
+                    iconColor: '#6b7280',
+                  },
+                  invalid: {
+                    color: '#ef4444',
+                    iconColor: '#ef4444',
                   },
                 },
-              }}
-              onReady={() => {
-                console.log('✅ Payment Request Button ready')
-              }}
-              onClick={(event) => {
-                console.log('👆 Payment Request Button clicked')
+                hidePostalCode: true,
+                iconStyle: 'solid',
+                disabled: isProcessing || isRedirecting,
               }}
             />
           </div>
         </div>
-        
-        {/* Divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-3 text-gray-500">Or pay with card</span>
-          </div>
-        </div>
-      </div>
-    )}
 
-    {/* Card Payment Form */}
-    <form onSubmit={handleCardPayment} className="space-y-4">
-      {/* Billing Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name
-          </label>
-          <input
-            type="text"
-            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[hsl(var(--primary-500))] focus:border-transparent text-base"
-            placeholder="Your full name"
-            value={billingDetails.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            required
-            disabled={isProcessing}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Postcode
-          </label>
-          <input
-            type="text"
-            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent uppercase text-base"
-            placeholder="SW1A 1AA"
-            value={billingDetails.postalCode}
-            onChange={(e) => handleInputChange('postalCode', e.target.value.toUpperCase())}
-            maxLength="8"
-            required
-            disabled={isProcessing}
-          />
-        </div>
-      </div>
-
-      {/* Card Element */}
-      <div className="p-4 border border-gray-300 rounded-xl bg-white">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Details
-        </label>
-        <CardElement 
-          options={{
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#424770',
-                '::placeholder': {
-                  color: '#aab7c4',
-                },
-                iconColor: '#424770',
-              },
-              invalid: {
-                color: '#9e2146',
-                iconColor: '#9e2146',
-              },
-            },
-            hidePostalCode: true,
-            iconStyle: 'solid',
-            disabled: isProcessing,
-          }}
-        />
-      </div>
-
-      {/* Payment Error */}
-      {paymentError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-red-700 text-sm">{paymentError}</p>
-        </div>
-      )}
-
-      {/* Payment Button */}
-      <Button 
-        type="submit"
-        disabled={!stripe || isProcessing}
-        className="w-full bg-primary-600 hover:bg-[hsl(var(--primary-700))] text-white py-4 text-base md:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
-        style={{
-          background: isProcessing ? undefined : `hsl(var(--primary-600))`,
-        }}
-      >
-        {isProcessing ? (
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>Processing Payment...</span>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center space-x-2">
-            <Lock className="w-5 h-5" />
-            <span>Pay £{depositAmount} Securely</span>
+        {/* Payment Error */}
+        {paymentError && !isRedirecting && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{paymentError}</p>
           </div>
         )}
-      </Button>
-    </form>
 
-    {/* Security notices */}
-    <div className="space-y-2">
-      <p className="text-xs text-gray-500 text-center">
-        Secure payment powered by Stripe. Your card details are encrypted and never stored.
-      </p>
-      {canMakePayment && (
+        {/* Payment Button with Enhanced States */}
+        <button 
+          type="submit"
+          disabled={!stripe || isProcessing || isRedirecting}
+          className="cursor-pointer w-full bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isRedirecting ? (
+            <div className="flex items-center justify-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-400" />
+              <span>Redirecting to confirmation...</span>
+            </div>
+          ) : isProcessing ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Processing Payment...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center space-x-2">
+              <Lock className="w-4 h-4" />
+              <span>Pay £{depositAmount} Securely</span>
+            </div>
+          )}
+        </button>
+      </form>
+
+      {/* Security notices */}
+      <div className="space-y-2">
         <p className="text-xs text-gray-500 text-center">
-          Apple Pay and Google Pay use your device's secure authentication.
+          Secure payment powered by Stripe. Your card details are encrypted and never stored.
         </p>
-      )}
+        {canMakePayment && (
+          <p className="text-xs text-gray-500 text-center">
+            Apple Pay and Google Pay use your device's secure authentication.
+          </p>
+        )}
+      </div>
     </div>
-  </div>
   )
 }
 
@@ -417,125 +428,8 @@ export default function PaymentPageContent() {
   const [user, setUser] = useState(null)
   const [partyId, setPartyId] = useState(null)
 
- // Party plan hook for current data
-const { partyPlan, addons } = usePartyPlan()
-
-useEffect(() => {
-  const loadPaymentData = async () => {
-    try {
-      // Get current user
-      const userResult = await partyDatabaseBackend.getCurrentUser()
-      if (!userResult.success) {
-        router.push('/auth/signin?redirect=/payment')
-        return
-      }
-      setUser(userResult.user)
-
-      // Get current party from database
-      const partyResult = await partyDatabaseBackend.getCurrentParty()
-      if (!partyResult.success || !partyResult.party) {
-        router.push('/dashboard')
-        return
-      }
-
-      setPartyId(partyResult.party.id)
-      setPartyDetails({
-        id: partyResult.party.id,
-        childName: partyResult.party.child_name,
-        theme: partyResult.party.theme,
-        date: partyResult.party.party_date,
-        childAge: partyResult.party.child_age,
-        location: partyResult.party.location,
-        guestCount: partyResult.party.guest_count,
-        email: userResult.user.email,
-        parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
-      })
-
-      // ✅ SIMPLE: Get accepted enquiries for payment status check
-      const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
-      
-      // ✅ SIMPLE: Get supplier data from party plan (which has all the real data)
-      const partyPlan = partyResult.party.party_plan || {}
-      
-      if (enquiriesResult.success) {
-        // Get categories that are accepted but unpaid
-        const unpaidAcceptedEnquiries = enquiriesResult.enquiries.filter(enquiry => 
-          enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid'
-        )
-        
-        console.log('💳 Unpaid accepted enquiries:', unpaidAcceptedEnquiries)
-        console.log('🎪 Party plan:', partyPlan)
-        
-        // ✅ MAP: Use party plan data for supplier details
-        const confirmed = unpaidAcceptedEnquiries.map(enquiry => {
-          const supplierCategory = enquiry.supplier_category
-          const supplierFromPlan = partyPlan[supplierCategory]
-          
-          if (!supplierFromPlan) {
-            console.warn(`⚠️ No supplier found in party plan for category: ${supplierCategory}`)
-            return null
-          }
-          
-          return {
-            id: supplierFromPlan.id,
-            name: supplierFromPlan.name,
-            image: supplierFromPlan.image || '/placeholder.jpg',
-            rating: supplierFromPlan.rating || 4.5,
-            description: supplierFromPlan.description || 'Professional service provider',
-            category: supplierCategory,
-            price: enquiry.quoted_price || supplierFromPlan.price || 0,
-            enquiry_id: enquiry.id,
-            // ✅ BONUS: Include package details if available
-            packageData: supplierFromPlan.packageData,
-            selectedAddons: supplierFromPlan.selectedAddons || [],
-            hasAddons: (supplierFromPlan.selectedAddons || []).length > 0
-          }
-        }).filter(Boolean) // Remove any null entries
-        
-        console.log('✅ Final confirmed suppliers for payment:', confirmed)
-        setConfirmedSuppliers(confirmed)
-      }
-
-    } catch (error) {
-      console.error('Error loading payment data:', error)
-      router.push('/dashboard')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  loadPaymentData()
-}, [router])
-
-// Calculate cost only for unpaid confirmed suppliers
-const totalCost = confirmedSuppliers.reduce((sum, supplier) => sum + supplier.price, 0)
-const depositAmount = Math.max(50, totalCost * 0.2) // 20% deposit or £50 minimum
-const remainingBalance = totalCost - depositAmount
-
-  // Stripe Elements options
-  const stripeOptions = {
-    appearance: {
-      theme: 'stripe',
-      variables: {
-        colorPrimary: '#10b981',
-        colorBackground: '#ffffff',
-        colorText: '#374151',
-        colorDanger: '#ef4444',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        spacingUnit: '4px',
-        borderRadius: '8px',
-      },
-      rules: {
-        '.Input': {
-          padding: '12px',
-          fontSize: '16px',
-        },
-        '.Input:focus': {
-          boxShadow: '0 0 0 2px #10b981',
-        },
-      },
-    },
-  }
+  // Party plan hook for current data
+  const { partyPlan, addons } = usePartyPlan()
 
   // Load party and user data
   useEffect(() => {
@@ -552,14 +446,13 @@ const remainingBalance = totalCost - depositAmount
         // Get current party from database
         const partyResult = await partyDatabaseBackend.getCurrentParty()
         if (!partyResult.success || !partyResult.party) {
-          // No database party - redirect back to dashboard
           router.push('/dashboard')
           return
         }
 
         setPartyId(partyResult.party.id)
         setPartyDetails({
-        id: partyResult.party.id, // ADD THIS LINE
+          id: partyResult.party.id,
           childName: partyResult.party.child_name,
           theme: partyResult.party.theme,
           date: partyResult.party.party_date,
@@ -570,20 +463,48 @@ const remainingBalance = totalCost - depositAmount
           parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
         })
 
-        // Get confirmed suppliers from enquiries
+        // Get accepted enquiries for payment status check
         const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
+        
+        // Get supplier data from party plan (which has all the real data)
+        const partyPlan = partyResult.party.party_plan || {}
+        
         if (enquiriesResult.success) {
-        // NEW: Only get unpaid confirmed suppliers
-const confirmed = enquiriesResult.enquiries
-.filter(enquiry => enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid')
-.map(enquiry => ({
-  id: enquiry.supplier_id,
-  category: enquiry.supplier_category,
-  price: enquiry.quoted_price || 0,
-  name: `${enquiry.supplier_category} Supplier`,
-  rating: 4.8,
-  image: '/placeholder-supplier.jpg'
-}))
+          // Get categories that are accepted but unpaid
+          const unpaidAcceptedEnquiries = enquiriesResult.enquiries.filter(enquiry => 
+            enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid'
+          )
+          
+          console.log('💳 Unpaid accepted enquiries:', unpaidAcceptedEnquiries)
+          console.log('🎪 Party plan:', partyPlan)
+          
+          // Use party plan data for supplier details
+          const confirmed = unpaidAcceptedEnquiries.map(enquiry => {
+            const supplierCategory = enquiry.supplier_category
+            const supplierFromPlan = partyPlan[supplierCategory]
+            
+            if (!supplierFromPlan) {
+              console.warn(`⚠️ No supplier found in party plan for category: ${supplierCategory}`)
+              return null
+            }
+            
+            return {
+              id: supplierFromPlan.id,
+              name: supplierFromPlan.name,
+              image: supplierFromPlan.image || '/placeholder.jpg',
+              rating: supplierFromPlan.rating || 4.5,
+              description: supplierFromPlan.description || 'Professional service provider',
+              category: supplierCategory,
+              price: enquiry.quoted_price || supplierFromPlan.price || 0,
+              enquiry_id: enquiry.id,
+              // Include package details if available
+              packageData: supplierFromPlan.packageData,
+              selectedAddons: supplierFromPlan.selectedAddons || [],
+              hasAddons: (supplierFromPlan.selectedAddons || []).length > 0
+            }
+          }).filter(Boolean) // Remove any null entries
+          
+          console.log('✅ Final confirmed suppliers for payment:', confirmed)
           setConfirmedSuppliers(confirmed)
         }
 
@@ -598,11 +519,44 @@ const confirmed = enquiriesResult.enquiries
     loadPaymentData()
   }, [router])
 
+  // Calculate cost only for unpaid confirmed suppliers
+  const totalCost = confirmedSuppliers.reduce((sum, supplier) => sum + supplier.price, 0)
+  const depositAmount = Math.max(50, totalCost * 0.2) // 20% deposit or £50 minimum
+  const remainingBalance = totalCost - depositAmount
+
+  // Stripe Elements options
+  const stripeOptions = {
+    appearance: {
+      theme: 'stripe',
+      variables: {
+        colorPrimary: '#374151',
+        colorBackground: '#ffffff',
+        colorText: '#374151',
+        colorDanger: '#ef4444',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        spacingUnit: '4px',
+        borderRadius: '6px',
+      },
+      rules: {
+        '.Input': {
+          padding: '12px',
+          fontSize: '16px',
+        },
+        '.Input:focus': {
+          boxShadow: '0 0 0 2px #3b82f6',
+        },
+      },
+    },
+  }
+
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
       console.log('Payment successful:', paymentIntent.id)
       
-      // 1. UPDATE: Record the payment in your database (you already have this)
+      // Note: setIsRedirecting(true) is now called in PaymentForm immediately after payment success
+      // This ensures instant feedback to the user
+      
+      // Record the payment in your database
       const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
         payment_status: 'deposit_paid',
         payment_intent_id: paymentIntent.id,
@@ -614,7 +568,7 @@ const confirmed = enquiriesResult.enquiries
         console.error('Failed to update payment status:', updateResult.error)
       }
       
-      // 2. NEW: Update enquiry payment statuses
+      // Update enquiry payment statuses
       const supplierCategories = confirmedSuppliers.map(s => s.category)
       const enquiryUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(partyId, supplierCategories)
       
@@ -629,9 +583,10 @@ const confirmed = enquiriesResult.enquiries
       
     } catch (error) {
       console.error('Error handling payment success:', error)
+      // Reset states on error
+      setIsRedirecting(false)
     }
   }
-
   const handlePaymentError = (error) => {
     console.error('Payment failed:', error)
     // Handle payment failure (show error, allow retry, etc.)
@@ -645,8 +600,8 @@ const confirmed = enquiriesResult.enquiries
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading payment details...</p>
+          <div className="animate-spin w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading payment details...</p>
         </div>
       </div>
     )
@@ -658,7 +613,7 @@ const confirmed = enquiriesResult.enquiries
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">No Party Found</h1>
           <p className="text-gray-600 mb-6">We couldn't find your party details.</p>
-          <Button onClick={() => router.push('/dashboard')}>
+          <Button onClick={() => router.push('/dashboard')} className="bg-gray-900 hover:bg-gray-800 text-white">
             Return to Dashboard
           </Button>
         </div>
@@ -667,112 +622,107 @@ const confirmed = enquiriesResult.enquiries
   }
 
   return (
-    <div className="min-h-screen  bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] py-10 md:py-8">
-    <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start  sm:items-center mb-6 md:mb-8 space-y-4 sm:space-y-0">
-        
-        <div>
-          <h1 className="text-5xl md:text-5xl font-bold text-gray-900">Secure Your Booking</h1>
-          <p className="text-gray-600 text-sm md:text-base mt-5">Complete your payment to guarantee your party date</p>
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex items-center space-x-4">
+            <button onClick={handleGoBack} className="text-gray-400 hover:text-gray-600">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Secure Your Booking</h1>
+              <p className="text-gray-600 text-sm mt-1">Complete your payment to guarantee your party date</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-        {/* Left Column - Party Summary */}
-        <div className="lg:col-span-2 space-y-4 md:space-y-6">
-          {/* Celebration Header */}
-          <Card className="border-[hsl(var(--primary-200))] bg-primary-400">
-            <CardContent className="p-4 md:p-6 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary-100 rounded-full mb-3 md:mb-4">
-                <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary-500" />
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column - Order Summary */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Status Banner */}
+            <div className="bg-primary-50 border border-[hsl(var(--primary-200))] rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-primary-800">Your suppliers are ready</h3>
+                  <p className="text-sm text-primary-600">Complete payment to secure {partyDetails.childName}'s {partyDetails.theme} party</p>
+                </div>
               </div>
-              <h2 className="text-xl md:text-2xl font-bold text-white mb-2">
-                🎉 All Suppliers Confirmed!
-              </h2>
-              <p className="text-white text-sm md:text-base">
-                {partyDetails.childName}'s {partyDetails.theme} party is ready to go
-              </p>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Party Details */}
-          <Card>
-            <CardContent className="p-4 md:p-6 bg-primary-400 rounded-xl text-white">
-              <h3 className="text-lg font-semibold text-white mb-4">Party Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-primary-900" />
+            {/* Party Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Party Details</h2>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center space-x-2 text-gray-600">
+                  <Calendar className="w-4 h-4" />
                   <span>{partyDetails.date}</span>
                 </div>
-                <div className="flex items-center space-x-2 ">
-                  <Users className="w-4 h-4 text-primary-900" />
+                <div className="flex items-center space-x-2 text-gray-600">
+                  <Users className="w-4 h-4" />
                   <span>Age {partyDetails.childAge}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-primary-900" />
+                <div className="flex items-center space-x-2 text-gray-600">
+                  <MapPin className="w-4 h-4" />
                   <span>{partyDetails.location}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-primary-900" />
+                <div className="flex items-center space-x-2 text-gray-600">
+                  <Users className="w-4 h-4" />
                   <span>{partyDetails.guestCount || '10-15'} guests</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Confirmed Suppliers */}
-          <Card>
-            <CardContent className="p-4 md:p-6 bg-primary-400 rounded-xl">
-              <h3 className="text-lg font-semibold text-white mb-4  ">
-                Your Confirmed Party Team
-              </h3>
-              <div className="space-y-3 md:space-y-4">
+            {/* Available Services */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Selected Services</h2>
+              <div className="space-y-4">
                 {confirmedSuppliers.map((supplier) => (
-                  <div key={supplier.id} className="flex items-center space-x-3 md:space-x-4 p-3 md:p-4 bg-gray-50 rounded-xl">
-                    <img 
-                      src={supplier.image || "/placeholder.png"} 
-                      alt={supplier.name}
-                      className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-semibold text-gray-900 text-sm md:text-base truncate">{supplier.name}</h4>
-                        <Badge className="bg-primary-100 text-primary-800 border-[hsl(var(--primary-200))] text-xs">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Confirmed
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 md:space-x-3 text-xs md:text-sm text-gray-500">
+                  <div key={supplier.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <img 
+                        src={supplier.image || "/placeholder.jpg"} 
+                        alt={supplier.name}
+                        className="w-12 h-12 rounded-lg object-cover bg-gray-200"
+                      />
+                      <div>
+                        <h3 className="font-medium text-gray-900">{supplier.name}</h3>
+                        <div className="flex items-center space-x-3 text-sm text-gray-500">
                           <div className="flex items-center space-x-1">
-                            <Star className="w-3 h-3 fill-current text-yellow-400" />
+                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                             <span>{supplier.rating}</span>
                           </div>
                           <span>•</span>
                           <span className="capitalize">{supplier.category}</span>
                         </div>
-                        <span className="font-semibold text-gray-900 text-sm md:text-base">£{supplier.price}</span>
                       </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">£{supplier.price}</div>
+                      <div className="text-xs text-blue-600 font-medium">Ready to book</div>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
 
-        {/* Right Column - Payment */}
-        <div className="space-y-4 md:space-y-6">
-          {/* Cost Summary */}
-          <Card className="lg:sticky lg:top-8">
-            <CardContent className="p-4 md:p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Payment Summary
-              </h3>
+          {/* Right Column - Payment */}
+          <div className="space-y-6">
+            
+            {/* Payment Summary */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Payment Summary</h2>
               
-              {/* Cost breakdown */}
-              <div className="space-y-2 md:space-y-3 mb-4">
+              {/* Line items */}
+              <div className="space-y-2 mb-4">
                 {confirmedSuppliers.map((supplier) => (
                   <div key={supplier.id} className="flex justify-between text-sm">
                     <span className="text-gray-600 capitalize">{supplier.category}</span>
@@ -788,36 +738,60 @@ const confirmed = enquiriesResult.enquiries
                 ))}
               </div>
 
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total Cost</span>
+              <div className="border-t border-gray-200 pt-4 mb-6">
+                <div className="flex justify-between text-base font-medium text-gray-900 mb-3">
+                  <span>Total</span>
                   <span>£{totalCost}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600 mt-2">
+                <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>Deposit required today</span>
                   <span>£{depositAmount}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Remaining balance</span>
+                  <span>Remaining balance (due on party day)</span>
                   <span>£{remainingBalance}</span>
                 </div>
               </div>
 
-              {/* Security notice */}
-              <div className="bg-primary-50 border border-[hsl(var(--primary-200))] rounded-xl p-4 mb-6">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Shield className="w-5 h-5 text-primary-600" />
-                  <span className="font-medium text-primary-900">Booking Protection</span>
+              {/* Security Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-medium text-blue-900 mb-1">Booking Protection</h3>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• Full refund if suppliers cancel</li>
+                      <li>• 48-hour booking guarantee</li>
+                      <li>• Customer support included</li>
+                    </ul>
+                  </div>
                 </div>
-                <ul className="text-sm text-primary-800 space-y-1">
-                  <li>• Full refund if suppliers cancel</li>
-                  <li>• 48-hour booking guarantee</li>
-                  <li>• Customer support included</li>
-                </ul>
               </div>
 
               {/* Stripe Payment Form */}
-              <Elements stripe={stripePromise} options={stripeOptions}>
+              <Elements stripe={stripePromise} options={{
+                appearance: {
+                  theme: 'stripe',
+                  variables: {
+                    colorPrimary: '#374151',
+                    colorBackground: '#ffffff',
+                    colorText: '#374151',
+                    colorDanger: '#ef4444',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    spacingUnit: '4px',
+                    borderRadius: '6px',
+                  },
+                  rules: {
+                    '.Input': {
+                      padding: '12px',
+                      fontSize: '16px',
+                    },
+                    '.Input:focus': {
+                      boxShadow: '0 0 0 2px #3b82f6',
+                    },
+                  },
+                },
+              }}>
                 <PaymentForm
                   partyDetails={partyDetails}
                   confirmedSuppliers={confirmedSuppliers}
@@ -832,11 +806,10 @@ const confirmed = enquiriesResult.enquiries
               <p className="text-xs text-gray-500 text-center mt-3">
                 Remaining balance due on party day.
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
   )
 }

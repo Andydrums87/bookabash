@@ -27,12 +27,12 @@ export default function SnappyEnquiryLoader({
       message: `Securing all the details for ${childName}'s special day...`
     },
     {
-      title: "Sending Enquiries! 📧",
-      message: `Snappy's contacting ${supplierCount} fantastic suppliers right now!`
+      title: "Booking Magic! ✨",
+      message: `Snappy's securing ${supplierCount} amazing suppliers right now!`
     },
     {
-      title: "All Done! ✨",
-      message: `${childName}'s party enquiries are on their way!`
+      title: "Final Step! 🚀",
+      message: `Taking you to payment to complete ${childName}'s amazing party!`
     }
   ]
 
@@ -175,26 +175,6 @@ export default function SnappyEnquiryLoader({
               </p>
             </div>
           )}
-
-          {/* Success state - Only show when completed (step 3) */}
-          {/* {currentStep === 3 && (
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] rounded-xl p-6 border-2 border-[hsl(var(--primary-600))]">
-                <div className="flex w items-center justify-center space-x-2 mb-3">
-                
-                  <span className="font-bold w-full text-white text-lg">
-                    {supplierCount} Suppliers Contacted!
-                  </span>
-      
-                </div>
-                
-                <p className="text-white text-sm mb-3">
-                  Your amazing suppliers will get back to you within 24 hours with quotes and availability!
-                </p>
-         
-              </div>
-            </div>
-          )} */}
 
           {/* Confetti overlay */}
           {showConfetti && (

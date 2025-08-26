@@ -19,6 +19,8 @@ export default function Sidebar({
   timeRemaining,
   onPaymentReady,
   showPaymentCTA,
+  totalOutstandingCost,
+  outstandingSuppliers
 }) {
 
   const router = useRouter()
@@ -41,6 +43,8 @@ export default function Sidebar({
         onPaymentReady={onPaymentReady}
         showPaymentCTA={shouldShowPaymentCTA}  // Based on actual enquiry states
         isPaymentComplete={actuallyPaymentComplete}  // Based on actual enquiry states
+        totalOutstandingCost={totalOutstandingCost} // Add this line
+        outstandingSuppliers={outstandingSuppliers} // Add this line
       />
       
       {!isPaymentConfirmed && budgetControlProps && (

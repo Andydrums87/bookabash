@@ -159,17 +159,17 @@ const MobileBookingBar = ({
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
       
-      console.log(`🔍 MOBILE: Checking time slot availability for ${dateString} (${dayName}) - ${timeSlot}`)
+  
       
       // Check working hours
       const workingDay = migratedSupplier.workingHours?.[dayName]
       if (!workingDay?.active) {
-        console.log(`❌ MOBILE: Day ${dayName} not active`)
+
         return false
       }
       
       if (!workingDay.timeSlots?.[timeSlot]?.available) {
-        console.log(`❌ MOBILE: Time slot ${timeSlot} not available in working hours`)
+
         return false
       }
       
@@ -178,22 +178,22 @@ const MobileBookingBar = ({
         const udDate = getDateStringForComparison(ud.date || ud)
         const matches = udDate === dateString
         if (matches) {
-          console.log(`🔍 MOBILE: Found matching unavailable date ${udDate} === ${dateString}`)
+   
         }
         return matches
       })
       
       if (unavailableDate) {
-        console.log(`🔍 MOBILE: Found unavailable date entry:`, unavailableDate)
+       
         if (typeof unavailableDate === 'string') {
-          console.log(`❌ MOBILE: Legacy format - entire day unavailable`)
+
           return false
         }
         if (unavailableDate.timeSlots?.includes(timeSlot)) {
-          console.log(`❌ MOBILE: Time slot ${timeSlot} is blocked:`, unavailableDate.timeSlots)
+
           return false
         }
-        console.log(`✅ MOBILE: Time slot ${timeSlot} not blocked`)
+        
       }
       
       // FIXED: Check busy dates with consistent comparison
@@ -201,25 +201,25 @@ const MobileBookingBar = ({
         const bdDate = getDateStringForComparison(bd.date || bd)
         const matches = bdDate === dateString
         if (matches) {
-          console.log(`🔍 MOBILE: Found matching busy date ${bdDate} === ${dateString}`)
+        
         }
         return matches
       })
       
       if (busyDate) {
-        console.log(`🔍 MOBILE: Found busy date entry:`, busyDate)
+  
         if (typeof busyDate === 'string') {
-          console.log(`❌ MOBILE: Legacy format - entire day busy`)
+
           return false
         }
         if (busyDate.timeSlots?.includes(timeSlot)) {
-          console.log(`❌ MOBILE: Time slot ${timeSlot} is busy:`, busyDate.timeSlots)
+          
           return false
         }
-        console.log(`✅ MOBILE: Time slot ${timeSlot} not busy`)
+
       }
       
-      console.log(`✅ MOBILE: Time slot ${timeSlot} is available for ${dateString}`)
+   
       return true
     } catch (error) {
       console.error('❌ MOBILE: Error checking time slot availability:', error)
@@ -271,26 +271,26 @@ const MobileBookingBar = ({
     if (isCakeSupplier && selectedPackage && openCakeModal) {
       const shouldShowModal = isCustomizablePackage(selectedPackage)
       
-      console.log('🎂 Mobile: Should show modal?', shouldShowModal)
+
       
       if (shouldShowModal) {
-        console.log('🎂 Mobile: Opening cake modal with package:', selectedPackage.name)
+    
         setIsModalOpen(false)
         openCakeModal(selectedPackage)
         return
       } else {
-        console.log('🎂 Mobile: Package marked as non-customizable, proceeding normally')
+
       }
     } else if (isCakeSupplier && !openCakeModal) {
       console.warn('🎂 Mobile: isCakeSupplier is true but openCakeModal function not provided')
     }
 
-    console.log('➡️ Mobile: Proceeding with regular add to plan')
+
     onAddToPlan()
   }
 
   const handleApprove = () => {
-    console.log('🐊 MOBILE APPROVE: Starting approval process')
+
     
     if (!selectedPackage) {
       console.error('❌ MOBILE APPROVE: No package selected')
@@ -401,19 +401,19 @@ const MobileBookingBar = ({
         }
       }
       
-      console.log('💾 MOBILE APPROVE: Setting comprehensive replacement context:', updatedContext)
+
       sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
       sessionStorage.setItem('shouldRestoreReplacementModal', 'true')
       sessionStorage.setItem('modalShowUpgrade', 'true')
       
-      console.log('🚀 MOBILE APPROVE: All flags set, navigating to dashboard')
+
       
       setTimeout(() => {
         if (onReturnToReplacement) {
-          console.log('🚀 MOBILE APPROVE: Using onReturnToReplacement callback')
+
           onReturnToReplacement()
         } else {
-          console.log('🚀 MOBILE APPROVE: Using window.location.href fallback')
+  
           window.location.href = '/dashboard'
         }
       }, 200)
@@ -425,7 +425,7 @@ const MobileBookingBar = ({
   }
   
   const handleBackToReplacement = () => {
-    console.log('🚀 Mobile: Package approved, forcing page reload to ensure restoration')
+
     window.location.href = '/dashboard'
   }
 
@@ -510,7 +510,7 @@ const MobileBookingBar = ({
           
           if (!partyTimeSlotToCheck && parsed.time) {
             const timeStr = parsed.time.toLowerCase()
-            console.log('🔍 MOBILE: Mapping party time to slot:', parsed.time)
+       
             
             if (timeStr.includes('am') || 
                 timeStr.includes('9') || timeStr.includes('10') || 
@@ -522,7 +522,7 @@ const MobileBookingBar = ({
               partyTimeSlotToCheck = 'afternoon'
             }
             
-            console.log('🔍 MOBILE: Mapped party time slot:', partyTimeSlotToCheck)
+          
           }
         }
       } catch (error) {
@@ -532,7 +532,7 @@ const MobileBookingBar = ({
     
     if (partyTimeSlotToCheck) {
       const isSlotAvailable = isTimeSlotAvailable(partyDate, partyTimeSlotToCheck)
-      console.log(`🔍 MOBILE: Party date ${partyDate.toDateString()} ${partyTimeSlotToCheck} availability:`, isSlotAvailable)
+
       return isSlotAvailable ? 'available' : 'unavailable'
     }
     
@@ -851,22 +851,42 @@ const MobileBookingBar = ({
               </button>
             </div>
             <button 
-              onClick={() => buttonState.requiresDate ? setIsModalOpen(true) : handleMainButtonClick()}
-              className={`w-full font-semibold py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 ${buttonState.className}`}
-            >
-              {buttonState.requiresDate ? (
-                <>
-                  {buttonState.text}
-                </>
-              ) : (
-                <>
-                  <Plus className="w-5 h-5" />
-                  {typeof buttonState.text === 'string' ? buttonState.text : 'Add to Plan'}
-                  {selectedDate && ` (${getSelectedDateDisplay()}${getSelectedTimeSlotDisplay()})`}
-                  {isFromDashboard && partyDate && ` (${partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}${partyTimeSlot ? ` ${TIME_SLOTS[partyTimeSlot]?.label}` : ''})`}
-                </>
-              )}
-            </button>
+  onClick={() => buttonState.requiresDate ? setIsModalOpen(true) : handleMainButtonClick()}
+  className={`w-full font-semibold py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 ${buttonState.className}`}
+>
+  {buttonState.requiresDate ? (
+    <>
+      {buttonState.text}
+    </>
+  ) : (
+    <>
+      <Plus className="w-5 h-5" />
+      {(() => {
+        // Get the base button text without any date info
+        let baseText = typeof buttonState.text === 'string' ? buttonState.text : 'Add to Plan'
+        
+        // Remove any existing date info from the button state text
+        // This handles cases where the button state already includes dates
+        baseText = baseText.replace(/\s*\([^)]*\)\s*/g, '').trim()
+        
+        // Now add our own date display logic
+        let dateDisplay = ''
+        
+        if (!isFromDashboard && selectedDate) {
+          // For manually selected dates
+          dateDisplay = ` (${getSelectedDateDisplay()}${getSelectedTimeSlotDisplay()})`
+        } else if (isFromDashboard && partyDate) {
+          // For party dates from dashboard
+          const partyDateDisplay = partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          const timeSlotDisplay = partyTimeSlot ? ` ${TIME_SLOTS[partyTimeSlot]?.label}` : ''
+          dateDisplay = ` (${partyDateDisplay}${timeSlotDisplay})`
+        }
+        
+        return baseText + dateDisplay
+      })()}
+    </>
+  )}
+</button>
           </div>
         </div>
       )}
