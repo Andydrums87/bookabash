@@ -1378,7 +1378,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         .select('id, status')
         .eq('party_id', partyId)
         .eq('supplier_category', supplierType)
-        .in('status', ['pending', 'declined']) // ✅ UPDATED: Handle both pending and declined
+        .in('status', ['pending', 'declined', 'accepted']) // ← Add 'accepted'
         .single();
       
       if (findError && findError.code !== 'PGRST116') {

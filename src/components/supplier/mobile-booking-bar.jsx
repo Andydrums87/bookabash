@@ -827,15 +827,10 @@ const MobileBookingBar = ({
                   {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
                   {selectedDate && (
                     <span className="ml-2 text-primary-500 font-medium">
-                      •  {getSelectedDateDisplay()}{getSelectedTimeSlotDisplay()}
+                     {getSelectedDateDisplay()}
                     </span>
                   )}
-                  {isFromDashboard && partyDate && (
-                    <span className="ml-2 text-primary-500 font-medium">
-                      • {partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {partyTimeSlot && ` (${TIME_SLOTS[partyTimeSlot]?.label})`}
-                    </span>
-                  )}
+             
                 </p>
               </div>
               <button 

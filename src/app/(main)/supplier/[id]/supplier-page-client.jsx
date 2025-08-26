@@ -48,42 +48,7 @@ import { useSupplierEnquiries } from "../hooks/useSupplierEnquiries"
 import { useReplacementMode } from "../hooks/useReplacementMode"
 import { useSupplierNotifications } from "../hooks/useSupplierNotifications"
 
-const SelectedDateBanner = ({ selectedDate, currentMonth, onClearDate }) => {
-  if (!selectedDate || !currentMonth) return null
-  
-  const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate)
-  
-  return (
-    <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 transition-all duration-300">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-green-900 text-sm">
-              Perfect! Party date selected
-            </h4>
-            <p className="text-sm text-green-700">
-              {dateObj.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onClearDate}
-          className="text-sm text-green-700 hover:text-green-800 underline transition-colors"
-        >
-          Change date
-        </button>
-      </div>
-    </div>
-  )
-}
+
 
 // Move this function outside the component to prevent recreation on every render
 const hasValidPartyPlanDebug = () => {
@@ -352,12 +317,7 @@ if (userTypeLoading) {
 />
 
 
-            {/* NEW: Add selected date confirmation */}
-  <SelectedDateBanner 
-    selectedDate={availability.selectedDate}
-    currentMonth={availability.currentMonth}
-    onClearDate={() => availability.setSelectedDate(null)}
-  />
+
     <ServiceDetailsDisplayRouter supplier={supplier} />
             <SupplierPortfolioGallery 
               portfolioImages={supplier?.portfolioImages || []} 
