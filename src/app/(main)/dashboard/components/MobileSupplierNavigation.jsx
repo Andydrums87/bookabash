@@ -7,7 +7,7 @@ import SupplierCard from "./SupplierCard/SupplierCard"
 import Image from "next/image"
 import AddonsSection from "./AddonsSection"
 import RecommendedAddons from "@/components/recommended-addons"
-import SnappyHelpSpot from "@/components/ui/SnappyHelpSpot"
+
 export default function MobileSupplierNavigation({
   suppliers,
   loadingCards = [],
@@ -353,14 +353,9 @@ export default function MobileSupplierNavigation({
       {/* Sticky Tab Navigation */}
       <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
         <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
-            {/* Snappy's Navigation Help */}
+     
    
-            <SnappyHelpSpot
-  id="mobile-navigation"
-  content="Tap these circles to see different types of suppliers for your party! Swipe left and right to explore all your options. I've organized everything to make party planning super easy!"
-  side="bottom"
-  snappyMessage="Let me show you around!"
-/>
+
           {/* Decorative background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-2 left-8 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>

@@ -15,7 +15,7 @@ import BudgetControls from "@/components/budget-controls"
 import { useToast } from '@/components/ui/toast'
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal"
-import SnappyHelpSpot from "@/components/ui/SnappyHelpSpot"
+
 
 import { getDateStringForComparison } from '@/utils/dateHelpers'
 

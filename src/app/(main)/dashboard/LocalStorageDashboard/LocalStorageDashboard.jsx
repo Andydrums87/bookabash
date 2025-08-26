@@ -25,7 +25,7 @@ import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal
 // Supplier Components
 import SupplierCard from "../components/SupplierCard/SupplierCard"
 import MobileSupplierNavigation from "../components/MobileSupplierNavigation"
-import SnappyHelpSpot from "@/components/ui/SnappyHelpSpot"
+
 
 // Addon Components
 import AddonsSection from "../components/AddonsSection"
