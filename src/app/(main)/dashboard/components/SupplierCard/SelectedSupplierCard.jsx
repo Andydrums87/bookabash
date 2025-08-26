@@ -213,6 +213,7 @@ export default function SelectedSupplierCard({
           onClick={() => openSupplierModal(type)}
           disabled={isDeleting}
           size="lg"
+          data-tour={`change-supplier-${type}`}
         >
           {isDeleting ? "Removing..." : `Change ${getDisplayName(type)}`}
         </Button>

@@ -25,6 +25,7 @@ import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal
 // Supplier Components
 import SupplierCard from "../components/SupplierCard/SupplierCard"
 import MobileSupplierNavigation from "../components/MobileSupplierNavigation"
+import SnappyHelpSpot from "@/components/ui/SnappyHelpSpot"
 
 // Addon Components
 import AddonsSection from "../components/AddonsSection"
@@ -37,6 +38,8 @@ import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import RecommendedAddons from "@/components/recommended-addons"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import ReferFriend from "@/components/ReferFriend"
+// Make sure you have this import
+import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
 
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
@@ -65,6 +68,7 @@ export default function LocalStorageDashboard() {
   // Welcome popup state
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false)
+  const [isTourActiveOnNavigation, setIsTourActiveOnNavigation] = useState(false)
 
   // General state
   const [isUpdating, setIsUpdating] = useState(false)
@@ -87,7 +91,20 @@ export default function LocalStorageDashboard() {
 
   useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
 
+  const handleMobileNavigationStepActive = (isActive) => {
+    console.log('Dashboard received mobile nav step active:', isActive)
+    setIsTourActiveOnNavigation(isActive)
+  }
 
+  const { 
+    isTourActive, 
+    startTour, 
+
+    completeTour, 
+    closeTour 
+  } = useDashboardTour()
+
+  
 
 
   // ✅ PRODUCTION SAFETY: Mount detection
@@ -970,6 +987,7 @@ useEffect(() => {
         addons={addons}
       >
         <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
+          <div data-tour="party-header">
           <PartyHeader 
             theme={partyTheme} 
             isSignedIn={false}
@@ -983,12 +1001,16 @@ useEffect(() => {
             suppliers={suppliers}
             dataSource="localStorage"
             onPartyRebuilt={handlePartyRebuilt} // Add this callback
+     
           />
+           
+          </div>
+      
 
           <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
             {/* Main Content */}
             <main className="lg:col-span-2 space-y-8">
-              <div className="hidden md:flex justify-between mb-4 items-start">
+              <div className="hidden md:flex justify-between mb-4 items-start" data-tour="supplier-section">
                 <div className="flex justify-center">
                   <Image
                     src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
@@ -1005,8 +1027,9 @@ useEffect(() => {
                       Snappy's picked the best suppliers for your big day 
                     </p>
                   </div>
+                 
                 </div>
-
+     
                 <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
                   <Plus className="w-4 h-4" />
                   Add Supplier
@@ -1016,7 +1039,7 @@ useEffect(() => {
               {/* Supplier Grid */}
               <div className="w-full">
                 {/* Desktop Grid */}
-                <div className="hidden md:grid md:grid-cols-3 gap-6">
+                <div className="hidden md:grid md:grid-cols-3 gap-6" >
                   {Object.entries(suppliers).map(([type, supplier]) => (
                     <SupplierCard 
                       key={type}
@@ -1041,7 +1064,8 @@ useEffect(() => {
                 </div>
 
                 {/* Mobile Navigation */}
-                <div className="md:hidden">
+                <div className="md:hidden" >
+   
                 <MobileSupplierNavigation
     suppliers={suppliers}
     loadingCards={loadingCards}
@@ -1061,10 +1085,11 @@ useEffect(() => {
     // NEW PROPS:
     activeSupplierType={activeMobileSupplierType}
     onSupplierTabChange={handleMobileSupplierTabChange}
+    isTourActiveOnNavigation={isTourActiveOnNavigation}
   />
                 </div>
               </div>
-
+ 
               <div className="md:block hidden">
                 <AddonsSectionWrapper suppliers={suppliers} />
               </div>
@@ -1078,7 +1103,7 @@ useEffect(() => {
               </div>
 
               {/* Action Section */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4"  data-tour="review-book">
                 <Button
                   className="flex-3 bg-primary rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-6 text-base font-semibold"
                   asChild
@@ -1098,7 +1123,9 @@ useEffect(() => {
 
             {/* Sidebar */}
             <aside className="hidden lg:block space-y-6">
-              <BudgetControls {...budgetControlProps} />
+            <div data-tour="budget-tracker">
+                <BudgetControls {...budgetControlProps} />
+              </div>
               <CountdownWidget partyDate={partyDetails.date} />
               <ReferFriend />
             </aside>
@@ -1163,7 +1190,7 @@ useEffect(() => {
       />
 
       {/* Mobile Add Supplier Button */}
-      <div className="md:hidden fixed bottom-5 right-4 z-40">
+      <div className="md:hidden fixed bottom-5 right-4 z-40" data-tour="mobile-add-supplier">
         <button 
           onClick={handleAddSupplier}
           className="bg-primary-400 hover:bg-[hsl(var(--primary-600))] w-10 h-10 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
@@ -1173,6 +1200,12 @@ useEffect(() => {
           </svg>
         </button>
       </div>
+      <SnappyDashboardTour
+        isOpen={isTourActive}
+        onMobileNavigationStepActive={handleMobileNavigationStepActive} 
+        onClose={closeTour}
+        onComplete={completeTour}
+      />
     </div>
   )
 }

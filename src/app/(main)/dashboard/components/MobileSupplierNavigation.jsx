@@ -32,9 +32,10 @@ export default function MobileSupplierNavigation({
   onSupplierTabChange,
   activeSupplierType, // NEW: Externally controlled active tab
   showFirstTimeHelp = false,
+  isTourActiveOnNavigation = false,
 
 }) {
-  const tabsRef = useRef(null)
+  
 
   // Individual supplier types with their own tabs
   const supplierTypes = [
@@ -134,6 +135,77 @@ export default function MobileSupplierNavigation({
   const activeTab = activeSupplierType !== undefined ? 
     supplierTypes.findIndex(st => st.type === activeSupplierType) : 
     internalActiveTab
+
+    const tabsRef = useRef(null)
+    const [isAutoScrolling, setIsAutoScrolling] = useState(false)
+    const startAutoScrollDemo = () => {
+      if (!tabsRef.current || isAutoScrolling) return
+      
+      setIsAutoScrolling(true)
+      let scrollDirection = 1 // 1 for right, -1 for left
+      let currentPosition = 0
+      const maxScroll = tabsRef.current.scrollWidth - tabsRef.current.clientWidth
+      const scrollStep = 150 // pixels to scroll each step
+      
+      autoScrollIntervalRef.current = setInterval(() => {
+        if (!tabsRef.current) return
+        
+        currentPosition += scrollDirection * scrollStep
+        
+        // Reverse direction when reaching ends
+        if (currentPosition >= maxScroll) {
+          scrollDirection = -1
+          currentPosition = maxScroll
+        } else if (currentPosition <= 0) {
+          scrollDirection = 1
+          currentPosition = 0
+        }
+        
+        tabsRef.current.scrollTo({
+          left: currentPosition,
+          behavior: 'smooth'
+        })
+      }, 1000) // Change direction every 1.5 seconds
+      
+      // Stop demo after 8 seconds
+      setTimeout(() => {
+        stopAutoScrollDemo()
+      }, 6000)
+    }
+    
+    // Function to stop the auto-scroll demonstration
+    const stopAutoScrollDemo = () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current)
+        autoScrollIntervalRef.current = null
+      }
+      setIsAutoScrolling(false)
+      
+      // Return to the active tab position
+      if (tabsRef.current) {
+        const tabWidth = 80
+        const scrollPosition = activeTab * tabWidth - tabsRef.current.clientWidth / 2 + tabWidth / 2
+        tabsRef.current.scrollTo({
+          left: scrollPosition,
+          behavior: 'smooth'
+        })
+      }
+    }
+    useEffect(() => {
+      if (isTourActiveOnNavigation && !isAutoScrolling) {
+        console.log('Tour active on navigation - starting demo')
+        const timeout = setTimeout(() => {
+          startAutoScrollDemo()
+        }, 200) // Much shorter delay
+        
+        return () => clearTimeout(timeout)
+      } else if (!isTourActiveOnNavigation && isAutoScrolling) {
+        console.log('Tour no longer on navigation - stopping demo')
+        stopAutoScrollDemo()
+      }
+    }, [isTourActiveOnNavigation, isAutoScrolling])
+    const autoScrollIntervalRef = useRef(null)
+
 
   // Party tasks
   const partyTasks = [
@@ -274,27 +346,21 @@ export default function MobileSupplierNavigation({
     null : 
     suppliers[activeSupplierTypeData?.type]
 
-    console.log('📱 MobileSupplierNavigation received activeSupplierType:', activeSupplierType)
-console.log('📱 Current activeTab calculated as:', activeTab)
-console.log('📱 supplierTypes array:', supplierTypes.map(st => st.type))
 
   return (
     <div className="w-full relative">
       
       {/* Sticky Tab Navigation */}
-      <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6">
+      <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
         <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
             {/* Snappy's Navigation Help */}
-            {!showFirstTimeHelp && (
-            <div className="absolute top-2 left-20 h-auto">
-              <SnappyHelpSpot 
-                content="Tap these circles to see different types of suppliers for your party! Swipe left and right to explore all your options. I've organized everything to make party planning super easy! 🎉"
-                side="bottom"
-                snappyMessage="Let me show you around! 🐊"
-              />
-            </div>
-          )}
-
+   
+            <SnappyHelpSpot
+  id="mobile-navigation"
+  content="Tap these circles to see different types of suppliers for your party! Swipe left and right to explore all your options. I've organized everything to make party planning super easy!"
+  side="bottom"
+  snappyMessage="Let me show you around!"
+/>
           {/* Decorative background elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-2 left-8 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
@@ -344,6 +410,7 @@ console.log('📱 supplierTypes array:', supplierTypes.map(st => st.type))
                           )}
                           
                           {hasContent && (
+                            
                             <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full border-2 border-white shadow-lg">
                               {supplierType.isAddonSection && getAddonCount() > 0 && (
                                 <div className="w-full h-full bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center">
@@ -435,7 +502,7 @@ console.log('📱 supplierTypes array:', supplierTypes.map(st => st.type))
       </div>
 
       {/* ✅ NEW: Single Supplier Card Content */}
-      <div className="px-4" id="mobile-supplier-content">
+      <div className="px-4" id="mobile-supplier-content" data-tour="mobile-supplier-cards">
         {activeSupplierTypeData?.isAddonSection ? (
           // Show Add-ons Section
           <div>
@@ -452,7 +519,8 @@ console.log('📱 supplierTypes array:', supplierTypes.map(st => st.type))
           </div>
         ) : (
           // Show Single Supplier Card
-          <div className="transition-all duration-300 ease-in-out">
+          <div className="transition-all duration-300 ease-in-out"   data-tour={activeSupplierTypeData.type === 'venue' ? 'venue-card-mobile' : undefined}>
+      
             <SupplierCard
               type={activeSupplierTypeData.type}
               supplier={currentSupplier}

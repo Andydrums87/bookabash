@@ -35,12 +35,11 @@ import PartyPhaseContent from '../components/PartyPhaseContent'
 import Sidebar from './components/Sidebar'
 import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
-import OutstandingPaymentBanner from "./components/OutstandingPaymentModal"
+
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
-import RealTimeNotifications from "./components/realTimeNotifications"
-import PartyReadyModal from "./components/PartyReadyModal"
+
 
 export default function DatabaseDashboard() {
   const router = useRouter()
@@ -929,6 +928,7 @@ useEffect(() => {
           enquiries={enquiries}
           isSignedIn={true}
         />
+        
 
 
 
