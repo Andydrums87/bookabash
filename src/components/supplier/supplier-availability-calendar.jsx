@@ -4,7 +4,8 @@ import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Calendar, Lock, Info, Clock, Sun, Moon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar, Lock, Info, Clock, Sun, Moon, Package } from "lucide-react"
+import{ getAvailabilityType, AVAILABILITY_TYPES } from '../../app/suppliers/utils/supplierTypes'
 import { useEffect, useRef, useMemo, useState } from "react"
 import { 
   dateToLocalString, 
@@ -51,7 +52,8 @@ export default function SupplierAvailabilityCalendar({
   onTimeSlotSelect,
   showTimeSlotSelection = true
 }) {
-
+  const availabilityType = getAvailabilityType(supplier?.category)
+  const isLeadTimeBased = availabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
   const [showingTimeSlots, setShowingTimeSlots] = useState(false)
   const [selectedDateForSlots, setSelectedDateForSlots] = useState(null)
   const hasSetInitialMonth = useRef(false)
@@ -136,6 +138,42 @@ export default function SupplierAvailabilityCalendar({
     }
     
     return migrated
+  }
+  const getLeadTimeAvailability = (date, supplierData) => {
+    if (!supplierData) return "unknown"
+    
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    if (checkDate < today) return "past"
+    
+    // Check lead time requirements
+    const leadTimeSettings = supplierData.leadTimeSettings || {}
+    const minLeadTime = leadTimeSettings.minLeadTimeDays || 3
+    const advanceBooking = supplierData.advanceBookingDays || 0
+    
+    const minBookingDate = new Date(today)
+    minBookingDate.setDate(today.getDate() + minLeadTime + advanceBooking)
+    minBookingDate.setHours(0, 0, 0, 0)
+    
+    if (checkDate < minBookingDate) return "outside-window"
+    
+    const maxDays = supplierData.maxBookingDays || 365
+    const maxBookingDate = new Date(today)
+    maxBookingDate.setDate(today.getDate() + maxDays)
+    maxBookingDate.setHours(0, 0, 0, 0)
+    
+    if (checkDate > maxBookingDate) return "outside-window"
+    
+    // Check stock if applicable
+    if (leadTimeSettings.stockBased && !leadTimeSettings.unlimitedStock) {
+      if (leadTimeSettings.stockQuantity <= 0) return "unavailable"
+    }
+    
+    return "available"
   }
 
   const migratedSupplier = useMemo(() => getSupplierWithTimeSlots(supplier), [supplier])
@@ -277,10 +315,14 @@ export default function SupplierAvailabilityCalendar({
     )
   }
 
-  // Get date status with time slot consideration
   const getDateStatus = (date) => {
     if (!migratedSupplier) return "unknown"
     
+    if (isLeadTimeBased) {
+      return getLeadTimeAvailability(date, migratedSupplier)
+    }
+    
+    // Existing time slot logic
     try {
       const checkDate = new Date(date)
       checkDate.setHours(0, 0, 0, 0)
@@ -362,9 +404,14 @@ export default function SupplierAvailabilityCalendar({
           ? 'bg-green-50 text-green-700 cursor-default border-green-200'
           : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-green-300'
       case "partially-available":
-        return readOnly
-          ? 'bg-yellow-50 text-yellow-700 cursor-default border-yellow-200'
-          : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer border-yellow-300'
+        // For lead-time suppliers, treat as fully available (no partial availability concept)
+        return isLeadTimeBased 
+          ? (readOnly 
+              ? 'bg-green-50 text-green-700 cursor-default border-green-200'
+              : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-green-300')
+          : (readOnly
+              ? 'bg-yellow-50 text-yellow-700 cursor-default border-yellow-200'
+              : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer border-yellow-300')
       case "unavailable":
         return 'bg-red-100 text-red-800 cursor-not-allowed line-through border-red-300'
       case "past":
@@ -376,6 +423,7 @@ export default function SupplierAvailabilityCalendar({
     }
   }
 
+
   const handleDateClick = (date, day) => {
     if (readOnly) {
       return
@@ -383,14 +431,14 @@ export default function SupplierAvailabilityCalendar({
     
     // For dashboard users, only allow clicking the party date
     if (isFromDashboard && !isPartyDate(date)) {
-      console.log('🚫 CALENDAR: Cannot select non-party date for dashboard users')
+      console.log('Cannot select non-party date for dashboard users')
       return
     }
     
     // For dashboard users clicking party date, just ensure it's selected
     if (isFromDashboard && isPartyDate(date)) {
       setSelectedDate(day)
-      if (partyTimeSlot && setSelectedTimeSlot) {
+      if (partyTimeSlot && setSelectedTimeSlot && !isLeadTimeBased) {
         setSelectedTimeSlot(partyTimeSlot)
       }
       return
@@ -402,14 +450,22 @@ export default function SupplierAvailabilityCalendar({
       return
     }
     
+    // Set the selected date
+    setSelectedDate(day)
+    
+    // For lead-time suppliers, no time slot selection needed
+    if (isLeadTimeBased) {
+      if (onTimeSlotSelect) {
+        // Call with null timeSlot to indicate lead-time based selection
+        onTimeSlotSelect(date, null)
+      }
+      return
+    }
     const availableSlots = getAvailableTimeSlots(date)
     
     if (availableSlots.length === 0) {
       return
     }
-    
-    // Set the selected date
-    setSelectedDate(day)
     
     // If only one slot available, auto-select it
     if (availableSlots.length === 1) {
@@ -420,10 +476,7 @@ export default function SupplierAvailabilityCalendar({
         onTimeSlotSelect(date, availableSlots[0])
       }
       return
-    }
-    
-    // If multiple slots and time slot selection is enabled, show picker
-    if (showTimeSlotSelection && availableSlots.length > 1) {
+    }    if (showTimeSlotSelection && availableSlots.length > 1) {
       setSelectedDateForSlots(date)
       setShowingTimeSlots(true)
     } else {
@@ -432,6 +485,7 @@ export default function SupplierAvailabilityCalendar({
       }
     }
   }
+
   const handleTimeSlotSelection = (timeSlot) => {
 
     
@@ -470,7 +524,7 @@ export default function SupplierAvailabilityCalendar({
       const isSelected = selectedDate === day || (isFromDashboard && isPartyDate(date))
       const status = getDateStatus(date)
       const isCurrentMonth = true
-      const availableSlots = getAvailableTimeSlots(date)
+      const availableSlots = isLeadTimeBased ? [] : getAvailableTimeSlots(date)
       const styling = getDayStyle(date, status, isSelected, isCurrentMonth, availableSlots)
       const isPartyDay = isPartyDate(date)
 
@@ -486,9 +540,13 @@ export default function SupplierAvailabilityCalendar({
           title={
             isPartyDay 
               ? `Your Party Date - ${status.replace("-", " ")}`
-              : availableSlots.length > 0
-              ? `Available: ${availableSlots.map(s => TIME_SLOTS[s].label).join(', ')}`
-              : status.replace("-", " ")
+              : isLeadTimeBased
+              ? (status === "available" ? "Available for delivery/pickup" : 
+                 status === "outside-window" ? "Too soon - doesn't meet lead time" :
+                 status.replace("-", " "))
+              : (availableSlots.length > 0
+                ? `Available: ${availableSlots.map(s => TIME_SLOTS[s].label).join(', ')}`
+                : status.replace("-", " "))
           }
           disabled={!canClick}
         >
@@ -501,8 +559,8 @@ export default function SupplierAvailabilityCalendar({
             </div>
           )}
           
-          {/* Time slot indicators - show dots for available slots */}
-          {!isPartyDay && availableSlots.length > 0 && availableSlots.length < 2 && (
+          {/* Time slot indicators - only for time-slot based suppliers */}
+          {!isPartyDay && !isLeadTimeBased && availableSlots.length > 0 && availableSlots.length < 2 && (
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
               {availableSlots.map(slot => {
                 const SlotIcon = TIME_SLOTS[slot].icon
@@ -513,8 +571,15 @@ export default function SupplierAvailabilityCalendar({
             </div>
           )}
           
-          {/* Show "AM/PM" text for partially available days */}
-          {!isPartyDay && status === "partially-available" && availableSlots.length === 1 && (
+          {/* Package icon for lead-time suppliers */}
+          {!isPartyDay && isLeadTimeBased && status === "available" && (
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+              <Package className="w-2 h-2 text-current opacity-70" />
+            </div>
+          )}
+          
+          {/* Show "AM/PM" text for partially available days (time-slot only) */}
+          {!isPartyDay && !isLeadTimeBased && status === "partially-available" && availableSlots.length === 1 && (
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs font-bold">
               {availableSlots[0] === 'morning' ? 'AM' : 'PM'}
             </div>
@@ -523,13 +588,16 @@ export default function SupplierAvailabilityCalendar({
       )
     }
     return days
-  }, [currentMonth, migratedSupplier, selectedDate, isFromDashboard, readOnly, partyDateString])
+  }, [currentMonth, migratedSupplier, selectedDate, isFromDashboard, readOnly, partyDateString, isLeadTimeBased])
 
-  // FIXED: Party date status with proper time slot checking
   const partyDateStatus = useMemo(() => {
     if (!partyDate || !migratedSupplier) return null
     
-    // Get party time slot
+    if (isLeadTimeBased) {
+      return getLeadTimeAvailability(partyDate, migratedSupplier)
+    }
+    
+    // Existing time slot checking logic
     let partyTimeSlotToCheck = partyTimeSlot
     
     if (!partyTimeSlotToCheck) {
@@ -539,10 +607,8 @@ export default function SupplierAvailabilityCalendar({
           const parsed = JSON.parse(partyDetails)
           partyTimeSlotToCheck = parsed.timeSlot
           
-          // Map from party time if timeSlot not explicitly set
           if (!partyTimeSlotToCheck && parsed.time) {
             const timeStr = parsed.time.toLowerCase()
-            console.log('🔍 CALENDAR: Mapping party time to slot:', parsed.time)
             
             if (timeStr.includes('am') || 
                 timeStr.includes('9') || timeStr.includes('10') || 
@@ -553,8 +619,6 @@ export default function SupplierAvailabilityCalendar({
                       timeStr.includes('4') || timeStr.includes('5')) {
               partyTimeSlotToCheck = 'afternoon'
             }
-            
-            console.log('🔍 CALENDAR: Mapped party time slot:', partyTimeSlotToCheck)
           }
         }
       } catch (error) {
@@ -565,30 +629,41 @@ export default function SupplierAvailabilityCalendar({
     // Check if the specific time slot is available
     if (partyTimeSlotToCheck) {
       const isSlotAvailable = isTimeSlotAvailable(partyDate, partyTimeSlotToCheck)
-      console.log(`🔍 CALENDAR: Party date ${partyDate.toDateString()} ${partyTimeSlotToCheck} availability:`, isSlotAvailable)
       return isSlotAvailable ? 'available' : 'unavailable'
     }
     
     // Fallback to general date status
     return getDateStatus(partyDate)
-  }, [partyDate, partyTimeSlot, migratedSupplier, isTimeSlotAvailable, getDateStatus])
+  }, [partyDate, partyTimeSlot, migratedSupplier, isTimeSlotAvailable, getDateStatus, isLeadTimeBased])
+
 
   return (
     <Card className="border-gray-200 shadow-sm">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">
-            {isFromDashboard ? "Party Date Availability" : "Time Slot Availability"}
+          {isFromDashboard ? "Party Date Availability" : 
+             isLeadTimeBased ? "Delivery Date Availability" :
+             "Time Slot Availability"}
           </h2>
           {migratedSupplier?.advanceBookingDays > 0 && (
             <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
-              Book {migratedSupplier.advanceBookingDays}+ days ahead
+              {isLeadTimeBased ? 
+                `${migratedSupplier.advanceBookingDays}+ days lead time` :
+                `Book ${migratedSupplier.advanceBookingDays}+ days ahead`
+              }
+               {isLeadTimeBased && migratedSupplier?.leadTimeSettings?.minLeadTimeDays && (
+            <div className="text-sm text-gray-600 bg-purple-50 px-3 py-1 rounded-full">
+              Min {migratedSupplier.leadTimeSettings.minLeadTimeDays} days lead time
+            </div>
+          )}
             </div>
           )}
         </div>
 
         {/* Party date status banner with time slot info */}
-        {isFromDashboard && partyDate && partyDateStatus && (
+       {/* Party date status banner with lead-time info */}
+       {isFromDashboard && partyDate && partyDateStatus && (
           <div className={`mb-6 p-4 rounded-lg border-2 ${
             partyDateStatus === 'available' || partyDateStatus === 'partially-available'
               ? 'bg-green-50 border-green-200' 
@@ -606,7 +681,7 @@ export default function SupplierAvailabilityCalendar({
                 'bg-gray-200'
               }`}>
                 {(partyDateStatus === 'available' || partyDateStatus === 'partially-available') ? (
-                  <Calendar className="w-4 h-4 text-green-700" />
+                  isLeadTimeBased ? <Package className="w-4 h-4 text-green-700" /> : <Calendar className="w-4 h-4 text-green-700" />
                 ) : (
                   <Info className="w-4 h-4 text-gray-700" />
                 )}
@@ -626,17 +701,24 @@ export default function SupplierAvailabilityCalendar({
                   partyDateStatus === 'busy' ? 'text-yellow-700' :
                   'text-gray-700'
                 }`}>
-                  {partyDateStatus === 'available' && '✅ Available for booking!'}
-                  {partyDateStatus === 'partially-available' && '⚠️ Partially available - some time slots open'}
-                  {partyDateStatus === 'unavailable' && '❌ Not available for your party time'}
-                  {partyDateStatus === 'busy' && '⚠️ Already booked on this date'}
-                  {partyDateStatus === 'closed' && '🚫 Supplier is closed on this date'}
-                  {partyDateStatus === 'past' && '📅 This date has passed'}
-                  {partyDateStatus === 'outside-window' && '📋 Outside booking window'}
+                  {isLeadTimeBased ? (
+                    partyDateStatus === 'available' ? '✅ Can deliver/be ready by this date!' :
+                    partyDateStatus === 'unavailable' ? '❌ Cannot fulfill by this date' :
+                    partyDateStatus === 'outside-window' ? '⏰ Insufficient lead time' :
+                    '⚠️ Check availability'
+                  ) : (
+                    partyDateStatus === 'available' && '✅ Available for booking!' ||
+                    partyDateStatus === 'partially-available' && '⚠️ Partially available - some time slots open' ||
+                    partyDateStatus === 'unavailable' && '❌ Not available for your party time' ||
+                    partyDateStatus === 'busy' && '⚠️ Already booked on this date' ||
+                    partyDateStatus === 'closed' && '🚫 Supplier is closed on this date' ||
+                    partyDateStatus === 'past' && '📅 This date has passed' ||
+                    partyDateStatus === 'outside-window' && '📋 Outside booking window'
+                  )}
                 </p>
                 
-                {/* Show available time slots for party date */}
-                {(partyDateStatus === 'available' || partyDateStatus === 'partially-available') && (
+                {/* Show available time slots for party date (time-slot suppliers only) */}
+                {!isLeadTimeBased && (partyDateStatus === 'available' || partyDateStatus === 'partially-available') && (
                   <div className="flex gap-2 mt-2">
                     {getAvailableTimeSlots(partyDate).map(slot => {
                       const SlotIcon = TIME_SLOTS[slot].icon;
@@ -671,8 +753,8 @@ export default function SupplierAvailabilityCalendar({
         )}
 
         <div className="space-y-6">
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between">
+           {/* Month Navigation */}
+           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
               {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </h3>
@@ -710,7 +792,7 @@ export default function SupplierAvailabilityCalendar({
             {calendarDays}
           </div>
 
-          {/* Legend */}
+          {/* Legend - Updated for lead-time suppliers */}
           <div className="space-y-3">
             <h4 className="font-semibold text-gray-900">Legend:</h4>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
@@ -722,39 +804,60 @@ export default function SupplierAvailabilityCalendar({
                   <span className="text-gray-600">Your Party Date</span>
                 </div>
               )}
-              {[
-                { label: "Fully Available", color: "bg-green-100 border-green-300" },
-                { label: "Partially Available", color: "bg-yellow-100 border-yellow-300" },
-                { label: "Unavailable", color: "bg-red-100 border-red-300" },
-                { label: "Past/Outside Window", color: "bg-gray-100 border-gray-200 opacity-70" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-3">
-                  <div className={`w-4 h-4 rounded border ${item.color}`}></div>
-                  <span className="text-gray-600">{item.label}</span>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded border bg-green-100 border-green-300"></div>
+                <span className="text-gray-600">
+                  {isLeadTimeBased ? "Can Deliver" : "Fully Available"}
+                </span>
+              </div>
+              {!isLeadTimeBased && (
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded border bg-yellow-100 border-yellow-300"></div>
+                  <span className="text-gray-600">Partially Available</span>
                 </div>
-              ))}
+              )}
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded border bg-red-100 border-red-300"></div>
+                <span className="text-gray-600">
+                  {isLeadTimeBased ? "Too Soon" : "Unavailable"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded border bg-gray-100 border-gray-200 opacity-70"></div>
+                <span className="text-gray-600">Past/Outside Window</span>
+              </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              • AM/PM indicators show which time slots are available
-              <br />
-              • Click dates to select preferred time slot for your party
+              {isLeadTimeBased ? (
+                <>
+                  • Green dates meet minimum lead time requirements<br/>
+                  • Package icons indicate delivery availability
+                </>
+              ) : (
+                <>
+                  • AM/PM indicators show which time slots are available<br/>
+                  • Click dates to select preferred time slot for your party
+                </>
+              )}
             </p>
           </div>
 
-          {/* Selected Date Display with Time Slot */}
+          {/* Selected Date Display - Updated for lead-time */}
           {!isFromDashboard && selectedDate && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 <div className="flex-1">
-                  <span className="font-semibold text-blue-900">Selected Date</span>
+                  <span className="font-semibold text-blue-900">
+                    {isLeadTimeBased ? 'Selected Delivery Date' : 'Selected Date'}
+                  </span>
                   <p className="text-blue-700 text-sm">
                     {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate).toLocaleDateString(
                       "en-US",
                       { weekday: "long", year: "numeric", month: "long", day: "numeric" },
                     )}
                   </p>
-                  {selectedTimeSlot && (
+                  {!isLeadTimeBased && selectedTimeSlot && (
                     <div className="flex items-center gap-2 mt-1">
                       {(() => {
                         const SlotIcon = TIME_SLOTS[selectedTimeSlot].icon;
@@ -769,6 +872,7 @@ export default function SupplierAvailabilityCalendar({
               </div>
             </div>
           )}
+      
         </div>
 
         {/* Time Slot Selection Modal */}

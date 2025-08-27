@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   AlertCircle,
   Sun,
-  Moon
+  Moon,
+  Package
 } from "lucide-react";
 
 import { 
@@ -26,6 +27,8 @@ import {
   isSameDay,
   formatDate
 } from '@/utils/dateHelpers';
+
+import { getAvailabilityType, AVAILABILITY_TYPES } from '../../app/suppliers/utils/supplierTypes';
 
 // Time slot definitions - matching the supplier settings
 const TIME_SLOTS = {
@@ -87,6 +90,11 @@ const MobileBookingBar = ({
   const [selectedDateForSlots, setSelectedDateForSlots] = useState(null);
   const hasSetInitialMonth = useRef(false);
 
+  // Determine availability type
+  const supplierCategory = supplier?.category
+  const availabilityType = getAvailabilityType(supplierCategory)
+  const isLeadTimeBased = availabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
+
   // Set initial month to party date if coming from dashboard
   useEffect(() => {
     if (isFromDashboard && partyDate && !hasSetInitialMonth.current) {
@@ -103,17 +111,17 @@ const MobileBookingBar = ({
     }
   }, [isFromDashboard, partyDate])
 
-  // FIXED: Migration helper for legacy supplier data with centralized date handling
+  // Migration helper for legacy supplier data with centralized date handling
   const getSupplierWithTimeSlots = (supplierData) => {
     if (!supplierData) return null
     
-    if (supplierData.workingHours?.Monday?.timeSlots) {
+    if (supplierData.workingHours?.Monday?.timeSlots || isLeadTimeBased) {
       return supplierData
     }
     
     const migrated = { ...supplierData }
     
-    if (supplierData.workingHours) {
+    if (!isLeadTimeBased && supplierData.workingHours) {
       migrated.workingHours = {}
       Object.entries(supplierData.workingHours).forEach(([day, hours]) => {
         migrated.workingHours[day] = {
@@ -134,7 +142,7 @@ const MobileBookingBar = ({
       })
     }
     
-    // FIXED: Use centralized date migration
+    // Use centralized date migration
     if (supplierData.unavailableDates && Array.isArray(supplierData.unavailableDates)) {
       migrated.unavailableDates = migrateDateArray(supplierData.unavailableDates)
     }
@@ -148,9 +156,9 @@ const MobileBookingBar = ({
 
   const migratedSupplier = useMemo(() => getSupplierWithTimeSlots(supplier), [supplier])
 
-  // FIXED: Check if a specific time slot is available on a date
+  // Check if a specific time slot is available on a date (for time-slot based suppliers)
   const isTimeSlotAvailable = (date, timeSlot) => {
-    if (!migratedSupplier || !date || !timeSlot) return false
+    if (!migratedSupplier || !date || !timeSlot || isLeadTimeBased) return false
     
     try {
       const checkDate = parseSupplierDate(date)
@@ -159,76 +167,97 @@ const MobileBookingBar = ({
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
       
-  
-      
       // Check working hours
       const workingDay = migratedSupplier.workingHours?.[dayName]
       if (!workingDay?.active) {
-
         return false
       }
       
       if (!workingDay.timeSlots?.[timeSlot]?.available) {
-
         return false
       }
       
-      // FIXED: Check unavailable dates with consistent comparison
+      // Check unavailable dates
       const unavailableDate = migratedSupplier.unavailableDates?.find(ud => {
         const udDate = getDateStringForComparison(ud.date || ud)
         const matches = udDate === dateString
-        if (matches) {
-   
-        }
         return matches
       })
       
       if (unavailableDate) {
-       
         if (typeof unavailableDate === 'string') {
-
           return false
         }
         if (unavailableDate.timeSlots?.includes(timeSlot)) {
-
           return false
         }
-        
       }
       
-      // FIXED: Check busy dates with consistent comparison
+      // Check busy dates
       const busyDate = migratedSupplier.busyDates?.find(bd => {
         const bdDate = getDateStringForComparison(bd.date || bd)
         const matches = bdDate === dateString
-        if (matches) {
-        
-        }
         return matches
       })
       
       if (busyDate) {
-  
         if (typeof busyDate === 'string') {
-
           return false
         }
         if (busyDate.timeSlots?.includes(timeSlot)) {
-          
           return false
         }
-
       }
       
-   
       return true
     } catch (error) {
-      console.error('❌ MOBILE: Error checking time slot availability:', error)
+      console.error('Error checking time slot availability:', error)
       return false
     }
   }
 
-  // Get available time slots for a date
+  // Lead time availability checking
+  const getLeadTimeAvailability = (date, supplierData) => {
+    if (!supplierData) return "unknown"
+    
+    const checkDate = new Date(date)
+    checkDate.setHours(0, 0, 0, 0)
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    if (checkDate < today) return "past"
+    
+    // Check lead time requirements
+    const leadTimeSettings = supplierData.leadTimeSettings || {}
+    const minLeadTime = leadTimeSettings.minLeadTimeDays || 3
+    const advanceBooking = supplierData.advanceBookingDays || 0
+    
+    const minBookingDate = new Date(today)
+    minBookingDate.setDate(today.getDate() + minLeadTime + advanceBooking)
+    minBookingDate.setHours(0, 0, 0, 0)
+    
+    if (checkDate < minBookingDate) return "outside-window"
+    
+    const maxDays = supplierData.maxBookingDays || 365
+    const maxBookingDate = new Date(today)
+    maxBookingDate.setDate(today.getDate() + maxDays)
+    maxBookingDate.setHours(0, 0, 0, 0)
+    
+    if (checkDate > maxBookingDate) return "outside-window"
+    
+    // Check stock if applicable
+    if (leadTimeSettings.stockBased && !leadTimeSettings.unlimitedStock) {
+      if (leadTimeSettings.stockQuantity <= 0) return "unavailable"
+    }
+    
+    return "available"
+  }
+
+  // Get available time slots for a date (time-slot suppliers only)
   const getAvailableTimeSlots = (date) => {
+    if (isLeadTimeBased) return []
+    
     return Object.keys(TIME_SLOTS).filter(slot => 
       slot !== 'allday' && isTimeSlotAvailable(date, slot)
     )
@@ -258,48 +287,32 @@ const MobileBookingBar = ({
            !packageData?.packageType
   }
 
-  // FIXED: Mobile add to plan with proper cake modal opening
+  // Mobile add to plan with proper cake modal opening
   const handleMobileAddToPlan = () => {
-    console.log('🎂 Mobile: Checking for cake customization need:', {
-      isCakeSupplier,
-      selectedPackage: selectedPackage?.name,
-      packageType: selectedPackage?.packageType,
-      isCustomizable: isCustomizablePackage(selectedPackage),
-      hasOpenCakeModal: !!openCakeModal
-    })
-
     if (isCakeSupplier && selectedPackage && openCakeModal) {
       const shouldShowModal = isCustomizablePackage(selectedPackage)
       
-
-      
       if (shouldShowModal) {
-    
         setIsModalOpen(false)
         openCakeModal(selectedPackage)
         return
-      } else {
-
       }
     } else if (isCakeSupplier && !openCakeModal) {
-      console.warn('🎂 Mobile: isCakeSupplier is true but openCakeModal function not provided')
+      console.warn('isCakeSupplier is true but openCakeModal function not provided')
     }
-
 
     onAddToPlan()
   }
 
   const handleApprove = () => {
-
-    
     if (!selectedPackage) {
-      console.error('❌ MOBILE APPROVE: No package selected')
+      console.error('No package selected')
       alert('Please select a package first!')
       return
     }
     
     if (!supplier?.category) {
-      console.error('❌ MOBILE APPROVE: No supplier category')
+      console.error('No supplier category')
       alert('Supplier category not found. Please refresh and try again.')
       return
     }
@@ -400,32 +413,26 @@ const MobileBookingBar = ({
           }
         }
       }
-      
 
       sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
       sessionStorage.setItem('shouldRestoreReplacementModal', 'true')
       sessionStorage.setItem('modalShowUpgrade', 'true')
       
-
-      
       setTimeout(() => {
         if (onReturnToReplacement) {
-
           onReturnToReplacement()
         } else {
-  
           window.location.href = '/dashboard'
         }
       }, 200)
       
     } catch (error) {
-      console.error('❌ MOBILE APPROVE: Error during approval:', error)
+      console.error('Error during approval:', error)
       alert('Error saving package selection. Please try again.')
     }
   }
   
   const handleBackToReplacement = () => {
-
     window.location.href = '/dashboard'
   }
 
@@ -444,10 +451,15 @@ const MobileBookingBar = ({
     return []
   }
 
-  // FIXED: Enhanced availability logic with time slots
+  // Enhanced availability logic with lead time support
   const getDateStatus = (date, supplierData) => {
     if (!supplierData) return "unknown"
     
+    if (isLeadTimeBased) {
+      return getLeadTimeAvailability(date, supplierData)
+    }
+    
+    // Existing time slot logic
     try {
       const checkDate = new Date(date)
       checkDate.setHours(0, 0, 0, 0)
@@ -489,16 +501,20 @@ const MobileBookingBar = ({
     return partyDate ? partyDate.toDateString() : null
   }, [partyDate])
 
-  // FIXED: Use centralized date comparison
   const isPartyDate = (date) => {
     if (!partyDate) return false
     return isSameDay(date, partyDate)
   }
 
-  // FIXED: Party date status with proper time slot checking
+  // Party date status with lead-time checking
   const partyDateStatus = useMemo(() => {
     if (!partyDate || !migratedSupplier) return null
     
+    if (isLeadTimeBased) {
+      return getLeadTimeAvailability(partyDate, migratedSupplier)
+    }
+    
+    // Existing time slot checking logic
     let partyTimeSlotToCheck = partyTimeSlot
     
     if (!partyTimeSlotToCheck) {
@@ -510,7 +526,6 @@ const MobileBookingBar = ({
           
           if (!partyTimeSlotToCheck && parsed.time) {
             const timeStr = parsed.time.toLowerCase()
-       
             
             if (timeStr.includes('am') || 
                 timeStr.includes('9') || timeStr.includes('10') || 
@@ -521,8 +536,6 @@ const MobileBookingBar = ({
                       timeStr.includes('4') || timeStr.includes('5')) {
               partyTimeSlotToCheck = 'afternoon'
             }
-            
-          
           }
         }
       } catch (error) {
@@ -532,7 +545,6 @@ const MobileBookingBar = ({
     
     if (partyTimeSlotToCheck) {
       const isSlotAvailable = isTimeSlotAvailable(partyDate, partyTimeSlotToCheck)
-
       return isSlotAvailable ? 'available' : 'unavailable'
     }
     
@@ -558,7 +570,9 @@ const MobileBookingBar = ({
       const isSelected = selectedDate && date.getDate() === selectedDate && isCurrentMonth && !isFromDashboard;
       const status = getDateStatus(date, migratedSupplier);
       const isPartyDay = isPartyDate(date);
-      const availableSlots = getAvailableTimeSlots(date);
+      
+      // For lead-time suppliers, no time slots needed
+      const availableSlots = isLeadTimeBased ? [] : getAvailableTimeSlots(date);
       
       days.push({
         date,
@@ -586,6 +600,7 @@ const MobileBookingBar = ({
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
 
+  // Different styling for lead-time suppliers
   const getDayStyle = (day) => {
     if (!day.isCurrentMonth) return 'text-gray-400 cursor-not-allowed';
     
@@ -595,15 +610,10 @@ const MobileBookingBar = ({
       
       switch (partyDateStatus) {
         case "available":
-        case "partially-available":
           return `${baseStyle} bg-blue-100 text-blue-900 shadow-md`
         case "unavailable":
         case "outside-window":
           return `${baseStyle} bg-red-100 text-red-800 line-through`
-        case "busy":
-          return `${baseStyle} bg-yellow-100 text-yellow-800`
-        case "closed":
-          return `${baseStyle} bg-gray-200 text-gray-600`
         default:
           return `${baseStyle} bg-blue-100 text-blue-900`
       }
@@ -617,29 +627,37 @@ const MobileBookingBar = ({
           ? 'bg-green-50 text-green-700 cursor-default border-green-200'
           : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-green-300';
       case "partially-available":
-        return isFromDashboard
-          ? 'bg-yellow-50 text-yellow-700 cursor-default border-yellow-200'
-          : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer border-yellow-300';
+        // For lead-time suppliers, treat as fully available
+        return isLeadTimeBased 
+          ? (isFromDashboard 
+              ? 'bg-green-50 text-green-700 cursor-default border-green-200'
+              : 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border-green-300')
+          : (isFromDashboard
+              ? 'bg-yellow-50 text-yellow-700 cursor-default border-yellow-200'
+              : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer border-yellow-300');
       case "unavailable":
         return 'bg-red-100 text-red-800 cursor-not-allowed line-through border-red-300';
-      case "busy":
-        return 'bg-yellow-100 text-yellow-800 cursor-not-allowed border-yellow-300';
-      case "closed":
-        return 'bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300';
       case "past":
         return 'text-gray-300 cursor-not-allowed line-through border-gray-200';
       case "outside-window":
-        return 'text-gray-400 cursor-not-allowed opacity-70 border-gray-200';
+        return 'text-gray-400 cursor-not-allowed opacity-60 border-gray-200';
       default:
         return 'text-gray-400 cursor-not-allowed border-gray-200';
     }
   };
 
-  // Handle date click - now considers time slots
+  // Handle date click for lead-time suppliers
   const handleDateClick = (day) => {
     if (day.status !== 'available' && day.status !== 'partially-available') return;
     if (!day.isCurrentMonth || isFromDashboard || day.isPartyDay) return;
     
+    if (isLeadTimeBased) {
+      // For lead-time suppliers, just select the date (no time slots needed)
+      setSelectedDate(day.day);
+      return;
+    }
+    
+    // Existing time slot logic for service-based suppliers
     const availableSlots = day.availableSlots;
     
     if (availableSlots.length === 0) return;
@@ -668,7 +686,7 @@ const MobileBookingBar = ({
     setSelectedDateForSlots(null);
   };
 
-  // Button logic (for normal mode)
+  // Button logic with lead-time considerations
   const getButtonState = () => {
     if (addToPlanButtonState) return addToPlanButtonState;
     
@@ -682,7 +700,8 @@ const MobileBookingBar = ({
     
     const hasPartyPlan = hasValidPartyPlan()
     
-    if (!hasPartyPlan && !selectedDate) {
+    // For lead-time suppliers, date selection is optional for some cases
+    if (!hasPartyPlan && !selectedDate && !isLeadTimeBased) {
       return {
         disabled: false,
         className: "bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white transition-colors",
@@ -691,9 +710,14 @@ const MobileBookingBar = ({
       };
     }
     
-    const buttonText = isCakeSupplier && isCustomizablePackage(selectedPackage)
-      ? "🎂 Customize & Add"
-      : hasPartyPlan ? "Add to Plan" : "Book This Supplier"
+    let buttonText
+    if (isCakeSupplier && isCustomizablePackage(selectedPackage)) {
+      buttonText = "🎂 Customize & Add"
+    } else if (isLeadTimeBased) {
+      buttonText = hasPartyPlan ? "Add to Plan" : "Add to Cart"
+    } else {
+      buttonText = hasPartyPlan ? "Add to Plan" : "Book This Supplier"
+    }
     
     return {
       disabled: false,
@@ -705,7 +729,7 @@ const MobileBookingBar = ({
   const buttonState = getButtonState();
 
   const handleMainButtonClick = () => {
-    if (!isFromDashboard && (buttonState.requiresDate || !selectedDate)) {
+    if (!isFromDashboard && (buttonState.requiresDate || (!selectedDate && !isLeadTimeBased))) {
       setIsModalOpen(true);
       return;
     }
@@ -760,7 +784,7 @@ const MobileBookingBar = ({
   };
 
   const getSelectedTimeSlotDisplay = () => {
-    if (!selectedTimeSlot || !TIME_SLOTS[selectedTimeSlot]) return '';
+    if (!selectedTimeSlot || !TIME_SLOTS[selectedTimeSlot] || isLeadTimeBased) return '';
     return ` (${TIME_SLOTS[selectedTimeSlot].label})`;
   };
 
@@ -822,6 +846,9 @@ const MobileBookingBar = ({
                   {isCakeSupplier && isCustomizablePackage(selectedPackage) && (
                     <span className="ml-1">🎂</span>
                   )}
+                  {isLeadTimeBased && (
+                    <span className="ml-1">📦</span>
+                  )}
                 </p>
                 <p className="text-sm text-gray-600">
                   {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
@@ -830,7 +857,6 @@ const MobileBookingBar = ({
                      {getSelectedDateDisplay()}
                     </span>
                   )}
-             
                 </p>
               </div>
               <button 
@@ -842,46 +868,41 @@ const MobileBookingBar = ({
                 }`}
               >
                 <Calendar className="w-4 h-4" />
-                {isFromDashboard ? 'View Calendar' : selectedDate ? 'Change Date' : 'Check Dates'}
+                {isFromDashboard ? 'View Calendar' : 
+                 isLeadTimeBased ? (selectedDate ? 'Change Delivery Date' : 'Select Delivery Date') :
+                 selectedDate ? 'Change Date' : 'Check Dates'}
               </button>
             </div>
             <button 
-  onClick={() => buttonState.requiresDate ? setIsModalOpen(true) : handleMainButtonClick()}
-  className={`w-full font-semibold py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 ${buttonState.className}`}
->
-  {buttonState.requiresDate ? (
-    <>
-      {buttonState.text}
-    </>
-  ) : (
-    <>
-      <Plus className="w-5 h-5" />
-      {(() => {
-        // Get the base button text without any date info
-        let baseText = typeof buttonState.text === 'string' ? buttonState.text : 'Add to Plan'
-        
-        // Remove any existing date info from the button state text
-        // This handles cases where the button state already includes dates
-        baseText = baseText.replace(/\s*\([^)]*\)\s*/g, '').trim()
-        
-        // Now add our own date display logic
-        let dateDisplay = ''
-        
-        if (!isFromDashboard && selectedDate) {
-          // For manually selected dates
-          dateDisplay = ` (${getSelectedDateDisplay()}${getSelectedTimeSlotDisplay()})`
-        } else if (isFromDashboard && partyDate) {
-          // For party dates from dashboard
-          const partyDateDisplay = partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          const timeSlotDisplay = partyTimeSlot ? ` ${TIME_SLOTS[partyTimeSlot]?.label}` : ''
-          dateDisplay = ` (${partyDateDisplay}${timeSlotDisplay})`
-        }
-        
-        return baseText + dateDisplay
-      })()}
-    </>
-  )}
-</button>
+              onClick={() => buttonState.requiresDate ? setIsModalOpen(true) : handleMainButtonClick()}
+              className={`w-full font-semibold py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 ${buttonState.className}`}
+            >
+              {buttonState.requiresDate ? (
+                <>
+                  {buttonState.text}
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  {(() => {
+                    let baseText = typeof buttonState.text === 'string' ? buttonState.text : 'Add to Plan'
+                    baseText = baseText.replace(/\s*\([^)]*\)\s*/g, '').trim()
+                    
+                    let dateDisplay = ''
+                    
+                    if (!isFromDashboard && selectedDate) {
+                      dateDisplay = ` (${getSelectedDateDisplay()}${getSelectedTimeSlotDisplay()})`
+                    } else if (isFromDashboard && partyDate) {
+                      const partyDateDisplay = partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      const timeSlotDisplay = (!isLeadTimeBased && partyTimeSlot) ? ` ${TIME_SLOTS[partyTimeSlot]?.label}` : ''
+                      dateDisplay = ` (${partyDateDisplay}${timeSlotDisplay})`
+                    }
+                    
+                    return baseText + dateDisplay
+                  })()}
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -890,10 +911,11 @@ const MobileBookingBar = ({
       {isModalOpen && !isReplacementMode && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
           <div className="bg-white w-full max-h-[90vh] rounded-t-3xl overflow-hidden flex flex-col">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-bold text-gray-900">
-                {isFromDashboard ? 'Party Date Calendar' : selectedDate ? 'Change Date & Time' : 'Pick Your Party Date & Time'}
+                {isFromDashboard ? 'Party Date Calendar' : 
+                 isLeadTimeBased ? 'Select Delivery/Pickup Date' :
+                 selectedDate ? 'Change Date & Time' : 'Pick Your Party Date & Time'}
               </h2>
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -903,28 +925,36 @@ const MobileBookingBar = ({
               </button>
             </div>
 
-            {/* Modal Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-4">
+                {/* Lead-time supplier info */}
+                {isLeadTimeBased && !isFromDashboard && (
+                  <div className="mb-4 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                    <div className="flex items-start gap-3">
+                      <Package className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-purple-900 mb-1">Delivery-Based Service</h4>
+                        <p className="text-sm text-purple-700">
+                          Select when you need your order delivered or ready for pickup.
+                          {migratedSupplier?.leadTimeSettings?.minLeadTimeDays && (
+                            ` Minimum ${migratedSupplier.leadTimeSettings.minLeadTimeDays} days notice required.`
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Party date status banner */}
                 {isFromDashboard && partyDate && partyDateStatus && (
                   <div className={`mb-4 p-3 rounded-lg border-2 ${
-                    partyDateStatus === 'available' || partyDateStatus === 'partially-available'
-                      ? 'bg-green-50 border-green-200' 
-                      : partyDateStatus === 'unavailable' 
-                      ? 'bg-red-50 border-red-200'
-                      : partyDateStatus === 'busy'
-                      ? 'bg-yellow-50 border-yellow-200'
-                      : 'bg-gray-50 border-gray-200'
+                    partyDateStatus === 'available' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                   }`}>
                     <div className="flex items-start gap-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        partyDateStatus === 'available' || partyDateStatus === 'partially-available' ? 'bg-green-200' : 
-                        partyDateStatus === 'unavailable' ? 'bg-red-200' :
-                        partyDateStatus === 'busy' ? 'bg-yellow-200' :
-                        'bg-gray-200'
+                        partyDateStatus === 'available' ? 'bg-green-200' : 'bg-red-200'
                       }`}>
-                        {(partyDateStatus === 'available' || partyDateStatus === 'partially-available') ? (
+                        {partyDateStatus === 'available' ? (
                           <Calendar className="w-3 h-3 text-green-700" />
                         ) : (
                           <Info className="w-3 h-3 text-gray-700" />
@@ -932,10 +962,7 @@ const MobileBookingBar = ({
                       </div>
                       <div className="flex-1">
                         <h4 className={`font-semibold text-sm mb-1 ${
-                          partyDateStatus === 'available' || partyDateStatus === 'partially-available' ? 'text-green-800' :
-                          partyDateStatus === 'unavailable' ? 'text-red-800' :
-                          partyDateStatus === 'busy' ? 'text-yellow-800' :
-                          'text-gray-800'
+                          partyDateStatus === 'available' ? 'text-green-800' : 'text-red-800'
                         }`}>
                           Your Party Date: {partyDate.toLocaleDateString('en-US', { 
                             weekday: 'long', 
@@ -944,22 +971,16 @@ const MobileBookingBar = ({
                           })}
                         </h4>
                         <p className={`text-xs mb-2 ${
-                          partyDateStatus === 'available' || partyDateStatus === 'partially-available' ? 'text-green-700' :
-                          partyDateStatus === 'unavailable' ? 'text-red-700' :
-                          partyDateStatus === 'busy' ? 'text-yellow-700' :
-                          'text-gray-700'
+                          partyDateStatus === 'available' ? 'text-green-700' : 'text-red-700'
                         }`}>
-                          {partyDateStatus === 'available' && '✅ Available for booking!'}
-                          {partyDateStatus === 'partially-available' && '⚠️ Partially available - some time slots open'}
-                          {partyDateStatus === 'unavailable' && '❌ Not available on this date'}
-                          {partyDateStatus === 'busy' && '⚠️ Already booked on this date'}
-                          {partyDateStatus === 'closed' && '🚫 Supplier is closed on this date'}
-                          {partyDateStatus === 'past' && '📅 This date has passed'}
-                          {partyDateStatus === 'outside-window' && '📋 Outside booking window'}
+                          {partyDateStatus === 'available' ? 
+                            (isLeadTimeBased ? '✅ Available for delivery/pickup!' : '✅ Available for booking!') :
+                            (isLeadTimeBased ? '❌ Cannot fulfill by this date' : '❌ Not available on this date')
+                          }
                         </p>
                         
-                        {/* Show available time slots */}
-                        {(partyDateStatus === 'available' || partyDateStatus === 'partially-available') && (
+                        {/* Show available time slots for party date (time-slot suppliers only) */}
+                        {!isLeadTimeBased && (partyDateStatus === 'available' || partyDateStatus === 'partially-available') && (
                           <div className="flex gap-2 mt-2">
                             {getAvailableTimeSlots(partyDate).map(slot => {
                               const SlotIcon = TIME_SLOTS[slot].icon;
@@ -1027,9 +1048,13 @@ const MobileBookingBar = ({
                       title={
                         day.isPartyDay 
                           ? `Your Party Date - ${day.status.replace("-", " ")}`
-                          : day.availableSlots?.length > 0
-                          ? `Available: ${day.availableSlots.map(s => TIME_SLOTS[s].label).join(', ')}`
-                          : day.status.replace("-", " ")
+                          : isLeadTimeBased
+                          ? (day.status === "available" ? "Available for delivery/pickup" : 
+                             day.status === "outside-window" ? "Too soon - doesn't meet lead time" :
+                             day.status.replace("-", " "))
+                          : (day.availableSlots?.length > 0
+                            ? `Available: ${day.availableSlots.map(s => TIME_SLOTS[s].label).join(', ')}`
+                            : day.status.replace("-", " "))
                       }
                     >
                       {day.day}
@@ -1039,8 +1064,15 @@ const MobileBookingBar = ({
                         </div>
                       )}
                       
-                      {/* Time slot indicators */}
-                      {!day.isPartyDay && day.availableSlots && day.availableSlots.length > 0 && day.availableSlots.length < 2 && (
+                      {/* Package icon for lead-time suppliers */}
+                      {!day.isPartyDay && isLeadTimeBased && day.status === "available" && (
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+                          <Package className="w-2 h-2 text-current opacity-70" />
+                        </div>
+                      )}
+                      
+                      {/* Time slot indicators for time-slot suppliers */}
+                      {!day.isPartyDay && !isLeadTimeBased && day.availableSlots && day.availableSlots.length > 0 && day.availableSlots.length < 2 && (
                         <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
                           {day.availableSlots.map(slot => {
                             const SlotIcon = TIME_SLOTS[slot].icon;
@@ -1051,8 +1083,8 @@ const MobileBookingBar = ({
                         </div>
                       )}
                       
-                      {/* AM/PM text for partially available days */}
-                      {!day.isPartyDay && day.status === "partially-available" && day.availableSlots && day.availableSlots.length === 1 && (
+                      {/* AM/PM text for partially available days (time-slot only) */}
+                      {!day.isPartyDay && !isLeadTimeBased && day.status === "partially-available" && day.availableSlots && day.availableSlots.length === 1 && (
                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs font-bold">
                           {day.availableSlots[0] === 'morning' ? 'AM' : 'PM'}
                         </div>
@@ -1075,15 +1107,21 @@ const MobileBookingBar = ({
                     )}
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
-                      <span className="text-gray-600">Fully Available</span>
+                      <span className="text-gray-600">
+                        {isLeadTimeBased ? "Can Deliver" : "Available"}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
-                      <span className="text-gray-600">Partially Available</span>
-                    </div>
+                    {!isLeadTimeBased && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
+                        <span className="text-gray-600">Partially Available</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
-                      <span className="text-gray-600">Unavailable</span>
+                      <span className="text-gray-600">
+                        {isLeadTimeBased ? "Too Soon" : "Unavailable"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-gray-200 border border-gray-300 rounded"></div>
@@ -1091,9 +1129,10 @@ const MobileBookingBar = ({
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    • AM/PM indicators show which time slots are available
-                    <br />
-                    • Click dates to select preferred time slot for your party
+                    {isLeadTimeBased ? 
+                      '• Green dates meet minimum lead time requirements' :
+                      '• AM/PM indicators show which time slots are available'
+                    }
                   </p>
                 </div>
 
@@ -1103,14 +1142,16 @@ const MobileBookingBar = ({
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                       <div className="flex-1">
-                        <span className="font-semibold text-blue-900 text-sm">Selected Date</span>
+                        <span className="font-semibold text-blue-900 text-sm">
+                          {isLeadTimeBased ? 'Selected Delivery Date' : 'Selected Date'}
+                        </span>
                         <p className="text-blue-700 text-sm">
                           {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate).toLocaleDateString(
                             "en-US",
                             { weekday: "long", year: "numeric", month: "long", day: "numeric" },
                           )}
                         </p>
-                        {selectedTimeSlot && (
+                        {!isLeadTimeBased && selectedTimeSlot && (
                           <div className="flex items-center gap-2 mt-1">
                             {(() => {
                               const SlotIcon = TIME_SLOTS[selectedTimeSlot].icon;
@@ -1133,18 +1174,27 @@ const MobileBookingBar = ({
               <div className="space-y-3">
                 <button 
                   onClick={handleAddToPlan}
-                  className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-1 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
-                  disabled={!isFromDashboard && !selectedDate}
+                  className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+                  disabled={!isFromDashboard && !selectedDate && !isLeadTimeBased}
                 >
                   <Plus className="w-5 h-5" />
                   {isCakeSupplier && isCustomizablePackage(selectedPackage) ? (
                     <>🎂 Customize & Add</>
                   ) : (
-                    <>Add to Plan</>
+                    <>{isLeadTimeBased ? 'Add to Cart' : 'Add to Plan'}</>
                   )}
-                  {' '}
-                  {!isFromDashboard && selectedDate && `(${getSelectedDateDisplay()}${getSelectedTimeSlotDisplay()})`}
-                  {isFromDashboard && partyDate && `(${partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}${partyTimeSlot ? ` ${TIME_SLOTS[partyTimeSlot]?.label}` : ''})`}
+                  {selectedDate && (
+                    <>
+                      {' '}({getSelectedDateDisplay()}
+                      {!isLeadTimeBased && getSelectedTimeSlotDisplay()})
+                    </>
+                  )}
+                  {isFromDashboard && partyDate && (
+                    <>
+                      {' '}({partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {!isLeadTimeBased && partyTimeSlot ? ` ${TIME_SLOTS[partyTimeSlot]?.label}` : ''})
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -1152,8 +1202,8 @@ const MobileBookingBar = ({
         </div>
       )}
 
-      {/* Time Slot Selection Modal */}
-      {showingTimeSlots && selectedDateForSlots && (
+      {/* Time slot selection modal - only show for time-slot based suppliers */}
+      {showingTimeSlots && selectedDateForSlots && !isLeadTimeBased && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Choose Your Preferred Time</h3>
