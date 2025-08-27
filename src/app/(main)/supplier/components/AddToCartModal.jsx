@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calendar, MapPin, Users, User, Cake, Sparkles, Gift, ArrowLeft, CheckCircle, PlusCircle, Star, Zap } from "lucide-react"
+import { Calendar, MapPin, Users, User, Cake, Sparkles, Gift, ArrowLeft, CheckCircle, PlusCircle, Star, Zap, Loader2, PartyPopper, Clock } from "lucide-react"
 import Image from "next/image"
 
 export default function AlaCarteModal({ 
@@ -17,7 +17,10 @@ export default function AlaCarteModal({
   selectedPackage, 
   onBuildFullParty, 
   onJustBookSupplier,
-  preSelectedDate = null
+  preSelectedDate = null,
+  isBooking = false, // NEW: Loading state prop
+  bookingProgress = 0, // NEW: Progress prop
+  bookingStep = 0 // NEW: Step prop
 }) {
   const [step, setStep] = useState(1)
   const [firstName, setFirstName] = useState("")
@@ -25,7 +28,6 @@ export default function AlaCarteModal({
   const [childAge, setChildAge] = useState("")
   const [partyDate, setPartyDate] = useState(preSelectedDate || "")
   const [postcode, setPostcode] = useState("")
-  // Initialize guest count as undefined for dropdown placeholder to show
   const [guestCount, setGuestCount] = useState()
   const [selectedAddons, setSelectedAddons] = useState([])
   const [totalPrice, setTotalPrice] = useState(selectedPackage?.price || 0)
@@ -33,15 +35,6 @@ export default function AlaCarteModal({
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
   const hasAddons = availableAddons.length > 0
   const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
-
-  // Add state change tracking
-  useEffect(() => {
-    console.log('🔄 Name state changed - firstName:', firstName, 'lastName:', lastName, 'childAge:', childAge)
-  }, [firstName, lastName, childAge])
-
-  useEffect(() => {
-    console.log('🔄 Location state changed - postcode:', postcode, 'guestCount:', guestCount)
-  }, [postcode, guestCount])
 
   useEffect(() => {
     if (preSelectedDate) {
@@ -74,34 +67,17 @@ export default function AlaCarteModal({
   }, [onBuildFullParty])
 
   const handleFinalBooking = useCallback(() => {
-    console.log('🚀 Starting handleFinalBooking in a-la-carte modal')
-    
-    // Capture current state immediately
-    const currentFirstName = firstName
-    const currentLastName = lastName
-    const currentChildAge = childAge
-    const currentPartyDate = partyDate
-    const currentPostcode = postcode
-    const currentGuestCount = guestCount
-    
-    console.log('📝 Current state captured:', { 
-      currentFirstName, 
-      currentLastName, 
-      currentChildAge, 
-      currentPartyDate, 
-      currentPostcode, 
-      currentGuestCount
-    })
+    console.log('Starting handleFinalBooking in a-la-carte modal')
     
     const partyDetails = {
-      childName: `${currentFirstName.trim()} ${currentLastName.trim()}`.trim(),
-      firstName: currentFirstName.trim(),
-      lastName: currentLastName.trim(),
-      childAge: parseInt(currentChildAge),
-      date: currentPartyDate,
-      postcode: currentPostcode.trim(),
-      guestCount: parseInt(currentGuestCount),
-      location: mapPostcodeToLocation(currentPostcode),
+      childName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      childAge: parseInt(childAge),
+      date: partyDate,
+      postcode: postcode.trim(),
+      guestCount: parseInt(guestCount),
+      location: mapPostcodeToLocation(postcode),
       theme: 'general',
       budget: null,
       timeSlot: 'afternoon',
@@ -109,24 +85,18 @@ export default function AlaCarteModal({
       selectedAddons: selectedAddons,
       totalPrice: totalPrice,
       basePrice: selectedPackage?.price || 0,
-      // Mark this as a-la-carte flow so welcome popup can be skipped
       source: 'a_la_carte',
       skipWelcomePopup: true,
-      // Add timestamp for debugging
       savedAt: new Date().toISOString()
     }
 
-    console.log('💾 Party details to be passed:', partyDetails)
-
-    // Let the parent handle localStorage - just pass the data
-    console.log('📤 Calling onJustBookSupplier with validated data')
+    console.log('Calling onJustBookSupplier with validated data')
     onJustBookSupplier(partyDetails)
   }, [firstName, lastName, childAge, partyDate, postcode, guestCount, selectedAddons, totalPrice, selectedPackage, onJustBookSupplier, mapPostcodeToLocation])
 
   const handleDetailsSubmit = useCallback(() => {
-    console.log('🔍 Validating form data:', { firstName, childAge, partyDate, postcode, guestCount })
+    console.log('Validating form data:', { firstName, childAge, partyDate, postcode, guestCount })
     
-    // Enhanced validation with specific error messages
     const missingFields = []
     if (!firstName.trim()) missingFields.push('First name')
     if (!childAge) missingFields.push('Age')
@@ -135,12 +105,12 @@ export default function AlaCarteModal({
     if (!guestCount) missingFields.push('Guest count')
     
     if (missingFields.length > 0) {
-      console.log('❌ Missing required fields:', missingFields)
+      console.log('Missing required fields:', missingFields)
       alert(`Please fill in the following required fields:\n• ${missingFields.join('\n• ')}`)
       return
     }
     
-    console.log('✅ All fields validated successfully')
+    console.log('All fields validated successfully')
     
     if (hasAddons && isEntertainer) {
       setStep(3)
@@ -167,7 +137,7 @@ export default function AlaCarteModal({
   }, [handleFinalBooking])
 
   const handleClose = useCallback(() => {
-    if (!isOpen) return
+    if (!isOpen || isBooking) return // Prevent close during booking
     setStep(1)
     setFirstName("")
     setLastName("")
@@ -178,22 +148,48 @@ export default function AlaCarteModal({
     setSelectedAddons([])
     setTotalPrice(selectedPackage?.price || 0)
     onClose()
-  }, [isOpen, onClose, preSelectedDate, selectedPackage])
+  }, [isOpen, isBooking, onClose, preSelectedDate, selectedPackage])
 
   const handleKeyPress = useCallback((e) => {
-    if (e.key === 'Enter' && step === 2) {
+    if (e.key === 'Enter' && step === 2 && !isBooking) {
       handleDetailsSubmit()
     }
-  }, [step, handleDetailsSubmit])
+  }, [step, isBooking, handleDetailsSubmit])
 
   if (!supplier || !selectedPackage) {
     return null
   }
 
-  // Remove the guestCountOptions array since we're not using dropdown anymore
+  // Get loading messages based on booking step
+  const getLoadingMessage = () => {
+    switch (bookingStep) {
+      case 0:
+        return "Preparing your party..."
+      case 1:
+        return "Creating party plan..."
+      case 2:
+        return "Adding supplier..."
+      case 3:
+        return "Sending enquiry..."
+      case 4:
+        return "Almost done..."
+      default:
+        return "Processing..."
+    }
+  }
 
   // Get modal configuration based on step
   const getModalConfig = () => {
+    if (isBooking) {
+      return {
+        size: 'md',
+        theme: 'success',
+        title: 'Creating Your Party!',
+        subtitle: getLoadingMessage(),
+        icon: <PartyPopper className="w-6 h-6 animate-bounce" />
+      }
+    }
+
     switch (step) {
       case 1:
         return {
@@ -207,7 +203,7 @@ export default function AlaCarteModal({
         return {
           size: 'md',
           theme: 'fun',
-          title: `Party Details for ${supplier?.name} 🎈`,
+          title: `Party Details for ${supplier?.name}`,
           subtitle: 'Help us create the perfect party experience',
           icon: <Gift className="w-6 h-6" />
         }
@@ -215,7 +211,7 @@ export default function AlaCarteModal({
         return {
           size: 'lg',
           theme: 'fun',
-          title: 'Optional Extras ✨',
+          title: 'Optional Extras',
           subtitle: `Make ${firstName.trim()}'s party even more special`,
           icon: <Star className="w-6 h-6" />
         }
@@ -232,6 +228,9 @@ export default function AlaCarteModal({
 
   const config = getModalConfig()
 
+  // Check if form is valid for step 2
+  const isFormValid = firstName.trim() && childAge && partyDate && postcode && guestCount
+
   return (
     <UniversalModal 
       isOpen={isOpen} 
@@ -247,23 +246,75 @@ export default function AlaCarteModal({
       />
 
       <ModalContent>
-        {step === 1 && (
-          /* Step 1: Choice Interface with Better Borders */
+        {isBooking ? (
+          /* Loading State */
+          <div className="text-center py-8 space-y-6 ">
+            <div className="relative">
+              {/* Animated Party Icons */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-6xl animate-pulse">🎉</div>
+              </div>
+              <div className="absolute top-2 left-12 text-2xl animate-bounce delay-100">✨</div>
+              <div className="absolute top-2 right-12 text-2xl animate-bounce delay-200">🎈</div>
+              <div className="absolute bottom-2 left-8 text-2xl animate-bounce delay-300">🎊</div>
+              <div className="absolute bottom-2 right-8 text-2xl animate-bounce delay-400">🎁</div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mt-16 space-y-4">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]  h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${bookingProgress}%` }}
+                ></div>
+              </div>
+              
+              <div className="flex items-center justify-center gap-2 text-gray-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="font-medium">{getLoadingMessage()}</span>
+              </div>
+              
+              <p className="text-sm text-gray-500">
+                This usually takes just a few seconds...
+              </p>
+            </div>
+
+            {/* Step Indicators */}
+            <div className="flex justify-center gap-2 mt-6">
+              {[0, 1, 2, 3, 4].map((stepNum) => (
+                <div
+                  key={stepNum}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    stepNum <= bookingStep 
+                      ? 'bg-primary-500' 
+                      : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : step === 1 ? (
+          /* Step 1: Choice Interface with Better Buttons */
           <div className="space-y-4">
             {/* Full Party Option */}
             <div 
               onClick={() => handleChoiceSelection('full')}
-              className="group cursor-pointer p-6 rounded-xl border-2 border-purple-200 bg-white/30 backdrop-blur-sm hover:bg-white/40 hover:border-purple-300 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="group cursor-pointer p-6 rounded-xl border-2 border-primary-200 hover:to-purple-100 hover:border-primary-300 transition-all duration-200 shadow-sm hover:shadow-lg transform hover:scale-[1.02]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 group-hover:scale-110 transition-transform duration-200">
+                  <div className="bg-white rounded-full p-3 shadow-sm group-hover:shadow-md transition-all duration-200">
                     <Sparkles className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">Build Complete Party Plan</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-bold text-gray-900">Build Complete Party Plan</h3>
+                      <div className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs font-semibold">
+                        RECOMMENDED
+                      </div>
+                    </div>
                     <p className="text-gray-700 text-sm mb-3">
-                      Get venue, catering, entertainment, decorations & more!
+                      Get venue, catering, entertainment, decorations & more all sorted for you!
                     </p>
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 text-amber-500" />
@@ -278,17 +329,17 @@ export default function AlaCarteModal({
             {/* Single Supplier Option */}
             <div 
               onClick={() => handleChoiceSelection('single')}
-              className="group cursor-pointer p-6 rounded-xl border-2 border-blue-200 bg-white/20 backdrop-blur-sm hover:bg-white/30 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="group cursor-pointer p-6 rounded-xl border-2 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-full p-3 group-hover:scale-110 transition-transform duration-200">
+                  <div className="bg-gray-100 rounded-full p-3 group-hover:bg-gray-200 transition-all duration-200">
                     <User className="w-6 h-6 text-gray-600" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-1">Just Book This Supplier</h3>
                     <p className="text-gray-700 text-sm mb-3">
-                      Add {supplier?.name} to your party and manage everything yourself
+                      Add {supplier?.name} to your party and manage everything else yourself
                     </p>
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-blue-500" />
@@ -300,15 +351,13 @@ export default function AlaCarteModal({
               </div>
             </div>
 
-            <div className="text-center mt-6">
-              <p className="text-xs text-gray-600">
+            <div className="text-center mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-700 font-medium">
                 💡 Don't worry - you can always add more suppliers to your party later!
               </p>
             </div>
           </div>
-        )}
-
-        {step === 2 && (
+        ) : step === 2 ? (
           /* Step 2: Details Form */
           <div className="space-y-4">
             {/* Child Details */}
@@ -328,6 +377,7 @@ export default function AlaCarteModal({
                     className="pl-10 h-11 text-base border-2 border-gray-200 focus:border-primary-400 rounded-lg"
                     placeholder="Emma"
                     autoFocus
+                    disabled={isBooking}
                   />
                 </div>
               </div>
@@ -346,6 +396,7 @@ export default function AlaCarteModal({
                     onKeyPress={handleKeyPress}
                     className="pl-10 h-11 text-base border-2 border-gray-200 focus:border-primary-400 rounded-lg"
                     placeholder="Smith"
+                    disabled={isBooking}
                   />
                 </div>
               </div>
@@ -356,7 +407,7 @@ export default function AlaCarteModal({
                 </Label>
                 <div className="relative">
                   <Cake className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                  <Select value={childAge} onValueChange={setChildAge}>
+                  <Select value={childAge} onValueChange={setChildAge} disabled={isBooking}>
                     <SelectTrigger className="w-full pl-10 h-11 border-2 border-gray-200 focus:border-primary-400 rounded-lg">
                       <SelectValue placeholder="Select age" className="text-sm" />
                     </SelectTrigger>
@@ -406,6 +457,7 @@ export default function AlaCarteModal({
                     onChange={(e) => setPartyDate(e.target.value)}
                     className="pl-10 h-11 text-base border-2 border-gray-200 focus:border-primary-400 rounded-lg"
                     min={new Date().toISOString().split('T')[0]}
+                    disabled={isBooking}
                   />
                 )}
               </div>
@@ -427,6 +479,7 @@ export default function AlaCarteModal({
                     onKeyPress={handleKeyPress}
                     className="pl-10 h-11 text-base border-2 border-gray-200 focus:border-primary-400 rounded-lg"
                     placeholder="SW1A 1AA"
+                    disabled={isBooking}
                   />
                 </div>
               </div>
@@ -437,7 +490,7 @@ export default function AlaCarteModal({
                 </Label>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
-                  <Select value={guestCount} onValueChange={setGuestCount}>
+                  <Select value={guestCount} onValueChange={setGuestCount} disabled={isBooking}>
                     <SelectTrigger className="w-full pl-10 h-11 py-5 border-2 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-lg placeholder:text-xs">
                       <SelectValue placeholder="How many kids?" className="text-xs" />
                     </SelectTrigger>
@@ -454,9 +507,7 @@ export default function AlaCarteModal({
               </div>
             </div>
           </div>
-        )}
-
-        {step === 3 && (
+        ) : (
           /* Step 3: Addons */
           <div className="space-y-4">
             {/* Base Package Summary */}
@@ -481,13 +532,14 @@ export default function AlaCarteModal({
                       isSelected 
                         ? 'border-white/50 bg-white/40' 
                         : 'border-white/30 bg-white/20 hover:bg-white/30'
-                    }`}
-                    onClick={() => handleAddonToggle(addon)}
+                    } ${isBooking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => !isBooking && handleAddonToggle(addon)}
                   >
                     <div className="flex items-center gap-3">
                       <Checkbox 
                         checked={isSelected}
-                        onChange={() => handleAddonToggle(addon)}
+                        onChange={() => !isBooking && handleAddonToggle(addon)}
+                        disabled={isBooking}
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
@@ -521,7 +573,15 @@ export default function AlaCarteModal({
       </ModalContent>
 
       <ModalFooter theme={config.theme}>
-        {step === 1 ? (
+        {isBooking ? (
+          /* Loading Footer */
+          <div className="text-center w-full">
+            <div className="flex items-center justify-center gap-2 text-gray-600">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm">Please wait while we create your party...</span>
+            </div>
+          </div>
+        ) : step === 1 ? (
           <div className="text-center">
             <p className="text-xs text-gray-600">
               Choose your preferred planning approach above
@@ -532,7 +592,8 @@ export default function AlaCarteModal({
             <Button 
               variant="outline"
               onClick={() => setStep(step - 1)}
-              className="flex-1 h-11 bg-white/80 backdrop-blur-sm border-white/50 hover:bg-white/90"
+              className="flex-1 h-12 bg-white/80 backdrop-blur-sm border-white/50 hover:bg-white/90 font-medium"
+              disabled={isBooking}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -540,19 +601,40 @@ export default function AlaCarteModal({
             {step === 2 ? (
               <Button 
                 onClick={handleDetailsSubmit}
-                disabled={!firstName.trim() || !childAge || !partyDate || !postcode || !guestCount}
-                className="flex-2 bg-white text-primary-600 hover:bg-white/90 font-semibold h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isFormValid || isBooking}
+                className={`flex-2 h-12 font-bold text-lg transition-all duration-200 ${
+                  isFormValid 
+                    ? 'bg-gradient-to-r from-[hsl(var(--primary-500))]  to-[hsl(var(--primary-600))]  hover:from-[hsl(var(--primary-600))]  hover:to-[hsl(var(--primary-700))]  text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
-                {hasAddons && isEntertainer ? "Continue" : `Add ${supplier?.name}! 🎉`}
-                {(!firstName.trim() || !childAge || !partyDate || !postcode || !guestCount) && (
-                  <span className="ml-2 text-xs opacity-75">(Fill all fields)</span>
+                {isFormValid ? (
+                  <>
+                    {hasAddons && isEntertainer ? (
+                      <>
+                        <Star className="w-5 h-5 mr-2" />
+                        Continue to Extras
+                      </>
+                    ) : (
+                      <>
+                        <PartyPopper className="w-5 h-5 mr-2" />
+                        Add {supplier?.name}!
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="opacity-75">Please fill all fields</span>
+                  </>
                 )}
               </Button>
             ) : (
               <Button 
                 onClick={handleAddonsConfirm}
-                className="flex-2 bg-white text-primary-600 hover:bg-white/90 font-semibold h-11"
+                className="flex-2 h-12 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]  hover:from-[hsl(var(--primary-600))]  hover:to-[hsl(var(--primary-700))]  text-white font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                disabled={isBooking}
               >
+                <Gift className="w-5 h-5 mr-2" />
                 Add to Party - £{totalPrice}
               </Button>
             )}

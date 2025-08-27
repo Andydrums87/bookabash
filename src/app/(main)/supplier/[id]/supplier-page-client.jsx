@@ -449,11 +449,14 @@ if (userTypeLoading) {
  supplier={supplier}
  selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId)}
  onBuildFullParty={() => {
-   modals.setShowAlaCarteModal(false) // ✅ Fixed: use modals.setShowAlaCarteModal
+   modals.setShowAlaCarteModal(false)
    router.push('/party-builder')
  }}
- onJustBookSupplier={booking.handleAlaCarteBooking} // ✅ Fixed: use correct function name
+ onJustBookSupplier={booking.handleAlaCarteBooking}
  preSelectedDate={availability.getSelectedCalendarDate()} 
+ isBooking={booking.isAddingToPlan}        // ✅ Fixed: use booking.isAddingToPlan
+ bookingProgress={booking.progress}        // ✅ Fixed: use booking.progress
+ bookingStep={booking.loadingStep}         // ✅ Fixed: use booking.loadingStep
 />
 )}
 

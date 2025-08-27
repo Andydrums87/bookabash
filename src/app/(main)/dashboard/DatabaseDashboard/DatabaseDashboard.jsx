@@ -26,6 +26,7 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
 import EInvitesBanner from "../components/ui/EInvitesBanner"
 import PartyHeader from "../components/ui/PartyHeader"
+import DatabasePartyHeader from "../components/ui/DatabaseDashboardPartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 
 // Feature Components
@@ -39,6 +40,8 @@ import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmati
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
+
+
 
 
 export default function DatabaseDashboard() {
@@ -918,17 +921,13 @@ useEffect(() => {
       />
       
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
-        <PartyHeader 
-          theme={partyTheme}
-          partyDetails={partyDetails}
-          onPartyDetailsChange={handlePartyDetailsUpdate}
-          dataSource={dataSource}
-          currentParty={currentParty}
-          isPaymentConfirmed={isPaymentConfirmed}
-          enquiries={enquiries}
-          isSignedIn={true}
-        />
-        
+      <DatabasePartyHeader 
+  theme={partyTheme}
+  partyDetails={partyDetails}
+  currentParty={currentParty}
+  dataSource="database"
+  enquiries={enquiries}
+/>
 
 
 

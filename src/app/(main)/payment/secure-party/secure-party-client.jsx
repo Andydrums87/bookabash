@@ -111,7 +111,7 @@ function PaymentForm({
         console.log('💳 Processing Payment Request API payment...')
         setIsProcessing(true)
         setPaymentError(null)
-
+      
         try {
           // Create payment intent on your backend
           const response = await fetch('/api/create-payment-intent', {
@@ -132,30 +132,24 @@ function PaymentForm({
               paymentType: 'payment_request'
             }),
           })
-
+      
           const { clientSecret, error: backendError } = await response.json()
-
+      
           if (backendError) {
             throw new Error(backendError)
           }
-
-          // Use confirmPayment instead of confirmCardPayment for Payment Request API
-          const { error, paymentIntent } = await stripe.confirmPayment({
-            elements,
-            clientSecret,
-            confirmParams: {
-              payment_method: ev.paymentMethod.id,
-              return_url: `${window.location.origin}/payment/success`,
-            },
-            redirect: 'if_required'
+      
+          // ✅ FIXED: Use confirmCardPayment for Payment Request API
+          const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: ev.paymentMethod.id,
           })
-
+      
           if (error) {
             console.error('❌ Payment Request API error:', error)
             ev.complete('fail')
             throw new Error(error.message)
           }
-
+      
           if (paymentIntent.status === 'succeeded') {
             console.log('✅ Payment Request API payment successful:', paymentIntent.id)
             ev.complete('success')
@@ -170,7 +164,7 @@ function PaymentForm({
             ev.complete('fail')
             throw new Error('Payment not completed')
           }
-
+      
         } catch (error) {
           console.error('❌ Payment Request API payment error:', error)
           ev.complete('fail')

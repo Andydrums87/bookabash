@@ -17,11 +17,11 @@ import { RefreshCw, ChevronRight, Plus } from "lucide-react"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
-import PartyHeader from "../components/ui/PartyHeader"
+import LocalStoragePartyHeader from "../components/ui/LocalStoragePartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
-import SupplierAvailabilityModal from "@/components/ui/SupplierAvailabilityModal"
+
 // Supplier Components
 import SupplierCard from "../components/SupplierCard/SupplierCard"
 import MobileSupplierNavigation from "../components/MobileSupplierNavigation"
@@ -51,6 +51,68 @@ import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
 import useDisableScroll from "@/hooks/useDisableScroll"
+
+export const calculatePartyBagsDisplayPriceLocal = (supplier, guestCount) => {
+  // Only calculate for party bags
+  if (supplier?.category !== 'Party Bags' && supplier?.type !== 'partyBags') {
+    return {
+      totalPrice: supplier?.price || 0,
+      basePrice: supplier?.price || 0,
+      guestCount: 1,
+      displayText: `£${(supplier?.price || 0).toFixed(2)}`,
+      isCalculated: false
+    };
+  }
+
+  let finalGuestCount = null;
+  
+  // Priority 1: Passed parameter
+  if (guestCount && guestCount > 0) {
+    finalGuestCount = parseInt(guestCount);
+  }
+  
+  // Priority 2: Get from localStorage (LOCAL STORAGE DASHBOARD)
+  if (!finalGuestCount && typeof window !== 'undefined') {
+    try {
+      const storedPartyDetails = localStorage.getItem('party_details');
+      if (storedPartyDetails) {
+        const parsed = JSON.parse(storedPartyDetails);
+        if (parsed.guestCount && parsed.guestCount > 0) {
+          finalGuestCount = parseInt(parsed.guestCount);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not get guest count from localStorage:', error);
+    }
+  }
+  
+  // Priority 3: Supplier stored guest count
+  if (!finalGuestCount && supplier?.guestCount && supplier.guestCount > 0) {
+    finalGuestCount = parseInt(supplier.guestCount);
+  }
+  
+  // Priority 4: Fallback to default
+  if (!finalGuestCount || finalGuestCount < 1) {
+    finalGuestCount = 10;
+  }
+
+  const basePrice = supplier?.packageData?.basePrice || 
+                   supplier?.pricePerBag || 
+                   supplier?.basePrice || 
+                   supplier?.price || 
+                   5.00;
+
+  const totalPrice = basePrice * finalGuestCount;
+
+  return {
+    totalPrice,
+    basePrice,
+    guestCount: finalGuestCount,
+    displayText: `${finalGuestCount} bags × £${basePrice.toFixed(2)} = £${totalPrice.toFixed(2)}`,
+    isCalculated: true
+  };
+};
+
 
 export default function LocalStorageDashboard() {
   // Router and navigation
@@ -997,21 +1059,13 @@ const handleNameSubmit = (nameData) => {
       >
         <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
           <div data-tour="party-header">
-          <PartyHeader 
-            theme={partyTheme} 
-            isSignedIn={false}
-            partyDetails={partyDetails}
-            onPartyDetailsChange={handlePartyDetailsUpdate}
-            isPaymentConfirmed={false}
-            budgetControlProps={{
-              ...budgetControlProps,
-              getBudgetCategory
-            }}
-            suppliers={suppliers}
-            dataSource="localStorage"
-            onPartyRebuilt={handlePartyRebuilt} // Add this callback
-     
-          />
+          <LocalStoragePartyHeader 
+  theme={partyTheme}
+  partyDetails={partyDetails}
+  onPartyDetailsChange={handlePartyDetailsUpdate}
+  suppliers={suppliers}
+  onPartyRebuilt={handlePartyRebuilt}
+/>
            
           </div>
       

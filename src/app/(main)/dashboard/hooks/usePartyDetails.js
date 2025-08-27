@@ -19,7 +19,11 @@ export function usePartyDetails(user = null, currentParty = null) {
         childAge: partyDetails?.childAge || 6,
         location: partyDetails?.postcode || partyDetails?.location || 'W1A 1AA',
         theme: partyDetails?.theme || 'superhero',
-        time: partyDetails?.time || '14:00',
+        // FIX: Read the new time fields
+        startTime: partyDetails?.startTime || '14:00', // NEW
+        duration: partyDetails?.duration || 2, // NEW
+        displayTimeRange: partyDetails?.displayTimeRange, // NEW
+        time: partyDetails?.time || '14:00', // Keep for backward compatibility
         guestCount: partyDetails?.guestCount || '',
         budget: partyDetails?.budget || '',
         specialNotes: partyDetails?.specialNotes || '',

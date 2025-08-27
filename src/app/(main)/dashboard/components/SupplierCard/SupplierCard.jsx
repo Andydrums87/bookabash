@@ -197,9 +197,36 @@ export default function SupplierCard({
     
     // For party bags, multiply by guest count
     if (supplier.category === 'Party Bags' || type === 'partyBags') {
-      const pricePerBag = supplier.packageData?.basePrice || supplier.price || 5.00
-      const guestCount = partyDetails?.guestCount || 10
+      const pricePerBag = supplier.packageData?.basePrice || supplier.pricePerBag || supplier.price || 5.00
+      
+      let guestCount = 10; // Default fallback
+      
+      // Try to get guest count from partyDetails first (works for both dashboards)
+      if (partyDetails?.guestCount && partyDetails.guestCount > 0) {
+        guestCount = parseInt(partyDetails.guestCount)
+      }
+      // Fallback: try localStorage (for localStorage dashboard)
+      else if (typeof window !== 'undefined') {
+        try {
+          const storedPartyDetails = localStorage.getItem('party_details')
+          if (storedPartyDetails) {
+            const parsed = JSON.parse(storedPartyDetails)
+            if (parsed.guestCount && parsed.guestCount > 0) {
+              guestCount = parseInt(parsed.guestCount)
+            }
+          }
+        } catch (error) {
+          console.warn('Could not get guest count from localStorage:', error)
+        }
+      }
+      
       basePrice = pricePerBag * guestCount
+      
+      console.log(`Party bag calculation for ${supplier.name}:`, {
+        pricePerBag,
+        guestCount,
+        totalPrice: basePrice
+      })
     }
     
     const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)

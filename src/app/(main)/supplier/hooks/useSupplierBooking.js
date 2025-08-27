@@ -562,86 +562,399 @@ if (addResult.success) {
 ])
 
 // ✅ UPDATED: handleAlaCarteBooking with enhanced time slot support and availability checks
+// const handleAlaCarteBooking = useCallback(async (partyDetails) => {
+//   console.log('🎪 === HANDLE À LA CARTE BOOKING START ===')
+//   console.log('🎪 Party details:', partyDetails)
+//   console.log('🎪 Current state:', { selectedDate, selectedTimeSlot, currentMonth })
+
+//   try {
+//     // 1. VALIDATION
+//     if (!partyDetails) {
+//       throw new Error('No party details provided')
+//     }
+
+//     if (!supplier) {
+//       throw new Error('No supplier data available')
+//     }
+
+//     // Get selected package
+//     const selectedPkg = packagesWithPopular.find(pkg => pkg.id === selectedPackageId)
+//     if (!selectedPkg) {
+//       throw new Error('No package selected')
+//     }
+
+//     // 2. TIME SLOT VALIDATION - Enhanced with new availability system
+//     if (partyDetails.date) {
+//       let partyTimeSlot = partyDetails.timeSlot || selectedTimeSlot
+      
+//       // Map party time to time slot if not explicitly set (similar to handleAddToPlan)
+//       if (!partyTimeSlot && partyDetails.time) {
+//         const timeStr = partyDetails.time.toLowerCase()
+//         console.log('🔍 À LA CARTE: Mapping party time to slot:', partyDetails.time)
+        
+//         if (timeStr.includes('am') || 
+//             timeStr.includes('9') || timeStr.includes('10') || 
+//             timeStr.includes('11') || timeStr.includes('12')) {
+//           partyTimeSlot = 'morning'
+//         } else if (timeStr.includes('pm') || timeStr.includes('1') || 
+//                   timeStr.includes('2') || timeStr.includes('3') || 
+//                   timeStr.includes('4') || timeStr.includes('5')) {
+//           partyTimeSlot = 'afternoon'
+//         }
+        
+//         console.log('🔍 À LA CARTE: Mapped to time slot:', partyTimeSlot)
+//       }
+      
+//       console.log('🔍 À LA CARTE: Final time slot for validation:', partyTimeSlot)
+      
+//       // Enhanced availability check with time slot
+//       const availabilityResult = checkSupplierAvailability(partyDetails.date, partyTimeSlot)
+//       console.log('🔍 À LA CARTE: Availability result:', availabilityResult)
+      
+//       // Add null check for availabilityResult
+//       if (!availabilityResult || !availabilityResult.available) {
+//         const timeSlotText = partyTimeSlot ? ` during ${partyTimeSlot}` : ''
+//         throw new Error(`Supplier is not available on ${partyDetails.date}${timeSlotText}. Please choose a different date or time slot.`)
+//       }
+      
+//       // If partially available but no specific time slot, use the first available slot
+//       if (availabilityResult.timeSlots && availabilityResult.timeSlots.length > 0 && !partyTimeSlot) {
+//         partyTimeSlot = availabilityResult.timeSlots[0]
+//         console.log('🔍 À LA CARTE: Auto-selected time slot:', partyTimeSlot)
+//       }
+      
+//       // Update partyDetails with the determined time slot
+//       partyDetails = {
+//         ...partyDetails,
+//         timeSlot: partyTimeSlot
+//       }
+//     }
+
+//     // 3. CURRENT SELECTION BOOKABLE CHECK
+//     if (selectedDate && !isCurrentSelectionBookable()) {
+//       throw new Error('Current date and time selection is not bookable. Please choose a different time slot.')
+//     }
+
+//     // 4. START LOADING PROCESS
+//     console.log('🎪 Starting à la carte booking process')
+//     setIsAddingToPlan(true)
+//     setLoadingStep(0)
+//     setProgress(10)
+
+//     // 5. PREPARE ENHANCED PACKAGE DATA with time slot info
+//     const enhancedPackage = {
+//       ...selectedPkg,
+//       addons: [],
+//       originalPrice: selectedPkg.price,
+//       totalPrice: selectedPkg.price,
+//       addonsPriceTotal: 0,
+//       cakeCustomization: selectedPkg.cakeCustomization || null,
+//       packageType: selectedPkg.packageType || 'standard',
+//       supplierType: selectedPkg.supplierType || 'standard',
+//       // NEW: Add comprehensive time slot information
+//       selectedTimeSlot: partyDetails.timeSlot,
+//       bookingTimeSlot: partyDetails.timeSlot,
+//       selectedDate: partyDetails.date ? new Date(partyDetails.date) : null,
+//       partyTimeSlot: partyDetails.timeSlot
+//     }
+
+//     console.log('🎯 À LA CARTE: Enhanced package with time slot:', enhancedPackage)
+//     setProgress(30)
+
+//     // 6. PREPARE ENHANCED SUPPLIER DATA
+//     const enhancedSupplier = {
+//       ...backendSupplier,
+//       selectedPackage: enhancedPackage,
+//       bookingInfo: {
+//         selectedDate: partyDetails.date,
+//         selectedTimeSlot: partyDetails.timeSlot,
+//         packageId: selectedPkg.id,
+//         packageName: selectedPkg.name,
+//         partyTime: partyDetails.time,
+//         timeSlotMapped: !!partyDetails.timeSlot
+//       }
+//     }
+
+//     setLoadingStep(1)
+//     setProgress(50)
+
+//     // 7. CREATE PARTY IN BACKEND
+//     console.log('🎪 Creating new party with supplier and time slot info')
+    
+//     // Determine if we should create a database party or localStorage party
+//     const shouldCreateDatabaseParty = userType !== 'ANONYMOUS' && userType !== 'ERROR_FALLBACK'
+    
+//     let result
+    
+//     if (shouldCreateDatabaseParty) {
+//       // Create database party with enhanced supplier
+//       console.log('📊 Creating database party')
+//       result = await partyDatabaseBackend.createPartyWithSupplier(
+//         partyDetails,
+//         enhancedSupplier,
+//         enhancedPackage
+//       )
+//     } else {
+//       // Create localStorage party with enhanced supplier
+//       console.log('📦 Creating localStorage party')
+      
+//       // Save party details to localStorage with time slot info
+//       const partyDetailsForStorage = {
+//         ...partyDetails,
+//         timeSlot: partyDetails.timeSlot,
+//         originalTime: partyDetails.time, // Keep original time format too
+//         created: new Date().toISOString(),
+//         source: 'ala-carte-booking'
+//       }
+      
+//       localStorage.setItem('party_details', JSON.stringify(partyDetailsForStorage))
+      
+//       // Add supplier to party plan
+//       const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
+//       if (mainCategories.includes(supplier.category || "")) {
+//         result = await addSupplier(enhancedSupplier, enhancedPackage)
+//       } else {
+//         const addonDataToAdd = {
+//           ...supplier,
+//           price: selectedPkg.price,
+//           packageId: enhancedPackage.id,
+//           selectedAddons: enhancedPackage.addons,
+//           packageData: enhancedPackage,
+//           selectedTimeSlot: partyDetails.timeSlot,
+//           bookingTimeSlot: partyDetails.timeSlot
+//         }
+//         result = await addAddon(addonDataToAdd)
+//       }
+//     }
+
+//     setLoadingStep(2)
+//     setProgress(70)
+
+//     // 8. SEND AUTO-ENQUIRY (if needed, similar to handleAddToPlan)
+//     if (result?.success && shouldCreateDatabaseParty) {
+//       console.log('📧 À LA CARTE: Checking if auto-enquiry needed')
+      
+//       // Send enquiry for new party bookings to ensure supplier communication
+//       if (result.partyId || userContext?.currentPartyId) {
+//         console.log('📧 À LA CARTE: Sending auto-enquiry for new party')
+//         setLoadingStep(3)
+        
+//         const enquiryReason = `New party booking via à la carte selection for ${partyDetails.date}${partyDetails.timeSlot ? ` (${partyDetails.timeSlot})` : ''}`
+        
+//         // Include comprehensive time slot information in enquiry
+//         const enquiryPackage = {
+//           ...enhancedPackage,
+//           timeSlotRequested: partyDetails.timeSlot,
+//           preferredTimeSlot: partyDetails.timeSlot,
+//           partyDate: partyDetails.date,
+//           enquiryType: 'ala-carte-booking'
+//         }
+        
+//         const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+//           result.partyId || userContext.currentPartyId,
+//           enhancedSupplier,
+//           enquiryPackage,
+//           enquiryReason
+//         )
+        
+//         if (enquiryResult.success) {
+//           console.log('✅ À LA CARTE: Auto-enquiry sent successfully with comprehensive time slot info')
+//         }
+//       }
+//     }
+
+//     setLoadingStep(4)
+//     setProgress(100)
+
+//     // 9. SUCCESS HANDLING
+//     if (result?.success) {
+//       let successMessage = `Party created with ${supplier.name}`
+      
+//       // Add time slot to success message
+//       if (partyDetails.timeSlot) {
+//         const timeSlotLabel = partyDetails.timeSlot === 'morning' ? 'morning' : 'afternoon'
+//         successMessage += ` for ${timeSlotLabel} on ${partyDetails.date}`
+//       } else {
+//         successMessage += ` on ${partyDetails.date}`
+//       }
+      
+//       // Add enquiry info to message
+//       if (shouldCreateDatabaseParty) {
+//         successMessage += ' and enquiry sent!'
+//       } else {
+//         successMessage += '!'
+//       }
+      
+//       // Store success info for potential display
+//       localStorage.setItem('alaCarteBookingSuccess', JSON.stringify({
+//         supplierName: supplier.name,
+//         partyDate: partyDetails.date,
+//         timeSlot: partyDetails.timeSlot,
+//         packageName: selectedPkg.name,
+//         enquirySent: shouldCreateDatabaseParty,
+//         timestamp: Date.now()
+//       }))
+      
+//       // Wait for user to see completion
+//       await new Promise((resolve) => setTimeout(resolve, 1000))
+      
+//       // Navigate to appropriate destination
+//       const categoryMap = {
+//         'Entertainment': 'entertainment',
+//         'Venues': 'venue', 
+//         'Venue': 'venue',
+//         'Catering': 'catering',
+//         'Decorations': 'decorations',
+//         'Party Bags': 'partyBags',
+//         'Photography': 'photography',
+//         'Activities': 'activities',
+//         'Face Painting': 'facePainting',
+//         'Cakes': 'cakes',
+//         'Balloons': 'balloons'
+//       }
+
+//       const supplierType = categoryMap[supplier.category] || 'entertainment'
+//       console.log('🎯 À LA CARTE: Mapping category for navigation:', supplier.category, '→', supplierType)
+      
+//       const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=party-created&source=ala-carte&timeSlot=${partyDetails.timeSlot || ''}`
+//       console.log('🚀 À LA CARTE: Navigating to dashboard:', dashboardUrl)
+//       router.push(dashboardUrl)
+
+//       return { 
+//         success: true, 
+//         message: successMessage,
+//         partyId: result.partyId,
+//         timeSlotInfo: partyDetails.timeSlot ? {
+//           selectedTimeSlot: partyDetails.timeSlot,
+//           timeSlotLabel: partyDetails.timeSlot === 'morning' ? 'Morning' : 'Afternoon',
+//           partyDate: partyDetails.date
+//         } : null,
+//         enquiryInfo: shouldCreateDatabaseParty ? {
+//           enquirySent: true,
+//           enquiryReason: 'ala-carte-booking'
+//         } : null
+//       }
+//     } else {
+//       throw new Error(result?.error || "Failed to create party")
+//     }
+
+//   } catch (error) {
+//     console.error("❌ Error in handleAlaCarteBooking:", error)
+    
+//     return { 
+//       success: false, 
+//       message: `Failed to create party plan: ${error.message}. Please try again.` 
+//     }
+//   } finally {
+//     setIsAddingToPlan(false)
+//     setProgress(0)
+//     setLoadingStep(0)
+//     console.log('🔧 À LA CARTE: Cleanup completed')
+//   }
+// }, [
+//   packages, 
+//   selectedPackageId, 
+//   selectedTimeSlot, 
+//   selectedDate, 
+//   currentMonth,
+//   supplier, 
+//   backendSupplier, 
+//   router, 
+//   checkSupplierAvailability,
+//   isCurrentSelectionBookable,
+//   userType,
+//   userContext,
+//   addSupplier,
+//   addAddon
+// ])
 const handleAlaCarteBooking = useCallback(async (partyDetails) => {
-  console.log('🎪 === HANDLE À LA CARTE BOOKING START ===')
-  console.log('🎪 Party details:', partyDetails)
-  console.log('🎪 Current state:', { selectedDate, selectedTimeSlot, currentMonth })
+  console.log('=== HANDLE À LA CARTE BOOKING START ===')
+  console.log('Party details:', partyDetails)
+  console.log('Current state:', { selectedDate, selectedTimeSlot, currentMonth })
+  console.log('Packages available:', packages?.length)
+  console.log('Selected package ID:', selectedPackageId)
 
   try {
-    // 1. VALIDATION
+    // 1. VALIDATION - Party Details
     if (!partyDetails) {
       throw new Error('No party details provided')
     }
 
-    if (!supplier) {
+    // 2. VALIDATION - Supplier Data
+    const supplierToUse = backendSupplier || supplier
+    if (!supplierToUse) {
       throw new Error('No supplier data available')
     }
 
-    // Get selected package
-    const selectedPkg = packagesWithPopular.find(pkg => pkg.id === selectedPackageId)
-    if (!selectedPkg) {
-      throw new Error('No package selected')
+    // 3. VALIDATION - Packages
+    if (!packages || packages.length === 0) {
+      throw new Error('No packages available for this supplier')
     }
 
-    // 2. TIME SLOT VALIDATION - Enhanced with new availability system
-    if (partyDetails.date) {
-      let partyTimeSlot = partyDetails.timeSlot || selectedTimeSlot
+    // 4. PACKAGE SELECTION - Defensive approach
+    let packageIdToUse = selectedPackageId
+    let selectedPkg = null
+
+    if (packageIdToUse) {
+      selectedPkg = packages.find(pkg => pkg.id === packageIdToUse)
+    }
+
+    // If no package selected or package not found, use first available
+    if (!selectedPkg) {
+      selectedPkg = packages[0]
+      packageIdToUse = selectedPkg.id
+      console.log('Auto-selecting first package:', packageIdToUse)
       
-      // Map party time to time slot if not explicitly set (similar to handleAddToPlan)
-      if (!partyTimeSlot && partyDetails.time) {
-        const timeStr = partyDetails.time.toLowerCase()
-        console.log('🔍 À LA CARTE: Mapping party time to slot:', partyDetails.time)
-        
-        if (timeStr.includes('am') || 
-            timeStr.includes('9') || timeStr.includes('10') || 
-            timeStr.includes('11') || timeStr.includes('12')) {
-          partyTimeSlot = 'morning'
-        } else if (timeStr.includes('pm') || timeStr.includes('1') || 
-                  timeStr.includes('2') || timeStr.includes('3') || 
-                  timeStr.includes('4') || timeStr.includes('5')) {
-          partyTimeSlot = 'afternoon'
-        }
-        
-        console.log('🔍 À LA CARTE: Mapped to time slot:', partyTimeSlot)
+      // Update state for consistency
+      setSelectedPackageId(packageIdToUse)
+    }
+
+    console.log('Using package:', selectedPkg.name, 'with ID:', packageIdToUse)
+
+    // 5. TIME SLOT VALIDATION
+    let finalTimeSlot = partyDetails.timeSlot || selectedTimeSlot
+    
+    // Map party time to time slot if not explicitly set
+    if (!finalTimeSlot && partyDetails.time) {
+      const timeStr = partyDetails.time.toLowerCase()
+      console.log('Mapping party time to slot:', partyDetails.time)
+      
+      if (timeStr.includes('am') || 
+          ['9', '10', '11', '12'].some(hour => timeStr.includes(hour))) {
+        finalTimeSlot = 'morning'
+      } else if (timeStr.includes('pm') || 
+                ['1', '2', '3', '4', '5'].some(hour => timeStr.includes(hour))) {
+        finalTimeSlot = 'afternoon'
       }
       
-      console.log('🔍 À LA CARTE: Final time slot for validation:', partyTimeSlot)
+      console.log('Mapped to time slot:', finalTimeSlot)
+    }
+
+    // 6. AVAILABILITY CHECK
+    if (partyDetails.date && checkSupplierAvailability) {
+      console.log('Checking availability for:', partyDetails.date, finalTimeSlot)
       
-      // Enhanced availability check with time slot
-      const availabilityResult = checkSupplierAvailability(partyDetails.date, partyTimeSlot)
-      console.log('🔍 À LA CARTE: Availability result:', availabilityResult)
+      const availabilityResult = checkSupplierAvailability(partyDetails.date, finalTimeSlot)
+      console.log('Availability result:', availabilityResult)
       
-      // Add null check for availabilityResult
       if (!availabilityResult || !availabilityResult.available) {
-        const timeSlotText = partyTimeSlot ? ` during ${partyTimeSlot}` : ''
+        const timeSlotText = finalTimeSlot ? ` during ${finalTimeSlot}` : ''
         throw new Error(`Supplier is not available on ${partyDetails.date}${timeSlotText}. Please choose a different date or time slot.`)
       }
       
-      // If partially available but no specific time slot, use the first available slot
-      if (availabilityResult.timeSlots && availabilityResult.timeSlots.length > 0 && !partyTimeSlot) {
-        partyTimeSlot = availabilityResult.timeSlots[0]
-        console.log('🔍 À LA CARTE: Auto-selected time slot:', partyTimeSlot)
-      }
-      
-      // Update partyDetails with the determined time slot
-      partyDetails = {
-        ...partyDetails,
-        timeSlot: partyTimeSlot
+      // Auto-select available time slot if none specified
+      if (!finalTimeSlot && availabilityResult.timeSlots?.length > 0) {
+        finalTimeSlot = availabilityResult.timeSlots[0]
+        console.log('Auto-selected time slot:', finalTimeSlot)
       }
     }
 
-    // 3. CURRENT SELECTION BOOKABLE CHECK
-    if (selectedDate && !isCurrentSelectionBookable()) {
+    // 7. CURRENT SELECTION BOOKABLE CHECK
+    if (selectedDate && typeof isCurrentSelectionBookable === 'function' && !isCurrentSelectionBookable()) {
       throw new Error('Current date and time selection is not bookable. Please choose a different time slot.')
     }
 
-    // 4. START LOADING PROCESS
-    console.log('🎪 Starting à la carte booking process')
-    setIsAddingToPlan(true)
-    setLoadingStep(0)
-    setProgress(10)
-
-    // 5. PREPARE ENHANCED PACKAGE DATA with time slot info
+    // 8. PREPARE ENHANCED PACKAGE DATA
     const enhancedPackage = {
       ...selectedPkg,
       addons: [],
@@ -651,58 +964,56 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       cakeCustomization: selectedPkg.cakeCustomization || null,
       packageType: selectedPkg.packageType || 'standard',
       supplierType: selectedPkg.supplierType || 'standard',
-      // NEW: Add comprehensive time slot information
-      selectedTimeSlot: partyDetails.timeSlot,
-      bookingTimeSlot: partyDetails.timeSlot,
+      selectedTimeSlot: finalTimeSlot,
+      bookingTimeSlot: finalTimeSlot,
       selectedDate: partyDetails.date ? new Date(partyDetails.date) : null,
-      partyTimeSlot: partyDetails.timeSlot
+      partyTimeSlot: finalTimeSlot
     }
 
-    console.log('🎯 À LA CARTE: Enhanced package with time slot:', enhancedPackage)
-    setProgress(30)
+    console.log('Enhanced package with time slot:', enhancedPackage)
 
-    // 6. PREPARE ENHANCED SUPPLIER DATA
+    // 9. PREPARE ENHANCED SUPPLIER DATA
     const enhancedSupplier = {
-      ...backendSupplier,
+      ...supplierToUse,
       selectedPackage: enhancedPackage,
       bookingInfo: {
         selectedDate: partyDetails.date,
-        selectedTimeSlot: partyDetails.timeSlot,
+        selectedTimeSlot: finalTimeSlot,
         packageId: selectedPkg.id,
         packageName: selectedPkg.name,
         partyTime: partyDetails.time,
-        timeSlotMapped: !!partyDetails.timeSlot
+        timeSlotMapped: !!finalTimeSlot
       }
     }
 
-    setLoadingStep(1)
-    setProgress(50)
-
-    // 7. CREATE PARTY IN BACKEND
-    console.log('🎪 Creating new party with supplier and time slot info')
+    // 10. CREATE PARTY
+    console.log('Creating new party with supplier and time slot info')
     
-    // Determine if we should create a database party or localStorage party
     const shouldCreateDatabaseParty = userType !== 'ANONYMOUS' && userType !== 'ERROR_FALLBACK'
-    
     let result
-    
+
     if (shouldCreateDatabaseParty) {
-      // Create database party with enhanced supplier
-      console.log('📊 Creating database party')
+      // Create database party
+      console.log('Creating database party')
+      
+      if (!partyDatabaseBackend?.createPartyWithSupplier) {
+        throw new Error('Database backend not available')
+      }
+      
       result = await partyDatabaseBackend.createPartyWithSupplier(
         partyDetails,
         enhancedSupplier,
         enhancedPackage
       )
     } else {
-      // Create localStorage party with enhanced supplier
-      console.log('📦 Creating localStorage party')
+      // Create localStorage party
+      console.log('Creating localStorage party')
       
-      // Save party details to localStorage with time slot info
+      // Save party details to localStorage
       const partyDetailsForStorage = {
         ...partyDetails,
-        timeSlot: partyDetails.timeSlot,
-        originalTime: partyDetails.time, // Keep original time format too
+        timeSlot: finalTimeSlot,
+        originalTime: partyDetails.time,
         created: new Date().toISOString(),
         source: 'ala-carte-booking'
       }
@@ -711,149 +1022,150 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       
       // Add supplier to party plan
       const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
-      if (mainCategories.includes(supplier.category || "")) {
+      
+      if (mainCategories.includes(supplierToUse.category || "")) {
+        if (typeof addSupplier !== 'function') {
+          throw new Error('addSupplier function not available')
+        }
         result = await addSupplier(enhancedSupplier, enhancedPackage)
       } else {
+        if (typeof addAddon !== 'function') {
+          throw new Error('addAddon function not available')
+        }
+        
         const addonDataToAdd = {
-          ...supplier,
+          ...supplierToUse,
           price: selectedPkg.price,
           packageId: enhancedPackage.id,
           selectedAddons: enhancedPackage.addons,
           packageData: enhancedPackage,
-          selectedTimeSlot: partyDetails.timeSlot,
-          bookingTimeSlot: partyDetails.timeSlot
+          selectedTimeSlot: finalTimeSlot,
+          bookingTimeSlot: finalTimeSlot
         }
         result = await addAddon(addonDataToAdd)
       }
     }
 
-    setLoadingStep(2)
-    setProgress(70)
-
-    // 8. SEND AUTO-ENQUIRY (if needed, similar to handleAddToPlan)
+    // 11. SEND AUTO-ENQUIRY (for database users)
     if (result?.success && shouldCreateDatabaseParty) {
-      console.log('📧 À LA CARTE: Checking if auto-enquiry needed')
+      console.log('Checking if auto-enquiry needed')
       
-      // Send enquiry for new party bookings to ensure supplier communication
-      if (result.partyId || userContext?.currentPartyId) {
-        console.log('📧 À LA CARTE: Sending auto-enquiry for new party')
-        setLoadingStep(3)
+      const partyId = result.partyId || userContext?.currentPartyId
+      if (partyId && partyDatabaseBackend?.sendIndividualEnquiry) {
+        console.log('Sending auto-enquiry for new party')
         
-        const enquiryReason = `New party booking via à la carte selection for ${partyDetails.date}${partyDetails.timeSlot ? ` (${partyDetails.timeSlot})` : ''}`
+        const enquiryReason = `New party booking via à la carte selection for ${partyDetails.date}${finalTimeSlot ? ` (${finalTimeSlot})` : ''}`
         
-        // Include comprehensive time slot information in enquiry
         const enquiryPackage = {
           ...enhancedPackage,
-          timeSlotRequested: partyDetails.timeSlot,
-          preferredTimeSlot: partyDetails.timeSlot,
+          timeSlotRequested: finalTimeSlot,
+          preferredTimeSlot: finalTimeSlot,
           partyDate: partyDetails.date,
           enquiryType: 'ala-carte-booking'
         }
         
-        const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
-          result.partyId || userContext.currentPartyId,
-          enhancedSupplier,
-          enquiryPackage,
-          enquiryReason
-        )
-        
-        if (enquiryResult.success) {
-          console.log('✅ À LA CARTE: Auto-enquiry sent successfully with comprehensive time slot info')
+        try {
+          const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
+            partyId,
+            enhancedSupplier,
+            enquiryPackage,
+            enquiryReason
+          )
+          
+          if (enquiryResult.success) {
+            console.log('Auto-enquiry sent successfully')
+          }
+        } catch (enquiryError) {
+          console.warn('Failed to send auto-enquiry:', enquiryError)
+          // Don't fail the entire booking for enquiry errors
         }
       }
     }
 
-    setLoadingStep(4)
-    setProgress(100)
-
-    // 9. SUCCESS HANDLING
-    if (result?.success) {
-      let successMessage = `Party created with ${supplier.name}`
-      
-      // Add time slot to success message
-      if (partyDetails.timeSlot) {
-        const timeSlotLabel = partyDetails.timeSlot === 'morning' ? 'morning' : 'afternoon'
-        successMessage += ` for ${timeSlotLabel} on ${partyDetails.date}`
-      } else {
-        successMessage += ` on ${partyDetails.date}`
-      }
-      
-      // Add enquiry info to message
-      if (shouldCreateDatabaseParty) {
-        successMessage += ' and enquiry sent!'
-      } else {
-        successMessage += '!'
-      }
-      
-      // Store success info for potential display
-      localStorage.setItem('alaCarteBookingSuccess', JSON.stringify({
-        supplierName: supplier.name,
-        partyDate: partyDetails.date,
-        timeSlot: partyDetails.timeSlot,
-        packageName: selectedPkg.name,
-        enquirySent: shouldCreateDatabaseParty,
-        timestamp: Date.now()
-      }))
-      
-      // Wait for user to see completion
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      // Navigate to appropriate destination
-      const categoryMap = {
-        'Entertainment': 'entertainment',
-        'Venues': 'venue', 
-        'Venue': 'venue',
-        'Catering': 'catering',
-        'Decorations': 'decorations',
-        'Party Bags': 'partyBags',
-        'Photography': 'photography',
-        'Activities': 'activities',
-        'Face Painting': 'facePainting',
-        'Cakes': 'cakes',
-        'Balloons': 'balloons'
-      }
-
-      const supplierType = categoryMap[supplier.category] || 'entertainment'
-      console.log('🎯 À LA CARTE: Mapping category for navigation:', supplier.category, '→', supplierType)
-      
-      const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=party-created&source=ala-carte&timeSlot=${partyDetails.timeSlot || ''}`
-      console.log('🚀 À LA CARTE: Navigating to dashboard:', dashboardUrl)
-      router.push(dashboardUrl)
-
-      return { 
-        success: true, 
-        message: successMessage,
-        partyId: result.partyId,
-        timeSlotInfo: partyDetails.timeSlot ? {
-          selectedTimeSlot: partyDetails.timeSlot,
-          timeSlotLabel: partyDetails.timeSlot === 'morning' ? 'Morning' : 'Afternoon',
-          partyDate: partyDetails.date
-        } : null,
-        enquiryInfo: shouldCreateDatabaseParty ? {
-          enquirySent: true,
-          enquiryReason: 'ala-carte-booking'
-        } : null
-      }
-    } else {
+    // 12. SUCCESS HANDLING
+    if (!result?.success) {
       throw new Error(result?.error || "Failed to create party")
     }
 
+    let successMessage = `Party created with ${supplierToUse.name}`
+    
+    if (finalTimeSlot) {
+      const timeSlotLabel = finalTimeSlot === 'morning' ? 'morning' : 'afternoon'
+      successMessage += ` for ${timeSlotLabel} on ${partyDetails.date}`
+    } else if (partyDetails.date) {
+      successMessage += ` on ${partyDetails.date}`
+    }
+    
+    if (shouldCreateDatabaseParty) {
+      successMessage += ' and enquiry sent!'
+    } else {
+      successMessage += '!'
+    }
+    
+    // Store success info
+    localStorage.setItem('alaCarteBookingSuccess', JSON.stringify({
+      supplierName: supplierToUse.name,
+      partyDate: partyDetails.date,
+      timeSlot: finalTimeSlot,
+      packageName: selectedPkg.name,
+      enquirySent: shouldCreateDatabaseParty,
+      timestamp: Date.now()
+    }))
+    
+    // Wait for user to see completion
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    
+    // Navigate to dashboard
+    const categoryMap = {
+      'Entertainment': 'entertainment',
+      'Venues': 'venue', 
+      'Venue': 'venue',
+      'Catering': 'catering',
+      'Decorations': 'decorations',
+      'Party Bags': 'partyBags',
+      'Photography': 'photography',
+      'Activities': 'activities',
+      'Face Painting': 'facePainting',
+      'Cakes': 'cakes',
+      'Balloons': 'balloons'
+    }
+
+    const supplierType = categoryMap[supplierToUse.category] || 'entertainment'
+    console.log('Mapping category for navigation:', supplierToUse.category, '→', supplierType)
+    
+    const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=party-created&source=ala-carte&timeSlot=${finalTimeSlot || ''}`
+    console.log('Navigating to dashboard:', dashboardUrl)
+    router.push(dashboardUrl)
+
+    return { 
+      success: true, 
+      message: successMessage,
+      partyId: result.partyId,
+      timeSlotInfo: finalTimeSlot ? {
+        selectedTimeSlot: finalTimeSlot,
+        timeSlotLabel: finalTimeSlot === 'morning' ? 'Morning' : 'Afternoon',
+        partyDate: partyDetails.date
+      } : null,
+      enquiryInfo: shouldCreateDatabaseParty ? {
+        enquirySent: true,
+        enquiryReason: 'ala-carte-booking'
+      } : null
+    }
+
   } catch (error) {
-    console.error("❌ Error in handleAlaCarteBooking:", error)
+    console.error('Error in handleAlaCarteBooking:', error)
     
     return { 
       success: false, 
       message: `Failed to create party plan: ${error.message}. Please try again.` 
     }
   } finally {
-    setIsAddingToPlan(false)
-    setProgress(0)
-    setLoadingStep(0)
-    console.log('🔧 À LA CARTE: Cleanup completed')
+    console.log('À la carte cleanup completed')
   }
 }, [
   packages, 
   selectedPackageId, 
+  setSelectedPackageId,
   selectedTimeSlot, 
   selectedDate, 
   currentMonth,

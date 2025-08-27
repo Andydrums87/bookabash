@@ -13,7 +13,7 @@ import AuthModal from "@/components/AuthModal";
 
 import { useContextualNavigation } from '@/hooks/useContextualNavigation';
 import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestions';
-import { partyPlanBackend } from "@/utils/partyPlanBackend";
+import { usePartyPlan } from "@/utils/partyPlanBackend";
 import { useToast } from '@/components/ui/toast';
 import Image from 'next/image';
 
@@ -52,8 +52,11 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase";
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend";
 
+import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
+
 export default function SnappyChatReviewPage() {
   const router = useRouter();
+  const { removeSupplier } = usePartyPlan();
   
   // State management
   const [currentStep, setCurrentStep] = useState(0);
@@ -72,6 +75,8 @@ export default function SnappyChatReviewPage() {
   const [hasAddedOnCurrentStep, setHasAddedOnCurrentStep] = useState(false);
 const [initialSupplierCount, setInitialSupplierCount] = useState(0);
 const [ loadingError, setLoadingError] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState(null);
 
   const { toast } = useToast()
 
@@ -352,6 +357,7 @@ const { navigateWithContext} = useContextualNavigation()
             image: supplier.image || supplier.imageUrl || supplier.originalSupplier?.image,
             price: supplier.price,
             description: supplier.description,
+            supplierType: key, // Add this for removal functionality
           });
           
           fullSupplierData[key] = supplier;
@@ -751,6 +757,52 @@ const { navigateWithContext} = useContextualNavigation()
       setLoadingError(error.message);
       setIsSubmitting(false);
     }
+  };
+
+  // Handle removing suppliers in final CTA - show confirmation modal first
+  const handleRemoveSupplier = async (supplierType, supplierId) => {
+    console.log('🗑️ Opening delete confirmation for supplier:', supplierType, supplierId);
+    setSupplierToDelete({ type: supplierType, id: supplierId });
+    setDeleteModalOpen(true);
+  };
+
+  // Confirm supplier removal after user confirms in modal
+  const handleConfirmRemoveSupplier = async (supplierType) => {
+    try {
+      console.log('✅ Confirming removal of supplier:', supplierType);
+      
+      const result = await removeSupplier(supplierType);
+      
+      if (result.success) {
+        // Reload party data to update UI
+        loadPartyDataFromLocalStorage();
+        
+        // Show success toast
+        if (toast) {
+          toast.success('Supplier removed from your party');
+        }
+      } else {
+        console.error('❌ Failed to remove supplier:', result.error);
+        if (toast) {
+          toast.error('Failed to remove supplier. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error removing supplier:', error);
+      if (toast) {
+        toast.error('Something went wrong. Please try again.');
+      }
+    } finally {
+      // Close modal and reset state
+      setDeleteModalOpen(false);
+      setSupplierToDelete(null);
+    }
+  };
+
+  // Cancel supplier removal
+  const handleCancelRemoveSupplier = () => {
+    setDeleteModalOpen(false);
+    setSupplierToDelete(null);
   };
   
   const totalPrice = selectedSuppliers.reduce((sum, supplier) => sum + (supplier.price || 0), 0);
@@ -1331,10 +1383,9 @@ const getButtonIcon = (stepData) => {
        
        <div className="mb-6">
 
-
 <div className="bg-gray-50 rounded-lg p-2 space-y-1.5 max-h-48 overflow-y-auto">
  {selectedSuppliers.map(supplier => (
-   <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100">
+   <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100 group">
      <div className="flex items-center space-x-2 min-w-0 flex-1">
        <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
          <Image
@@ -1352,8 +1403,17 @@ const getButtonIcon = (stepData) => {
          <div className="text-xs text-gray-500 truncate">({supplier.category})</div>
        </div>
      </div>
-     <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
-       £{supplier.price || 0}
+     <div className="flex items-center space-x-2">
+       <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
+         £{supplier.price || 0}
+       </div>
+       <button
+         onClick={() => handleRemoveSupplier(supplier.supplierType || supplier.category.toLowerCase(), supplier.id)}
+         className="w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 text-gray-500 hover:text-red-600 transition-all duration-200 opacity-0 group-hover:opacity-100 flex items-center justify-center"
+         title="Remove supplier"
+       >
+         <X className="w-3 h-3" />
+       </button>
      </div>
    </div>
  ))}
@@ -1468,6 +1528,14 @@ const getButtonIcon = (stepData) => {
           selectedSuppliersCount={selectedSuppliers.length}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmDialog
+        isOpen={deleteModalOpen}
+        supplierType={supplierToDelete?.type}
+        onConfirm={handleConfirmRemoveSupplier}
+        onCancel={handleCancelRemoveSupplier}
+      />
 
  
     </>
