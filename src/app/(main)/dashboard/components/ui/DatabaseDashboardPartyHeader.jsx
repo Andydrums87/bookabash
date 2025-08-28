@@ -302,7 +302,7 @@ export default function DatabasePartyHeader({
           <div className="md:hidden">
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory items-start">
               {/* Date Card - Wider */}
-              <div className="flex-shrink-0 w-40 bg-white/15 backdrop-blur-sm rounded-lg p-3 border border-white/30 snap-center">
+              <div className="flex-shrink-0 w-auto bg-white/15 backdrop-blur-sm rounded-lg p-3 border border-white/30 snap-center">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1 bg-white/20 rounded-full">
                     <Calendar className="w-3 h-3" />

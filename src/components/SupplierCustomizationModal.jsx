@@ -337,7 +337,7 @@ export default function SupplierCustomizationModal({
             
             {/* Package Summary Card for Cake Suppliers */}
             {isCakeSupplier && showCakeCustomization && selectedPackage && (
-              <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl p-4 border border-orange-200 mb-4">
+              <div className="bg-white rounded-xl p-4 border border-[hsl(var(--primary-200))] mb-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -346,8 +346,8 @@ export default function SupplierCustomizationModal({
                     <p className="text-sm text-gray-600">{selectedPackage.duration}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-orange-600">£{selectedPackage.price}</div>
-                    <div className="text-xs text-orange-700">Full Payment</div>
+                    <div className="text-2xl font-bold text-primary-600">£{selectedPackage.price}</div>
+                    <div className="text-xs text-primary-700">Full Payment</div>
                   </div>
                 </div>
                 
@@ -510,14 +510,14 @@ export default function SupplierCustomizationModal({
                 </Label>
                 
                 {availableFlavors.length === 0 ? (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-yellow-800 text-sm">
+                  <div className="p-4 bg-primary-50 border border-[hsl(var(--primary-200))] rounded-lg">
+                    <p className="text-primary-800 text-sm">
                       This supplier hasn't specified their available flavors yet. Please discuss flavor options directly with them.
                     </p>
                   </div>
                 ) : (
                   <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-                    <SelectTrigger className="w-full h-12 bg-white border-2 border-orange-200 rounded-lg text-base">
+                    <SelectTrigger className="w-full h-12 bg-white border-2 border-[hsl(var(--primary-200))] rounded-lg text-sm px-2">
                       <SelectValue placeholder="Select a flavor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -525,11 +525,11 @@ export default function SupplierCustomizationModal({
                         <SelectItem key={flavor.id} value={flavor.id} className="text-base py-3">
                           <div className="flex items-center justify-between w-full">
                             <span>{flavor.name}</span>
-                            {flavor.popular && (
-                              <Badge className="ml-2 text-xs bg-orange-100 text-orange-700 border-orange-200">
+                            {/* {flavor.popular && (
+                              <Badge className="ml-2 text-xs bg-primary-100 text-primary-700 border-[hsl(var(--primary-200))]">
                                 Popular
                               </Badge>
-                            )}
+                            )} */}
                           </div>
                         </SelectItem>
                       ))}
@@ -549,7 +549,7 @@ export default function SupplierCustomizationModal({
                   onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder="Any special decorating requests, dietary requirements, or message for the cake maker..."
                   rows={4}
-                  className="bg-white border-2 border-orange-200 rounded-lg text-base p-4 resize-none"
+                  className="bg-white placeholder:text-sm border-2 border-[hsl(var(--primary-200))] rounded-lg text-base p-4 resize-none"
                   maxLength={500}
                 />
                 <div className="text-xs text-gray-500 text-right">
@@ -695,7 +695,7 @@ export default function SupplierCustomizationModal({
               !canAddCheck.canAdd 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : isCakeSupplier 
-                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white'
+                  ? 'bg-primary-500  text-white'
                   : 'bg-primary-500 hover:bg-primary-600 text-white'
             }`}
             disabled={!selectedPackageId || isAdding || !canAddCheck.canAdd || (isCakeSupplier && showCakeCustomization && !isCakeCustomizationComplete())}

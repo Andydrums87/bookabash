@@ -46,7 +46,7 @@ export default function MobileSupplierNavigation({
       type: "venue",
       title: "Venue",
       name: "Venue",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386510/iStock-2194928280_1_j9rcey.jpg",
       icon: <Building className="w-5 h-5" />,
     },
     {
@@ -54,7 +54,7 @@ export default function MobileSupplierNavigation({
       type: "entertainment",
       title: "Entertainment",
       name: "Entertainment",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386472/iStock-2067025996_p6x3k4.jpg",
       icon: <Music className="w-5 h-5" />,
     },
     {
@@ -62,7 +62,7 @@ export default function MobileSupplierNavigation({
       type: "catering",
       title: "Catering",
       name: "Catering", 
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385342/iStock-669850098_wnqysx.jpg",
       icon: <Utensils className="w-5 h-5" />,
     },
     {
@@ -70,7 +70,7 @@ export default function MobileSupplierNavigation({
       type: "cakes",
       title: "Cakes",
       name: "Cakes",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385304/iStock-1467525287_chvhqw.jpg",
       icon: <Cake className="w-5 h-5" />,
     },
     {
@@ -78,7 +78,7 @@ export default function MobileSupplierNavigation({
       type: "decorations",
       title: "Decorations",
       name: "Decorations",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386306/iStock-1702395012_z3e8mp.jpg",
       icon: <Palette className="w-5 h-5" />,
     },
     {
@@ -86,7 +86,7 @@ export default function MobileSupplierNavigation({
       type: "photography", 
       title: "Photography",
       name: "Photography",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386547/iStock-1181011006_tf3w8n.jpg",
       icon: <Camera className="w-5 h-5" />,
     },
     {
@@ -94,7 +94,7 @@ export default function MobileSupplierNavigation({
       type: "facePainting",
       title: "Face Painting",
       name: "Face Painting",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385783/iStock-484189669_epczo3.jpg",
       icon: <Palette className="w-5 h-5" />,
     },
     {
@@ -102,7 +102,7 @@ export default function MobileSupplierNavigation({
       type: "activities",
       title: "Activities",
       name: "Activities",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385838/iStock-2185368487_a68z9g.jpg",
       icon: <Music className="w-5 h-5" />,
     },
     {
@@ -110,7 +110,7 @@ export default function MobileSupplierNavigation({
       type: "partyBags", 
       title: "Party Bags",
       name: "Party Bags",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
       icon: <Gift className="w-5 h-5" />,
     },
     {
@@ -118,7 +118,7 @@ export default function MobileSupplierNavigation({
       type: "bouncyCastle",
       title: "Bouncy Castle", 
       name: "Bouncy Castle",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386872/iStock-120532646_bdk29o.jpg",
       icon: <Castle className="w-5 h-5" />,
     },
     // {
@@ -395,12 +395,12 @@ export default function MobileSupplierNavigation({
                               e.target.style.display = 'none'
                             }}
                           />
-                          
+{/*                           
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="w-6 h-6">
                               {supplierType.icon}
                             </div>
-                          </div>
+                          </div> */}
                           
                           {isActive && (
                             <div className="absolute inset-0 rounded-full border-4 border-teal-500 shadow-lg"></div> 

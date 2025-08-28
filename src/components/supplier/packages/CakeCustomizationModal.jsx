@@ -267,7 +267,7 @@ const CakeCustomizationModal = ({
           </Button>
           <Button
             onClick={handleConfirm}
-            className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            className="flex-1 bg-primary-400 hover:[hsl(var(--primary-500))] text-white shadow-lg hover:shadow-xl transition-all duration-200"
             disabled={!selectedFlavorObj || availableFlavors.length === 0}
           >
             <span className="flex items-center gap-2">

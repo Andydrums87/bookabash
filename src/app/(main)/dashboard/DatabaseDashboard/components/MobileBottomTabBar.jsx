@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Home, BarChart3, FileText, Clock, X, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { calculatePaymentAmounts } from '@/utils/supplierPricingHelpers'
@@ -281,7 +281,7 @@ const MobileBottomTabBar = ({
                     />
 
                     {tab.badge && !isPaymentTab && (
-                      <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center font-bold shadow-sm border-2 border-white">
+                      <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-sm border-2 border-white">
                         {tab.badge.split("/")[0]}
                       </span>
                     )}
