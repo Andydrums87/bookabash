@@ -51,6 +51,7 @@ import { useRouter } from "next/navigation"
 // Import auth and database functions
 import { supabase } from "@/lib/supabase";
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend";
+import { calculateSupplierPrice, isLeadTimeSupplier } from '@/utils/supplierPricingHelpers'
 
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 
@@ -746,6 +747,14 @@ const { navigateWithContext} = useContextualNavigation()
       const migratedParty = await migratePartyToDatabase(user);
       console.log("Migration complete:", migratedParty);
       
+      // NEW: Set status to 'draft' after migration
+      await supabase
+        .from('parties')
+        .update({ status: 'draft' })
+        .eq('id', migratedParty.id);
+      
+      console.log("Party status set to draft");
+      
       // Small delay for UX, then redirect to payment
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -805,7 +814,11 @@ const { navigateWithContext} = useContextualNavigation()
     setSupplierToDelete(null);
   };
   
-  const totalPrice = selectedSuppliers.reduce((sum, supplier) => sum + (supplier.price || 0), 0);
+  const totalPrice = selectedSuppliers.reduce((sum, supplier) => {
+    const { price } = calculateSupplierPrice(supplier, partyDetails);
+    return sum + price;
+  }, 0);
+  
   const totalAddonsPrice = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
   const grandTotal = totalPrice + totalAddonsPrice;
 
@@ -1384,39 +1397,57 @@ const getButtonIcon = (stepData) => {
        <div className="mb-6">
 
 <div className="bg-gray-50 rounded-lg p-2 space-y-1.5 max-h-48 overflow-y-auto">
- {selectedSuppliers.map(supplier => (
-   <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100 group">
-     <div className="flex items-center space-x-2 min-w-0 flex-1">
-       <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-         <Image
-           src={supplier.image || '/placeholder.svg'}
-           alt={supplier.name}
-           width={24}
-           height={24}
-           className="object-cover w-full h-full"
-         />
-       </div>
-       <div className="min-w-0 flex-1">
-         <div className="font-medium text-gray-900 truncate text-xs">
-           {supplier.name}
-         </div>
-         <div className="text-xs text-gray-500 truncate">({supplier.category})</div>
-       </div>
-     </div>
-     <div className="flex items-center space-x-2">
-       <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
-         £{supplier.price || 0}
-       </div>
-       <button
-         onClick={() => handleRemoveSupplier(supplier.supplierType || supplier.category.toLowerCase(), supplier.id)}
-         className="w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 text-gray-500 hover:text-red-600 transition-all duration-200 opacity-0 group-hover:opacity-100 flex items-center justify-center"
-         title="Remove supplier"
-       >
-         <X className="w-3 h-3" />
-       </button>
-     </div>
-   </div>
- ))}
+{selectedSuppliers.map(supplier => {
+  // Add this calculation for each supplier
+  const pricingInfo = calculateSupplierPrice(supplier, partyDetails);
+  const isLeadTime = isLeadTimeSupplier(supplier);
+  
+  return (
+    <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100 group">
+      <div className="flex items-center space-x-2 min-w-0 flex-1">
+        <div className="w-6 h-6 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+          <Image
+            src={supplier.image || '/placeholder.svg'}
+            alt={supplier.name}
+            width={24}
+            height={24}
+            className="object-cover w-full h-full"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium text-gray-900 truncate text-xs">
+            {supplier.name}
+          </div>
+          <div className="text-xs text-gray-500 truncate">
+            ({supplier.category})
+            {/* Show breakdown for party bags */}
+            {pricingInfo.breakdown && (
+              <span className="ml-1">- {pricingInfo.breakdown}</span>
+            )}
+          </div>
+          {/* Show payment type indicator */}
+          {isLeadTime && (
+            <div className="text-xs text-orange-600 font-medium">
+              Full payment required
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
+          £{pricingInfo.price.toFixed(2)}
+        </div>
+        <button
+          onClick={() => handleRemoveSupplier(supplier.supplierType || supplier.category.toLowerCase(), supplier.id)}
+          className="w-5 h-5 rounded-full bg-gray-200 hover:bg-red-100 text-gray-500 hover:text-red-600 transition-all duration-200 opacity-0 group-hover:opacity-100 flex items-center justify-center"
+          title="Remove supplier"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  )
+})}
  
  {/* Inline Add-ons */}
  {selectedAddons.map(addon => (

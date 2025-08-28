@@ -26,34 +26,42 @@ import {
   Lock,
   ArrowLeft,
   CreditCard,
-  Sparkles
+  Sparkles,
+  Package,
+  Clock
 } from 'lucide-react'
 
 // Hooks and Backend
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb'
+import { supabase } from '@/lib/supabase'
 
 // Initialize Stripe with proper configuration
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
   locale: 'en-GB',
 })
 
+// Import helper functions
+import { 
+  isLeadTimeSupplier, 
+  calculatePaymentAmounts,
+  calculateSupplierPrice 
+} from '@/utils/supplierPricingHelpers'
+
 function PaymentForm({ 
   partyDetails, 
   confirmedSuppliers, 
   addons, 
-  totalCost, 
-  depositAmount,
+  paymentBreakdown,
   onPaymentSuccess,
   onPaymentError,
-  isRedirecting,      // Add this
-  setIsRedirecting    // Add this
+  isRedirecting,
+  setIsRedirecting
 }) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
-
   const [paymentError, setPaymentError] = useState(null)
   const [paymentRequest, setPaymentRequest] = useState(null)
   const [canMakePayment, setCanMakePayment] = useState(false)
@@ -65,23 +73,27 @@ function PaymentForm({
   // Initialize Apple Pay / Google Pay
   useEffect(() => {
     if (stripe) {
-      console.log('🔄 Initializing Payment Request API...')
+      console.log('Initializing Payment Request API...')
       
       const pr = stripe.paymentRequest({
         country: 'GB',
         currency: 'gbp',
         total: {
-          label: `${partyDetails.childName}'s Party Deposit`,
-          amount: depositAmount * 100, // Amount in pence
+          label: `${partyDetails.childName}'s Party Payment`,
+          amount: paymentBreakdown.totalPaymentToday * 100,
         },
         displayItems: [
-          {
-            label: 'Party Deposit',
-            amount: depositAmount * 100,
-          },
-          ...(confirmedSuppliers || []).map(supplier => ({
-            label: `${supplier.category} Service`,
-            amount: Math.round((supplier.price || 0) * 100),
+          ...(paymentBreakdown.hasDeposits ? [{
+            label: 'Service Deposits',
+            amount: paymentBreakdown.depositAmount * 100,
+          }] : []),
+          ...(paymentBreakdown.hasFullPayments ? [{
+            label: 'Full Payments (Products)',
+            amount: paymentBreakdown.fullPaymentAmount * 100,
+          }] : []),
+          ...paymentBreakdown.paymentDetails.map(supplier => ({
+            label: `${supplier.category} - ${supplier.paymentType === 'full_payment' ? 'Full Payment' : 'Deposit'}`,
+            amount: supplier.amountToday * 100,
           })),
           ...(addons || []).map(addon => ({
             label: addon.name,
@@ -94,34 +106,33 @@ function PaymentForm({
 
       // Check if Apple Pay / Google Pay is available
       pr.canMakePayment().then(result => {
-        console.log('🔍 Payment Request API availability check:', result)
+        console.log('Payment Request API availability check:', result)
         if (result) {
           setPaymentRequest(pr)
           setCanMakePayment(true)
-          console.log('✅ Payment Request API available - showing buttons')
+          console.log('Payment Request API available - showing buttons')
         } else {
-          console.log('❌ Payment Request API not available on this device/browser')
+          console.log('Payment Request API not available on this device/browser')
         }
       }).catch(err => {
-        console.log('❌ Error checking payment request availability:', err)
+        console.log('Error checking payment request availability:', err)
         setCanMakePayment(false)
       })
 
       // Handle Apple Pay / Google Pay payment
       pr.on('paymentmethod', async (ev) => {
-        console.log('💳 Processing Payment Request API payment...')
+        console.log('Processing Payment Request API payment...')
         setIsProcessing(true)
         setPaymentError(null)
       
         try {
-          // Create payment intent on your backend
           const response = await fetch('/api/create-payment-intent', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              amount: depositAmount * 100,
+              amount: paymentBreakdown.totalPaymentToday * 100,
               currency: 'gbp',
               partyDetails: {
                 ...partyDetails,
@@ -140,26 +151,23 @@ function PaymentForm({
             throw new Error(backendError)
           }
       
-          // ✅ FIXED: Use confirmCardPayment for Payment Request API
           const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
             payment_method: ev.paymentMethod.id,
           })
       
           if (error) {
-            console.error('❌ Payment Request API error:', error)
+            console.error('Payment Request API error:', error)
             ev.complete('fail')
             throw new Error(error.message)
           }
       
           if (paymentIntent.status === 'succeeded') {
-            console.log('✅ Payment Request API payment successful:', paymentIntent.id)
+            console.log('Payment Request API payment successful:', paymentIntent.id)
             ev.complete('success')
             
-            // IMMEDIATELY show redirecting state
             setIsProcessing(false)
             setIsRedirecting(true)
             
-            // Call the success handler which will do backend work and redirect
             onPaymentSuccess(paymentIntent)
           } else {
             ev.complete('fail')
@@ -167,7 +175,7 @@ function PaymentForm({
           }
       
         } catch (error) {
-          console.error('❌ Payment Request API payment error:', error)
+          console.error('Payment Request API payment error:', error)
           ev.complete('fail')
           setPaymentError(error.message)
           onPaymentError(error)
@@ -175,7 +183,7 @@ function PaymentForm({
         }
       })
     }
-  }, [stripe, depositAmount, partyDetails, confirmedSuppliers, addons, onPaymentSuccess, onPaymentError])
+  }, [stripe, paymentBreakdown, partyDetails, confirmedSuppliers, addons, onPaymentSuccess, onPaymentError])
 
   // Handle regular card payment
   const handleCardPayment = async (event) => {
@@ -191,16 +199,15 @@ function PaymentForm({
     const cardElement = elements.getElement(CardElement)
 
     try {
-      console.log('💳 Processing card payment...')
+      console.log('Processing card payment...')
 
-      // Create payment intent on your backend
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: depositAmount * 100,
+          amount: paymentBreakdown.totalPaymentToday * 100,
           currency: 'gbp',
           partyDetails,
           suppliers: confirmedSuppliers,
@@ -216,7 +223,6 @@ function PaymentForm({
         throw new Error(backendError)
       }
 
-      // Confirm payment with Stripe
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -235,18 +241,16 @@ function PaymentForm({
       }
 
       if (paymentIntent.status === 'succeeded') {
-        console.log('✅ Card payment successful:', paymentIntent.id)
+        console.log('Card payment successful:', paymentIntent.id)
         
-        // IMMEDIATELY show redirecting state
         setIsProcessing(false)
         setIsRedirecting(true)
         
-        // Call the success handler which will do backend work and redirect
         onPaymentSuccess(paymentIntent)
       }
 
     } catch (error) {
-      console.error('❌ Card payment error:', error)
+      console.error('Card payment error:', error)
       setPaymentError(error.message)
       onPaymentError(error)
       setIsProcessing(false)
@@ -262,7 +266,8 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
-          <ContextualBreadcrumb currentPage="payment" />
+      <ContextualBreadcrumb currentPage="payment" />
+      
       {/* Apple Pay / Google Pay Button */}
       {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && (
         <div className="space-y-4">
@@ -281,10 +286,10 @@ function PaymentForm({
                   },
                 }}
                 onReady={() => {
-                  console.log('✅ Payment Request Button ready')
+                  console.log('Payment Request Button ready')
                 }}
                 onClick={(event) => {
-                  console.log('👆 Payment Request Button clicked')
+                  console.log('Payment Request Button clicked')
                 }}
               />
             </div>
@@ -393,7 +398,7 @@ function PaymentForm({
           ) : (
             <div className="flex items-center justify-center space-x-2">
               <Lock className="w-4 h-4" />
-              <span>Pay £{depositAmount} Securely</span>
+              <span>Pay £{paymentBreakdown.totalPaymentToday} Securely</span>
             </div>
           )}
         </button>
@@ -426,142 +431,222 @@ export default function PaymentPageContent() {
   const [user, setUser] = useState(null)
   const [partyId, setPartyId] = useState(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [paymentBreakdown, setPaymentBreakdown] = useState({
+    depositAmount: 0,
+    fullPaymentAmount: 0,
+    totalPaymentToday: 0,
+    totalCost: 0,
+    remainingBalance: 0,
+    hasDeposits: false,
+    hasFullPayments: false,
+    paymentDetails: []
+  })
 
   // Party plan hook for current data
   const { partyPlan, addons } = usePartyPlan()
 
   useEffect(() => {
-   // Add this function at the top of your PaymentPageContent component
-const loadPaymentData = async () => {
-  try {
-    // Get current user
-    const userResult = await partyDatabaseBackend.getCurrentUser();
-    if (!userResult.success) {
-      router.push('/auth/signin?redirect=/payment');
-      return;
-    }
-    setUser(userResult.user);
-
-    // Get current party from database
-    const partyResult = await partyDatabaseBackend.getCurrentParty();
-    if (!partyResult.success || !partyResult.party) {
-      router.push('/dashboard');
-      return;
-    }
-
-    // Get enquiries for this party to check payment status
-    const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id);
-    const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
-    
-    // Create a set of paid categories
-    const paidCategories = new Set(
-      existingEnquiries
-        .filter(enquiry => enquiry.payment_status === 'paid')
-        .map(enquiry => enquiry.supplier_category)
-    );
-    
-    console.log('Already paid categories:', Array.from(paidCategories));
-
-    // Build supplier list from party plan, excluding already paid ones
-    const partyPlan = partyResult.party.party_plan || {};
-    const supplierList = Object.entries(partyPlan)
-      .filter(([key, supplier]) => 
-        supplier && 
-        typeof supplier === 'object' && 
-        supplier.name &&
-        key !== 'addons' && // Exclude addons from supplier list
-        !paidCategories.has(key) // ✅ EXCLUDE ALREADY PAID SUPPLIERS
-      )
-      .map(([key, supplier]) => ({
-        id: supplier.id,
-        name: supplier.name,
-        image: supplier.image || '/placeholder.jpg',
-        rating: supplier.rating || 4.5,
-        description: supplier.description || 'Professional service provider',
-        category: key,
-        price: supplier.price || 0,
-        packageData: supplier.packageData,
-        selectedAddons: supplier.selectedAddons || []
-      }));
-    
-    console.log('✅ Suppliers for payment (unpaid only):', supplierList);
-    
-    // If no unpaid suppliers, redirect to dashboard with message
-    if (supplierList.length === 0) {
-      console.log('No unpaid suppliers found - redirecting to dashboard');
-      router.push('/dashboard?message=no-pending-payments');
-      return;
-    }
-    
-    setConfirmedSuppliers(supplierList);
-
-    setPartyId(partyResult.party.id);
-    setPartyDetails({
-      id: partyResult.party.id,
-      childName: partyResult.party.child_name,
-      theme: partyResult.party.theme,
-      date: partyResult.party.party_date,
-      childAge: partyResult.party.child_age,
-      location: partyResult.party.location,
-      guestCount: partyResult.party.guest_count,
-      email: userResult.user.email,
-      parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
-    });
-
-  } catch (error) {
-    console.error('Error loading payment data:', error);
-    router.push('/dashboard');
-  } finally {
-    setLoading(false);
-  }
-};
+    const loadPaymentData = async () => {
+      try {
+        // Get current user
+        const userResult = await partyDatabaseBackend.getCurrentUser();
+        if (!userResult.success) {
+          router.push('/auth/signin?redirect=/payment');
+          return;
+        }
+        setUser(userResult.user);
+  
+        // Get party ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const partyIdFromUrl = urlParams.get('party_id');
+        
+        if (!partyIdFromUrl) {
+          console.error('No party ID in URL');
+          router.push('/dashboard');
+          return;
+        }
+  
+        // Get specific party by ID (works for both draft and planned)
+        const partyResult = await partyDatabaseBackend.getPartyById(partyIdFromUrl);
+        if (!partyResult.success || !partyResult.party) {
+          console.error('Party not found:', partyIdFromUrl);
+          router.push('/dashboard');
+          return;
+        }
+  
+        // Verify this party belongs to the current user
+        if (partyResult.party.user_id !== userResult.user.id) {
+          console.error('Party does not belong to current user');
+          router.push('/dashboard');
+          return;
+        }
+  
+        // Get enquiries for this party to check payment status
+        const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id);
+        const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
+        
+        // Create a set of paid categories
+        const paidCategories = new Set(
+          existingEnquiries
+            .filter(enquiry => enquiry.payment_status === 'paid')
+            .map(enquiry => enquiry.supplier_category)
+        );
+        
+        console.log('Already paid categories:', Array.from(paidCategories));
+  
+        // Build supplier list from party plan, excluding already paid ones
+        const partyPlan = partyResult.party.party_plan || {};
+        const supplierList = Object.entries(partyPlan)
+          .filter(([key, supplier]) => 
+            supplier && 
+            typeof supplier === 'object' && 
+            supplier.name &&
+            key !== 'addons' &&
+            !paidCategories.has(key)
+          )
+          .map(([key, supplier]) => ({
+            id: supplier.id,
+            name: supplier.name,
+            image: supplier.image || '/placeholder.jpg',
+            rating: supplier.rating || 4.5,
+            description: supplier.description || 'Professional service provider',
+            category: key,
+            price: supplier.price || 0,
+            packageData: supplier.packageData,
+            selectedAddons: supplier.selectedAddons || []
+          }));
+        
+        console.log('Suppliers for payment (unpaid only):', supplierList);
+        
+        // If no unpaid suppliers, redirect to dashboard with message
+        if (supplierList.length === 0) {
+          console.log('No unpaid suppliers found - redirecting to dashboard');
+          router.push('/dashboard?message=no-pending-payments');
+          return;
+        }
+        
+        // Calculate payment breakdown using your helper function
+        const breakdown = calculatePaymentAmounts(supplierList, partyResult.party);
+        console.log('Payment breakdown:', breakdown);
+        
+        setConfirmedSuppliers(supplierList);
+        setPaymentBreakdown(breakdown);
+        setPartyId(partyResult.party.id);
+        setPartyDetails({
+          id: partyResult.party.id,
+          childName: partyResult.party.child_name,
+          theme: partyResult.party.theme,
+          date: partyResult.party.party_date,
+          childAge: partyResult.party.child_age,
+          location: partyResult.party.location,
+          guestCount: partyResult.party.guest_count,
+          email: userResult.user.email,
+          parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
+        });
+  
+      } catch (error) {
+        console.error('Error loading payment data:', error);
+        router.push('/dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
   
     loadPaymentData();
   }, [router]);
 
-  // Calculate cost only for unpaid confirmed suppliers
-  const totalCost = confirmedSuppliers.reduce((sum, supplier) => sum + supplier.price, 0)
-  const depositAmount = Math.max(50, totalCost * 0.2) // 20% deposit or £50 minimum
-  const remainingBalance = totalCost - depositAmount
-
-  // Stripe Elements options
-  const stripeOptions = {
-    appearance: {
-      theme: 'stripe',
-      variables: {
-        colorPrimary: '#374151',
-        colorBackground: '#ffffff',
-        colorText: '#374151',
-        colorDanger: '#ef4444',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        spacingUnit: '4px',
-        borderRadius: '6px',
-      },
-      rules: {
-        '.Input': {
-          padding: '12px',
-          fontSize: '16px',
-        },
-        '.Input:focus': {
-          boxShadow: '0 0 0 2px #3b82f6',
-        },
-      },
-    },
-  }
-
+  // const handlePaymentSuccess = async (paymentIntent) => {
+  //   try {
+  //     // Step 1: Record payment
+  //     const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
+  //       payment_status: paymentBreakdown.remainingBalance > 0 ? 'partial_paid' : 'fully_paid',
+  //       payment_intent_id: paymentIntent.id,
+  //       deposit_amount: paymentBreakdown.depositAmount,
+  //       full_payment_amount: paymentBreakdown.fullPaymentAmount,
+  //       total_paid_today: paymentBreakdown.totalPaymentToday,
+  //       remaining_balance: paymentBreakdown.remainingBalance,
+  //       payment_date: new Date().toISOString()
+  //     });
+  
+  //     const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category);
+      
+  //     // Step 2: Check if enquiries already exist for the suppliers we're paying for
+  //     const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId);
+  //     const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
+      
+  //     const existingEnquiryCategories = existingEnquiries.map(e => e.supplier_category);
+  //     const enquiriesAlreadyExist = supplierCategoriesToPay.every(category => 
+  //       existingEnquiryCategories.includes(category)
+  //     );
+  
+  //     if (enquiriesAlreadyExist) {
+  //       // Individual supplier payment
+  //       console.log('Individual supplier payment - setting auto_accepted and updating payment status');
+        
+  //       // First, mark as auto-accepted
+  //       const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
+        
+  //       // Then update payment status with enhanced info
+  //       const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
+  //         partyId, 
+  //         supplierCategoriesToPay,
+  //         {
+  //           payment_breakdown: paymentBreakdown.paymentDetails,
+  //           lead_time_suppliers: supplierCategoriesToPay.filter(cat => 
+  //             paymentBreakdown.paymentDetails.find(p => p.category === cat)?.paymentType === 'full_payment'
+  //           )
+  //         }
+  //       );
+  //     } else {
+  //       // Initial party payment - create enquiries first
+  //       console.log('Creating new enquiries for initial party payment');
+        
+  //       const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+  //         partyId,
+  //         "BOOKING CONFIRMED - Customer has completed payment"
+  //       );
+        
+  //       if (enquiryResult.success) {
+  //         const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
+  //         const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
+  //           partyId, 
+  //           supplierCategoriesToPay,
+  //           {
+  //             payment_breakdown: paymentBreakdown.paymentDetails
+  //           }
+  //         );
+  //       }
+  //     }
+      
+  //     router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
+      
+  //   } catch (error) {
+  //     console.error('Error handling payment success:', error);
+  //     setIsRedirecting(false);
+  //   }
+  // };
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
-      // Step 1: Record payment
+      // Step 0: Update party status from 'draft' to 'planned'
+      await supabase
+        .from('parties')
+        .update({ status: 'planned' })
+        .eq('id', partyId);
+  
+      // Step 1: Record payment (your existing logic)
       const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
-        payment_status: 'deposit_paid',
+        payment_status: paymentBreakdown.remainingBalance > 0 ? 'partial_paid' : 'fully_paid',
         payment_intent_id: paymentIntent.id,
-        deposit_amount: depositAmount,
+        deposit_amount: paymentBreakdown.depositAmount,
+        full_payment_amount: paymentBreakdown.fullPaymentAmount,
+        total_paid_today: paymentBreakdown.totalPaymentToday,
+        remaining_balance: paymentBreakdown.remainingBalance,
         payment_date: new Date().toISOString()
       });
   
       const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category);
       
-      // Step 2: Check if enquiries already exist for the suppliers we're paying for
+      // Step 2: Check if enquiries already exist (your existing logic)
       const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId);
       const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
       
@@ -571,34 +656,44 @@ const loadPaymentData = async () => {
       );
   
       if (enquiriesAlreadyExist) {
-        // Individual supplier payment
+        // Individual supplier payment (your existing logic)
         console.log('Individual supplier payment - setting auto_accepted and updating payment status');
         
-        // First, mark as auto-accepted
         const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
         
-        // Then update payment status
         const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
           partyId, 
-          supplierCategoriesToPay
+          supplierCategoriesToPay,
+          {
+            payment_breakdown: paymentBreakdown.paymentDetails,
+            lead_time_suppliers: supplierCategoriesToPay.filter(cat => 
+              paymentBreakdown.paymentDetails.find(p => p.category === cat)?.paymentType === 'full_payment'
+            )
+          }
         );
       } else {
-        // Initial party payment - create enquiries first
+        // Initial party payment - create enquiries first (your existing logic)
         console.log('Creating new enquiries for initial party payment');
         
         const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
           partyId,
-          "BOOKING CONFIRMED - Customer has completed payment",
-          // ...
+          "BOOKING CONFIRMED - Customer has completed payment"
         );
         
         if (enquiryResult.success) {
           const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
           const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
             partyId, 
-            supplierCategoriesToPay
+            supplierCategoriesToPay,
+            {
+              payment_breakdown: paymentBreakdown.paymentDetails
+            }
           );
         }
+        
+        // Step 3: Clear localStorage only after successful enquiry creation
+        localStorage.removeItem('party_details');
+        localStorage.removeItem('user_party_plan');
       }
       
       router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
@@ -608,14 +703,8 @@ const loadPaymentData = async () => {
       setIsRedirecting(false);
     }
   };
-  
   const handlePaymentError = (error) => {
     console.error('Payment failed:', error)
-    // Handle payment failure (show error, allow retry, etc.)
-  }
-
-  const handleGoBack = () => {
-    router.push('/review-book')
   }
 
   if (loading) {
@@ -645,12 +734,12 @@ const loadPaymentData = async () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-<ContextualBreadcrumb currentPage="payment" />
+      <ContextualBreadcrumb currentPage="payment" />
+      
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center space-x-4">
-           
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Secure Your Booking</h1>
               <p className="text-gray-600 text-sm mt-1">Complete your payment to guarantee your party date</p>
@@ -702,37 +791,105 @@ const loadPaymentData = async () => {
             </div>
 
             {/* Available Services */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Selected Services</h2>
-              <div className="space-y-4">
-                {confirmedSuppliers.map((supplier) => (
-                  <div key={supplier.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <img 
-                        src={supplier.image || "/placeholder.jpg"} 
-                        alt={supplier.name}
-                        className="w-12 h-12 rounded-lg object-cover bg-gray-200"
-                      />
-                      <div>
-                        <h3 className="font-medium text-gray-900">{supplier.name}</h3>
-                        <div className="flex items-center space-x-3 text-sm text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                            <span>{supplier.rating}</span>
-                          </div>
-                          <span>•</span>
-                          <span className="capitalize">{supplier.category}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">£{supplier.price}</div>
-                      <div className="text-xs text-blue-600 font-medium">Ready to book</div>
-                    </div>
-                  </div>
-                ))}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
+  <h2 className="text-lg font-medium text-gray-900 mb-4">Selected Services</h2>
+  <div className="space-y-3">
+    {paymentBreakdown.paymentDetails.map((supplier) => (
+      <div key={supplier.id} className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+        {/* Mobile Layout: Stack vertically */}
+        <div className="sm:hidden">
+          {/* Top Row: Image + Name */}
+          <div className="flex items-center space-x-3 mb-3">
+            <img 
+              src={supplier.image || "/placeholder.jpg"} 
+              alt={supplier.name}
+              className="w-10 h-10 rounded-lg object-cover bg-gray-200 flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-gray-900 truncate text-sm">{supplier.name}</h3>
+              <span className="text-xs text-gray-500 capitalize">{supplier.category}</span>
+            </div>
+          </div>
+          
+          {/* Middle Row: Rating + Payment Type */}
+          <div className="flex items-center justify-between mb-3 text-xs">
+            <div className="flex items-center space-x-1">
+              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              <span className="text-gray-600">{supplier.rating}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              {supplier.paymentType === 'full_payment' ? (
+                <>
+                  <Package className="w-3 h-3 text-green-600" />
+                  <span className="text-green-600 font-medium">Full Payment</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3 h-3 text-blue-600" />
+                  <span className="text-blue-600 font-medium">Deposit</span>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Bottom Row: Price */}
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-blue-600 font-medium">Ready to book</div>
+            <div className="text-right">
+              <div className="font-semibold text-gray-900 text-sm">£{supplier.amountToday}</div>
+              {supplier.remaining > 0 && (
+                <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout: Side by side (unchanged) */}
+        <div className="hidden sm:flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <img 
+              src={supplier.image || "/placeholder.jpg"} 
+              alt={supplier.name}
+              className="w-12 h-12 rounded-lg object-cover bg-gray-200"
+            />
+            <div>
+              <h3 className="font-medium text-gray-900">{supplier.name}</h3>
+              <div className="flex items-center space-x-3 text-sm text-gray-500">
+                <div className="flex items-center space-x-1">
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                  <span>{supplier.rating}</span>
+                </div>
+                <span>•</span>
+                <span className="capitalize">{supplier.category}</span>
+                <span>•</span>
+                <div className="flex items-center space-x-1">
+                  {supplier.paymentType === 'full_payment' ? (
+                    <>
+                      <Package className="w-3 h-3 text-green-600" />
+                      <span className="text-green-600 font-medium">Full Payment</span>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="w-3 h-3 text-blue-600" />
+                      <span className="text-blue-600 font-medium">Deposit</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
+          <div className="text-right">
+            <div className="font-semibold text-gray-900">£{supplier.amountToday}</div>
+            {supplier.remaining > 0 && (
+              <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
+            )}
+            <div className="text-xs text-blue-600 font-medium">Ready to book</div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
           </div>
 
           {/* Right Column - Payment */}
@@ -744,10 +901,12 @@ const loadPaymentData = async () => {
               
               {/* Line items */}
               <div className="space-y-2 mb-4">
-                {confirmedSuppliers.map((supplier) => (
+                {paymentBreakdown.paymentDetails.map((supplier) => (
                   <div key={supplier.id} className="flex justify-between text-sm">
-                    <span className="text-gray-600 capitalize">{supplier.category}</span>
-                    <span className="text-gray-900">£{supplier.price}</span>
+                    <span className="text-gray-600 capitalize">
+                      {supplier.category} ({supplier.paymentType === 'full_payment' ? 'Full' : 'Deposit'})
+                    </span>
+                    <span className="text-gray-900">£{supplier.amountToday}</span>
                   </div>
                 ))}
                 
@@ -761,33 +920,65 @@ const loadPaymentData = async () => {
 
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between text-base font-medium text-gray-900 mb-3">
-                  <span>Total</span>
-                  <span>£{totalCost}</span>
+                  <span>Total Due Today</span>
+                  <span>£{paymentBreakdown.totalPaymentToday}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>Deposit required today</span>
-                  <span>£{depositAmount}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Remaining balance (due on party day)</span>
-                  <span>£{remainingBalance}</span>
-                </div>
+                
+                {paymentBreakdown.hasDeposits && (
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Service deposits</span>
+                    <span>£{paymentBreakdown.depositAmount}</span>
+                  </div>
+                )}
+                
+                {paymentBreakdown.hasFullPayments && (
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Full payments (products)</span>
+                    <span>£{paymentBreakdown.fullPaymentAmount}</span>
+                  </div>
+                )}
+                
+                {paymentBreakdown.remainingBalance > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Remaining balance (due on party day)</span>
+                    <span>£{paymentBreakdown.remainingBalance}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Security Notice */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div className="flex items-start space-x-3">
-                  <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="text-sm font-medium text-blue-900 mb-1">Booking Protection</h3>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Full refund if suppliers cancel</li>
-                      <li>• 48-hour booking guarantee</li>
-                      <li>• Customer support included</li>
-                    </ul>
+              {/* Payment Type Explanation */}
+              {(paymentBreakdown.hasDeposits && paymentBreakdown.hasFullPayments) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-900 mb-1">Mixed Payment Types</h3>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• Product suppliers (cakes, party bags) require full payment upfront</li>
+                        <li>• Service suppliers require deposits, remainder due on party day</li>
+                        <li>• All bookings guaranteed once payment is complete</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Standard Protection Notice */}
+              {(!paymentBreakdown.hasDeposits || !paymentBreakdown.hasFullPayments) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-900 mb-1">Booking Protection</h3>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• Full refund if suppliers cancel</li>
+                        <li>• 48-hour booking guarantee</li>
+                        <li>• Customer support included</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Stripe Payment Form */}
               <Elements stripe={stripePromise} options={{
@@ -817,18 +1008,19 @@ const loadPaymentData = async () => {
                   partyDetails={partyDetails}
                   confirmedSuppliers={confirmedSuppliers}
                   addons={addons || []}
-                  totalCost={totalCost}
-                  depositAmount={depositAmount}
+                  paymentBreakdown={paymentBreakdown}
                   onPaymentSuccess={handlePaymentSuccess}
                   onPaymentError={handlePaymentError}
-                  isRedirecting={isRedirecting}        // Add this
-                  setIsRedirecting={setIsRedirecting}  // Add this
+                  isRedirecting={isRedirecting}
+                  setIsRedirecting={setIsRedirecting}
                 />
               </Elements>
 
-              <p className="text-xs text-gray-500 text-center mt-3">
-                Remaining balance due on party day.
-              </p>
+              {paymentBreakdown.remainingBalance > 0 && (
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  Remaining balance of £{paymentBreakdown.remainingBalance} due on party day.
+                </p>
+              )}
             </div>
           </div>
         </div>

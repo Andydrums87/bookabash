@@ -13,7 +13,6 @@ export default function DashboardPage() {
   const [userType, setUserType] = useState(null) // null | 'localStorage' | 'database' | 'welcome'
   const [isLoading, setIsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
-
   useEffect(() => {
     const determineUserType = async () => {
       try {
@@ -21,24 +20,24 @@ export default function DashboardPage() {
         const userResult = await partyDatabaseBackend.getCurrentUser()
         
         if (userResult.success) {
-          // User is signed in - check for database party
+          // User is signed in - check for PLANNED party only (ignores drafts)
           const partyResult = await partyDatabaseBackend.getCurrentParty()
           
           if (partyResult.success && partyResult.party) {
-            // Has database party - use database dashboard
-            console.log('🎯 Router: User has database party, showing DatabaseDashboard')
+            // Has planned party - use database dashboard
+            console.log('Router: User has planned party, showing DatabaseDashboard')
             setUserType('database')
           } else {
-            // Signed in but no database party - check localStorage
+            // No planned party (drafts are ignored) - check localStorage
             const localPlan = localStorage.getItem('party_plan')
             const localDetails = localStorage.getItem('party_details')
             
-            console.log('🔍 Router: Checking localStorage data for signed user:', { 
+            console.log('Router: Signed user has no planned party, checking localStorage:', { 
               localPlan: !!localPlan, 
               localDetails: !!localDetails 
             })
             
-            // Parse and check localStorage data more thoroughly
+            // Validate localStorage data
             let hasValidPartyPlan = false
             let hasValidPartyDetails = false
             
@@ -52,9 +51,9 @@ export default function DashboardPage() {
                     parsedPlan[key].name
                   )
                 )
-                console.log('📦 Router: Party plan validity:', hasValidPartyPlan)
+                console.log('Router: Party plan validity for signed user:', hasValidPartyPlan)
               } catch (e) {
-                console.log('⚠️ Router: Failed to parse party_plan')
+                console.log('Router: Failed to parse party_plan for signed user')
               }
             }
             
@@ -68,33 +67,33 @@ export default function DashboardPage() {
                   parsedDetails.guestCount ||
                   parsedDetails.postcode
                 )
-                console.log('📋 Router: Party details validity:', hasValidPartyDetails)
+                console.log('Router: Party details validity for signed user:', hasValidPartyDetails)
               } catch (e) {
-                console.log('⚠️ Router: Failed to parse party_details')
+                console.log('Router: Failed to parse party_details for signed user')
               }
             }
             
             if (hasValidPartyPlan || hasValidPartyDetails) {
-              // Has meaningful party data - use localStorage dashboard with migration prompt
-              console.log('🎯 Router: Found valid localStorage data for signed user, showing LocalStorageDashboard with migration option')
+              // Has meaningful localStorage data - continue with localStorage dashboard
+              console.log('Router: Signed user with valid localStorage data, showing LocalStorageDashboard')
               setUserType('localStorage')
             } else {
-              // Signed in but no meaningful data - show welcome with party creation options
-              console.log('🎯 Router: Signed user with no data, showing welcome page')
+              // Signed in but no meaningful data anywhere - show welcome
+              console.log('Router: Signed user with no data, showing welcome page')
               setUserType('welcome')
             }
           }
         } else {
-          // Not signed in - check for localStorage data
+          // Not signed in - check for localStorage data only
           const localPlan = localStorage.getItem('party_plan')
           const localDetails = localStorage.getItem('party_details')
           
-          console.log('🔍 Router: Checking localStorage data for unsigned user:', { 
+          console.log('Router: Unsigned user, checking localStorage:', { 
             localPlan: !!localPlan, 
             localDetails: !!localDetails 
           })
           
-          // Parse and check localStorage data more thoroughly
+          // Validate localStorage data for unsigned users
           let hasValidPartyPlan = false
           let hasValidPartyDetails = false
           
@@ -108,9 +107,9 @@ export default function DashboardPage() {
                   parsedPlan[key].name
                 )
               )
-              console.log('📦 Router: Party plan validity (unsigned):', hasValidPartyPlan)
+              console.log('Router: Party plan validity for unsigned user:', hasValidPartyPlan)
             } catch (e) {
-              console.log('⚠️ Router: Failed to parse party_plan (unsigned)')
+              console.log('Router: Failed to parse party_plan for unsigned user')
             }
           }
           
@@ -124,33 +123,33 @@ export default function DashboardPage() {
                 parsedDetails.guestCount ||
                 parsedDetails.postcode
               )
-              console.log('📋 Router: Party details validity (unsigned):', hasValidPartyDetails)
+              console.log('Router: Party details validity for unsigned user:', hasValidPartyDetails)
             } catch (e) {
-              console.log('⚠️ Router: Failed to parse party_details (unsigned)')
+              console.log('Router: Failed to parse party_details for unsigned user')
             }
           }
           
           if (hasValidPartyPlan || hasValidPartyDetails) {
-            // Has meaningful party data - use localStorage dashboard
-            console.log('🎯 Router: Found valid localStorage data for unsigned user, showing LocalStorageDashboard')
+            // Has meaningful localStorage data - use localStorage dashboard
+            console.log('Router: Unsigned user with valid localStorage data, showing LocalStorageDashboard')
             setUserType('localStorage')
           } else {
-            // No data at all - show welcome with auth and party creation options
-            console.log('🎯 Router: No data found, showing welcome page')
+            // No data at all - show welcome page
+            console.log('Router: No data found anywhere, showing welcome page')
             setUserType('welcome')
           }
         }
       } catch (error) {
-        console.error('❌ Router: Error determining user type:', error)
+        console.error('Router: Error determining user type:', error)
         // On error, show welcome page to avoid blocking users
         setUserType('welcome')
       } finally {
         setIsLoading(false)
       }
     }
-
+   
     determineUserType()
-  }, [refreshKey])
+   }, [refreshKey])
 
   // Handle refresh after party creation or sign in
   const handleRefresh = () => {

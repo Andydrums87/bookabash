@@ -715,7 +715,7 @@ useEffect(() => {
 
   // Navigation handlers
   const handleAddSupplier = () => navigateWithContext('/browse', 'dashboard')
-  const handlePaymentReady = () => router.push('/payment/secure-party')
+  const handlePaymentReady = () => router.push(`/payment/secure-party?party_id=${partyId}`)
   const handleCreateInvites = () => window.location.href = "/e-invites/create"
   const calculatePartyBagsDisplayPrice = (supplier, guestCount) => {
     // Only calculate for party bags

@@ -38,6 +38,11 @@ export const useSupplierBooking = (
   const [progress, setProgress] = useState(0)
   const [finalPackageData, setFinalPackageData] = useState(null)
 
+  const isLeadTimeBased = useMemo(() => {
+    const leadTimeCategories = ['Cakes', 'Party Bags', 'Decorations'];
+    return leadTimeCategories.includes(supplier?.category);
+  }, [supplier?.category]);
+
   const getCategoryMappingForScroll = useCallback((category) => {
     const mapping = {
       'Entertainment': 'entertainment',
@@ -203,24 +208,20 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
 
   // 3. PARTY DATE AVAILABILITY CHECK - THE CRITICAL CHECK
   if (partyDateToCheck) {
-    console.log('🔍 ⭐ CRITICAL CHECK: Validating supplier availability on PARTY DATE')
-    console.log('🔍 ⭐ Party date:', partyDateToCheck)
-    console.log('🔍 ⭐ Party time slot:', partyTimeSlotToCheck)
-    console.log('🔍 ⭐ This should check Oct 4th, not Oct 9th!')
+ 
     
-    const partyDateAvailability = checkSupplierAvailability(partyDateToCheck, partyTimeSlotToCheck)
+     // For lead-time suppliers, only check date availability (no time slot)
+  const timeSlotToCheck = isLeadTimeBased ? null : partyTimeSlotToCheck;
+  const partyDateAvailability = checkSupplierAvailability(partyDateToCheck, timeSlotToCheck);
     
     console.log('🔍 ⭐ PARTY DATE availability result:', partyDateAvailability)
     
-    // BLOCK if supplier unavailable on party date
     if (!partyDateAvailability || !partyDateAvailability.available) {
-      console.log('🚫 ⭐ BLOCKING: Supplier unavailable on PARTY DATE')
-      console.log('🚫 This should show the unavailable modal!')
       return { 
         showUnavailableModal: true,
         unavailableDate: partyDateToCheck,
-        unavailableTimeSlot: partyTimeSlotToCheck,
-        availableSlots: partyDateAvailability?.timeSlots || [],
+        unavailableTimeSlot: isLeadTimeBased ? null : partyTimeSlotToCheck,
+        availableSlots: isLeadTimeBased ? [] : (partyDateAvailability?.timeSlots || []),
         reason: 'party_date_unavailable'
       }
     }
@@ -351,11 +352,12 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       packageType: packageToAdd.packageType || 'standard',
       supplierType: packageToAdd.supplierType || 'standard',
       // Use party date and time slot for booking
-      selectedTimeSlot: bookingTimeSlot,
+      selectedTimeSlot: isLeadTimeBased ? null : bookingTimeSlot,
       selectedDate: bookingDate,
-      bookingTimeSlot: bookingTimeSlot,
+      bookingTimeSlot: isLeadTimeBased ? null : bookingTimeSlot,
       partyDate: partyDateToCheck,
-      partyTimeSlot: partyTimeSlotToCheck
+      partyTimeSlot: isLeadTimeBased ? null : partyTimeSlotToCheck,
+        supplierDeliveryType: isLeadTimeBased ? 'lead_time' : 'time_slot'
     }
 
     console.log('🎯 Enhanced package with correct party date/time:', enhancedPackage)
@@ -1254,7 +1256,7 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     }
   
     // TIME SLOT VALIDATION for selected dates
-    if (selectedDate && currentMonth) {
+    if (selectedDate && currentMonth && !isLeadTimeBased) {
       const selectedDateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate)
       
       let requiredTimeSlot = selectedTimeSlot
@@ -1276,11 +1278,10 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
         }
       }
       
-      // Check availability for the specific time slot
       const availabilityResult = checkSupplierAvailability(
         selectedDateObj.toISOString().split('T')[0], 
         requiredTimeSlot
-      )
+      );
       
       if (!availabilityResult || !availabilityResult.available) {
         return {

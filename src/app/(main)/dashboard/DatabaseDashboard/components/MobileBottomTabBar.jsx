@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Home, BarChart3, FileText, Clock, X, CreditCard } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { calculatePaymentAmounts } from '@/utils/supplierPricingHelpers'
 import { Button } from "@/components/ui/button"
 
 const MobileBottomTabBar = ({
@@ -20,9 +21,11 @@ const MobileBottomTabBar = ({
   // Widget props
   ProgressWidget,
   CountdownWidget,
+  isVisible = true 
 }) => {
   const [activeTab, setActiveTab] = useState("party")
   const [showModal, setShowModal] = useState(false)
+  const [paymentBreakdown, setPaymentBreakdown] = useState(null)
   const router = useRouter()
 
   // Calculate progress
@@ -32,6 +35,23 @@ const MobileBottomTabBar = ({
 
   const totalSlots = 7
   const progressPercentage = Math.round((confirmedSuppliers / totalSlots) * 100)
+
+  useEffect(() => {
+    if (confirmedSuppliers.length > 0) {
+      const breakdown = calculatePaymentAmounts(confirmedSuppliers, partyDetails)
+      setPaymentBreakdown(breakdown)
+      
+      console.log('Mobile tab bar payment breakdown:', {
+        totalPaymentToday: breakdown.totalPaymentToday,
+        depositAmount: breakdown.depositAmount,
+        fullPaymentAmount: breakdown.fullPaymentAmount,
+        hasDeposits: breakdown.hasDeposits,
+        hasFullPayments: breakdown.hasFullPayments
+      })
+    } else {
+      setPaymentBreakdown(null)
+    }
+  }, [confirmedSuppliers, partyDetails])
 
   // Enhanced tab configuration with payment integration
   const getTabConfig = () => {

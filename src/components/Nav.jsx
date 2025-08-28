@@ -121,7 +121,7 @@ function UserMenu({ user, onSignOut }) {
   )
 }
 
-function CartIndicator({ className = "" }) {
+function CartIndicator({ className = "", partyId }) {
   const [cartData, setCartData] = useState({ suppliers: [], totalDeposit: 0 })
   const [isClient, setIsClient] = useState(false)
   const router = useRouter()
@@ -161,7 +161,7 @@ function CartIndicator({ className = "" }) {
   }
 
   const handlePaymentClick = () => {
-    router.push('/payment/secure-party')
+    router.push(`/payment/secure-party?party_id=${partyId}`)
   }
 
   return (
@@ -356,6 +356,20 @@ export function Nav() {
   
   const { suppliers } = useSuppliers()
 
+  const [currentPartyId, setCurrentPartyId] = useState(null);
+  
+  useEffect(() => {
+    const loadPartyId = async () => {
+      if (user) {
+        const result = await partyDatabaseBackend.getCurrentParty();
+        if (result.success && result.party) {
+          setCurrentPartyId(result.party.id);
+        }
+      }
+    };
+    loadPartyId();
+  }, [user]);
+
 
   // Check authentication status
   useEffect(() => {
@@ -534,11 +548,11 @@ const handleSignOut = async () => {
                 </>
               )}
                {/* ADD CART INDICATOR HERE */}
-  <CartIndicator />
+               <CartIndicator partyId={currentPartyId} />
             </div>
 
             {/* Mobile menu button */}
-            <MobileNav user={user} onSignOut={handleSignOut} loading={loading} />
+            <MobileNav user={user} onSignOut={handleSignOut} loading={loading} currentPartyId={currentPartyId}  />
           </div>
         </div>
       </div>

@@ -1,9 +1,11 @@
+// Updated SelectedSuppliersCard with correct helper function usage
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, CheckCircle } from "lucide-react"
+import { Users, CheckCircle, Package, Clock } from "lucide-react"
 import Image from "next/image"
+import { calculateSupplierPrice, isLeadTimeSupplier } from '@/utils/supplierPricingHelpers'
 
 // Helper function to get category-specific gradients
 const getSupplierGradient = (category) => {
@@ -17,12 +19,14 @@ const getSupplierGradient = (category) => {
     'PartyBags': 'bg-gradient-to-br from-yellow-400 to-orange-400',
     'Cakes' : 'bg-gradient-to-br from-purple-200 to-purple-400',
     'Balloons': 'bg-gradient-to-br from-teal-400 to-cyan-400',
-
   }
   return gradients[category] || 'bg-gradient-to-br from-gray-400 to-slate-400'
 }
 
-export default function SelectedSuppliersCard({ selectedSuppliers = [] }) {
+export default function SelectedSuppliersCard({ 
+  selectedSuppliers = [],
+  partyDetails = null
+}) {
   return (
     <Card className="border border-gray-200 shadow-lg">
       <CardContent className="p-4 sm:p-6">
@@ -63,137 +67,194 @@ export default function SelectedSuppliersCard({ selectedSuppliers = [] }) {
           <>
             {/* Desktop: Mini supplier cards */}
             <div className="hidden sm:grid sm:grid-cols-2 gap-4">
-              {selectedSuppliers.map((supplier) => (
-                <div
-                  key={supplier.id}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
-                >
-                  {/* Image/Header Section */}
-                  <div className="relative h-24 w-full overflow-hidden">
-                    {supplier.image ? (
-                      <Image
-                        src={supplier.image}
-                        alt={supplier.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className={`w-full h-full ${getSupplierGradient(supplier.category)}`} />
-                    )}
-                    
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
-                    
-                    {/* Category badge */}
-                    <div className="absolute top-2 left-2 z-10">
-                      <div className="bg-primary-500 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm">
-                        {supplier.category}
-                      </div>
-                    </div>
-
-                    {/* Checkmark */}
-                    <div className="absolute top-2 right-2 z-10">
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
-                        <CheckCircle className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                    
-                    {/* Supplier name and price */}
-                    <div className="absolute bottom-2 left-2 right-2 z-10">
-                      <h3 className="font-bold text-white text-sm drop-shadow-sm truncate">
-                        {supplier.name}
-                      </h3>
-                      {supplier.price && (
-                        <p className="text-white/90 text-xs font-semibold drop-shadow-sm">
-                          £{supplier.price}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Footer Section */}
-                  <div className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                          {supplier.icon}
-                        </div>
-                        <span className="text-xs text-gray-600">Selected</span>
-                      </div>
-                      <div className="text-right">
-                        {supplier.price && (
-                          <div className="text-sm font-bold text-gray-900">£{supplier.price}</div>
-                        )}
-                        <div className="text-xs font-semibold text-green-600">
-                          ✓ Ready to send
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Mobile: Compact cards */}
-            <div className="sm:hidden">
-              <div className="grid grid-cols-2 gap-3">
-                {selectedSuppliers.map((supplier) => (
+              {selectedSuppliers.map((supplier) => {
+                const pricingInfo = calculateSupplierPrice(supplier, partyDetails)
+                const isLeadTime = isLeadTimeSupplier(supplier)
+                
+                return (
                   <div
                     key={supplier.id}
-                    className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
+                    className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                   >
-                    {/* Mobile header */}
-                    <div className="relative h-16 w-full overflow-hidden">
+                    {/* Image/Header Section */}
+                    <div className="relative h-24 w-full overflow-hidden">
                       {supplier.image ? (
                         <Image
                           src={supplier.image}
                           alt={supplier.name}
                           fill
                           className="object-cover"
-                          sizes="50vw"
+                          sizes="(max-width: 640px) 50vw, 33vw"
                         />
                       ) : (
                         <div className={`w-full h-full ${getSupplierGradient(supplier.category)}`} />
                       )}
                       
                       {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/50" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
                       
+                      {/* Category badge */}
+                      <div className="absolute top-2 left-2 z-10">
+                        <div className="bg-primary-500 text-white px-2 py-1 rounded-md text-xs font-semibold shadow-sm">
+                          {supplier.category}
+                        </div>
+                      </div>
+
+                      {/* Payment type indicator */}
+                      <div className="absolute top-2 right-8 z-10">
+                        {isLeadTime ? (
+                          <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow-sm" title="Full payment required">
+                            <Package className="w-3 h-3 text-white" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shadow-sm" title="Deposit payment">
+                            <Clock className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+
                       {/* Checkmark */}
-                      <div className="absolute top-1 right-1 z-10">
-                        <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-3 h-3 text-white" />
+                      <div className="absolute top-2 right-2 z-10">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                          <CheckCircle className="w-4 h-4 text-white" />
                         </div>
                       </div>
                       
-                      {/* Name and price */}
-                      <div className="absolute bottom-1 left-1 right-1 z-10">
-                        <h3 className="font-semibold text-white text-xs drop-shadow-sm truncate">
+                      {/* Supplier name and price - FIXED to use calculated price */}
+                      <div className="absolute bottom-2 left-2 right-2 z-10">
+                        <h3 className="font-bold text-white text-sm drop-shadow-sm truncate">
                           {supplier.name}
                         </h3>
-                        {supplier.price && (
-                          <p className="text-white/90 text-xs font-medium drop-shadow-sm">
-                            £{supplier.price}
+                        <div>
+                          <p className="text-white/90 text-xs font-semibold drop-shadow-sm">
+                            £{pricingInfo.price.toFixed(2)}
                           </p>
-                        )}
+                          {pricingInfo.breakdown && (
+                            <p className="text-white/80 text-xs drop-shadow-sm">
+                              {pricingInfo.breakdown}
+                            </p>
+                          )}
+                          {isLeadTime && (
+                            <p className="text-orange-200 text-xs drop-shadow-sm font-medium">
+                              Full payment required
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Mobile footer */}
-                    <div className="p-2">
+                    {/* Footer Section - FIXED to use calculated price */}
+                    <div className="p-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1">
-                          <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
                             {supplier.icon}
                           </div>
-                          <span className="text-xs text-gray-600 truncate">{supplier.category}</span>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-600">Selected</span>
+                            {isLeadTime && (
+                              <span className="text-xs text-orange-600 font-medium">Full Payment</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-xs font-semibold text-green-600">✓</div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-gray-900">£{pricingInfo.price.toFixed(2)}</div>
+                          <div className="text-xs font-semibold text-green-600">
+                            ✓ Ready to send
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                )
+              })}
+            </div>
+
+            {/* Mobile: Compact cards - FIXED to use calculated price */}
+            <div className="sm:hidden">
+              <div className="grid grid-cols-2 gap-3">
+                {selectedSuppliers.map((supplier) => {
+                  const pricingInfo = calculateSupplierPrice(supplier, partyDetails)
+                  const isLeadTime = isLeadTimeSupplier(supplier)
+                  
+                  return (
+                    <div
+                      key={supplier.id}
+                      className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
+                    >
+                      {/* Mobile header */}
+                      <div className="relative h-16 w-full overflow-hidden">
+                        {supplier.image ? (
+                          <Image
+                            src={supplier.image}
+                            alt={supplier.name}
+                            fill
+                            className="object-cover"
+                            sizes="50vw"
+                          />
+                        ) : (
+                          <div className={`w-full h-full ${getSupplierGradient(supplier.category)}`} />
+                        )}
+                        
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/50" />
+                        
+                        {/* Payment type indicator */}
+                        <div className="absolute top-1 right-6 z-10">
+                          {isLeadTime ? (
+                            <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center" title="Full payment">
+                              <Package className="w-2 h-2 text-white" />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center" title="Deposit">
+                              <Clock className="w-2 h-2 text-white" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Checkmark */}
+                        <div className="absolute top-1 right-1 z-10">
+                          <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        </div>
+                        
+                        {/* Name and price - FIXED to use calculated price */}
+                        <div className="absolute bottom-1 left-1 right-1 z-10">
+                          <h3 className="font-semibold text-white text-xs drop-shadow-sm truncate">
+                            {supplier.name}
+                          </h3>
+                          <p className="text-white/90 text-xs font-medium drop-shadow-sm">
+                            £{pricingInfo.price.toFixed(2)}
+                          </p>
+                          {pricingInfo.breakdown && (
+                            <p className="text-white/80 text-xs drop-shadow-sm">
+                              {pricingInfo.breakdown}
+                            </p>
+                          )}
+                          {isLeadTime && (
+                            <p className="text-orange-200 text-xs drop-shadow-sm">
+                              Full payment
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Mobile footer */}
+                      <div className="p-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-1">
+                            <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                              {supplier.icon}
+                            </div>
+                            <span className="text-xs text-gray-600 truncate">{supplier.category}</span>
+                          </div>
+                          <div className="text-xs font-semibold text-green-600">✓</div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               
               {/* Summary for many suppliers */}

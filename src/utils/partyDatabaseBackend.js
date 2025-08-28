@@ -221,7 +221,7 @@ class PartyDatabaseBackend {
         .from('parties')
         .select('*')
         .eq('user_id', userResult.user.id)
-        .in('status', ['draft', 'planned'])
+        .in('status', ['planned'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -234,8 +234,58 @@ class PartyDatabaseBackend {
       console.error('❌ Error getting current party:', error)
       return { success: false, error: error.message }
     }
-  }
+  }/**
+ * Get user's confirmed parties (planned status only)
+ */
+async getUserPlannedParties() {
+  try {
+    const userResult = await this.getCurrentUser()
+    if (!userResult.success) {
+      throw new Error('User not found')
+    }
 
+    const { data: parties, error } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('user_id', userResult.user.id)
+      .eq('status', 'planned')  // Only confirmed parties
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    return { success: true, parties: parties || [] }
+
+  } catch (error) {
+    console.error('Error getting planned parties:', error)
+    return { success: false, error: error.message }
+  }
+}
+// Add this new function to partyDatabaseBackend.js
+async getActivePlannedParty() {
+  try {
+    const userResult = await this.getCurrentUser()
+    if (!userResult.success) {
+      throw new Error('User not found')
+    }
+
+    const { data: party, error } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('user_id', userResult.user.id)
+      .eq('status', 'planned')  // Only confirmed parties
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+
+    return { success: true, party }
+
+  } catch (error) {
+    console.error('Error getting active planned party:', error)
+    return { success: false, error: error.message }
+  }
+}
 
 
 

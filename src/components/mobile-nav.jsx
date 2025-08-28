@@ -7,14 +7,37 @@ import { Menu, X, Calendar, Settings, LogOut, Home, Search, Heart, BookOpen, Sta
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
+import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
-// Cart Indicator Component for Mobile
+// Cart Indicator Component for Mobile - FIXED with party ID
 function MobileCartIndicator({ className = "", onCartClick }) {
   const [cartData, setCartData] = useState({ suppliers: [], totalDeposit: 0 })
   const [isClient, setIsClient] = useState(false)
+  const [partyId, setPartyId] = useState(null)
+  const router = useRouter()
 
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  // Get party ID for payment URL
+  useEffect(() => {
+    const loadPartyId = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const result = await partyDatabaseBackend.getCurrentParty()
+          if (result.success && result.party) {
+            setPartyId(result.party.id)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading party ID for mobile cart:', error)
+      }
+    }
+    
+    loadPartyId()
   }, [])
 
   useEffect(() => {
@@ -47,10 +70,19 @@ function MobileCartIndicator({ className = "", onCartClick }) {
     return null
   }
 
+  const handleCartClick = () => {
+    if (!partyId) {
+      router.push('/dashboard') // Fallback if no party ID
+      return
+    }
+    router.push(`/payment/secure-party?party_id=${partyId}`)
+    onCartClick() // Call the original onCartClick to close menu
+  }
+
   return (
     <Button
       variant="outline"
-      onClick={onCartClick}
+      onClick={handleCartClick}
       className={`relative flex items-center gap-2 h-10 px-3 border-none transition-all hover:shadow-md ${className}`}
     >
       <div className="relative">
@@ -111,22 +143,19 @@ export default function MobileNav({ user, onSignOut, loading }) {
   }
 
   const handleSignOut = () => {
-    console.log("📱 Mobile handleSignOut called")
+    console.log("Mobile handleSignOut called")
     closeMenu()
     onSignOut()
   }
 
-  const handleCartClick = () => {
-    closeMenu()
-    router.push('/payment/secure-party')
-  }
-
+  // Remove the old handleCartClick - now handled by MobileCartIndicator
+  
   return (
     <>
       {/* Mobile Header with Menu Button and Cart */}
       <div className="md:hidden flex items-center space-x-2">
-        {/* Cart Indicator */}
-        <MobileCartIndicator onCartClick={handleCartClick} />
+        {/* Cart Indicator - now handles its own click with party ID */}
+        <MobileCartIndicator onCartClick={closeMenu} />
         
         {/* Menu Button */}
         <Button
@@ -316,7 +345,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
         <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-white">
           {!loading && user ? (
             <Button
-              onClick={handleSignOut}
+              onClick={onSignOut}
               className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3 text-base rounded-full transition-all duration-200"
             >
               LOG OUT

@@ -1,4 +1,4 @@
-// SupplierCard.jsx - Fixed state logic for proper card flow
+// SupplierCard.jsx - Updated to use helper functions
 "use client"
 import { useRouter } from 'next/navigation'
 import EmptySupplierCard from './EmptySupplierCard'
@@ -8,6 +8,9 @@ import ConfirmedSupplierCard from './ConfirmedSupplierCard'
 import PaymentConfirmedSupplierCard from './PaymentConfirmedSupplierCard'
 import DeclinedSupplierCard from './DeclinedSupplierCard'
 import DepositPaidSupplierCard from './DepositPaidSupplierCard'
+
+// Import the helper functions
+import { calculateSupplierTotalPrice } from '@/utils/supplierPricingHelpers'
 
 export default function SupplierCard({
   type,
@@ -65,77 +68,69 @@ export default function SupplierCard({
     }, 150)
   }
 
-// FIXED getSupplierState function for SupplierCard.jsx
-const getSupplierState = () => {
-  if (!supplier) return "empty"
-  
-  // Find the SPECIFIC enquiry for THIS supplier type
-  const enquiry = enquiries.find(e => e.supplier_category === type)
-  
-  // If no enquiry exists for this supplier type, it's just selected
-  if (!enquiry) {
-    return isSignedIn ? "selected" : "selected"
-  }
-  
-  // Get the specific payment status for THIS enquiry
-  const thisSupplierPaymentStatus = enquiry.payment_status
-  const enquiryStatus = enquiry.status // Use the enquiry's own status, not global
-  const isAutoAccepted = enquiry.auto_accepted
-  const supplierManuallyAccepted = enquiry.supplier_response_date && 
-                                  enquiry.supplier_response &&
-                                  !enquiry.supplier_response.includes('Auto-')
-  
-  console.log(`🔍 Supplier ${supplier.name} (${type}) state check:`, {
-    enquiryId: enquiry.id,
-    enquiryStatus: enquiryStatus,
-    paymentStatus: thisSupplierPaymentStatus,
-    isAutoAccepted,
-    supplierManuallyAccepted,
-    supplierResponse: enquiry.supplier_response
-  })
+  // FIXED getSupplierState function for SupplierCard.jsx
+  const getSupplierState = () => {
+    if (!supplier) return "empty"
+    
+    // Find the SPECIFIC enquiry for THIS supplier type
+    const enquiry = enquiries.find(e => e.supplier_category === type)
+    
+    // If no enquiry exists for this supplier type, it's just selected
+    if (!enquiry) {
+      return isSignedIn ? "selected" : "selected"
+    }
+    
+    // Get the specific payment status for THIS enquiry
+    const thisSupplierPaymentStatus = enquiry.payment_status
+    const enquiryStatus = enquiry.status // Use the enquiry's own status, not global
+    const isAutoAccepted = enquiry.auto_accepted
+    const supplierManuallyAccepted = enquiry.supplier_response_date && 
+                                    enquiry.supplier_response &&
+                                    !enquiry.supplier_response.includes('Auto-')
+    
 
-  // Handle declined enquiries first
-  if (enquiryStatus === "declined") {
-    console.log(`❌ ${supplier.name}: DECLINED`)
-    return "declined"
-  }
-  
-  // PAYMENT FLOW: Only check payment if enquiry is accepted
-  if (enquiryStatus === "accepted") {
-    
-    // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
-    if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
-      console.log(`✅ ${supplier.name}: PAYMENT_CONFIRMED (paid + manually confirmed)`)
-      return "payment_confirmed"
+    // Handle declined enquiries first
+    if (enquiryStatus === "declined") {
+      console.log(`❌ ${supplier.name}: DECLINED`)
+      return "declined"
     }
     
-    // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
-    if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
-      console.log(`💳 ${supplier.name}: DEPOSIT_PAID_CONFIRMED (paid but awaiting confirmation)`)
-      return "deposit_paid_confirmed"  
+    // PAYMENT FLOW: Only check payment if enquiry is accepted
+    if (enquiryStatus === "accepted") {
+      
+      // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
+      if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
+        console.log(`✅ ${supplier.name}: PAYMENT_CONFIRMED (paid + manually confirmed)`)
+        return "payment_confirmed"
+      }
+      
+      // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
+      if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
+        console.log(`💳 ${supplier.name}: DEPOSIT_PAID_CONFIRMED (paid but awaiting confirmation)`)
+        return "deposit_paid_confirmed"  
+      }
+      
+      // If accepted but not paid = CONFIRMED
+      if (thisSupplierPaymentStatus !== "paid") {
+        console.log(`⏰ ${supplier.name}: CONFIRMED (accepted, awaiting payment)`)
+        return "confirmed"
+      }
     }
     
-    // If accepted but not paid = CONFIRMED
-    if (thisSupplierPaymentStatus !== "paid") {
-      console.log(`⏰ ${supplier.name}: CONFIRMED (accepted, awaiting payment)`)
-      return "confirmed"
+    // ENQUIRY FLOW: Handle pending enquiries
+    if (enquiryStatus === "pending") {
+      console.log(`⏳ ${supplier.name}: AWAITING_RESPONSE`)
+      return "awaiting_response"
     }
+    
+    // DEFAULT: Supplier is selected but no enquiry sent yet
+    console.log(`📝 ${supplier.name}: SELECTED`)
+    return "selected"
   }
-  
-  // ENQUIRY FLOW: Handle pending enquiries
-  if (enquiryStatus === "pending") {
-    console.log(`⏳ ${supplier.name}: AWAITING_RESPONSE`)
-    return "awaiting_response"
-  }
-  
-  // DEFAULT: Supplier is selected but no enquiry sent yet
-  console.log(`📝 ${supplier.name}: SELECTED`)
-  return "selected"
-}
 
   const supplierState = getSupplierState()
 
-  // ✅ Enhanced addon collection that includes enquiry addons
+  // Enhanced addon collection that includes enquiry addons
   const supplierAddons = (() => {
     // Find the enquiry for this supplier type
     const enquiry = enquiries.find(e => e.supplier_category === type)
@@ -148,7 +143,7 @@ const getSupplierState = () => {
         const parsedAddons = JSON.parse(enquiry.addon_details)
         enquiryAddons = Array.isArray(parsedAddons) ? parsedAddons : []
       } catch (error) {
-        console.error(`❌ Error parsing addon_details for ${type}:`, error)
+        console.error(`Error parsing addon_details for ${type}:`, error)
         
         // Fallback: try to get addon IDs and reconstruct
         if (enquiry.addon_ids) {
@@ -162,7 +157,7 @@ const getSupplierState = () => {
               price: 0 // You'll need to fetch actual price
             }))
           } catch (idError) {
-            console.error(`❌ Error parsing addon_ids for ${type}:`, idError)
+            console.error(`Error parsing addon_ids for ${type}:`, idError)
           }
         }
       }
@@ -188,51 +183,8 @@ const getSupplierState = () => {
     return uniqueAddons
   })()
 
-  const getTotalPrice = () => {
-    if (!supplier) return 0
-    
-    let basePrice = supplier.price || 0
-    
-    // For party bags, multiply by guest count
-    if (supplier.category === 'Party Bags' || type === 'partyBags') {
-      const pricePerBag = supplier.packageData?.basePrice || supplier.pricePerBag || supplier.price || 5.00
-      
-      let guestCount = 10; // Default fallback
-      
-      // Try to get guest count from partyDetails first (works for both dashboards)
-      if (partyDetails?.guestCount && partyDetails.guestCount > 0) {
-        guestCount = parseInt(partyDetails.guestCount)
-      }
-      // Fallback: try localStorage (for localStorage dashboard)
-      else if (typeof window !== 'undefined') {
-        try {
-          const storedPartyDetails = localStorage.getItem('party_details')
-          if (storedPartyDetails) {
-            const parsed = JSON.parse(storedPartyDetails)
-            if (parsed.guestCount && parsed.guestCount > 0) {
-              guestCount = parseInt(parsed.guestCount)
-            }
-          }
-        } catch (error) {
-          console.warn('Could not get guest count from localStorage:', error)
-        }
-      }
-      
-      basePrice = pricePerBag * guestCount
-      
-      console.log(`Party bag calculation for ${supplier.name}:`, {
-        pricePerBag,
-        guestCount,
-        totalPrice: basePrice
-      })
-    }
-    
-    const addonsPrice = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-    
-    return basePrice + addonsPrice
-  }
-
-  const totalPrice = getTotalPrice()
+  // Use the helper function to calculate total price
+  const { totalPrice } = calculateSupplierTotalPrice(supplier, supplierAddons, partyDetails)
   
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
@@ -240,7 +192,7 @@ const getSupplierState = () => {
   const commonProps = {
     type,
     supplier,
-    addons: supplierAddons, // ← Fix: ConfirmedSupplierCard expects 'addons' not 'supplierAddons'
+    addons: supplierAddons,
     isLoading,
     isDeleting,
     openSupplierModal,
@@ -253,12 +205,13 @@ const getSupplierState = () => {
     enquiries,
     onPaymentReady,
     handleCancelEnquiry,
-    onClick: handleCardClick
+    onClick: handleCardClick,
+    totalPrice // Pass the calculated total price
   }
 
   // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
-  console.log(`🎯 Rendering ${supplierState} card for ${supplier?.name || type}`)
+  console.log(`Rendering ${supplierState} card for ${supplier?.name || type}`)
 
   // Render the appropriate card component based on state
   switch (supplierState) {

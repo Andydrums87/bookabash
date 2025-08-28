@@ -1,4 +1,4 @@
-// Enhanced SupplierCustomizationModal with inline cake customization
+// Enhanced SupplierCustomizationModal with complete cake customization info
 "use client"
 
 import { useState, useMemo, useEffect } from 'react'
@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Star, 
   Check, 
@@ -15,11 +17,25 @@ import {
   Users,
   Sparkles,
   ChefHat,
-  MessageSquare
+  MessageSquare,
+  Clock, 
+  AlertCircle, 
+  Heart,
+  Truck,
+  Cake
 } from "lucide-react"
 import Image from "next/image"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
-import { Clock, AlertCircle, Heart } from "lucide-react"
+
+// Default cake flavors
+const DEFAULT_CAKE_FLAVORS = [
+  { id: 'vanilla', name: 'Vanilla Sponge', popular: true },
+  { id: 'chocolate', name: 'Chocolate Fudge', popular: true },
+  { id: 'strawberry', name: 'Strawberry', popular: true },
+  { id: 'red-velvet', name: 'Red Velvet' },
+  { id: 'lemon', name: 'Lemon Drizzle' },
+  { id: 'funfetti', name: 'Funfetti/Rainbow' }
+]
 
 export default function SupplierCustomizationModal({
   isOpen,
@@ -37,14 +53,12 @@ export default function SupplierCustomizationModal({
   const [showPendingModal, setShowPendingModal] = useState(false)
   const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: 'planning_empty_slot', showModal: false })
   
-  // 🎂 NEW: Cake customization state
+  // 🎂 Enhanced cake customization state
   const [showCakeCustomization, setShowCakeCustomization] = useState(false)
-  const [cakeCustomization, setCakeCustomization] = useState({
-    flavor: '',
-    flavorName: ''
-  })
+  const [selectedFlavor, setSelectedFlavor] = useState('vanilla')
+  const [customMessage, setCustomMessage] = useState('')
 
-  // 🎂 NEW: Detect if this is a cake supplier
+  // 🎂 Detect if this is a cake supplier
   const isCakeSupplier = useMemo(() => {
     if (!supplier) return false
     
@@ -67,14 +81,19 @@ export default function SupplierCustomizationModal({
     return nameOrDesc.includes('cake') || nameOrDesc.includes('bakery') || nameOrDesc.includes('patisserie')
   }, [supplier])
 
-  // 🎂 NEW: Get available cake flavors
+  // 🎂 Get available cake flavors
   const availableFlavors = useMemo(() => {
+    if (!supplier) return DEFAULT_CAKE_FLAVORS
+
     if (supplier?.serviceDetails?.cakeFlavors?.length > 0) {
-      return supplier.serviceDetails.cakeFlavors
+      return supplier.serviceDetails.cakeFlavors.map((flavor, index) => ({
+        id: flavor.toLowerCase().replace(/\s+/g, '-'),
+        name: flavor,
+        popular: index < 3
+      }))
     }
     
-    // Default flavors
-    return ['Vanilla Sponge', 'Chocolate Fudge', 'Strawberry', 'Red Velvet', 'Lemon Drizzle', 'Funfetti']
+    return DEFAULT_CAKE_FLAVORS
   }, [supplier?.serviceDetails?.cakeFlavors])
 
   const packages = useMemo(() => {
@@ -129,6 +148,7 @@ export default function SupplierCustomizationModal({
 
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
   const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId)
+  const selectedFlavorObj = availableFlavors.find(f => f.id === selectedFlavor) || availableFlavors[0]
   
   // Calculate total price
   const totalPrice = (selectedPackage?.price || 0) + 
@@ -137,15 +157,21 @@ export default function SupplierCustomizationModal({
       return sum + (addon?.price || 0)
     }, 0)
 
-  // 🎂 NEW: Initialize cake customization when showing
+  // Initialize states when modal opens
   useEffect(() => {
-    if (showCakeCustomization && availableFlavors.length > 0 && !cakeCustomization.flavor) {
-      setCakeCustomization({
-        flavor: availableFlavors[0].toLowerCase().replace(/\s+/g, '-'),
-        flavorName: availableFlavors[0]
-      })
+    if (isOpen) {
+      // Set initial flavor
+      if (availableFlavors.length > 0 && !selectedFlavor) {
+        setSelectedFlavor(availableFlavors[0].id)
+      }
+      
+      // Reset cake customization form
+      if (showCakeCustomization) {
+        setSelectedFlavor(availableFlavors[0]?.id || 'vanilla')
+        setCustomMessage('')
+      }
     }
-  }, [showCakeCustomization, availableFlavors, cakeCustomization.flavor])
+  }, [isOpen, showCakeCustomization, availableFlavors])
 
   useEffect(() => {
     if (!selectedPackageId && packages.length > 0) {
@@ -163,94 +189,85 @@ export default function SupplierCustomizationModal({
     )
   }
 
-  // 🎂 NEW: Handle cake customization form changes
-  const handleCakeCustomizationChange = (field, value) => {
-    setCakeCustomization(prev => {
-      const updated = { ...prev, [field]: value }
+  // Handle add to plan with enhanced cake data
+  const handleAddToPlan = () => {
+    // Get selected addon objects
+    const selectedAddonObjects = selectedAddons.map(addonId => {
+      const addon = availableAddons.find(addon => addon.id === addonId)
+      if (!addon) return null
       
-      // If flavor changes, update flavorName too
-      if (field === 'flavor') {
-        const flavorObj = availableFlavors.find(f => 
-          f.toLowerCase().replace(/\s+/g, '-') === value
-        )
-        updated.flavorName = flavorObj || value
+      return {
+        ...addon,
+        supplierId: supplier.id,
+        supplierName: supplier.name,
+        attachedToSupplier: true,
+        isSupplierAddon: true,
+        supplierType: supplier.category,
+        addedAt: new Date().toISOString(),
+        displayId: `${supplier.id}-${addon.id}`
       }
-      
-      return updated
-    })
-  }
+    }).filter(Boolean)
 
- // FIXED: Handle add to plan with proper data format
-const handleAddToPlan = () => {
-  // Get selected addon objects
-  const selectedAddonObjects = selectedAddons.map(addonId => {
-    const addon = availableAddons.find(addon => addon.id === addonId)
-    if (!addon) return null
+    // Create enhanced package with cake customization
+    let finalPackage = selectedPackage
     
-    return {
-      ...addon,
-      supplierId: supplier.id,
-      supplierName: supplier.name,
-      attachedToSupplier: true,
-      isSupplierAddon: true,
-      supplierType: supplier.category,
-      addedAt: new Date().toISOString(),
-      displayId: `${supplier.id}-${addon.id}`
+    if (isCakeSupplier && showCakeCustomization) {
+      finalPackage = {
+        ...selectedPackage,
+        
+        // Payment and delivery info (from CakeCustomizationModal)
+        paymentType: 'full_payment',
+        deliveryExpectation: 'pre_party_delivery',
+        supplierContactRequired: true,
+        
+        // Enhanced cake customization data
+        cakeCustomization: {
+          flavor: selectedFlavor,
+          flavorName: selectedFlavorObj?.name || 'Custom Flavor',
+          customMessage: customMessage.trim(),
+          customizationType: 'cake_specialist'
+        },
+        
+        // Update package features
+        features: [
+          ...(selectedPackage.features || []),
+          `${selectedFlavorObj?.name || 'Custom'} flavor`,
+          'Professional cake decoration',
+          'Pre-party delivery included'
+        ],
+        
+        // Update description
+        description: selectedPackage.description ? 
+          `${selectedPackage.description} - ${selectedFlavorObj?.name || 'Custom'} flavor` :
+          `${selectedFlavorObj?.name || 'Custom'} cake`,
+        
+        packageType: 'cake',
+        supplierType: 'cake_specialist'
+      }
     }
-  }).filter(Boolean)
 
-  // Create package with cake customization if applicable
-  let finalPackage = selectedPackage
-  
-  if (isCakeSupplier && showCakeCustomization) {
-    finalPackage = {
-      ...selectedPackage,
-      cakeCustomization: {
-        flavor: cakeCustomization.flavor,
-        flavorName: cakeCustomization.flavorName,
-        customizationType: 'cake_specialist'
-      },
-      packageType: 'cake',
-      supplierType: 'cake_specialist',
-      description: selectedPackage.description ? 
-        `${selectedPackage.description} - ${cakeCustomization.flavorName} flavor with personalized message` :
-        `${cakeCustomization.flavorName} cake with personalized message`,
-      features: [
-        ...(selectedPackage.features || []),
-        `${cakeCustomization.flavorName} flavor`,
-        'Professional cake decoration'
-      ]
+    const dataToSend = {
+      supplier,
+      package: finalPackage,
+      addons: selectedAddonObjects,
+      totalPrice,
+      autoEnquiry: false
+    }
+
+    console.log('Enhanced cake order data:', dataToSend)
+
+    try {
+      const result = onAddToPlan(dataToSend)
+      console.log('onAddToPlan returned:', result)
+      onClose()
+    } catch (error) {
+      console.error('Error calling onAddToPlan:', error)
     }
   }
 
-  const dataToSend = {
-    supplier,
-    package: finalPackage,
-    addons: selectedAddonObjects,
-    totalPrice,
-    autoEnquiry: false
-  }
-
-  console.log('Enhanced add to plan with data:', dataToSend)
-
-  try {
-    // FIXED: Call onAddToPlan and handle the response properly
-    const result = onAddToPlan(dataToSend)
-    console.log('onAddToPlan returned:', result)
-    
-    // FIXED: Close the customization modal after successful submission
-    onClose()
-    
-  } catch (error) {
-    console.error('Error calling onAddToPlan:', error)
-  }
-}
-
-  // 🎂 NEW: Check if cake customization is ready
   const isCakeCustomizationComplete = () => {
     if (!isCakeSupplier || !showCakeCustomization) return true
-    
-    return cakeCustomization.flavor && cakeCustomization.flavorName
+    return selectedFlavorObj && availableFlavors.length > 0
   }
 
   const getButtonText = () => {
@@ -266,10 +283,9 @@ const handleAddToPlan = () => {
       return `🎂 Customize Cake (£${totalPrice})`
     }
   
-    return `Quick Add (£${totalPrice})`
+    return `Book ${isCakeSupplier ? 'Cake' : 'Service'} - £${totalPrice}`
   }
 
-  // 🎂 NEW: Handle cake customization button
   const handleCakeCustomizeClick = () => {
     if (!showCakeCustomization) {
       setShowCakeCustomization(true)
@@ -294,6 +310,7 @@ const handleAddToPlan = () => {
             {supplier.name}
           </div>
         }
+        subtitle={showCakeCustomization ? "Customize your cake order" : undefined}
         theme="fun"
         icon={
           <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-white shadow-md">
@@ -318,172 +335,269 @@ const handleAddToPlan = () => {
               Choose Your Package
             </h3>
             
-            {/* Package cards with cake styling */}
-            <div className="hidden md:grid md:grid-cols-1 gap-3">
-              {packages.map((pkg) => (
-                <Card 
-                  key={pkg.id}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    selectedPackageId === pkg.id 
-                      ? `ring-2 ${isCakeSupplier ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
-                      : 'hover:shadow-md hover:bg-gray-50'
-                  } ${isCakeSupplier ? 'border-orange-200' : ''}`}
-                  onClick={() => setSelectedPackageId(pkg.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-gray-900">
-                            {isCakeSupplier && '🎂 '}{pkg.name}
-                          </h4>
-                          {pkg.popular && (
-                            <Badge className={`text-xs px-2 py-0.5 ${
-                              isCakeSupplier ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
-                            }`}>
-                              Popular
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{pkg.duration}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            <span>{pkg.features[1] || "Multiple children"}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right ml-4">
-                        <div className={`text-xl font-bold ${
-                          isCakeSupplier ? 'text-orange-600' : 'text-primary-600'
-                        }`}>£{pkg.price}</div>
-                        {selectedPackageId === pkg.id && (
-                          <Check className={`w-5 h-5 mt-1 ml-auto ${
-                            isCakeSupplier ? 'text-orange-500' : 'text-primary-500'
-                          }`} />
-                        )}
-                      </div>
+            {/* Package Summary Card for Cake Suppliers */}
+            {isCakeSupplier && showCakeCustomization && selectedPackage && (
+              <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-xl p-4 border border-orange-200 mb-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      🎂 {selectedPackage.name}
+                    </h3>
+                    <p className="text-sm text-gray-600">{selectedPackage.duration}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-orange-600">£{selectedPackage.price}</div>
+                    <div className="text-xs text-orange-700">Full Payment</div>
+                  </div>
+                </div>
+                
+                {/* Key Info Cards */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div className="text-xs font-medium text-gray-700">Delivery</div>
+                      <div className="text-xs text-gray-600">1-2 days before party</div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Mobile version - similar enhancement */}
-            <div className="md:hidden">
-              <div className="flex gap-3 overflow-x-auto pb-4 px-3 py-1 scrollbar-hide snap-x snap-mandatory">
-                {packages.map((pkg, index) => (
-                  <Card 
-                    key={pkg.id}
-                    className={`flex-shrink-0 w-60 cursor-pointer transition-all duration-200 snap-center ${
-                      selectedPackageId === pkg.id 
-                        ? `ring-2 ${isCakeSupplier ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
-                        : 'hover:shadow-md hover:bg-gray-50'
-                    } ${isCakeSupplier ? 'border-orange-200' : ''} ${index === 0 ? 'ml-1' : ''} ${index === packages.length - 1 ? 'mr-1' : ''}`}
-                    onClick={() => setSelectedPackageId(pkg.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+                    <Truck className="w-4 h-4 text-green-600" />
+                    <div>
+                      <div className="text-xs font-medium text-gray-700">Contact</div>
+                      <div className="text-xs text-gray-600">Supplier will call you</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Package cards */}
+            {!showCakeCustomization && (
+              <>
+                <div className="hidden md:grid md:grid-cols-1 gap-3">
+                  {packages.map((pkg) => (
+                    <Card 
+                      key={pkg.id}
+                      className={`cursor-pointer transition-all duration-200 ${
+                        selectedPackageId === pkg.id 
+                          ? `ring-2 ${isCakeSupplier ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
+                          : 'hover:shadow-md hover:bg-gray-50'
+                      } ${isCakeSupplier ? 'border-orange-200' : ''}`}
+                      onClick={() => setSelectedPackageId(pkg.id)}
+                    >
+                      <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">
-                              {isCakeSupplier && '🎂 '}{pkg.name}
-                            </h4>
-                            {pkg.popular && (
-                              <Badge className={`text-xs px-2 py-0.5 ${
-                                isCakeSupplier ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
-                              }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold text-gray-900">
+                                {isCakeSupplier && '🎂 '}{pkg.name}
+                              </h4>
+                              {pkg.popular && (
+                                <Badge className={`text-xs px-2 py-0.5 ${
+                                  isCakeSupplier ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
+                                }`}>
+                                  Popular
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{pkg.description}</p>
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{pkg.duration}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                <span>{pkg.features[1] || "Multiple children"}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className={`text-xl font-bold ${
+                              isCakeSupplier ? 'text-orange-600' : 'text-primary-600'
+                            }`}>£{pkg.price}</div>
+                            {selectedPackageId === pkg.id && (
+                              <Check className={`w-5 h-5 mt-1 ml-auto ${
+                                isCakeSupplier ? 'text-orange-500' : 'text-primary-500'
+                              }`} />
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Mobile version */}
+                <div className="md:hidden">
+                  <div className="flex gap-3 overflow-x-auto pb-4 px-3 py-1 scrollbar-hide snap-x snap-mandatory">
+                    {packages.map((pkg, index) => (
+                      <Card 
+                        key={pkg.id}
+                        className={`flex-shrink-0 w-60 cursor-pointer transition-all duration-200 snap-center ${
+                          selectedPackageId === pkg.id 
+                            ? `ring-2 ${isCakeSupplier ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
+                            : 'hover:shadow-md hover:bg-gray-50'
+                        } ${isCakeSupplier ? 'border-orange-200' : ''} ${index === 0 ? 'ml-1' : ''} ${index === packages.length - 1 ? 'mr-1' : ''}`}
+                        onClick={() => setSelectedPackageId(pkg.id)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">
+                                  {isCakeSupplier && '🎂 '}{pkg.name}
+                                </h4>
+                                {pkg.popular && (
+                                  <Badge className={`text-xs px-2 py-0.5 ${
+                                    isCakeSupplier ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
+                                  }`}>
+                                    Popular
+                                  </Badge>
+                                )}
+                              </div>
+                              {selectedPackageId === pkg.id && (
+                                <Check className={`w-5 h-5 flex-shrink-0 ${
+                                  isCakeSupplier ? 'text-orange-500' : 'text-primary-500'
+                                }`} />
+                              )}
+                            </div>
+                            
+                            <div className={`text-2xl font-bold ${
+                              isCakeSupplier ? 'text-orange-600' : 'text-primary-600'
+                            }`}>£{pkg.price}</div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Clock className="w-3 h-3 flex-shrink-0" />
+                                <span>{pkg.duration}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Users className="w-3 h-3 flex-shrink-0" />
+                                <span>{pkg.features[1] || "Multiple children"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  <div className="flex justify-center gap-1 mt-2">
+                    {packages.map((_, index) => (
+                      <div 
+                        key={index}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          selectedPackageId === packages[index]?.id 
+                            ? (isCakeSupplier ? 'bg-orange-500' : 'bg-primary-500')
+                            : 'bg-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 🎂 Enhanced Cake Customization Section */}
+          {isCakeSupplier && showCakeCustomization && (
+            <>
+              {/* Flavor Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold text-gray-900">
+                  Choose Cake Flavor
+                </Label>
+                
+                {availableFlavors.length === 0 ? (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-yellow-800 text-sm">
+                      This supplier hasn't specified their available flavors yet. Please discuss flavor options directly with them.
+                    </p>
+                  </div>
+                ) : (
+                  <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
+                    <SelectTrigger className="w-full h-12 bg-white border-2 border-orange-200 rounded-lg text-base">
+                      <SelectValue placeholder="Select a flavor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableFlavors.map((flavor) => (
+                        <SelectItem key={flavor.id} value={flavor.id} className="text-base py-3">
+                          <div className="flex items-center justify-between w-full">
+                            <span>{flavor.name}</span>
+                            {flavor.popular && (
+                              <Badge className="ml-2 text-xs bg-orange-100 text-orange-700 border-orange-200">
                                 Popular
                               </Badge>
                             )}
                           </div>
-                          {selectedPackageId === pkg.id && (
-                            <Check className={`w-5 h-5 flex-shrink-0 ${
-                              isCakeSupplier ? 'text-orange-500' : 'text-primary-500'
-                            }`} />
-                          )}
-                        </div>
-                        
-                        <div className={`text-2xl font-bold ${
-                          isCakeSupplier ? 'text-orange-600' : 'text-primary-600'
-                        }`}>£{pkg.price}</div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span>{pkg.duration}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Users className="w-3 h-3 flex-shrink-0" />
-                            <span>{pkg.features[1] || "Multiple children"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
-              
-              <div className="flex justify-center gap-1 mt-2">
-                {packages.map((_, index) => (
-                  <div 
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      selectedPackageId === packages[index]?.id 
-                        ? (isCakeSupplier ? 'bg-orange-500' : 'bg-primary-500')
-                        : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
 
-          {/* 🎂 NEW: Cake Customization Section */}
-          {isCakeSupplier && showCakeCustomization && (
-            <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-orange-900 mb-4 flex items-center gap-2">
-                <ChefHat className="w-5 h-5 text-orange-600" />
-                🎂 Choose Your Cake Flavor
-              </h3>
-              
-              <div className="max-w-md">
-                <Label className="text-sm font-medium text-orange-800 mb-2 block">
-                  Cake Flavor
+              {/* Custom Message */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Special Requests or Custom Message
                 </Label>
-                <select
-                  value={cakeCustomization.flavor}
-                  onChange={(e) => handleCakeCustomizationChange('flavor', e.target.value)}
-                  className="w-full p-3 border-2 border-orange-200 rounded-lg bg-white focus:border-orange-400 focus:outline-none text-lg"
-                >
-                  {availableFlavors.map(flavor => (
-                    <option 
-                      key={flavor} 
-                      value={flavor.toLowerCase().replace(/\s+/g, '-')}
-                    >
-                      {flavor}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Cake preview */}
-              <div className="mt-4 p-3 bg-white rounded-lg border border-orange-200">
-                <h4 className="font-semibold text-orange-900 mb-2">🎂 Your Cake Order:</h4>
-                <div className="text-sm space-y-1">
-                  <p><strong>Package:</strong> {selectedPackage?.name}</p>
-                  <p><strong>Flavor:</strong> {cakeCustomization.flavorName}</p>
+                <Textarea
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Any special decorating requests, dietary requirements, or message for the cake maker..."
+                  rows={4}
+                  className="bg-white border-2 border-orange-200 rounded-lg text-base p-4 resize-none"
+                  maxLength={500}
+                />
+                <div className="text-xs text-gray-500 text-right">
+                  {customMessage.length}/500 characters
                 </div>
               </div>
-            </div>
+
+              {/* Order Summary */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 border border-green-200">
+                <h4 className="font-semibold mb-3 text-green-900 flex items-center gap-2">
+                  <Cake className="w-5 h-5" />
+                  Order Summary
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Package:</span>
+                    <span className="font-medium text-gray-900">{selectedPackage?.name}</span>
+                  </div>
+                  {selectedFlavorObj && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Flavor:</span>
+                      <span className="font-medium text-gray-900">{selectedFlavorObj.name}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Payment:</span>
+                    <span className="font-medium text-gray-900">Full payment upfront</span>
+                  </div>
+                  <div className="border-t border-green-200 pt-2 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-green-900">Total Amount:</span>
+                      <span className="font-bold text-xl text-green-900">£{totalPrice}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Important Note */}
+                <div className="mt-4 p-3 bg-white/70 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-xs text-gray-700">
+                    <strong>Next steps:</strong> After booking, {supplier?.name || 'the cake maker'} will contact you within 24 hours to confirm delivery details and finalize any custom decorating requests.
+                  </p>
+                </div>
+              </div>
+            </>
           )}
 
-          {/* Add-ons Section - existing code */}
-          {availableAddons.length > 0 && (
+          {/* Add-ons Section - only show when not in cake customization mode */}
+          {availableAddons.length > 0 && !showCakeCustomization && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary-500" />
@@ -529,37 +643,38 @@ const handleAddToPlan = () => {
             </div>
           )}
 
-          {/* Price Summary */}
-          <div className={`${isCakeSupplier ? 'bg-orange-50 border-orange-200' : 'bg-primary-50 border-[hsl(var(--primary-200))]'} rounded-xl p-4 border`}>
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Star className={`w-5 h-5 ${isCakeSupplier ? 'text-orange-500' : 'text-primary-500'}`} />
-              Price Summary
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">
-                  {isCakeSupplier && showCakeCustomization ? '🎂 ' : ''}{selectedPackage?.name}
-                  {isCakeSupplier && showCakeCustomization && ` (${cakeCustomization.flavorName})`}
-                </span>
-                <span className="font-medium">£{selectedPackage?.price}</span>
-              </div>
-              {selectedAddons.map(addonId => {
-                const addon = availableAddons.find(a => a.id === addonId)
-                return addon ? (
-                  <div key={addonId} className="flex justify-between">
-                    <span className="text-gray-600">{addon.name}</span>
-                    <span className="font-medium">£{addon.price}</span>
-                  </div>
-                ) : null
-              })}
-              <div className={`border-t pt-2 flex justify-between font-bold text-lg ${
-                isCakeSupplier ? 'border-orange-200' : 'border-primary-200'
-              }`}>
-                <span>Total</span>
-                <span className={isCakeSupplier ? 'text-orange-600' : 'text-primary-600'}>£{totalPrice}</span>
+          {/* Price Summary - only show when not in detailed cake customization */}
+          {!showCakeCustomization && (
+            <div className={`${isCakeSupplier ? 'bg-orange-50 border-orange-200' : 'bg-primary-50 border-[hsl(var(--primary-200))]'} rounded-xl p-4 border`}>
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Star className={`w-5 h-5 ${isCakeSupplier ? 'text-orange-500' : 'text-primary-500'}`} />
+                Price Summary
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">
+                    {isCakeSupplier ? '🎂 ' : ''}{selectedPackage?.name}
+                  </span>
+                  <span className="font-medium">£{selectedPackage?.price}</span>
+                </div>
+                {selectedAddons.map(addonId => {
+                  const addon = availableAddons.find(a => a.id === addonId)
+                  return addon ? (
+                    <div key={addonId} className="flex justify-between">
+                      <span className="text-gray-600">{addon.name}</span>
+                      <span className="font-medium">£{addon.price}</span>
+                    </div>
+                  ) : null
+                })}
+                <div className={`border-t pt-2 flex justify-between font-bold text-lg ${
+                  isCakeSupplier ? 'border-orange-200' : 'border-primary-200'
+                }`}>
+                  <span>Total</span>
+                  <span className={isCakeSupplier ? 'text-orange-600' : 'text-primary-600'}>£{totalPrice}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </ModalContent>
 
@@ -580,7 +695,7 @@ const handleAddToPlan = () => {
               !canAddCheck.canAdd 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : isCakeSupplier 
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white'
                   : 'bg-primary-500 hover:bg-primary-600 text-white'
             }`}
             disabled={!selectedPackageId || isAdding || !canAddCheck.canAdd || (isCakeSupplier && showCakeCustomization && !isCakeCustomizationComplete())}
@@ -599,6 +714,8 @@ const handleAddToPlan = () => {
               <>
                 {isCakeSupplier && !showCakeCustomization ? (
                   <ChefHat className="w-4 h-4 mr-2" />
+                ) : showCakeCustomization ? (
+                  <Cake className="w-4 h-4 mr-2" />
                 ) : (
                   <Plus className="w-4 h-4 mr-2" />
                 )}
@@ -608,8 +725,6 @@ const handleAddToPlan = () => {
           </Button>
         </div>
       </ModalFooter>
-
-      {/* Existing pending modal code... */}
     </UniversalModal>
   )
 }
