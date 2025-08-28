@@ -32,6 +32,7 @@ import {
 // Hooks and Backend
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
+import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb'
 
 // Initialize Stripe with proper configuration
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
@@ -261,6 +262,7 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
+          <ContextualBreadcrumb currentPage="payment" />
       {/* Apple Pay / Google Pay Button */}
       {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && (
         <div className="space-y-4">
@@ -429,70 +431,90 @@ export default function PaymentPageContent() {
   const { partyPlan, addons } = usePartyPlan()
 
   useEffect(() => {
-    const loadPaymentData = async () => {
-      try {
-        // Get current user
-        const userResult = await partyDatabaseBackend.getCurrentUser();
-        if (!userResult.success) {
-          router.push('/auth/signin?redirect=/payment');
-          return;
-        }
-        setUser(userResult.user);
-  
-        // Get current party from database
-        const partyResult = await partyDatabaseBackend.getCurrentParty();
-        if (!partyResult.success || !partyResult.party) {
-          router.push('/dashboard');
-          return;
-        }
-  
-        // ✅ UPDATED: Don't look for enquiries - we'll create them after payment
-        // Just get the party plan data for payment calculation
-        const partyPlan = partyResult.party.party_plan || {};
-        
-        // Build supplier list from party plan (not enquiries)
-        const supplierList = Object.entries(partyPlan)
-          .filter(([key, supplier]) => 
-            supplier && 
-            typeof supplier === 'object' && 
-            supplier.name &&
-            key !== 'addons' // Exclude addons from supplier list
-          )
-          .map(([key, supplier]) => ({
-            id: supplier.id,
-            name: supplier.name,
-            image: supplier.image || '/placeholder.jpg',
-            rating: supplier.rating || 4.5,
-            description: supplier.description || 'Professional service provider',
-            category: key,
-            price: supplier.price || 0,
-            packageData: supplier.packageData,
-            selectedAddons: supplier.selectedAddons || []
-          }));
-        
-        console.log('✅ Suppliers for payment (from party plan):', supplierList);
-        setConfirmedSuppliers(supplierList);
-  
-        setPartyId(partyResult.party.id);
-        setPartyDetails({
-          id: partyResult.party.id,
-          childName: partyResult.party.child_name,
-          theme: partyResult.party.theme,
-          date: partyResult.party.party_date,
-          childAge: partyResult.party.child_age,
-          location: partyResult.party.location,
-          guestCount: partyResult.party.guest_count,
-          email: userResult.user.email,
-          parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
-        });
-  
-      } catch (error) {
-        console.error('Error loading payment data:', error);
-        router.push('/dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
+   // Add this function at the top of your PaymentPageContent component
+const loadPaymentData = async () => {
+  try {
+    // Get current user
+    const userResult = await partyDatabaseBackend.getCurrentUser();
+    if (!userResult.success) {
+      router.push('/auth/signin?redirect=/payment');
+      return;
+    }
+    setUser(userResult.user);
+
+    // Get current party from database
+    const partyResult = await partyDatabaseBackend.getCurrentParty();
+    if (!partyResult.success || !partyResult.party) {
+      router.push('/dashboard');
+      return;
+    }
+
+    // Get enquiries for this party to check payment status
+    const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id);
+    const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
+    
+    // Create a set of paid categories
+    const paidCategories = new Set(
+      existingEnquiries
+        .filter(enquiry => enquiry.payment_status === 'paid')
+        .map(enquiry => enquiry.supplier_category)
+    );
+    
+    console.log('Already paid categories:', Array.from(paidCategories));
+
+    // Build supplier list from party plan, excluding already paid ones
+    const partyPlan = partyResult.party.party_plan || {};
+    const supplierList = Object.entries(partyPlan)
+      .filter(([key, supplier]) => 
+        supplier && 
+        typeof supplier === 'object' && 
+        supplier.name &&
+        key !== 'addons' && // Exclude addons from supplier list
+        !paidCategories.has(key) // ✅ EXCLUDE ALREADY PAID SUPPLIERS
+      )
+      .map(([key, supplier]) => ({
+        id: supplier.id,
+        name: supplier.name,
+        image: supplier.image || '/placeholder.jpg',
+        rating: supplier.rating || 4.5,
+        description: supplier.description || 'Professional service provider',
+        category: key,
+        price: supplier.price || 0,
+        packageData: supplier.packageData,
+        selectedAddons: supplier.selectedAddons || []
+      }));
+    
+    console.log('✅ Suppliers for payment (unpaid only):', supplierList);
+    
+    // If no unpaid suppliers, redirect to dashboard with message
+    if (supplierList.length === 0) {
+      console.log('No unpaid suppliers found - redirecting to dashboard');
+      router.push('/dashboard?message=no-pending-payments');
+      return;
+    }
+    
+    setConfirmedSuppliers(supplierList);
+
+    setPartyId(partyResult.party.id);
+    setPartyDetails({
+      id: partyResult.party.id,
+      childName: partyResult.party.child_name,
+      theme: partyResult.party.theme,
+      date: partyResult.party.party_date,
+      childAge: partyResult.party.child_age,
+      location: partyResult.party.location,
+      guestCount: partyResult.party.guest_count,
+      email: userResult.user.email,
+      parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
+    });
+
+  } catch (error) {
+    console.error('Error loading payment data:', error);
+    router.push('/dashboard');
+  } finally {
+    setLoading(false);
+  }
+};
   
     loadPaymentData();
   }, [router]);
@@ -529,9 +551,6 @@ export default function PaymentPageContent() {
 
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
-      console.log('Payment successful:', paymentIntent.id);
-      setIsRedirecting(true);
-      
       // Step 1: Record payment
       const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
         payment_status: 'deposit_paid',
@@ -539,52 +558,54 @@ export default function PaymentPageContent() {
         deposit_amount: depositAmount,
         payment_date: new Date().toISOString()
       });
-      
-      if (!updateResult.success) {
-        throw new Error('Failed to record payment');
-      }
   
-      // Step 2: Send enquiries
-      const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-        partyId,
-        "BOOKING CONFIRMED - Customer has completed payment",
-        JSON.stringify({
-          paymentConfirmed: true,
-          paymentIntentId: paymentIntent.id,
-          depositPaid: depositAmount,
-          bookingType: 'paid_booking'
-        })
+      const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category);
+      
+      // Step 2: Check if enquiries already exist for the suppliers we're paying for
+      const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId);
+      const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
+      
+      const existingEnquiryCategories = existingEnquiries.map(e => e.supplier_category);
+      const enquiriesAlreadyExist = supplierCategoriesToPay.every(category => 
+        existingEnquiryCategories.includes(category)
       );
   
-      if (enquiryResult.success) {
-        // Step 3: Auto-accept enquiries
-        const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
+      if (enquiriesAlreadyExist) {
+        // Individual supplier payment
+        console.log('Individual supplier payment - setting auto_accepted and updating payment status');
         
-        if (autoAcceptResult.success) {
-          console.log('All enquiries auto-accepted after payment');
-          
-          // Step 4: UPDATE PAYMENT STATUS ON ENQUIRIES
-          const supplierCategories = confirmedSuppliers.map(s => s.category);
+        // First, mark as auto-accepted
+        const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
+        
+        // Then update payment status
+        const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
+          partyId, 
+          supplierCategoriesToPay
+        );
+      } else {
+        // Initial party payment - create enquiries first
+        console.log('Creating new enquiries for initial party payment');
+        
+        const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+          partyId,
+          "BOOKING CONFIRMED - Customer has completed payment",
+          // ...
+        );
+        
+        if (enquiryResult.success) {
+          const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
           const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
             partyId, 
-            supplierCategories
+            supplierCategoriesToPay
           );
-          
-          if (paymentUpdateResult.success) {
-            console.log(`Payment status updated for ${paymentUpdateResult.updatedEnquiries.length} enquiries`);
-          } else {
-            console.error('Failed to update enquiry payment status:', paymentUpdateResult.error);
-          }
         }
       }
       
-      // Step 5: Redirect
-      router.push(`/payment/success?payment_intent=${paymentIntent.id}&enquiries_sent=${enquiryResult.success}`);
+      router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
       
     } catch (error) {
       console.error('Error handling payment success:', error);
       setIsRedirecting(false);
-      alert('Payment successful, but there was an issue with booking confirmation. Please contact support.');
     }
   };
   
@@ -624,13 +645,12 @@ export default function PaymentPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+<ContextualBreadcrumb currentPage="payment" />
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           <div className="flex items-center space-x-4">
-            <button onClick={handleGoBack} className="text-gray-400 hover:text-gray-600">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+           
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Secure Your Booking</h1>
               <p className="text-gray-600 text-sm mt-1">Complete your payment to guarantee your party date</p>

@@ -180,66 +180,71 @@ export default function SupplierCustomizationModal({
     })
   }
 
-  // 🎂 ENHANCED: Handle add to plan with cake customization
-  const handleAddToPlan = () => {
-    // Get selected addon objects
-    const selectedAddonObjects = selectedAddons.map(addonId => {
-      const addon = availableAddons.find(addon => addon.id === addonId)
-      if (!addon) return null
-      
-      return {
-        ...addon,
-        supplierId: supplier.id,
-        supplierName: supplier.name,
-        attachedToSupplier: true,
-        isSupplierAddon: true,
-        supplierType: supplier.category,
-        addedAt: new Date().toISOString(),
-        displayId: `${supplier.id}-${addon.id}`
-      }
-    }).filter(Boolean)
-
-    // 🎂 ENHANCED: Create package with cake customization if applicable
-    let finalPackage = selectedPackage
+ // FIXED: Handle add to plan with proper data format
+const handleAddToPlan = () => {
+  // Get selected addon objects
+  const selectedAddonObjects = selectedAddons.map(addonId => {
+    const addon = availableAddons.find(addon => addon.id === addonId)
+    if (!addon) return null
     
-    if (isCakeSupplier && showCakeCustomization) {
-      finalPackage = {
-        ...selectedPackage,
-        cakeCustomization: {
-          flavor: cakeCustomization.flavor,
-          flavorName: cakeCustomization.flavorName,
-          customizationType: 'cake_specialist'
-        },
-        packageType: 'cake',
-        supplierType: 'cake_specialist',
-        description: selectedPackage.description ? 
-          `${selectedPackage.description} - ${cakeCustomization.flavorName} flavor with personalized message` :
-          `${cakeCustomization.flavorName} cake with personalized message`,
-        features: [
-          ...(selectedPackage.features || []),
-          `${cakeCustomization.flavorName} flavor`,
-          'Professional cake decoration'
-        ]
-      }
+    return {
+      ...addon,
+      supplierId: supplier.id,
+      supplierName: supplier.name,
+      attachedToSupplier: true,
+      isSupplierAddon: true,
+      supplierType: supplier.category,
+      addedAt: new Date().toISOString(),
+      displayId: `${supplier.id}-${addon.id}`
     }
+  }).filter(Boolean)
 
-    const dataToSend = {
-      supplier,
-      package: finalPackage,
-      addons: selectedAddonObjects,
-      totalPrice,
-      autoEnquiry: false
-    }
-
-    console.log('🎂 Enhanced add to plan with cake data:', dataToSend)
-
-    try {
-      const result = onAddToPlan(dataToSend)
-      console.log('✅ onAddToPlan returned:', result)
-    } catch (error) {
-      console.error('❌ Error calling onAddToPlan:', error)
+  // Create package with cake customization if applicable
+  let finalPackage = selectedPackage
+  
+  if (isCakeSupplier && showCakeCustomization) {
+    finalPackage = {
+      ...selectedPackage,
+      cakeCustomization: {
+        flavor: cakeCustomization.flavor,
+        flavorName: cakeCustomization.flavorName,
+        customizationType: 'cake_specialist'
+      },
+      packageType: 'cake',
+      supplierType: 'cake_specialist',
+      description: selectedPackage.description ? 
+        `${selectedPackage.description} - ${cakeCustomization.flavorName} flavor with personalized message` :
+        `${cakeCustomization.flavorName} cake with personalized message`,
+      features: [
+        ...(selectedPackage.features || []),
+        `${cakeCustomization.flavorName} flavor`,
+        'Professional cake decoration'
+      ]
     }
   }
+
+  const dataToSend = {
+    supplier,
+    package: finalPackage,
+    addons: selectedAddonObjects,
+    totalPrice,
+    autoEnquiry: false
+  }
+
+  console.log('Enhanced add to plan with data:', dataToSend)
+
+  try {
+    // FIXED: Call onAddToPlan and handle the response properly
+    const result = onAddToPlan(dataToSend)
+    console.log('onAddToPlan returned:', result)
+    
+    // FIXED: Close the customization modal after successful submission
+    onClose()
+    
+  } catch (error) {
+    console.error('Error calling onAddToPlan:', error)
+  }
+}
 
   // 🎂 NEW: Check if cake customization is ready
   const isCakeCustomizationComplete = () => {

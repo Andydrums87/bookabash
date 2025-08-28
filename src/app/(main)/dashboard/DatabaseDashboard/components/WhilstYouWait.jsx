@@ -155,7 +155,7 @@ function EInvitesCard({
             </div>
 
             {/* Quick Stats */}
-            {totalGuests > 0 && (
+            {/* {totalGuests > 0 && (
               <div className="grid grid-cols-2 gap-3 mb-6 p-4 bg-gray-50 rounded-xl">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{totalGuests}</div>
@@ -166,7 +166,7 @@ function EInvitesCard({
                   <div className="text-sm text-gray-600">Invites Sent</div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Management Actions */}
             <div className="space-y-3">

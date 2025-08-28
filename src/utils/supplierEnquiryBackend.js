@@ -69,12 +69,13 @@ class SupplierEnquiryBackend {
     try {
       console.log('🔧 Starting manual join for suppliers:', supplierIds)
 
-      // Step 1: Get enquiries
-      let enquiriesQuery = supabase
-        .from('enquiries')
-        .select('*')
-        .in('supplier_id', supplierIds)
-        .order('created_at', { ascending: false })
+    // In manualJoinEnquiries function
+let enquiriesQuery = supabase
+.from('enquiries')
+.select('*')
+.in('supplier_id', supplierIds)
+.eq('payment_status', 'paid') // Only show paid enquiries to suppliers
+.order('created_at', { ascending: false })
 
       if (status) {
         enquiriesQuery = enquiriesQuery.eq('status', status)

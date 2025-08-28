@@ -21,6 +21,7 @@ import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
 import useDisableScroll from "@/hooks/useDisableScroll"
 
+
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
@@ -49,6 +50,7 @@ export default function DatabaseDashboard() {
   const searchParams = useSearchParams()
   const { navigateWithContext, getStoredModalState, clearModalState } = useContextualNavigation() // ✅ Already available
 
+
   const [isUpdating, setIsUpdating] = useState(false)
   const [sendingEnquiry, setSendingEnquiry] = useState(false)
   const [enquiryFeedback, setEnquiryFeedback] = useState(null)
@@ -66,6 +68,8 @@ const [isClient, setIsClient] = useState(false)
 useEffect(() => {
   setIsClient(typeof window !== 'undefined')
 }, [])
+
+
 
   // MAIN PARTY DATA HOOK
   const {
@@ -122,11 +126,10 @@ useEffect(() => {
     })
     setShowSupplierModal(true)
   }
-
   const closeSupplierModal = () => {
     console.log('🔒 Closing supplier modal')
     setShowSupplierModal(false)
-    clearModalState() // ✅ Clear modal state when closing
+    // Don't call clearModalState() immediately - it interferes with the confirmation modal
   }
 
   // ✅ MODAL RESTORATION EFFECT - Same as localStorage dashboard
@@ -188,22 +191,34 @@ useEffect(() => {
     window.addEventListener('restoreModal', handleRestoreModal)
     return () => window.removeEventListener('restoreModal', handleRestoreModal)
   }, [])
-
+  useEffect(() => {
+    const outstandingData = getOutstandingSupplierData()
+    
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('cartData', JSON.stringify({
+        suppliers: outstandingData.suppliers,
+        totalDeposit: outstandingData.totalDeposit,
+        supplierCount: outstandingData.suppliers.length,
+        timestamp: Date.now()
+      }))
+    }
+  }, [enquiries, visibleSuppliers])
   
-
-  // Clean, separate functions for supplier selection
   const handleSupplierSelection = async (supplierData) => {
+    console.log('🎯 DASHBOARD: handleSupplierSelection ENTRY - supplierData:', supplierData)
     const supplier = supplierData?.supplier || supplierData
     const selectedPackage = supplierData?.package || null
-    
+    console.log('🎯 DASHBOARD: Extracted supplier:', supplier?.name)
+    console.log('🎯 DASHBOARD: Extracted package:', selectedPackage?.name)
     if (!supplier) {
       console.error('❌ No supplier data provided')
       return
     }
     
     try {
-      console.log('✅ Using Quick Add flow - show confirmation modal first')
-      await handleNormalSupplierAddition(supplier, selectedPackage)
+      console.log('✅ Using Quick Add flow - calling handleNormalSupplierAddition')
+    await handleNormalSupplierAddition(supplier, selectedPackage)
+    console.log('✅ handleNormalSupplierAddition completed')
       const supplierTypeMapping = {
         'Venues': 'venue',
         'Entertainment': 'entertainment', 
@@ -219,22 +234,55 @@ useEffect(() => {
       
       const supplierType = supplierTypeMapping[supplier.category] || 'venue'
       setActiveMobileSupplierType(supplierType)
+      
     } catch (error) {
       console.error('💥 Error in supplier selection:', error)
       setEnquiryFeedback(`❌ Failed to process ${supplier.name}: ${error.message}`)
     }
   }
+  
+
 
   const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
-    console.log('📝 Quick Add for:', supplier.name, '- showing confirmation modal first')
+    console.log('📝 DASHBOARD: handleNormalSupplierAddition called for:', supplier.name)
     
-    // DON'T add supplier to party plan yet - just show confirmation modal
-    // Only add when user confirms in modal
-    setAddedSupplierData({ supplier, selectedPackage })
-    setShowSupplierAddedModal(true)
-    closeSupplierModal() // ✅ This will now properly clear modal state
-    setEnquiryFeedback(null)
+    // STEP 1: Close the supplier selection modal first
+    setShowSupplierModal(false)
+    
+    // STEP 2: Use setTimeout to ensure the state update is processed
+    setTimeout(() => {
+      console.log('📝 DASHBOARD: Setting modal data for:', supplier.name)
+      
+      // Set the modal data
+      const modalData = { supplier, selectedPackage }
+      setAddedSupplierData(modalData)
+      
+      // Show the confirmation modal
+      setShowSupplierAddedModal(true)
+      
+      console.log('📝 DASHBOARD: Modal state should now be:', {
+        showSupplierAddedModal: true,
+        addedSupplierData: modalData
+      })
+      
+      // Clear any error feedback
+      setEnquiryFeedback(null)
+      
+    }, 200) // Increased delay to ensure state is fully processed
   }
+  // ALSO ENSURE: Your handleModalSendEnquiry function properly refreshes data
+  // Add this after your existing handleModalSendEnquiry function if it's not already there:
+  
+
+  const refreshDashboardData = async () => {
+    console.log('🔄 DASHBOARD: Refreshing dashboard data...')
+    try {
+      await refreshPartyData() // This should trigger your usePartyData hook to reload
+      console.log('✅ DASHBOARD: Data refresh completed')
+    } catch (error) {
+      console.error('❌ DASHBOARD: Error refreshing data:', error)
+    }
+  }  
 
   const handleAutoEnquiryAddition = async (supplier, selectedPackage) => {
     console.log('🔄 Starting auto-enquiry addition for:', supplier.name)
@@ -309,6 +357,7 @@ useEffect(() => {
     }, 50)
   }
   
+
   // Early return with specific error message if party ID is missing
   if (!loading && isSignedIn && !partyId) {
     console.error('❌ CRITICAL: User is signed in but no party ID found!')
@@ -906,18 +955,18 @@ useEffect(() => {
       
       {/* Supplier Added Confirmation Modal */}
       <SupplierAddedConfirmationModal
-        isOpen={showSupplierAddedModal}
-        onClose={handleModalClose}
-        onSendEnquiry={handleModalSendEnquiry}
-        supplier={addedSupplierData?.supplier}
-        selectedPackage={addedSupplierData?.selectedPackage}
-        partyDetails={partyDetails}
-        isSending={sendingEnquiry}
-        currentPhase={currentPhase}
-        partyData={partyData}
-        partyId={partyId}
-        enquiries={enquiries}
-        hasEnquiriesPending={hasEnquiriesPending}
+     isOpen={showSupplierAddedModal}
+     onClose={handleModalClose}
+     onSendEnquiry={handleModalSendEnquiry}
+     supplier={addedSupplierData?.supplier}
+     selectedPackage={addedSupplierData?.selectedPackage}
+     partyDetails={partyDetails}
+     isSending={sendingEnquiry}
+     currentPhase={currentPhase}
+     partyData={partyData}
+     partyId={partyId}  // Make sure this is being passed
+     enquiries={enquiries}
+     hasEnquiriesPending={hasEnquiriesPending}
       />
       
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
@@ -949,6 +998,7 @@ useEffect(() => {
           hasEnquiriesPending={hasEnquiriesPending}
           isSignedIn={true}                    // ✅ Database users are signed in
           currentPartyId={partyId}             // ✅ Pass the party ID
+          onAddToPlan={handleSupplierSelection} 
         />
 
         {/* Replacement Manager - only if we have a party ID */}

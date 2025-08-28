@@ -2,13 +2,72 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Calendar, Settings, LogOut, Home, Search, Heart, BookOpen, Star, Mail, ChevronRight, Gift, Users } from 'lucide-react'
+import { Badge } from "@/components/ui/badge"
+import { Menu, X, Calendar, Settings, LogOut, Home, Search, Heart, BookOpen, Star, Mail, ChevronRight, Gift, Users, ShoppingCart } from 'lucide-react'
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+
+// Cart Indicator Component for Mobile
+function MobileCartIndicator({ className = "", onCartClick }) {
+  const [cartData, setCartData] = useState({ suppliers: [], totalDeposit: 0 })
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
+
+    const updateCartFromStorage = () => {
+      try {
+        const storedCart = sessionStorage.getItem('cartData')
+        if (storedCart) {
+          const parsed = JSON.parse(storedCart)
+          if (Date.now() - parsed.timestamp < 30000) {
+            setCartData(parsed)
+          } else {
+            setCartData({ suppliers: [], totalDeposit: 0 })
+          }
+        }
+      } catch (error) {
+        console.error('Error reading cart data:', error)
+      }
+    }
+
+    updateCartFromStorage()
+    const interval = setInterval(updateCartFromStorage, 3000)
+    return () => clearInterval(interval)
+  }, [isClient])
+
+  const supplierCount = cartData.suppliers?.length || 0
+  
+  if (supplierCount === 0) {
+    return null
+  }
+
+  return (
+    <Button
+      variant="outline"
+      onClick={onCartClick}
+      className={`relative flex items-center gap-2 h-10 px-3 border-none transition-all hover:shadow-md ${className}`}
+    >
+      <div className="relative">
+        <ShoppingCart className="w-4 h-4" />
+        <Badge className="absolute -top-4 -right-4 h-5 min-w-5 text-xs bg-primary-500 text-white border-white px-1">
+          {supplierCount}
+        </Badge>
+      </div>
+      <span className="text-xs font-medium">£{cartData.totalDeposit.toFixed(2)}</span>
+    </Button>
+  )
+}
 
 export default function MobileNav({ user, onSignOut, loading }) {
   const [isOpen, setIsOpen] = useState(false)
   const [dashboardExpanded, setDashboardExpanded] = useState(false)
+  const router = useRouter()
 
   // Reordered nav items - dashboard after browse
   const navItems = [
@@ -57,21 +116,33 @@ export default function MobileNav({ user, onSignOut, loading }) {
     onSignOut()
   }
 
+  const handleCartClick = () => {
+    closeMenu()
+    router.push('/payment/secure-party')
+  }
+
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="md:hidden relative z-50 p-2 hover:bg-gray-100 transition-colors duration-200"
-        onClick={toggleMenu}
-      >
-        {isOpen ? (
-          <X className="h-6 w-6 text-gray-700" />
-        ) : (
-          <Menu className="h-6 w-6 text-gray-700" />
-        )}
-        <span className="sr-only">Toggle menu</span>
-      </Button>
+      {/* Mobile Header with Menu Button and Cart */}
+      <div className="md:hidden flex items-center space-x-2">
+        {/* Cart Indicator */}
+        <MobileCartIndicator onCartClick={handleCartClick} />
+        
+        {/* Menu Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="relative z-50 p-2 hover:bg-gray-100 transition-colors duration-200"
+          onClick={toggleMenu}
+        >
+          {isOpen ? (
+            <X className="h-6 w-6 text-gray-700" />
+          ) : (
+            <Menu className="h-6 w-6 text-gray-700" />
+          )}
+          <span className="sr-only">Toggle menu</span>
+        </Button>
+      </div>
 
       {/* Backdrop */}
       {isOpen && (

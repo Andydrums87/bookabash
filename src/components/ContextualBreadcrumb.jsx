@@ -38,41 +38,42 @@ export function ContextualBreadcrumb({
           action: () => goBack(),
         }
 
-        case "supplier-detail": {
-          // work out back target
-          let backText = "Browse Suppliers"
-          let action = () => router.push("/browse")
-        
-          if (navigationContext === "dashboard") {
-            backText = "Dashboard"
-            action = () => goBack(true)
-          } else if (navigationContext === "favorites") {
-            backText = "My Favorites"
-            action = () => goBack()
-          } else if (navigationContext === "review-book-missing") {
-            // NEW: Handle navigation back to review book at step 4 (forgotten step)
-            backText = "Review & Book"
-            action = () => {
-              console.log('🔄 Navigating back to review-book step 4')
-              // Navigate back to review page and restore to step 4 (forgotten step)
-              const reviewState = {
-                step: 4,
-                stepId: 'forgotten',
-                timestamp: Date.now()
-              }
-              sessionStorage.setItem('reviewBookRestoreState', JSON.stringify(reviewState))
-              router.push("/review-book?restore=step4")
+      case "supplier-detail": {
+        // work out back target
+        let backText = "Browse Suppliers"
+        let action = () => router.push("/browse")
+      
+        if (navigationContext === "dashboard") {
+          backText = "Dashboard"
+          action = () => goBack(true)
+        } else if (navigationContext === "favorites") {
+          backText = "My Favorites"
+          action = () => goBack()
+        } else if (navigationContext === "review-book-missing") {
+          // NEW: Handle navigation back to review book at step 4 (forgotten step)
+          backText = "Review & Book"
+          action = () => {
+            console.log('🔄 Navigating back to review-book step 4')
+            // Navigate back to review page and restore to step 4 (forgotten step)
+            const reviewState = {
+              step: 4,
+              stepId: 'forgotten',
+              timestamp: Date.now()
             }
-          }
-        
-          return {
-            show: true,
-            backText,
-            // show supplier name if we have it, else fall back
-            currentText: supplierName || "Supplier Details",
-            action,
+            sessionStorage.setItem('reviewBookRestoreState', JSON.stringify(reviewState))
+            router.push("/review-book?restore=step4")
           }
         }
+      
+        return {
+          show: true,
+          backText,
+          // show supplier name if we have it, else fall back
+          currentText: supplierName || "Supplier Details",
+          action,
+        }
+      }
+      
       case "add-supplier":
         return {
           show: true,
@@ -80,20 +81,22 @@ export function ContextualBreadcrumb({
           currentText: "Add Supplier",
           action: goBack,
         }
-        case "manage-invite":
-          return {
-            show: true,
-            backText: "Dashboard",
-            currentText: "Manage Invite",
-            action: goBack,
-          }
-          case "party-summary":
-            return {
-              show: true,
-              backText: "Dashboard",
-              currentText: "Party Summary",
-              action: goBack
-            }
+        
+      case "manage-invite":
+        return {
+          show: true,
+          backText: "Dashboard",
+          currentText: "Manage Invite",
+          action: goBack,
+        }
+        
+      case "party-summary":
+        return {
+          show: true,
+          backText: "Dashboard",
+          currentText: "Party Summary",
+          action: goBack
+        }
 
       case "e-invites":
         return {
@@ -102,13 +105,14 @@ export function ContextualBreadcrumb({
           currentText: "E-Invites",
           action: goBack,
         }
-        case "rsvps":
-          return {
-            show: true,
-            backText: "Dashboard",
-            currentText: "Rsvps",
-            action: goBack,
-          }
+        
+      case "rsvps":
+        return {
+          show: true,
+          backText: "Dashboard",
+          currentText: "Rsvps",
+          action: goBack,
+        }
 
       case "Review & Book":
         return {
@@ -117,104 +121,95 @@ export function ContextualBreadcrumb({
           currentText: "Review & Book",
           action: () => router.push("/dashboard"),
         }
-        case "Build Party":
+        
+      case "payment":
+        if (navigationContext === "review-book") {
           return {
             show: true,
-            backText: "Home",
-            currentText: "Build Party",
-            action: () => router.push("/"),
+            backText: "Review & Book",
+            currentText: "Secure Payment",
+            action: () => router.push("/review-book"),
           }
-          case "e-invites":
+        }
+        // Default to dashboard when no context or came from dashboard
+        return {
+          show: true,
+          backText: "Dashboard", 
+          currentText: "Secure Payment",
+          action: () => router.push("/dashboard"),
+        }
+        
+      case "Build Party":
+        return {
+          show: true,
+          backText: "Home",
+          currentText: "Build Party",
+          action: () => router.push("/"),
+        }
+        
+      case "Browse Gifts":
+        return {
+          show: true,
+          backText: "Dashboard",
+          currentText: "Gift Registry",
+          action: () => router.push("/dashboard"),
+        }
+
+      case "rsvp":
+        return {
+          show: true,
+          backText: "Home", 
+          currentText: `${inviteDetails}'s Party`,
+          action: () => router.push("/"),
+        }
+
+      case "Gift Registry Preview":
+        // Check RSVP context FIRST
+        if (navigationContext === "rsvp") {
+          return {
+            show: true,
+            backText: "Back to Invitation",
+            currentText: "Gift Registry",
+            action: () => goBack(),
+          }
+        }
+        // Default case for other contexts
+        return {
+          show: true,
+          backText: "Browse Gifts", 
+          currentText: "Gift Registry",
+          action: () => router.push(`/gift-registry/${id}/create`),
+        }
+        
+      case "favorites":
+        if (navigationContext === "dashboard") {
           return {
             show: true,
             backText: "Dashboard",
-            currentText: "E-Invites",
-            action: () => router.push("/dashboard"),
+            currentText: "My Favorites",
+            action: () => {
+              sessionStorage.removeItem("navigationContext")
+              goBack()
+            },
           }
-          case "Browse Gifts":
-            return {
-              show: true,
-              backText: "Dashboard",
-              currentText: "Gift Registry",
-              action: () => router.push("/dashboard"),
-            }
-       
-         // Add these cases to your existing getBreadcrumbConfig() function:
-
-case "rsvp":
-  return {
-    show: true,
-    backText: "Home", 
-    currentText: `${inviteDetails}'s Party`,
-    action: () => router.push("/"),
-  }
-
-  case "Gift Registry Preview":
-    // Check RSVP context FIRST
-    if (navigationContext === "rsvp") {
-      return {
-        show: true,
-        backText: "Back to Invitation",
-        currentText: "Gift Registry",
-        action: () => goBack(),
-      }
-    }
-    // Default case for other contexts
-    return {
-      show: true,
-      backText: "Browse Gifts", 
-      currentText: "Gift Registry",
-      action: () => router.push(`/gift-registry/${id}/create`),
-    }
-case "favorites":
-  if (navigationContext === "dashboard") {
-    return {
-      show: true,
-      backText: "Dashboard",
-      currentText: "My Favorites",
-      action: () => {
-        sessionStorage.removeItem("navigationContext")
-        goBack()
-      },
-    }
-  }
-  if (navigationContext === "browse") {
-    return {
-      show: true,
-      backText: "Browse Suppliers",
-      currentText: "My Favorites",
-      action: () => {
-        sessionStorage.removeItem("navigationContext")
-        goBack()
-      },
-    }
-  }
-  return {
-    show: true,
-    backText: "Home",
-    currentText: "My Favorites",
-    action: () => router.push("/"),
-  }
-
-// Also update the supplier-detail case to handle favorites context:
-case "supplier-detail":
-  let backText = "Browse Suppliers"; // default
-  let backAction = () => router.push("/browse");
-  
-  if (navigationContext === "dashboard") {
-    backText = "Dashboard";
-    backAction = () => goBack(true);
-  } else if (navigationContext === "favorites") {
-    backText = "My Favorites";
-    backAction = () => goBack();
-  }
-  
-  return {
-    show: true,
-    backText,
-    currentText: "Supplier Details",
-    action: backAction,
-  }
+        }
+        if (navigationContext === "browse") {
+          return {
+            show: true,
+            backText: "Browse Suppliers",
+            currentText: "My Favorites",
+            action: () => {
+              sessionStorage.removeItem("navigationContext")
+              goBack()
+            },
+          }
+        }
+        return {
+          show: true,
+          backText: "Home",
+          currentText: "My Favorites",
+          action: () => router.push("/"),
+        }
 
       default:
         return { show: false }

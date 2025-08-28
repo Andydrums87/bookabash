@@ -65,75 +65,73 @@ export default function SupplierCard({
     }, 150)
   }
 
-  const getSupplierState = () => {
-    if (!supplier) return "empty"
-    
-    // Find the enquiry for this supplier
-    const enquiry = enquiries.find(e => e.supplier_category === type)
-    const thisSupplierPaymentStatus = enquiry?.payment_status
-    const isAutoAccepted = enquiry?.auto_accepted
-    const supplierManuallyAccepted = enquiry?.supplier_response_date && enquiry?.supplier_response
-    
-    console.log(`🔍 Supplier ${supplier.name} state check:`, {
-      enquiryStatus,
-      thisSupplierPaymentStatus,
-      isAutoAccepted,
-      supplierManuallyAccepted,
-      enquiryId: enquiry?.id,
-      supplierResponseDate: enquiry?.supplier_response_date,
-      supplierResponse: enquiry?.supplier_response
-    })
+// FIXED getSupplierState function for SupplierCard.jsx
+const getSupplierState = () => {
+  if (!supplier) return "empty"
+  
+  // Find the SPECIFIC enquiry for THIS supplier type
+  const enquiry = enquiries.find(e => e.supplier_category === type)
+  
+  // If no enquiry exists for this supplier type, it's just selected
+  if (!enquiry) {
+    return isSignedIn ? "selected" : "selected"
+  }
+  
+  // Get the specific payment status for THIS enquiry
+  const thisSupplierPaymentStatus = enquiry.payment_status
+  const enquiryStatus = enquiry.status // Use the enquiry's own status, not global
+  const isAutoAccepted = enquiry.auto_accepted
+  const supplierManuallyAccepted = enquiry.supplier_response_date && 
+                                  enquiry.supplier_response &&
+                                  !enquiry.supplier_response.includes('Auto-')
+  
+  console.log(`🔍 Supplier ${supplier.name} (${type}) state check:`, {
+    enquiryId: enquiry.id,
+    enquiryStatus: enquiryStatus,
+    paymentStatus: thisSupplierPaymentStatus,
+    isAutoAccepted,
+    supplierManuallyAccepted,
+    supplierResponse: enquiry.supplier_response
+  })
 
-    // ✅ CORRECTED LOGIC: The proper flow
+  // Handle declined enquiries first
+  if (enquiryStatus === "declined") {
+    console.log(`❌ ${supplier.name}: DECLINED`)
+    return "declined"
+  }
+  
+  // PAYMENT FLOW: Only check payment if enquiry is accepted
+  if (enquiryStatus === "accepted") {
     
-    // Handle declined auto-accepted enquiries (hide them)
-    if (isAutoAccepted && enquiryStatus === "declined") {
-      console.log(`🚫 ${supplier.name}: Hiding declined auto-accepted enquiry`)
-      return "deposit_paid_confirmed" // Show as confirmed while handling replacement
-    }
-    
-    // 1. PAYMENT_CONFIRMED: Supplier manually accepted + paid
-    //    This is when supplier has responded to a deposit-paid booking
-    if (enquiryStatus === "accepted" && 
-        thisSupplierPaymentStatus === "paid" && 
-        supplierManuallyAccepted &&
-        !enquiry?.supplier_response?.includes('Auto-')) {
-      console.log(`✅ ${supplier.name}: PAYMENT_CONFIRMED (supplier manually confirmed + paid)`)
+    // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
+    if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
+      console.log(`✅ ${supplier.name}: PAYMENT_CONFIRMED (paid + manually confirmed)`)
       return "payment_confirmed"
     }
     
-    // 2. DEPOSIT_PAID_CONFIRMED: Auto-accepted + paid but supplier hasn't manually confirmed
-    //    This means customer used instant booking, paid, but supplier hasn't responded yet
-    if (enquiryStatus === "accepted" && 
-        thisSupplierPaymentStatus === "paid" && 
-        (!supplierManuallyAccepted || enquiry?.supplier_response?.includes('Auto-'))) {
-      console.log(`💳 ${supplier.name}: DEPOSIT_PAID_CONFIRMED (deposit paid, awaiting supplier confirmation)`)
-      return "deposit_paid_confirmed"
+    // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
+    if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
+      console.log(`💳 ${supplier.name}: DEPOSIT_PAID_CONFIRMED (paid but awaiting confirmation)`)
+      return "deposit_paid_confirmed"  
     }
     
-    // 3. CONFIRMED: Accepted but not paid yet (either auto or manual)
-    //    This is when enquiry is accepted but customer hasn't paid deposit
-    if (enquiryStatus === "accepted" && 
-        (thisSupplierPaymentStatus === "unpaid" || !thisSupplierPaymentStatus)) {
-      console.log(`⏰ ${supplier.name}: CONFIRMED (accepted but not paid)`)
+    // If accepted but not paid = CONFIRMED
+    if (thisSupplierPaymentStatus !== "paid") {
+      console.log(`⏰ ${supplier.name}: CONFIRMED (accepted, awaiting payment)`)
       return "confirmed"
     }
-    
-    // Handle other states
-    if (!isSignedIn) return "selected"
-    
-    switch (enquiryStatus) {
-      case "pending": 
-        console.log(`⏳ ${supplier.name}: AWAITING_RESPONSE`)
-        return "awaiting_response"
-      case "declined": 
-        console.log(`❌ ${supplier.name}: DECLINED`)
-        return "declined"
-      default: 
-        console.log(`📝 ${supplier.name}: SELECTED (default)`)
-        return "selected"
-    }
   }
+  
+  // ENQUIRY FLOW: Handle pending enquiries
+  if (enquiryStatus === "pending") {
+    console.log(`⏳ ${supplier.name}: AWAITING_RESPONSE`)
+    return "awaiting_response"
+  }
+  
+  // DEFAULT: Supplier is selected but no enquiry sent yet
+  console.log(`📝 ${supplier.name}: SELECTED`)
+  return "selected"
+}
 
   const supplierState = getSupplierState()
 

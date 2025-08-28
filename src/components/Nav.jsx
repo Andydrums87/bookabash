@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "./ui/badge"
 import { Input } from "@/components/ui/input"
-import { Menu, X, Search, Star, MapPin, User, LogOut, Settings, Calendar, ChevronDown, Mail, Gift, Users} from "lucide-react"
+import { Menu, X, Search, Star, MapPin, User, LogOut, Settings, Calendar,  ShoppingCart, CreditCard, ChevronDown, Mail, Gift, Users} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -12,105 +13,7 @@ import { useSuppliers } from '@/utils/mockBackend'
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
-function DashboardDropdown() {
-  const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef(null)
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Dashboard Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
-      >
-        <span>My Snapboard</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-          {/* Main Dashboard */}
-          <Link 
-            href="/dashboard" 
-            className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
-            onClick={() => setIsOpen(false)}
-          >
-            <Calendar className="w-4 h-4 mr-3 text-gray-500" />
-            <div>
-              <div className="font-medium">Party Dashboard</div>
-              <div className="text-xs text-gray-500">Overview & planning</div>
-            </div>
-          </Link>
-
-          {/* Party Tools Section */}
-          <div className="py-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Party Tools
-            </div>
-            
-            <Link 
-              href="/e-invites" 
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setIsOpen(false)}
-            >
-              <Mail className="w-4 h-4 mr-3 text-gray-500" />
-              <span>E-Invites</span>
-            </Link>
-
-            <Link 
-              href="/gift-registry" 
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setIsOpen(false)}
-            >
-              <Gift className="w-4 h-4 mr-3 text-gray-500" />
-              <span>Gift Registry</span>
-            </Link>
-
-            <Link 
-              href="/rsvps" 
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setIsOpen(false)}
-            >
-              <Users className="w-4 h-4 mr-3 text-gray-500" />
-              <span>RSVP Management</span>
-            </Link>
-          </div>
-
-          {/* Quick Actions Section */}
-          <div className="border-t border-gray-100 py-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Quick Actions
-            </div>
-            
-            <Link 
-              href="/dashboard?action=new-party" 
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setIsOpen(false)}
-            >
-              <Star className="w-4 h-4 mr-3 text-gray-500" />
-              <span>Start New Party</span>
-            </Link>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // User Menu Component
 function UserMenu({ user, onSignOut }) {
@@ -218,6 +121,228 @@ function UserMenu({ user, onSignOut }) {
   )
 }
 
+function CartIndicator({ className = "" }) {
+  const [cartData, setCartData] = useState({ suppliers: [], totalDeposit: 0 })
+  const [isClient, setIsClient] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
+
+    const updateCartFromStorage = () => {
+      try {
+        const storedCart = sessionStorage.getItem('cartData')
+        if (storedCart) {
+          const parsed = JSON.parse(storedCart)
+          if (Date.now() - parsed.timestamp < 30000) {
+            setCartData(parsed)
+          } else {
+            setCartData({ suppliers: [], totalDeposit: 0 })
+          }
+        }
+      } catch (error) {
+        console.error('Error reading cart data:', error)
+      }
+    }
+
+    updateCartFromStorage()
+    const interval = setInterval(updateCartFromStorage, 3000)
+    return () => clearInterval(interval)
+  }, [isClient])
+
+  const supplierCount = cartData.suppliers?.length || 0
+  
+  if (supplierCount === 0) {
+    return null
+  }
+
+  const handlePaymentClick = () => {
+    router.push('/payment/secure-party')
+  }
+
+  return (
+    <Button
+    variant="outline"
+    onClick={handlePaymentClick}
+    className={`relative flex items-center gap-2 h-10 px-3 border-none  transition-all hover:shadow-md ${className}`}
+  >
+    <div className="relative">
+      <ShoppingCart className="w-4 h-4" />
+      <Badge className="absolute -top-4 -right-4 h-5 min-w-5 text-xs bg-primary-500 text-white border-white px-1">
+        {supplierCount}
+      </Badge>
+    </div>
+    
+  
+    
+    <div className="sm:hidden">
+      <span className="text-xs font-medium">£{cartData.totalDeposit.toFixed(2)}</span>
+    </div>
+  </Button>
+  )
+}
+
+function DashboardDropdown() {
+
+  const [isOpen, setIsOpen] = useState(false)
+  const [activePartyId, setActivePartyId] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState(null)
+  const router = useRouter()
+  const dropdownRef = useRef(null)
+
+
+  // Load user and party data when dropdown opens
+  useEffect(() => {
+    if (isOpen && !activePartyId) {
+      loadPartyData()
+    }
+  }, [isOpen])
+
+  const loadPartyData = async () => {
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      
+      if (user) {
+        const result = await partyDatabaseBackend.getCurrentParty()
+        if (result.success && result.party) {
+          setActivePartyId(result.party.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading party data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleNavigation = async (item) => {
+    setIsOpen(false)
+
+    if (!user) {
+      router.push('/signin')
+      return
+    }
+
+    if (item.requiresPartyId) {
+      if (!activePartyId) {
+        router.push('/dashboard?action=new-party')
+        return
+      }
+
+      let targetRoute
+      switch (item.href) {
+        case '/gift-registry':
+          targetRoute = `/gift-registry/manage/${activePartyId}`
+          break
+        case '/rsvps':
+          targetRoute = `/rsvps/${activePartyId}`
+          break
+        default:
+          targetRoute = item.href
+      }
+      
+      router.push(targetRoute)
+    } else {
+      router.push(item.href)
+    }
+  }
+
+  const dashboardItems = [
+    { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
+    { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
+    { 
+      href: "/gift-registry", 
+      label: "Gift Registry", 
+      icon: Gift, 
+      description: "Gift wishlists",
+      requiresPartyId: true 
+    },
+    { 
+      href: "/rsvps", 
+      label: "RSVP Management", 
+      icon: Users, 
+      description: "Track responses",
+      requiresPartyId: true 
+    },
+  ]
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Dashboard Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
+      >
+        <span>My Snapboard</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          {/* Main Dashboard */}
+          <button 
+            onClick={() => handleNavigation({ href: "/dashboard" })}
+            className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+          >
+            <Calendar className="w-4 h-4 mr-3 text-gray-500" />
+            <div className="text-left">
+              <div className="font-medium">Party Dashboard</div>
+              <div className="text-xs text-gray-500">Overview & planning</div>
+            </div>
+          </button>
+
+          {/* Party Tools Section */}
+          <div className="py-1">
+            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Party Tools
+            </div>
+            
+            {dashboardItems.slice(1).map((item) => (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item)}
+                disabled={loading}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+                <div className="text-left">
+                  <div>{item.label}</div>
+                  {item.requiresPartyId && !activePartyId && !loading && (
+                    <div className="text-xs text-orange-500">Requires active party</div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Actions Section */}
+          <div className="border-t border-gray-100 py-1">
+            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Quick Actions
+            </div>
+            
+            <button 
+              onClick={() => handleNavigation({ href: "/dashboard?action=new-party" })}
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Star className="w-4 h-4 mr-3 text-gray-500" />
+              <span>Start New Party</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Main Navbar Component
 export function Nav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -225,10 +350,12 @@ export function Nav() {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [user, setUser] = useState(null)
+
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
   const { suppliers } = useSuppliers()
+
 
   // Check authentication status
   useEffect(() => {
@@ -391,6 +518,7 @@ const handleSignOut = async () => {
               ) : user ? (
                 // Signed in - show user menu
                 <UserMenu user={user} onSignOut={handleSignOut} />
+                
               ) : (
                 // Not signed in - show sign in/up buttons
                 <>
@@ -405,6 +533,8 @@ const handleSignOut = async () => {
                   
                 </>
               )}
+               {/* ADD CART INDICATOR HERE */}
+  <CartIndicator />
             </div>
 
             {/* Mobile menu button */}

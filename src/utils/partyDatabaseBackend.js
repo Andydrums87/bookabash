@@ -1131,36 +1131,37 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
 // Auto-accept all pending enquiries for a party (for immediate booking flow)
 // In partyDatabaseBackend.js - UPDATED autoAcceptEnquiries function
 // In partyDatabaseBackend.js - FIXED autoAcceptEnquiries function
-async autoAcceptEnquiries(partyId) {
+async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
   try {
-    console.log('✅ Auto-accepting enquiries for immediate booking:', partyId);
+    console.log('Auto-accepting enquiries for immediate booking:', { partyId, specificSupplierCategories });
     
-    const { data: updatedEnquiries, error } = await supabase
-      .from('enquiries')
-      .update({ 
-        // ✅ FIXED: Use standard 'accepted' status
-        status: 'accepted',
-        payment_status: 'unpaid', // Keep as unpaid so payment page finds them
-        supplier_response_date: new Date().toISOString(),
-        supplier_response: 'Auto-accepted for immediate booking - customer proceeding to payment',
-        auto_accepted: true, // ✅ NEW: Flag to identify auto-accepted enquiries
-        updated_at: new Date().toISOString()
-      })
-      .eq('party_id', partyId)
-      .eq('status', 'pending')
-      .select();
-
+    let query = supabase
+    .from('enquiries')
+    .update({ 
+      status: 'accepted', // Keep as accepted
+      auto_accepted: true, // This is the key change needed
+      updated_at: new Date().toISOString()
+    })
+    .eq('party_id', partyId)
+    .in('status', ['draft', 'pending', 'accepted']) // Include 'accepted' status
+    .eq('auto_accepted', false) // Only update non-auto-accepted enquiries
+    
+    if (specificSupplierCategories && specificSupplierCategories.length > 0) {
+      query = query.in('supplier_category', specificSupplierCategories)
+    }
+    
+    const { data: updatedEnquiries, error } = await query.select()
+    
     if (error) throw error;
-
-    console.log(`✅ Auto-accepted ${updatedEnquiries.length} enquiries`);
+    
+    console.log(`Auto-accepted ${updatedEnquiries.length} enquiries`);
     return { success: true, updatedEnquiries };
-
+    
   } catch (error) {
-    console.error('❌ Error auto-accepting enquiries:', error);
+    console.error('Error auto-accepting enquiries:', error);
     return { success: false, error: error.message };
   }
 }
-
 // In partyDatabaseBackend.js - ADD this new function
 async autoAcceptSpecificEnquiry(enquiryId) {
   try {
@@ -1511,7 +1512,9 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         special_requests: party.special_requirements || null,
         quoted_price: totalQuotedPrice,
         status: 'accepted',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+          
+
       }
   
       console.log('📤 Creating individual enquiry:', enquiryData)
@@ -3589,10 +3592,10 @@ async getPartyRSVPs(partyId) {
   try {
     console.log('📊 Getting RSVPs for party:', partyId);
     
-    // First, get all public invites for this party
+    // Get all active invites with their JSONB data in ONE query
     const { data: invites, error: invitesError } = await supabase
       .from('public_invites')
-      .select('id')
+      .select('id, invite_data')
       .eq('is_active', true);
 
     if (invitesError) {
@@ -3600,27 +3603,17 @@ async getPartyRSVPs(partyId) {
       return { success: false, error: invitesError.message };
     }
 
-    // Filter invites that belong to this party (stored in invite_data JSONB)
-    const partyInviteIds = [];
-    for (const invite of invites) {
-      // We'll need to get the full invite to check the JSONB data
-      const { data: fullInvite, error } = await supabase
-        .from('public_invites')
-        .select('invite_data')
-        .eq('id', invite.id)
-        .single();
-      
-      if (!error && fullInvite?.invite_data?.partyId === partyId) {
-        partyInviteIds.push(invite.id);
-      }
-    }
+    // Filter invites in JavaScript (much faster than individual DB queries)
+    const partyInviteIds = invites
+      .filter(invite => invite.invite_data?.partyId === partyId)
+      .map(invite => invite.id);
 
     if (partyInviteIds.length === 0) {
       console.log('📊 No invites found for party:', partyId);
       return { success: true, rsvps: [] };
     }
 
-    // Get RSVPs for these invites
+    // Get RSVPs for these invites in ONE query
     const { data: rsvps, error } = await supabase
       .from('rsvps')
       .select('*')
@@ -3643,10 +3636,93 @@ async getPartyRSVPs(partyId) {
 /**
  * Update guest list with send status
  */
-async updateGuestSendStatus(partyId, guestId, status, sentMethod = 'manual') {
+async updateGuestStatus(partyId, guestId, newStatus) {
   try {
-    console.log('📤 Updating guest send status:', { partyId, guestId, status });
+    console.log('📝 Updating guest status:', { partyId, guestId, newStatus });
     
+    // Get the party data first
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    // Get current party plan structure
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Find and update the specific guest
+    let guestFound = false;
+    const updatedGuestList = guestList.map(guest => {
+      if (guest.id === guestId) {
+        guestFound = true;
+        return {
+          ...guest,
+          attendance: newStatus, // 'pending', 'yes', 'no', 'maybe'
+          status: newStatus === 'pending' ? guest.status : 'responded', // Keep track if they've responded
+          updated_at: new Date().toISOString(),
+          manually_updated: true // Flag to show this was manually updated
+        };
+      }
+      return guest;
+    });
+
+    if (!guestFound) {
+      console.error('❌ Guest not found in list:', guestId);
+      return { success: false, error: 'Guest not found in party guest list' };
+    }
+
+    // Update the party plan with new guest list
+    const updatedPlan = {
+      ...currentPlan,
+      einvites: {
+        ...einvites,
+        guestList: updatedGuestList,
+        updatedAt: new Date().toISOString(),
+      }
+    };
+
+    // Save back to database
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: updatedPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error updating guest status:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Guest status updated successfully');
+    return { 
+      success: true, 
+      party: data,
+      updatedGuest: updatedGuestList.find(g => g.id === guestId)
+    };
+    
+  } catch (error) {
+    console.error('❌ Error in updateGuestStatus:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get guest list with RSVP statuses for a party
+ * This combines manually added guests with any actual RSVP submissions
+ */
+async getPartyGuestList(partyId) {
+  try {
+    console.log('📋 Getting party guest list:', partyId);
+    
+    // Get the party data
     const { data: party, error: fetchError } = await supabase
       .from('parties')
       .select('party_plan')
@@ -3662,42 +3738,192 @@ async updateGuestSendStatus(partyId, guestId, status, sentMethod = 'manual') {
     const einvites = currentPlan.einvites || {};
     const guestList = einvites.guestList || [];
 
-    // Update the specific guest
-    const updatedGuestList = guestList.map(guest => {
-      if (guest.id === guestId) {
+    // Also get any actual RSVP submissions to cross-reference
+    const rsvpResult = await this.getPartyRSVPs(partyId);
+    const actualRSVPs = rsvpResult.success ? rsvpResult.rsvps : [];
+
+    // Merge guest list with actual RSVP data
+    const mergedGuestList = guestList.map(guest => {
+      // Look for matching RSVP submission
+      const matchingRSVP = actualRSVPs.find(rsvp => 
+        rsvp.guest_email === guest.contact || 
+        rsvp.guest_phone === guest.contact ||
+        rsvp.guest_name.toLowerCase() === guest.name.toLowerCase()
+      );
+
+      if (matchingRSVP) {
+        // If there's an actual RSVP submission, prioritize that data
         return {
           ...guest,
-          status: status,
-          sentAt: status === 'sent' ? new Date().toISOString() : guest.sentAt,
-          sentMethod: status === 'sent' ? sentMethod : guest.sentMethod,
+          attendance: matchingRSVP.attendance,
+          adults_count: matchingRSVP.adults_count,
+          children_count: matchingRSVP.children_count,
+          dietary_requirements: matchingRSVP.dietary_requirements,
+          message: matchingRSVP.message,
+          guest_email: matchingRSVP.guest_email,
+          guest_phone: matchingRSVP.guest_phone,
+          submitted_at: matchingRSVP.submitted_at,
+          has_actual_rsvp: true
         };
       }
-      return guest;
+
+      return {
+        ...guest,
+        attendance: guest.attendance || 'pending',
+        has_actual_rsvp: false
+      };
     });
 
-    // Update the party plan
-    currentPlan.einvites = {
-      ...einvites,
-      guestList: updatedGuestList,
-      updatedAt: new Date().toISOString(),
+    console.log(`✅ Found ${mergedGuestList.length} guests in list`);
+    return { 
+      success: true, 
+      guests: mergedGuestList,
+      totalGuests: mergedGuestList.length,
+      actualRSVPs: actualRSVPs.length
+    };
+    
+  } catch (error) {
+    console.error('❌ Error in getPartyGuestList:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Add a new guest to the party guest list
+ */
+async addGuestToList(partyId, guestData) {
+  try {
+    console.log('👤 Adding guest to party:', { partyId, guestName: guestData.name });
+    
+    // Get current party data
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Create new guest object
+    const newGuest = {
+      id: Date.now(), // Simple ID for now
+      name: guestData.name,
+      email: guestData.email || '',
+      contact: guestData.contact || guestData.email || '',
+      type: guestData.type || 'email',
+      adults_count: guestData.adults_count || 1,
+      children_count: guestData.children_count || 0,
+      notes: guestData.notes || '',
+      attendance: 'pending',
+      status: 'pending',
+      manually_added: true,
+      added_at: new Date().toISOString()
     };
 
+    // Add to guest list
+    const updatedGuestList = [...guestList, newGuest];
+
+    // Update party plan
+    const updatedPlan = {
+      ...currentPlan,
+      einvites: {
+        ...einvites,
+        guestList: updatedGuestList,
+        updatedAt: new Date().toISOString(),
+      }
+    };
+
+    // Save to database
     const { data, error } = await supabase
       .from('parties')
-      .update({ party_plan: currentPlan })
+      .update({ party_plan: updatedPlan })
       .eq('id', partyId)
       .select()
       .single();
 
     if (error) {
-      console.error('❌ Error updating guest status:', error);
+      console.error('❌ Error adding guest:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Guest send status updated');
-    return { success: true, party: data };
+    console.log('✅ Guest added successfully');
+    return { 
+      success: true, 
+      party: data,
+      newGuest: newGuest
+    };
+    
   } catch (error) {
-    console.error('❌ Error in updateGuestSendStatus:', error);
+    console.error('❌ Error in addGuestToList:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Remove a guest from the party guest list
+ */
+async removeGuestFromList(partyId, guestId) {
+  try {
+    console.log('🗑️ Removing guest from party:', { partyId, guestId });
+    
+    // Get current party data
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Remove the guest from the list
+    const updatedGuestList = guestList.filter(guest => guest.id !== guestId);
+
+    // Update party plan
+    const updatedPlan = {
+      ...currentPlan,
+      einvites: {
+        ...einvites,
+        guestList: updatedGuestList,
+        updatedAt: new Date().toISOString(),
+      }
+    };
+
+    // Save to database
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: updatedPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error removing guest:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Guest removed successfully');
+    return { 
+      success: true, 
+      party: data,
+      remainingGuests: updatedGuestList.length
+    };
+    
+  } catch (error) {
+    console.error('❌ Error in removeGuestFromList:', error);
     return { success: false, error: error.message };
   }
 }
@@ -3735,6 +3961,54 @@ async getRSVPAnalytics(partyId) {
     return { success: true, analytics };
   } catch (error) {
     console.error('❌ Error getting RSVP analytics:', error);
+    return { success: false, error: error.message };
+  }
+}
+/**
+ * Submit RSVP for an invite
+ */
+async submitRSVP(inviteId, rsvpData) {
+  try {
+    console.log('📝 Submitting RSVP for invite:', inviteId);
+    console.log('📝 RSVP data received:', rsvpData);
+    
+    const rsvp = {
+      invite_id: inviteId,
+      guest_name: rsvpData.guestName,
+      child_name: rsvpData.childName,
+      guest_email: rsvpData.guestEmail,
+      guest_phone: rsvpData.guestPhone,
+      attendance: rsvpData.attendance,
+      adults_count: rsvpData.adultsCount || 1,
+      children_count: rsvpData.childrenCount || 0,
+      dietary_requirements: rsvpData.dietaryRequirements || '',
+      message: rsvpData.message || '',
+      submitted_at: new Date().toISOString(),
+    };
+
+    console.log('📝 RSVP object being saved:', rsvp);
+
+    const { data, error } = await supabase
+      .from('rsvps')
+      .upsert(rsvp, { 
+        onConflict: 'invite_id,guest_email',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single();
+
+    console.log('🔍 Database response - data:', data);
+    console.log('🔍 Database response - error:', error);
+
+    if (error) {
+      console.error('❌ Database error:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ RSVP saved successfully');
+    return { success: true, rsvp: data };
+  } catch (error) {
+    console.error('❌ Error in submitRSVP:', error);
     return { success: false, error: error.message };
   }
 }
@@ -3890,6 +4164,172 @@ async getUserParties(userId) {
     return { success: true, parties: data }
   } catch (error) {
     return { success: false, error: error.message }
+  }
+}
+/**
+ * Add a guest to the party's guest list (simple child name only)
+ */
+async addPartyGuest(partyId, guestData) {
+  try {
+    console.log('👤 Adding guest to party:', { partyId, childName: guestData.childName });
+    
+    // Get current party data
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Create new guest object (simple - just child name)
+    const newGuest = {
+      id: `guest_${Date.now()}`, // Simple unique ID
+      childName: guestData.childName.trim(),
+      added_at: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Add to guest list
+    const updatedGuestList = [...guestList, newGuest];
+
+    // Update party plan
+    const updatedPlan = {
+      ...currentPlan,
+      einvites: {
+        ...einvites,
+        guestList: updatedGuestList,
+        updatedAt: new Date().toISOString(),
+      }
+    };
+
+    // Save to database
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: updatedPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error adding guest:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Guest added successfully');
+    return { 
+      success: true, 
+      guest: newGuest
+    };
+    
+  } catch (error) {
+    console.error('❌ Error in addPartyGuest:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get all guests for a party
+ */
+async getPartyGuests(partyId) {
+  try {
+    console.log('📋 Getting guests for party:', partyId);
+    
+    // Get the party data
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    console.log(`✅ Found ${guestList.length} guests`);
+    return { 
+      success: true, 
+      guests: guestList
+    };
+    
+  } catch (error) {
+    console.error('❌ Error in getPartyGuests:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Remove a guest from the party guest list
+ */
+async removePartyGuest(partyId, guestId) {
+  try {
+    console.log('🗑️ Removing guest from party:', { partyId, guestId });
+    
+    // Get current party data
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Remove the guest from the list
+    const updatedGuestList = guestList.filter(guest => guest.id !== guestId);
+
+    if (updatedGuestList.length === guestList.length) {
+      console.error('❌ Guest not found:', guestId);
+      return { success: false, error: 'Guest not found' };
+    }
+
+    // Update party plan
+    const updatedPlan = {
+      ...currentPlan,
+      einvites: {
+        ...einvites,
+        guestList: updatedGuestList,
+        updatedAt: new Date().toISOString(),
+      }
+    };
+
+    // Save to database
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: updatedPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error removing guest:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Guest removed successfully');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Error in removePartyGuest:', error);
+    return { success: false, error: error.message };
   }
 }
 }

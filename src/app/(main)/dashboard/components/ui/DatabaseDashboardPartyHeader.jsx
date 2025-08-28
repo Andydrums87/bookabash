@@ -252,10 +252,7 @@ export default function DatabasePartyHeader({
       {/* Lock Status Banner */}
       {isPartyLocked && (
         <div className="absolute top-4 right-4 z-20">
-          <div className="bg-white/20 backdrop-blur-md rounded-full px-3 py-2 flex items-center gap-2 border border-white/30">
-            <Shield className="w-4 h-4 text-white" />
-            <span className="text-sm font-medium text-white">Party Locked</span>
-          </div>
+         
         </div>
       )}
 
@@ -298,14 +295,7 @@ export default function DatabasePartyHeader({
             <p className="text-base md:text-2xl text-white/95 drop-shadow-lg font-medium">
               {currentTheme?.description || `An amazing ${currentTheme} celebration`}
             </p>
-            {isPartyLocked && (
-              <div className="flex items-center gap-2 mt-2">
-                <Lock className="w-4 h-4 text-white/80" />
-                <p className="text-sm md:text-base text-white/80 drop-shadow-lg">
-                  Party details are secured - enquiries have been sent to suppliers
-                </p>
-              </div>
-            )}
+           
           </div>
 
           {/* Mobile: Information Cards */}

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useContextualNavigation } from "@/hooks/useContextualNavigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
+import { supabase } from '@/lib/supabase'
 import { 
   Calendar, 
   Clock, 
@@ -45,12 +46,13 @@ export default function AnimatedRSVPPage() {
   const [hasSeenAnimation, setHasSeenAnimation] = useState(false)
   const { navigateWithContext } = useContextualNavigation()
   const [rsvpData, setRsvpData] = useState({
-    status: '',
     guestName: '',
+    childName: '', // Add this line
     email: '',
     phone: '',
-    guestCount: 1,
-    childrenCount: 0,
+    status: '',
+    guestCount: 2,
+    childrenCount: 1,
     dietaryRequirements: '',
     message: ''
   })
@@ -195,11 +197,13 @@ export default function AnimatedRSVPPage() {
   const submitRSVP = async () => {
     try {
       console.log('📝 Submitting RSVP:', rsvpData)
+      console.log('📝 Child name being sent:', rsvpData.childName)
       
-      // Submit to database
+      // Submit to database via backend
       const result = await partyDatabaseBackend.submitRSVP(inviteId, {
         guestName: rsvpData.guestName,
         guestEmail: rsvpData.email,
+        childName: rsvpData.childName,
         guestPhone: rsvpData.phone,
         attendance: rsvpData.status,
         adultsCount: rsvpData.guestCount,
@@ -207,9 +211,12 @@ export default function AnimatedRSVPPage() {
         dietaryRequirements: rsvpData.dietaryRequirements,
         message: rsvpData.message
       })
-
+  
+      console.log('🔍 Backend result:', result)
+      
       if (result.success) {
-        console.log('✅ RSVP submitted successfully')
+        console.log('✅ RSVP submitted successfully:', result)
+        console.log('📦 Returned RSVP data:', result.rsvp)
         
         // Save locally and mark as confirmed
         setConfirmedRsvpData(rsvpData)
@@ -218,21 +225,25 @@ export default function AnimatedRSVPPage() {
         const rsvpKey = `rsvp-confirmed-${inviteId}`
         localStorage.setItem(rsvpKey, JSON.stringify(rsvpData))
         
+        console.log('🔒 Closing RSVP modal')
         setShowRSVPModal(false)
         
-        // Show discount offer after successful RSVP
-        setTimeout(() => setShowDiscountOffer(true), 500)
+        console.log('⏰ Setting timeout for discount offer')
+        setTimeout(() => {
+          console.log('💰 Showing discount offer')
+          setShowDiscountOffer(true)
+        }, 500)
       } else {
         console.error('❌ RSVP submission failed:', result.error)
+        console.error('❌ Full error result:', result)
         alert('Failed to submit RSVP. Please try again.')
       }
-
+  
     } catch (error) {
       console.error('❌ Error submitting RSVP:', error)
       alert('Failed to submit RSVP. Please try again.')
     }
   }
-
   // Loading state
   if (loading) {
     return (
@@ -634,6 +645,17 @@ export default function AnimatedRSVPPage() {
             className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
           />
         </div>
+        <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Child's Name *
+  </label>
+  <Input
+    value={rsvpData.childName}
+    onChange={(e) => setRsvpData(prev => ({ ...prev, childName: e.target.value }))}
+    placeholder="Which child is invited?"
+    className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+  />
+</div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
