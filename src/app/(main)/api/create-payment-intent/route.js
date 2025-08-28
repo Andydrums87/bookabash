@@ -74,45 +74,15 @@ export async function POST(request) {
       console.warn(`Payment amount mismatch: received ${amount}, expected ${expectedAmount}`);
     }
 
-    // Create enhanced metadata
-    const metadata = {
-      party_id: partyDetails.id?.toString() || 'unknown',
-      party_child_name: partyDetails.childName || 'Unknown',
-      party_theme: partyDetails.theme || 'Party',
-      party_date: partyDetails.date || 'TBD',
-      supplier_count: suppliers.length.toString(),
-      addon_count: (addons?.length || 0).toString(),
-      payment_type: paymentType || 'mixed',
-      
-      // Payment breakdown
-      deposit_total: Math.round(paymentBreakdown.depositTotal * 100).toString(),
-      full_payment_total: Math.round(paymentBreakdown.fullPaymentTotal * 100).toString(),
-      has_deposits: paymentBreakdown.hasDeposits.toString(),
-      has_full_payments: paymentBreakdown.hasFullPayments.toString(),
-      
-      // Supplier categories and payment types
-      supplier_categories: JSON.stringify(suppliers.map(s => s.category)),
-      payment_details: JSON.stringify(paymentBreakdown.paymentDetails),
-      
-      // Lead-time suppliers specifically
-      lead_time_suppliers: JSON.stringify(
-        suppliers
-          .filter(isLeadTimeSupplier)
-          .map(s => ({ category: s.category, name: s.name, amount: s.price }))
-      ),
-      
-      // Deposit suppliers specifically  
-      deposit_suppliers: JSON.stringify(
-        suppliers
-          .filter(s => !isLeadTimeSupplier(s))
-          .map(s => ({ 
-            category: s.category, 
-            name: s.name, 
-            deposit: Math.max(50, s.price * 0.2),
-            remaining: s.price - Math.max(50, s.price * 0.2)
-          }))
-      )
-    };
+  // MINIMAL metadata - only essential tracking info
+  const metadata = {
+    party_id: partyDetails.id?.toString() || 'unknown',
+    payment_type: paymentType || 'mixed',
+    supplier_count: suppliers.length.toString(),
+    total_suppliers: suppliers.length.toString(),
+    // Keep categories short and truncated if needed
+    categories: suppliers.map(s => s.category.substring(0, 3)).join(',').substring(0, 100)
+  };
 
     // Create PaymentIntent with enhanced metadata
     const paymentIntent = await stripe.paymentIntents.create({
