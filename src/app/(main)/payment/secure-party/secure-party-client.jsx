@@ -266,7 +266,7 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
-      <ContextualBreadcrumb currentPage="payment" />
+
       
       {/* Apple Pay / Google Pay Button */}
       {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && (

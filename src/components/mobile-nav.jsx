@@ -99,9 +99,34 @@ function MobileCartIndicator({ className = "", onCartClick }) {
 export default function MobileNav({ user, onSignOut, loading }) {
   const [isOpen, setIsOpen] = useState(false)
   const [dashboardExpanded, setDashboardExpanded] = useState(false)
+  const [activePartyId, setActivePartyId] = useState(null)
+  const [loadingPartyData, setLoadingPartyData] = useState(false)
   const router = useRouter()
 
-  // Reordered nav items - dashboard after browse
+  // Load party data when component mounts or user changes
+  useEffect(() => {
+    const loadPartyData = async () => {
+      if (user) {
+        try {
+          setLoadingPartyData(true)
+          const result = await partyDatabaseBackend.getCurrentParty()
+          if (result.success && result.party) {
+            setActivePartyId(result.party.id)
+          }
+        } catch (error) {
+          console.error('Error loading party data:', error)
+        } finally {
+          setLoadingPartyData(false)
+        }
+      } else {
+        setActivePartyId(null)
+      }
+    }
+
+    loadPartyData()
+  }, [user])
+
+  // Basic nav items
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/browse", label: "Snap Suppliers", icon: Search },
@@ -110,11 +135,24 @@ export default function MobileNav({ user, onSignOut, loading }) {
     { href: "/favorites", label: "My Favorites", icon: Heart },
   ]
 
+  // Dashboard items with same logic as desktop
   const dashboardItems = [
     { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
     { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
-    { href: "/gift-registry/manage", label: "Gift Registry", icon: Gift, description: "Gift wishlists" },
-    { href: "/rsvps", label: "RSVP Management", icon: Users, description: "Track responses" },
+    { 
+      href: "/gift-registry", 
+      label: "Gift Registry", 
+      icon: Gift, 
+      description: "Manage gift wishlists",
+      simpleNavigation: true // Special flag for gift registry
+    },
+    { 
+      href: "/rsvps", 
+      label: "RSVP Management", 
+      icon: Users, 
+      description: "Track responses",
+      requiresPartyId: true 
+    },
   ]
 
   useEffect(() => {
@@ -148,8 +186,42 @@ export default function MobileNav({ user, onSignOut, loading }) {
     onSignOut()
   }
 
-  // Remove the old handleCartClick - now handled by MobileCartIndicator
-  
+  // Handle dashboard item navigation with same logic as desktop
+  const handleDashboardNavigation = async (item) => {
+    closeMenu()
+
+    if (!user) {
+      router.push('/signin')
+      return
+    }
+
+    // Special handling for gift registry (simple navigation)
+    if (item.simpleNavigation) {
+      router.push(item.href)
+      return
+    }
+
+    if (item.requiresPartyId) {
+      if (!activePartyId) {
+        router.push('/dashboard?action=new-party')
+        return
+      }
+
+      let targetRoute
+      switch (item.href) {
+        case '/rsvps':
+          targetRoute = `/rsvps/${activePartyId}`
+          break
+        default:
+          targetRoute = item.href
+      }
+      
+      router.push(targetRoute)
+    } else {
+      router.push(item.href)
+    }
+  }
+
   return (
     <>
       {/* Mobile Header with Menu Button and Cart */}
@@ -260,7 +332,7 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 );
               })()}
 
-              {/* Dashboard - Expandable (now positioned after Snap Suppliers) */}
+              {/* Dashboard - Expandable with same logic as desktop */}
               <div className="border-b border-gray-50">
                 <button
                   onClick={() => setDashboardExpanded(!dashboardExpanded)}
@@ -273,25 +345,67 @@ export default function MobileNav({ user, onSignOut, loading }) {
                   <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
                 </button>
 
-                {/* Dashboard Sub-items with auto height */}
+                {/* Dashboard Sub-items with auto height and same logic as desktop */}
                 <div className={`overflow-hidden transition-all duration-300 ease-out ${
                   dashboardExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
                 }`}>
                   <div className="pl-10 pb-2 space-y-1">
-                    {dashboardItems.map((item) => (
-                      <Link
+                    {/* Main Party Dashboard */}
+                    <button
+                      onClick={() => handleDashboardNavigation({ href: "/dashboard" })}
+                      className="flex items-center w-full py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+                    >
+                      <Calendar className="w-4 h-4 mr-3 text-gray-500" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium">Party Dashboard</div>
+                        <div className="text-xs text-gray-500">Overview & planning</div>
+                      </div>
+                    </button>
+
+                    {/* Party Tools Section Label */}
+                    <div className="pt-3 pb-1">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Party Tools
+                      </div>
+                    </div>
+
+                    {/* Dashboard Items */}
+                    {dashboardItems.slice(1).map((item) => (
+                      <button
                         key={item.href}
-                        href={item.href}
-                        className="flex items-center py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                        onClick={closeMenu}
+                        onClick={() => handleDashboardNavigation(item)}
+                        disabled={loadingPartyData}
+                        className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 disabled:opacity-50"
                       >
                         <item.icon className="w-4 h-4 mr-3 text-gray-500" />
-                        <div>
+                        <div className="text-left">
                           <div className="text-sm font-medium">{item.label}</div>
-                          <div className="text-xs text-gray-500">{item.description}</div>
+                          <div className="text-xs text-gray-500">
+                            {item.description}
+                            {item.requiresPartyId && !activePartyId && !loadingPartyData && (
+                              <span className="text-orange-500"> • Requires active party</span>
+                            )}
+                          </div>
                         </div>
-                      </Link>
+                      </button>
                     ))}
+
+                    {/* Quick Actions Section */}
+                    <div className="pt-3 pb-1">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Quick Actions
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleDashboardNavigation({ href: "/dashboard?action=new-party" })}
+                      className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+                    >
+                      <Star className="w-4 h-4 mr-3 text-gray-500" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium">Start New Party</div>
+                      </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -325,15 +439,14 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 );
               })()}
 
-              {/* Featured Action */}
-              <Link
-                href="/dashboard"
-                className="flex items-center py-4 text-red-500 hover:text-red-600 transition-colors duration-200 border-b border-gray-50"
-                onClick={closeMenu}
+              {/* Featured Action - moved outside dashboard */}
+              <button
+                onClick={() => handleDashboardNavigation({ href: "/dashboard" })}
+                className="flex items-center w-full py-4 text-red-500 hover:text-red-600 transition-colors duration-200 border-b border-gray-50"
               >
                 <Star className="w-6 h-6 mr-4 text-red-500" />
                 <span className="text-lg font-normal">Start Planning</span>
-              </Link>
+              </button>
 
               {/* Extra spacing to ensure scroll reaches bottom */}
               <div className="h-4"></div>

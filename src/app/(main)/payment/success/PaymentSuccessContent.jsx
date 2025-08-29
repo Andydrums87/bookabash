@@ -10,8 +10,10 @@ export default function PaymentSuccessPage() {
 
   const paymentIntentId = searchParams.get("payment_intent")
 
+
+
   const handleReturnToDashboard = () => {
-    router.push("/dashboard?payment_success=true&booking_confirmed=true&supplier_count=3&timestamp=" + Date.now())
+    router.push(`/dashboard?payment_success=true&booking_confirmed=true&timestamp=${Date.now()}`)
   }
 
   return (

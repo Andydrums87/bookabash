@@ -118,11 +118,7 @@ export const useSupplierBooking = (
 
 // COMPLETELY REWRITTEN handleAddToPlan with correct date priority logic
 const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
-  console.log('🚀 === HANDLE ADD TO PLAN START ===')
-  console.log('🚀 Input params:', { skipAddonModal, addonData })
-  console.log('🚀 Current state:', { selectedDate, selectedTimeSlot, currentMonth })
-  console.log('🚀 User type:', userType)
-  console.log('🚀 Database party data:', databasePartyData)
+
 
   if (!supplier || !selectedPackageId) {
     console.log('❌ Missing supplier or package')
@@ -505,7 +501,15 @@ if (addResult.success) {
         }
 
         const supplierType = categoryMap[supplier.category] || 'entertainment'
-        const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
+    // For database users - show enquiry banner (they send real enquiries)
+if (userType === 'DATABASE_USER') {
+  const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail&enquiry_sent=true&timestamp=${Date.now()}`
+  router.push(dashboardUrl)
+} else {
+  // For localStorage users - just navigate normally (no enquiry banner)
+  const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
+  router.push(dashboardUrl)
+}
         console.log('🚀 Navigating to dashboard:', dashboardUrl)
         router.push(dashboardUrl)
       }

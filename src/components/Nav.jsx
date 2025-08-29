@@ -187,14 +187,12 @@ function CartIndicator({ className = "", partyId }) {
 }
 
 function DashboardDropdown() {
-
   const [isOpen, setIsOpen] = useState(false)
   const [activePartyId, setActivePartyId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
   const router = useRouter()
   const dropdownRef = useRef(null)
-
 
   // Load user and party data when dropdown opens
   useEffect(() => {
@@ -222,6 +220,18 @@ function DashboardDropdown() {
     }
   }
 
+  const dashboardItems = [
+    { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
+    { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
+    { 
+      href: "/rsvps", 
+      label: "RSVP Management", 
+      icon: Users, 
+      description: "Track responses",
+      requiresPartyId: true 
+    },
+  ]
+
   const handleNavigation = async (item) => {
     setIsOpen(false)
 
@@ -238,9 +248,6 @@ function DashboardDropdown() {
 
       let targetRoute
       switch (item.href) {
-        case '/gift-registry':
-          targetRoute = `/gift-registry/manage/${activePartyId}`
-          break
         case '/rsvps':
           targetRoute = `/rsvps/${activePartyId}`
           break
@@ -253,25 +260,6 @@ function DashboardDropdown() {
       router.push(item.href)
     }
   }
-
-  const dashboardItems = [
-    { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
-    { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
-    { 
-      href: "/gift-registry", 
-      label: "Gift Registry", 
-      icon: Gift, 
-      description: "Gift wishlists",
-      requiresPartyId: true 
-    },
-    { 
-      href: "/rsvps", 
-      label: "RSVP Management", 
-      icon: Users, 
-      description: "Track responses",
-      requiresPartyId: true 
-    },
-  ]
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -305,7 +293,42 @@ function DashboardDropdown() {
               Party Tools
             </div>
             
-            {dashboardItems.slice(1).map((item) => (
+            {/* E-Invites */}
+            {dashboardItems.slice(1, 2).map((item) => (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item)}
+                disabled={loading}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+                <div className="text-left">
+                  <div>{item.label}</div>
+                </div>
+              </button>
+            ))}
+
+            {/* Gift Registry - Simple Navigation */}
+            <button
+              onClick={() => {
+                setIsOpen(false)
+                if (!user) {
+                  router.push('/signin')
+                } else {
+                  router.push('/gift-registry')
+                }
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Gift className="w-4 h-4 mr-3 text-gray-500" />
+              <div className="text-left">
+                <div>Gift Registry</div>
+                <div className="text-xs text-gray-500">Manage gift wishlists</div>
+              </div>
+            </button>
+
+            {/* RSVP Management */}
+            {dashboardItems.slice(2).map((item) => (
               <button
                 key={item.href}
                 onClick={() => handleNavigation(item)}

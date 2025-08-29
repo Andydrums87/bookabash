@@ -81,23 +81,30 @@ const [ loadingError, setLoadingError] = useState(false)
 
   const { toast } = useToast()
 
-  const [formData, setFormData] = useState({
-    parentName: "",
-    phoneNumber: "",
-    email: "",
-    numberOfChildren: "",
-    dietaryRequirements: {
-      vegetarian: false,
-      vegan: false,
-      glutenFree: false,
-      nutAllergy: false,
-    },
-    accessibilityRequirements: {
-      wheelchairAccessible: false,
-      sensoryFriendly: false,
-    },
-    additionalMessage: "",
-  });
+  
+// Updated formData state initialization
+const [formData, setFormData] = useState({
+  parentName: "",
+  phoneNumber: "",
+  email: "",
+  // New address fields
+  addressLine1: "",
+  addressLine2: "", // Optional
+  city: "",
+  postcode: "",
+  numberOfChildren: "",
+  dietaryRequirements: {
+    vegetarian: false,
+    vegan: false,
+    glutenFree: false,
+    nutAllergy: false,
+  },
+  accessibilityRequirements: {
+    wheelchairAccessible: false,
+    sensoryFriendly: false,
+  },
+  additionalMessage: "",
+});
 const { navigateWithContext} = useContextualNavigation()
   // Load data on mount
   useEffect(() => {
@@ -394,53 +401,59 @@ const { navigateWithContext} = useContextualNavigation()
   const checkAuthStatusAndLoadProfile = async () => {
     try {
       setLoadingProfile(true);
-      console.log("🔍 Checking auth status...");
+      console.log("Checking auth status...");
       
       const {
         data: { user },
         error,
       } = await supabase.auth.getUser();
-
-      console.log("👤 Auth check result:", { user: !!user, error });
-
+  
+      console.log("Auth check result:", { user: !!user, error });
+  
       if (user && !error) {
-        console.log("✅ Found authenticated user:", user.email);
-
-        // Check if this is a CUSTOMER (not a supplier)
+        console.log("Found authenticated user:", user.email);
+  
+        // Check if this is a SUPPLIER (not a customer) - suppliers have their own table
         const { data: supplierRecord } = await supabase
           .from("suppliers")
           .select("id")
           .eq("auth_user_id", user.id)
           .maybeSingle();
-
+  
         if (supplierRecord) {
           // This is a supplier account, not a customer - treat as not signed in
-          console.log("🔍 Detected supplier account, treating as not signed in for customer flow");
+          console.log("Detected supplier account, treating as not signed in for customer flow");
           setUser(null);
           setCustomerProfile(null);
           setLoadingProfile(false);
           return;
         }
-
+  
         setUser(user);
-
-        // Get or create customer profile
+  
+        // Get or create customer profile from 'users' table
         const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
-          console.log("✅ Found customer profile:", result.user);
+          console.log("Found user profile:", result.user);
           setCustomerProfile(result.user);
-
-          // Auto-populate form with customer data
+  
+          // Auto-populate form with user data including address
           setFormData((prev) => ({
             ...prev,
             parentName: `${result.user.first_name || ""} ${result.user.last_name || ""}`.trim() || prev.parentName,
             email: result.user.email || user.email || prev.email,
             phoneNumber: result.user.phone || prev.phoneNumber,
+            
+            // Populate address fields if available in users table
+            addressLine1: result.user.address_line_1 || prev.addressLine1,
+            addressLine2: result.user.address_line_2 || prev.addressLine2,
+            city: result.user.city || prev.city,
+            postcode: result.user.postcode || prev.postcode,
           }));
-
-          console.log("✅ Form auto-populated with customer data");
+  
+          console.log("Form auto-populated with user data including address");
         } else {
-          console.log("⚠️ No customer profile found, will create one during migration");
+          console.log("No user profile found, will create one during migration");
           // Still populate what we can from auth user
           setFormData((prev) => ({
             ...prev,
@@ -450,12 +463,12 @@ const { navigateWithContext} = useContextualNavigation()
           }));
         }
       } else {
-        console.log("❌ No authenticated user found");
+        console.log("No authenticated user found");
         setUser(null);
         setCustomerProfile(null);
       }
     } catch (error) {
-      console.error("❌ Error checking auth status:", error);
+      console.error("Error checking auth status:", error);
       setUser(null);
       setCustomerProfile(null);
     } finally {
@@ -535,165 +548,244 @@ const { navigateWithContext} = useContextualNavigation()
     };
   }, []);
 
-  // Updated migration function to handle new time format
-  const migratePartyToDatabase = async (authenticatedUser) => {
-    try {
-      setIsMigrating(true);
-      console.log("🔄 Starting party migration to database...");
+ // Updated migration function to handle new time format and full address
+// Updated migration function to handle new time format and full address
+const migratePartyToDatabase = async (authenticatedUser) => {
+  try {
+    setIsMigrating(true);
+    console.log("Starting party migration to database...");
 
-      // Get localStorage data
-      const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}");
-      const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
+    // Get localStorage data
+    const partyDetailsLS = JSON.parse(localStorage.getItem("party_details") || "{}");
+    const partyPlanLS = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
 
-      console.log("📋 localStorage data:", { partyDetailsLS, partyPlanLS });
+    console.log("localStorage data:", { partyDetailsLS, partyPlanLS });
 
-      // Ensure user profile exists (create if needed)
-      const userResult = await partyDatabaseBackend.createOrGetUser({
-        firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
-        lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
-        email: authenticatedUser.email,
-        phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
-        postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
-      });
+    // Validate required address fields before proceeding
+    if (!formData.addressLine1 || !formData.city || !formData.postcode) {
+      throw new Error("Please complete all required address fields");
+    }
 
-      if (!userResult.success) {
-        throw new Error(`Failed to create user profile: ${userResult.error}`);
+    // Ensure user profile exists in 'users' table with full address and contact details
+    const userResult = await partyDatabaseBackend.createOrGetUser({
+      firstName: formData.parentName.split(" ")[0] || partyDetailsLS.childName || "Party Host",
+      lastName: formData.parentName.split(" ").slice(1).join(" ") || "",
+      email: authenticatedUser.email,
+      phone: formData.phoneNumber || authenticatedUser.user_metadata?.phone || "",
+      
+      // Full address information
+      addressLine1: formData.addressLine1,
+      addressLine2: formData.addressLine2 || "", // Optional field
+      city: formData.city,
+      postcode: formData.postcode,
+      
+      // Legacy postcode field (for backwards compatibility)
+      postcode: formData.postcode || partyDetailsLS.postcode || partyDetailsLS.location || "",
+    });
+
+    if (!userResult.success) {
+      throw new Error(`Failed to create user profile: ${userResult.error}`);
+    }
+
+    console.log("User profile ready with full address:", userResult.user.id);
+
+    // Helper function to calculate end time
+    const calculateEndTime = (startTime, duration) => {
+      try {
+        const [hours, minutes] = startTime.split(':');
+        const startDate = new Date();
+        startDate.setHours(parseInt(hours), parseInt(minutes || 0));
+        
+        const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000));
+        
+        return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+      } catch (error) {
+        console.error("Error calculating end time:", error);
+        return "16:00"; // Default fallback
       }
+    };
 
-      console.log("✅ User profile ready:", userResult.user.id);
-
-      // Helper function to calculate end time
-      const calculateEndTime = (startTime, duration) => {
-        try {
-          const [hours, minutes] = startTime.split(':');
-          const startDate = new Date();
-          startDate.setHours(parseInt(hours), parseInt(minutes || 0));
-          
-          const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000));
-          
-          return `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-        } catch (error) {
-          console.error("Error calculating end time:", error);
-          return "16:00"; // Default fallback
-        }
-      };
-
-      // Handle time data - prioritize new format
-      const getTimeData = () => {
-        // Priority 1: Check for startTime (new format)
-        if (partyDetailsLS.startTime) {
-          console.log("✅ Using new startTime format:", partyDetailsLS.startTime);
-          const endTime = calculateEndTime(partyDetailsLS.startTime, partyDetailsLS.duration || 2);
-          return {
-            time: partyDetailsLS.startTime, // Keep for backwards compatibility
-            startTime: partyDetailsLS.startTime, // New start_time column
-            endTime: endTime, // New end_time column
-            duration: partyDetailsLS.duration || 2,
-            timePreference: {
-              type: 'specific',
-              startTime: partyDetailsLS.startTime,
-              duration: partyDetailsLS.duration || 2,
-              endTime: endTime
-            }
-          };
-        }
-        
-        // Priority 2: Legacy timeSlot format
-        if (partyDetailsLS.timeSlot) {
-          console.log("⚠️ Using legacy timeSlot format:", partyDetailsLS.timeSlot);
-          const timeSlotToTime = {
-            morning: "10:00",
-            afternoon: "14:00"
-          };
-          const startTime = timeSlotToTime[partyDetailsLS.timeSlot] || "14:00";
-          const endTime = calculateEndTime(startTime, partyDetailsLS.duration || 2);
-          
-          return {
-            time: startTime, // Keep for backwards compatibility
-            startTime: startTime, // New start_time column
-            endTime: endTime, // New end_time column
-            duration: partyDetailsLS.duration || 2,
-            timePreference: {
-              type: 'flexible',
-              slot: partyDetailsLS.timeSlot,
-              duration: partyDetailsLS.duration || 2,
-              startTime: startTime
-            }
-          };
-        }
-        
-        // Fallback
-        console.log("⚠️ No time data found, using default");
+    // Handle time data - prioritize new format
+    const getTimeData = () => {
+      // Priority 1: Check for startTime (new format)
+      if (partyDetailsLS.startTime) {
+        console.log("Using new startTime format:", partyDetailsLS.startTime);
+        const endTime = calculateEndTime(partyDetailsLS.startTime, partyDetailsLS.duration || 2);
         return {
-          time: "14:00", // Keep for backwards compatibility
-          startTime: "14:00", // New start_time column
-          endTime: "16:00", // New end_time column
-          duration: 2,
+          time: partyDetailsLS.startTime, // Keep for backwards compatibility
+          startTime: partyDetailsLS.startTime, // New start_time column
+          endTime: endTime, // New end_time column
+          duration: partyDetailsLS.duration || 2,
           timePreference: {
-            type: 'flexible',
-            slot: 'afternoon',
-            duration: 2,
-            startTime: "14:00"
+            type: 'specific',
+            startTime: partyDetailsLS.startTime,
+            duration: partyDetailsLS.duration || 2,
+            endTime: endTime
           }
         };
-      };
-
-      const timeData = getTimeData();
-      console.log("⏰ Final time data for database:", timeData);
-
-      // Create party in database with separate start/end times
-      const partyData = {
-        childName: partyDetailsLS.childName || "Your Child",
-        childAge: parseInt(partyDetailsLS.childAge) || 6,
-        date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
-        
-        // Legacy time field (keep for backwards compatibility)
-        time: timeData.time,
-        
-        // New separate time columns - try both naming conventions
-        startTime: timeData.startTime,   // camelCase
-        start_time: timeData.startTime,  // snake_case
-        endTime: timeData.endTime,       // camelCase  
-        end_time: timeData.endTime,      // snake_case
-        
-        duration: timeData.duration,
-        
-        guestCount: parseInt(formData.numberOfChildren?.split("-")[0]) || parseInt(partyDetailsLS.guestCount) || 15,
-        location: partyDetailsLS.location || "TBD",
-        postcode: partyDetailsLS.postcode || partyDetailsLS.location || "",
-        theme: partyDetailsLS.theme || "party",
-        budget: parseInt(partyDetailsLS.budget) || 600,
-        specialRequirements: formData.additionalMessage || "",
-        
-        // Time preference object
-        timePreference: timeData.timePreference
-      };
-
-      console.log("🎉 Creating party with time data:", {
-        startTime: timeData.startTime,
-        endTime: timeData.endTime,
-        duration: timeData.duration
-      });
-
-      console.log("🎉 Creating party with data:", partyData);
-      console.log("🎁 Add-ons being migrated:", partyPlanLS.addons?.length || 0);
-
-      const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS);
-
-      if (!createResult.success) {
-        throw new Error(`Failed to create party: ${createResult.error}`);
       }
+      
+      // Priority 2: Legacy timeSlot format
+      if (partyDetailsLS.timeSlot) {
+        console.log("Using legacy timeSlot format:", partyDetailsLS.timeSlot);
+        const timeSlotToTime = {
+          morning: "10:00",
+          afternoon: "14:00"
+        };
+        const startTime = timeSlotToTime[partyDetailsLS.timeSlot] || "14:00";
+        const endTime = calculateEndTime(startTime, partyDetailsLS.duration || 2);
+        
+        return {
+          time: startTime, // Keep for backwards compatibility
+          startTime: startTime, // New start_time column
+          endTime: endTime, // New end_time column
+          duration: partyDetailsLS.duration || 2,
+          timePreference: {
+            type: 'flexible',
+            slot: partyDetailsLS.timeSlot,
+            duration: partyDetailsLS.duration || 2,
+            startTime: startTime
+          }
+        };
+      }
+      
+      // Fallback
+      console.log("No time data found, using default");
+      return {
+        time: "14:00", // Keep for backwards compatibility
+        startTime: "14:00", // New start_time column
+        endTime: "16:00", // New end_time column
+        duration: 2,
+        timePreference: {
+          type: 'flexible',
+          slot: 'afternoon',
+          duration: 2,
+          startTime: "14:00"
+        }
+      };
+    };
 
-      console.log("✅ Party migrated successfully to database:", createResult.party.id);
-      return createResult.party;
-    } catch (error) {
-      console.error("❌ Migration failed:", error);
-      throw error;
-    } finally {
-      setIsMigrating(false);
+    const timeData = getTimeData();
+    console.log("Final time data for database:", timeData);
+
+    // Format full address for display and storage
+    const formatFullAddress = () => {
+      const parts = [
+        formData.addressLine1,
+        formData.addressLine2,
+        formData.city,
+        formData.postcode
+      ].filter(Boolean); // Remove empty parts
+      
+      return parts.join(', ');
+    };
+
+    // Build comprehensive dietary requirements object
+    const dietaryRequirementsArray = [];
+    if (formData.dietaryRequirements.vegetarian) dietaryRequirementsArray.push('Vegetarian');
+    if (formData.dietaryRequirements.vegan) dietaryRequirementsArray.push('Vegan');
+    if (formData.dietaryRequirements.glutenFree) dietaryRequirementsArray.push('Gluten-Free');
+    if (formData.dietaryRequirements.nutAllergy) dietaryRequirementsArray.push('Nut Allergy');
+
+    // Build accessibility requirements object
+    const accessibilityRequirementsArray = [];
+    if (formData.accessibilityRequirements.wheelchairAccessible) accessibilityRequirementsArray.push('Wheelchair Accessible');
+    if (formData.accessibilityRequirements.sensoryFriendly) accessibilityRequirementsArray.push('Sensory Friendly');
+
+    // Create comprehensive party data with all new fields
+    const partyData = {
+      // Basic party information
+      childName: partyDetailsLS.childName || "Your Child",
+      childAge: parseInt(partyDetailsLS.childAge) || 6,
+      date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
+      
+      // Time information (multiple formats for compatibility)
+      time: timeData.time,
+      startTime: timeData.startTime,
+      start_time: timeData.startTime,
+      endTime: timeData.endTime,
+      end_time: timeData.endTime,
+      duration: timeData.duration,
+      timePreference: timeData.timePreference,
+      
+      // Guest and location information
+      guestCount: parseInt(formData.numberOfChildren?.split("-")[0]) || parseInt(partyDetailsLS.guestCount) || 15,
+      location: partyDetailsLS.location || formatFullAddress(), // Use full address as location fallback
+      postcode: formData.postcode || partyDetailsLS.postcode || "",
+      
+      // Full delivery address information
+      deliveryAddress: {
+        line1: formData.addressLine1,
+        line2: formData.addressLine2,
+        city: formData.city,
+        postcode: formData.postcode,
+        fullAddress: formatFullAddress()
+      },
+      
+      // Individual address fields for database columns
+      deliveryAddressLine1: formData.addressLine1,
+      deliveryAddressLine2: formData.addressLine2,
+      deliveryCity: formData.city,
+      deliveryPostcode: formData.postcode,
+      fullDeliveryAddress: formatFullAddress(),
+      
+      // Contact information
+      parentName: formData.parentName,
+      parentEmail: formData.email,
+      parentPhone: formData.phoneNumber,
+      
+      // Party preferences and requirements
+      theme: partyDetailsLS.theme || "party",
+      budget: parseInt(partyDetailsLS.budget) || 600,
+      specialRequirements: formData.additionalMessage || "",
+      
+      // Dietary requirements (both as object and array)
+      dietaryRequirements: formData.dietaryRequirements,
+      dietaryRequirementsArray: dietaryRequirementsArray,
+      hasDietaryRequirements: dietaryRequirementsArray.length > 0,
+      
+      // Accessibility requirements (both as object and array)
+      accessibilityRequirements: formData.accessibilityRequirements,
+      accessibilityRequirementsArray: accessibilityRequirementsArray,
+      hasAccessibilityRequirements: accessibilityRequirementsArray.length > 0,
+      
+      // Additional metadata
+      submittedAt: new Date().toISOString(),
+      status: 'draft' // Always use draft status to match database constraint
+    };
+
+    console.log("Creating party with comprehensive data including:", {
+      deliveryAddress: partyData.deliveryAddress,
+      dietaryRequirements: dietaryRequirementsArray,
+      accessibilityRequirements: accessibilityRequirementsArray,
+      contactInfo: {
+        name: partyData.parentName,
+        email: partyData.parentEmail,
+        phone: partyData.parentPhone
+      }
+    });
+
+    // Create the party in the database
+    const createResult = await partyDatabaseBackend.createParty(partyData, partyPlanLS);
+
+    if (!createResult.success) {
+      throw new Error(`Failed to create party: ${createResult.error}`);
     }
-  };
 
+    console.log("Party migrated successfully to database with full address and requirements:", createResult.party.id);
+    
+    // Optional: Store party ID in localStorage for reference
+    localStorage.setItem("migrated_party_id", createResult.party.id);
+    
+    return createResult.party;
+    
+  } catch (error) {
+    console.error("Migration failed:", error);
+    throw error;
+  } finally {
+    setIsMigrating(false);
+  }
+};
   const handleAuthSuccess = async (authenticatedUser, userData = null) => {
     console.log("✅ Authentication successful, user can now access the review page");
     console.log("👤 User data received:", userData);
@@ -915,13 +1007,21 @@ const handlePhoneChange = (value) => {
 
 // Updated canProceed function
 const canProceed = () => {
-  const step = currentStepData
+  const step = currentStepData;
   if (step.id === 'contact') {
-    const phoneValid = phoneError === '' && formData.phoneNumber.length > 0
-    return formData.parentName.length > 0 && phoneValid && formData.email.length > 0
+    const phoneValid = phoneError === '' && formData.phoneNumber.length > 0;
+    const addressValid = formData.addressLine1.length > 0 && 
+                        formData.city.length > 0 && 
+                        formData.postcode.length > 0;
+    return formData.parentName.length > 0 && 
+           phoneValid && 
+           formData.email.length > 0 && 
+           addressValid;
   }
-  return true
-}
+  return true;
+};
+
+
 
 
   const currentStepData = chatSteps[currentStep];
@@ -1175,7 +1275,8 @@ const getButtonIcon = (stepData) => {
           {/* Form Content */}
           <div className="space-y-6 mb-8">
             
-          {currentStepData.showContactFields && (
+          
+{currentStepData.showContactFields && (
   <div className="space-y-4 max-w-lg mx-auto">
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">Your name *</label>
@@ -1187,10 +1288,11 @@ const getButtonIcon = (stepData) => {
         autoFocus
       />
     </div>
+    
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">UK Mobile number *</label>
       <Input
-       placeholder="Enter your phone number"
+        placeholder="Enter your phone number"
         value={formData.phoneNumber}
         onChange={(e) => handlePhoneChange(e.target.value)}
         className={`h-12 text-base border-2 rounded-lg placeholder:text-gray-400 placeholder:text-sm ${
@@ -1201,6 +1303,7 @@ const getButtonIcon = (stepData) => {
         <p className="text-red-500 text-sm mt-1">{phoneError}</p>
       )}
     </div>
+    
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">Email address *</label>
       <Input
@@ -1208,12 +1311,64 @@ const getButtonIcon = (stepData) => {
         type="email"
         value={formData.email}
         onChange={(e) => updateFormData('email', e.target.value)}
-        className="h-12 border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg  text-gray-700 text-sm"
+        className="h-12 border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg text-gray-700 text-sm"
         disabled={!!user}
       />
       {user && (
         <p className="text-xs text-gray-500 mt-1">Email cannot be changed as you're signed in</p>
       )}
+    </div>
+
+    {/* NEW ADDRESS SECTION */}
+    <div className="pt-4 border-t border-gray-200">
+      <h4 className="text-lg font-semibold text-gray-800 mb-4">Delivery Address</h4>
+      <p className="text-sm text-gray-600 mb-4">
+        Where should suppliers deliver items and set up for your party?
+      </p>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 1 *</label>
+          <Input
+            placeholder="House number and street name"
+            value={formData.addressLine1}
+            onChange={(e) => updateFormData('addressLine1', e.target.value)}
+            className="h-12 text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
+          <Input
+            placeholder="Apartment, suite, floor (optional)"
+            value={formData.addressLine2}
+            onChange={(e) => updateFormData('addressLine2', e.target.value)}
+            className="h-12 text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg"
+          />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+            <Input
+              placeholder="City"
+              value={formData.city}
+              onChange={(e) => updateFormData('city', e.target.value)}
+              className="h-12 text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Postcode *</label>
+            <Input
+              placeholder="SW1A 1AA"
+              value={formData.postcode}
+              onChange={(e) => updateFormData('postcode', e.target.value.toUpperCase())}
+              className="h-12 text-base border-2 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-lg"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 )}

@@ -30,105 +30,37 @@ export default function PartyPhaseContent({
 }) {
 
 
-  
-  // Payment confirmed phase
-  if (phase === 'payment_confirmed') {
-    return (
-      <div className="mb-8">
+
      
-           {/* While You Wait Section */}
-           <WhilstYouWaitSection 
-          registry={registry}
-          registryItems={registryItems}
-          partyTheme={partyTheme?.name?.toLowerCase()}
-          childAge={childAge || 6}
-          onCreateRegistry={onCreateRegistry}
-          onAddItem={onAddItem}
-          registryLoading={registryLoading}
-          hasCreatedInvites={hasCreatedInvites}
-        partyDetails={partyDetails}
-        partyId={partyDetails?.id}
-          onCreateInvites={onCreateInvites}
-        />
-      </div>
-    )
-  }
+  
+         
+ 
+    
+  
 
 
-  // Awaiting responses phase
-  if (phase === 'awaiting_responses') {
-    const suppliersWithEnquiries = Object.keys(suppliers).filter(key => 
-      suppliers[key] && enquiries.some(e => e.supplier_category === key && e.status === 'pending')
-    )
 
-    return (
-      <div className="space-y-8">
-        {/* Snappy's Present Party */}
-        {/* <SnappysPresentParty
-          suppliers={suppliers}
-          enquiries={enquiries}
-          timeRemaining={24} // You might want to calculate this
-          onPaymentReady={onPaymentReady}
-          showPaymentCTA={false} // Not ready for payment yet
-        /> */}
 
-        {/* While You Wait Section */}
-        <WhilstYouWaitSection 
-          registry={registry}
-          registryItems={registryItems}
-          partyTheme={partyTheme?.name?.toLowerCase()}
-          childAge={childAge || 6}
-          onCreateRegistry={onCreateRegistry}
-          onAddItem={onAddItem}
-          registryLoading={registryLoading}
-          hasCreatedInvites={hasCreatedInvites}
-        partyDetails={partyDetails}
-        partyId={partyDetails?.id}
-          onCreateInvites={onCreateInvites}
-        />
-
-        {/* What Happens Next */}
-        <WhatHappensNextCard suppliersCount={suppliersWithEnquiries.length} />
-      </div>
-    )
-  }
-
-  // Ready for payment phase
-  if (phase === 'ready_for_payment') {
-    return (
-      <div className="mb-8">
-        <SnappysPresentParty
-          suppliers={suppliers}
-          enquiries={enquiries}
-          timeRemaining={24}
-          onPaymentReady={onPaymentReady}
-          showPaymentCTA={true} // Ready for payment!
-        />
-           {/* While You Wait Section */}
-           <WhilstYouWaitSection 
-          registry={registry}
-          registryItems={registryItems}
-          partyTheme={partyTheme?.name?.toLowerCase()}
-          childAge={childAge || 6}
-          onCreateRegistry={onCreateRegistry}
-          onAddItem={onAddItem}
-          registryLoading={registryLoading}
-          hasCreatedInvites={hasCreatedInvites}
-        partyDetails={partyDetails}
-        partyId={partyDetails?.id}
-          onCreateInvites={onCreateInvites}
-        />
-      </div>
-    )
-  }
 
   // Planning phase (default)
   return (
     <div className="mb-8">
-      {/* <PlanningPhaseContent /> */}
+   <WhilstYouWaitSection 
+          registry={registry}
+          registryItems={registryItems}
+          partyTheme={partyTheme?.name?.toLowerCase()}
+          childAge={childAge || 6}
+          onCreateRegistry={onCreateRegistry}
+          onAddItem={onAddItem}
+          registryLoading={registryLoading}
+          hasCreatedInvites={hasCreatedInvites}
+        partyDetails={partyDetails}
+        partyId={partyDetails?.id}
+          onCreateInvites={onCreateInvites}
+        />
     </div>
   )
-}
+
 
 // Planning phase component
 function PlanningPhaseContent() {
@@ -287,4 +219,5 @@ function PostPaymentSuccessSection({ suppliers, enquiries, partyData, paymentDet
       </CardContent>
     </Card>
   )
+}
 }

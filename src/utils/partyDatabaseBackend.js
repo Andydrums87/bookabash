@@ -41,10 +41,15 @@ class PartyDatabaseBackend {
         // Update the existing profile with any new data
         const updateData = {
           email: userData.email || authUser.user.email,
+
           first_name: userData.firstName || existingUser.first_name,
           last_name: userData.lastName || existingUser.last_name,
           phone: userData.phone || existingUser.phone,
           postcode: userData.postcode || existingUser.postcode,
+           // NEW: Address fields
+        address_line_1: userData.addressLine1 || existingUser.address_line_1,
+        address_line_2: userData.addressLine2 || existingUser.address_line_2,
+        city: userData.city || existingUser.city,
           updated_at: new Date().toISOString()
         }
         
@@ -68,7 +73,12 @@ class PartyDatabaseBackend {
         first_name: userData.firstName || 'User',
         last_name: userData.lastName || '',
         phone: userData.phone || '',
-        postcode: userData.postcode || ''
+        postcode: userData.postcode || '',
+           
+      // NEW: Address fields for new users
+      address_line_1: userData.addressLine1 || '',
+      address_line_2: userData.addressLine2 || '',
+      city: userData.city || ''
       }
       
       console.log('📝 Creating new user profile:', newUserData)
@@ -180,13 +190,51 @@ class PartyDatabaseBackend {
         guest_count: partyDetails.guestCount,
         location: partyDetails.location,
         postcode: partyDetails.postcode,
+        
+        // NEW: Delivery address fields
+        delivery_address_line_1: partyDetails.deliveryAddressLine1,
+        delivery_address_line_2: partyDetails.deliveryAddressLine2,
+        delivery_city: partyDetails.deliveryCity,
+        delivery_postcode: partyDetails.deliveryPostcode,
+        full_delivery_address: partyDetails.fullDeliveryAddress,
+        
+        // NEW: Contact information
+        parent_name: partyDetails.parentName,
+        parent_email: partyDetails.parentEmail,
+        parent_phone: partyDetails.parentPhone,
+        
+        // NEW: Requirements
+        dietary_requirements: JSON.stringify(partyDetails.dietaryRequirements || {}),
+        accessibility_requirements: JSON.stringify(partyDetails.accessibilityRequirements || {}),
+        dietary_requirements_array: partyDetails.dietaryRequirementsArray || [],
+        accessibility_requirements_array: partyDetails.accessibilityRequirementsArray || [],
+        has_dietary_requirements: partyDetails.hasDietaryRequirements || false,
+        has_accessibility_requirements: partyDetails.hasAccessibilityRequirements || false,
+        
         theme: partyDetails.theme,
         budget: partyDetails.budget,
         special_requirements: partyDetails.specialRequirements,
         party_plan: partyPlan,
         estimated_cost: this.calculatePartyPlanCost(partyPlan),
-        status: 'draft'
+        
+        // NEW: Additional metadata
+        submitted_at: partyDetails.submittedAt || new Date().toISOString(),
+        status: partyDetails.status || 'draft'
       }
+  
+      console.log('🎉 Creating party with delivery address:', {
+        delivery_address: {
+          line1: party.delivery_address_line_1,
+          line2: party.delivery_address_line_2,
+          city: party.delivery_city,
+          postcode: party.delivery_postcode
+        },
+        contact_info: {
+          name: party.parent_name,
+          email: party.parent_email,
+          phone: party.parent_phone
+        }
+      });
 
   
 
@@ -3502,7 +3550,7 @@ async findGiftRegistryForParty(partyId) {
   try {
     console.log('🔍 [Backend] Finding gift registry for party:', partyId)
     
-    // First, try to find existing registry by party ID
+    // Find existing registry by party ID
     const { data: registry, error: registryError } = await supabase
       .from('party_gift_registries')
       .select('*')
@@ -3519,33 +3567,13 @@ async findGiftRegistryForParty(partyId) {
       }
     }
     
-    // If not found by party ID, check if there's a registry that should be linked
-    // This is a fallback for existing registries that weren't properly linked
-    const { data: allRegistries, error: allError } = await supabase
-      .from('party_gift_registries')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(10) // Check recent registries
-    
-    if (!allError && allRegistries && allRegistries.length > 0) {
-      // For now, return the most recent registry as fallback
-      // In a real app, you'd have better logic to match registries to parties
-      const fallbackRegistry = allRegistries[0]
-      
-      console.log('⚠️ [Backend] Using fallback registry:', fallbackRegistry.id)
-      return {
-        success: true,
-        registry: fallbackRegistry,
-        method: 'fallback_recent'
-      }
-    }
-    
+    // If not found, return no registry (remove fallback logic)
     console.log('❌ [Backend] No gift registry found for party:', partyId)
     return {
       success: false,
       error: 'No gift registry found for this party',
-      registry: null
+      registry: null,
+      method: 'not_found'
     }
     
   } catch (error) {
@@ -3553,7 +3581,8 @@ async findGiftRegistryForParty(partyId) {
     return {
       success: false,
       error: error.message,
-      registry: null
+      registry: null,
+      method: 'error'
     }
   }
 }

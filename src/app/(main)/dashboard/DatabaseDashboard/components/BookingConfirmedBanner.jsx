@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { X, Sparkles, ArrowRight } from "lucide-react"
+import { X, ArrowRight, PartyPopper } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
 
 export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [], paymentDetails = null }) {
@@ -11,42 +11,47 @@ export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [],
   const router = useRouter()
   const [isVisible, setIsVisible] = useState(false)
   const [supplierCount, setSupplierCount] = useState(0)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   // Get confirmed suppliers
   const confirmedSuppliers = Object.entries(suppliers)
-    .filter(([key, supplier]) => supplier && key !== 'einvites')
+    .filter(([key, supplier]) => supplier && key !== "einvites")
     .map(([type, supplier]) => {
-      const enquiry = enquiries.find(e => e.supplier_category === type)
+      const enquiry = enquiries.find((e) => e.supplier_category === type)
       return {
         type,
         name: supplier.name,
         category: type.charAt(0).toUpperCase() + type.slice(1),
-        status: enquiry?.status || 'confirmed'
+        status: enquiry?.status || "confirmed",
       }
     })
-    .filter(supplier => supplier.status === 'accepted')
+    .filter((supplier) => supplier.status === "accepted")
 
   useEffect(() => {
     // Check for payment success parameters
-    const paymentSuccess = searchParams.get('payment_success') === 'true'
-    const bookingConfirmed = searchParams.get('booking_confirmed') === 'true'
-    const count = searchParams.get('supplier_count')
+    const paymentSuccess = searchParams.get("payment_success") === "true"
+    const bookingConfirmed = searchParams.get("booking_confirmed") === "true"
+    const count = searchParams.get("supplier_count")
 
     if (paymentSuccess || bookingConfirmed) {
       setIsVisible(true)
-      setSupplierCount(parseInt(count) || confirmedSuppliers.length)
-      
+      setSupplierCount(Number.parseInt(count) || confirmedSuppliers.length)
+
+      // Trigger confetti animation
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 3000)
+
       // Clean up URL parameters after showing
       setTimeout(() => {
         const newSearchParams = new URLSearchParams(searchParams.toString())
-        newSearchParams.delete('payment_success')
-        newSearchParams.delete('booking_confirmed')
-        newSearchParams.delete('supplier_count')
-        newSearchParams.delete('timestamp')
-        
-        const newUrl = window.location.pathname + (newSearchParams.toString() ? `?${newSearchParams}` : '')
+        newSearchParams.delete("payment_success")
+        newSearchParams.delete("booking_confirmed")
+        newSearchParams.delete("supplier_count")
+        newSearchParams.delete("timestamp")
+
+        const newUrl = window.location.pathname + (newSearchParams.toString() ? `?${newSearchParams}` : "")
         router.replace(newUrl, { scroll: false })
-      }, 8000) // Clean up after 8 seconds
+      }, 8000)
     }
   }, [searchParams, router, confirmedSuppliers.length])
 
@@ -59,100 +64,109 @@ export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [],
   }
 
   return (
-    <div className="w-full mb-6">
-      <Card className="border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 shadow-xl overflow-hidden">
-        <CardContent className="p-0">
-          {/* Celebration Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6 relative">
-            
-            {/* Floating sparkles */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute top-4 left-8 w-2 h-2 bg-white/40 rounded-full animate-ping"></div>
-              <div className="absolute top-8 right-12 w-1.5 h-1.5 bg-white/30 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
-              <div className="absolute bottom-6 left-16 w-1 h-1 bg-white/50 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>
-            </div>
+    <div className="w-full mb-6 relative">
+      {/* Confetti Animation */}
+      {showConfetti && (
+        <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-20px`,
+                backgroundColor: ["#fbbf24", "#f472b6", "#60a5fa", "#34d399", "#a78bfa"][i % 5],
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: "3s",
+                transform: `rotate(${Math.random() * 360}deg)`,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
+      <Card className="border-2 border-teal-300 bg-gradient-to-br from-teal-50 to-teal-100 shadow-2xl overflow-hidden transform hover:scale-[1.02] transition-transform duration-300">
+        <CardContent className="p-0 relative">
+          {/* Main Content */}
+          <div className="p-8 text-center relative">
             {/* Dismiss button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={handleDismiss}
-              className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 h-8 w-8 p-0"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 hover:bg-gray-100 h-8 w-8 p-0 z-20"
             >
               <X className="w-4 h-4" />
             </Button>
 
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Sparkles className="w-8 h-8 text-white" />
+            {/* Hero Section with Mascot */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-6">
+              {/* Mascot */}
+              <div className="relative">
+                <div className="w-50 h-50 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-teal-400 shadow-lg transform ">
+                  <img
+                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1756456032/animation_n8ymlh.webp"
+                    alt="Party mascot"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Celebration effects around mascot */}
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center animate-pulse">
+                  <PartyPopper className="w-4 h-4 text-white" />
+                </div>
               </div>
+
+              {/* Main Message */}
               <div>
-                <h2 className="text-2xl md:text-3xl font-black mb-1">
-                  Your Party Team is Secured!
-                </h2>
-                <p className="text-white/90 text-base md:text-lg font-medium">
-                  {supplierCount} amazing supplier{supplierCount !== 1 ? 's' : ''} locked in and ready to make magic happen
-                </p>
+                <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-teal-500 via-primary-500 to-teal-600 bg-clip-text text-transparent">
+                  IT'S OFFICIAL! 🎉
+                </h1>
+                <p className="text-xl md:text-2xl text-gray-700 font-bold mb-2">Your party dream team is ready!</p>
+                <p className="text-gray-600">They'll contact you within 24 hours ✨</p>
               </div>
             </div>
-          </div>
 
-          {/* Content Section */}
-          <div className="p-6">
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
-              
-              {/* Left: Quick summary */}
-              <div className="flex-1">
-                <div className="bg-white/60 rounded-xl p-4 mb-4">
-                  <h3 className="font-bold text-emerald-800 mb-3 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    What happens next?
-                  </h3>
-                  <p className="text-emerald-700 text-sm leading-relaxed">
-                    Your suppliers will contact you within 24 hours with their contact details and to finalize the party magic. 
-                    Check your email for booking confirmations!
-                  </p>
-                </div>
+            {/* Action Button */}
+            <div className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+            
 
-                {/* Supplier tags preview */}
-                {confirmedSuppliers.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {confirmedSuppliers.slice(0, 5).map((supplier) => (
-                      <span 
-                        key={supplier.type} 
-                        className="text-xs bg-emerald-200 text-emerald-800 px-3 py-1.5 rounded-full font-medium"
-                      >
-                        {supplier.category}
-                      </span>
-                    ))}
-                    {confirmedSuppliers.length > 5 && (
-                      <span className="text-xs text-emerald-600 px-3 py-1.5 font-medium">
-                        +{confirmedSuppliers.length - 5} more
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Single clear action */}
-              <div className="lg:w-80">
-                <div className="bg-white/80 rounded-xl p-4 text-center">
-                  <h4 className="font-bold text-emerald-800 mb-3">
-                    Ready for the next step?
-                  </h4>
-                  <Button 
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3"
-                    onClick={() => router.push('/e-invites')}
-                  >
-                    Create Party Invitations
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                  <p className="text-xs text-emerald-600 mt-2">
-                    Send beautiful invites to your guests
-                  </p>
-                </div>
-              </div>
+              <Button
+                size="lg"
+                className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-primary-600 text-white font-bold py-4 text-lg shadow-xl transform hover:scale-105 transition-all duration-200"
+                onClick={() => router.push("/e-invites")}
+              >
+                Create Invitations
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 border-2 border-teal-400 text-teal-600 hover:bg-teal-50 font-bold py-4 text-lg shadow-lg transform hover:scale-105 transition-all duration-200 bg-transparent"
+                onClick={() => router.push("/gift-registry")}
+              >
+                Create Gift Registry
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
+            <p className="text-sm text-gray-500 mt-3 text-center">
+              Send stunning invites & let guests know what to bring!
+            </p>
+
+            {/* Floating celebration elements */}
+            <div className="absolute top-8 left-8 w-3 h-3 bg-teal-400 rounded-full animate-ping opacity-70"></div>
+            <div
+              className="absolute top-12 right-16 w-2 h-2 bg-primary-400 rounded-full animate-ping opacity-60"
+              style={{ animationDelay: "0.5s" }}
+            ></div>
+            <div
+              className="absolute bottom-8 left-16 w-2.5 h-2.5 bg-teal-500 rounded-full animate-ping opacity-50"
+              style={{ animationDelay: "1s" }}
+            ></div>
+            <div
+              className="absolute bottom-12 right-12 w-2 h-2 bg-primary-500 rounded-full animate-ping opacity-60"
+              style={{ animationDelay: "1.5s" }}
+            ></div>
           </div>
         </CardContent>
       </Card>

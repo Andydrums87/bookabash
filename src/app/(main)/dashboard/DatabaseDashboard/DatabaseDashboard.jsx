@@ -20,6 +20,7 @@ import { useSupplierManager } from "../hooks/useSupplierManager"
 import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
 import useDisableScroll from "@/hooks/useDisableScroll"
+import WhilstYouWaitSection from "./components/WhilstYouWait"
 
 
 // Layout Components
@@ -553,7 +554,7 @@ useEffect(() => {
       
      // ✅ UPDATED: Show booking confirmation message
      const currentUrl = new URL(window.location)
-     currentUrl.searchParams.set('booking_confirmed', 'true')
+     currentUrl.searchParams.set('enquiry_sent', 'true')
      currentUrl.searchParams.set('supplier_name', encodeURIComponent(supplier.name))
      router.push(currentUrl.toString())
       
@@ -946,7 +947,9 @@ useEffect(() => {
           remainingBalance: totalCost * 0.8
         }}
       />
-      <EnquirySuccessBanner />
+      <EnquirySuccessBanner 
+      partyId={partyId}
+      />
       {/* <EInvitesBanner 
         partyId={partyId}
         isBookingPending={currentPhase !== 'confirmed'} 
@@ -1036,7 +1039,7 @@ useEffect(() => {
               onSupplierTabChange={handleMobileSupplierTabChange}   
 
             />
-
+        
             <PartyPhaseContent
               phase={partyPhase}
               suppliers={visibleSuppliers}
