@@ -5,7 +5,7 @@
 import { Suspense } from 'react'
 import EInvitesPage from '../components/EinvitesPage'
 import { Loader2 } from "lucide-react"
-import { SnappyLoader } from '@/components/ui/SnappyLoader'
+import SnappyLoader from '@/components/ui/SnappyLoader'
 
 // Loading component for Suspense fallback
 function EInvitesLoading() {

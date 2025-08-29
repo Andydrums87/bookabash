@@ -126,6 +126,41 @@ export default function MobileNav({ user, onSignOut, loading }) {
     loadPartyData()
   }, [user])
 
+  // Add this function inside MobileNav component
+const hasLocalStorageParty = () => {
+  try {
+    const userPartyPlan = localStorage.getItem('user_party_plan')
+    const partyDetails = localStorage.getItem('party_details')
+    
+    if (userPartyPlan) {
+      const parsedPlan = JSON.parse(userPartyPlan)
+      const hasValidPlan = parsedPlan && Object.keys(parsedPlan).some(key => 
+        parsedPlan[key] && 
+        typeof parsedPlan[key] === 'object' && 
+        parsedPlan[key].name
+      )
+      if (hasValidPlan) return true
+    }
+    
+    if (partyDetails) {
+      const parsedDetails = JSON.parse(partyDetails)
+      const hasValidDetails = parsedDetails && (
+        parsedDetails.theme || 
+        parsedDetails.date || 
+        (parsedDetails.childName && parsedDetails.childName !== 'Emma') ||
+        parsedDetails.guestCount ||
+        parsedDetails.postcode
+      )
+      if (hasValidDetails) return true
+    }
+    
+    return false
+  } catch (error) {
+    console.error('Error checking localStorage party data:', error)
+    return false
+  }
+}
+
   // Basic nav items
   const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -322,86 +357,67 @@ export default function MobileNav({ user, onSignOut, loading }) {
                 <span className="text-md">Snap Suppliers</span>
               </Link>
 
-              {/* Dashboard - Expandable with same logic as desktop */}
-              {user && (
-                <div className="border-b border-gray-50">
-                  <button
-                    onClick={() => setDashboardExpanded(!dashboardExpanded)}
-                    className="flex items-center justify-between w-full py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                  >
-                    <div className="flex items-center">
-                      <Calendar className="w-6 h-6 mr-4 text-gray-600" />
-                      <span className="text-md">My Snapboard</span>
-                    </div>
-                    <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
-                  </button>
+ {/* Dashboard - ALWAYS show, regardless of user state */}
+<div className="border-b border-gray-50">
+  <button
+    onClick={() => setDashboardExpanded(!dashboardExpanded)}
+    className="flex items-center justify-between w-full py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+  >
+    <div className="flex items-center">
+      <Calendar className="w-6 h-6 mr-4 text-gray-600" />
+      <span className="text-md">My Snapboard</span>
+    </div>
+    <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
+  </button>
 
-                  {/* Dashboard Sub-items */}
-                  <div className={`overflow-hidden transition-all duration-300 ease-out ${
-                    dashboardExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-                  }`}>
-                    <div className="pl-10 pb-2 space-y-1">
-                      {/* Main Party Dashboard */}
-                      <button
-                        onClick={() => handleDashboardNavigation({ href: "/dashboard" })}
-                        className="flex items-center w-full py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                      >
-                        <Calendar className="w-4 h-4 mr-3 text-gray-500" />
-                        <div className="text-left">
-                          <div className="text-sm font-medium">Party Dashboard</div>
-                          <div className="text-xs text-gray-500">Overview & planning</div>
-                        </div>
-                      </button>
+  {/* Dashboard Sub-items */}
+  <div className={`overflow-hidden transition-all duration-300 ease-out ${
+    dashboardExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+  }`}>
+    <div className="pl-10 pb-2 space-y-1">
+      {/* Main Party Dashboard - ALWAYS available */}
+      <button
+        onClick={() => {
+          closeMenu()
+          router.push("/dashboard")
+        }}
+        className="flex items-center w-full py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+      >
+        <Calendar className="w-4 h-4 mr-3 text-gray-500" />
+        <div className="text-left">
+          <div className="text-sm font-medium">Party Dashboard</div>
+          <div className="text-xs text-gray-500">Overview & planning</div>
+        </div>
+      </button>
 
-                      {/* Party Tools Section Label */}
-                      <div className="pt-3 pb-1">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          Party Tools
-                        </div>
-                      </div>
-
-                      {/* Dashboard Items */}
-                      {dashboardItems.slice(1).map((item) => (
-                        <button
-                          key={item.href}
-                          onClick={() => handleDashboardNavigation(item)}
-                          disabled={loadingPartyData}
-                          className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 disabled:opacity-50"
-                        >
-                          <item.icon className="w-4 h-4 mr-3 text-gray-500" />
-                          <div className="text-left">
-                            <div className="text-sm font-medium">{item.label}</div>
-                            <div className="text-xs text-gray-500">
-                              {item.description}
-                              {item.requiresPartyId && !activePartyId && !loadingPartyData && (
-                                <span className="text-orange-500"> • Requires active party</span>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-
-                      {/* Quick Actions Section */}
-                      <div className="pt-3 pb-1">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                          Quick Actions
-                        </div>
-                      </div>
-                      
-                      <button 
-                        onClick={() => handleDashboardNavigation({ href: "/dashboard?action=new-party" })}
-                        className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                      >
-                        <Star className="w-4 h-4 mr-3 text-gray-500" />
-                        <div className="text-left">
-                          <div className="text-sm font-medium">Start New Party</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+      {/* Auth-required features - only for signed users */}
+      {user && (
+        <>
+          <div className="pt-3 pb-1">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Party Tools
+            </div>
+          </div>
+          
+          {dashboardItems.slice(1).map((item) => (
+            <button
+              key={item.href}
+              onClick={() => handleDashboardNavigation(item)}
+              disabled={loadingPartyData}
+              className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 disabled:opacity-50"
+            >
+              <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+              <div className="text-left">
+                <div className="text-sm font-medium">{item.label}</div>
+                <div className="text-xs text-gray-500">{item.description}</div>
+              </div>
+            </button>
+          ))}
+        </>
+      )}
+    </div>
+  </div>
+</div>
               {/* Snapspiration */}
               <Link
                 href="/blog"

@@ -232,35 +232,78 @@ function DashboardDropdown() {
     },
   ]
 
-  const handleNavigation = async (item) => {
-    setIsOpen(false)
+// Replace the handleNavigation function in DashboardDropdown with this:
+const handleNavigation = async (item) => {
+  setIsOpen(false)
 
-    if (!user) {
-      router.push('/signin')
-      return
-    }
-
-    if (item.requiresPartyId) {
-      if (!activePartyId) {
-        router.push('/dashboard?action=new-party')
-        return
-      }
-
-      let targetRoute
-      switch (item.href) {
-        case '/rsvps':
-          targetRoute = `/rsvps/${activePartyId}`
-          break
-        default:
-          targetRoute = item.href
+  // Check if user has localStorage party data (for unsigned users)
+  const hasLocalStorageParty = () => {
+    try {
+      const userPartyPlan = localStorage.getItem('user_party_plan')
+      const partyDetails = localStorage.getItem('party_details')
+      
+      if (userPartyPlan) {
+        const parsedPlan = JSON.parse(userPartyPlan)
+        const hasValidPlan = parsedPlan && Object.keys(parsedPlan).some(key => 
+          parsedPlan[key] && 
+          typeof parsedPlan[key] === 'object' && 
+          parsedPlan[key].name
+        )
+        if (hasValidPlan) return true
       }
       
-      router.push(targetRoute)
-    } else {
-      router.push(item.href)
+      if (partyDetails) {
+        const parsedDetails = JSON.parse(partyDetails)
+        const hasValidDetails = parsedDetails && (
+          parsedDetails.theme || 
+          parsedDetails.date || 
+          (parsedDetails.childName && parsedDetails.childName !== 'Emma') ||
+          parsedDetails.guestCount ||
+          parsedDetails.postcode
+        )
+        if (hasValidDetails) return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking localStorage party data:', error)
+      return false
     }
   }
 
+  // Handle dashboard access - ALWAYS allow dashboard access
+  if (item.href === '/dashboard') {
+    router.push(item.href)
+    return
+  }
+
+  // Handle items that require authentication (like E-Invites, RSVPs)
+  if (!user) {
+    router.push('/signin')
+    return
+  }
+
+  // Handle items that require a party ID (like RSVPs)
+  if (item.requiresPartyId) {
+    if (!activePartyId) {
+      router.push('/dashboard?action=new-party')
+      return
+    }
+
+    let targetRoute
+    switch (item.href) {
+      case '/rsvps':
+        targetRoute = `/rsvps/${activePartyId}`
+        break
+      default:
+        targetRoute = item.href
+    }
+    
+    router.push(targetRoute)
+  } else {
+    router.push(item.href)
+  }
+}
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Dashboard Button */}

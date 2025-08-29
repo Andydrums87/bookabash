@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
+import SnappyLoader from "@/components/ui/SnappyLoader"
 
 // Add Guest Modal Component
 const AddGuestModal = ({ isOpen, onClose, onAdd, partyId }) => {
@@ -471,13 +472,11 @@ export default function RSVPManagementPage({ partyId, onBack }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-[hsl(var(--primary-500))] border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-[hsl(var(--primary-600))] font-medium">Loading party data...</p>
-        </div>
-      </div>
-    )
+       <div className="min-h-screen bg-white flex items-center justify-center">
+            <SnappyLoader text="Loading your party dashboard..." />
+          </div>
+        )
+    
   }
 
   return (

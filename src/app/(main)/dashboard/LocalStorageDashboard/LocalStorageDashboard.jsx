@@ -51,7 +51,7 @@ import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
 import useDisableScroll from "@/hooks/useDisableScroll"
-import { SnappyLoader } from "@/components/ui/SnappyLoader"
+import  SnappyLoader  from "@/components/ui/SnappyLoader"
 
 export const calculatePartyBagsDisplayPriceLocal = (supplier, guestCount) => {
   // Only calculate for party bags
@@ -1032,14 +1032,8 @@ const handleNameSubmit = (nameData) => {
       toast.success(`Party updated with ${rebuildResults.totalReplaceable} replacement supplier${rebuildResults.totalReplaceable !== 1 ? 's' : ''}`)
     }
   }
-  
-  if (!isMounted || !themeLoaded || planLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <SnappyLoader text="Loading your party..." />
-      </div>
-    )
-  }
+
+
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
@@ -1191,7 +1185,7 @@ const handleNameSubmit = (nameData) => {
             <div data-tour="budget-tracker">
                 <BudgetControls {...budgetControlProps} />
               </div>
-              <CountdownWidget partyDate={partyDetails.date} />
+              <CountdownWidget partyDate={partyDetails?.date} />
               <ReferFriend />
             </aside>
           </div>
@@ -1217,7 +1211,7 @@ const handleNameSubmit = (nameData) => {
         date={modalConfig.date}
         initialFilters={modalConfig.filters}
         onSelectSupplier={handleSupplierSelection}
-        partyLocation={partyDetails.location}
+        partyLocation={partyDetails?.location}
         currentPhase="planning"
         isAwaitingResponses={false}
         partyData={partyPlan}

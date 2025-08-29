@@ -24,7 +24,7 @@ const SimpleMobileBottomTabBar = ({
 
   // Calculate time remaining until party
   const calculateTimeRemaining = () => {
-    if (!partyDetails.date) return 0
+    if (!partyDetails?.date) return 0
     
     const partyDate = new Date(partyDetails.date)
     const now = new Date()

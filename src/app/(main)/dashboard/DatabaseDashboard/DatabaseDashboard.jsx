@@ -39,7 +39,7 @@ import Sidebar from './components/Sidebar'
 import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
 
-import { SnappyLoader } from "@/components/ui/SnappyLoader"
+import SnappyLoader  from "@/components/ui/SnappyLoader"
 
 
 // Modals
@@ -882,13 +882,7 @@ useEffect(() => {
   
   const outstandingData = getOutstandingSupplierData()
 
-  if (loading || !themeLoaded || phaseLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <SnappyLoader text="Loading your party..." />
-      </div>
-    )
-  }
+
   // Show different content based on data source
   if (dataSource === 'localStorage') {
     console.log('📦 Rendering localStorage dashboard instead')
@@ -990,7 +984,7 @@ useEffect(() => {
           onSelectSupplier={handleSupplierSelection}
           currentPhase={currentPhase}
           isAwaitingResponses={currentPhase === 'awaiting_responses'}
-          partyLocation={partyDetails.location}
+          partyLocation={partyDetails?.location}
           partyData={partyData}
           enquiries={enquiries}
           hasEnquiriesPending={hasEnquiriesPending}

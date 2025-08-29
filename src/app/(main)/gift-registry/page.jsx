@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
-import { SnappyLoader } from "@/components/ui/SnappyLoader"
+import SnappyLoader  from "@/components/ui/SnappyLoader"
 import { 
   Gift, 
   Star, 

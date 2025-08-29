@@ -10,7 +10,7 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { ArrowLeft, Share2, Users, Mail, MessageCircle, Plus, X, Eye, Edit, Check, Copy, Download, Settings, Send, ExternalLink, UserPlus, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from "next/link"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
-import { SnappyLoader } from "@/components/ui/SnappyLoader"
+import  SnappyLoader  from "@/components/ui/SnappyLoader"
 
 export default function EInvitesManagementPage() {
   const params = useParams()

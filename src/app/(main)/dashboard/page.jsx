@@ -6,14 +6,15 @@ import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard'
 import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
 import DashboardWelcome from "./components/DashboardWelcome"
-import { SnappyLoader } from "@/components/ui/SnappyLoader"
+import SnappyLoader from "@/components/ui/SnappyLoader"
 
 export default function DashboardPage() {
   const router = useRouter()
   
-  const [userType, setUserType] = useState(null) // null | 'localStorage' | 'database' | 'welcome'
+  const [userType, setUserType] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+
   useEffect(() => {
     const determineUserType = async () => {
       try {
@@ -150,14 +151,16 @@ export default function DashboardPage() {
     }
    
     determineUserType()
-   }, [refreshKey])
+  }, [refreshKey])
 
   // Handle refresh after party creation or sign in
   const handleRefresh = () => {
     console.log("🔄 Refreshing dashboard router...")
+    setIsLoading(true) // Show loading during refresh
     setRefreshKey(prev => prev + 1)
   }
 
+  // Single loading screen for everything
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -166,15 +169,15 @@ export default function DashboardPage() {
     )
   }
 
-  // Clean routing based on user type
+  // Render appropriate dashboard with preloaded data
   switch (userType) {
     case 'database':
-      return <DatabaseDashboard />
+      return <DatabaseDashboard  />
     case 'localStorage':
       return <LocalStorageDashboard onRefresh={handleRefresh} />
     case 'welcome':
       return <DashboardWelcome onRefresh={handleRefresh} />
     default:
-      return <DashboardWelcome onRefresh={handleRefresh} /> // Fallback
+      return <DashboardWelcome onRefresh={handleRefresh} />
   }
 }
