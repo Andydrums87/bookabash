@@ -48,6 +48,8 @@ import { useSupplierEnquiries } from "../hooks/useSupplierEnquiries"
 import { useReplacementMode } from "../hooks/useReplacementMode"
 import { useSupplierNotifications } from "../hooks/useSupplierNotifications"
 
+import SnappyLoader from "@/components/ui/SnappyLoader"
+
 
 
 // Move this function outside the component to prevent recreation on every render
@@ -262,15 +264,9 @@ const handleAddToPlanWithModals = async (...args) => {
   // UPDATE your loading check to include user type loading:
 if (userTypeLoading) {
   return (
-    <div className="min-h-screen bg-primary-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p>Detecting user type...</p>
-        <p className="text-sm text-gray-500 mt-2">
-          User type: {userType || 'detecting...'} | Data source: {userContext?.dataSource || 'unknown'}
-        </p>
-      </div>
-    </div>
+           <div className="min-h-screen bg-white flex items-center justify-center">
+                <SnappyLoader text="Loading your party dashboard..." />
+              </div>      
   )
 }
 
