@@ -265,7 +265,7 @@ const handleAddToPlanWithModals = async (...args) => {
 if (userTypeLoading) {
   return (
            <div className="min-h-screen bg-white flex items-center justify-center">
-                <SnappyLoader text="Loading your party dashboard..." />
+                <SnappyLoader text="Loading Your Supplier" />
               </div>      
   )
 }

@@ -3,7 +3,7 @@
 import Lottie from 'lottie-react';
 import { useState, useEffect } from 'react';
 
-export default function SnappyLoader() {
+export default function SnappyLoader({ text = "Loading..." }) {
   const [animationData, setAnimationData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,10 +24,15 @@ export default function SnappyLoader() {
   if (!animationData) return null;
 
   return (
-    <Lottie 
-      animationData={animationData} 
-      loop={true}
-      style={{ height: 200, width: 200 }}
-    />
+    <div className="flex flex-col items-center justify-center">
+      <Lottie 
+        animationData={animationData} 
+        loop={true}
+        style={{ height: 200, width: 200 }}
+      />
+      <p className="text-gray-600 text-lg font-medium text-center">
+        {text}
+      </p>
+    </div>
   );
 }
