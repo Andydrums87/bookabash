@@ -6,6 +6,7 @@ import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard'
 import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
 import DashboardWelcome from "./components/DashboardWelcome"
+import { SnappyLoader } from "@/components/ui/SnappyLoader"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -159,11 +160,8 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading your party...</p>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <SnappyLoader text="Loading your party dashboard..." />
       </div>
     )
   }

@@ -10,6 +10,7 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { ArrowLeft, Share2, Users, Mail, MessageCircle, Plus, X, Eye, Edit, Check, Copy, Download, Settings, Send, ExternalLink, UserPlus, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from "next/link"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { SnappyLoader } from "@/components/ui/SnappyLoader"
 
 export default function EInvitesManagementPage() {
   const params = useParams()
@@ -216,12 +217,9 @@ export default function EInvitesManagementPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-2 border-[hsl(var(--primary-500))] border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your invitation...</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+           <SnappyLoader text="Loading your party..." />
+         </div>
     )
   }
 
@@ -346,9 +344,9 @@ export default function EInvitesManagementPage() {
                 </Link>
               </Button>
               <Button asChild className="order-1 sm:order-2">
-                <Link href={`/e-invites/${inviteId}/edit`}>
+                <Link href={`/e-invites/create`}>
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit Design
+                  Regenerate
                 </Link>
               </Button>
             </div>
@@ -501,7 +499,7 @@ export default function EInvitesManagementPage() {
                 </div>
 
                 {/* Guest Count Summary */}
-                {totalGuests > 0 && (
+                {/* {totalGuests > 0 && (
                   <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-blue-600" />
@@ -510,7 +508,7 @@ export default function EInvitesManagementPage() {
                       </span>
                     </div>
                   </div>
-                )}
+                )} */}
               </CardContent>
             </Card>
 
@@ -542,199 +540,7 @@ export default function EInvitesManagementPage() {
               </CardContent>
             </Card>
 
-            {/* Guest Management Section */}
-            <div className="space-y-4">
-              {/* Add Guest */}
-              <Card className="shadow-lg border-0 bg-white p-4 lg:p-6">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                      <UserPlus className="w-4 h-4 lg:w-5 lg:h-5 text-[hsl(var(--primary-500))]" />
-                      Guest Management
-                    </CardTitle>
-                    <Button 
-                      onClick={() => setShowAddGuest(!showAddGuest)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add
-                    </Button>
-                  </div>
-                </CardHeader>
-                
-                {showAddGuest && (
-                  <CardContent className="border-t pt-4">
-                    <div className="space-y-3">
-                      <Input
-                        placeholder="Guest name"
-                        value={newGuest.name}
-                        onChange={(e) => setNewGuest(prev => ({ ...prev, name: e.target.value }))}
-                        className="text-sm"
-                      />
-                      
-                      <div className="flex gap-2">
-                        <select
-                          value={newGuest.type}
-                          onChange={(e) => setNewGuest(prev => ({ ...prev, type: e.target.value }))}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-shrink-0 bg-white"
-                        >
-                          <option value="email">📧 Email</option>
-                          <option value="phone">📱 WhatsApp</option>
-                        </select>
-                        
-                        <Input
-                          placeholder={newGuest.type === "email" ? "Email address" : "Phone number"}
-                          value={newGuest.contact}
-                          onChange={(e) => setNewGuest(prev => ({ ...prev, contact: e.target.value }))}
-                          className="flex-1 text-sm"
-                          inputMode={newGuest.type === "phone" ? "tel" : "email"}
-                        />
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={addGuest}
-                          className="flex-1 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white"
-                          disabled={!newGuest.name.trim() || !newGuest.contact.trim()}
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Guest
-                        </Button>
-                        
-                        <Button
-                          onClick={() => setShowAddGuest(false)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-
-              {/* Guest List */}
-              {guestList.length > 0 && (
-                <Card className="shadow-lg border-0 bg-white p-4 lg:p-6">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base lg:text-lg">Guest List ({totalGuests})</CardTitle>
-                      {pendingInvites > 0 && (
-                        <Button
-                          onClick={() => {
-                            guestList
-                              .filter(g => g.status === 'pending')
-                              .forEach((guest, index) => {
-                                setTimeout(() => {
-                                  guest.type === 'phone' ? sendViaWhatsApp(guest) : sendViaEmail(guest)
-                                }, index * 1000) // Stagger sends
-                              })
-                          }}
-                          className="bg-gradient-to-r from-green-500 to-green-600 text-white"
-                          size="sm"
-                        >
-                          <Send className="w-4 h-4 mr-2" />
-                          Send All ({pendingInvites})
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-64 lg:max-h-96 overflow-y-auto">
-                      {guestList.map(guest => (
-                        <div 
-                          key={guest.id} 
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0 mr-3">
-                            <div className="font-medium text-sm text-gray-900 truncate">
-                              {guest.name}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              {guest.contact}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs font-medium ${
-                                guest.status === 'sent'
-                                  ? 'bg-[hsl(var(--primary-50))] text-[hsl(var(--primary-700))] border-[hsl(var(--primary-200))]'
-                                  : 'bg-orange-50 text-orange-700 border-orange-200'
-                              }`}
-                            >
-                              {guest.status === 'sent' ? (
-                                <>
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Sent
-                                </>
-                              ) : (
-                                <>
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  Pending
-                                </>
-                              )}
-                            </Badge>
-                            
-                            {guest.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => guest.type === 'phone' ? sendViaWhatsApp(guest) : sendViaEmail(guest)}
-                                disabled={sendingToGuest === guest.id}
-                                className="h-7 px-2"
-                              >
-                                {sendingToGuest === guest.id ? (
-                                  <div className="w-3 h-3 animate-spin border border-gray-400 border-t-transparent rounded-full" />
-                                ) : guest.type === 'phone' ? (
-                                  <MessageCircle className="w-3 h-3" />
-                                ) : (
-                                  <Mail className="w-3 h-3" />
-                                )}
-                              </Button>
-                            )}
-                            
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => removeGuest(guest.id)}
-                              className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Empty State */}
-              {guestList.length === 0 && (
-                <Card className="shadow-lg border-0 bg-white p-4 lg:p-6">
-                  <CardContent className="p-6 text-center">
-                    <Users className="w-10 h-10 lg:w-12 lg:h-12 text-gray-400 mx-auto mb-3" />
-                    <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-2">No guests added yet</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Start by adding guests to share your beautiful invitation with them.
-                    </p>
-                    <Button 
-                      onClick={() => setShowAddGuest(true)}
-                      className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Your First Guest
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+     
           </div>
         </div>
       </div>

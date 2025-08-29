@@ -51,6 +51,7 @@ import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 
 import useDisableScroll from "@/hooks/useDisableScroll"
+import { SnappyLoader } from "@/components/ui/SnappyLoader"
 
 export const calculatePartyBagsDisplayPriceLocal = (supplier, guestCount) => {
   // Only calculate for party bags
@@ -1032,18 +1033,13 @@ const handleNameSubmit = (nameData) => {
     }
   }
   
-  // ✅ PRODUCTION SAFETY: Don't render until mounted and data loaded
   if (!isMounted || !themeLoaded || planLoading) {
     return (
-      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading your party...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <SnappyLoader text="Loading your party..." />
       </div>
     )
   }
-
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>

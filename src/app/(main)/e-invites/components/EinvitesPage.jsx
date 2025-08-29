@@ -107,12 +107,13 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     
     if (result && result.success) {
       setSaveResult(result)
+      console.log(result)
       // Don't generate shareable link here as it's handled in save function
     }
   }
 
   const handleRedirectToDashboard = () => {
-    window.location.href = '/dashboard'
+    window.location.href = '/e-invites'
   }
 
   const handleCloseSuccessModal = () => {

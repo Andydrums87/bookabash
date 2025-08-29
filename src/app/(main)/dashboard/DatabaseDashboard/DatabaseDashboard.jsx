@@ -39,6 +39,8 @@ import Sidebar from './components/Sidebar'
 import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
 
+import { SnappyLoader } from "@/components/ui/SnappyLoader"
+
 
 // Modals
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
@@ -367,9 +369,7 @@ useEffect(() => {
       <div className="min-h-screen bg-primary-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            No Party Found
-          </h2>
+          <SnappyLoader size="w-20 h-20" showText={false} className="mb-4 opacity-50" />
           <p className="text-gray-600 mb-4">
             You're signed in but we couldn't find your party data. This might be because:
           </p>
@@ -882,18 +882,13 @@ useEffect(() => {
   
   const outstandingData = getOutstandingSupplierData()
 
-  // Loading state
   if (loading || !themeLoaded || phaseLoading) {
     return (
-      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading your party...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <SnappyLoader text="Loading your party..." />
       </div>
     )
   }
-
   // Show different content based on data source
   if (dataSource === 'localStorage') {
     console.log('📦 Rendering localStorage dashboard instead')

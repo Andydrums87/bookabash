@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
+import { SnappyLoader } from "@/components/ui/SnappyLoader"
 import { 
   Mail, 
   Star, 
@@ -102,14 +103,9 @@ export default function EInvitesOverviewPage() {
   // Loading state
   if (loading || einvitesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--primary-500))] mx-auto mb-4" />
-          <p className="text-gray-600">
-            {loading ? 'Loading your party details...' : 'Checking your invitations...'}
-          </p>
-        </div>
-      </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <SnappyLoader text="Loading your party..." />
+    </div>
     )
   }
 
@@ -223,12 +219,12 @@ export default function EInvitesOverviewPage() {
                   {creating ? (
                     <>
                       <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                      Setting up {activeParty.child_name}'s Invites...
+                      Setting up {activeParty.child_name?.split(' ')[0]}'s Invites...
                     </>
                   ) : (
                     <>
                       <Plus className="w-6 h-6 mr-3" />
-                      Create {activeParty.child_name}'s Digital Invites
+                      Create {activeParty.child_name?.split(' ')[0]}'s Digital Invites
                     </>
                   )}
                 </Button>
@@ -286,11 +282,8 @@ export default function EInvitesOverviewPage() {
   // If we get here, hasEinvites is true and the useEffect will redirect
   // Show a loading state while redirecting
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--primary-500))] mx-auto mb-4" />
-        <p className="text-gray-600">Loading your digital invites...</p>
-      </div>
-    </div>
+     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <SnappyLoader text="Loading your party..." />
+          </div>
   )
 }

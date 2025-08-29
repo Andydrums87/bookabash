@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
+import { SnappyLoader } from "@/components/ui/SnappyLoader"
 import { 
   Gift, 
   Star, 
@@ -113,12 +114,9 @@ export default function GiftRegistryOverviewPage() {
   // Loading state
   if (loading || registryLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))] flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--primary-500))] mx-auto mb-4" />
-          <p className="text-gray-600">Loading your party details...</p>
-        </div>
-      </div>
+       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                 <SnappyLoader text="Loading your party..." />
+               </div>
     )
   }
 
@@ -227,17 +225,17 @@ export default function GiftRegistryOverviewPage() {
                 <Button
                   onClick={handleCreateRegistry}
                   disabled={creating}
-                  className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-8 py-6 text-lg rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                  className=" bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-8  py-6 text-lg rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                 >
                   {creating ? (
                     <>
                       <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                      Creating {activeParty.child_name}'s Registry...
+                      Creating {activeParty.child_name?.split(' ')[0]}'s Registry...
                     </>
                   ) : (
                     <>
                       <Plus className="w-6 h-6 mr-3" />
-                      Create {activeParty.child_name}'s Gift Registry
+                      Create {activeParty.child_name?.split(' ')[0]}'s Gift Registry
                     </>
                   )}
                 </Button>

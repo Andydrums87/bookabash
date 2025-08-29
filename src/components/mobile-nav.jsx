@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Menu, X, Calendar, Settings, LogOut, Home, Search, Heart, BookOpen, Star, Mail, ChevronRight, Gift, Users, ShoppingCart } from 'lucide-react'
+import { Menu, X, Calendar, Settings, User, LogOut, Home, Search, Heart, BookOpen, Star, Mail, ChevronRight, Gift, Users, ShoppingCart } from 'lucide-react'
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -91,7 +91,7 @@ function MobileCartIndicator({ className = "", onCartClick }) {
           {supplierCount}
         </Badge>
       </div>
-      <span className="text-xs font-medium">£{cartData.totalDeposit.toFixed(2)}</span>
+      {/* <span className="text-xs font-medium">£{cartData.totalDeposit.toFixed(2)}</span> */}
     </Button>
   )
 }
@@ -303,150 +303,150 @@ export default function MobileNav({ user, onSignOut, loading }) {
           <nav className="px-6">
             <div className="space-y-2 mt-2 pb-6">
               {/* Home */}
-              {(() => {
-                const HomeIcon = navItems[0].icon;
-                return (
-                  <Link
-                    href={navItems[0].href}
-                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
-                    onClick={closeMenu}
-                  >
-                    <HomeIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
-                    <span className="text-md">{navItems[0].label}</span>
-                  </Link>
-                );
-              })()}
+              <Link
+                href="/"
+                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                onClick={closeMenu}
+              >
+                <Home className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <span className="text-md">Home</span>
+              </Link>
 
               {/* Snap Suppliers */}
-              {(() => {
-                const SearchIcon = navItems[1].icon;
-                return (
-                  <Link
-                    href={navItems[1].href}
-                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
-                    onClick={closeMenu}
-                  >
-                    <SearchIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
-                    <span className="text-md">{navItems[1].label}</span>
-                  </Link>
-                );
-              })()}
+              <Link
+                href="/browse"
+                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                onClick={closeMenu}
+              >
+                <Search className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <span className="text-md">Snap Suppliers</span>
+              </Link>
 
               {/* Dashboard - Expandable with same logic as desktop */}
-              <div className="border-b border-gray-50">
-                <button
-                  onClick={() => setDashboardExpanded(!dashboardExpanded)}
-                  className="flex items-center justify-between w-full py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                >
-                  <div className="flex items-center">
-                    <Calendar className="w-6 h-6 mr-4 text-gray-600" />
-                    <span className="text-md">My Snapboard</span>
-                  </div>
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
-                </button>
-
-                {/* Dashboard Sub-items with auto height and same logic as desktop */}
-                <div className={`overflow-hidden transition-all duration-300 ease-out ${
-                  dashboardExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-                }`}>
-                  <div className="pl-10 pb-2 space-y-1">
-                    {/* Main Party Dashboard */}
-                    <button
-                      onClick={() => handleDashboardNavigation({ href: "/dashboard" })}
-                      className="flex items-center w-full py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                    >
-                      <Calendar className="w-4 h-4 mr-3 text-gray-500" />
-                      <div className="text-left">
-                        <div className="text-sm font-medium">Party Dashboard</div>
-                        <div className="text-xs text-gray-500">Overview & planning</div>
-                      </div>
-                    </button>
-
-                    {/* Party Tools Section Label */}
-                    <div className="pt-3 pb-1">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Party Tools
-                      </div>
+              {user && (
+                <div className="border-b border-gray-50">
+                  <button
+                    onClick={() => setDashboardExpanded(!dashboardExpanded)}
+                    className="flex items-center justify-between w-full py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+                  >
+                    <div className="flex items-center">
+                      <Calendar className="w-6 h-6 mr-4 text-gray-600" />
+                      <span className="text-md">My Snapboard</span>
                     </div>
+                    <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
+                  </button>
 
-                    {/* Dashboard Items */}
-                    {dashboardItems.slice(1).map((item) => (
+                  {/* Dashboard Sub-items */}
+                  <div className={`overflow-hidden transition-all duration-300 ease-out ${
+                    dashboardExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+                  }`}>
+                    <div className="pl-10 pb-2 space-y-1">
+                      {/* Main Party Dashboard */}
                       <button
-                        key={item.href}
-                        onClick={() => handleDashboardNavigation(item)}
-                        disabled={loadingPartyData}
-                        className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 disabled:opacity-50"
+                        onClick={() => handleDashboardNavigation({ href: "/dashboard" })}
+                        className="flex items-center w-full py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
                       >
-                        <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+                        <Calendar className="w-4 h-4 mr-3 text-gray-500" />
                         <div className="text-left">
-                          <div className="text-sm font-medium">{item.label}</div>
-                          <div className="text-xs text-gray-500">
-                            {item.description}
-                            {item.requiresPartyId && !activePartyId && !loadingPartyData && (
-                              <span className="text-orange-500"> • Requires active party</span>
-                            )}
-                          </div>
+                          <div className="text-sm font-medium">Party Dashboard</div>
+                          <div className="text-xs text-gray-500">Overview & planning</div>
                         </div>
                       </button>
-                    ))}
 
-                    {/* Quick Actions Section */}
-                    <div className="pt-3 pb-1">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Quick Actions
+                      {/* Party Tools Section Label */}
+                      <div className="pt-3 pb-1">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Party Tools
+                        </div>
                       </div>
+
+                      {/* Dashboard Items */}
+                      {dashboardItems.slice(1).map((item) => (
+                        <button
+                          key={item.href}
+                          onClick={() => handleDashboardNavigation(item)}
+                          disabled={loadingPartyData}
+                          className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 disabled:opacity-50"
+                        >
+                          <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+                          <div className="text-left">
+                            <div className="text-sm font-medium">{item.label}</div>
+                            <div className="text-xs text-gray-500">
+                              {item.description}
+                              {item.requiresPartyId && !activePartyId && !loadingPartyData && (
+                                <span className="text-orange-500"> • Requires active party</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+
+                      {/* Quick Actions Section */}
+                      <div className="pt-3 pb-1">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Quick Actions
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => handleDashboardNavigation({ href: "/dashboard?action=new-party" })}
+                        className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+                      >
+                        <Star className="w-4 h-4 mr-3 text-gray-500" />
+                        <div className="text-left">
+                          <div className="text-sm font-medium">Start New Party</div>
+                        </div>
+                      </button>
                     </div>
-                    
-                    <button 
-                      onClick={() => handleDashboardNavigation({ href: "/dashboard?action=new-party" })}
-                      className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
-                    >
-                      <Star className="w-4 h-4 mr-3 text-gray-500" />
-                      <div className="text-left">
-                        <div className="text-sm font-medium">Start New Party</div>
-                      </div>
-                    </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Remaining nav items (Snapspiration and My Favorites) */}
-              {(() => {
-                const BookIcon = navItems[2].icon;
-                return (
-                  <Link
-                    href={navItems[2].href}
-                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
-                    onClick={closeMenu}
-                  >
-                    <BookIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
-                    <span className="text-md">{navItems[2].label}</span>
-                  </Link>
-                );
-              })()}
-
-              {(() => {
-                const HeartIcon = navItems[3].icon;
-                return (
-                  <Link
-                    href={navItems[3].href}
-                    className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
-                    onClick={closeMenu}
-                  >
-                    <HeartIcon className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
-                    <span className="text-md">{navItems[3].label}</span>
-                  </Link>
-                );
-              })()}
-
-              {/* Featured Action - moved outside dashboard */}
-              <button
-                onClick={() => handleDashboardNavigation({ href: "/dashboard" })}
-                className="flex items-center w-full py-4 text-red-500 hover:text-red-600 transition-colors duration-200 border-b border-gray-50"
+              {/* Snapspiration */}
+              <Link
+                href="/blog"
+                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                onClick={closeMenu}
               >
-                <Star className="w-6 h-6 mr-4 text-red-500" />
-                <span className="text-lg font-normal">Start Planning</span>
-              </button>
+                <BookOpen className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <span className="text-md">Snapspiration</span>
+              </Link>
+
+              {/* My Favorites */}
+              <Link
+                href="/favorites"
+                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                onClick={closeMenu}
+              >
+                <Heart className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <span className="text-md">My Favorites</span>
+              </Link>
+
+              {/* NEW: Account Settings (only show for authenticated users) */}
+              {user && (
+                <Link
+                  href="/profile"
+                  className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                  onClick={closeMenu}
+                >
+                  <Settings className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                  <span className="text-md">Account Settings</span>
+                </Link>
+              )}
+
+              {/* Start Planning - moved outside dashboard for non-authenticated users */}
+              {!user && (
+                <button
+                  onClick={() => {
+                    closeMenu()
+                    router.push("/dashboard")
+                  }}
+                  className="flex items-center w-full py-4 text-red-500 hover:text-red-600 transition-colors duration-200 border-b border-gray-50"
+                >
+                  <Star className="w-6 h-6 mr-4 text-red-500" />
+                  <span className="text-lg font-normal">Start Planning</span>
+                </button>
+              )}
 
               {/* Extra spacing to ensure scroll reaches bottom */}
               <div className="h-4"></div>
@@ -457,12 +457,29 @@ export default function MobileNav({ user, onSignOut, loading }) {
         {/* Fixed Bottom Actions */}
         <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-white">
           {!loading && user ? (
-            <Button
-              onClick={onSignOut}
-              className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3 text-base rounded-full transition-all duration-200"
-            >
-              LOG OUT
-            </Button>
+            <div className="space-y-3">
+              {/* NEW: Quick Profile Access Button */}
+              <Button
+                variant="outline"
+                className="w-full border-[hsl(var(--primary-500))] text-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-50))] font-normal py-3 text-base rounded-full transition-all duration-200"
+                asChild
+              >
+                <Link href="/profile" onClick={closeMenu}>
+                  <User className="w-4 h-4 mr-2" />
+                  My Profile
+                </Link>
+              </Button>
+              
+              {/* Sign Out Button */}
+              <Button
+                onClick={handleSignOut}
+                variant="ghost"
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 py-3 text-base rounded-full transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           ) : !loading ? (
             <div className="space-y-3">
               <Button
