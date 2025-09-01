@@ -1,6 +1,6 @@
 // /api/supplier-responses/route.js
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db' // Adjust import path to your database connection
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request) {
   try {
@@ -59,7 +59,7 @@ export async function POST(request) {
       sent_at || new Date().toISOString()
     ]
 
-    const result = await db.query(query, values)
+    const result = await supabase.query(query, values)
     const savedResponse = result.rows[0]
 
     // Log success for debugging
