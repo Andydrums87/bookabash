@@ -19,10 +19,12 @@ import {
   Mail,
   Phone,
   MapPin,
-  X
+  X,
+  MessageSquare
 } from "lucide-react"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { Button } from "@/components/ui/button"
+import MessageTemplatesManager from "@/components/MessengerTemplateManager"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -615,6 +617,11 @@ const Settings = () => {
             </CardContent>
           </Card>
         </div>
+
+        <MessageTemplatesManager 
+  supplierCategory={businessInfo.businessType}
+  supplierId={supplierData?.id || supplier?.id}
+/>
 
         {/* Notification Preferences - Mobile Optimized */}
         <div className="p-4 sm:p-6 pt-0">

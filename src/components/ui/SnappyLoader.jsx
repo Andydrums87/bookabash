@@ -24,7 +24,7 @@ export default function SnappyLoader({ text = "Loading..." }) {
   if (!animationData) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col bg-gray-50 items-center justify-center">
       <Lottie 
         animationData={animationData} 
         loop={true}

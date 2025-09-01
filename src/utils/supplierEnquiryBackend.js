@@ -381,6 +381,67 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
   }
 }
 
+// Add this method to your SupplierEnquiryBackend class
+async saveSupplierResponse(responseData) {
+  try {
+    const {
+      enquiry_id,
+      party_id,
+      supplier_id,
+      customer_id,
+      response_type,
+      response_message,
+      final_price
+    } = responseData
+
+    console.log('💾 Saving supplier response to history:', responseData)
+
+    // Validate required fields
+    if (!enquiry_id || !party_id || !supplier_id || !customer_id || !response_type || !response_message) {
+      throw new Error('Missing required fields for supplier response')
+    }
+
+    if (!['accepted', 'declined'].includes(response_type)) {
+      throw new Error('Invalid response type. Must be "accepted" or "declined"')
+    }
+
+    // Save to Supabase using direct database insert
+    const { data: savedResponse, error } = await supabase
+      .from('supplier_responses')
+      .insert({
+        enquiry_id,
+        party_id,
+        supplier_id,
+        customer_id,
+        response_type,
+        response_message,
+        final_price: final_price ? parseFloat(final_price) : null,
+        sent_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Supabase error saving response:', error)
+      throw new Error(`Database error: ${error.message}`)
+    }
+
+    console.log('✅ Supplier response saved successfully:', savedResponse.id)
+
+    return {
+      success: true,
+      response_id: savedResponse.id,
+      message: 'Supplier response saved successfully'
+    }
+  } catch (error) {
+    console.error('❌ Error saving supplier response:', error)
+    return {
+      success: false,
+      error: error.message
+    }
+  }
+}
+
 // ✅ NEW: Alert PartySnap function
 async alertPartySnapUrgent(alertData) {
   try {
@@ -436,10 +497,146 @@ async alertPartySnapUrgent(alertData) {
     return { success: false, error: error.message }
   }
 }
+/**
+ * Get supplier's custom template or fall back to system default
+ */
+async getSupplierTemplate(supplierId, supplierCategory, responseType) {
+  try {
+    // Convert responseType to database template_type
+    let templateType
+    if (responseType === 'accepted' || responseType === 'acceptance') {
+      templateType = 'acceptance'
+    } else if (responseType === 'declined' || responseType === 'decline') {
+      templateType = 'decline'
+    } else {
+      console.warn('Unknown responseType:', responseType);
+      templateType = 'acceptance' // default fallback
+    }
+    
+    console.log('🔍 Searching for template:', {
+      supplierId,
+      supplierCategory,
+      templateType,
+      originalResponseType: responseType
+    });
+    
+    // Step 1: Try to get supplier's custom template
+    const { data: customTemplate, error: customError } = await supabase
+      .from('supplier_message_templates')
+      .select('message_template')
+      .eq('supplier_id', supplierId)
+      .eq('supplier_category', supplierCategory)
+      .eq('template_type', templateType)
+      .maybeSingle() // Use maybeSingle instead of single to avoid errors
 
+    console.log('📝 Custom template query result:', {
+      found: !!customTemplate,
+      error: customError,
+      template: customTemplate?.message_template?.substring(0, 50)
+    });
+
+    if (customTemplate?.message_template && !customError) {
+      console.log('✅ Using custom template');
+      return customTemplate.message_template
+    }
+
+    // Step 2: Fall back to system default template
+    const { data: systemTemplate, error: systemError } = await supabase
+      .from('supplier_message_templates')
+      .select('message_template')
+      .eq('supplier_category', supplierCategory)
+      .eq('template_type', templateType)
+      .eq('is_system_template', true)
+      .maybeSingle()
+
+    console.log('📝 System template query result:', {
+      found: !!systemTemplate,
+      error: systemError,
+      template: systemTemplate?.message_template?.substring(0, 50)
+    });
+
+    if (systemTemplate?.message_template && !systemError) {
+      console.log('✅ Using system template');
+      return systemTemplate.message_template
+    }
+
+    // Step 3: Category-specific fallbacks
+    console.log('⚠️ No templates found in database, using category fallback');
+    const fallbacks = {
+      entertainment: {
+        acceptance: "Hi {customer_name}! I'm thrilled to perform at {child_name}'s {party_theme} party on {party_date}. Looking forward to creating magical memories for £{final_price}!",
+        decline: "Hi {customer_name}, thank you for your enquiry for {child_name}'s party. Unfortunately I'm already booked for {party_date}."
+      },
+      catering: {
+        acceptance: "Hi {customer_name}! I'm delighted to cater {child_name}'s {party_theme} party on {party_date}. All dietary requirements noted! Final price: £{final_price}",
+        decline: "Hi {customer_name}, thank you for your catering enquiry for {child_name}'s party. Unfortunately I'm not available on {party_date}."
+      },
+      venue: {
+        acceptance: "Hi {customer_name}! Our venue is confirmed for {child_name}'s {party_theme} party on {party_date}. Final price: £{final_price}. I'll send details closer to the date.",
+        decline: "Hi {customer_name}, thank you for your venue enquiry for {child_name}'s party. Unfortunately we're already booked for {party_date}."
+      }
+    }
+    
+    const categoryFallbacks = fallbacks[supplierCategory] || fallbacks.entertainment
+    return categoryFallbacks[templateType] || "Thank you for your enquiry!"
+
+  } catch (error) {
+    console.error('❌ Error fetching template:', error)
+    return "Thank you for your enquiry!"
+  }
+}
   /**
    * Get single enquiry details
    */
+  /**
+ * Get default template for supplier category and response type
+ */
+
+  // Add this method to your SupplierEnquiryBackend class in supplierEnquiryBackend.js
+
+/**
+ * Get default template for supplier category and response type
+ */
+async getDefaultTemplate(supplierCategory, responseType) {
+  try {
+    const templateType = responseType === 'accepted' ? 'acceptance' : 'decline'
+    
+    const { data: template, error } = await supabase
+      .from('supplier_message_templates')
+      .select('message_template')
+      .eq('supplier_category', supplierCategory)
+      .eq('template_type', templateType)
+      .eq('is_default', true)
+      .single()
+
+    if (error || !template) {
+      // Fallback messages by category
+      const fallbacks = {
+        entertainment: {
+          accepted: "Hi! I'm thrilled to perform at your child's party. Looking forward to creating magical memories!",
+          declined: "Thank you for your enquiry. Unfortunately I'm already booked for this date."
+        },
+        catering: {
+          accepted: "Hi! I'm delighted to cater your child's party. All dietary requirements noted!",
+          declined: "Thank you for your catering enquiry. Unfortunately I'm not available on this date."
+        },
+        venue: {
+          accepted: "Hi! Our venue is confirmed for your child's party. I'll send details closer to the date.",
+          declined: "Thank you for your venue enquiry. Unfortunately we're already booked for this date."
+        }
+      }
+      
+      const categoryFallbacks = fallbacks[supplierCategory] || fallbacks.entertainment
+      return categoryFallbacks[responseType] || "Thank you for your enquiry!"
+    }
+
+    return template.message_template
+  } catch (error) {
+    console.error('Error fetching template:', error)
+    return "Thank you for your enquiry!"
+  }
+}
+
   async getEnquiryDetails(enquiryId) {
     try {
       // Use manual join for single enquiry too
@@ -565,6 +762,9 @@ export function useSupplierEnquiries(status = null, specificBusinessId = null, f
       return { success: false, error: err.message }
     }
   }
+  
+  
+
 
   return {
     enquiries,

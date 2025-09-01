@@ -189,7 +189,7 @@ export async function POST(req) {
 
        // Send confirmation email
        await client.sendEmail({
-        From: "hello@bookabash.com",
+        From: "hello@partysnap.uk",
         To: email,
     
         Subject: "Thanks for signing up to BookABash!",

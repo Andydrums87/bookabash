@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { supabase } from "@/lib/supabase"
 import {
   Calendar,
   Eye,
@@ -50,6 +51,12 @@ export default function EnquiryDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [responding, setResponding] = useState(false)
   const [error, setError] = useState(null)
+  const [placeholderTemplates, setPlaceholderTemplates] = useState({
+    accepted: '',
+    declined: ''
+  })
+  const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [templatesLoaded, setTemplatesLoaded] = useState(false)
 
   // Response form state
   const [response, setResponse] = useState("") // 'accepted' or 'declined'
@@ -62,6 +69,65 @@ export default function EnquiryDetailsPage() {
       loadEnquiryDetails()
     }
   }, [enquiryId])
+
+// 2. FIXED: Load templates immediately when enquiry is available
+useEffect(() => {
+  const loadPlaceholderTemplates = async () => {
+    if (enquiry?.supplier_id && enquiry?.supplier_category && !templatesLoaded) {
+      try {
+        setTemplatesLoading(true)
+        console.log('🔄 Loading templates for:', {
+          supplierId: enquiry.supplier_id,
+          category: enquiry.supplier_category
+        });
+        
+        // FIX: Use correct template types that match your database
+        const acceptTemplate = await supplierEnquiryBackend.getSupplierTemplate(
+          enquiry.supplier_id,
+          enquiry.supplier_category,
+          'accepted' // This will be converted to 'acceptance' inside the function
+        )
+        const declineTemplate = await supplierEnquiryBackend.getSupplierTemplate(
+          enquiry.supplier_id,
+          enquiry.supplier_category,
+          'declined' // This will be converted to 'decline' inside the function
+        )
+        
+        console.log('📝 Raw templates loaded:', { acceptTemplate, declineTemplate });
+        
+        // Process templates with enquiry data
+        const processedAccept = processTemplate(acceptTemplate)
+        const processedDecline = processTemplate(declineTemplate)
+        
+        console.log('✅ Processed templates:', { 
+          processedAccept, 
+          processedDecline 
+        });
+        
+        setPlaceholderTemplates({
+          accepted: processedAccept,
+          declined: processedDecline
+        })
+        
+        setTemplatesLoaded(true)
+        
+      } catch (error) {
+        console.error('❌ Error loading templates:', error);
+        // Set fallback templates
+        setPlaceholderTemplates({
+          accepted: "Thank you for your enquiry! I'm pleased to confirm I can provide this service for your party.",
+          declined: "Thank you for your enquiry. Unfortunately, I'm not available for this date."
+        })
+      } finally {
+        setTemplatesLoading(false)
+      }
+    }
+  }
+  
+  if (enquiry && !templatesLoaded) {
+    loadPlaceholderTemplates()
+  }
+}, [enquiry, templatesLoaded])
 
   const loadEnquiryDetails = async () => {
     try {
@@ -211,44 +277,188 @@ const getCakeCustomizationData = (enquiry) => {
     }
   }
 
-  const handleResponse = async (responseType) => {
-    setResponse(responseType)
-    setShowResponseForm(true)
-  }
+  // Add this function to your EnquiryDetailsPage component
+// Place it after your existing helper functions
 
-// In EnquiryDetailsPage.jsx - Update submitResponse function
+const processTemplate = (template) => {
+  if (!template || !enquiry) return template
+  
+  const customer = enquiry.parties?.users
+  const party = enquiry.parties
+  
+  return template
+    .replace(/{customer_name}/g, customer?.first_name || 'there')
+    .replace(/{child_name}/g, party?.child_name || 'your child')
+    .replace(/{party_date}/g, formatDate(party?.party_date))
+    .replace(/{party_theme}/g, party?.theme || 'themed')
+    .replace(/{final_price}/g, finalPrice || enquiry.quoted_price)
+    .replace(/{guest_count}/g, party?.guest_count || 'the children')
+}
+
+// Also add the getDefaultTemplate function to your component:
+const getDefaultTemplate = async (supplierCategory, responseType) => {
+  try {
+    const templateType = responseType === 'accepted' ? 'acceptance' : 'decline'
+    
+    const { data: template, error } = await supabase
+      .from('supplier_message_templates')
+      .select('message_template')
+      .eq('supplier_category', supplierCategory)
+      .eq('template_type', templateType)
+      .eq('is_default', true)
+      .single()
+
+    if (error || !template) {
+      // Fallback messages
+      const fallbacks = {
+        accepted: "Thank you for your enquiry! I'm pleased to confirm I can provide this service for your party.",
+        declined: "Thank you for your enquiry. Unfortunately, I'm not available for this date."
+      }
+      return fallbacks[responseType] || fallbacks.accepted
+    }
+
+    return template.message_template
+  } catch (error) {
+    console.error('Error fetching template:', error)
+    return "Thank you for your enquiry!"
+  }
+}
+const handleResponse = async (responseType) => {
+  setResponse(responseType)
+  setTemplatesLoading(true)
+  
+  try {
+    console.log('🎯 handleResponse called with:', responseType);
+    console.log('🔍 Enquiry data available:', {
+      supplierId: enquiry?.supplier_id,
+      category: enquiry?.supplier_category,
+      hasParty: !!enquiry?.parties,
+      hasCustomer: !!enquiry?.parties?.users
+    });
+    
+    // Get template - let the backend handle the type conversion
+    const template = await supplierEnquiryBackend.getSupplierTemplate(
+      enquiry.supplier_id,
+      enquiry.supplier_category,
+      responseType // Pass 'accepted' or 'declined' directly
+    )
+    
+    console.log('📝 Template received from backend:', template?.substring(0, 100));
+    
+    // Process template with current enquiry data
+    const processedMessage = processTemplate(template)
+    console.log('✅ Final processed message:', processedMessage?.substring(0, 100));
+    
+    setResponseMessage(processedMessage)
+    
+  } catch (error) {
+    console.error('❌ Error in handleResponse:', error);
+    // Fallback message
+    const fallbackMessage = responseType === 'accepted' 
+      ? "Thank you for your enquiry! I'm pleased to confirm I can provide this service for your party."
+      : "Thank you for your enquiry. Unfortunately, I'm not available for this date."
+    setResponseMessage(fallbackMessage)
+  } finally {
+    setTemplatesLoading(false)
+  }
+  
+  setShowResponseForm(true)
+}
+
+
 const submitResponse = async () => {
   if (!response) return
 
   try {
     setResponding(true)
     
-    // ✅ UPDATED: Enhanced response handling
-    const result = await supplierEnquiryBackend.respondToEnquiry(
+    // Step 1: Update the enquiry status (your existing functionality)
+    const enquiryResult = await supplierEnquiryBackend.respondToEnquiry(
       enquiryId,
       response,
-      finalPrice ? Number.parseFloat(finalPrice) : null,
+      finalPrice ? parseFloat(finalPrice) : null,
       responseMessage,
-      enquiry.payment_status === 'paid' // Pass deposit-paid status
+      enquiry.payment_status === 'paid'
     )
 
-    if (result.success) {
-      // Reload enquiry to show updated status
-      await loadEnquiryDetails()
-      setShowResponseForm(false)
-      
-      // ✅ UPDATED: Different success messages
-      if (enquiry.payment_status === 'paid' && response === 'declined') {
-        alert('PartySnap has been notified immediately. They will find a replacement supplier and handle all customer communication. Thank you for your honesty!')
-      } else if (enquiry.payment_status === 'paid' && response === 'accepted') {
-        alert('Perfect! The customer\'s party is confirmed. You\'ll receive final details closer to the date.')
-      } else {
-        alert(`Enquiry ${response} successfully! The customer will be notified.`)
-      }
-    } else {
-      setError(result.error)
+    if (!enquiryResult.success) {
+      setError(enquiryResult.error)
+      return
     }
+
+    // Step 2: Save to supplier response history (NEW)
+    const party = enquiry.parties
+    const customer = party?.users
+
+    const responseHistoryData = {
+      enquiry_id: enquiryId,
+      party_id: party?.id,
+      supplier_id: enquiry.supplier_id,
+      customer_id: customer?.id,
+      response_type: response,
+      response_message: responseMessage,
+      final_price: finalPrice ? parseFloat(finalPrice) : null
+    }
+
+    console.log('Saving response history:', responseHistoryData)
+
+    const historyResult = await supplierEnquiryBackend.saveSupplierResponse(responseHistoryData)
+    
+    if (!historyResult.success) {
+      console.warn('Failed to save response history:', historyResult.error)
+    } else {
+      console.log('Response history saved successfully:', historyResult.response_id)
+    }
+
+    // Step 3: Send customer notification email
+    try {
+      const emailPayload = {
+        customerEmail: customer?.email,
+        customerName: customer?.first_name,
+        childName: party?.child_name,
+        theme: party?.theme,
+        partyDate: party?.party_date,
+        supplierName: 'Your Supplier', // You may need to fetch actual supplier name
+        serviceType: enquiry.supplier_category,
+        supplierMessage: responseMessage,
+        responseType: response, // 'accepted' or 'declined'
+        finalPrice: finalPrice || enquiry.quoted_price,
+        originalPrice: enquiry.quoted_price,
+        isPaid: enquiry.payment_status === 'paid',
+        dashboardLink: `${window.location.origin}/dashboard`
+      }
+
+      const emailResponse = await fetch('/api/email/customer-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPayload)
+      })
+
+      if (!emailResponse.ok) {
+        console.warn('Failed to send customer notification email:', await emailResponse.text())
+      } else {
+        console.log('Customer notification email sent successfully')
+      }
+    } catch (emailError) {
+      console.warn('Error sending customer email:', emailError)
+      // Continue with the rest of the function even if email fails
+    }
+
+    // Step 4: Reload enquiry to show updated status (existing functionality)
+    await loadEnquiryDetails()
+    setShowResponseForm(false)
+    
+    // Step 5: Show appropriate success message (existing functionality)
+    if (enquiry.payment_status === 'paid' && response === 'declined') {
+      alert('PartySnap has been notified immediately. They will find a replacement supplier and handle all customer communication. Thank you for your honesty!')
+    } else if (enquiry.payment_status === 'paid' && response === 'accepted') {
+      alert('Perfect! The customer\'s party is confirmed. You\'ll receive final details closer to the date.')
+    } else {
+      alert(`Enquiry ${response} successfully! The customer will be notified and can view your response in their profile.`)
+    }
+
   } catch (err) {
+    console.error('Error in submitResponse:', err)
     setError(err.message)
   } finally {
     setResponding(false)
@@ -1076,11 +1286,11 @@ const getStatusIcon = (status) => {
                       <Textarea
                         value={responseMessage}
                         onChange={(e) => setResponseMessage(e.target.value)}
-                        placeholder={
+                        placeholder={templatesLoading ? "Loading template..." : (
                           response === "accepted"
-                            ? "Thank you for your enquiry! I'd be delighted to provide entertainment for your child's party. Please let me know if you have any questions..."
-                            : "Thank you for your enquiry. Unfortunately, I'm not available for this date. I'd be happy to suggest alternative dates if you're flexible..."
-                        }
+                            ? (placeholderTemplates.accepted || "Thank you for your enquiry! I'd be delighted to...")
+                            : (placeholderTemplates.declined || "Thank you for your enquiry. Unfortunately, I'm not available...")
+                        )}
                         rows={4}
                       />
                     </div>

@@ -555,85 +555,17 @@ export default function PaymentPageContent() {
     loadPaymentData();
   }, [router]);
 
-  // const handlePaymentSuccess = async (paymentIntent) => {
-  //   try {
-  //     // Step 1: Record payment
-  //     const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
-  //       payment_status: paymentBreakdown.remainingBalance > 0 ? 'partial_paid' : 'fully_paid',
-  //       payment_intent_id: paymentIntent.id,
-  //       deposit_amount: paymentBreakdown.depositAmount,
-  //       full_payment_amount: paymentBreakdown.fullPaymentAmount,
-  //       total_paid_today: paymentBreakdown.totalPaymentToday,
-  //       remaining_balance: paymentBreakdown.remainingBalance,
-  //       payment_date: new Date().toISOString()
-  //     });
-  
-  //     const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category);
-      
-  //     // Step 2: Check if enquiries already exist for the suppliers we're paying for
-  //     const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId);
-  //     const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
-      
-  //     const existingEnquiryCategories = existingEnquiries.map(e => e.supplier_category);
-  //     const enquiriesAlreadyExist = supplierCategoriesToPay.every(category => 
-  //       existingEnquiryCategories.includes(category)
-  //     );
-  
-  //     if (enquiriesAlreadyExist) {
-  //       // Individual supplier payment
-  //       console.log('Individual supplier payment - setting auto_accepted and updating payment status');
-        
-  //       // First, mark as auto-accepted
-  //       const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
-        
-  //       // Then update payment status with enhanced info
-  //       const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-  //         partyId, 
-  //         supplierCategoriesToPay,
-  //         {
-  //           payment_breakdown: paymentBreakdown.paymentDetails,
-  //           lead_time_suppliers: supplierCategoriesToPay.filter(cat => 
-  //             paymentBreakdown.paymentDetails.find(p => p.category === cat)?.paymentType === 'full_payment'
-  //           )
-  //         }
-  //       );
-  //     } else {
-  //       // Initial party payment - create enquiries first
-  //       console.log('Creating new enquiries for initial party payment');
-        
-  //       const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-  //         partyId,
-  //         "BOOKING CONFIRMED - Customer has completed payment"
-  //       );
-        
-  //       if (enquiryResult.success) {
-  //         const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
-  //         const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-  //           partyId, 
-  //           supplierCategoriesToPay,
-  //           {
-  //             payment_breakdown: paymentBreakdown.paymentDetails
-  //           }
-  //         );
-  //       }
-  //     }
-      
-  //     router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
-      
-  //   } catch (error) {
-  //     console.error('Error handling payment success:', error);
-  //     setIsRedirecting(false);
-  //   }
-  // };
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
-      // Step 0: Update party status from 'draft' to 'planned'
+      console.log('Processing payment success for payment intent:', paymentIntent.id);
+  
+      // Step 1: Update party status from 'draft' to 'planned'
       await supabase
         .from('parties')
         .update({ status: 'planned' })
         .eq('id', partyId);
   
-      // Step 1: Record payment (your existing logic)
+      // Step 2: Record payment
       const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
         payment_status: paymentBreakdown.remainingBalance > 0 ? 'partial_paid' : 'fully_paid',
         payment_intent_id: paymentIntent.id,
@@ -646,7 +578,7 @@ export default function PaymentPageContent() {
   
       const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category);
       
-      // Step 2: Check if enquiries already exist (your existing logic)
+      // Step 3: Check if enquiries already exist
       const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId);
       const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
       
@@ -656,12 +588,11 @@ export default function PaymentPageContent() {
       );
   
       if (enquiriesAlreadyExist) {
-        // Individual supplier payment (your existing logic)
+        // Individual supplier payment
         console.log('Individual supplier payment - setting auto_accepted and updating payment status');
         
-        const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
-        
-        const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
+        await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
+        await partyDatabaseBackend.updateEnquiriesPaymentStatus(
           partyId, 
           supplierCategoriesToPay,
           {
@@ -672,7 +603,7 @@ export default function PaymentPageContent() {
           }
         );
       } else {
-        // Initial party payment - create enquiries first (your existing logic)
+        // Initial party payment - create enquiries first
         console.log('Creating new enquiries for initial party payment');
         
         const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
@@ -681,26 +612,108 @@ export default function PaymentPageContent() {
         );
         
         if (enquiryResult.success) {
-          const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
-          const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
+          await partyDatabaseBackend.autoAcceptEnquiries(partyId);
+          await partyDatabaseBackend.updateEnquiriesPaymentStatus(
             partyId, 
             supplierCategoriesToPay,
             {
               payment_breakdown: paymentBreakdown.paymentDetails
             }
           );
+          
+          // Clear localStorage only after successful enquiry creation
+          localStorage.removeItem('party_details');
+          localStorage.removeItem('user_party_plan');
         }
-        
-        // Step 3: Clear localStorage only after successful enquiry creation
-        localStorage.removeItem('party_details');
-        localStorage.removeItem('user_party_plan');
       }
+  
+      // Step 4: Send supplier notifications (non-blocking)
+      sendSupplierNotifications();
       
+      // Step 5: Redirect to success page
       router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
       
     } catch (error) {
       console.error('Error handling payment success:', error);
       setIsRedirecting(false);
+      alert('Payment was successful, but there was an issue setting up your booking. Please contact support.');
+    }
+  };
+  
+  // Separate async function for supplier notifications (runs in background)
+  const sendSupplierNotifications = async () => {
+    try {
+      console.log('Sending supplier notifications...');
+      
+      for (const supplier of confirmedSuppliers) {
+        try {
+          // Get supplier details from database using supplier.id
+          const { data: supplierData, error } = await supabase
+            .from('suppliers')
+            .select('data')
+            .eq('id', supplier.id)
+            .single();
+  
+          if (error || !supplierData?.data) {
+            console.warn(`No supplier data found for ${supplier.name}:`, error);
+            continue;
+          }
+  
+          // Parse the JSON data column to get owner info
+          const supplierInfo = typeof supplierData.data === 'string' 
+            ? JSON.parse(supplierData.data) 
+            : supplierData.data;
+  
+          if (!supplierInfo?.owner?.email) {
+            console.warn(`No email found in owner data for ${supplier.name}`);
+            continue;
+          }
+  
+          // Get supplier payment details
+          const supplierPaymentDetail = paymentBreakdown.paymentDetails.find(p => p.category === supplier.category);
+          
+          const emailPayload = {
+            supplierEmail: supplierInfo.owner.email,
+            supplierName: supplierInfo.owner.name || supplier.name,
+            customerName: partyDetails.parentName,
+            customerEmail: partyDetails.email,
+            customerPhone: user?.phone || supplierInfo.owner.phone, // Include supplier's phone as backup
+            childName: partyDetails.childName,
+            theme: partyDetails.theme,
+            partyDate: partyDetails.date,
+            partyTime: partyDetails.time,
+            partyLocation: partyDetails.location,
+            guestCount: partyDetails.guestCount,
+            serviceType: supplier.category,
+            depositAmount: supplierPaymentDetail?.amountToday || supplier.price,
+            supplierEarning: supplier.price,
+            paymentType: supplierPaymentDetail?.paymentType || (isLeadTimeSupplier(supplier.category) ? 'full_payment' : 'deposit'),
+            dashboardLink: 'http://localhost:3000/suppliers/dashboard'
+          };
+  
+          console.log(`Sending notification to ${supplierInfo.owner.name} at ${supplierInfo.owner.email}`);
+          console.log('Email payload:', JSON.stringify(emailPayload, null, 2)); // Add this line
+  
+          const response = await fetch('/api/email/supplier-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailPayload)
+          });
+  
+          if (response.ok) {
+            console.log(`✅ Notification sent to ${supplier.name} (${supplierInfo.owner.name})`);
+          } else {
+            const errorText = await response.text();
+            console.warn(`❌ Failed to notify ${supplier.name}:`, errorText);
+          }
+          
+        } catch (supplierError) {
+          console.warn(`Error notifying supplier ${supplier.name}:`, supplierError);
+        }
+      }
+      
+    } catch (error) {
+      console.warn('Error in supplier notifications:', error);
     }
   };
   const handlePaymentError = (error) => {

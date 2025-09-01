@@ -1,4 +1,5 @@
 "use client"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,6 +10,9 @@ import { useRouter } from "next/navigation"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { ChevronDown, ChevronRight, Gift, Edit, Trash2, Building, Users, DollarSign, CreditCard } from "lucide-react"
 import { useState } from "react"
+import SupplierChatTabs from '@/components/SupplierChatTabs'
+import { supabase } from "@/lib/supabase"
+
 
 // Mobile Party Service Card Component
 // Simple Mobile Party Service Card Component
@@ -378,6 +382,7 @@ export default function PartyPlanSummary() {
 
   const { enquiries, isPaymentConfirmed, currentPhase } = usePartyPhase(partyData, partyId)
 
+
   const toggleRowExpansion = (serviceId) => {
     const newExpanded = new Set(expandedRows)
     if (newExpanded.has(serviceId)) {
@@ -512,6 +517,9 @@ export default function PartyPlanSummary() {
     )
   }
 
+
+  
+
   const tableData = getTableData()
   const budgetData = getBudgetData()
 
@@ -519,7 +527,11 @@ export default function PartyPlanSummary() {
     <div className="min-h-screen bg-[hsl(var(--primary-50))] px-2">
       <ContextualBreadcrumb currentPage="party-summary" />
 
-      <div className="bg-[hsl(var(--primary-50))] px-3 pt-8 pb-5">
+
+   
+
+
+      <div className="bg-[hsl(var(--primary-50))] px-7 pt-8 pb-5">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">Party Summary</h1>
       </div>
 
@@ -600,6 +612,18 @@ export default function PartyPlanSummary() {
             </CardContent>
           </Card>
         )}
+
+
+<div className="bg-[hsl(var(--primary-50))] px-3 pt-8 pb-5">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">Supplier Messages</h1>
+      </div>
+<SupplierChatTabs 
+  customerId={user?.id}
+  partyId={partyId}
+  suppliers={suppliers}
+/>
+        
+
 
         {/* Budget Summary */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
