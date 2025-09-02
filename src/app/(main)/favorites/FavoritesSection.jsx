@@ -217,7 +217,7 @@ const FavoritesSection = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Heart className="w-8 h-8 text-pink-500 fill-pink-500" />
+                <Heart className="w-8 h-8 text-primary-500 fill-primary-500" />
                 My Favorites
               </h1>
               <p className="text-gray-600 mt-1">
@@ -246,96 +246,7 @@ const FavoritesSection = () => {
         </div>
       </div>
 
-      {/* Filters and Controls */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search favorites..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {getCategories().slice(1).map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date_added">Recently Added</SelectItem>
-                  <SelectItem value="name">Name A-Z</SelectItem>
-                  <SelectItem value="price">Price Low-High</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="px-3"
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="px-3"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Active filters display */}
-          {(searchQuery || filterCategory !== 'all') && (
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-gray-500">Active filters:</span>
-              {searchQuery && (
-                <Badge variant="secondary" className="gap-1">
-                  Search: "{searchQuery}"
-                  <X 
-                    className="w-3 h-3 cursor-pointer hover:text-red-500" 
-                    onClick={() => setSearchQuery('')}
-                  />
-                </Badge>
-              )}
-              {filterCategory !== 'all' && (
-                <Badge variant="secondary" className="gap-1">
-                  {filterCategory}
-                  <X 
-                    className="w-3 h-3 cursor-pointer hover:text-red-500" 
-                    onClick={() => setFilterCategory('all')}
-                  />
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+   
 
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -379,7 +290,7 @@ const FavoritesSection = () => {
                           }}
                           className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm group/heart"
                         >
-                          <Heart className="w-4 h-4 fill-pink-500 text-pink-500 group-hover/heart:scale-110 transition-transform" />
+                          <Heart className="w-4 h-4 fill-[hsl(var(--primary-800))] text-primary-800 group-hover/heart:scale-110 transition-transform" />
                         </button>
 
                         {/* Category badge */}

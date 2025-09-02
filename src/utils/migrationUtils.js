@@ -48,7 +48,7 @@ export class MigrationUtils {
    */
   static async migrateLocalStorageToDatabase(userInfo = null) {
     try {
-      console.log('🔄 Starting localStorage to database migration...')
+
 
       // Get current user if not provided
       let user = userInfo
@@ -63,11 +63,11 @@ export class MigrationUtils {
       // Get localStorage data
       const localData = this.getLocalStoragePartyData()
       if (!localData?.hasData) {
-        console.log('ℹ️ No localStorage party data to migrate')
+
         return { success: true, message: 'No data to migrate' }
       }
 
-      console.log('📋 Found localStorage data to migrate:', localData)
+    
 
       // Ensure user profile exists
       const userResult = await partyDatabaseBackend.createOrGetUser({
@@ -82,12 +82,11 @@ export class MigrationUtils {
         throw new Error(`Failed to create user profile: ${userResult.error}`)
       }
 
-      console.log('✅ User profile ready for migration:', userResult.user.id)
 
       // Check if user already has a current party
       const currentPartyResult = await partyDatabaseBackend.getCurrentParty()
       if (currentPartyResult.success && currentPartyResult.party) {
-        console.log('ℹ️ User already has a party in database, skipping migration')
+       
         return { 
           success: true, 
           message: 'User already has a party in database',
@@ -109,7 +108,7 @@ export class MigrationUtils {
         specialRequirements: localData.partyDetails.specialRequirements || ''
       }
 
-      console.log('🎉 Creating party with migrated data:', partyData)
+   
 
       // Create party in database
       const createResult = await partyDatabaseBackend.createParty(partyData, localData.partyPlan)
@@ -117,8 +116,6 @@ export class MigrationUtils {
       if (!createResult.success) {
         throw new Error(`Failed to create party: ${createResult.error}`)
       }
-
-      console.log('✅ Party migrated successfully to database:', createResult.party.id)
 
       // Optionally clear localStorage after successful migration
       // this.clearLocalStoragePartyData()
@@ -147,7 +144,7 @@ export class MigrationUtils {
     try {
       localStorage.removeItem('party_details')
       localStorage.removeItem('user_party_plan')
-      console.log('🧹 Cleared localStorage party data')
+
     } catch (error) {
       console.error('Error clearing localStorage:', error)
     }
@@ -178,12 +175,12 @@ export class MigrationUtils {
         return { success: true, message: 'No local data to migrate' }
       }
       
-      console.log('🔄 Auto-migrating localStorage data for signed-in user...')
+      
       
       const result = await this.migrateLocalStorageToDatabase(user)
       
       if (result.success) {
-        console.log('✅ Auto-migration completed successfully')
+    
         // Optionally show success notification
         this.showMigrationSuccess()
       }

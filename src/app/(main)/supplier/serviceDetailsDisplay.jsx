@@ -42,8 +42,7 @@ const ServiceDetailsDisplay = ({ supplier }) => {
     return null;
   }
   
-  console.log('Service Details:', serviceDetails);
-  console.log('Supplier Category:', supplier?.category);
+
 
   // Enhanced category detection
   const detectCategory = () => {
@@ -86,7 +85,7 @@ const ServiceDetailsDisplay = ({ supplier }) => {
   };
 
   const category = detectCategory();
-  console.log('Detected category:', category);
+ 
 
   // Helper function to render age groups
   const renderAgeGroups = (ageGroups) => {

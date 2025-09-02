@@ -22,11 +22,11 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
         if (partyDetails) {
           const parsed = JSON.parse(partyDetails)
           
-          console.log('Checking existing party details:', parsed)
+  
           
           // If we have child data from à la carte, use it and auto-submit
           if (parsed.source === 'a_la_carte' && parsed.firstName && parsed.childAge) {
-            console.log('Found existing child data from à la carte flow')
+ 
             
             const childData = {
               childName: parsed.childName || `${parsed.firstName} ${parsed.lastName || ''}`.trim(),
@@ -45,7 +45,7 @@ export default function WelcomeDashboardPopup({ isOpen, onClose, onNameSubmit })
           }
         }
         
-        console.log('No existing data found, showing normal flow')
+
       } catch (error) {
         console.log('Error checking existing data:', error)
       }

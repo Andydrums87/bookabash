@@ -240,28 +240,28 @@ export default function SupplierSelectionModal({
   // ENHANCED: Time slot availability check (existing logic but cleaner)
   const isTimeSlotAvailable = (supplier, date, timeSlot) => {
     if (!supplier || !date) {
-      console.log(`✅ LENIENT: ${supplier?.name} - No date/supplier, assuming available`)
+
       return true
     }
     
     const migratedSupplier = getSupplierWithTimeSlots(supplier)
     
     if (!migratedSupplier) {
-      console.log(`✅ LENIENT: ${supplier.name} - No migrated data, assuming available`)
+      
       return true
     }
     
     try {
       const checkDate = parseSupplierDate(date)
       if (!checkDate) {
-        console.log(`✅ LENIENT: ${supplier.name} - Could not parse date, assuming available`)
+     
         return true
       }
       
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
       
-      console.log(`🔍 LENIENT: Checking ${supplier.name} for ${dateString} (${dayName}) - ${timeSlot}`)
+   
       
       // LENIENT: Only check if we have working hours data
       if (migratedSupplier.workingHours?.[dayName]) {
@@ -269,7 +269,7 @@ export default function SupplierSelectionModal({
         
         // If day is explicitly marked as inactive, respect that
         if (workingDay.active === false) {
-          console.log(`❌ LENIENT: ${supplier.name} - Day ${dayName} explicitly inactive`)
+    
           return false
         }
         
@@ -277,7 +277,7 @@ export default function SupplierSelectionModal({
         if (workingDay.timeSlots?.[timeSlot]) {
           const slotAvailable = workingDay.timeSlots[timeSlot].available
           if (slotAvailable === false) {
-            console.log(`❌ LENIENT: ${supplier.name} - Time slot ${timeSlot} explicitly unavailable`)
+          
             return false
           }
         }
@@ -297,21 +297,21 @@ export default function SupplierSelectionModal({
   // ENHANCED: Unified availability checking that handles both types
   const checkSupplierAvailability = (supplier, date, timeSlot = null) => {
     if (!date || !supplier) {
-      console.log(`✅ UNIFIED: ${supplier?.name} - No date/supplier provided, assuming available`)
+
       return { available: true, reason: 'no-data-provided' }
     }
     
-    console.log(`📅 UNIFIED: Checking availability for ${supplier.name} (${supplier.category})`)
+
     
     // Determine supplier type
     const supplierAvailabilityType = getAvailabilityType(supplier.category)
     const isLeadTimeSupplier = supplierAvailabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
     
     if (isLeadTimeSupplier) {
-      console.log(`📦 UNIFIED: ${supplier.name} is lead-time based, checking lead time availability`)
+
       return getLeadTimeAvailability(supplier, date)
     } else {
-      console.log(`⏰ UNIFIED: ${supplier.name} is time-slot based, checking time slot availability`)
+
       
       // Convert the check date
       let checkDate
@@ -322,7 +322,7 @@ export default function SupplierSelectionModal({
       }
       
       if (!checkDate) {
-        console.log(`✅ UNIFIED: ${supplier.name} - Could not parse date, assuming available`)
+ 
         return { available: true, reason: 'date-parse-error' }
       }
       
@@ -330,7 +330,7 @@ export default function SupplierSelectionModal({
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (checkDate < today) {
-        console.log(`❌ UNIFIED: ${supplier.name} - Past date, unavailable`)
+
         return { available: false, reason: 'past-date' }
       }
 
@@ -371,7 +371,7 @@ export default function SupplierSelectionModal({
           checkedDate: dateToLocalString(checkDate)
         }
         
-        console.log(`📅 UNIFIED: ${supplier.name} - Time slot ${timeSlot} result:`, result)
+
         return result
       }
 
@@ -391,7 +391,7 @@ export default function SupplierSelectionModal({
         checkedDate: dateToLocalString(checkDate)
       }
 
-      console.log(`📅 UNIFIED: ${supplier.name} - General availability result:`, result)
+
       return result
     }
   }
@@ -405,7 +405,7 @@ export default function SupplierSelectionModal({
   const handleCustomizationAddToPlan = async (customizationData) => {
     const { supplier, package: selectedPackage, addons, totalPrice } = customizationData
     
-    console.log('🔥 CUSTOMIZATION MODAL: Received customization data:', customizationData)
+
     
     if (!supplier || !selectedPackage) {
       console.error("❌ Missing supplier or package data")
@@ -435,12 +435,12 @@ export default function SupplierSelectionModal({
         autoEnquiry: false
       }
   
-      console.log('🔥 CUSTOMIZATION MODAL: Calling onSelectSupplier with:', supplierSelectionData)
+ 
       
       // This should call handleSupplierSelection in the dashboard
       const result = await onSelectSupplier(supplierSelectionData)
       
-      console.log('🔥 CUSTOMIZATION MODAL: Dashboard response:', result)
+
       
       // Close the customization modal
       setShowCustomizationModal(false)
@@ -496,7 +496,7 @@ export default function SupplierSelectionModal({
     };
   
     const partyDetails = getPartyDetails();
-    console.log('🔍 ENHANCED FILTERING: Using party details:', partyDetails)
+
     
     const filtered = suppliers.filter((supplier) => {
       const targetCategories = Array.isArray(categoryMapping[category]) 
@@ -504,7 +504,7 @@ export default function SupplierSelectionModal({
         : [categoryMapping[category]];
     
       if (!supplier.category) {
-        console.log(`❌ FILTERING: ${supplier.name} - No category defined`);
+      
         return false;
       }
     
@@ -518,7 +518,7 @@ export default function SupplierSelectionModal({
   
       // ENHANCED: Availability filtering with lead-time support
       if (availableOnly && selectedDate) {
-        console.log(`🔍 ENHANCED FILTERING: Checking availability for ${supplier.name} (availableOnly is ON)`)
+     
         const availabilityResult = checkSupplierAvailability(supplier, selectedDate, partyDetails.timeSlot)
         
         // Only exclude if we're really sure they're unavailable
@@ -529,7 +529,7 @@ export default function SupplierSelectionModal({
                                        availabilityResult.reason === 'out-of-stock'
         
         if (isDefinitelyUnavailable) {
-          console.log(`❌ ENHANCED FILTERING: ${supplier.name} - Definitely unavailable (${availabilityResult.reason})`)
+
           return false
         } else {
           console.log(`✅ ENHANCED FILTERING: ${supplier.name} - Keeping (${availabilityResult.reason})`)
@@ -541,7 +541,7 @@ export default function SupplierSelectionModal({
       // Other filters remain the same...
       if (distance !== "all" && partyLocation) {
         if (!supplier.location) {
-          console.log(`📍 FILTERING: ${supplier.name} - No location data, excluding`)
+
           return false
         }
         
@@ -561,7 +561,7 @@ export default function SupplierSelectionModal({
         )
         
         if (!canServe) {
-          console.log(`❌ FILTERING: ${supplier.name} - Cannot serve location`)
+
           return false
         }
       }
@@ -583,8 +583,6 @@ export default function SupplierSelectionModal({
       return true
     });
   
-    console.log(`🔍 ENHANCED FILTERING: Final result - ${filtered.length} suppliers from ${suppliers.length} total`)
-    console.log(`🔍 ENHANCED FILTERING: availableOnly is ${availableOnly ? 'ON' : 'OFF'}`)
   
     // Sorting logic remains the same...
     if (partyLocation) {

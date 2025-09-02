@@ -15,65 +15,65 @@ export const useSupplierModals = () => {
 
   // Cake modal handlers
   const openCakeModal = useCallback((packageData) => {
-    console.log('🎂 Opening cake modal with package:', packageData?.name)
+
     setSelectedPackageForCake(packageData)
     setShowCakeModal(true)
   }, [])
   
   const closeCakeModal = useCallback(() => {
-    console.log('🎂 Closing cake modal')
+
     setShowCakeModal(false)
     setSelectedPackageForCake(null)
   }, [])
 
   // Addon modal handlers
   const openAddonModal = useCallback(() => {
-    console.log('🎭 Opening addon modal')
+
     setShowAddonModal(true)
   }, [])
 
   const closeAddonModal = useCallback(() => {
-    console.log('🎭 Closing addon modal')
+
     setShowAddonModal(false)
     setSelectedAddons([])
   }, [])
 
   // À la carte modal handlers
   const openAlaCarteModal = useCallback(() => {
-    console.log('🎪 Opening à la carte modal')
+
     setShowAlaCarteModal(true)
   }, [])
 
   const closeAlaCarteModal = useCallback(() => {
-    console.log('🎪 Closing à la carte modal')
+
     setShowAlaCarteModal(false)
   }, [])
 
   // Pending enquiry modal handlers
   const openPendingEnquiryModal = useCallback(() => {
-    console.log('📧 Opening pending enquiry modal')
+
     setShowPendingEnquiryModal(true)
   }, [])
 
   const closePendingEnquiryModal = useCallback(() => {
-    console.log('📧 Closing pending enquiry modal')
+
     setShowPendingEnquiryModal(false)
   }, [])
 
   // Unavailable modal handlers
   const openUnavailableModal = useCallback(() => {
-    console.log('🚫 Opening unavailable modal')
+
     setShowUnavailableModal(true)
   }, [])
 
   const closeUnavailableModal = useCallback(() => {
-    console.log('🚫 Closing unavailable modal')
+
     setShowUnavailableModal(false)
   }, [])
 
   // Close all modals helper
   const closeAllModals = useCallback(() => {
-    console.log('🔄 Closing all modals')
+
     setShowAddonModal(false)
     setShowAlaCarteModal(false)
     setShowCakeModal(false)
@@ -94,7 +94,7 @@ export const useSupplierModals = () => {
 
   // Modal handlers for specific flows
   const handleModalFlow = useCallback((flowType, data = {}) => {
-    console.log('🎯 Handling modal flow:', flowType, data)
+
     
     switch (flowType) {
       case 'showDatePicker':
@@ -153,7 +153,7 @@ export const useSupplierModals = () => {
 
   // Enhanced handlers for modal responses
   const handleAddonConfirm = useCallback((addonData, onConfirm) => {
-    console.log('🎭 Addon modal confirmed:', addonData)
+    
     setSelectedAddons(addonData.addons || [])
     closeAddonModal()
     if (onConfirm) {
@@ -162,10 +162,7 @@ export const useSupplierModals = () => {
   }, [closeAddonModal])
 
   const handleCakeConfirm = useCallback((enhancedPackageData, onConfirm) => {
-    console.log('🎂 Cake modal confirmed:', {
-      packageName: enhancedPackageData.name,
-      flavor: enhancedPackageData.cakeCustomization?.flavorName
-    })
+  
     closeCakeModal()
     if (onConfirm) {
       onConfirm(enhancedPackageData)
@@ -173,7 +170,7 @@ export const useSupplierModals = () => {
   }, [closeCakeModal])
 
   const handleAlaCarteConfirm = useCallback((partyDetails, onConfirm) => {
-    console.log('🎪 À la carte modal confirmed:', partyDetails)
+
     closeAlaCarteModal()
     if (onConfirm) {
       onConfirm(partyDetails)

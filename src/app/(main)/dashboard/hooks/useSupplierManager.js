@@ -32,7 +32,7 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
 
   // Open supplier selection modal
   const openSupplierModal = (category) => {
-    console.log('🔍 Opening supplier modal for category:', category)
+
     setSelectedSupplierModal({ isOpen: true, category })
   }
   
@@ -88,7 +88,7 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
           newValue: JSON.stringify(currentPlan)
         }));
         
-        console.log('✅ E-invite reset to default state');
+
       } else {
         // Regular supplier removal for other types (including cakes)
         if (removeSupplier) {
@@ -117,14 +117,14 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
    const handleCancelEnquiry = async (supplierType) => {
     if (isDeleting || !partyId) return
     
-    console.log('🚫 Cancelling enquiry for:', supplierType)
+
     setIsDeleting(true)
     
     try {
       const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
       
       if (result.success) {
-        console.log('✅ Enquiry cancelled and supplier removed')
+
         return { success: true, message: result.message }
       } else {
         throw new Error(result.error)

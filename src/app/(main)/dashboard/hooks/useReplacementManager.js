@@ -25,22 +25,17 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
 
 
   useEffect(() => {
-    console.log('🔍 === REPLACEMENT CONTEXT CHECK ===')
+    
     
     // ✅ STEP 1: Check restoration flags FIRST and with priority
     const shouldRestore = sessionStorage.getItem('shouldRestoreReplacementModal')
     const modalShowUpgrade = sessionStorage.getItem('modalShowUpgrade')
     const storedContext = sessionStorage.getItem('replacementContext')
-    
-    console.log('🔍 Restoration flags:', { 
-      shouldRestore, 
-      modalShowUpgrade, 
-      hasStoredContext: !!storedContext 
-    })
+ 
     
     // ✅ STEP 2: Handle restoration case - THIS IS THE KEY FIX
     if (shouldRestore === 'true' && storedContext) {
-      console.log('🎯 RESTORATION MODE DETECTED - Creating restoration replacement')
+
       
       try {
         const context = JSON.parse(storedContext)
@@ -82,12 +77,12 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
           selectedPackageData: context.selectedPackageData
         }
         
-        console.log('✅ Created restoration replacement:', restorationReplacement)
+    
         
         // ✅ SET: The replacement immediately to trigger the modal
         setReplacements([restorationReplacement])
         
-        console.log('🎯 RESTORATION: Replacement set, modal should open automatically')
+    
         
         return // ✅ EXIT EARLY - Don't process regular enquiries during restoration
         
@@ -102,7 +97,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
     
     // ✅ STEP 3: Regular enquiry processing (only if not restoring)
     if (!partyId || enquiries.length === 0) {
-      console.log('❌ No partyId or enquiries for regular processing')
+
       return
     }
     
@@ -112,7 +107,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
         enquiry.status === 'declined' && enquiry.replacement_processed === false
       )
       
-      console.log('📊 Found declined enquiries:', declinedEnquiries.length)
+    
       
       if (declinedEnquiries.length === 0) {
         console.log('✅ No declined enquiries - clearing replacements')
@@ -171,7 +166,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
         }
         
         if (newReplacements.length > 0) {
-          console.log('✅ Setting new replacements:', newReplacements.length)
+        
           setReplacements(prev => {
             const existingCategories = newReplacements.map(r => r.category)
             const filtered = prev.filter(r => 

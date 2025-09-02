@@ -121,7 +121,7 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
 
 
   if (!supplier || !selectedPackageId) {
-    console.log('❌ Missing supplier or package')
+
     return { 
       success: false, 
       message: "Please select a package first." 
@@ -131,15 +131,15 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
   // CHECK IF WE CAME FROM REVIEW-BOOK
   const urlParams = new URLSearchParams(window.location.search)
   const fromReviewBook = urlParams.get('from') === 'review-book-missing'
-  console.log('🔍 From review book:', fromReviewBook)
+
   
   // Get behavior based on user type
   const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-  console.log('🚀 Behavior:', behavior)
+
   
   // 1. DATE PICKER FLOW (for users without parties)
   if (behavior.shouldShowDatePicker) {
-    console.log('📅 Showing date picker prompt')
+
     return { 
       showDatePicker: true,
       message: "📅 Please select an available date from the calendar below first!"
@@ -164,16 +164,10 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
         const hour = parseInt(timeField.toString().split(':')[0])
         if (!isNaN(hour)) {
           partyTimeSlotToCheck = hour < 13 ? 'morning' : 'afternoon'
-          console.log('🔍 DB: Mapped time', timeField, '→ slot:', partyTimeSlotToCheck)
+
         }
       }
     }
-    
-    console.log('🔍 DB USER: Party info extracted:', {
-      party_date: partyDateToCheck,
-      time_slot: partyTimeSlotToCheck,
-      start_time: databasePartyData.start_time
-    })
   } 
   else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
     try {
@@ -195,11 +189,6 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
     } catch (error) {
       console.log('❌ Could not parse localStorage party details')
     }
-    
-    console.log('🔍 LS USER: Party info extracted:', {
-      party_date: partyDateToCheck,
-      time_slot: partyTimeSlotToCheck
-    })
   }
 
   // 3. PARTY DATE AVAILABILITY CHECK - THE CRITICAL CHECK
@@ -210,7 +199,7 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
   const timeSlotToCheck = isLeadTimeBased ? null : partyTimeSlotToCheck;
   const partyDateAvailability = checkSupplierAvailability(partyDateToCheck, timeSlotToCheck);
     
-    console.log('🔍 ⭐ PARTY DATE availability result:', partyDateAvailability)
+    
     
     if (!partyDateAvailability || !partyDateAvailability.available) {
       return { 
@@ -222,7 +211,7 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       }
     }
     
-    console.log('✅ ⭐ PARTY DATE CHECK PASSED: Supplier available on party date')
+
   }
 
   // 4. SELECTED CALENDAR DATE VALIDATION (only if different from party date)
@@ -230,15 +219,14 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
     const selectedCalendarDateString = getSelectedCalendarDate()
     
     if (selectedCalendarDateString && selectedCalendarDateString !== partyDateToCheck) {
-      console.log('🔍 SECONDARY: Calendar date differs from party date')
-      console.log('🔍 Calendar date:', selectedCalendarDateString, 'vs Party date:', partyDateToCheck)
+
       
       let calendarTimeSlot = selectedTimeSlot || partyTimeSlotToCheck
       
       const calendarDateAvailability = checkSupplierAvailability(selectedCalendarDateString, calendarTimeSlot)
       
       if (!calendarDateAvailability || !calendarDateAvailability.available) {
-        console.log('🚫 BLOCKING: Supplier unavailable on selected calendar date')
+       
         return { 
           showUnavailableModal: true,
           unavailableInfo: {
@@ -254,13 +242,13 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
 
   // 5. À LA CARTE FLOW
   if (behavior.shouldShowAlaCarteModal) {
-    console.log('🎪 Opening à la carte modal for anonymous user')
+
     return { showAlaCarteModal: true }
   }
   
   // 6. CATEGORY OCCUPATION CHECK
   if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-    console.log('🔍 Checking category occupation for database user')
+
     try {
       const partyResult = await partyDatabaseBackend.getCurrentParty()
       if (partyResult.success && partyResult.party?.party_plan) {
@@ -282,7 +270,7 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
         const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
         
         if (isSlotOccupied) {
-          console.log('🚫 Database user - category occupied, blocking')
+         
           return {
             success: false,
             message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`
@@ -314,12 +302,9 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
   const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
 
   if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
-    console.log('🎭 Showing addon modal')
+
     return { showAddonModal: true }
   }
-
-  // 9. START ADDING PROCESS
-  console.log('🚀 Starting add to plan process - all checks passed')
   
   const shouldShowLoadingModal = !fromReviewBook
   
@@ -356,7 +341,6 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
         supplierDeliveryType: isLeadTimeBased ? 'lead_time' : 'time_slot'
     }
 
-    console.log('🎯 Enhanced package with correct party date/time:', enhancedPackage)
     if (shouldShowLoadingModal) setProgress(30)
 
     let result
@@ -364,7 +348,6 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
 
     // 10. DATABASE USER FLOW
     if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-      console.log('📊 Database user - adding supplier to database')
       if (shouldShowLoadingModal) setProgress(50)
       
       const addResult = await partyDatabaseBackend.addSupplierToParty(
@@ -378,7 +361,7 @@ const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = n
       
 // DON'T send enquiry - it will be sent after payment
 if (addResult.success) {
-  console.log('✅ Supplier added to party plan (enquiry will be sent after payment)')
+
   
   // Create accepted enquiry record but mark as unpaid
   if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
@@ -405,7 +388,7 @@ if (addResult.success) {
     }
     // 11. LOCALSTORAGE USER FLOW
     else {
-      console.log('📦 LocalStorage user - adding supplier to localStorage')
+
       if (shouldShowLoadingModal) setProgress(50)
       if (shouldShowLoadingModal) setLoadingStep(2)
       
@@ -483,7 +466,7 @@ if (addResult.success) {
         }))
         
         const reviewUrl = `/review-book?restore=step4&added=true&supplier=${encodeURIComponent(supplier.name)}`
-        console.log('🔄 Returning to review-book:', reviewUrl)
+        
         router.push(reviewUrl)
       } else {
         const categoryMap = {
@@ -510,7 +493,7 @@ if (userType === 'DATABASE_USER') {
   const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
   router.push(dashboardUrl)
 }
-        console.log('🚀 Navigating to dashboard:', dashboardUrl)
+
         router.push(dashboardUrl)
       }
 
@@ -543,7 +526,7 @@ if (userType === 'DATABASE_USER') {
       setLoadingStep(0)
     }
     setFinalPackageData(null)
-    console.log('🔧 handleAddToPlan cleanup completed')
+
   }
 }, [
   userType, 
@@ -874,11 +857,6 @@ if (userType === 'DATABASE_USER') {
 //   addAddon
 // ])
 const handleAlaCarteBooking = useCallback(async (partyDetails) => {
-  console.log('=== HANDLE À LA CARTE BOOKING START ===')
-  console.log('Party details:', partyDetails)
-  console.log('Current state:', { selectedDate, selectedTimeSlot, currentMonth })
-  console.log('Packages available:', packages?.length)
-  console.log('Selected package ID:', selectedPackageId)
 
   try {
     // 1. VALIDATION - Party Details
@@ -909,13 +887,13 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     if (!selectedPkg) {
       selectedPkg = packages[0]
       packageIdToUse = selectedPkg.id
-      console.log('Auto-selecting first package:', packageIdToUse)
+ 
       
       // Update state for consistency
       setSelectedPackageId(packageIdToUse)
     }
 
-    console.log('Using package:', selectedPkg.name, 'with ID:', packageIdToUse)
+  
 
     // 5. TIME SLOT VALIDATION
     let finalTimeSlot = partyDetails.timeSlot || selectedTimeSlot
@@ -923,7 +901,7 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     // Map party time to time slot if not explicitly set
     if (!finalTimeSlot && partyDetails.time) {
       const timeStr = partyDetails.time.toLowerCase()
-      console.log('Mapping party time to slot:', partyDetails.time)
+
       
       if (timeStr.includes('am') || 
           ['9', '10', '11', '12'].some(hour => timeStr.includes(hour))) {
@@ -933,15 +911,15 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
         finalTimeSlot = 'afternoon'
       }
       
-      console.log('Mapped to time slot:', finalTimeSlot)
+
     }
 
     // 6. AVAILABILITY CHECK
     if (partyDetails.date && checkSupplierAvailability) {
-      console.log('Checking availability for:', partyDetails.date, finalTimeSlot)
+
       
       const availabilityResult = checkSupplierAvailability(partyDetails.date, finalTimeSlot)
-      console.log('Availability result:', availabilityResult)
+  
       
       if (!availabilityResult || !availabilityResult.available) {
         const timeSlotText = finalTimeSlot ? ` during ${finalTimeSlot}` : ''
@@ -951,7 +929,7 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       // Auto-select available time slot if none specified
       if (!finalTimeSlot && availabilityResult.timeSlots?.length > 0) {
         finalTimeSlot = availabilityResult.timeSlots[0]
-        console.log('Auto-selected time slot:', finalTimeSlot)
+
       }
     }
 
@@ -976,7 +954,7 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       partyTimeSlot: finalTimeSlot
     }
 
-    console.log('Enhanced package with time slot:', enhancedPackage)
+    
 
     // 9. PREPARE ENHANCED SUPPLIER DATA
     const enhancedSupplier = {
@@ -992,15 +970,14 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       }
     }
 
-    // 10. CREATE PARTY
-    console.log('Creating new party with supplier and time slot info')
+
     
     const shouldCreateDatabaseParty = userType !== 'ANONYMOUS' && userType !== 'ERROR_FALLBACK'
     let result
 
     if (shouldCreateDatabaseParty) {
       // Create database party
-      console.log('Creating database party')
+
       
       if (!partyDatabaseBackend?.createPartyWithSupplier) {
         throw new Error('Database backend not available')
@@ -1013,7 +990,7 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
       )
     } else {
       // Create localStorage party
-      console.log('Creating localStorage party')
+
       
       // Save party details to localStorage
       const partyDetailsForStorage = {
@@ -1054,11 +1031,11 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
 
     // 11. SEND AUTO-ENQUIRY (for database users)
     if (result?.success && shouldCreateDatabaseParty) {
-      console.log('Checking if auto-enquiry needed')
+
       
       const partyId = result.partyId || userContext?.currentPartyId
       if (partyId && partyDatabaseBackend?.sendIndividualEnquiry) {
-        console.log('Sending auto-enquiry for new party')
+
         
         const enquiryReason = `New party booking via à la carte selection for ${partyDetails.date}${finalTimeSlot ? ` (${finalTimeSlot})` : ''}`
         
@@ -1137,10 +1114,10 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     }
 
     const supplierType = categoryMap[supplierToUse.category] || 'entertainment'
-    console.log('Mapping category for navigation:', supplierToUse.category, '→', supplierType)
+
     
     const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=party-created&source=ala-carte&timeSlot=${finalTimeSlot || ''}`
-    console.log('Navigating to dashboard:', dashboardUrl)
+
     router.push(dashboardUrl)
 
     return { 

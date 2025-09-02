@@ -24,8 +24,6 @@ class PartyDatabaseBackend {
       const userId = authUser?.user?.id
       if (!userId) throw new Error("No authenticated user")
   
-      console.log('🔍 Creating/getting user for auth_user_id:', userId)
-  
       // Check if user profile exists for THIS auth user
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
@@ -36,7 +34,7 @@ class PartyDatabaseBackend {
       if (fetchError) throw fetchError
   
       if (existingUser) {
-        console.log('✅ User profile already exists:', existingUser.id)
+
         
         // Update the existing profile with any new data
         const updateData = {
@@ -62,7 +60,7 @@ class PartyDatabaseBackend {
         
         if (updateError) throw updateError
         
-        console.log('✅ Updated existing user profile')
+
         return { success: true, user: updatedUser }
       }
   
@@ -81,7 +79,7 @@ class PartyDatabaseBackend {
       city: userData.city || ''
       }
       
-      console.log('📝 Creating new user profile:', newUserData)
+
   
       const { data: newUser, error: createError } = await supabase
         .from('users')
@@ -91,7 +89,7 @@ class PartyDatabaseBackend {
   
       if (createError) throw createError
   
-      console.log('✅ User profile created:', newUser.id)
+
       return { success: true, user: newUser }
   
     } catch (error) {
@@ -126,7 +124,7 @@ class PartyDatabaseBackend {
       }
   
       if (!user) {
-        console.log('⚠️ No customer profile found for auth_user_id:', userId)
+
         return { success: false, error: 'No customer profile found' }
       }
   
@@ -141,7 +139,7 @@ class PartyDatabaseBackend {
 
   async getPartyById(partyId) {
     try {
-      console.log('🔍 Getting party by ID:', partyId);
+
       
       const { data: party, error } = await supabase
         .from('parties')
@@ -157,7 +155,7 @@ class PartyDatabaseBackend {
         throw error;
       }
   
-      console.log('✅ Party found:', party.child_name);
+      
       return { success: true, party };
   
     } catch (error) {
@@ -221,20 +219,6 @@ class PartyDatabaseBackend {
         submitted_at: partyDetails.submittedAt || new Date().toISOString(),
         status: partyDetails.status || 'draft'
       }
-  
-      console.log('🎉 Creating party with delivery address:', {
-        delivery_address: {
-          line1: party.delivery_address_line_1,
-          line2: party.delivery_address_line_2,
-          city: party.delivery_city,
-          postcode: party.delivery_postcode
-        },
-        contact_info: {
-          name: party.parent_name,
-          email: party.parent_email,
-          phone: party.parent_phone
-        }
-      });
 
   
 
@@ -358,7 +342,7 @@ async getActivePlannedParty() {
 
       if (error) throw error
 
-      console.log('✅ Party plan updated:', partyId)
+
       return { success: true, party: updatedParty }
 
     } catch (error) {
@@ -392,7 +376,7 @@ async getActivePlannedParty() {
 
       if (error) throw error
 
-      console.log('✅ Party payment status updated:', partyId)
+ 
       return { success: true, party: updatedParty }
 
     } catch (error) {
@@ -404,7 +388,7 @@ async getActivePlannedParty() {
   // Add this to your partyDatabaseBackend
 async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
   try {
-    console.log('🔄 Updating enquiry payment status for:', { partyId, includedSuppliers })
+    
     
     // Update enquiries for suppliers that were included in this payment
     const { data: updatedEnquiries, error } = await supabase
@@ -420,7 +404,7 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
 
     if (error) throw error
 
-    console.log(`✅ Updated payment status for ${updatedEnquiries.length} enquiries`)
+  
     return { success: true, updatedEnquiries }
 
   } catch (error) {
@@ -435,7 +419,7 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
 // In partyDatabaseBackend.js - Ensure createEnquiry creates accepted status:
 async createEnquiry(partyId, supplier, packageData, message = '', specialRequests = '') {
   try {
-    console.log('🔧 createEnquiry - creating AUTO-ACCEPTED enquiry')
+ 
     
     const enquiryData = {
       party_id: partyId,
@@ -460,7 +444,7 @@ async createEnquiry(partyId, supplier, packageData, message = '', specialRequest
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     }
 
-    console.log('📝 Creating enquiry with status:', enquiryData.status)
+
 
     const { data: enquiry, error } = await supabase
       .from('enquiries')
@@ -470,11 +454,7 @@ async createEnquiry(partyId, supplier, packageData, message = '', specialRequest
 
     if (error) throw error
 
-    console.log('✅ Created auto-accepted enquiry:', {
-      id: enquiry.id,
-      status: enquiry.status,
-      auto_accepted: enquiry.auto_accepted
-    })
+  
     
     return { success: true, enquiry }
 
@@ -598,13 +578,7 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
     const packageType = selectedPackage?.packageType || 'standard'
     const supplierTypeEnhanced = selectedPackage?.supplierType || 'standard'
 
-    console.log('🎂 Processing supplier with potential cake customization:', {
-      supplierName: supplier.name,
-      packageType,
-      supplierTypeEnhanced,
-      hasCakeCustomization: !!cakeCustomization,
-      cakeData: cakeCustomization
-    })
+   
        
     // ✅ ENHANCED: Create supplier data with cake customization
     const supplierData = {
@@ -652,11 +626,7 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
       // Update description to include cake details for dashboard display
       supplierData.description = `${supplierData.description || supplier.name} - ${cakeCustomization.flavorName} flavor cake with personalized message`
       
-      console.log('🎂 Added cake customization to supplier data:', {
-        flavor: cakeCustomization.flavorName,
-        message: cakeCustomization.message,
-        updatedDescription: supplierData.description
-      })
+    
     }
        
     // Update the plan
@@ -666,7 +636,7 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
     const result = await this.updatePartyPlan(partyId, currentPlan)
            
     if (result.success) {
-      console.log('✅ Supplier added to party plan with customization data')
+   
          
       return {
         success: true,
@@ -689,19 +659,13 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
 // Enhanced sendIndividualEnquiry function to include cake customization in enquiry
 async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMessage = '') {
   try {
-    console.log('📧 Sending individual enquiry:', {
-      partyId,
-      supplierName: supplier.name,
-      supplierId: supplier.id,
-      packageId: selectedPackage?.id,
-      hasCakeCustomization: !!selectedPackage?.cakeCustomization
-    })
+  
 
     // ✅ EMERGENCY FIX: Add category if missing
     if (!supplier.category) {
-      console.log('🚨 EMERGENCY: supplier.category is undefined in sendIndividualEnquiry, adding it')
+
       supplier.category = 'Entertainment'
-      console.log('🔧 Fixed supplier.category for enquiry:', supplier.category)
+
     }
      
     // Get party details for enquiry context
@@ -733,7 +697,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       addon.supplierName === supplier.name
     )
        
-    console.log(`📦 Found ${relevantAddons.length} relevant add-ons for enquiry`)
+
        
     // Calculate quoted price (supplier + package + relevant add-ons)
     const supplierPrice = selectedPackage ? selectedPackage.price : supplier.priceFrom || 0
@@ -751,7 +715,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       enquiryMessage += `- Message: "${cake.message}"\n`
       enquiryMessage += `- Child: ${cake.childName}, Age ${cake.childAge}\n`
       
-      console.log('🎂 Added cake customization to enquiry message')
+ 
     }
        
     // ✅ ENHANCED: Create enquiry data with cake customization
@@ -777,7 +741,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       }) : null
     }
        
-    console.log('📤 Creating individual enquiry with customization:', enquiryData)
+    
        
     // Insert enquiry
     const { data: newEnquiry, error: insertError } = await supabase
@@ -798,7 +762,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       throw insertError
     }
        
-    console.log('✅ Individual enquiry created successfully with cake customization:', newEnquiry.id)
+ 
        
     return {
       success: true,
@@ -821,7 +785,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
    */
   async addAddonToParty(partyId, addon) {
     try {
-      console.log('🎁 Adding addon to database party:', { partyId, addonId: addon.id, addonName: addon.name })
+      
 
       // Get current party
       const { data: party, error: fetchError } = await supabase
@@ -867,7 +831,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       }
 
       if (existingAddonIndex !== -1) {
-        console.log('⚠️ Addon already exists, updating instead')
+
         // Update existing addon instead of returning error
         currentPlan.addons[existingAddonIndex] = {
           ...currentPlan.addons[existingAddonIndex],
@@ -875,7 +839,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
           updatedAt: new Date().toISOString()
         }
       } else {
-        console.log('➕ Adding new addon to database')
+
         // Add to addons array
         currentPlan.addons.push(addonData)
       }
@@ -884,7 +848,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       const result = await this.updatePartyPlan(partyId, currentPlan)
       
       if (result.success) {
-        console.log('✅ Addon operation completed successfully')
+
         return { 
           success: true, 
           addon: addonData,
@@ -948,7 +912,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
    */
   async removeAddonFromParty(partyId, addonId) {
     try {
-      console.log('🗑️ Removing addon from database party:', { partyId, addonId })
+   
 
       // Get current party
       const { data: party, error: fetchError } = await supabase
@@ -962,18 +926,18 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       const currentPlan = party.party_plan || {}
       
       if (!currentPlan.addons) {
-        console.log('⚠️ No addons found in party plan')
+
         return { success: false, error: 'No addons found in party plan' }
       }
 
       const addonIndex = currentPlan.addons.findIndex(addon => addon.id === addonId)
       
       if (addonIndex === -1) {
-        console.log('⚠️ Addon not found in party plan')
+  
         return { success: false, error: 'Add-on not found in party plan' }
       }
       
-      console.log('✅ Addon found, removing from database')
+
       const removedAddon = currentPlan.addons[addonIndex]
       currentPlan.addons.splice(addonIndex, 1)
 
@@ -981,7 +945,7 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       const result = await this.updatePartyPlan(partyId, currentPlan)
       
       if (result.success) {
-        console.log('✅ Addon removal completed successfully')
+
         return { 
           success: true, 
           removedAddon,
@@ -1038,30 +1002,30 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       // Categories to exclude from enquiries
       const excludeCategories = ['einvites', 'addons']
 
-      console.log('🔍 Processing party plan for enquiries:', Object.keys(partyPlan))
+  
 
       // Create enquiries for each supplier in the party plan
       for (const [category, supplierInfo] of Object.entries(partyPlan)) {
         // Skip excluded categories
         if (excludeCategories.includes(category)) {
-          console.log(`⏭️ Skipping ${category} (excluded category)`)
+
           continue
         }
 
         // Skip if no supplier
         if (!supplierInfo || !supplierInfo.name) {
-          console.log(`⏭️ Skipping ${category} (no supplier info)`)
+          
           continue
         }
 
-        console.log(`🔍 Resolving supplier for ${category}: ${supplierInfo.name}`)
+
 
         let actualSupplierId = null
 
         // OPTION 1: If localStorage has a valid UUID, use it
         if (supplierInfo.id && this.isValidUUID(supplierInfo.id)) {
           actualSupplierId = supplierInfo.id
-          console.log(`✅ Using supplier ID from localStorage: ${actualSupplierId}`)
+       
         }
         // OPTION 2: Search by business name
         else if (supplierInfo.name) {
@@ -1078,25 +1042,24 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
 
           if (matchingSuppliers && matchingSuppliers.length > 0) {
             actualSupplierId = matchingSuppliers[0].id
-            console.log(`✅ Found supplier ${supplierInfo.name} with ID: ${actualSupplierId}`)
+
           } else {
-            console.log(`⚠️ Could not find supplier ${supplierInfo.name} in database`)
+
             continue
           }
         }
         // OPTION 3: Use your business as fallback for testing
         else {
           actualSupplierId = 'e4520e35-b028-405e-a81f-f6d46a43f458'
-          console.log(`🔄 Using fallback supplier ID for ${category}: ${actualSupplierId}`)
+
         }
 
-        console.log(`✅ Creating enquiry for ${category}: ${supplierInfo.name} → ${actualSupplierId}`)
+ 
 
         // Get add-ons for this supplier category or general add-ons
 const partyPlan = party.party_plan || {}
 const allAddons = partyPlan.addons || []
 
-console.log(`🔍 All addons in party plan:`, allAddons)
 
 // Filter add-ons for this supplier (either linked to this supplier or general add-ons)
 const categoryAddons = allAddons.filter(addon => 
@@ -1106,7 +1069,7 @@ const categoryAddons = allAddons.filter(addon =>
   addon.supplierId === null
 )
 
-console.log(`📦 Addons for ${category} (${supplierInfo.name}):`, categoryAddons)
+
 
        
 const enquiryData = {
@@ -1121,12 +1084,12 @@ const enquiryData = {
   quoted_price: (supplierInfo.price || 0) + categoryAddons.reduce((sum, addon) => sum + (addon.price || 0), 0),
   status: 'pending'
 }
-console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_details)
+
 
         enquiries.push(enquiryData)
       }
 
-      console.log(`📊 Prepared ${enquiries.length} enquiries for sending`)
+
 
       if (enquiries.length === 0) {
         return { 
@@ -1135,8 +1098,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
         }
       }
 
-      // Insert all enquiries
-      console.log('📤 Inserting enquiries into database...')
+
       const { data: newEnquiries, error: insertError } = await supabase
         .from('enquiries')
         .insert(enquiries)
@@ -1153,7 +1115,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
         .update({ status: 'planned' })
         .eq('id', partyId)
 
-      console.log(`✅ Successfully sent ${newEnquiries.length} enquiries for party ${partyId}`)
+  
       
       return { 
         success: true, 
@@ -1208,7 +1170,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
       const result = await this.updatePartyPlan(partyId, currentPlan)
       
       if (result.success) {
-        console.log('📝 Supplier added to party plan without enquiry (Quick Add flow)')
+   
         
         return { 
           success: true, 
@@ -1231,7 +1193,7 @@ console.log(`📧 Creating enquiry with addon_details:`, enquiryData.addon_detai
 // In partyDatabaseBackend.js - FIXED autoAcceptEnquiries function
 async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
   try {
-    console.log('Auto-accepting enquiries for immediate booking:', { partyId, specificSupplierCategories });
+ 
     
     let query = supabase
     .from('enquiries')
@@ -1252,7 +1214,7 @@ async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
     
     if (error) throw error;
     
-    console.log(`Auto-accepted ${updatedEnquiries.length} enquiries`);
+    
     return { success: true, updatedEnquiries };
     
   } catch (error) {
@@ -1263,7 +1225,7 @@ async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
 // In partyDatabaseBackend.js - ADD this new function
 async autoAcceptSpecificEnquiry(enquiryId) {
   try {
-    console.log('✅ Auto-accepting specific enquiry:', enquiryId)
+   
     
     const { data: updatedEnquiry, error } = await supabase
       .from('enquiries')
@@ -1281,7 +1243,7 @@ async autoAcceptSpecificEnquiry(enquiryId) {
 
     if (error) throw error
 
-    console.log(`✅ Auto-accepted enquiry ${enquiryId}`)
+ 
     return { success: true, enquiry: updatedEnquiry }
 
   } catch (error) {
@@ -1292,7 +1254,7 @@ async autoAcceptSpecificEnquiry(enquiryId) {
 
 async getEnquiriesForParty(partyId) {
   try {
-    console.log('📋 Fetching fresh enquiries for party:', partyId)
+
     
     // ✅ IMPORTANT: Add a timestamp to prevent caching
     const timestamp = Date.now()
@@ -1314,16 +1276,11 @@ async getEnquiriesForParty(partyId) {
       
     if (error) throw error
 
-    console.log(`✅ Fetched ${enquiries?.length || 0} enquiries from database`)
+
     
     // ✅ DEBUG: Log the auto_accepted status of each enquiry
     enquiries?.forEach((enquiry) => {
-      console.log(`Enquiry ${enquiry.id} (${enquiry.supplier_category}):`, {
-        auto_accepted: enquiry.auto_accepted,
-        status: enquiry.status,
-        payment_status: enquiry.payment_status,
-        supplier_response_date: enquiry.supplier_response_date
-      })
+    
     })
 
     return { success: true, enquiries: enquiries || [] }
@@ -1337,12 +1294,7 @@ async getEnquiriesForParty(partyId) {
 // ✅ ALSO: Make sure your supplier response update actually works:
 async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isDepositPaid = false) {
   try {
-    console.log('🎯 Updating enquiry in database:', {
-      enquiryId,
-      response,
-      isDepositPaid,
-      willClearAutoAccepted: isDepositPaid && response === 'accepted'
-    })
+  
 
     const updateData = {
       status: response,
@@ -1354,7 +1306,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
     // ✅ CRITICAL: Clear auto_accepted when supplier manually accepts deposit-paid booking
     if (isDepositPaid && response === 'accepted') {
       updateData.auto_accepted = false
-      console.log('✅ Setting auto_accepted = false for manual confirmation')
+
     }
 
     if (response === 'accepted' && finalPrice) {
@@ -1370,13 +1322,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
     if (error) throw error
 
-    console.log('✅ Database update successful:', {
-      id: updatedEnquiry.id,
-      auto_accepted: updatedEnquiry.auto_accepted,
-      status: updatedEnquiry.status,
-      payment_status: updatedEnquiry.payment_status
-    })
-
+  
     return { success: true, enquiry: updatedEnquiry }
 
   } catch (error) {
@@ -1386,7 +1332,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 }
   async hasPartyPendingEnquiries(partyId) {
     try {
-      console.log('🔍 Checking for pending enquiries for party:', partyId);
+
       
       const { data: enquiries, error } = await supabase
         .from('enquiries')
@@ -1402,7 +1348,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
   
       const hasPending = enquiries && enquiries.length > 0;
       
-      console.log(`📊 Found ${enquiries?.length || 0} pending enquiries`);
+
       
       return {
         success: true,
@@ -1457,7 +1403,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
   
       if (error) throw error
   
-      console.log('✅ Party updated:', partyId)
+
       return { success: true, party: updatedParty }
   
     } catch (error) {
@@ -1469,7 +1415,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
   async cancelEnquiryAndRemoveSupplier(partyId, supplierType) {
     try {
-      console.log('🚫 Cancelling enquiry and removing supplier:', { partyId, supplierType });
+ 
       
       // Step 1: Find the enquiry
       const { data: enquiry, error: findError } = await supabase
@@ -1487,8 +1433,8 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
       
       // Mark enquiry as withdrawn by user
       if (enquiry) {
-        console.log('📧 Marking enquiry as withdrawn by user:', enquiry.id);
-        console.log('🔍 Enquiry status:', enquiry.status);
+     
+       
         
         // ✅ NEW: Different update based on enquiry status
         const updateData = {
@@ -1499,7 +1445,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         // ✅ KEY FIX: If enquiry was declined, mark replacement as processed
         if (enquiry.status === 'declined') {
           updateData.replacement_processed = true
-          console.log('🔄 Enquiry was declined - marking replacement as processed')
+  
         }
         
         const { error: withdrawError } = await supabase
@@ -1512,7 +1458,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
           throw withdrawError;
         }
         
-        console.log('✅ Enquiry marked as withdrawn and replacement processed if needed');
+     
       } else {
         console.log('⚠️ No enquiry found to cancel');
       }
@@ -1524,7 +1470,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         throw new Error(`Failed to remove supplier: ${removeResult.error}`);
       }
       
-      console.log('✅ Supplier removed from party plan');
+
       
       return {
         success: true,
@@ -1549,17 +1495,12 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
   async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMessage = '') {
     try {
-      console.log('📧 Sending individual enquiry:', {
-        partyId,
-        supplierName: supplier.name,
-        supplierId: supplier.id,
-        packageId: selectedPackage?.id
-      })
+    
      // ✅ EMERGENCY FIX: Add category if missing (same as addSupplierToParty)
      if (!supplier.category) {
-      console.log('🚨 EMERGENCY: supplier.category is undefined in sendIndividualEnquiry, adding it')
+
       supplier.category = 'Entertainment'
-      console.log('🔧 Fixed supplier.category for enquiry:', supplier.category)
+
     }
 
       // Get party details for enquiry context
@@ -1591,7 +1532,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         addon.supplierName === supplier.name
       )
   
-      console.log(`📦 Found ${relevantAddons.length} relevant add-ons for enquiry`)
+     
   
       // Calculate quoted price (supplier + package + relevant add-ons)
       const supplierPrice = selectedPackage ? selectedPackage.price : supplier.priceFrom || 0
@@ -1615,7 +1556,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
       }
   
-      console.log('📤 Creating individual enquiry:', enquiryData)
+
   
       // Insert enquiry
       const { data: newEnquiry, error: insertError } = await supabase
@@ -1636,7 +1577,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         throw insertError
       }
   
-      console.log('✅ Individual enquiry created successfully:', newEnquiry.id)
+      
   
       return {
         success: true,
@@ -1657,12 +1598,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 // 3. Add the markReplacementAsProcessed method to your partyDatabaseBackend.js
 async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierId = null) {
   try {
-    console.log('🔄 === REPLACEMENT PROCESSING DEBUG ===')
-    console.log('🔄 Input parameters:', { 
-      partyId, 
-      supplierCategory, 
-      replacementSupplierId 
-    })
+    
 
     // Update the declined enquiry to mark replacement as processed
     const { data: updatedEnquiry, error: updateError } = await supabase
@@ -1684,10 +1620,10 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
     }
 
     if (updatedEnquiry) {
-      console.log('✅ Successfully updated enquiry:', updatedEnquiry)
+
       return { success: true, enquiry: updatedEnquiry }
     } else {
-      console.log('⚠️ No matching declined enquiry found to update')
+ 
       return { success: false, error: 'No matching declined enquiry found' }
     }
 
@@ -1702,7 +1638,7 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
    * (You might already have this, but here's the implementation)
    */
   mapCategoryToSupplierType(category) {
-    console.log('🔍 Mapping category:', category, typeof category)
+
     
     const mapping = {
       // Standard supplier categories
@@ -1734,7 +1670,7 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
     }
     
     const result = mapping[category] || mapping[category?.toLowerCase()] || null
-    console.log('✅ Mapped', category, 'to', result)
+
     
     return result
   }
@@ -1768,11 +1704,7 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
 // Add this to your partyDatabaseBackend
 async createUnpaidBookingRecord(partyId, supplier, packageData, reason = null) {
   try {
-    console.log('Creating unpaid booking record (NO enquiry sent):', {
-      partyId,
-      supplierName: supplier.name,
-      packageId: packageData.id
-    });
+  
 
     // Insert ONLY the database record - no enquiry sending
     const { data: enquiry, error } = await supabase
@@ -1856,7 +1788,7 @@ async getGiftSuggestions(theme, age, category = null, limit = 20) {
         if (real[i]) combined.push({ ...real[i], source: 'amazon' });
       }
 
-      console.log('📊 Enhanced suggestions:', { curated: curated.length, real: real.length });
+
       return { success: true, suggestions: combined.slice(0, limit) };
     } else {
       return this.getCuratedGiftSuggestions(theme, age, category, limit);
@@ -1934,7 +1866,7 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
    */
   async addCustomItemToRegistry(registryId, itemData) {
     try {
-      console.log('📝 [Backend] Adding custom item to registry:', itemData.name);
+ 
       
       const registryItem = {
         registry_id: registryId,
@@ -1961,7 +1893,7 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
         };
       }
       
-      console.log('✅ [Backend] Custom item added to registry:', newItem.id);
+      
       
       return {
         success: true,
@@ -2009,7 +1941,7 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
 
   async getRegistryById(registryId) {
     try {
-      console.log('🔍 [Backend] Loading gift registry by ID:', registryId);
+   
       
       // Get the registry
       const { data: registry, error: registryError } = await supabase
@@ -2040,12 +1972,12 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
         };
       }
       
-      console.log('✅ [Backend] Registry loaded:', registry);
+
       
       // Get registry items from the correct table: registry_items
       let items = [];
       try {
-        console.log('🔍 [Backend] Loading registry items from registry_items table...');
+
         
         const { data: rawItems, error: itemsError } = await supabase
           .from('registry_items') // ✅ CORRECT TABLE NAME
@@ -2063,7 +1995,7 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
           };
         }
         
-        console.log('✅ [Backend] Raw items loaded:', rawItems?.length || 0);
+ 
         items = rawItems || [];
         
       } catch (itemsError) {
@@ -2071,7 +2003,7 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
         items = [];
       }
       
-      console.log('✅ [Backend] Registry loaded by ID with', items?.length || 0, 'items');
+   
       
       return {
         success: true,
@@ -2094,7 +2026,7 @@ async getCuratedGiftSuggestions(theme, age, category = null, limit = 20) {
 
 async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
   try {
-    console.log('🎁 [Backend] Adding curated item to registry:', giftItemId);
+    
     
     const registryItem = {
       registry_id: registryId,
@@ -2121,7 +2053,7 @@ async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
       };
     }
     
-    console.log('✅ [Backend] Curated item added to registry:', newItem.id);
+
     
     return {
       success: true,
@@ -2141,7 +2073,7 @@ async addCuratedItemToRegistry(registryId, giftItemId, itemData = {}) {
 // Also fix the getPartyGiftRegistry method:
 async getPartyGiftRegistry(partyId) {
   try {
-    console.log('🔍 [Backend] Loading gift registry for party:', partyId);
+
     
     // Get the registry from party_gift_registries table
     const { data: registry, error: registryError } = await supabase
@@ -2183,7 +2115,7 @@ async getPartyGiftRegistry(partyId) {
       };
     }
     
-    console.log('✅ [Backend] Found gift registry:', registry.id);
+
     
     // Get registry items from the correct table: registry_items
     let items = [];
@@ -2204,7 +2136,7 @@ async getPartyGiftRegistry(partyId) {
       console.error('⚠️ [Backend] Exception fetching registry items:', itemsError);
     }
     
-    console.log('✅ [Backend] Registry loaded with', items?.length || 0, 'items');
+  
     
     return {
       success: true,
@@ -2265,7 +2197,7 @@ async getPartyGiftRegistry(partyId) {
    */
   async removeItemFromRegistry(registryItemId) {
     try {
-      console.log('🗑️ [Backend] Removing item from registry:', registryItemId);
+      
       
       const { error } = await supabase
         .from('registry_items') // ✅ CORRECT TABLE NAME
@@ -2280,7 +2212,7 @@ async getPartyGiftRegistry(partyId) {
         };
       }
       
-      console.log('✅ [Backend] Item removed from registry');
+
       
       return {
         success: true,
@@ -2320,8 +2252,7 @@ async getPartyGiftRegistry(partyId) {
   }
   async createGiftRegistry(partyId, registryData = {}) {
     try {
-      console.log('🎁 [Backend] Creating gift registry for party:', partyId);
-      console.log('📝 [Backend] Registry data:', registryData);
+   
       
       // First get the party details to make a nice name
       const { data: party, error: partyError } = await supabase
@@ -2343,7 +2274,7 @@ async getPartyGiftRegistry(partyId) {
         is_active: true
       };
       
-      console.log('💾 [Backend] Inserting registry record:', registryRecord);
+
       
       const { data: newRegistry, error: registryError } = await supabase
         .from('party_gift_registries')
@@ -2360,7 +2291,7 @@ async getPartyGiftRegistry(partyId) {
         };
       }
       
-      console.log('✅ [Backend] Registry created successfully:', newRegistry);
+    
       
       // Verify it was saved by reading it back
       const { data: verifyRegistry, error: verifyError } = await supabase
@@ -2397,7 +2328,7 @@ async getPartyGiftRegistry(partyId) {
    */
   async claimRegistryItem(registryItemId, guestName) {
     try {
-      console.log('🎁 [Backend] Claiming registry item:', registryItemId, 'by', guestName);
+
       
       const { data: updatedItem, error } = await supabase
         .from('registry_items') // ✅ CORRECT TABLE NAME
@@ -2418,7 +2349,7 @@ async getPartyGiftRegistry(partyId) {
         };
       }
       
-      console.log('✅ [Backend] Item claimed successfully');
+  
       
       return {
         success: true,
@@ -2535,7 +2466,7 @@ async getPartyGiftRegistry(partyId) {
 // Add this to your PartyDatabaseBackend class:
 async addRealProductToRegistry(registryId, product, itemData = {}) {
   try {
-    console.log('🛒 [Backend] Adding real product to registry:', product.name);
+
     
     const registryItem = {
       registry_id: registryId,
@@ -2552,7 +2483,7 @@ async addRealProductToRegistry(registryId, product, itemData = {}) {
       notes: itemData.notes || null
     };
     
-    console.log('💾 [Backend] Inserting registry item:', registryItem);
+    
     
     const { data: newItem, error } = await supabase
       .from('registry_items') // ✅ CORRECT TABLE NAME
@@ -2568,7 +2499,7 @@ async addRealProductToRegistry(registryId, product, itemData = {}) {
       };
     }
     
-    console.log('✅ [Backend] Product added to registry:', newItem.id);
+    
     
     return {
       success: true,
@@ -2586,7 +2517,7 @@ async addRealProductToRegistry(registryId, product, itemData = {}) {
 }
 async findSuppliersByCategory(excludeId, category) {
   try {
-    console.log(`🔍 Searching for category: "${category}" (excluding ID: ${excludeId})`)
+    
     
     // Build query with proper UUID handling
     let query = supabase
@@ -2609,11 +2540,9 @@ async findSuppliersByCategory(excludeId, category) {
       return []
     }
     
-    console.log(`📊 Found ${allSuppliers?.length || 0} total suppliers to filter`)
-    
     // Log categories for debugging
     const allCategories = allSuppliers?.map(s => s.data?.category).filter(Boolean)
-    console.log('📋 All categories in database:', [...new Set(allCategories)])
+  
     
     // Filter suppliers by category with flexible matching
     const matchingSuppliers = allSuppliers?.filter(supplier => {
@@ -2636,15 +2565,13 @@ async findSuppliersByCategory(excludeId, category) {
       return isMatch
     }) || []
     
-    console.log(`🎯 Found ${matchingSuppliers.length} matching suppliers for category "${category}"`)
+
     
     // If this is a test and we found real suppliers, great!
     if (matchingSuppliers.length > 0) {
       return matchingSuppliers
     }
     
-    // If no matches and this is a test, don't return empty - let the mock system handle it
-    console.log('⚠️ No category matches found')
     return []
     
   } catch (error) {
@@ -2655,7 +2582,7 @@ async findSuppliersByCategory(excludeId, category) {
 
 
 getFallbackCategories(originalCategory) {
-  console.log('🔄 Getting fallbacks for:', originalCategory)
+  
   
   // Map enquiry categories (lowercase) to actual database categories (title case)
   const categoryMappings = {
@@ -2696,7 +2623,7 @@ getFallbackCategories(originalCategory) {
     cat.toLowerCase() !== originalCategory?.toLowerCase()
   )
   
-  console.log('📋 Fallback categories:', finalFallbacks)
+
   return finalFallbacks
 }
 
@@ -2707,11 +2634,9 @@ getFallbackCategories(originalCategory) {
  */
 async findReplacementSuppliers(rejectedSupplier, userPreferences = {}) {
   try {
-    console.log('🔍 Finding replacements for:', rejectedSupplier.name)
-    console.log('🔍 Rejected supplier category:', rejectedSupplier.category)
+
     
-    // First try exact category match
-    console.log('🎯 Step 1: Trying exact category match...')
+    
     const exactMatches = await this.findSuppliersByCategory(rejectedSupplier.id, rejectedSupplier.category)
     
     if (exactMatches.length > 0) {
@@ -2719,23 +2644,22 @@ async findReplacementSuppliers(rejectedSupplier, userPreferences = {}) {
       return this.transformSupplierData(exactMatches, rejectedSupplier, userPreferences)
     }
     
-    console.log('⚠️ No exact matches found, trying related categories...')
+
     
-    // Try related/fallback categories
-    console.log('🎯 Step 2: Trying fallback categories...')
+  
     const fallbackCategories = this.getFallbackCategories(rejectedSupplier.category)
     
     for (const fallbackCategory of fallbackCategories) {
-      console.log(`🔍 Trying fallback category: "${fallbackCategory}"`)
+
       const fallbackMatches = await this.findSuppliersByCategory(rejectedSupplier.id, fallbackCategory)
       
       if (fallbackMatches.length > 0) {
-        console.log(`✅ Found ${fallbackMatches.length} suppliers in fallback category: ${fallbackCategory}`)
+
         return this.transformSupplierData(fallbackMatches, rejectedSupplier, userPreferences)
       }
     }
     
-    console.log('❌ No suppliers found in any category!')
+
     
     // Development fallback
     if (process.env.NODE_ENV === 'development') {
@@ -2771,23 +2695,16 @@ async findReplacementSuppliers(rejectedSupplier, userPreferences = {}) {
  * Transform and score supplier data - KEEP THIS HELPER METHOD
  */
 transformSupplierData(suppliers, rejectedSupplier, userPreferences) {
-  console.log('🔄 Transforming supplier data for', suppliers.length, 'suppliers')
+
   
   if (!suppliers || suppliers.length === 0) {
-    console.log('⚠️ No suppliers to transform')
+
     return []
   }
   
   // Transform the data to match expected format
   const transformedAlternatives = suppliers.map((supplier, index) => {
     const supplierData = supplier.data || {}
-    
-    console.log(`🔍 Transforming supplier ${index + 1}:`, {
-      business_name: supplier.business_name,
-      category: supplierData.category,
-      priceFrom: supplierData.priceFrom,
-      rating: supplierData.rating
-    })
     
     return {
       id: supplier.id,
@@ -2808,7 +2725,7 @@ transformSupplierData(suppliers, rejectedSupplier, userPreferences) {
     }
   })
   
-  console.log('✅ Transformed suppliers successfully')
+
   
   // Score and rank the alternatives
   const scoredAlternatives = transformedAlternatives.map(supplier => ({
@@ -2954,13 +2871,13 @@ determineReplacementReason(oldSupplier, newSupplier) {
  */
 async createReplacementForSupplier(rejectedSupplier, userPreferences = {}) {
   try {
-    console.log('🔄 Creating replacement for:', rejectedSupplier.name)
+
     
     // Find alternatives
     const alternatives = await this.findReplacementSuppliers(rejectedSupplier, userPreferences)
     
     if (alternatives.length === 0) {
-      console.log('❌ No alternatives found')
+   
       return null
     }
     
@@ -3001,7 +2918,7 @@ async createReplacementForSupplier(rejectedSupplier, userPreferences = {}) {
       createdAt: new Date().toISOString()
     }
     
-    console.log('✅ Created replacement:', replacement)
+
     return replacement
     
   } catch (error) {
@@ -3016,7 +2933,7 @@ async createReplacementForSupplier(rejectedSupplier, userPreferences = {}) {
  */
 async handleSupplierRejection(partyId, enquiryId, rejectedSupplier, userPreferences = {}) {
   try {
-    console.log('🚫 Handling supplier rejection:', rejectedSupplier.name)
+
     
     // DON'T mark as processed here - let user decide first
     // await supabase
@@ -3056,7 +2973,7 @@ async handleApproveReplacement(replacementId)  {
     const replacement = replacements.find(r => r.id === replacementId)
     if (!replacement) return
 
-    console.log('✅ Approving replacement:', replacementId)
+
     
     const result = await partyDatabaseBackend.applyReplacementToParty(
       partyId, 
@@ -3086,7 +3003,7 @@ async handleApproveReplacement(replacementId)  {
         new Promise(resolve => setTimeout(resolve, 1000)).then(() => refreshEnquiries())
       ])
       
-      console.log('✅ Replacement approved and marked as processed')
+
     }
     
   } catch (error) {
@@ -3096,7 +3013,7 @@ async handleApproveReplacement(replacementId)  {
 
 
 mapCategoryToSupplierType(category) {
-  console.log('🔍 Mapping category:', category, typeof category)
+
   
   // Handle both the enquiry category (lowercase) and supplier category (title case)
   const mapping = {
@@ -3129,13 +3046,13 @@ mapCategoryToSupplierType(category) {
   }
   
   const result = mapping[category] || mapping[category?.toLowerCase()] || null
-  console.log('✅ Mapped', category, 'to', result)
+
   
   return result
 }
 async sendEnquiryToReplacementSupplier(partyId, replacement, originalEnquiryId) {
   try {
-    console.log('📧 Sending enquiry to replacement supplier:', replacement.newSupplier.name)
+ 
     
     // Get party details for enquiry
     const { data: party, error: partyError } = await supabase
@@ -3170,7 +3087,7 @@ async sendEnquiryToReplacementSupplier(partyId, replacement, originalEnquiryId) 
       // Removed the columns that don't exist yet
     }
     
-    console.log('📤 Creating new enquiry:', newEnquiryData)
+
     
     // Insert new enquiry
     const { data: newEnquiry, error: insertError } = await supabase
@@ -3197,7 +3114,7 @@ async sendEnquiryToReplacementSupplier(partyId, replacement, originalEnquiryId) 
       })
       .eq('id', originalEnquiryId)
     
-    console.log('✅ New enquiry created and original enquiry marked as processed')
+
     
     return {
       success: true,
@@ -3218,7 +3135,7 @@ async sendEnquiryToReplacementSupplier(partyId, replacement, originalEnquiryId) 
  */
 async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
   try {
-    console.log('✅ Applying replacement to party:', partyId)
+   
     
     // Get current party
     const { data: party, error: fetchError } = await supabase
@@ -3235,7 +3152,7 @@ async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
     let supplierType = this.mapCategoryToSupplierType(replacement.category)
     
     if (!supplierType) {
-      console.log('⚠️ Standard mapping failed, trying alternative approaches...')
+   
       
       const planKeys = Object.keys(currentPlan).filter(key => key !== 'addons')
       const matchingKey = planKeys.find(key => {
@@ -3248,14 +3165,14 @@ async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
       
       if (matchingKey) {
         supplierType = matchingKey
-        console.log('✅ Found supplier type from party plan:', supplierType)
+      
       } else {
         const possibleTypes = ['entertainment', 'venue', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography']
         supplierType = possibleTypes.find(type => 
           type.toLowerCase() === replacement.category.toLowerCase()
         ) || 'entertainment'
         
-        console.log('🔄 Using fallback supplier type:', supplierType)
+
       }
     }
     
@@ -3291,14 +3208,14 @@ async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
       const enquiryResult = await this.sendEnquiryToReplacementSupplier(partyId, replacement, originalEnquiryId)
       if (enquiryResult.success) {
         newEnquiry = enquiryResult.newEnquiry
-        console.log('✅ New enquiry sent to replacement supplier')
+
       } else {
         console.error('❌ Failed to send enquiry to replacement:', enquiryResult.error)
         // Don't fail the whole process if enquiry fails
       }
     }
     
-    console.log('✅ Replacement applied successfully')
+
     
     return {
       success: true,
@@ -3317,7 +3234,7 @@ async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
 
 async saveEInvites(partyId, einviteData) {
   try {
-    console.log('💾 Saving e-invites for party:', partyId);
+ 
     
     const { data: party, error: fetchError } = await supabase
       .from('parties')
@@ -3331,7 +3248,7 @@ async saveEInvites(partyId, einviteData) {
     }
 
     const currentPlan = party.party_plan || {};
-    console.log('📋 Current party plan keys:', Object.keys(currentPlan));
+
 
     // Generate unique invite ID if not exists
     if (!einviteData.inviteId) {
@@ -3376,7 +3293,7 @@ async saveEInvites(partyId, einviteData) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ E-invites saved successfully');
+
     return { success: true, einvites: einvitesData, party: data };
   } catch (error) {
     console.error('❌ Error in saveEInvites:', error);
@@ -3389,7 +3306,7 @@ async saveEInvites(partyId, einviteData) {
  */
 async getEInvites(partyId) {
   try {
-    console.log('🔍 Getting e-invites for party:', partyId);
+    
     
     const { data: party, error } = await supabase
       .from('parties')
@@ -3415,7 +3332,7 @@ async getEInvites(partyId) {
 
 async createPublicInvite(inviteData) {
   try {
-    console.log('🌐 Creating public invite');
+
     
     const publicInvite = {
       id: inviteData.inviteId,
@@ -3444,7 +3361,6 @@ async createPublicInvite(inviteData) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Public invite created:', data.id);
     return { success: true, publicInvite: data };
   } catch (error) {
     console.error('❌ Error in createPublicInvite:', error);
@@ -3455,7 +3371,7 @@ async createPublicInvite(inviteData) {
 
 async getPublicInvite(inviteId) {
   try {
-    console.log('🔍 [Backend] Getting public invite:', inviteId);
+  
     
     const { data: invite, error } = await supabase
       .from('public_invites')
@@ -3483,7 +3399,7 @@ async getPublicInvite(inviteId) {
       };
     }
 
-    console.log('✅ [Backend] Found public invite:', invite.id);
+
     
     // Parse the invite_data JSON
     let parsedInviteData = {};
@@ -3496,14 +3412,11 @@ async getPublicInvite(inviteId) {
       parsedInviteData = {};
     }
 
-    console.log('📋 [Backend] Parsed invite data:', parsedInviteData);
-
     // Get party details if we have a party ID
     let partyDetails = null;
     const partyId = parsedInviteData?.partyId;
     
     if (partyId) {
-      console.log('🔍 [Backend] Loading party details for ID:', partyId);
       
       const { data: party, error: partyError } = await supabase
         .from('parties')
@@ -3512,7 +3425,7 @@ async getPublicInvite(inviteId) {
         .single();
 
       if (!partyError && party) {
-        console.log('✅ [Backend] Loaded party details');
+
         partyDetails = party;
       } else {
         console.log('⚠️ [Backend] Could not load party details:', partyError?.message || 'Unknown error');
@@ -3531,7 +3444,6 @@ async getPublicInvite(inviteId) {
       parties: partyDetails
     };
 
-    console.log('✅ [Backend] Public invite loaded successfully with party data');
     return { 
       success: true, 
       invite: structuredInvite 
@@ -3548,8 +3460,6 @@ async getPublicInvite(inviteId) {
 }
 async findGiftRegistryForParty(partyId) {
   try {
-    console.log('🔍 [Backend] Finding gift registry for party:', partyId)
-    
     // Find existing registry by party ID
     const { data: registry, error: registryError } = await supabase
       .from('party_gift_registries')
@@ -3559,7 +3469,7 @@ async findGiftRegistryForParty(partyId) {
       .single()
     
     if (!registryError && registry) {
-      console.log('✅ [Backend] Found registry by party ID:', registry.id)
+     
       return {
         success: true,
         registry: registry,
@@ -3567,8 +3477,7 @@ async findGiftRegistryForParty(partyId) {
       }
     }
     
-    // If not found, return no registry (remove fallback logic)
-    console.log('❌ [Backend] No gift registry found for party:', partyId)
+
     return {
       success: false,
       error: 'No gift registry found for this party',
@@ -3603,8 +3512,7 @@ async getGiftRegistryUrlForParty(partyId) {
       }
     }
     
-    // Fallback to known working registry
-    console.log('⚠️ [Backend] Using hardcoded fallback registry')
+
     return {
       success: true,
       url: `/gift-registry/d8588236-6060-4501-9627-19b8f3c5b428/preview`,
@@ -3626,7 +3534,7 @@ async getGiftRegistryUrlForParty(partyId) {
  */
 async submitRSVP(inviteId, rsvpData) {
   try {
-    console.log('📝 Submitting RSVP for invite:', inviteId);
+
     
     const rsvp = {
       invite_id: inviteId,
@@ -3655,7 +3563,7 @@ async submitRSVP(inviteId, rsvpData) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ RSVP submitted successfully');
+
     return { success: true, rsvp: data };
   } catch (error) {
     console.error('❌ Error in submitRSVP:', error);
@@ -3669,7 +3577,7 @@ async submitRSVP(inviteId, rsvpData) {
  */
 async getPartyRSVPs(partyId) {
   try {
-    console.log('📊 Getting RSVPs for party:', partyId);
+
     
     // Get all active invites with their JSONB data in ONE query
     const { data: invites, error: invitesError } = await supabase
@@ -3717,7 +3625,7 @@ async getPartyRSVPs(partyId) {
  */
 async updateGuestStatus(partyId, guestId, newStatus) {
   try {
-    console.log('📝 Updating guest status:', { partyId, guestId, newStatus });
+
     
     // Get the party data first
     const { data: party, error: fetchError } = await supabase
@@ -3780,7 +3688,7 @@ async updateGuestStatus(partyId, guestId, newStatus) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Guest status updated successfully');
+
     return { 
       success: true, 
       party: data,
@@ -3950,7 +3858,7 @@ async addGuestToList(partyId, guestData) {
  */
 async removeGuestFromList(partyId, guestId) {
   try {
-    console.log('🗑️ Removing guest from party:', { partyId, guestId });
+  
     
     // Get current party data
     const { data: party, error: fetchError } = await supabase
@@ -3994,7 +3902,7 @@ async removeGuestFromList(partyId, guestId) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Guest removed successfully');
+
     return { 
       success: true, 
       party: data,
@@ -4012,7 +3920,7 @@ async removeGuestFromList(partyId, guestId) {
  */
 async getRSVPAnalytics(partyId) {
   try {
-    console.log('📊 Getting RSVP analytics for party:', partyId);
+
     
     const result = await this.getPartyRSVPs(partyId);
     if (!result.success) {
@@ -4048,8 +3956,7 @@ async getRSVPAnalytics(partyId) {
  */
 async submitRSVP(inviteId, rsvpData) {
   try {
-    console.log('📝 Submitting RSVP for invite:', inviteId);
-    console.log('📝 RSVP data received:', rsvpData);
+  
     
     const rsvp = {
       invite_id: inviteId,
@@ -4065,7 +3972,7 @@ async submitRSVP(inviteId, rsvpData) {
       submitted_at: new Date().toISOString(),
     };
 
-    console.log('📝 RSVP object being saved:', rsvp);
+
 
     const { data, error } = await supabase
       .from('rsvps')
@@ -4076,15 +3983,14 @@ async submitRSVP(inviteId, rsvpData) {
       .select()
       .single();
 
-    console.log('🔍 Database response - data:', data);
-    console.log('🔍 Database response - error:', error);
+   
 
     if (error) {
       console.error('❌ Database error:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('✅ RSVP saved successfully');
+
     return { success: true, rsvp: data };
   } catch (error) {
     console.error('❌ Error in submitRSVP:', error);
@@ -4110,7 +4016,7 @@ async hasCreatedEInvites(partyId) {
 }
 async hasPartyPendingEnquiries(partyId) {
   try {
-    console.log('🔍 Checking for pending enquiries for party:', partyId);
+    
     
     const { data: enquiries, error } = await supabase
       .from('enquiries')
@@ -4126,7 +4032,7 @@ async hasPartyPendingEnquiries(partyId) {
 
     const hasPending = enquiries && enquiries.length > 0;
     
-    console.log(`📊 Found ${enquiries?.length || 0} pending enquiries`);
+
     
     return {
       success: true,
@@ -4146,7 +4052,7 @@ async hasPartyPendingEnquiries(partyId) {
  */
 async isPartyAwaitingResponses(partyId) {
   try {
-    console.log('🔍 Checking if party is awaiting responses:', partyId);
+
     
     // Get party status first
     const { data: party, error: partyError } = await supabase
@@ -4175,7 +4081,7 @@ async isPartyAwaitingResponses(partyId) {
       }
     }
 
-    console.log('✅ Party is not awaiting responses (can modify plan)');
+ 
     return {
       success: true,
       isAwaiting: false,
@@ -4250,7 +4156,7 @@ async getUserParties(userId) {
  */
 async addPartyGuest(partyId, guestData) {
   try {
-    console.log('👤 Adding guest to party:', { partyId, childName: guestData.childName });
+
     
     // Get current party data
     const { data: party, error: fetchError } = await supabase
@@ -4302,7 +4208,7 @@ async addPartyGuest(partyId, guestData) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Guest added successfully');
+
     return { 
       success: true, 
       guest: newGuest
@@ -4319,7 +4225,7 @@ async addPartyGuest(partyId, guestData) {
  */
 async getPartyGuests(partyId) {
   try {
-    console.log('📋 Getting guests for party:', partyId);
+  
     
     // Get the party data
     const { data: party, error: fetchError } = await supabase
@@ -4337,7 +4243,7 @@ async getPartyGuests(partyId) {
     const einvites = currentPlan.einvites || {};
     const guestList = einvites.guestList || [];
 
-    console.log(`✅ Found ${guestList.length} guests`);
+
     return { 
       success: true, 
       guests: guestList
@@ -4354,7 +4260,7 @@ async getPartyGuests(partyId) {
  */
 async removePartyGuest(partyId, guestId) {
   try {
-    console.log('🗑️ Removing guest from party:', { partyId, guestId });
+
     
     // Get current party data
     const { data: party, error: fetchError } = await supabase

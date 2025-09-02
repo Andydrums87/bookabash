@@ -156,7 +156,7 @@ const SupplierCard = ({ supplier }) => {
               <Heart
                 className={`w-4 h-4 ${
                   isSupplierFavorite 
-                    ? "fill-red-500 text-red-500" 
+                    ? "fill-[hsl(var(--primary-800))] text-primary-800" 
                     : "text-gray-600 hover:text-red-500"
                 }`}
               />

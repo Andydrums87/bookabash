@@ -10,7 +10,7 @@ class RapidAPIProductService {
     async searchAmazonProducts(query, maxResults = 10) {
       // TEMPORARY: Use fake data until API key is fixed
       if (!this.apiKey) {
-        console.log('⚠️ No API key found, using fake data for:', query);
+
         return this.getFakeProducts(query, maxResults);
       }
   
@@ -40,7 +40,7 @@ class RapidAPIProductService {
         const data = await response.json();
         
         if (data.status === 'OK' && data.data?.products) {
-          console.log('✅ Found', data.data.products.length, 'products');
+     
           return this.formatRapidAPIResults(data.data.products.slice(0, maxResults));
         } else {
           console.error('❌ API Error:', data);
@@ -48,7 +48,7 @@ class RapidAPIProductService {
         }
       } catch (error) {
         console.error('❌ RapidAPI search error:', error);
-        console.log('🔄 Falling back to fake data...');
+
         return this.getFakeProducts(query, maxResults); // Fallback to fake
       }
     }
@@ -238,7 +238,7 @@ class RapidAPIProductService {
   // Enhanced suggestions function
   export async function getEnhancedGiftSuggestions(theme, age, category = null, limit = 20) {
     try {
-      console.log('🎁 Getting enhanced gift suggestions for:', { theme, age, category });
+      
       
       const rapidAPI = new RapidAPIProductService();
       
@@ -261,7 +261,7 @@ class RapidAPIProductService {
         ? realProducts.value 
         : [];
   
-      console.log('📊 Results:', { curated: curated.length, real: real.length });
+
       
       // Interleave curated and real products
       const combined = [];

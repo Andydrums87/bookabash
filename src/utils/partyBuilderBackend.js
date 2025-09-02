@@ -266,7 +266,7 @@ class PartyBuilderBackend {
     const budgetFiltered = suppliers.filter(s => s.priceFrom <= categoryBudget * 1.3);
     
     if (budgetFiltered.length === 0) {
-      console.log(`No ${category} suppliers within budget range`);
+
       return { supplier: null, reason: 'no-suppliers-in-budget' };
     }
     
@@ -321,7 +321,7 @@ class PartyBuilderBackend {
     
     // Fallback: Best supplier regardless of availability
     const bestFallback = sorted[0];
-    console.log(`Selected fallback ${category}: ${bestFallback.name} (score: ${bestFallback.compositeScore}) - needs confirmation`);
+
     
     return { 
       supplier: {
@@ -353,7 +353,7 @@ class PartyBuilderBackend {
     const guests = parseInt(guestCount);
     const isLargeParty = guests >= 30;
     
-    console.log(`\nBuilding party for ${guests} guests, ${timeSlot} slot, £${budget} budget, ${theme} theme`);
+
     
     // Define budget allocation based on budget size
     let budgetAllocation, includedCategories;
@@ -374,8 +374,6 @@ class PartyBuilderBackend {
       }
     }
     
-    console.log('Budget allocation:', budgetAllocation);
-    console.log('Included categories:', includedCategories);
     
     // 1. SELECT ENTERTAINMENT FIRST (theme priority)
     const entertainmentBudget = budget * budgetAllocation.entertainment;
@@ -388,7 +386,7 @@ class PartyBuilderBackend {
       if (entertainmentResult.supplier) {
         selected.entertainment = entertainmentResult.supplier;
         remainingBudget -= entertainmentResult.supplier.priceFrom;
-        console.log(`Entertainment selected: ${entertainmentResult.supplier.name} (${entertainmentResult.reason})`);
+
       }
     }
     
@@ -402,7 +400,7 @@ class PartyBuilderBackend {
       if (entertainmentResult.supplier) {
         selected.entertainment = entertainmentResult.supplier;
         remainingBudget -= entertainmentResult.supplier.priceFrom;
-        console.log(`General entertainment selected: ${entertainmentResult.supplier.name} (${entertainmentResult.reason})`);
+
       }
     }
     
@@ -444,10 +442,7 @@ class PartyBuilderBackend {
     const totalCost = Object.values(selected).reduce((sum, supplier) => sum + (supplier.priceFrom || 0), 0);
     const budgetUsed = Math.round((totalCost / budget) * 100);
     
-    console.log(`\nParty selection complete:`);
-    console.log(`- Categories filled: ${Object.keys(selected).length}/${includedCategories.length}`);
-    console.log(`- Total cost: £${totalCost} (${budgetUsed}% of budget)`);
-    console.log(`- Fallback selections: ${Object.values(selected).filter(s => s.isFallbackSelection).length}`);
+
     
     return selected;
   }
@@ -498,7 +493,6 @@ class PartyBuilderBackend {
         processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
       }
 
-      console.log(`Building party: ${processedFirstName} ${processedLastName}, ${guestCount} guests, £${finalBudget}, ${theme} theme, ${processedTimeSlot} slot`);
 
       // Get suppliers
       const allSuppliers = await suppliersAPI.getAllSuppliers();
@@ -580,7 +574,7 @@ class PartyBuilderBackend {
       this.savePartyDetailsToLocalStorage(enhancedPartyDetails);
       this.savePartyPlanToLocalStorage(partyPlan);
 
-      console.log('Party built and saved successfully');
+
 
       return {
         success: true,

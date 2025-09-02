@@ -91,7 +91,7 @@ export default function SupplierCard({
 
     // Handle declined enquiries first
     if (enquiryStatus === "declined") {
-      console.log(`❌ ${supplier.name}: DECLINED`)
+  
       return "declined"
     }
     
@@ -100,31 +100,30 @@ export default function SupplierCard({
       
       // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
       if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
-        console.log(`✅ ${supplier.name}: PAYMENT_CONFIRMED (paid + manually confirmed)`)
+   
         return "payment_confirmed"
       }
       
       // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
       if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
-        console.log(`💳 ${supplier.name}: DEPOSIT_PAID_CONFIRMED (paid but awaiting confirmation)`)
+        
         return "deposit_paid_confirmed"  
       }
       
       // If accepted but not paid = CONFIRMED
       if (thisSupplierPaymentStatus !== "paid") {
-        console.log(`⏰ ${supplier.name}: CONFIRMED (accepted, awaiting payment)`)
+        
         return "confirmed"
       }
     }
     
     // ENQUIRY FLOW: Handle pending enquiries
     if (enquiryStatus === "pending") {
-      console.log(`⏳ ${supplier.name}: AWAITING_RESPONSE`)
+
       return "awaiting_response"
     }
     
-    // DEFAULT: Supplier is selected but no enquiry sent yet
-    console.log(`📝 ${supplier.name}: SELECTED`)
+
     return "selected"
   }
 
@@ -211,7 +210,7 @@ export default function SupplierCard({
 
   // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
-  console.log(`Rendering ${supplierState} card for ${supplier?.name || type}`)
+
 
   // Render the appropriate card component based on state
   switch (supplierState) {

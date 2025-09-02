@@ -10,7 +10,7 @@ import Head from "next/head";
 
 export default function BlogDetailPage({ params }) {
   const { slug } = React.use(params);
-console.log(params)
+
   const post = allPosts.find((p) => p.slug === slug);
   if (!post) {
     return <NotFoundMessage />;

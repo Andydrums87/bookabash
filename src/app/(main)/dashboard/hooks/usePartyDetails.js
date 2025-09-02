@@ -1,3 +1,4 @@
+// hooks/usePartyDetails.js - Updated to work with consolidated loading
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,7 +8,7 @@ export function usePartyDetails(user = null, currentParty = null) {
   const [partyDetails, setPartyDetails] = useState(null)
   const [partyTheme, setPartyTheme] = useState("superhero")
   const [themeLoaded, setThemeLoaded] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // Add loading state
+  const [isLoading, setIsLoading] = useState(false) // Start as false, only true during processing
 
   // Get party details from localStorage (for guests)
   const getPartyDetailsFromLocalStorage = () => {
@@ -19,11 +20,10 @@ export function usePartyDetails(user = null, currentParty = null) {
         childAge: partyDetails?.childAge || 6,
         location: partyDetails?.postcode || partyDetails?.location || 'W1A 1AA',
         theme: partyDetails?.theme || 'superhero',
-        // FIX: Read the new time fields
-        startTime: partyDetails?.startTime || '14:00', // NEW
-        duration: partyDetails?.duration || 2, // NEW
-        displayTimeRange: partyDetails?.displayTimeRange, // NEW
-        time: partyDetails?.time || '14:00', // Keep for backward compatibility
+        startTime: partyDetails?.startTime || '14:00',
+        duration: partyDetails?.duration || 2,
+        displayTimeRange: partyDetails?.displayTimeRange,
+        time: partyDetails?.time || '14:00',
         guestCount: partyDetails?.guestCount || '',
         budget: partyDetails?.budget || '',
         specialNotes: partyDetails?.specialNotes || '',
@@ -47,8 +47,6 @@ export function usePartyDetails(user = null, currentParty = null) {
 
   const getPartyDetailsFromDatabase = (party) => {
     if (!party) return getPartyDetailsFromLocalStorage();
-    
-    console.log('🔍 getPartyDetailsFromDatabase received:', party);
     
     // Extract first and last name from child_name for UI components
     let firstName = "";
@@ -83,82 +81,56 @@ export function usePartyDetails(user = null, currentParty = null) {
       duration: party.duration || 2,
       id: party.id 
     };
-    
-    console.log('✅ Mapped database party to component format:', mapped);
+
     return mapped;
   };
 
-  // Initialize party details - FIXED VERSION
+  // Initialize party details - SIMPLIFIED VERSION
   useEffect(() => {
-    console.log('🔄 usePartyDetails useEffect triggered:', { 
-      hasUser: !!user, 
-      hasCurrentParty: !!currentParty,
-      currentPartyId: currentParty?.id,
-      currentPartyChildName: currentParty?.child_name 
-    });
-    
-    setIsLoading(true); // Start loading
-    
-    // Wait for user state to be determined before proceeding
+    // Don't start loading until we have determined user state
     if (user === undefined || currentParty === undefined) {
-      // Still loading user/party data - don't set anything yet
-      console.log("⏳ Still waiting for user/party data to load...");
       return;
     }
     
+    // Process immediately without setting loading state
     let details;
     
     if (user && currentParty) {
-      // Signed-in user with party data - use database
-      console.log("👤 Loading party details from database");
-      console.log("🔍 currentParty data:", currentParty);
       details = getPartyDetailsFromDatabase(currentParty);
-      console.log("✅ Database details processed:", details);
     } else {
-      // Guest user (user is null) OR signed-in user without party (currentParty is null)
-      console.log("📦 Loading party details from localStorage (user:", !!user, "currentParty:", !!currentParty, ")");
       details = getPartyDetailsFromLocalStorage();
-      console.log("✅ localStorage details processed:", details);
     }
-    console.log("🎯 Setting partyDetails to:", details);
+  
     setPartyDetails(details);
 
     // Set theme
     if (details.theme) {
-      console.log("🎨 Setting theme to:", details.theme);
       setPartyTheme(details.theme);
     }
     setThemeLoaded(true);
-    setIsLoading(false); // Finish loading
   }, [user, currentParty]);
 
   const savePartyDetails = async (details) => {
     try {
       if (user) {
-        // Database logic (existing code)
+        // Database logic for signed-in users
+        const result = await partyDatabaseBackend.updatePartyDetails(user.id, details);
+        return result.success ? details : details;
       } else {
         // Guest user - save to localStorage
-        console.log("👻 Saving party details to localStorage:", details)
-        
         const existingDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
         
-        // If we're updating the childName, also update firstName/lastName
         let updatedDetails = {
           ...existingDetails,
           ...details,
           postcode: details.postcode || (details.location?.match(/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i) ? details.location : existingDetails.postcode)
         };
         
-        // IMPORTANT FIX: If childName is being updated, extract firstName/lastName
+        // If childName is being updated, extract firstName/lastName
         if (details.childName) {
           const nameParts = details.childName.split(' ');
           updatedDetails.firstName = nameParts[0] || '';
           updatedDetails.lastName = nameParts.slice(1).join(' ') || '';
-          console.log("📝 Extracted names from childName:", {
-            childName: details.childName,
-            firstName: updatedDetails.firstName,
-            lastName: updatedDetails.lastName
-          });
         }
         
         // If firstName/lastName are provided directly, use those
@@ -169,7 +141,6 @@ export function usePartyDetails(user = null, currentParty = null) {
           updatedDetails.lastName = details.lastName;
         }
         
-        console.log("💾 Final details to store:", updatedDetails);
         localStorage.setItem('party_details', JSON.stringify(updatedDetails));
         
         // Trigger storage event
@@ -186,32 +157,36 @@ export function usePartyDetails(user = null, currentParty = null) {
     }
   };
 
-  // Handle party details update
+  // Handle party details update - SIMPLIFIED
   const handlePartyDetailsUpdate = async (updatedDetails) => {
-    console.log("🔄 Updating party details:", updatedDetails);
+    // Only set loading during actual processing
+    setIsLoading(true);
     
-    const savedDetails = await savePartyDetails(updatedDetails);
-    setPartyDetails(savedDetails);
-    
-    // Update theme if changed
-    if (updatedDetails.theme && updatedDetails.theme !== partyTheme) {
-      setPartyTheme(updatedDetails.theme);
+    try {
+      const savedDetails = await savePartyDetails(updatedDetails);
+      setPartyDetails(savedDetails);
+      
+      // Update theme if changed
+      if (updatedDetails.theme && updatedDetails.theme !== partyTheme) {
+        setPartyTheme(updatedDetails.theme);
+      }
+    } catch (error) {
+      console.error('Error updating party details:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    console.log("✅ Party details updated:", savedDetails);
   };
 
   // Handle name submission (for welcome popup)
   const handleNameSubmit = async ({ childName, childAge }) => {
     await handlePartyDetailsUpdate({ childName, childAge });
-    console.log('✅ Child info saved:', { childName, childAge });
   };
 
   return {
     partyDetails,
     partyTheme,
     themeLoaded,
-    isLoading, // NEW: Expose loading state
+    isLoading, // Only true during actual processing, not initialization
     getPartyDetails: user && currentParty ? () => getPartyDetailsFromDatabase(currentParty) : getPartyDetailsFromLocalStorage,
     savePartyDetails,
     handleNameSubmit,

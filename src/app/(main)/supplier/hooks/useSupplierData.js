@@ -191,12 +191,7 @@ const generateReviews = () => [
 
 // Detect if supplier is a cake specialist (your exact logic)
 const detectCakeSupplier = (supplier) => {
-  console.log('🔍 Checking if cake supplier:', {
-    category: supplier?.category,
-    cateringType: supplier?.serviceDetails?.cateringType,
-    cakeFlavors: supplier?.serviceDetails?.cakeFlavors,
-    cakeSpecialist: supplier?.serviceDetails?.cakeSpecialist
-  });
+
 
   if (!supplier) return false
 
@@ -210,37 +205,37 @@ const detectCakeSupplier = (supplier) => {
         serviceDetails?.cateringType === 'Birthday Cake Specialist' ||
         serviceDetails?.cateringType === 'Custom Cake Designer' ||
         serviceDetails?.cateringType === 'Dessert Specialist') {
-      console.log('✅ Detected cake supplier via cateringType:', serviceDetails.cateringType);
+  
       return true
     }
     
     // Check if they have cake flavors defined (from your backend form)
     if (serviceDetails?.cakeFlavors?.length > 0) {
-      console.log('✅ Detected cake supplier via cakeFlavors:', serviceDetails.cakeFlavors.length, 'flavors');
+
       return true
     }
     
     // Check explicit cake specialist flag
     if (serviceDetails?.cakeSpecialist === true) {
-      console.log('✅ Detected cake supplier via cakeSpecialist flag');
+      
       return true
     }
   }
   
   // Method 2: Direct cake category
   if (supplier?.category?.toLowerCase().includes('cake')) {
-    console.log('✅ Detected cake supplier via category');
+
     return true
   }
   
   // Method 3: Check supplier name for cake keywords
   const nameOrDesc = `${supplier?.name || ''} ${supplier?.description || ''}`.toLowerCase()
   if (nameOrDesc.includes('cake') || nameOrDesc.includes('bakery') || nameOrDesc.includes('patisserie')) {
-    console.log('✅ Detected cake supplier via name/description');
+
     return true
   }
   
-  console.log('❌ Not a cake supplier');
+
   return false
 }
 

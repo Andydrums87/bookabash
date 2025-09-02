@@ -1,46 +1,47 @@
-// hooks/usePartyData.js - FIXED VERSION
+// hooks/usePartyData.js - FIXED VERSION with consolidated loading
 import { useState, useEffect } from 'react'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyDetails } from '../hooks/usePartyDetails'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { supabase } from '@/lib/supabase'
+import { useConsolidatedLoading } from './useConsolidatedLoading'
 
 export function usePartyData() {
-  // Core state
+  // Use consolidated loading
+  const { isLoading, startLoading, finishLoading } = useConsolidatedLoading()
+  
+  // Core state - Initialize with proper defaults to prevent undefined transitions
   const [partyData, setPartyData] = useState({})
   const [partyId, setPartyId] = useState(null)
   const [totalCost, setTotalCost] = useState(0)
   const [addons, setAddons] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState(null) // Initialize as null, not undefined
-  const [currentParty, setCurrentParty] = useState(null) // Initialize as null, not undefined
+  const [user, setUser] = useState(null) 
+  const [currentParty, setCurrentParty] = useState(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [dataSource, setDataSource] = useState('unknown')
   const [isSignedIn, setIsSignedIn] = useState(false)
-  const [userLoaded, setUserLoaded] = useState(false) // NEW: Track if user loading is complete
+  const [initialized, setInitialized] = useState(false) // Track initialization
 
-  // Load initial party data
+  // Load initial party data - CONSOLIDATED APPROACH
   useEffect(() => {
     const loadPartyData = async () => {
-      setLoading(true)
+      // Start loading for the main data fetch
+      startLoading('party-data', 'Loading your party...')
+      
       try {
-        console.log('🔄 Starting loadPartyData...')
         const { data: { user }, error } = await supabase.auth.getUser()
         
-        // Always set user state, even if null
+        // Set user state immediately (null or user object)
         setUser(user)
-        setUserLoaded(true) // Mark user loading as complete
         
         if (user && !error) {
-          console.log('👤 User authenticated, loading party from database')
           setIsSignedIn(true)
+          startLoading('database-party', 'Loading party details...')
           
           const partyResult = await partyDatabaseBackend.getCurrentParty()
         
           if (partyResult.success && partyResult.party) {
             const party = partyResult.party
-            console.log('✅ Database party loaded:', party.child_name)
-            
             const partyDataWithPayment = {
               ...(party.party_plan || {}),
               payment_status: party.payment_status,
@@ -54,31 +55,39 @@ export function usePartyData() {
             setTotalCost(party.estimated_cost || 0)
             setDataSource('database')
           } else {
-            console.log('❌ getCurrentParty failed:', partyResult.error)
-            setCurrentParty(null) // Explicitly set to null
+            setCurrentParty(null)
             setDataSource('localStorage')
+            // Load localStorage data for authenticated users without database party
+            const localPartyPlan = localStorage.getItem('party_plan')
+            const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
+            setPartyData(localPartyData)
+            setTotalCost(calculateLocalStorageCost(localPartyData))
+            setAddons(localPartyData.addons || [])
           }
+          
+          finishLoading('database-party')
         } else {
-          console.log('👥 Not authenticated, using localStorage')
           setIsSignedIn(false)
-          setCurrentParty(null) // Explicitly set to null
+          setCurrentParty(null)
           setDataSource('localStorage')
           
-          // Load localStorage data immediately for non-authenticated users
+          // Load localStorage data for non-authenticated users
           const localPartyPlan = localStorage.getItem('party_plan')
           const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
           setPartyData(localPartyData)
           setTotalCost(calculateLocalStorageCost(localPartyData))
           setAddons(localPartyData.addons || [])
         }
+        
+        setInitialized(true)
       } catch (error) {
-        console.error('❌ Error in loadPartyData:', error)
+        console.error('Error in loadPartyData:', error)
         setUser(null)
         setCurrentParty(null)
-        setUserLoaded(true)
         setDataSource('localStorage')
+        setInitialized(true)
       } finally {
-        setLoading(false)
+        finishLoading('party-data')
       }
     }
 
@@ -89,14 +98,12 @@ export function usePartyData() {
   const calculateLocalStorageCost = (partyPlan) => {
     let total = 0
     
-    // Add supplier costs
     Object.entries(partyPlan).forEach(([key, supplier]) => {
       if (supplier && supplier.price && key !== 'addons') {
         total += supplier.price
       }
     })
     
-    // Add addon costs
     if (partyPlan.addons) {
       partyPlan.addons.forEach(addon => {
         if (addon && addon.price) {
@@ -108,42 +115,7 @@ export function usePartyData() {
     return total
   }
 
-  // Refresh party data - ENHANCED to handle both sources
-  const refreshPartyData = async () => {
-    console.log('🔄 Refreshing party data...')
-    
-    try {
-      if (dataSource === 'database' && partyId) {
-        console.log('🎯 Refreshing database party:', partyId)
-        
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-        if (partyResult.success && partyResult.party) {
-          const party = partyResult.party
-          console.log('✅ Database party refreshed')
-          
-          setCurrentParty(party)
-          setPartyData(party.party_plan || {})
-          setTotalCost(party.estimated_cost || 0)
-          setAddons(party.party_plan?.addons || [])
-        } else {
-          console.error('❌ Failed to refresh database party')
-        }
-      } else {
-        console.log('📦 Refreshing localStorage party')
-        
-        const localPartyPlan = localStorage.getItem('party_plan')
-        const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
-        
-        setPartyData(localPartyData)
-        setTotalCost(calculateLocalStorageCost(localPartyData))
-        setAddons(localPartyData.addons || [])
-      }
-    } catch (error) {
-      console.error('❌ Error refreshing party data:', error)
-    }
-  }
-
-  // Use party details hook - ONLY after user state is determined
+  // Use party details hook - ONLY after initialization
   const {
     partyDetails,
     partyTheme,
@@ -151,7 +123,40 @@ export function usePartyData() {
     isLoading: partyDetailsLoading,
     handleNameSubmit,
     handlePartyDetailsUpdate: originalHandlePartyDetailsUpdate
-  } = usePartyDetails(userLoaded ? user : undefined, userLoaded ? currentParty : undefined)
+  } = usePartyDetails(initialized ? user : undefined, initialized ? currentParty : undefined)
+
+  // Register party details loading
+  useEffect(() => {
+    if (partyDetailsLoading && initialized) {
+      startLoading('party-details', 'Loading party details...')
+    } else {
+      finishLoading('party-details')
+    }
+  }, [partyDetailsLoading, initialized])
+
+  // Refresh party data
+  const refreshPartyData = async () => {
+    try {
+      if (dataSource === 'database' && partyId) {
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+        if (partyResult.success && partyResult.party) {
+          const party = partyResult.party
+          setCurrentParty(party)
+          setPartyData(party.party_plan || {})
+          setTotalCost(party.estimated_cost || 0)
+          setAddons(party.party_plan?.addons || [])
+        }
+      } else {
+        const localPartyPlan = localStorage.getItem('party_plan')
+        const localPartyData = localPartyPlan ? JSON.parse(localPartyPlan) : {}
+        setPartyData(localPartyData)
+        setTotalCost(calculateLocalStorageCost(localPartyData))
+        setAddons(localPartyData.addons || [])
+      }
+    } catch (error) {
+      console.error('Error refreshing party data:', error)
+    }
+  }
 
   // Enhanced party details update
   const handlePartyDetailsUpdate = async (updatedDetails) => {
@@ -159,7 +164,7 @@ export function usePartyData() {
     await refreshPartyData()
   }
 
-  // Budget management - FIXED to handle both data sources
+  // Budget management
   const {
     tempBudget,
     setTempBudget,
@@ -170,7 +175,7 @@ export function usePartyData() {
     updateSuppliersForBudget
   } = useBudgetManager(totalCost, isUpdating, setIsUpdating)
 
-  // Addon management - ENHANCED to handle both sources
+  // Addon management functions
   const addAddon = async (addon) => {
     if (dataSource === 'database' && partyId) {
       // Database mode
@@ -212,7 +217,7 @@ export function usePartyData() {
           return { success: false, error: 'Addon already exists' }
         }
       } catch (error) {
-        console.error('❌ Error adding addon to localStorage:', error)
+        console.error('Error adding addon to localStorage:', error)
         return { success: false, error: error.message }
       }
     }
@@ -242,7 +247,7 @@ export function usePartyData() {
             localStorage.setItem('party_plan', JSON.stringify(currentPartyPlan))
             
             // Update local state
-            setPartyData(localPartyPlan)
+            setPartyData(currentPartyPlan)
             setAddons(currentPartyPlan.addons)
             setTotalCost(calculateLocalStorageCost(currentPartyPlan))
             
@@ -252,7 +257,7 @@ export function usePartyData() {
         
         return { success: false, error: 'Addon not found' }
       } catch (error) {
-        console.error('❌ Error removing addon from localStorage:', error)
+        console.error('Error removing addon from localStorage:', error)
         return { success: false, error: error.message }
       }
     }
@@ -276,12 +281,12 @@ export function usePartyData() {
       const result = await addAddon(addonWithSupplier)
       
       if (result.success) {
-        console.log("✅ Add-on added successfully!")
+        console.log("Add-on added successfully!")
       } else {
-        console.error("❌ Failed to add addon:", result.error)
+        console.error("Failed to add addon:", result.error)
       }
     } catch (error) {
-      console.error("💥 Error adding addon:", error)
+      console.error("Error adding addon:", error)
     }
   }
 
@@ -289,12 +294,12 @@ export function usePartyData() {
     try {
       const result = await removeAddon(addonId)
       if (result.success) {
-        console.log("✅ Add-on removed successfully!")
+        console.log("Add-on removed successfully!")
       } else {
-        console.error("❌ Failed to remove addon:", result.error)
+        console.error("Failed to remove addon:", result.error)
       }
     } catch (error) {
-      console.error("💥 Error removing addon:", error)
+      console.error("Error removing addon:", error)
     }
   }
 
@@ -317,13 +322,12 @@ export function usePartyData() {
     partyId,
     totalCost,
     addons,
-    loading: loading || partyDetailsLoading, // Combine loading states
+    loading: isLoading, // SINGLE loading state
     user,
     currentParty,
     suppliers,
     dataSource,
     isSignedIn,
-    userLoaded, // NEW: Expose user loaded state
     
     // Party details
     partyDetails,

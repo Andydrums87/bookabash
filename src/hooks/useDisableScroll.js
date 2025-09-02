@@ -66,7 +66,7 @@ export const useDisableScroll = (shouldDisable, options = {}) => {
         document.addEventListener('touchmove', preventTouchMove, { passive: false })
       }
 
-      console.log('🔒 Background scrolling disabled')
+
 
       // Cleanup function
       return () => {
@@ -87,7 +87,7 @@ export const useDisableScroll = (shouldDisable, options = {}) => {
         // Restore scroll position
         window.scrollTo(scrollX, scrollY)
 
-        console.log('🔓 Background scrolling restored')
+
       }
     }
   }, [shouldDisable, mobileOptimized, preventTouch, backdropSelector])

@@ -132,7 +132,7 @@ const { supplier, packages: basePackages, portfolioImages, credentials, reviews,
       if (user) {
         const partyIdResult = await partyDatabaseBackend.getCurrentPartyId()
         if (partyIdResult.success) {
-          console.log('🎯 Dashboard got party ID:', partyIdResult.partyId)
+
           setCurrentPartyId(partyIdResult.partyId)
         }
       }
@@ -183,11 +183,6 @@ const replacement = useReplacementMode()
 const notifications = useSupplierNotifications()
 const availability = useSupplierAvailability(supplier, databasePartyData, userType)
 const enquiries = useSupplierEnquiries(userContext?.currentPartyId)
-
-
-console.log('🔍 DIRECT TEST: Checking party date availability:', 
-  availability.checkSupplierAvailability(databasePartyData?.party_date, 'afternoon') // ← CORRECT DATE
-)
 
 const booking = useSupplierBooking(
   supplier, 
@@ -256,11 +251,7 @@ const handleAddToPlanWithModals = async (...args) => {
       </div>
     )
   }
-  console.log('Time slot debug:')
-  console.log('databasePartyData.start_time:', databasePartyData?.start_time)
-  console.log('databasePartyData.party_time:', databasePartyData?.party_time) 
-  console.log('getPartyTimeSlot():', availability.getPartyTimeSlot())
-  console.log('selectedTimeSlot:', availability.selectedTimeSlot)
+
   // UPDATE your loading check to include user type loading:
 if (userTypeLoading) {
   return (

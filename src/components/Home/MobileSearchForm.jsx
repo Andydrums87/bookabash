@@ -161,7 +161,7 @@ export default function MobileSearchForm({
           required
         >
           <SelectTrigger className={`
-            bg-gray-50 w-full py-6 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 text-sm
+            bg-gray-50 text-gray-600 w-full py-6 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 text-sm
             ${!formData.guestCount ? 'border-red-300' : ''}
           `}>
             <SelectValue placeholder="Select guest count" />

@@ -49,14 +49,14 @@ export class LocationService {
           if (location.fullAddress) {
             const extractedPostcode = this.extractPostcodeFromVenueString(location.fullAddress);
             if (extractedPostcode) {
-              console.log(`🏢 Using venue postcode from address: ${extractedPostcode}`);
+         
               return extractedPostcode;
             }
           }
           
           // Fallback to direct postcode
           if (location.postcode) {
-            console.log(`🏢 Using venue postcode: ${location.postcode}`);
+ 
             return location.postcode;
           }
         }
@@ -64,11 +64,11 @@ export class LocationService {
         // Fallback to owner address postcode
         if (partyPlan?.venue?.originalSupplier?.owner?.address?.postcode) {
           const postcode = partyPlan.venue.originalSupplier.owner.address.postcode;
-          console.log(`🏢 Using venue owner postcode: ${postcode}`);
+ 
           return postcode;
         }
         
-        console.log('⚠️ No venue location found in party plan');
+        
         return null;
       } catch (error) {
         console.error('❌ Error getting venue location:', error);
@@ -78,23 +78,22 @@ export class LocationService {
     
     // Get appropriate comparison location based on supplier category
     static getComparisonLocation(category, partyLocation) {
-      console.log(`🎯 Getting comparison location for category: ${category}`);
+    
       
       // For venues, use the party location (user's preference)
       if (category === 'Venues' || category === 'venue') {
-        console.log(`🏢 Using party location for venue: ${partyLocation}`);
+     
         return partyLocation;
       }
       
       // For all other suppliers (mobile services), use the venue location
       const venueLocation = this.getVenueLocation();
       if (venueLocation) {
-        console.log(`🚗 Using venue location for mobile service (${category}): ${venueLocation}`);
+
         return venueLocation;
       }
       
-      // Fallback to party location if no venue selected
-      console.log(`🔄 Fallback to party location for ${category}: ${partyLocation}`);
+  
       return partyLocation;
     }
     
@@ -131,7 +130,7 @@ export class LocationService {
     static arePostcodesNearby(supplierLocation, targetLocation, maxDistance = 'district') {
       if (!supplierLocation || !targetLocation) return true;
       
-      console.log(`🔍 Checking distance: "${supplierLocation}" → "${targetLocation}" (max: ${maxDistance})`);
+    
       
       // Extract postcodes from venue strings if needed
       let supplierPostcode = supplierLocation;
@@ -142,7 +141,7 @@ export class LocationService {
         const extractedPostcode = this.extractPostcodeFromVenueString(targetLocation);
         if (extractedPostcode) {
           targetPostcode = extractedPostcode;
-          console.log(`📍 Extracted target postcode: "${extractedPostcode}" from "${targetLocation}"`);
+ 
         }
       }
       
@@ -151,7 +150,7 @@ export class LocationService {
         const extractedPostcode = this.extractPostcodeFromVenueString(supplierLocation);
         if (extractedPostcode) {
           supplierPostcode = extractedPostcode;
-          console.log(`📍 Extracted supplier postcode: "${extractedPostcode}" from "${supplierLocation}"`);
+      
         }
       }
       
@@ -159,31 +158,28 @@ export class LocationService {
       const supplierIsValidPostcode = this.isValidPostcode(supplierPostcode);
       const targetIsValidPostcode = this.isValidPostcode(targetPostcode);
       
-      console.log(`📍 Analysis:`, {
-        supplier: { location: supplierPostcode, isDescriptive: supplierIsDescriptive, isValid: supplierIsValidPostcode },
-        target: { location: targetPostcode, isValid: targetIsValidPostcode }
-      });
+    
       
       // Handle descriptive locations (mock suppliers)
       if (supplierIsDescriptive) {
         if (maxDistance === 'all' || maxDistance === 'wide') {
-          console.log(`✅ ${supplierPostcode}: Descriptive location allowed for wide distance setting`);
+  
           return true;
         } else {
-          console.log(`⚠️ ${supplierPostcode}: Descriptive location deprioritized for ${maxDistance} distance`);
+
           return false;
         }
       }
       
       // If target location is not a valid postcode, be more lenient
       if (!targetIsValidPostcode) {
-        console.log(`⚠️ Target location "${targetPostcode}" is not a valid postcode - allowing all suppliers`);
+
         return true;
       }
       
       // If supplier doesn't have a valid postcode but target does, only allow for wide coverage
       if (!supplierIsValidPostcode && targetIsValidPostcode) {
-        console.log(`❌ ${supplierPostcode}: Invalid postcode format, target has valid postcode`);
+ 
         return maxDistance === 'all' || maxDistance === 'wide';
       }
       
@@ -191,23 +187,23 @@ export class LocationService {
       const supplierArea = this.getPostcodeArea(supplierPostcode);
       const targetArea = this.getPostcodeArea(targetPostcode);
       
-      console.log(`📮 Postcode areas: ${supplierPostcode} (${supplierArea}) → ${targetPostcode} (${targetArea})`);
+
       
       // Exact postcode match (highest priority)
       if (supplierPostcode.toUpperCase().replace(/\s/g, '') === targetPostcode.toUpperCase().replace(/\s/g, '')) {
-        console.log(`✅ Exact postcode match`);
+    
         return true;
       }
       
       // Same area match
       if (supplierArea === targetArea) {
-        console.log(`✅ Same postcode area (${supplierArea})`);
+
         return true;
       }
       
       // Adjacent areas based on distance setting
       if (maxDistance === 'exact') {
-        console.log(`❌ Exact distance required, different areas`);
+
         return false;
       }
       
@@ -225,11 +221,11 @@ export class LocationService {
                         londonAdjacency[targetArea]?.includes(supplierArea);
       
       if (isAdjacent) {
-        console.log(`✅ Adjacent areas (${supplierArea} ↔ ${targetArea})`);
+     
         return true;
       }
       
-      console.log(`❌ Areas too far apart (${supplierArea} → ${targetArea})`);
+ 
       return false;
     }
     

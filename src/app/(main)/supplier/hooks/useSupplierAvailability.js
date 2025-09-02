@@ -65,7 +65,7 @@ export const useSupplierAvailability = (supplier, externalPartyData, externalUse
           // Get database party data
           const partyResult = await partyDatabaseBackend.getCurrentParty()
           if (partyResult.success && partyResult.party) {
-            console.log('📅 Got database party data:', partyResult.party)
+           
             setDatabasePartyData(partyResult.party)
           } else {
             setUserType('LOCALSTORAGE_USER')
@@ -153,7 +153,7 @@ export const useSupplierAvailability = (supplier, externalPartyData, externalUse
         if (timeField) {
           const hour = parseInt(timeField.toString().split(':')[0])
           timeSlot = hour < 13 ? 'morning' : 'afternoon'
-          console.log('Mapping time', timeField, 'to slot:', timeSlot)
+
         }
       }
       
@@ -296,7 +296,7 @@ export const useSupplierAvailability = (supplier, externalPartyData, externalUse
         timeSlotToCheck = partyTimeSlot
       }
       
-      console.log('Checking availability for date:', formatDate(checkDate), 'time slot:', timeSlotToCheck)
+ 
       
       // If specific time slot requested, check that slot
       if (timeSlotToCheck) {

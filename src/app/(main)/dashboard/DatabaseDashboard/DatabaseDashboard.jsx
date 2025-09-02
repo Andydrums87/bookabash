@@ -1,4 +1,4 @@
-// DatabaseDashboard.jsx - FIXED with all hooks at the top
+// DatabaseDashboard.jsx - FIXED with single loading state
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -65,13 +65,13 @@ export default function DatabaseDashboard() {
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const welcomePopupShownRef = useRef(false)
 
-  // ALL CUSTOM HOOKS SECOND
+  // MAIN PARTY DATA HOOK - This now handles ALL loading
   const {
     partyData,
     partyId,
     totalCost,
     addons,
-    loading,
+    loading, // This is the SINGLE consolidated loading state
     user,
     currentParty,
     suppliers,
@@ -86,6 +86,7 @@ export default function DatabaseDashboard() {
     themeLoaded
   } = usePartyData()
 
+  // PARTY PHASE HOOK - No longer has loading state
   const {
     partyPhase,
     currentPhase,
@@ -94,9 +95,10 @@ export default function DatabaseDashboard() {
     enquiries,
     isPaymentConfirmed,
     paymentDetails,
-    loading: phaseLoading
+    // REMOVED: loading from usePartyPhase - no longer needed
   } = usePartyPhase(partyData, partyId)
 
+  // OTHER HOOKS
   const {
     tempBudget,
     setTempBudget,
@@ -125,7 +127,7 @@ export default function DatabaseDashboard() {
   // Supplier management functions
   const removeSupplier = async (supplierType) => {
     if (!partyId) {
-      console.error('❌ Cannot remove supplier: No party ID')
+      console.error('Cannot remove supplier: No party ID')
       return { success: false, error: 'No party ID available' }
     }
     
@@ -142,7 +144,7 @@ export default function DatabaseDashboard() {
     getSupplierDisplayName,
   } = useSupplierManager(removeSupplier)
 
-  // ALL EFFECTS THIRD
+  // ALL EFFECTS
   useEffect(() => {
     setIsClient(typeof window !== 'undefined')
   }, [])
@@ -154,7 +156,7 @@ export default function DatabaseDashboard() {
       const storedState = getStoredModalState()
       
       if (storedState) {
-        console.log('🔄 Restoring modal state:', storedState)
+        console.log('Restoring modal state:', storedState)
         
         setModalConfig({
           category: storedState.category,
@@ -182,7 +184,7 @@ export default function DatabaseDashboard() {
       const { detail: modalState } = event
       
       if (modalState) {
-        console.log('🎯 Restoring modal via custom event:', modalState)
+        console.log('Restoring modal via custom event:', modalState)
         
         setModalConfig({
           category: modalState.category,
@@ -215,7 +217,7 @@ export default function DatabaseDashboard() {
         const fromPage = searchParams.get('from')
         const source = searchParams.get('source')
         
-        console.log('🔍 Database Dashboard Navigation Effect:', { 
+        console.log('Database Dashboard Navigation Effect:', { 
           scrollToSupplier, 
           lastAction, 
           fromPage, 
@@ -226,18 +228,18 @@ export default function DatabaseDashboard() {
         })
 
         if (scrollToSupplier && lastAction === 'supplier-added') {
-          console.log('🎯 SETTING MOBILE TAB TO:', scrollToSupplier)
+          console.log('SETTING MOBILE TAB TO:', scrollToSupplier)
           setActiveMobileSupplierType(scrollToSupplier)
 
           if (!showWelcomePopup && !showSupplierAddedModal) {
-            console.log('📱 Processing scroll for newly added supplier:', scrollToSupplier)
+            console.log('Processing scroll for newly added supplier:', scrollToSupplier)
             
             const scrollDelay = source === 'a_la_carte' ? 1000 : 500
             
             setTimeout(() => {
               const element = document.getElementById(`supplier-${scrollToSupplier}`)
               if (element && window.innerWidth >= 768) {
-                console.log('🖥️ Desktop scrolling to element:', element)
+                console.log('Desktop scrolling to element:', element)
                 element.scrollIntoView({ 
                   behavior: 'smooth',
                   block: 'center',
@@ -246,14 +248,14 @@ export default function DatabaseDashboard() {
               } else {
                 const mobileContent = document.getElementById('mobile-supplier-content')
                 if (mobileContent) {
-                  console.log('📱 Mobile scrolling to content area')
+                  console.log('Mobile scrolling to content area')
                   mobileContent.scrollIntoView({ 
                     behavior: 'smooth',
                     block: 'start',
                     inline: 'nearest'
                   })
                 } else {
-                  console.log('📱 Mobile content not found, scrolling to top')
+                  console.log('Mobile content not found, scrolling to top')
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }
@@ -274,18 +276,18 @@ export default function DatabaseDashboard() {
               router.replace(newURL, { scroll: false })
             }, scrollDelay + 1000)
           } else {
-            console.log('⏸️ Modals showing, tab set but scroll delayed')
+            console.log('Modals showing, tab set but scroll delayed')
           }
           
         } else if (fromPage === 'supplier-detail' || fromPage === 'browse') {
-          console.log('📍 Returning from supplier page without adding')
+          console.log('Returning from supplier page without adding')
           if (!showWelcomePopup && !showSupplierAddedModal) {
             window.scrollTo({ top: 0, behavior: 'smooth' })
           }
         }
         
       } catch (error) {
-        console.error('❌ Navigation effect error:', error)
+        console.error('Navigation effect error:', error)
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     }
@@ -312,15 +314,15 @@ export default function DatabaseDashboard() {
 
   // Helper functions
   const getOutstandingSupplierData = () => {
-    console.log('🔍 DEBUG: Starting payment calculation...')
-    console.log('🔍 Total enquiries:', enquiries.length)
-    console.log('🔍 Available supplier types:', Object.keys(visibleSuppliers))
+    console.log('DEBUG: Starting payment calculation...')
+    console.log('Total enquiries:', enquiries.length)
+    console.log('Available supplier types:', Object.keys(visibleSuppliers))
     
     const unpaidEnquiries = enquiries.filter(enquiry => {
       const isAccepted = enquiry.status === 'accepted'
       const isUnpaid = !enquiry.payment_status || enquiry.payment_status === 'unpaid'
       
-      console.log(`🔍 Enquiry ${enquiry.supplier_category}:`, {
+      console.log(`Enquiry ${enquiry.supplier_category}:`, {
         status: enquiry.status,
         payment_status: enquiry.payment_status,
         isAccepted,
@@ -331,10 +333,10 @@ export default function DatabaseDashboard() {
       return isAccepted && isUnpaid
     })
     
-    console.log('🔍 Found unpaid enquiries:', unpaidEnquiries.length)
+    console.log('Found unpaid enquiries:', unpaidEnquiries.length)
     
     if (unpaidEnquiries.length === 0) {
-      console.log('✅ All enquiries paid or no accepted enquiries, returning empty')
+      console.log('All enquiries paid or no accepted enquiries, returning empty')
       return { suppliers: [], totalCost: 0, totalDeposit: 0 }
     }
     
@@ -343,14 +345,14 @@ export default function DatabaseDashboard() {
         const supplierType = enquiry.supplier_category
         const supplier = visibleSuppliers[supplierType]
         
-        console.log(`🔍 Looking for supplier data for ${supplierType}:`, {
+        console.log(`Looking for supplier data for ${supplierType}:`, {
           found: !!supplier,
           name: supplier?.name,
           price: supplier?.price || supplier?.totalPrice
         })
         
         if (!supplier) {
-          console.log(`⚠️ No supplier found in visibleSuppliers for: ${supplierType}`)
+          console.log(`No supplier found in visibleSuppliers for: ${supplierType}`)
           return null
         }
         
@@ -358,13 +360,13 @@ export default function DatabaseDashboard() {
       })
       .filter(Boolean)
     
-    console.log('🔍 Mapped to suppliers:', outstandingSuppliers.length)
+    console.log('Mapped to suppliers:', outstandingSuppliers.length)
     
     const paymentData = outstandingSuppliers.map(({ enquiry, supplierType, supplier }) => {
       const supplierPrice = supplier.totalPrice || supplier.price || 0
       const supplierDepositAmount = Math.max(50, Math.round(supplierPrice * 0.3))
       
-      console.log(`💰 Payment calculation for ${supplierType}:`, {
+      console.log(`Payment calculation for ${supplierType}:`, {
         supplierName: supplier.name,
         totalPrice: supplierPrice,
         depositAmount: supplierDepositAmount
@@ -382,7 +384,7 @@ export default function DatabaseDashboard() {
     const totalOutstandingCost = paymentData.reduce((sum, item) => sum + item.totalAmount, 0)
     const totalDepositAmount = paymentData.reduce((sum, item) => sum + item.depositAmount, 0)
     
-    console.log('💳 Final outstanding payment calculation:', {
+    console.log('Final outstanding payment calculation:', {
       suppliers: paymentData.map(s => s.type),
       supplierCount: paymentData.length,
       totalCost: totalOutstandingCost,
@@ -412,7 +414,7 @@ export default function DatabaseDashboard() {
 
   // EVENT HANDLERS (after all hooks)
   const openSupplierModal = (category, theme = 'superhero') => {
-    console.log('🔓 Opening supplier modal:', { category, theme, currentPhase })
+    console.log('Opening supplier modal:', { category, theme, currentPhase })
     setModalConfig({
       category,
       theme,
@@ -423,25 +425,27 @@ export default function DatabaseDashboard() {
   }
 
   const closeSupplierModal = () => {
-    console.log('🔒 Closing supplier modal')
+    console.log('Closing supplier modal')
     setShowSupplierModal(false)
   }
 
   const handleSupplierSelection = async (supplierData) => {
-    console.log('🎯 DASHBOARD: handleSupplierSelection ENTRY - supplierData:', supplierData)
+    console.log('DASHBOARD: handleSupplierSelection ENTRY - supplierData:', supplierData)
     const supplier = supplierData?.supplier || supplierData
     const selectedPackage = supplierData?.package || null
-    console.log('🎯 DASHBOARD: Extracted supplier:', supplier?.name)
-    console.log('🎯 DASHBOARD: Extracted package:', selectedPackage?.name)
+    console.log('DASHBOARD: Extracted supplier:', supplier?.name)
+    console.log('DASHBOARD: Extracted package:', selectedPackage?.name)
+    
     if (!supplier) {
-      console.error('❌ No supplier data provided')
+      console.error('No supplier data provided')
       return
     }
     
     try {
-      console.log('✅ Using Quick Add flow - calling handleNormalSupplierAddition')
+      console.log('Using Quick Add flow - calling handleNormalSupplierAddition')
       await handleNormalSupplierAddition(supplier, selectedPackage)
-      console.log('✅ handleNormalSupplierAddition completed')
+      console.log('handleNormalSupplierAddition completed')
+      
       const supplierTypeMapping = {
         'Venues': 'venue',
         'Entertainment': 'entertainment', 
@@ -459,24 +463,24 @@ export default function DatabaseDashboard() {
       setActiveMobileSupplierType(supplierType)
       
     } catch (error) {
-      console.error('💥 Error in supplier selection:', error)
-      setEnquiryFeedback(`❌ Failed to process ${supplier.name}: ${error.message}`)
+      console.error('Error in supplier selection:', error)
+      setEnquiryFeedback(`Failed to process ${supplier.name}: ${error.message}`)
     }
   }
 
   const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
-    console.log('📝 DASHBOARD: handleNormalSupplierAddition called for:', supplier.name)
+    console.log('DASHBOARD: handleNormalSupplierAddition called for:', supplier.name)
     
     setShowSupplierModal(false)
     
     setTimeout(() => {
-      console.log('📝 DASHBOARD: Setting modal data for:', supplier.name)
+      console.log('DASHBOARD: Setting modal data for:', supplier.name)
       
       const modalData = { supplier, selectedPackage }
       setAddedSupplierData(modalData)
       setShowSupplierAddedModal(true)
       
-      console.log('📝 DASHBOARD: Modal state should now be:', {
+      console.log('DASHBOARD: Modal state should now be:', {
         showSupplierAddedModal: true,
         addedSupplierData: modalData
       })
@@ -490,9 +494,9 @@ export default function DatabaseDashboard() {
     setSendingEnquiry(true)
     
     try {
-      console.log('🚀 Securing booking for:', supplier.name)
+      console.log('Securing booking for:', supplier.name)
     
-      console.log('📝 STEP 1: Adding supplier to party plan...')
+      console.log('STEP 1: Adding supplier to party plan...')
       const addResult = await partyDatabaseBackend.addSupplierToParty(
         partyId,
         supplier,
@@ -503,9 +507,9 @@ export default function DatabaseDashboard() {
         throw new Error(addResult.error)
       }
       
-      console.log('✅ STEP 1: Supplier added to party plan successfully')
+      console.log('STEP 1: Supplier added to party plan successfully')
   
-      console.log('📧 STEP 2: Creating auto-accepted booking...')
+      console.log('STEP 2: Creating auto-accepted booking...')
       const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
         partyId,
         supplier,
@@ -514,10 +518,10 @@ export default function DatabaseDashboard() {
       )
   
       if (!enquiryResult.success) {
-        console.error('❌ Booking failed but supplier was added:', enquiryResult.error)
-        setEnquiryFeedback(`⚠️ ${supplier.name} added, but booking confirmation failed`)
+        console.error('Booking failed but supplier was added:', enquiryResult.error)
+        setEnquiryFeedback(`${supplier.name} added, but booking confirmation failed`)
       } else {
-        console.log('✅ STEP 2: Booking confirmed successfully')
+        console.log('STEP 2: Booking confirmed successfully')
       }
   
       const replacementContextString = sessionStorage.getItem('replacementContext')
@@ -526,18 +530,18 @@ export default function DatabaseDashboard() {
       if (replacementContextString) {
         try {
           replacementContext = JSON.parse(replacementContextString)
-          console.log('🔄 Found replacement context:', replacementContext)
+          console.log('Found replacement context:', replacementContext)
         } catch (error) {
-          console.error('❌ Error parsing replacement context:', error)
+          console.error('Error parsing replacement context:', error)
         }
       }
 
       if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
-        console.log('🔄 === REPLACEMENT PROCESSING ===')
-        console.log('🔄 Replacement context:', replacementContext)
-        console.log('🔄 Party ID:', partyId)
-        console.log('🔄 Original supplier category:', replacementContext.originalSupplierCategory)
-        console.log('🔄 New supplier:', supplier.name)
+        console.log('=== REPLACEMENT PROCESSING ===')
+        console.log('Replacement context:', replacementContext)
+        console.log('Party ID:', partyId)
+        console.log('Original supplier category:', replacementContext.originalSupplierCategory)
+        console.log('New supplier:', supplier.name)
         
         try {
           const markResult = await partyDatabaseBackend.markReplacementAsProcessed(
@@ -546,24 +550,24 @@ export default function DatabaseDashboard() {
             supplier.id
           )
           
-          console.log('🔄 Mark replacement result:', markResult)
+          console.log('Mark replacement result:', markResult)
           
           if (markResult.success) {
-            console.log('✅ STEP 3: Replacement marked as processed successfully')
+            console.log('STEP 3: Replacement marked as processed successfully')
           } else {
-            console.error('⚠️ STEP 3: Failed to mark replacement as processed:', markResult.error)
+            console.error('STEP 3: Failed to mark replacement as processed:', markResult.error)
           }
         } catch (error) {
-          console.error('❌ STEP 3: Exception marking replacement as processed:', error)
+          console.error('STEP 3: Exception marking replacement as processed:', error)
         }
         
         sessionStorage.removeItem('replacementContext')
-        console.log('🧹 Cleared replacement context from sessionStorage')
+        console.log('Cleared replacement context from sessionStorage')
       } else {
-        console.log('ℹ️ Not a replacement flow - skipping replacement processing')
+        console.log('Not a replacement flow - skipping replacement processing')
       }
 
-      console.log('🎉 STEP 4: Booking secured - updating UI...')
+      console.log('STEP 4: Booking secured - updating UI...')
       await refreshPartyData()
       setShowSupplierAddedModal(false)
       setAddedSupplierData(null)
@@ -574,20 +578,20 @@ export default function DatabaseDashboard() {
       router.push(currentUrl.toString())
       
     } catch (error) {
-      console.error('❌ CRITICAL ERROR in handleModalSendEnquiry:', error)
-      setEnquiryFeedback(`❌ Failed to add ${supplier.name}: ${error.message}`)
+      console.error('CRITICAL ERROR in handleModalSendEnquiry:', error)
+      setEnquiryFeedback(`Failed to add ${supplier.name}: ${error.message}`)
     } finally {
-      console.log('🏁 FINAL STEP: Setting sendingEnquiry to false')
+      console.log('FINAL STEP: Setting sendingEnquiry to false')
       setSendingEnquiry(false)
     }
   }
 
   const handleCancelEnquiry = async (supplierType) => {
-    console.log('🚫 handleCancelEnquiry called with:', supplierType)
-    console.log('🔍 partyId:', partyId)
+    console.log('handleCancelEnquiry called with:', supplierType)
+    console.log('partyId:', partyId)
     
     if (isCancelling || !partyId) {
-      console.log('⚠️ Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
+      console.log('Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
       return
     }
     
@@ -597,16 +601,16 @@ export default function DatabaseDashboard() {
       const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
       
       if (result.success) {
-        console.log('✅ Enquiry cancelled and supplier removed')
+        console.log('Enquiry cancelled and supplier removed')
         await refreshPartyData()
-        setEnquiryFeedback(`✅ Request cancelled for ${supplierType}`)
+        setEnquiryFeedback(`Request cancelled for ${supplierType}`)
         setTimeout(() => setEnquiryFeedback(null), 3000)
       } else {
         throw new Error(result.error)
       }
     } catch (error) {
-      console.error('❌ Error cancelling enquiry:', error)
-      setEnquiryFeedback(`❌ Failed to cancel request: ${error.message}`)
+      console.error('Error cancelling enquiry:', error)
+      setEnquiryFeedback(`Failed to cancel request: ${error.message}`)
       setTimeout(() => setEnquiryFeedback(null), 5000)
     } finally {
       setIsCancelling(false)
@@ -625,7 +629,7 @@ export default function DatabaseDashboard() {
   }
 
   const handleModalClose = () => {
-    console.log('🚪 User clicked "Maybe Later" - closing modal, no supplier added')
+    console.log('User clicked "Maybe Later" - closing modal, no supplier added')
     setShowSupplierAddedModal(false)
     setAddedSupplierData(null)
   }
@@ -634,12 +638,10 @@ export default function DatabaseDashboard() {
   const handlePaymentReady = () => router.push(`/payment/secure-party?party_id=${partyId}`)
   const handleCreateInvites = () => window.location.href = "/e-invites/create"
 
-  // NOW ALL CONDITIONAL RETURNS (after all hooks are called)
-  
-  // Loading check
-  if (loading || phaseLoading) {
+  // SINGLE LOADING CHECK - This is the key fix!
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <SnappyLoader text="Loading your party..." />
       </div>
     )
@@ -647,10 +649,10 @@ export default function DatabaseDashboard() {
 
   // Redirect check
   if (dataSource === 'localStorage') {
-    console.log('📦 Redirecting to localStorage dashboard')
+    console.log('Redirecting to localStorage dashboard')
     router.push('/dashboard-local')
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <SnappyLoader text="Redirecting to your local party..." />
       </div>
     )

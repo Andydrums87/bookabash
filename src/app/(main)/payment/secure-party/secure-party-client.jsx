@@ -639,15 +639,15 @@ export default function PaymentPageContent() {
       alert('Payment was successful, but there was an issue setting up your booking. Please contact support.');
     }
   };
-  
-  // Separate async function for supplier notifications (runs in background)
   const sendSupplierNotifications = async () => {
     try {
-      console.log('Sending supplier notifications...');
+      console.log('Sending supplier notifications via email and SMS...');
       
       for (const supplier of confirmedSuppliers) {
         try {
-          // Get supplier details from database using supplier.id
+          console.log(`Processing notifications for supplier: ${supplier.name} (ID: ${supplier.id})`);
+          
+          // Get supplier details from database
           const { data: supplierData, error } = await supabase
             .from('suppliers')
             .select('data')
@@ -664,6 +664,13 @@ export default function PaymentPageContent() {
             ? JSON.parse(supplierData.data) 
             : supplierData.data;
   
+          console.log(`Supplier data parsed for ${supplier.name}:`, {
+            ownerName: supplierInfo.owner?.name,
+            ownerEmail: supplierInfo.owner?.email,
+            ownerPhone: supplierInfo.owner?.phone,
+            smsConsent: supplierInfo.notifications?.smsBookings
+          });
+  
           if (!supplierInfo?.owner?.email) {
             console.warn(`No email found in owner data for ${supplier.name}`);
             continue;
@@ -672,50 +679,101 @@ export default function PaymentPageContent() {
           // Get supplier payment details
           const supplierPaymentDetail = paymentBreakdown.paymentDetails.find(p => p.category === supplier.category);
           
-          const emailPayload = {
-            supplierEmail: supplierInfo.owner.email,
+          const basePayload = {
             supplierName: supplierInfo.owner.name || supplier.name,
             customerName: partyDetails.parentName,
             customerEmail: partyDetails.email,
-            customerPhone: user?.phone || supplierInfo.owner.phone, // Include supplier's phone as backup
+            customerPhone: user?.phone || '',
             childName: partyDetails.childName,
             theme: partyDetails.theme,
             partyDate: partyDetails.date,
-            partyTime: partyDetails.time,
+            partyTime: partyDetails.time || '14:00',
             partyLocation: partyDetails.location,
-            guestCount: partyDetails.guestCount,
+            guestCount: String(partyDetails.guestCount || 10),
             serviceType: supplier.category,
-            depositAmount: supplierPaymentDetail?.amountToday || supplier.price,
-            supplierEarning: supplier.price,
-            paymentType: supplierPaymentDetail?.paymentType || (isLeadTimeSupplier(supplier.category) ? 'full_payment' : 'deposit'),
-            dashboardLink: 'http://localhost:3000/suppliers/dashboard'
+            depositAmount: String(supplierPaymentDetail?.amountToday || supplier.price),
+            supplierEarning: String(supplier.price),
+            paymentType: supplierPaymentDetail?.paymentType || 'deposit'
           };
   
-          console.log(`Sending notification to ${supplierInfo.owner.name} at ${supplierInfo.owner.email}`);
-          console.log('Email payload:', JSON.stringify(emailPayload, null, 2)); // Add this line
+          // 1. Send Email Notification (Always send)
+          try {
+            const emailPayload = {
+              supplierEmail: supplierInfo.owner.email,
+              dashboardLink: 'http://localhost:3000/suppliers/dashboard',
+              ...basePayload
+            };
   
-          const response = await fetch('/api/email/supplier-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailPayload)
-          });
+            console.log(`Sending email to ${supplierInfo.owner.name} at ${supplierInfo.owner.email}`);
   
-          if (response.ok) {
-            console.log(`✅ Notification sent to ${supplier.name} (${supplierInfo.owner.name})`);
-          } else {
-            const errorText = await response.text();
-            console.warn(`❌ Failed to notify ${supplier.name}:`, errorText);
+            const emailResponse = await fetch('/api/email/supplier-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(emailPayload)
+            });
+  
+            if (emailResponse.ok) {
+              console.log(`✅ Email sent successfully to ${supplier.name}`);
+            } else {
+              const emailError = await emailResponse.text();
+              console.warn(`❌ Email failed for ${supplier.name}:`, emailError);
+            }
+          } catch (emailError) {
+            console.error(`Email error for ${supplier.name}:`, emailError);
           }
+  
+          // 2. Send SMS Notification (Only if consented and phone exists)
+          if (supplierInfo.owner?.phone) {
+            // Check if SMS notifications are enabled (consent given)
+            if (supplierInfo.notifications?.smsBookings === true) {
+              try {
+                console.log(`Sending SMS to ${supplierInfo.owner.name} at ${supplierInfo.owner.phone} (consent: enabled)`);
+                
+                const smsPayload = {
+                  phoneNumber: supplierInfo.owner.phone,
+                  dashboardLink: 'http://localhost:3000/suppliers/dashboard',
+                  ...basePayload
+                };
+  
+                const smsResponse = await fetch('/api/send-sms-notification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(smsPayload)
+                });
+  
+                if (smsResponse.ok) {
+                  const smsResult = await smsResponse.json();
+                  console.log(`✅ SMS sent successfully to ${supplier.name} - Message ID: ${smsResult.messageId}`);
+                } else {
+                  const smsError = await smsResponse.text();
+                  console.warn(`❌ SMS failed for ${supplier.name}:`, smsError);
+                }
+              } catch (smsError) {
+                console.error(`SMS error for ${supplier.name}:`, smsError);
+              }
+            } else {
+              // Phone exists but SMS is disabled
+              console.log(`📱 SMS disabled for ${supplier.name} - respecting user preference (phone: ${supplierInfo.owner.phone})`);
+            }
+          } else {
+            // No phone number at all
+            console.log(`📱 No phone number for ${supplier.name} - skipping SMS`);
+          }
+  
+          console.log(`✅ Completed notification processing for ${supplier.name}`);
           
         } catch (supplierError) {
-          console.warn(`Error notifying supplier ${supplier.name}:`, supplierError);
+          console.error(`Error processing notifications for supplier ${supplier.name}:`, supplierError);
         }
       }
       
+      console.log('✅ All supplier notifications completed');
+      
     } catch (error) {
-      console.warn('Error in supplier notifications:', error);
+      console.error('Error in supplier notifications:', error);
     }
   };
+
   const handlePaymentError = (error) => {
     console.error('Payment failed:', error)
   }

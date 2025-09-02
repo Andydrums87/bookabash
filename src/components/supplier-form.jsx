@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "./ui/checkbox"
 import { MapPin, Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -37,6 +38,13 @@ export function SupplierForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  // Add to your form state
+const [notificationPreferences, setNotificationPreferences] = useState({
+  emailBookings: true,
+  emailMessages: true,
+  smsBookings: false,  // Default to false - requires explicit opt-in
+  smsReminders: false
+});
 
   // Form data for all steps
   const [businessData, setBusinessData] = useState({
@@ -537,7 +545,31 @@ export function SupplierForm() {
               </Button>
             </div>
           </div>
+          <div className="space-y-4 mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+  <h3 className="font-semibold text-blue-900">📱 Notification Preferences</h3>
+  
+  <div className="space-y-3">
+    <div className="flex items-start space-x-3">
+      <Checkbox
+        id="smsBookingsOnboard"
+        checked={notificationPreferences.smsBookings}
+        onCheckedChange={(checked) => setNotificationPreferences(prev => ({ ...prev, smsBookings: !!checked }))}
+        className="mt-1"
+      />
+      <Label htmlFor="smsBookingsOnboard" className="text-sm text-blue-800">
+        <strong>Enable urgent SMS alerts</strong> - Get instant notifications when customers pay deposits (highly recommended for faster response times)
+      </Label>
+    </div>
+    
+    <div className="text-xs text-blue-700 ml-6">
+      ✓ Instant alerts when payments are made<br/>
+      ✓ 2-hour response window reminders<br/>
+      ✓ Reply STOP anytime to opt out
+    </div>
+  </div>
+</div>
         </div>
+        
       )}
 
       {/* Step 3: Success */}

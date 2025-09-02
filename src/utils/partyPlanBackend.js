@@ -132,7 +132,7 @@ class PartyPlanBackend {
       // ✅ FIXED: Ensure einvites is never saved to party plan
       const cleanPlan = { ...plan };
       if (cleanPlan.einvites) {
-        console.log('🧹 Removing einvites before saving party plan');
+
         delete cleanPlan.einvites;
       }
       
@@ -164,11 +164,6 @@ addSupplierToPlan(supplier, selectedPackage = null) {
     // ✅ FIXED: Extract add-ons from selectedPackage if they exist
     const packageAddons = selectedPackage?.addons || selectedPackage?.selectedAddons || [];
     
-    console.log('🔧 BACKEND DEBUG - Adding supplier with addons:', {
-      supplierName: supplier.name,
-      packageAddons: packageAddons,
-      selectedPackage: selectedPackage
-    });
 
     // ✅ FIXED: Enhanced supplier data that preserves add-ons
     const supplierData = {
@@ -203,21 +198,10 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0
     };
 
-    // ✅ NEW: Debug logging to verify the data
-    console.log('🔍 BACKEND DEBUG - Storing supplier with data:', {
-      supplierName: supplier.name,
-      basePrice: selectedPackage?.price || supplier.priceFrom,
-      totalPrice: supplierData.totalPrice,
-      selectedAddons: supplierData.selectedAddons,
-      addonsCount: supplierData.selectedAddons.length,
-      hasPackageData: !!supplierData.packageData
-    });
-
     plan[supplierType] = supplierData;
     
     this.savePartyPlan(plan);
     
-    console.log('✅ Supplier added and event emitted:', supplierType);
     
     return { 
       success: true, 
@@ -275,13 +259,13 @@ addAddonToPlan(addon) {
       displayId: addon.displayId || null
     };
 
-    console.log('🔍 BACKEND DEBUG - Saving addon with data:', addonData);
+
 
     plan.addons.push(addonData);
     
     this.savePartyPlan(plan); // ✅ Keep the 'this.' prefix
     
-    console.log('✅ Add-on added and event emitted:', addon.name);
+
     
     return { 
       success: true, 
@@ -311,7 +295,7 @@ addAddonToPlan(addon) {
       
       this.savePartyPlan(plan);
       
-      console.log('✅ Add-on removed:', removedAddon.name);
+
       
       return { success: true, removedAddon };
     } catch (error) {
@@ -358,7 +342,7 @@ addAddonToPlan(addon) {
       
       this.savePartyPlan(plan);
       
-      console.log('✅ Add-on removed from supplier:', removedAddon.name);
+
       
       return { success: true, removedAddon };
     } catch (error) {
@@ -385,7 +369,7 @@ addAddonToPlan(addon) {
         plan.addons.splice(addonIndex, 1);
         
         this.savePartyPlan(plan);
-        console.log('✅ Add-on removed from global addons:', removedAddon.name);
+
         return { success: true, removedAddon };
       }
       
@@ -644,14 +628,14 @@ export function usePartyPlan() {
       loadPartyPlan();
       
       const unsubscribe = partyPlanBackend.onUpdate((updatedPlan) => {
-        console.log('🔄 Real-time update received:', updatedPlan);
+
         setPartyPlan(updatedPlan);
       });
 
        // NEW: Add storage event listener for cross-component sync
        const handleStorageChange = (e) => {
         if (e.key === 'party_plan' || e.key === 'user_party_plan') {
-          console.log('🔄 usePartyPlan: Storage changed, reloading...', e.key);
+   
           loadPartyPlan();
         }
       };
@@ -693,7 +677,7 @@ const loadPartyPlan = () => {
       try {
         const altPlan = JSON.parse(alternativeData);
         if (altPlan.addons && altPlan.addons.length > 0) {
-          console.log('🔄 Found addons in party_plan, merging...');
+   
           
           // Merge addons (avoid duplicates)
           const currentAddons = data.addons || [];
@@ -712,7 +696,7 @@ const loadPartyPlan = () => {
           partyPlanBackend.savePartyPlan(data);
           localStorage.removeItem('party_plan');
           
-          console.log('✅ Merged and cleaned up storage');
+
         }
       } catch (e) {
         console.error('Error merging storage:', e);
@@ -741,7 +725,7 @@ const addSupplier = async (supplier, selectedPackage = null) => {
     const result = partyPlanBackend.addSupplierToPlan(supplier, selectedPackage);
     
     if (result.success) {
-      console.log('✅ Supplier added successfully, state will update via event');
+
       return { success: true, supplierType: result.supplierType };
     } else {
       setError(result.error);
@@ -762,7 +746,7 @@ const addSupplier = async (supplier, selectedPackage = null) => {
       const result = partyPlanBackend.addAddonToPlan(addon);
       
       if (result.success) {
-        console.log('✅ Add-on added successfully, state will update via event');
+
         return { success: true, addon: result.addon };
       } else {
         setError(result.error);
@@ -784,7 +768,7 @@ const addSupplier = async (supplier, selectedPackage = null) => {
       const result = partyPlanBackend.removeAddonFromPlan(addonId);
       
       if (result.success) {
-        console.log('✅ Add-on removed successfully, state will update via event');
+
         return { success: true };
       } else {
         setError(result.error);
@@ -808,7 +792,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
     const result = partyPlanBackend.removeAddonFromSupplier(supplierType, addonId);
     
     if (result.success) {
-      console.log('✅ Add-on removed from supplier successfully, state will update via event');
+    
       return { success: true };
     } else {
       setError(result.error);
@@ -830,7 +814,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
       const result = partyPlanBackend.removeSupplierFromPlan(supplierType);
       
       if (result.success) {
-        console.log('✅ Supplier removed successfully, state will update via event');
+
         return { success: true };
       } else {
         setError(result.error);
@@ -854,7 +838,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
       const result = partyPlanBackend.updateSupplierPackage(supplierId, newPackage);
       
       if (result.success) {
-        console.log('✅ Supplier package updated successfully');
+   
         return { success: true };
       } else {
         setError(result.error);

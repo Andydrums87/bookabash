@@ -100,7 +100,7 @@ export default function Blog() {
       <section className="relative py-12 md:py-20">
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-[#FC6B57]/40 to-[#FC6B57]/30 z-10"></div>
-          <Image src="/blog-hero.png" alt="Children's party decorations and supplies" fill sizes="100vw" className="object-cover" />
+          <Image src="/birthday-party-illustration.png" alt="Children's party decorations and supplies" fill sizes="100vw" className="object-cover" />
         </div>
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-sm p-8 md:p-12 rounded-lg shadow-xl">

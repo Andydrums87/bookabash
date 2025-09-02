@@ -27,7 +27,7 @@ export function usePartyDatabase() {
       if (result.success && result.party) {
         setCurrentParty(result.party)
         setPartyPlan(result.party.party_plan || {})
-        console.log('✅ Loaded current party:', result.party.id)
+ 
       } else {
         setCurrentParty(null)
         setPartyPlan({})
@@ -53,7 +53,7 @@ export function usePartyDatabase() {
       if (result.success) {
         setCurrentParty(result.party)
         setPartyPlan(result.party.party_plan || {})
-        console.log('✅ Party created successfully:', result.party.id)
+
         return { success: true, party: result.party }
       } else {
         setError(result.error)
@@ -90,7 +90,7 @@ export function usePartyDatabase() {
       if (result.success) {
         setCurrentParty(result.party)
         setPartyPlan(result.party.party_plan || {})
-        console.log('✅ Supplier added successfully:', result.supplierType)
+   
         return { success: true, supplierType: result.supplierType }
       } else {
         setError(result.error)
@@ -159,7 +159,7 @@ export function usePartyDatabase() {
       if (result.success) {
         setCurrentParty(result.party)
         setPartyPlan(result.party.party_plan || {})
-        console.log('✅ Supplier removed successfully:', supplierType)
+
         return { success: true }
       } else {
         setError(result.error)
@@ -229,7 +229,7 @@ export function usePartyDatabase() {
       if (result.success) {
         // Reload party to get updated status
         await loadCurrentParty()
-        console.log(`✅ Sent ${result.count} enquiries successfully`)
+
         return { success: true, count: result.count, enquiries: result.enquiries }
       } else {
         setError(result.error)

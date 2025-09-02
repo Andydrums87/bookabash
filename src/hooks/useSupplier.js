@@ -22,13 +22,13 @@ export function useSupplier() {
     
     // ✅ Prevent duplicate calls
     if (isLoadingRef.current || lastBusinessIdRef.current === businessId) {
-      console.log("🚫 Skipping duplicate loadSupplier call")
+
       return
     }
 
     // 🔧 FIX: Don't load if we don't have a business yet
     if (!businessId) {
-      console.log("⏳ No business selected yet, waiting...")
+
       setLoading(false)
       return
     }
@@ -45,7 +45,7 @@ export function useSupplier() {
       const userId = userResult?.user?.id
       if (!userId) throw new Error("No logged-in user")
 
-      console.log("🔍 useSupplier loading for business:", currentBusiness.name, businessId)
+ 
 
       // Load the specific business from the context
       const { data: businessRow, error: businessErr } = await supabase
@@ -72,7 +72,7 @@ export function useSupplier() {
         const businessData = businessRow.data || {}
         setSupplierData(businessData)
         
-        console.log("✅ Loaded business data for:", businessRow.business_name)
+
         
         // Dispatch event for other components
         window.dispatchEvent(new CustomEvent('supplierDataChanged', { 
@@ -97,7 +97,7 @@ export function useSupplier() {
 
   // ✅ Memoized refresh function
   const refresh = useCallback(async () => {
-    console.log("🔄 Refreshing supplier data...")
+
     lastBusinessIdRef.current = null // Reset to force reload
     await loadSupplier()
   }, [loadSupplier])
@@ -105,7 +105,7 @@ export function useSupplier() {
   // 🔧 UPDATED: Load supplier when currentBusiness changes from BusinessContext
   useEffect(() => {
     if (currentBusiness?.id && currentBusiness.id !== lastBusinessIdRef.current) {
-      console.log("🏢 Business changed in context, loading data for:", currentBusiness.name)
+
       loadSupplier()
     }
   }, [currentBusiness?.id, loadSupplier])
@@ -113,7 +113,7 @@ export function useSupplier() {
   // 🆕 ENHANCED: Listen for force refresh events
   useEffect(() => {
     const handleForceRefresh = (event) => {
-      console.log("🔄 Force refresh triggered, reloading supplier data...")
+
       lastBusinessIdRef.current = null // Reset to force reload
       loadSupplier()
     }
@@ -128,7 +128,7 @@ export function useSupplier() {
   // ✅ Supplier update event listener - stable
   useEffect(() => {
     const handleSupplierUpdate = () => {
-      console.log("🔄 Supplier updated event received, refreshing...")
+
       refresh()
     }
 

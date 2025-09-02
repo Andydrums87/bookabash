@@ -16,7 +16,7 @@ export const useCheckIfNewlyAdded = (supplierType) => {
     )
     
     if (wasJustAdded) {
-      console.log(`🎯 Detected newly added supplier: ${supplierType}`)
+ 
       setIsNewlyAdded(true)
       
       // Reset after animation duration + buffer

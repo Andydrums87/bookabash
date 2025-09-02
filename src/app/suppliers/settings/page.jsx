@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useFirebaseNotifications } from '@/hooks/useFirebaseNotifications';
 import {
   User,
   Building,
@@ -698,6 +699,16 @@ const Settings = () => {
             </CardContent>
           </Card>
         </div>
+        <div className="p-4 sm:p-6 pt-0">
+        <SMSNotificationSettings 
+  supplierId={supplierData?.id || supplier?.id}
+  notifications={notifications}
+  setNotifications={setNotifications}
+  onSave={handleSaveSettings}  // Pass the save function
+  updateProfile={updateProfile}  // Pass from useSupplierDashboard hook
+  supplierData={supplierData}  // Pass supplier data for auto-save
+/>
+</div>
 
         {/* Security Settings - Mobile Optimized */}
         <div className="p-4 sm:p-6 pt-0">
@@ -812,3 +823,158 @@ const Settings = () => {
 }
 
 export default Settings
+
+// Add this new component at the bottom of your Settings.js file, replacing the PushNotificationSettings
+
+const SMSNotificationSettings = ({ supplierId, notifications, setNotifications }) => {
+  const [updatingConsent, setUpdatingConsent] = useState(false);
+
+  const handleSMSConsentChange = async (consentType, enabled) => {
+    setUpdatingConsent(true);
+    try {
+      // Update local state immediately for responsive UI
+      setNotifications(prev => ({ ...prev, [consentType]: enabled }));
+      
+      console.log(`SMS consent updated: ${consentType} = ${enabled}`);
+      
+      // Here you could also make an API call to update the backend immediately
+      // if you want real-time consent updates
+      
+    } catch (error) {
+      console.error('Error updating SMS consent:', error);
+      // Revert on error
+      setNotifications(prev => ({ ...prev, [consentType]: !enabled }));
+    } finally {
+      setUpdatingConsent(false);
+    }
+  };
+
+  const getSMSStatus = () => {
+    if (notifications.smsBookings || notifications.smsReminders) {
+      return { 
+        status: 'enabled', 
+        color: 'green', 
+        icon: '✅', 
+        message: 'SMS notifications are active' 
+      };
+    } else {
+      return { 
+        status: 'disabled', 
+        color: 'gray', 
+        icon: '📱', 
+        message: 'SMS notifications are disabled' 
+      };
+    }
+  };
+
+  const statusInfo = getSMSStatus();
+
+  return (
+    <Card className="shadow-sm border-2 border-blue-200">
+      <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-blue-50 to-blue-100">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <MessageSquare className="w-5 h-5" />
+          SMS Notifications
+        </CardTitle>
+        <CardDescription className="text-sm sm:text-base">
+          Get instant SMS alerts for urgent booking updates
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-6 pt-0">
+        
+        {/* Status Display */}
+        <div className={`p-4 rounded-lg mb-6 border-2 ${
+          statusInfo.status === 'enabled' 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-gray-50 border-gray-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{statusInfo.icon}</span>
+            <div>
+              <h4 className={`font-semibold ${
+                statusInfo.status === 'enabled' ? 'text-green-800' : 'text-gray-800'
+              }`}>
+                {statusInfo.message}
+              </h4>
+              {statusInfo.status === 'enabled' && (
+                <p className="text-green-700 text-sm mt-1">
+                  You'll receive urgent SMS notifications for paid bookings
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* SMS Consent Checkboxes */}
+        <div className="space-y-4 mb-6">
+          <h4 className="font-semibold text-gray-900">Choose your SMS preferences:</h4>
+          
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="smsBookings"
+                checked={notifications.smsBookings}
+                onCheckedChange={(checked) => handleSMSConsentChange('smsBookings', !!checked)}
+                disabled={updatingConsent}
+                className="mt-1"
+              />
+              <Label htmlFor="smsBookings" className="text-sm font-medium leading-relaxed">
+                <strong className="text-red-600">🚨 Urgent booking SMS alerts</strong>
+                <br />
+                <span className="text-gray-600">Get instant notifications when customers pay deposits (highly recommended)</span>
+              </Label>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="smsReminders"
+                checked={notifications.smsReminders}
+                onCheckedChange={(checked) => handleSMSConsentChange('smsReminders', !!checked)}
+                disabled={updatingConsent}
+                className="mt-1"
+              />
+              <Label htmlFor="smsReminders" className="text-sm font-medium leading-relaxed">
+                <strong>📅 Appointment reminders</strong>
+                <br />
+                <span className="text-gray-600">Get SMS reminders about upcoming parties</span>
+              </Label>
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits Section */}
+        {!notifications.smsBookings && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <h4 className="font-semibold text-amber-800 mb-3">Why enable urgent booking SMS?</h4>
+            <div className="space-y-2 text-sm text-amber-700">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-500">⚡</span>
+                <span>Respond within 2-hour window requirement</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-500">💰</span>
+                <span>Never miss a paid booking opportunity</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-purple-500">📱</span>
+                <span>Get notified even when not checking emails</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Privacy & Legal Notice */}
+        <div className="p-3 bg-gray-50 rounded-lg border">
+          <div className="flex items-start gap-2">
+            <Shield className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-gray-600">
+              <p className="font-medium mb-1">SMS Privacy & Consent</p>
+              <p>By enabling SMS notifications, you consent to receiving automated text messages from PartySnap about your bookings. Message and data rates may apply. Reply STOP to any message to opt out instantly. We only send urgent booking-related messages - no marketing or spam.</p>
+            </div>
+          </div>
+        </div>
+
+      </CardContent>
+    </Card>
+  );
+};

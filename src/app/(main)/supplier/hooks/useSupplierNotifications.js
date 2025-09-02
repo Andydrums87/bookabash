@@ -8,7 +8,7 @@ export const useSupplierNotifications = () => {
 
   // Show notification with auto-dismiss
   const showNotification = useCallback((notificationData) => {
-    console.log('📢 Showing notification:', notificationData)
+
     
     // Ensure notification has required properties
     const notification = {
@@ -29,7 +29,7 @@ export const useSupplierNotifications = () => {
 
   // Hide notification immediately
   const hideNotification = useCallback(() => {
-    console.log('🔇 Hiding notification')
+ 
     setNotification(null)
   }, [])
 

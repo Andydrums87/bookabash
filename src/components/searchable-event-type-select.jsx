@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ChevronDown, Search, X } from "lucide-react"
+import { ChevronDown, Search, X,  UsersIcon, } from "lucide-react"
+
 
 const eventTypes = [
 
@@ -173,10 +174,11 @@ export default function SearchableEventTypeSelect({
           }
         }}
         onKeyDown={handleKeyDown}
-        className="w-full justify-between bg-white border-gray-200 focus:border-primary-500 rounded-xl h-12 px-3 text-left font-normal"
+        className="w-full justify-between md:bg-white bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 px-3 text-left font-normal"
       >
-        <span className={selectedValue ? "text-gray-900" : "text-gray-500"}>
-          {selectedLabel}
+          <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+        <span className={selectedValue ? "text-gray-900 ml-6" : "text-gray-500 ml-6"}>
+        {selectedLabel}
         </span>
         <ChevronDown
           className={`w-4 h-4 text-gray-400 transition-transform ${
@@ -202,7 +204,7 @@ export default function SearchableEventTypeSelect({
                   setHighlightedIndex(-1)
                 }}
                 onKeyDown={handleKeyDown}
-                className="pl-10 pr-8 h-9 border-gray-200 focus:border-primary-500 rounded-lg"
+                className="pl-10 pr-8 h-9 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-lg"
               />
               {searchQuery && (
                 <button

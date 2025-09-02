@@ -8,7 +8,7 @@ export default function SnappyLoader({ text = "Loading..." }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://res.cloudinary.com/dghzq6xtd/raw/upload/v1756504250/snappy-head-nod_roivzc.json')
+    fetch('https://res.cloudinary.com/dghzq6xtd/raw/upload/v1756851637/Animation_jgd2km.json')
       .then(response => response.json())
       .then(data => {
         setAnimationData(data);
@@ -24,7 +24,7 @@ export default function SnappyLoader({ text = "Loading..." }) {
   if (!animationData) return null;
 
   return (
-    <div className="flex flex-col bg-gray-50 items-center justify-center">
+    <div className="flex flex-col bg-white items-center justify-center">
       <Lottie 
         animationData={animationData} 
         loop={true}

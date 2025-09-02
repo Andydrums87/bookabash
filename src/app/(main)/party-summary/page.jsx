@@ -11,7 +11,7 @@ import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { ChevronDown, ChevronRight, Gift, Edit, Trash2, Building, Users, DollarSign, CreditCard } from "lucide-react"
 import { useState } from "react"
 import SupplierChatTabs from '@/components/SupplierChatTabs'
-import { supabase } from "@/lib/supabase"
+import SnappyLoader from "@/components/ui/SnappyLoader"
 
 
 // Mobile Party Service Card Component
@@ -508,12 +508,9 @@ export default function PartyPlanSummary() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[hsl(var(--primary-50))] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-[hsl(var(--primary-500))] border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading your party summary...</p>
-        </div>
-      </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+             <SnappyLoader text="Loading your party..." />
+           </div>
     )
   }
 

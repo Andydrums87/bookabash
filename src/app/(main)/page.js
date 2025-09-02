@@ -182,7 +182,7 @@ const isFormValid = () => {
         }
       }
   
-      console.log("🎪 PRODUCTION: Submitting party with details:", partyDetails)
+   
   
       setBuildingProgress(15)
       await new Promise((resolve) => setTimeout(resolve, 800))
@@ -199,13 +199,12 @@ const isFormValid = () => {
   
       if (result.success) {
         setBuildingProgress(100)
-        console.log("✅ PRODUCTION: Party built successfully!")
+
         
         // ✅ PRODUCTION: Multiple welcome triggers for reliability
         try {
           // Method 1: URL parameter (existing)
-          console.log("📝 PRODUCTION: Setting welcome triggers...")
-          
+   
           // Method 2: Multiple localStorage keys for redundancy
           const welcomeData = {
             shouldShowWelcome: true,
@@ -230,7 +229,7 @@ const isFormValid = () => {
             sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
           }
           
-          console.log("💾 PRODUCTION: Welcome triggers saved:", welcomeData)
+
           
         } catch (storageError) {
           console.error("❌ PRODUCTION: Storage error:", storageError)
@@ -242,7 +241,7 @@ const isFormValid = () => {
         try {
           // Method 1: Standard redirect with parameters
           const redirectURL = "/dashboard?show_welcome=true&source=homepage&t=" + Date.now()
-          console.log("🔄 PRODUCTION: Redirecting to:", redirectURL)
+
           
           // Method 2: Set a flag before redirect
           if (typeof window !== 'undefined') {
@@ -287,8 +286,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
-
+    <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
       <PartyBuildingLoader
         isVisible={showPartyLoader}
         theme={mapThemeValue(formData.theme)}

@@ -8,7 +8,7 @@ export function useRobustEnquiryData(rawEnquiries = []) {
     const errors = []
 
     if (!rawEnquiries || rawEnquiries.length === 0) {
-      console.log('⚠️ DEBUG: No enquiries to process')
+
       return {
         leads: [],
         errors: [],
@@ -21,7 +21,7 @@ export function useRobustEnquiryData(rawEnquiries = []) {
         // Extract party information
         const party = enquiry.parties
         if (!party) {
-          console.log(`❌ DEBUG: Enquiry ${enquiry.id} - No party data`)
+       
           errors.push({
             enquiry_id: enquiry.id,
             error: 'Missing party data',

@@ -254,11 +254,11 @@ export default function SupplierCustomizationModal({
       autoEnquiry: false
     }
 
-    console.log('Enhanced cake order data:', dataToSend)
+
 
     try {
       const result = onAddToPlan(dataToSend)
-      console.log('onAddToPlan returned:', result)
+
       onClose()
     } catch (error) {
       console.error('Error calling onAddToPlan:', error)

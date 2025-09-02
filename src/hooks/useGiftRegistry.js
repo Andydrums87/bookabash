@@ -10,7 +10,7 @@ export const useGiftRegistry = (partyId) => {
 
   const loadRegistry = async () => {
     if (!partyId) {
-      console.log('🚫 [useGiftRegistry] No party ID provided');
+
       return;
     }
     
@@ -22,13 +22,13 @@ export const useGiftRegistry = (partyId) => {
       if (result.success) {
         setRegistry(result.registry);
         setRegistryItems(result.items);
-        console.log('✅ [useGiftRegistry] Registry loaded:', result.registry?.id || 'none');
+
       } else {
         // Only set error if it's a real error, not just "no registry found"
         if (result.error && !result.error.includes('not found')) {
           setError(result.error);
         }
-        console.log('ℹ️ [useGiftRegistry] No registry found (this is normal)');
+    
       }
     } catch (err) {
       console.error('❌ [useGiftRegistry] Error loading gift registry:', err);
@@ -215,13 +215,13 @@ export const useGiftSuggestions = (theme, age, category = null) => {
     const loadSuggestions = async () => {
       // Don't load if theme or age is null/undefined
       if (!theme || !age || theme === 'undefined') {
-        console.log('🚫 Skipping suggestions load - missing theme or age:', { theme, age });
+      
         setSuggestions([]);
         setLoading(false);
         return;
       }
       
-      console.log('🎯 Loading suggestions for:', { theme, age, category });
+
       
       setLoading(true);
       setError(null);
@@ -285,14 +285,14 @@ export const useGiftSearch = () => {
 
     // Don't search if it's the same as last query
     if (searchTerm === lastQuery) {
-      console.log('🔄 Skipping duplicate search for:', searchTerm);
+
       return;
     }
 
     // Check cache first
     const cached = searchCacheRef.current.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log('💾 Using cached results for:', searchTerm);
+
       setSearchResults(cached.data);
       setLastQuery(searchTerm);
       setError(null);
@@ -309,7 +309,7 @@ export const useGiftSearch = () => {
 
     setIsLoading(true);
     setError(null);
-    console.log('🔍 Making fresh search for:', searchTerm);
+  
 
     try {
       // Search both curated and Amazon products
@@ -350,12 +350,6 @@ export const useGiftSearch = () => {
         if (amazon[i]) combined.push(amazon[i]);
       }
 
-      console.log('🔍 Search results:', { 
-        searchTerm, 
-        curated: curated.length, 
-        amazon: amazon.length, 
-        total: combined.length 
-      });
 
       // Cache the results
       searchCacheRef.current.set(cacheKey, {
@@ -368,7 +362,7 @@ export const useGiftSearch = () => {
 
     } catch (err) {
       if (err.name === 'AbortError') {
-        console.log('🚫 Search aborted');
+
         return;
       }
       console.error('Error searching gifts:', err);

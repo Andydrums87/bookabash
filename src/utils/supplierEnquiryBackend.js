@@ -16,13 +16,11 @@ class SupplierEnquiryBackend {
         throw new Error('No authenticated user')
       }
 
-      console.log('🔍 Querying enquiries for auth user:', authUser.user.id)
-      console.log('🏢 Specific business ID:', specificBusinessId)
 
       let supplierIds = []
 
       if (specificBusinessId) {
-        console.log('🎯 Querying for specific business:', specificBusinessId)
+    
         supplierIds = [specificBusinessId]
       } else {
         const { data: supplierRecords, error: supplierError } = await supabase
@@ -36,7 +34,7 @@ class SupplierEnquiryBackend {
         }
 
         if (!supplierRecords || supplierRecords.length === 0) {
-          console.log('⚠️ No supplier records found for user:', authUser.user.id)
+
           return { 
             success: true, 
             enquiries: [], 
@@ -44,16 +42,15 @@ class SupplierEnquiryBackend {
           }
         }
 
-        console.log(`✅ Found ${supplierRecords.length} supplier record(s)`)
+
         supplierIds = supplierRecords.map(s => s.id)
       }
 
-      console.log('🔍 Getting enquiries for supplier IDs:', supplierIds)
+     
 
-      // ✅ Use manual joins (automatic JOINs not working in this setup)
-      console.log('🔧 FORCING manual joins (bypassing automatic JOINs)...')
+     
       const manualResult = await this.manualJoinEnquiries(supplierIds, status)
-      console.log('🔧 Manual join result:', manualResult.success ? 'SUCCESS' : 'FAILED', manualResult.enquiries?.length || 0, 'enquiries')
+
       return manualResult
 
     } catch (error) {
@@ -67,7 +64,7 @@ class SupplierEnquiryBackend {
    */
   async manualJoinEnquiries(supplierIds, status = null) {
     try {
-      console.log('🔧 Starting manual join for suppliers:', supplierIds)
+
 
     // In manualJoinEnquiries function
 let enquiriesQuery = supabase
@@ -87,7 +84,7 @@ let enquiriesQuery = supabase
         throw new Error(`Failed to fetch enquiries: ${enquiriesError.message}`)
       }
 
-      console.log('📧 Found enquiries:', enquiries?.length || 0)
+     
 
       if (!enquiries || enquiries.length === 0) {
         return { success: true, enquiries: [] }
@@ -95,36 +92,29 @@ let enquiriesQuery = supabase
 
       // Step 2: Get unique party IDs
       const partyIds = [...new Set(enquiries.map(e => e.party_id).filter(Boolean))]
-      console.log('🎉 Party IDs:', partyIds)
+
 
       if (partyIds.length === 0) {
-        console.log('⚠️ No party IDs found in enquiries')
+ 
         return { success: true, enquiries }
       }
 
-      // Step 3: Fetch parties
-      console.log('🔍 Attempting to fetch parties with IDs:', partyIds)
       const { data: parties, error: partiesError } = await supabase
         .from('parties')
         .select('*')
         .in('id', partyIds)
 
-      console.log('🔍 Parties query result:', {
-        data: parties,
-        error: partiesError,
-        count: parties?.length || 0
-      })
-
+  
       if (partiesError) {
         console.error('❌ Parties query error:', partiesError)
         return { success: true, enquiries }
       }
 
-      console.log('🎉 Found parties:', parties?.length || 0)
+   
 
       // If no parties found, let's try a direct query to see if the party exists
       if (!parties || parties.length === 0) {
-        console.log('🔍 No parties found, checking if party exists with direct query...')
+
         for (const partyId of partyIds) {
           const { data: singleParty, error: singleError } = await supabase
             .from('parties')
@@ -132,16 +122,13 @@ let enquiriesQuery = supabase
             .eq('id', partyId)
             .single()
           
-          console.log(`🔍 Direct query for party ${partyId}:`, {
-            data: singleParty,
-            error: singleError
-          })
+      
         }
       }
 
       // Step 4: Get unique user IDs from parties
       const userIds = [...new Set(parties?.map(p => p.user_id).filter(Boolean) || [])]
-      console.log('👤 User IDs:', userIds)
+
 
       let users = []
       if (userIds.length > 0) {
@@ -154,7 +141,7 @@ let enquiriesQuery = supabase
           console.error('❌ Users query error:', usersError)
         } else {
           users = usersData || []
-          console.log('👤 Found users:', users.length)
+    
         }
       }
 
@@ -167,14 +154,7 @@ let enquiriesQuery = supabase
         const party = partiesMap.get(enquiry.party_id)
         const user = party ? usersMap.get(party.user_id) : null
 
-        console.log(`🔗 Joining enquiry ${enquiry.id}:`, {
-          party_id: enquiry.party_id,
-          hasParty: !!party,
-          hasUser: !!user,
-          partyChildName: party?.child_name,
-          userFirstName: user?.first_name
-        })
-
+     
         return {
           ...enquiry,
           parties: party ? {
@@ -184,7 +164,7 @@ let enquiriesQuery = supabase
         }
       })
 
-      console.log('✅ Manual join completed:', joinedEnquiries.length, 'enquiries')
+
       return { success: true, enquiries: joinedEnquiries }
 
     } catch (error) {
@@ -263,7 +243,7 @@ let enquiriesQuery = supabase
 
       if (error) throw error
 
-      console.log('✅ Enquiry marked as viewed:', enquiryId)
+
       return { success: true, enquiry: updatedEnquiry }
 
     } catch (error) {
@@ -281,13 +261,7 @@ let enquiriesQuery = supabase
 
 async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isDepositPaid = false) {
   try {
-    console.log('🎯 Supplier responding to enquiry:', {
-      enquiryId,
-      response,
-      finalPrice,
-      isDepositPaid,
-      messageLength: message?.length || 0
-    })
+  
 
     // First, get the current enquiry to check its state
     const { data: currentEnquiry, error: fetchError } = await supabase
@@ -298,12 +272,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
     if (fetchError) throw fetchError
 
-    console.log('📋 Current enquiry state:', {
-      status: currentEnquiry.status,
-      auto_accepted: currentEnquiry.auto_accepted,
-      payment_status: currentEnquiry.payment_status,
-      supplier_response: currentEnquiry.supplier_response
-    })
+   
 
     // ✅ KEY: Prepare the update data
     const updateData = {
@@ -324,7 +293,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
     // we need to clear the auto_accepted flag to indicate manual confirmation
     if (isDepositPaid && response === 'accepted' && currentEnquiry.auto_accepted) {
       updateData.auto_accepted = false // ✅ This triggers the state change to PaymentConfirmedSupplierCard
-      console.log('✅ Clearing auto_accepted flag - supplier has manually confirmed')
+     
     }
 
     // ✅ CRITICAL: For deposit-paid bookings that are being declined,
@@ -332,7 +301,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
     if (isDepositPaid && response === 'declined') {
       updateData.replacement_requested = true
       updateData.replacement_requested_at = new Date().toISOString()
-      console.log('🔄 Marking for immediate replacement - deposit was paid')
+
     }
 
     // Update the enquiry
@@ -345,12 +314,7 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
     if (updateError) throw updateError
 
-    console.log('✅ Enquiry updated successfully:', {
-      id: updatedEnquiry.id,
-      status: updatedEnquiry.status,
-      auto_accepted: updatedEnquiry.auto_accepted,
-      payment_status: updatedEnquiry.payment_status
-    })
+   
 
     // ✅ ENHANCED: Send different notifications based on context
     if (isDepositPaid) {
@@ -394,7 +358,7 @@ async saveSupplierResponse(responseData) {
       final_price
     } = responseData
 
-    console.log('💾 Saving supplier response to history:', responseData)
+   
 
     // Validate required fields
     if (!enquiry_id || !party_id || !supplier_id || !customer_id || !response_type || !response_message) {
@@ -426,7 +390,7 @@ async saveSupplierResponse(responseData) {
       throw new Error(`Database error: ${error.message}`)
     }
 
-    console.log('✅ Supplier response saved successfully:', savedResponse.id)
+
 
     return {
       success: true,
@@ -486,10 +450,9 @@ async alertPartySnapUrgent(alertData) {
       }
     }
 
-    // Method 3: Email notification (if you have email service)
-    // await sendUrgentEmailAlert(alertData)
+ 
 
-    console.log('✅ PartySnap urgent alert sent successfully')
+  
     return { success: true }
 
   } catch (error) {
@@ -529,14 +492,9 @@ async getSupplierTemplate(supplierId, supplierCategory, responseType) {
       .eq('template_type', templateType)
       .maybeSingle() // Use maybeSingle instead of single to avoid errors
 
-    console.log('📝 Custom template query result:', {
-      found: !!customTemplate,
-      error: customError,
-      template: customTemplate?.message_template?.substring(0, 50)
-    });
 
     if (customTemplate?.message_template && !customError) {
-      console.log('✅ Using custom template');
+
       return customTemplate.message_template
     }
 
@@ -549,11 +507,6 @@ async getSupplierTemplate(supplierId, supplierCategory, responseType) {
       .eq('is_system_template', true)
       .maybeSingle()
 
-    console.log('📝 System template query result:', {
-      found: !!systemTemplate,
-      error: systemError,
-      template: systemTemplate?.message_template?.substring(0, 50)
-    });
 
     if (systemTemplate?.message_template && !systemError) {
       console.log('✅ Using system template');
@@ -561,7 +514,7 @@ async getSupplierTemplate(supplierId, supplierCategory, responseType) {
     }
 
     // Step 3: Category-specific fallbacks
-    console.log('⚠️ No templates found in database, using category fallback');
+
     const fallbacks = {
       entertainment: {
         acceptance: "Hi {customer_name}! I'm thrilled to perform at {child_name}'s {party_theme} party on {party_date}. Looking forward to creating magical memories for £{final_price}!",
@@ -705,7 +658,7 @@ export function useSupplierEnquiries(status = null, specificBusinessId = null, f
       setLoading(true)
       setError(null)
 
-      console.log('🔍 Hook: Loading enquiries for business:', specificBusinessId)
+
       const result = await supplierEnquiryBackend.getSupplierEnquiries(status, specificBusinessId)
       
       if (result.success) {

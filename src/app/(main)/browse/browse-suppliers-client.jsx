@@ -111,49 +111,49 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       id: "entertainment", 
       name: "Entertainment", 
       icon: <Music className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386472/iStock-2067025996_p6x3k4.jpg"
     },
     { 
       id: "venues", 
       name: "Venues", 
       icon: <Building className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749848122/oml2ieudsno9szcjlngp.jpg"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386510/iStock-2194928280_1_j9rcey.jpg"
     },
     { 
       id: "catering", 
       name: "Catering", 
       icon: <Utensils className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749854566/lcjmipa6yfuspckl93nz.jpg"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385342/iStock-669850098_wnqysx.jpg"
     },
     { 
       id: "decorations", 
       name: "Decorations", 
       icon: <Palette className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386306/iStock-1702395012_z3e8mp.jpg"
     },
     { 
       id: "bouncy-castles", // ✅ CHANGED: was "activities", now unique
       name: "Bouncy Castles", 
       icon: <div className="text-sm">🏰</div>,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748594952/bouncy-castle_gaq0z4.png"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386872/iStock-120532646_bdk29o.jpg"
     },
     { 
       id: "facePainting", 
       name: "Face Painting", 
       icon: <Palette className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1750170767/hlz6iinsgj7abeu0nndx.png"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385783/iStock-484189669_epczo3.jpg"
     },
     { 
       id: "party-bags", 
       name: "Party Bags", 
       icon: <Gift className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749482131/daniel-alvasd-QJlg2KSl0fU-unsplash_vm4acf.jpg"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg"
     },
     { 
       id: "photography", 
       name: "Photography", 
       icon: <Camera className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829545/kcikhfzbtlwiwfixzsji.png"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386547/iStock-1181011006_tf3w8n.jpg"
     },
     { 
       id: "magicians", 
@@ -177,7 +177,7 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
       id: "activities", // ✅ KEPT: This one stays as "activities"
       name: "Activities", 
       icon: <Gamepad2 className="w-5 h-5" />,
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749828970/niq4bh4wemamqziw0tki.png"
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756385838/iStock-2185368487_a68z9g.jpg"
     },
   ]
 
@@ -376,6 +376,7 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
 
   // Apply search to filtered suppliers
   const searchedSuppliers = searchSuppliers(filteredSuppliers, searchQuery);
+  
 
   const toggleFavorite = supplierId => {
     setFavorites(prev =>
@@ -1066,23 +1067,7 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
         />
       )}
 
-      {/* Quick Action Bar - Mobile Optimized */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-20 safe-area-pb">
-        <div className="flex space-x-3">
-          <Button variant="outline" className="flex-1 border-gray-200" asChild>
-            <Link href="/dashboard">
-              <Calendar className="w-4 h-4 mr-2" />
-              Dashboard
-            </Link>
-          </Button>
-          <Button className="flex-1 bg-primary-500 hover:bg-primary-600 text-white" asChild>
-            <Link href="/dashboard">
-              <Users className="w-4 h-4 mr-2" />
-              Plan Party
-            </Link>
-          </Button>
-        </div>
-      </div>
+ 
 
       {/* Bottom Padding for Mobile Action Bar */}
       <div className="md:hidden h-16"></div>

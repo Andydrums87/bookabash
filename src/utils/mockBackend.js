@@ -123,7 +123,7 @@ const themedData = {
 
     if (insertError) throw insertError
 
-    console.log('✅ Themed business created:', newThemedBusiness.id)
+
 
     return {
       success: true,
@@ -143,7 +143,7 @@ const themedData = {
 // Add this function to your mockBackend.js file, near the top with other helper functions
 
 const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
-  console.log('🎯 Creating default packages for:', serviceType, 'theme:', theme)
+
   
   const packageTemplates = {
     'entertainment': {
@@ -558,50 +558,7 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
   ]
 }
 
-// Get all suppliers from Supabase
-// const getAllSuppliers = async () => {
-//   try {
-//     console.log('🔍 Fetching suppliers from Supabase...')
-    
-//     const { data, error } = await supabase
-//       .from('suppliers')
-//       .select('*')
-//       .order('created_at', { ascending: false })
-    
-//     if (error) {
-//       console.error('Supabase error:', error)
-//       throw error
-//     }
-    
-//     if (!data || data.length === 0) {
-//       console.warn('No suppliers found in Supabase, returning empty array')
-//       return []
-//     }
-    
-//     // Transform the data from Supabase format to your existing format
-//     const transformedSuppliers = data.map(supplier => {
-//       try {
-//         return {
-//           ...supplier.data, // Spread the JSON data which contains all your original supplier fields
-//           id: supplier.legacy_id || supplier.id // Use legacy_id for consistency
-//         }
-//       } catch (transformError) {
-//         console.error('Error transforming supplier:', supplier.id, transformError)
-//         return null
-//       }
-//     }).filter(Boolean) // Remove any null entries
-    
-//     console.log(`✅ Successfully loaded ${transformedSuppliers.length} suppliers from Supabase`)
-//     return transformedSuppliers
-    
-//   } catch (error) {
-//     console.error('💥 Error loading suppliers from Supabase:', error)
-    
-//     // Return empty array instead of mock data to avoid confusion
-//     console.warn('Returning empty array due to Supabase error')
-//     return []
-//   }
-// }
+
 const getAllSuppliers = async () => {
   try {
 
@@ -773,7 +730,7 @@ export const suppliersAPI = {
         return matchesTheme;
       });
       
-      console.log(`🏢 Found ${venueSuppliers.length} venues for theme: ${theme}`);
+     
       return venueSuppliers;
       
     } catch (error) {
@@ -801,7 +758,7 @@ export const suppliersAPI = {
         return matchesTheme;
       });
       
-      console.log(`🍰 Found ${cateringSuppliers.length} catering suppliers for theme: ${theme}`);
+
       return cateringSuppliers;
       
     } catch (error) {
@@ -824,7 +781,7 @@ export const suppliersAPI = {
 
   addSupplierFromOnboarding: async (formData, authUserId = null) => {
     try {
-      console.log('🚀 Creating PRIMARY business for new supplier:', formData)
+
   
       // Helper function for themes (keep your existing logic)
       const getThemesFromServiceType = (serviceType) => {
@@ -869,14 +826,8 @@ export const suppliersAPI = {
       const serviceType = formData.supplierType || formData.serviceType
       const selectedTheme = formData.theme || 'general'
       
-      console.log('🎯 Generating smart packages for:', serviceType, 'theme:', selectedTheme)
+ 
       const defaultPackages = getDefaultPackagesForServiceType(serviceType, selectedTheme)
-      
-      console.log('📦 Generated packages:', defaultPackages.map(pkg => ({ 
-        id: pkg.id, 
-        name: pkg.name, 
-        price: pkg.price 
-      })))
   
       // ✅ Calculate pricing from packages
       const hasPackages = defaultPackages.length > 0
@@ -942,15 +893,6 @@ export const suppliersAPI = {
         maxBookingDays: 365
       }
   
-      console.log('💾 Final supplier data:', {
-        name: supplierData.name,
-        serviceType: supplierData.serviceType,
-        packagesCount: supplierData.packages.length,
-        priceFrom: supplierData.priceFrom,
-        priceUnit: supplierData.priceUnit,
-        isComplete: supplierData.isComplete
-      })
-  
       // Insert using NEW multi-business structure
       const { data: newBusiness, error: insertError } = await supabase
         .from("suppliers")
@@ -973,9 +915,6 @@ export const suppliersAPI = {
   
       // Save the real UUID for future queries
       localStorage.setItem('currentSupplierId', newBusiness.id)
-  
-      console.log('✅ New supplier added to Supabase with id:', newBusiness.id)
-      console.log('🎉 Supplier created with', defaultPackages.length, 'smart default packages')
   
       return {
         success: true,
@@ -1001,12 +940,6 @@ export const suppliersAPI = {
 
 updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
   try {
-    console.log('🔄 updateSupplierProfile called:', {
-      supplierId,
-      hasUpdatedData: !!updatedData,
-      packagesProvided: packages !== null,
-      packagesLength: Array.isArray(packages) ? packages.length : 'not provided'
-    })
 
     // Fetch current supplier data
     const { data: row, error: fetchError } = await supabase
@@ -1021,11 +954,11 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
     }
 
     const current = row.data || {}
-    console.log('📊 Current supplier data loaded, packages count:', current.packages?.length || 0)
+
 
     // ✅ SMART MERGING: Only update fields that are provided
     const shouldUpdatePackages = packages !== null && Array.isArray(packages)
-    console.log('📦 Should update packages?:', shouldUpdatePackages)
+  
 
     const merged = {
       // Core business info
@@ -1099,22 +1032,14 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
         dateOfBirth: updatedData.owner?.dateOfBirth || current.owner?.dateOfBirth,
         address: updatedData.owner?.address || current.owner?.address
       },
-
+      notifications: updatedData.notifications ? {
+        ...current.notifications,
+        ...updatedData.notifications
+      } : (current.notifications || {}),
       // Timestamps
       updatedAt: new Date().toISOString(),
       createdAt: current.createdAt || new Date().toISOString()
     }
-
-    // ✅ LOGGING: What we're about to save
-    console.log("💾 About to save merged data:", {
-      packagesUpdated: shouldUpdatePackages,
-      packagesCount: merged.packages?.length || 0,
-      isComplete: merged.isComplete,
-      badges: merged.badges,
-      serviceDetailsUpdated: !!updatedData.serviceDetails,
-      addOnServicesCount: merged.serviceDetails?.addOnServices?.length || 0
-    })
-
     // Save to database (PRIMARY BUSINESS)
     const { data: updated, error: updateError } = await supabase
       .from('suppliers')
@@ -1127,13 +1052,6 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       console.error('❌ Database update error:', updateError)
       throw updateError
     }
-
-    console.log("✅ Primary business updated successfully:", {
-      id: updated.id,
-      packagesCount: updated.data?.packages?.length || 0,
-      isComplete: updated.data?.isComplete,
-      addOnServicesCount: updated.data?.serviceDetails?.addOnServices?.length || 0
-    })
 
     // 🚨 CRITICAL FIX: Update all themed businesses if this is a primary business
     if (row.is_primary) {
@@ -1151,11 +1069,11 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
           console.error('⚠️ INHERITANCE: Error fetching themed businesses:', themedError)
           // Don't throw - primary business was updated successfully
         } else {
-          console.log(`📋 INHERITANCE: Found ${themedBusinesses.length} themed businesses to update`)
+       
           
           // Update each themed business with availability data
           for (const themedBusiness of themedBusinesses) {
-            console.log(`🔄 INHERITANCE: Updating themed business: ${themedBusiness.business_name}`)
+  
             
             const currentThemedData = themedBusiness.data || {}
             
@@ -1304,7 +1222,7 @@ export function useSupplierDashboard() {
         setLoading(true)
         setError(null)
         
-        console.log('📥 useSupplierDashboard loading current supplier...')
+
         
         // Get current authenticated user
         const { data: userResult, error: userErr } = await supabase.auth.getUser()
@@ -1319,7 +1237,7 @@ export function useSupplierDashboard() {
           throw new Error("No logged-in user")
         }
 
-        console.log('👤 User ID:', userId)
+
 
         // Load user's PRIMARY business (for dashboard compatibility)
         const { data: primaryBusiness, error: primaryErr } = await supabase
@@ -1344,17 +1262,10 @@ export function useSupplierDashboard() {
         console.log('🔍 Primary business query result:', primaryBusiness)
 
         if (!primaryBusiness) {
-          console.log('❌ No primary business found for user')
+
           setError('No supplier account found - please complete onboarding first')
           setCurrentSupplier(null)
         } else {
-          // ✅ Enhanced validation and logging
-          console.log('📊 Primary business raw data:', {
-            id: primaryBusiness.id,
-            business_name: primaryBusiness.business_name,
-            has_data: !!primaryBusiness.data,
-            data_keys: primaryBusiness.data ? Object.keys(primaryBusiness.data) : 'No data object'
-          })
 
           // Check if the data object exists and has essential fields
           if (!primaryBusiness.data) {
@@ -1378,7 +1289,7 @@ export function useSupplierDashboard() {
           })
           
           setCurrentSupplier(supplierForDashboard)
-          console.log('✅ Loaded primary business for dashboard:', supplierForDashboard.name)
+
         }
       } catch (err) {
         console.error('❌ Error loading current supplier:', err)
@@ -1402,21 +1313,12 @@ const updateProfile = async (profileData, packages = null, specificBusinessId = 
     return { success: false, error: 'No current supplier loaded' }
   }
 
-  console.log('🎯 updateProfile called:', {
-    hasProfileData: !!profileData,
-    packagesProvided: packages !== null,
-    packagesLength: Array.isArray(packages) ? packages.length : 'not provided',
-    specificBusinessId,
-    currentSupplierId: currentSupplier.id
-  })
-
   setSaving(true)
   setError(null)
 
   try {
     // Determine which business to update
     const businessIdToUpdate = specificBusinessId || currentSupplier.id
-    console.log('🎯 Targeting business ID:', businessIdToUpdate)
 
     // Call the updated API function
     const result = await suppliersAPI.updateSupplierProfile(
@@ -1424,13 +1326,6 @@ const updateProfile = async (profileData, packages = null, specificBusinessId = 
       profileData,
       packages  // null means "don't update packages", array means "update packages"
     )
-
-    console.log('📦 updateSupplierProfile result:', {
-      success: result.success,
-      error: result.error,
-      packagesInResult: result.supplier?.data?.packages?.length || 0
-    })
-
     if (result.success && result.supplier) {
       // Update local state with the result
       const updatedSupplierForDashboard = {
@@ -1439,12 +1334,7 @@ const updateProfile = async (profileData, packages = null, specificBusinessId = 
       }
       
       setCurrentSupplier(updatedSupplierForDashboard)
-      console.log('🎉 Local state updated successfully:', {
-        businessId: businessIdToUpdate,
-        packagesCount: updatedSupplierForDashboard.packages?.length || 0,
-        isComplete: updatedSupplierForDashboard.isComplete
-      })
-
+   
       // Trigger global update event
       window.dispatchEvent(new CustomEvent('supplierUpdated', {
         detail: { supplierId: result.supplier.id }

@@ -10,7 +10,7 @@ export function useBusinessAwareForm(initialData = {}) {
   // Update form data whenever supplier data changes
   useEffect(() => {
     if (supplierData && !loading) {
-      console.log('🔄 Form updating with new business data:', supplierData.name)
+  
       
       // Reset form with the new business data
       setFormData({
@@ -58,12 +58,12 @@ export function useBusinessAwareForm(initialData = {}) {
   // Listen for business switch events to immediately refresh form
   useEffect(() => {
     const handleBusinessSwitch = () => {
-      console.log('🔄 Form detected business switch - refreshing...')
+
       setIsFormLoading(true)
     }
 
     const handleSupplierDataChange = (event) => {
-      console.log('🔄 Form detected supplier data change - updating...')
+   
       // The useEffect above will handle the actual update
     }
 

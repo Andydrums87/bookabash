@@ -15,14 +15,14 @@ export const useUserTypeDetection = () => {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (session?.user) {
-        console.log('User is signed in, checking database party...')
+
         
         // Step 2: For signed-in users, check database party first
         try {
           const partyResult = await partyDatabaseBackend.getCurrentParty()
           
           if (partyResult.success && partyResult.party) {
-            console.log('Database party found')
+   
             setUserType('DATABASE_USER')
             setUserContext({
               needsDateSelection: false,
@@ -37,7 +37,7 @@ export const useUserTypeDetection = () => {
             setLoading(false)
             return
           } else {
-            console.log('No database party found, user needs migration')
+         
             // Check if they have localStorage data worth migrating
             const hasLocalStorageData = checkLocalStorageData()
             
@@ -64,7 +64,7 @@ export const useUserTypeDetection = () => {
       const hasLocalStorageData = checkLocalStorageData()
       
       if (hasLocalStorageData) {
-        console.log('Using localStorage data')
+
         setUserType('LOCALSTORAGE_USER')
         setUserContext({
           needsDateSelection: false,
@@ -74,7 +74,7 @@ export const useUserTypeDetection = () => {
           allowSupplierUpdates: true
         })
       } else {
-        console.log('No valid data found, anonymous user')
+
         setUserType('ANONYMOUS')
         setUserContext({
           needsDateSelection: true,

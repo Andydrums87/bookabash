@@ -35,7 +35,7 @@ const SupplierMessagesSection = ({ customerId, partyId }) => {
       setLoading(true)
       setError(null)
 
-      console.log('Loading messages for customer:', customerId, 'party:', partyId)
+  
 
       // Step 1: Get supplier responses - temporarily filter by party only
       let query = supabase
@@ -54,7 +54,7 @@ const SupplierMessagesSection = ({ customerId, partyId }) => {
         throw new Error(`Failed to fetch supplier messages: ${responsesError.message}`)
       }
 
-      console.log('Found responses:', responses?.length || 0)
+    
 
       if (!responses || responses.length === 0) {
         setMessages([])

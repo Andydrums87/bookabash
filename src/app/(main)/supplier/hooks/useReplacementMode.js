@@ -15,17 +15,14 @@ export const useReplacementMode = () => {
       return
     }
     
-    console.log('🔄 Initializing replacement mode hook')
-    
     // 1. Check URL parameters
     const urlParams = new URLSearchParams(window.location.search)
     const fromParam = urlParams.get('from')
     
-    console.log('🔍 URL from parameter:', fromParam)
     
     // 2. If coming from browse, clear everything and exit
     if (fromParam === 'browse') {
-      console.log('🧹 Coming from browse - clearing replacement context')
+
       setReplacementContext(null)
       sessionStorage.removeItem('replacementContext')
       sessionStorage.removeItem('shouldRestoreReplacementModal')
@@ -35,12 +32,12 @@ export const useReplacementMode = () => {
     
     // 3. Check session storage for replacement context
     const storedContext = sessionStorage.getItem('replacementContext')
-    console.log('🔍 Stored context exists:', !!storedContext)
+
     
     if (storedContext) {
       try {
         const parsedContext = JSON.parse(storedContext)
-        console.log('✅ Setting replacement context:', parsedContext)
+   
         setReplacementContext(parsedContext)
       } catch (error) {
         console.error('❌ Error parsing replacement context:', error)
@@ -48,7 +45,7 @@ export const useReplacementMode = () => {
         sessionStorage.removeItem('replacementContext')
       }
     } else {
-      console.log('❌ No stored context, clearing replacement state')
+
       setReplacementContext(null)
     }
   }, []) // Empty dependency - run once on mount
@@ -61,7 +58,7 @@ export const useReplacementMode = () => {
     }
     
     if (replacementContext?.isReplacement && supplier?.category) {
-      console.log('🏪 Storing current supplier data for replacement:', supplier)
+     
       
       try {
         const currentContext = sessionStorage.getItem('replacementContext')
@@ -85,7 +82,7 @@ export const useReplacementMode = () => {
           }
           
           sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
-          console.log('💾 Stored current supplier data with category:', supplier.category)
+
           
           // Update local state
           setReplacementContext(updatedContext)
@@ -98,7 +95,7 @@ export const useReplacementMode = () => {
 
   // Handle return to replacement flow
   const handleReturnToReplacement = useCallback(() => {
-    console.log('🔄 Returning to replacement flow from supplier profile')
+
     
     if (replacementContext?.returnUrl) {
       router.push(replacementContext.returnUrl)
@@ -129,7 +126,7 @@ export const useReplacementMode = () => {
 
   // Handle mobile approval for replacement mode
   const handleMobileApproval = useCallback((selectedPackage, supplier, packages) => {
-    console.log('🐊 MOBILE APPROVE: Starting approval process')
+    
     
     if (!selectedPackage) {
       console.error('❌ MOBILE APPROVE: No package selected')
@@ -258,7 +255,7 @@ export const useReplacementMode = () => {
         }
       }
       
-      console.log('💾 MOBILE APPROVE: Setting comprehensive replacement context:', updatedContext)
+
       sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
       setReplacementContext(updatedContext)
       
@@ -266,15 +263,15 @@ export const useReplacementMode = () => {
       sessionStorage.setItem('shouldRestoreReplacementModal', 'true')
       sessionStorage.setItem('modalShowUpgrade', 'true')
       
-      console.log('🚀 MOBILE APPROVE: All flags set, navigating to dashboard')
+
       
       // Navigate back to dashboard with small delay to ensure session storage is saved
       setTimeout(() => {
         if (replacementContext?.returnUrl) {
-          console.log('🚀 MOBILE APPROVE: Using returnUrl from context')
+
           router.push(replacementContext.returnUrl)
         } else {
-          console.log('🚀 MOBILE APPROVE: Using window.location.href fallback')
+ 
           window.location.href = '/dashboard'
         }
       }, 200)
@@ -290,7 +287,7 @@ export const useReplacementMode = () => {
 
   // Clear replacement context
   const clearReplacementContext = useCallback(() => {
-    console.log('🧹 Clearing replacement context')
+
     setReplacementContext(null)
     sessionStorage.removeItem('replacementContext')
     sessionStorage.removeItem('shouldRestoreReplacementModal')
@@ -304,7 +301,7 @@ export const useReplacementMode = () => {
       setReplacementContext(updatedContext)
       try {
         sessionStorage.setItem('replacementContext', JSON.stringify(updatedContext))
-        console.log('💾 Updated replacement context:', updates)
+
       } catch (error) {
         console.error('❌ Error updating replacement context:', error)
       }
