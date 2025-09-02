@@ -110,7 +110,7 @@ export function useReplacementManager(partyId, partyDetails, refreshPartyData, s
     
       
       if (declinedEnquiries.length === 0) {
-        console.log('✅ No declined enquiries - clearing replacements')
+
         setReplacements([])
         return
       }

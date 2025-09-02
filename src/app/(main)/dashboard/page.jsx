@@ -27,18 +27,13 @@ export default function DashboardPage() {
           
           if (partyResult.success && partyResult.party) {
             // Has planned party - use database dashboard
-            console.log('Router: User has planned party, showing DatabaseDashboard')
+   
             setUserType('database')
           } else {
             // No planned party (drafts are ignored) - check localStorage
             const localPlan = localStorage.getItem('party_plan')
             const localDetails = localStorage.getItem('party_details')
-            
-            console.log('Router: Signed user has no planned party, checking localStorage:', { 
-              localPlan: !!localPlan, 
-              localDetails: !!localDetails 
-            })
-            
+          
             // Validate localStorage data
             let hasValidPartyPlan = false
             let hasValidPartyDetails = false
@@ -53,7 +48,7 @@ export default function DashboardPage() {
                     parsedPlan[key].name
                   )
                 )
-                console.log('Router: Party plan validity for signed user:', hasValidPartyPlan)
+    
               } catch (e) {
                 console.log('Router: Failed to parse party_plan for signed user')
               }
@@ -69,7 +64,7 @@ export default function DashboardPage() {
                   parsedDetails.guestCount ||
                   parsedDetails.postcode
                 )
-                console.log('Router: Party details validity for signed user:', hasValidPartyDetails)
+         
               } catch (e) {
                 console.log('Router: Failed to parse party_details for signed user')
               }
@@ -77,11 +72,11 @@ export default function DashboardPage() {
             
             if (hasValidPartyPlan || hasValidPartyDetails) {
               // Has meaningful localStorage data - continue with localStorage dashboard
-              console.log('Router: Signed user with valid localStorage data, showing LocalStorageDashboard')
+       
               setUserType('localStorage')
             } else {
               // Signed in but no meaningful data anywhere - show welcome
-              console.log('Router: Signed user with no data, showing welcome page')
+          
               setUserType('welcome')
             }
           }
@@ -90,11 +85,7 @@ export default function DashboardPage() {
           const localPlan = localStorage.getItem('party_plan')
           const localDetails = localStorage.getItem('party_details')
           
-          console.log('Router: Unsigned user, checking localStorage:', { 
-            localPlan: !!localPlan, 
-            localDetails: !!localDetails 
-          })
-          
+        
           // Validate localStorage data for unsigned users
           let hasValidPartyPlan = false
           let hasValidPartyDetails = false
@@ -109,7 +100,7 @@ export default function DashboardPage() {
                   parsedPlan[key].name
                 )
               )
-              console.log('Router: Party plan validity for unsigned user:', hasValidPartyPlan)
+            
             } catch (e) {
               console.log('Router: Failed to parse party_plan for unsigned user')
             }
@@ -125,7 +116,7 @@ export default function DashboardPage() {
                 parsedDetails.guestCount ||
                 parsedDetails.postcode
               )
-              console.log('Router: Party details validity for unsigned user:', hasValidPartyDetails)
+        
             } catch (e) {
               console.log('Router: Failed to parse party_details for unsigned user')
             }
@@ -133,11 +124,11 @@ export default function DashboardPage() {
           
           if (hasValidPartyPlan || hasValidPartyDetails) {
             // Has meaningful localStorage data - use localStorage dashboard
-            console.log('Router: Unsigned user with valid localStorage data, showing LocalStorageDashboard')
+
             setUserType('localStorage')
           } else {
             // No data at all - show welcome page
-            console.log('Router: No data found anywhere, showing welcome page')
+ 
             setUserType('welcome')
           }
         }
@@ -155,7 +146,7 @@ export default function DashboardPage() {
 
   // Handle refresh after party creation or sign in
   const handleRefresh = () => {
-    console.log("🔄 Refreshing dashboard router...")
+
     setIsLoading(true) // Show loading during refresh
     setRefreshKey(prev => prev + 1)
   }
