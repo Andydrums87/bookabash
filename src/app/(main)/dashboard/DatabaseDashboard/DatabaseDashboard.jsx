@@ -156,7 +156,7 @@ export default function DatabaseDashboard() {
       const storedState = getStoredModalState()
       
       if (storedState) {
-        console.log('Restoring modal state:', storedState)
+
         
         setModalConfig({
           category: storedState.category,
@@ -184,7 +184,7 @@ export default function DatabaseDashboard() {
       const { detail: modalState } = event
       
       if (modalState) {
-        console.log('Restoring modal via custom event:', modalState)
+
         
         setModalConfig({
           category: modalState.category,
@@ -217,29 +217,20 @@ export default function DatabaseDashboard() {
         const fromPage = searchParams.get('from')
         const source = searchParams.get('source')
         
-        console.log('Database Dashboard Navigation Effect:', { 
-          scrollToSupplier, 
-          lastAction, 
-          fromPage, 
-          source,
-          showWelcomePopup,
-          showSupplierAddedModal,
-          currentActiveMobileType: activeMobileSupplierType
-        })
-
+       
         if (scrollToSupplier && lastAction === 'supplier-added') {
-          console.log('SETTING MOBILE TAB TO:', scrollToSupplier)
+
           setActiveMobileSupplierType(scrollToSupplier)
 
           if (!showWelcomePopup && !showSupplierAddedModal) {
-            console.log('Processing scroll for newly added supplier:', scrollToSupplier)
+
             
             const scrollDelay = source === 'a_la_carte' ? 1000 : 500
             
             setTimeout(() => {
               const element = document.getElementById(`supplier-${scrollToSupplier}`)
               if (element && window.innerWidth >= 768) {
-                console.log('Desktop scrolling to element:', element)
+
                 element.scrollIntoView({ 
                   behavior: 'smooth',
                   block: 'center',
@@ -255,7 +246,7 @@ export default function DatabaseDashboard() {
                     inline: 'nearest'
                   })
                 } else {
-                  console.log('Mobile content not found, scrolling to top')
+      
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }
@@ -314,29 +305,21 @@ export default function DatabaseDashboard() {
 
   // Helper functions
   const getOutstandingSupplierData = () => {
-    console.log('DEBUG: Starting payment calculation...')
-    console.log('Total enquiries:', enquiries.length)
-    console.log('Available supplier types:', Object.keys(visibleSuppliers))
+
     
     const unpaidEnquiries = enquiries.filter(enquiry => {
       const isAccepted = enquiry.status === 'accepted'
       const isUnpaid = !enquiry.payment_status || enquiry.payment_status === 'unpaid'
       
-      console.log(`Enquiry ${enquiry.supplier_category}:`, {
-        status: enquiry.status,
-        payment_status: enquiry.payment_status,
-        isAccepted,
-        isUnpaid,
-        include: isAccepted && isUnpaid
-      })
+   
       
       return isAccepted && isUnpaid
     })
     
-    console.log('Found unpaid enquiries:', unpaidEnquiries.length)
+
     
     if (unpaidEnquiries.length === 0) {
-      console.log('All enquiries paid or no accepted enquiries, returning empty')
+
       return { suppliers: [], totalCost: 0, totalDeposit: 0 }
     }
     
@@ -345,14 +328,10 @@ export default function DatabaseDashboard() {
         const supplierType = enquiry.supplier_category
         const supplier = visibleSuppliers[supplierType]
         
-        console.log(`Looking for supplier data for ${supplierType}:`, {
-          found: !!supplier,
-          name: supplier?.name,
-          price: supplier?.price || supplier?.totalPrice
-        })
+     
         
         if (!supplier) {
-          console.log(`No supplier found in visibleSuppliers for: ${supplierType}`)
+      
           return null
         }
         
@@ -360,17 +339,12 @@ export default function DatabaseDashboard() {
       })
       .filter(Boolean)
     
-    console.log('Mapped to suppliers:', outstandingSuppliers.length)
+
     
     const paymentData = outstandingSuppliers.map(({ enquiry, supplierType, supplier }) => {
       const supplierPrice = supplier.totalPrice || supplier.price || 0
       const supplierDepositAmount = Math.max(50, Math.round(supplierPrice * 0.3))
-      
-      console.log(`Payment calculation for ${supplierType}:`, {
-        supplierName: supplier.name,
-        totalPrice: supplierPrice,
-        depositAmount: supplierDepositAmount
-      })
+
       
       return {
         type: supplierType,
@@ -384,13 +358,7 @@ export default function DatabaseDashboard() {
     const totalOutstandingCost = paymentData.reduce((sum, item) => sum + item.totalAmount, 0)
     const totalDepositAmount = paymentData.reduce((sum, item) => sum + item.depositAmount, 0)
     
-    console.log('Final outstanding payment calculation:', {
-      suppliers: paymentData.map(s => s.type),
-      supplierCount: paymentData.length,
-      totalCost: totalOutstandingCost,
-      totalDeposit: totalDepositAmount
-    })
-    
+  
     return {
       suppliers: paymentData,
       totalCost: totalOutstandingCost,
@@ -414,7 +382,7 @@ export default function DatabaseDashboard() {
 
   // EVENT HANDLERS (after all hooks)
   const openSupplierModal = (category, theme = 'superhero') => {
-    console.log('Opening supplier modal:', { category, theme, currentPhase })
+ 
     setModalConfig({
       category,
       theme,
@@ -425,16 +393,15 @@ export default function DatabaseDashboard() {
   }
 
   const closeSupplierModal = () => {
-    console.log('Closing supplier modal')
+
     setShowSupplierModal(false)
   }
 
   const handleSupplierSelection = async (supplierData) => {
-    console.log('DASHBOARD: handleSupplierSelection ENTRY - supplierData:', supplierData)
+
     const supplier = supplierData?.supplier || supplierData
     const selectedPackage = supplierData?.package || null
-    console.log('DASHBOARD: Extracted supplier:', supplier?.name)
-    console.log('DASHBOARD: Extracted package:', selectedPackage?.name)
+
     
     if (!supplier) {
       console.error('No supplier data provided')
@@ -442,9 +409,9 @@ export default function DatabaseDashboard() {
     }
     
     try {
-      console.log('Using Quick Add flow - calling handleNormalSupplierAddition')
+
       await handleNormalSupplierAddition(supplier, selectedPackage)
-      console.log('handleNormalSupplierAddition completed')
+
       
       const supplierTypeMapping = {
         'Venues': 'venue',
@@ -469,21 +436,18 @@ export default function DatabaseDashboard() {
   }
 
   const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
-    console.log('DASHBOARD: handleNormalSupplierAddition called for:', supplier.name)
+  
     
     setShowSupplierModal(false)
     
     setTimeout(() => {
-      console.log('DASHBOARD: Setting modal data for:', supplier.name)
+
       
       const modalData = { supplier, selectedPackage }
       setAddedSupplierData(modalData)
       setShowSupplierAddedModal(true)
       
-      console.log('DASHBOARD: Modal state should now be:', {
-        showSupplierAddedModal: true,
-        addedSupplierData: modalData
-      })
+     
       
       setEnquiryFeedback(null)
       
@@ -494,9 +458,7 @@ export default function DatabaseDashboard() {
     setSendingEnquiry(true)
     
     try {
-      console.log('Securing booking for:', supplier.name)
-    
-      console.log('STEP 1: Adding supplier to party plan...')
+     
       const addResult = await partyDatabaseBackend.addSupplierToParty(
         partyId,
         supplier,
@@ -507,9 +469,7 @@ export default function DatabaseDashboard() {
         throw new Error(addResult.error)
       }
       
-      console.log('STEP 1: Supplier added to party plan successfully')
-  
-      console.log('STEP 2: Creating auto-accepted booking...')
+     
       const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
         partyId,
         supplier,
@@ -530,18 +490,14 @@ export default function DatabaseDashboard() {
       if (replacementContextString) {
         try {
           replacementContext = JSON.parse(replacementContextString)
-          console.log('Found replacement context:', replacementContext)
+
         } catch (error) {
           console.error('Error parsing replacement context:', error)
         }
       }
 
       if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
-        console.log('=== REPLACEMENT PROCESSING ===')
-        console.log('Replacement context:', replacementContext)
-        console.log('Party ID:', partyId)
-        console.log('Original supplier category:', replacementContext.originalSupplierCategory)
-        console.log('New supplier:', supplier.name)
+     
         
         try {
           const markResult = await partyDatabaseBackend.markReplacementAsProcessed(
@@ -550,7 +506,7 @@ export default function DatabaseDashboard() {
             supplier.id
           )
           
-          console.log('Mark replacement result:', markResult)
+       
           
           if (markResult.success) {
             console.log('STEP 3: Replacement marked as processed successfully')
@@ -562,12 +518,12 @@ export default function DatabaseDashboard() {
         }
         
         sessionStorage.removeItem('replacementContext')
-        console.log('Cleared replacement context from sessionStorage')
+     
       } else {
         console.log('Not a replacement flow - skipping replacement processing')
       }
 
-      console.log('STEP 4: Booking secured - updating UI...')
+    
       await refreshPartyData()
       setShowSupplierAddedModal(false)
       setAddedSupplierData(null)
@@ -587,9 +543,8 @@ export default function DatabaseDashboard() {
   }
 
   const handleCancelEnquiry = async (supplierType) => {
-    console.log('handleCancelEnquiry called with:', supplierType)
-    console.log('partyId:', partyId)
     
+ 
     if (isCancelling || !partyId) {
       console.log('Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
       return
@@ -601,7 +556,7 @@ export default function DatabaseDashboard() {
       const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
       
       if (result.success) {
-        console.log('Enquiry cancelled and supplier removed')
+
         await refreshPartyData()
         setEnquiryFeedback(`Request cancelled for ${supplierType}`)
         setTimeout(() => setEnquiryFeedback(null), 3000)
@@ -618,7 +573,7 @@ export default function DatabaseDashboard() {
   }
 
   const handleMobileSupplierTabChange = (supplierType) => {
-    console.log('Mobile tab changed to:', supplierType)
+
     setActiveMobileSupplierType(supplierType)
     
     setTimeout(() => {
@@ -629,7 +584,7 @@ export default function DatabaseDashboard() {
   }
 
   const handleModalClose = () => {
-    console.log('User clicked "Maybe Later" - closing modal, no supplier added')
+   
     setShowSupplierAddedModal(false)
     setAddedSupplierData(null)
   }
