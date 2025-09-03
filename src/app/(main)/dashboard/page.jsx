@@ -155,7 +155,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <SnappyLoader text="Loading your party dashboard..." />
+        <SnappyLoader text="Loading your party..." />
       </div>
     )
   }

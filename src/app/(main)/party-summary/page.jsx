@@ -8,14 +8,351 @@ import { usePartyData } from "../dashboard/hooks/usePartyData"
 import { usePartyPhase } from "../dashboard/hooks/usePartyPhase"
 import { useRouter } from "next/navigation"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
-import { ChevronDown, ChevronRight, Gift, Edit, Trash2, Building, Users, DollarSign, CreditCard } from "lucide-react"
+import { ChevronDown, ChevronRight, Gift, Edit, Trash2, Building, Users, DollarSign, CreditCard, Calendar, Clock, MapPin, User } from "lucide-react"
 import { useState } from "react"
 import SupplierChatTabs from '@/components/SupplierChatTabs'
 import SnappyLoader from "@/components/ui/SnappyLoader"
 
+// Party Details Card Component
+const PartyDetailsCard = ({ partyDetails, currentParty, dataSource }) => {
+  // Utility functions for formatting
+  const formatDateForDisplay = (dateInput) => {
+    if (!dateInput) return null;
+    
+    let date;
+    
+    if (dateInput instanceof Date) {
+      date = dateInput;
+    } else if (typeof dateInput === 'string') {
+      if (dateInput.includes('th ') || dateInput.includes('st ') || dateInput.includes('nd ') || dateInput.includes('rd ')) {
+        return dateInput;
+      }
+      
+      if (dateInput.includes('•')) {
+        const datePart = dateInput.split('•')[0].trim();
+        date = new Date(datePart);
+      } else {
+        date = new Date(dateInput);
+      }
+    } else {
+      return null;
+    }
+    
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    
+    const day = date.getDate();
+    const suffix = getDaySuffix(day);
+    const month = date.toLocaleDateString('en-GB', { month: 'long' });
+    const year = date.getFullYear();
+    
+    return `${day}${suffix} ${month}, ${year}`;
+  };
+
+  const getDaySuffix = (day) => {
+    if (day >= 11 && day <= 13) {
+      return 'th';
+    }
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
+  const formatTimeForDisplay = (timeInput) => {
+    if (!timeInput) return null;
+    
+    try {
+      if (typeof timeInput === 'string' && timeInput.includes(':')) {
+        const [hours, minutes] = timeInput.split(':');
+        const timeObj = new Date();
+        timeObj.setHours(parseInt(hours), parseInt(minutes || 0));
+        
+        return timeObj.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: minutes && minutes !== '00' ? '2-digit' : undefined,
+          hour12: true,
+        });
+      }
+      
+      const timeObj = new Date(`2000-01-01T${timeInput}`);
+      return timeObj.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',  
+        hour12: true,
+      });
+    } catch (error) {
+      return timeInput;
+    }
+  };
+
+  const calculateEndTime = (startTime, duration = 2) => {
+    if (!startTime) return null;
+    
+    try {
+      const [hours, minutes] = startTime.split(':');
+      const startDate = new Date();
+      startDate.setHours(parseInt(hours), parseInt(minutes || 0));
+      
+      const endDate = new Date(startDate.getTime() + (duration * 60 * 60 * 1000));
+      
+      return endDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
+        hour12: true,
+      });
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) => {
+    if (startTime && endTime) {
+      const formattedStart = formatTimeForDisplay(startTime);
+      const formattedEnd = formatTimeForDisplay(endTime);
+      
+      if (formattedStart && formattedEnd) {
+        return `${formattedStart} - ${formattedEnd}`;
+      }
+    }
+    
+    if (startTime) {
+      const formattedStart = formatTimeForDisplay(startTime);
+      const calculatedEnd = calculateEndTime(startTime, fallbackDuration);
+      
+      if (formattedStart && calculatedEnd) {
+        return `${formattedStart} - ${calculatedEnd}`;
+      }
+    }
+    
+    return "2pm - 4pm";
+  };
+
+  // Helper functions
+  const getFullName = () => {
+    if (dataSource === 'database' && currentParty?.child_name) {
+      return currentParty.child_name;
+    }
+    
+    if (partyDetails?.firstName || partyDetails?.lastName) {
+      return `${partyDetails?.firstName || ''} ${partyDetails?.lastName || ''}`.trim();
+    }
+    
+    if (partyDetails?.childName) {
+      return partyDetails.childName;
+    }
+    
+    return "Emma";
+  };
+
+  const getDisplayDate = () => {
+    if (dataSource === 'database' && currentParty?.party_date) {
+      return formatDateForDisplay(currentParty.party_date);
+    }
+    
+    return partyDetails?.displayDate || 
+           formatDateForDisplay(partyDetails?.date) || 
+           "14th June, 2025";
+  };
+
+  const getDisplayTimeRange = () => {
+    if (dataSource === 'database' && currentParty) {
+      return formatTimeRangeFromDatabase(
+        currentParty.start_time, 
+        currentParty.end_time, 
+        currentParty.duration || 2
+      );
+    }
+    
+    return partyDetails?.displayTimeRange || 
+           formatTimeRangeFromDatabase(partyDetails?.startTime, null, partyDetails?.duration) || 
+           "2pm - 4pm";
+  };
+
+  const getChildAge = () => {
+    if (dataSource === 'database' && currentParty?.child_age) {
+      return `${currentParty.child_age} years old`;
+    }
+    
+    return `${partyDetails?.childAge || 6} years old`;
+  };
+
+  const formatGuestCount = (count) => {
+    if (!count) return "Not specified";
+    return `${count} guests`;
+  };
+
+  const getGuestCount = () => {
+    if (dataSource === 'database' && currentParty?.guest_count) {
+      return formatGuestCount(currentParty.guest_count);
+    }
+    
+    return formatGuestCount(partyDetails?.guestCount);
+  };
+
+  const getLocation = () => {
+    if (dataSource === 'database' && currentParty?.location) {
+      return currentParty.location;
+    }
+    
+    return partyDetails?.location || "W1A 1AA";
+  };
+
+  const getTheme = () => {
+    if (dataSource === 'database' && currentParty?.theme) {
+      return currentParty.theme.charAt(0).toUpperCase() + currentParty.theme.slice(1);
+    }
+    
+    return partyDetails?.theme ? 
+      partyDetails.theme.charAt(0).toUpperCase() + partyDetails.theme.slice(1) : 
+      "Superhero";
+  };
+
+  return (
+    <Card className="bg-white shadow-lg border-0 rounded-2xl mb-8">
+      <CardContent className="p-6 md:p-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">Party Details</h2>
+        
+        {/* Mobile: 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-4 md:hidden mb-6">
+          {/* Child Name */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-gray-600">Child</span>
+            </div>
+            <p className="font-semibold text-gray-900">{getFullName()}</p>
+            <p className="text-sm text-gray-500">{getChildAge()}</p>
+          </div>
+
+          {/* Date */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-gray-600">Date</span>
+            </div>
+            <p className="font-semibold text-gray-900 text-sm leading-tight">{getDisplayDate()}</p>
+          </div>
+
+          {/* Time */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-gray-600">Time</span>
+            </div>
+            <p className="font-semibold text-gray-900 text-sm">{getDisplayTimeRange()}</p>
+          </div>
+
+          {/* Guests */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-gray-600">Guests</span>
+            </div>
+            <p className="font-semibold text-gray-900 text-sm">{getGuestCount()}</p>
+          </div>
+        </div>
+
+        {/* Location - Full width on mobile */}
+        <div className="md:hidden mb-6">
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-gray-600">Location</span>
+            </div>
+            <p className="font-semibold text-gray-900">{getLocation()}</p>
+          </div>
+        </div>
+
+        {/* Theme - Full width on mobile */}
+        <div className="md:hidden">
+          <div className="bg-primary-50 rounded-xl p-4 border border-primary-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Gift className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-primary-700">Theme</span>
+            </div>
+            <p className="font-semibold text-primary-900">{getTheme()} Party</p>
+          </div>
+        </div>
+
+        {/* Desktop: Grid Layout */}
+        <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {/* Child Name */}
+          <div className="bg-gray-50 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary-100 rounded-full">
+                <User className="w-5 h-5 text-primary-600" />
+              </div>
+              <span className="font-medium text-gray-600">Child</span>
+            </div>
+            <p className="font-bold text-xl text-gray-900 mb-1">{getFullName()}</p>
+            <p className="text-gray-500">{getChildAge()}</p>
+          </div>
+
+          {/* Date */}
+          <div className="bg-gray-50 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary-100 rounded-full">
+                <Calendar className="w-5 h-5 text-primary-600" />
+              </div>
+              <span className="font-medium text-gray-600">Date</span>
+            </div>
+            <p className="font-bold text-lg text-gray-900">{getDisplayDate()}</p>
+          </div>
+
+          {/* Time */}
+          <div className="bg-gray-50 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary-100 rounded-full">
+                <Clock className="w-5 h-5 text-primary-600" />
+              </div>
+              <span className="font-medium text-gray-600">Time</span>
+            </div>
+            <p className="font-bold text-lg text-gray-900">{getDisplayTimeRange()}</p>
+          </div>
+
+          {/* Guests */}
+          <div className="bg-gray-50 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary-100 rounded-full">
+                <Users className="w-5 h-5 text-primary-600" />
+              </div>
+              <span className="font-medium text-gray-600">Guests</span>
+            </div>
+            <p className="font-bold text-lg text-gray-900">{getGuestCount()}</p>
+          </div>
+
+          {/* Location - spans 2 columns on desktop */}
+          <div className="bg-gray-50 rounded-xl p-6 lg:col-span-2">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary-100 rounded-full">
+                <MapPin className="w-5 h-5 text-primary-600" />
+              </div>
+              <span className="font-medium text-gray-600">Location</span>
+            </div>
+            <p className="font-bold text-lg text-gray-900">{getLocation()}</p>
+          </div>
+
+          {/* Theme - spans 2 columns on desktop */}
+          <div className="bg-primary-50 rounded-xl p-6 lg:col-span-2 border border-primary-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary-200 rounded-full">
+                <Gift className="w-5 h-5 text-primary-700" />
+              </div>
+              <span className="font-medium text-primary-700">Party Theme</span>
+            </div>
+            <p className="font-bold text-xl text-primary-900">{getTheme()} Party</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 // Mobile Party Service Card Component
-// Simple Mobile Party Service Card Component
 const PartyServiceCard = ({ service, onAction }) => {
   const getStatusConfig = (status) => {
     switch (status) {
@@ -123,99 +460,6 @@ const PartyServiceCard = ({ service, onAction }) => {
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-// Alternative: Even simpler list view
-const SimplePartyServiceList = ({ services, onAction }) => {
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {services.map((service, index) => {
-        const getStatusConfig = (status) => {
-          switch (status) {
-            case "paid":
-              return { badge: "bg-teal-500 text-white", label: "Paid" }
-            case "confirmed":
-              return { badge: "bg-[hsl(var(--primary-500))] text-white", label: "Confirmed" }
-            case "process":
-              return { badge: "bg-orange-100 text-orange-800", label: "Pending" }
-            case "declined":
-              return { badge: "bg-red-100 text-red-800", label: "Declined" }
-            default:
-              return { badge: "bg-gray-100 text-gray-800", label: "Planned" }
-          }
-        }
-
-        const statusConfig = getStatusConfig(service.status)
-        const hasAddons = service.addons && service.addons.length > 0
-
-        return (
-          <div 
-            key={service.id} 
-            className={`p-4 ${index < services.length - 1 ? 'border-b border-gray-100' : ''}`}
-          >
-            {/* Main row */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900 truncate">
-                    {service.serviceName}
-                  </h3>
-                  {hasAddons && (
-                    <span className="text-xs bg-[hsl(var(--primary-100))] text-[hsl(var(--primary-700))] px-2 py-0.5 rounded-full">
-                      +{service.addons.length}
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {service.vendorName}
-                </div>
-              </div>
-              
-              <div className="text-right flex-shrink-0 ml-3">
-                <div className="text-lg font-bold text-gray-900">£{service.price}</div>
-                <Badge className={`${statusConfig.badge} text-xs px-2 py-0.5`}>
-                  {statusConfig.label}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Payment info - only if relevant */}
-            {(service.amountPaid > 0 || service.price - service.amountPaid > 0) && (
-              <div className="flex justify-between text-sm mb-3">
-                {service.amountPaid > 0 && (
-                  <span className="text-teal-600">
-                    £{service.amountPaid} paid
-                  </span>
-                )}
-                {service.price - service.amountPaid > 0 && (
-                  <span className="text-orange-600">
-                    £{service.price - service.amountPaid} remaining
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Quick actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => onAction("edit", service)}
-                className="text-xs text-[hsl(var(--primary-600))] hover:text-[hsl(var(--primary-800))] font-medium"
-              >
-                Edit
-              </button>
-              <span className="text-xs text-gray-300">•</span>
-              <button
-                onClick={() => onAction("remove", service)}
-                className="text-xs text-gray-500 hover:text-red-600 font-medium"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        )
-      })}
-    </div>
   )
 }
 
@@ -377,11 +621,12 @@ export default function PartyPlanSummary() {
     suppliers,
     isSignedIn,
     partyDetails,
+    currentParty,
+    dataSource,
     handleDeleteSupplier: removeSupplier,
   } = usePartyData()
 
   const { enquiries, isPaymentConfirmed, currentPhase } = usePartyPhase(partyData, partyId)
-
 
   const toggleRowExpansion = (serviceId) => {
     const newExpanded = new Set(expandedRows)
@@ -509,13 +754,10 @@ export default function PartyPlanSummary() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-             <SnappyLoader text="Loading your party..." />
-           </div>
+        <SnappyLoader text="Loading your party..." />
+      </div>
     )
   }
-
-
-  
 
   const tableData = getTableData()
   const budgetData = getBudgetData()
@@ -524,15 +766,18 @@ export default function PartyPlanSummary() {
     <div className="min-h-screen bg-[hsl(var(--primary-50))] px-2">
       <ContextualBreadcrumb currentPage="party-summary" />
 
-
-   
-
-
       <div className="bg-[hsl(var(--primary-50))] px-7 pt-8 pb-5">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">Party Summary</h1>
       </div>
 
       <div className="px-3 md:px-6 pb-8">
+        {/* Party Details Section */}
+        <PartyDetailsCard 
+          partyDetails={partyDetails} 
+          currentParty={currentParty}
+          dataSource={dataSource}
+        />
+
         {/* Services Section */}
         {tableData.length > 0 ? (
           <>
@@ -543,8 +788,6 @@ export default function PartyPlanSummary() {
                   key={service.id} 
                   service={service} 
                   onAction={handleAction}
-                  expandedRows={expandedRows}
-                  toggleRowExpansion={toggleRowExpansion}
                 />
               ))}
             </div>
@@ -610,17 +853,14 @@ export default function PartyPlanSummary() {
           </Card>
         )}
 
-
-<div className="bg-[hsl(var(--primary-50))] px-3 pt-8 pb-5">
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">Supplier Messages</h1>
-      </div>
-<SupplierChatTabs 
-  customerId={user?.id}
-  partyId={partyId}
-  suppliers={suppliers}
-/>
-        
-
+        <div id="supplier-messages" className="bg-[hsl(var(--primary-50))] px-3 pt-8 pb-5">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2">Supplier Messages</h1>
+        </div>
+        <SupplierChatTabs 
+          customerId={user?.id}
+          partyId={partyId}
+          suppliers={suppliers}
+        />
 
         {/* Budget Summary */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">

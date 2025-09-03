@@ -253,7 +253,7 @@ const MobileBottomTabBar = ({
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[9999] shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[200] shadow-lg">
         <div className="px-4 py-2 safe-area-pb">
           <div className="flex justify-between items-center max-w-sm mx-auto">
             {tabs.map((tab) => {
@@ -316,7 +316,7 @@ const MobileBottomTabBar = ({
       </div>
 
       {showModal && (
-        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-end">
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[250] flex items-end">
           <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl">
               <h2 className="text-lg font-semibold text-gray-900 capitalize">

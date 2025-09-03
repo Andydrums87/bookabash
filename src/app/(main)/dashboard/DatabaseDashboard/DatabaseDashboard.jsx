@@ -20,11 +20,12 @@ import { useSupplierManager } from "../hooks/useSupplierManager"
 import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
 import useDisableScroll from "@/hooks/useDisableScroll"
+import { useChatNotifications } from '../hooks/useChatNotifications'
 
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
-import DatabasePartyHeader from "../components/ui/DatabaseDashboardPartyHeader"
+import  DatabasePartyHeader  from "../components/ui/DatabaseDashboardPartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 
 // Feature Components
@@ -86,6 +87,8 @@ export default function DatabaseDashboard() {
     themeLoaded
   } = usePartyData()
 
+
+
   // PARTY PHASE HOOK - No longer has loading state
   const {
     partyPhase,
@@ -123,7 +126,17 @@ export default function DatabaseDashboard() {
     setNotification,
     null
   )
-
+  const {
+    unreadCount,
+    hasNewMessages,
+    unreadByCategory,
+    loading: notificationsLoading,
+    markMessagesAsRead,
+  } = useChatNotifications({
+    suppliers: visibleSuppliers,
+    partyId,
+    customerId: user?.id
+  })
   // Supplier management functions
   const removeSupplier = async (supplierType) => {
     if (!partyId) {
@@ -593,6 +606,11 @@ export default function DatabaseDashboard() {
   const handlePaymentReady = () => router.push(`/payment/secure-party?party_id=${partyId}`)
   const handleCreateInvites = () => window.location.href = "/e-invites/create"
 
+  const handleNotificationClick = () => {
+    markMessagesAsRead() // Mark as read
+    router.push('/party-summary#supplier-messages') // Navigate to chat
+  }
+
   // SINGLE LOADING CHECK - This is the key fix!
   if (loading) {
     return (
@@ -617,7 +635,7 @@ export default function DatabaseDashboard() {
   return (
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
-      
+
       {notification && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 
@@ -668,6 +686,9 @@ export default function DatabaseDashboard() {
           currentParty={currentParty}
           dataSource="database"
           enquiries={enquiries}
+          unreadCount={unreadCount}
+          hasNewMessages={hasNewMessages}
+          onNotificationClick={handleNotificationClick}
         />
 
         <SupplierSelectionModal
@@ -757,35 +778,38 @@ export default function DatabaseDashboard() {
         onClose={() => setShowWelcomePopup(false)}
       />
       
-      <MobileBottomTabBar
+     
+      {!showSupplierModal && (
+  <MobileBottomTabBar
+    suppliers={visibleSuppliers}
+    enquiries={enquiries}
+    totalCost={totalCost}
+    timeRemaining={24}
+    partyDetails={partyDetails}
+    onPaymentReady={handlePaymentReady}
+    isPaymentConfirmed={isPaymentConfirmed}
+    hasOutstandingPayments={outstandingData.suppliers.length > 0}
+    outstandingSuppliers={outstandingData.suppliers}
+    totalDepositAmount={outstandingData.totalDeposit}
+    ProgressWidget={
+      <SnappysPresentParty
         suppliers={visibleSuppliers}
         enquiries={enquiries}
-        totalCost={totalCost}
         timeRemaining={24}
-        partyDetails={partyDetails}
         onPaymentReady={handlePaymentReady}
-        isPaymentConfirmed={isPaymentConfirmed}
-        hasOutstandingPayments={outstandingData.suppliers.length > 0}
-        outstandingSuppliers={outstandingData.suppliers}
-        totalDepositAmount={outstandingData.totalDeposit}
-        ProgressWidget={
-          <SnappysPresentParty
-            suppliers={visibleSuppliers}
-            enquiries={enquiries}
-            timeRemaining={24}
-            onPaymentReady={handlePaymentReady}
-            showPaymentCTA={true}
-            isPaymentComplete={isPaymentConfirmed}
-            totalOutstandingCost={outstandingData.totalDeposit}
-            outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-          />
-        }
-        CountdownWidget={
-          <CountdownWidget
-            partyDate={partyDetails?.date}
-          />
-        }
+        showPaymentCTA={true}
+        isPaymentComplete={isPaymentConfirmed}
+        totalOutstandingCost={outstandingData.totalDeposit}
+        outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
       />
+    }
+    CountdownWidget={
+      <CountdownWidget
+        partyDate={partyDetails?.date}
+      />
+    }
+  />
+)}
     </div>
   )
 }

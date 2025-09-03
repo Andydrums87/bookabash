@@ -283,7 +283,7 @@ const hasLocalStorageParty = () => {
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-gray-900/30 backdrop-blur-lg z-40 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-gray-900/30 backdrop-blur-lg  z-[250]  md:hidden transition-opacity duration-300"
           onClick={closeMenu}
         />
       )}
@@ -291,7 +291,7 @@ const hasLocalStorageParty = () => {
       {/* Mobile Menu */}
       <div
         className={`
-          fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 md:hidden
+          fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-[300] md:hidden
           transform transition-all duration-300 ease-out flex flex-col
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}

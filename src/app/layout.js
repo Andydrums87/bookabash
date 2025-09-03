@@ -42,7 +42,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${montserrat.variable} ${poppins.variable}  ${orbitron.variable} ${fredoka.variable}`}>
+    <html lang="en" className={`scroll-to-top ${montserrat.variable} ${poppins.variable}  ${orbitron.variable} ${fredoka.variable}`}>
       <body className={`${montserrat.className} antialiased`}>
         {children}
       </body>

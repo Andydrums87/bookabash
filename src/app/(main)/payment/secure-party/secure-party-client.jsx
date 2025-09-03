@@ -630,7 +630,58 @@ export default function PaymentPageContent() {
       // Step 4: Send supplier notifications (non-blocking)
       sendSupplierNotifications();
       
-      // Step 5: Redirect to success page
+      // Step 5: Send customer payment confirmation email
+        // Generate dashboard link for this party
+        const dashboardLink = `${window.location.origin}/dashboard?party_id=${partyId}`;
+      try {
+        console.log('Sending payment confirmation email to customer...');
+        
+      
+        
+        const emailResponse = await fetch('/api/email/payment-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerEmail: partyDetails.email,
+            customerName: partyDetails.parentName,
+            childName: partyDetails.childName,
+            childAge: partyDetails.childAge,
+            theme: partyDetails.theme,
+            partyDate: partyDetails.date,
+            partyTime: partyDetails.time || '14:00',
+            location: partyDetails.location,
+            guestCount: partyDetails.guestCount,
+            services: paymentBreakdown.paymentDetails.map(detail => ({
+              name: confirmedSuppliers.find(s => s.category === detail.category)?.name || detail.category,
+              category: detail.category,
+              price: detail.totalAmount,
+              paymentType: detail.paymentType,
+              amountPaid: detail.amountToday,
+              remainingAmount: detail.remaining
+            })),
+            totalPaidToday: paymentBreakdown.totalPaymentToday,
+            remainingBalance: paymentBreakdown.remainingBalance,
+            paymentIntentId: paymentIntent.id,
+            paymentMethod: 'Card',
+            dashboardLink: dashboardLink,
+            addons: addons || []
+          })
+        });
+  
+        if (emailResponse.ok) {
+          const emailResult = await emailResponse.json();
+          console.log('✅ Payment confirmation email sent successfully:', emailResult.receiptId);
+        } else {
+          const emailError = await emailResponse.text();
+          console.warn('⚠️ Payment confirmation email failed:', emailError);
+          // Don't block the flow - payment was successful even if email fails
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending payment confirmation email:', emailError);
+        // Don't block the flow - payment was successful even if email fails
+      }
+      
+      // Step 6: Redirect to success page
       router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
       
     } catch (error) {

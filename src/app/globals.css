@@ -327,6 +327,9 @@ body {
 .form-field-half {
   width: 100%;
 }
+.scroll-to-top {
+  scroll-behavior: auto !important;
+}
 
 @media (min-width: 480px) {
   .form-field-date {
@@ -401,3 +404,15 @@ body {
 }
 
 
+/* Ensure mobile browsers start at top */
+@media (max-width: 768px) {
+  html, body {
+    scroll-behavior: auto;
+    overflow-x: hidden;
+  }
+  
+  /* Reset scroll position for mobile navigation */
+  body {
+    scroll-restoration: manual;
+  }
+}

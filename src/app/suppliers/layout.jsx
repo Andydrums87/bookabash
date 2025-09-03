@@ -1,15 +1,12 @@
-// Add to your supplier layout file
-
 "use client"
 
 import Link from "next/link"
 import { Suspense, useState } from "react"
-import { LayoutDashboard, UserCircle, Settings, Package2, Menu, Search, Bell, Calendar, Camera, Package } from "lucide-react"
+import { LayoutDashboard, UserCircle, Settings, Calendar, Camera, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { usePathname } from 'next/navigation'
+import { usePathname } from "next/navigation"
 import { UserMenu } from "./UserMenu"
 import { BusinessProvider } from "../../contexts/BusinessContext"
 import BusinessPageWrapper from "./dashboard/components/BusinessPageWrapper"
@@ -19,7 +16,7 @@ import CompactBusinessSwitcher from "./dashboard/components/MutliBusinessDashboa
 
 export default function SupplierLayout({ children }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  
+
   const navItems = [
     { href: "/suppliers/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/suppliers/profile", icon: UserCircle, label: "Profile" },
@@ -44,7 +41,7 @@ export default function SupplierLayout({ children }) {
             key={item.label}
             href={item.href}
             onClick={onNavClick}
-            className={`flex flex-col gap-2 ${isMobile ? 'mb-4' : 'mb-5'} rounded-2xl px-4 py-6 transition-all ${
+            className={`flex flex-col gap-2 ${isMobile ? "mb-4" : "mb-5"} rounded-2xl px-4 py-6 transition-all ${
               isActive
                 ? "bg-primary-400 text-white"
                 : "bg-[#fef7f7] text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -63,17 +60,17 @@ export default function SupplierLayout({ children }) {
   return (
     <BusinessProvider>
       <Suspense fallback={<div>Loading...</div>}>
-        <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] p-2 bg-primary-50 ">
+        <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] md:p-2 bg-primary-50 overflow-hidden">
           {/* Desktop Sidebar */}
           <div className="hidden bg-muted/40 md:block">
             <div className="flex h-full max-h-screen flex-col gap-2">
               <div className="flex h-14 items-center px-4 lg:h-[60px] lg:px-6">
-                <Image 
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png" 
-                  alt="PartySnap" 
-                  width={150} 
-                  height={32} 
-                  className="md:h-10 h-8 w-auto" 
+                <Image
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                  alt="PartySnap"
+                  width={150}
+                  height={32}
+                  className="md:h-10 h-8 w-auto"
                 />
               </div>
               <div className="flex-1 max-w-screen overflow-x-hidden overflow-y-scroll">
@@ -84,88 +81,87 @@ export default function SupplierLayout({ children }) {
             </div>
           </div>
 
-          <div className="flex flex-col md:w-[85vw] w-[98vw]">
-          <header className="flex h-14 items-center  bg-muted/40 lg:h-[60px] lg:px-6" >
-  {/* Mobile Menu */}
-  <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-    <SheetTrigger asChild>
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="shrink-0 md:hidden relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(-primary-600))] shadow-lg hover:shadow-xl transition-all duration-200 border-0"
-      >
-        <div className="flex flex-col gap-1">
-          <div className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
-          <div className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? 'opacity-0' : ''}`} />
-          <div className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
-        </div>
-        <span className="sr-only">Toggle navigation menu</span>
-      </Button>
-    </SheetTrigger>
-    <SheetContent side="left" className="flex flex-col bg-primary-50 border-r-0">
-      {/* Mobile content stays the same */}
-      <div className="flex items-center mb-6 pt-2">
-        <Image 
-          src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png" 
-          alt="PartySnap" 
-          width={140} 
-          height={30} 
-          className="h-8 w-auto" 
-        />
-      </div>
-      
-      <nav className="flex-1 px-2 max-w-screen overflow-scroll">
-    
-        <NavItems isMobile onNavClick={handleNavClick} />
-      </nav>
-
-      <div className="mt-auto p-4 border-t border-gray-200">
-        <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
-          <div className="h-10 w-10 rounded-full bg-primary-400 flex items-center justify-center">
-            <UserCircle className="h-6 w-6 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              Andrew Joseph
-            </p>
-            <p className="text-xs text-gray-500 truncate">
-              Supplier Account
-            </p>
-          </div>
-        </div>
-      </div>
-    </SheetContent>
-  </Sheet>
-
-  {/* Flex spacer to push content to center and right */}
-  <div className="flex-1"></div>
-
-  {/* Business Switcher - Centered with fixed width */}
-  <div className="md:w-full max-w-[70%] overflow-hidden">
-  <CompactBusinessSwitcher />
-</div>
-
-  {/* Another flex spacer to balance */}
-  <div className="flex-1"></div>
-
-  {/* User Menu - Right aligned */}
-  <div className="flex-shrink-0">
-    <UserMenu />
-  </div>
-</header>
-
-          
-{/* Main Content */}
-<main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/20 ">
-            <div className="max-w-7xl mx-auto w-full">
+          <div className="flex flex-col min-w-0 flex-1">
+            <header className="flex h-14 items-center bg-muted/40 lg:h-[60px] py-10 px-4 lg:px-6 gap-4">
+              {/* Mobile Menu */}
+              <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 md:hidden relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(-primary-600))] shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <div
+                        className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? "rotate-45 translate-y-1.5" : ""}`}
+                      />
+                      <div
+                        className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? "opacity-0" : ""}`}
+                      />
+                      <div
+                        className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? "-rotate-45 -translate-y-1.5" : ""}`}
+                      />
+                    </div>
+                    <span className="sr-only">Toggle navigation menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="flex flex-col bg-primary-50 border-r-0">
+                  {/* ... existing mobile content ... */}
+                  <main className="flex flex-1 flex-col gap-4 lg:gap-6 p-2 lg:p-6 bg-muted/20 ">
+            <div className="md:max-w-7xl w-screen mx-auto">
               <BusinessPageWrapper requiresBusiness={true}>
                 {children}
               </BusinessPageWrapper>
             </div>
           </main>
+                  <div className="flex items-center mb-6 pt-2">
+                    <Image
+                      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                      alt="PartySnap"
+                      width={140}
+                      height={30}
+                      className="h-8 w-auto"
+                    />
+                  </div>
+
+                  <nav className="flex-1 px-2 max-w-screen overflow-scroll">
+                    <NavItems isMobile onNavClick={handleNavClick} />
+                  </nav>
+
+                  <div className="mt-auto p-4 border-t border-gray-200">
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
+                      <div className="h-10 w-10 rounded-full bg-primary-400 flex items-center justify-center">
+                        <UserCircle className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">Andrew Joseph</p>
+                        <p className="text-xs text-gray-500 truncate">Supplier Account</p>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <div className="flex-1 flex items-center justify-center md:justify-start min-w-0">
+                <div className="w-[80%]">
+                  <CompactBusinessSwitcher />
+                </div>
+              </div>
+
+              <div className="flex-shrink-0">
+                <UserMenu />
+              </div>
+            </header>
+
+            <main className="flex flex-1 flex-col gap-4 lg:gap-6 lg:p-6 bg-muted/20 min-w-0 overflow-x-hidden">
+              <div className="w-[95%] sm:w-full max-w-7xl mx-auto">
+                <BusinessPageWrapper requiresBusiness={true}>{children}</BusinessPageWrapper>
+              </div>
+            </main>
           </div>
         </div>
       </Suspense>
     </BusinessProvider>
   )
 }
+

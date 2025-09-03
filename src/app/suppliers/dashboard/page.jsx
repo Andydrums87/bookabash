@@ -5,15 +5,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useSupplier } from "@/hooks/useSupplier"
-import { Badge, TrendingUp, Calendar, Settings, Users } from "lucide-react"
-import EnquiryNotificationBanner from '@/components/EnquiryNotificationBanner'
-import { HeaderEnquiryBadge } from '@/components/EnquiryNotificationBanner'
-import DebugBusinessSwitchEvents from "./components/DebugBusinessSwitchEvents"
+import { TrendingUp, Calendar, Settings, Users } from "lucide-react"
+import EnquiryNotificationBanner from "@/components/EnquiryNotificationBanner"
+import { HeaderEnquiryBadge } from "@/components/EnquiryNotificationBanner"
 
 // 👈 ADD THESE IMPORTS
 import { BusinessProvider } from "../../../contexts/BusinessContext"
 import EnquiryOverviewSection from "./components/EnquiryOverviewSection"
-
 
 export default function SupplierDashboard() {
   const { supplier, supplierData, loading } = useSupplier()
@@ -66,16 +64,15 @@ export default function SupplierDashboard() {
 
   return (
     <BusinessProvider>
-
       <div className="min-h-screen bg-primary-50">
         <div className="max-w-7xl mx-auto">
+          <EnquiryNotificationBanner />
 
-        <EnquiryNotificationBanner />
           {/* Welcome Header - Mobile Optimized */}
-          <div className="p-4 sm:p-6">
-          <HeaderEnquiryBadge />
+          <div className="p-3 sm:p-4 lg:p-6">
+            <HeaderEnquiryBadge />
             <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-5xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-gray-900 leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
                 Welcome back, {name}
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground">
@@ -85,7 +82,7 @@ export default function SupplierDashboard() {
           </div>
 
           {/* Main Content Grid - Mobile Optimized */}
-          <div className="p-4 sm:p-6 pt-0">
+          <div className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
               {/* Leads Table - Mobile Optimized */}
               <div className="xl:col-span-2">
@@ -93,15 +90,13 @@ export default function SupplierDashboard() {
                   <CardContent className="p-0">
                     {/* Mobile Table Header */}
                     <div className="p-4 sm:p-6 border-b border-gray-200 bg-muted/20">
-                      <h2 className="text-lg sm:text-xl font-semibold">Recent Enquiries</h2>
-                      <p className="text-sm text-muted-foreground mt-1">Manage your latest booking requests</p>
+                      <h2 className="text-base sm:text-lg lg:text-xl font-semibold">Recent Enquiries</h2>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                        Manage your latest booking requests
+                      </p>
                     </div>
 
-               <EnquiryOverviewSection />
-
-                   
-
-                   
+                    <EnquiryOverviewSection />
                   </CardContent>
                 </Card>
               </div>
@@ -122,13 +117,13 @@ export default function SupplierDashboard() {
                     </div>
 
                     {/* Upcoming Events */}
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-3">Upcoming Events</h3>
                       {upcomingEvents.map((day) => (
                         <div key={day.date} className="space-y-2">
                           <h4 className="font-medium text-xs sm:text-sm text-gray-700">{day.date}</h4>
                           {day.free ? (
-                            <div className="py-3 text-center text-muted-foreground text-sm bg-gray-50 rounded-lg">
+                            <div className="py-2 sm:py-3 text-center text-muted-foreground text-sm bg-gray-50 rounded-lg">
                               Free
                             </div>
                           ) : (
@@ -138,8 +133,8 @@ export default function SupplierDashboard() {
                                   key={idx}
                                   className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50 rounded-r-lg"
                                 >
-                                  <div className="font-medium text-sm">{event.name}</div>
-                                  <div className="text-xs text-muted-foreground mt-1">{event.location}</div>
+                                  <div className="font-medium text-xs sm:text-sm">{event.name}</div>
+                                  <div className="text-xs text-muted-foreground mt-1 break-words">{event.location}</div>
                                 </div>
                               ))}
                             </div>
@@ -150,8 +145,8 @@ export default function SupplierDashboard() {
                       {/* Empty Calendar State */}
                       {upcomingEvents.length === 0 && (
                         <div className="text-center py-6">
-                          <Calendar className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                          <p className="text-sm text-gray-500">No upcoming events</p>
+                          <Calendar className="mx-auto h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mb-2" />
+                          <p className="text-xs sm:text-sm text-gray-500">No upcoming events</p>
                         </div>
                       )}
                     </div>
@@ -162,25 +157,34 @@ export default function SupplierDashboard() {
           </div>
 
           {/* Action Buttons - Mobile Optimized */}
-          <div className="p-4 sm:p-6 pt-0">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-              <Button variant="outline" className="h-12 sm:h-14 bg-transparent text-sm sm:text-base touch-manipulation">
-                <TrendingUp className="mr-2 h-4 w-4" />
+          <div className="p-3 sm:p-4 lg:p-6 pt-0">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+              <Button
+                variant="outline"
+                className="h-10 sm:h-12 lg:h-14 bg-transparent text-xs sm:text-sm lg:text-base touch-manipulation"
+              >
+                <TrendingUp className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">View earnings</span>
                 <span className="sm:hidden">Earnings</span>
               </Button>
-              <Button variant="outline" className="h-12 sm:h-14 bg-transparent text-sm sm:text-base touch-manipulation">
-                <Calendar className="mr-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                className="h-10 sm:h-12 lg:h-14 bg-transparent text-xs sm:text-sm lg:text-base touch-manipulation"
+              >
+                <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Manage availability</span>
                 <span className="sm:hidden">Availability</span>
               </Button>
-              <Button variant="outline" className="h-12 sm:h-14 bg-transparent text-sm sm:text-base touch-manipulation">
-                <Settings className="mr-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                className="h-10 sm:h-12 lg:h-14 bg-transparent text-xs sm:text-sm lg:text-base touch-manipulation"
+              >
+                <Settings className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Manage upsells</span>
                 <span className="sm:hidden">Upsells</span>
               </Button>
-              <Button className="h-12 sm:h-14 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white text-sm sm:text-base touch-manipulation">
-                <Users className="mr-2 h-4 w-4" />
+              <Button className="h-10 sm:h-12 lg:h-14 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white text-xs sm:text-sm lg:text-base touch-manipulation col-span-2 lg:col-span-1">
+                <Users className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Edit profile</span>
                 <span className="sm:hidden">Profile</span>
               </Button>
@@ -188,29 +192,29 @@ export default function SupplierDashboard() {
           </div>
 
           {/* Quick Stats Cards - Mobile Optimized */}
-          <div className="p-4 sm:p-6 pt-0">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="p-3 sm:p-4 lg:p-6 pt-0">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
               <Card className="shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-primary-600">12</div>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary-600">12</div>
                   <div className="text-xs sm:text-sm text-muted-foreground">New Enquiries</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-green-600">£2,450</div>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">£2,450</div>
                   <div className="text-xs sm:text-sm text-muted-foreground">This Month</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-blue-600">8</div>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">8</div>
                   <div className="text-xs sm:text-sm text-muted-foreground">Bookings</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-orange-600">4.9</div>
+                <CardContent className="p-3 sm:p-4 text-center">
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">4.9</div>
                   <div className="text-xs sm:text-sm text-muted-foreground">Rating</div>
                 </CardContent>
               </Card>

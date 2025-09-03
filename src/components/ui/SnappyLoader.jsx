@@ -28,7 +28,7 @@ export default function SnappyLoader({ text = "Loading..." }) {
       <Lottie 
         animationData={animationData} 
         loop={true}
-        style={{ height: 200, width: 200 }}
+        style={{ height: 150, width: 150 }}
       />
       <p className="text-gray-600 text-lg font-medium text-center">
         {text}

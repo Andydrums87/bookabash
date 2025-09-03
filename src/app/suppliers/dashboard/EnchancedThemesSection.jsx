@@ -1,414 +1,215 @@
 "use client"
 
-import React, { useState } from 'react';
-import { Search, Plus, X, Tag, Sparkles, Star, Trash2 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react"
+import { Sparkles, ChevronDown, ChevronUp, Plus, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const EnhancedThemesSection = ({ details, setDetails }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isAddingCustom, setIsAddingCustom] = useState(false);
-  const [customThemeName, setCustomThemeName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('characters'); // Default to characters instead of 'all'
+  const [expandedSections, setExpandedSections] = useState({
+    themes: false,
+    customThemes: false,
+  })
+  const [newCustomTheme, setNewCustomTheme] = useState("")
 
-  // Extensive theme categories with popular themes
-  const themeCategories = {
-    characters: {
-      label: 'Characters & Heroes',
-      emoji: '🦸',
-      themes: [
-        'Princess', 'Superhero', 'Batman', 'Spider-Man', 'Wonder Woman', 'Superman',
-        'Disney Princess', 'Frozen', 'Moana', 'Belle', 'Cinderella', 'Ariel',
-        'Marvel Heroes', 'DC Heroes', 'Avengers', 'Justice League',
-        'Unicorn', 'Fairy', 'Mermaid', 'Dragon', 'Knight', 'Wizard'
-      ]
-    },
-    adventure: {
-      label: 'Adventure & Exploration',
-      emoji: '🗺️',
-      themes: [
-        'Pirate', 'Space', 'Dinosaur', 'Jungle Safari', 'Ocean Adventure',
-        'Treasure Hunt', 'Explorer', 'Astronaut', 'Deep Sea', 'Wild West',
-        'Archaeological Dig', 'Time Travel', 'Lost World', 'Adventure Island'
-      ]
-    },
-    animals: {
-      label: 'Animals & Nature',
-      emoji: '🦁',
-      themes: [
-        'Animal Safari', 'Farm Animals', 'Zoo Animals', 'Pets', 'Jungle Animals',
-        'Ocean Creatures', 'Forest Friends', 'Woodland Creatures', 'Birds',
-        'Reptiles', 'Insects & Bugs', 'Pet Show', 'Animal Rescue'
-      ]
-    },
-    fantasy: {
-      label: 'Fantasy & Magic',
-      emoji: '✨',
-      themes: [
-        'Magic', 'Fairy Tale', 'Enchanted Forest', 'Castle', 'Medieval',
-        'Mythology', 'Greek Gods', 'Norse Mythology', 'Celtic Legends',
-        'Magical Creatures', 'Spells & Potions', 'Wizarding World'
-      ]
-    },
-    science: {
-      label: 'Science & Learning',
-      emoji: '🧪',
-      themes: [
-        'Science Lab', 'Mad Scientist', 'Chemistry', 'Physics Fun',
-        'Space Science', 'Nature Science', 'Inventor', 'Robot Building',
-        'Engineering', 'Mathematics Magic', 'Weather Science'
-      ]
-    },
-    sports: {
-      label: 'Sports & Activities',
-      emoji: '⚽',
-      themes: [
-        'Football', 'Soccer', 'Basketball', 'Tennis', 'Swimming',
-        'Olympics', 'Gymnastics', 'Dance', 'Martial Arts', 'Racing',
-        'Baseball', 'Cricket', 'Hockey', 'Athletics'
-      ]
-    },
-    seasonal: {
-      label: 'Seasonal & Holidays',
-      emoji: '🎄',
-      themes: [
-        'Christmas', 'Halloween', 'Easter', 'Valentine\'s Day', 'St. Patrick\'s Day',
-        'Thanksgiving', 'New Year', 'Summer', 'Winter Wonderland', 'Spring',
-        'Autumn/Fall', 'Beach Party', 'Pool Party', 'Garden Party'
-      ]
-    },
-    creative: {
-      label: 'Arts & Creativity',
-      emoji: '🎨',
-      themes: [
-        'Art Party', 'Craft Workshop', 'Painting', 'Drawing', 'Sculpture',
-        'Music & Dance', 'Theater', 'Storytelling', 'Poetry', 'Creative Writing',
-        'Fashion Design', 'Jewelry Making', 'Pottery'
-      ]
-    },
-    food: {
-      label: 'Food & Cooking',
-      emoji: '🍰',
-      themes: [
-        'Cooking Class', 'Baking', 'Pizza Making', 'Cupcake Decorating',
-        'Ice Cream Social', 'Chocolate Factory', 'Healthy Eating',
-        'International Cuisine', 'Picnic', 'Tea Party'
-      ]
-    },
-    colors: {
-      label: 'Colors & Patterns',
-      emoji: '🌈',
-      themes: [
-        'Rainbow', 'Pink Party', 'Blue Theme', 'Red Theme', 'Purple Magic',
-        'Gold & Silver', 'Black & White', 'Neon Glow', 'Pastel Colors',
-        'Bright & Bold', 'Monochrome', 'Tie-Dye'
-      ]
-    }
-  };
-
-  // Get all themes from all categories
-  const getAllThemes = () => {
-    return Object.values(themeCategories).flatMap(category => category.themes);
-  };
-
-  // Filter themes based on search and category
-  const getFilteredThemes = () => {
-    let themes = [];
-    
-    // Always show specific category, default to characters if 'all' is selected
-    const categoryToShow = selectedCategory === 'all' ? 'characters' : selectedCategory;
-    themes = themeCategories[categoryToShow]?.themes || [];
-    
-    if (searchTerm) {
-      // When searching, search across all categories
-      const allThemes = Object.values(themeCategories).flatMap(category => category.themes);
-      themes = allThemes.filter(theme => 
-        theme.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    return themes;
-  };
-
-  // Add custom theme
-  const handleAddCustomTheme = () => {
-    if (customThemeName.trim() && !details.themes.includes(customThemeName.trim())) {
-      setDetails(prev => ({
-        ...prev,
-        themes: [...prev.themes, customThemeName.trim()]
-      }));
-      setCustomThemeName('');
-      setIsAddingCustom(false);
-    }
-  };
-
-  // Remove theme
-  const handleRemoveTheme = (themeToRemove) => {
-    setDetails(prev => ({
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
       ...prev,
-      themes: prev.themes.filter(theme => theme !== themeToRemove)
-    }));
-  };
+      [section]: !prev[section],
+    }))
+  }
 
-  // Toggle theme selection
-  const handleThemeToggle = (theme) => {
-    const isSelected = details.themes.includes(theme);
-    if (isSelected) {
-      handleRemoveTheme(theme);
-    } else {
-      setDetails(prev => ({
-        ...prev,
-        themes: [...prev.themes, theme]
-      }));
-    }
-  };
-
-  // Quick add popular themes
   const popularThemes = [
-    'Princess', 'Superhero', 'Pirate', 'Dinosaur', 'Magic', 'Unicorn', 
-    'Space', 'Animal Safari', 'Frozen', 'Christmas'
-  ];
+    "Superhero",
+    "Princess",
+    "Unicorn",
+    "Dinosaur",
+    "Space",
+    "Mermaid",
+    "Pirate",
+    "Fairy",
+    "Animals",
+    "Cars",
+    "Football",
+    "Rainbow",
+    "Jungle Safari",
+    "Under the Sea",
+    "Frozen",
+    "Harry Potter",
+    "Minecraft",
+    "LOL Surprise",
+    "Paw Patrol",
+    "Pokemon",
+    "Marvel",
+    "Disney",
+    "Star Wars",
+    "Peppa Pig",
+    "Bluey",
+    "Encanto",
+  ]
 
-  const handleQuickAdd = (themes) => {
-    const newThemes = themes.filter(theme => !details.themes.includes(theme));
-    if (newThemes.length > 0) {
-      setDetails(prev => ({
+  const handleThemeToggle = (theme) => {
+    const currentThemes = details.themes || []
+    const newThemes = currentThemes.includes(theme)
+      ? currentThemes.filter((t) => t !== theme)
+      : [...currentThemes, theme]
+
+    setDetails((prev) => ({
+      ...prev,
+      themes: newThemes,
+    }))
+  }
+
+  const handleAddCustomTheme = () => {
+    if (newCustomTheme.trim() && !details.themes?.includes(newCustomTheme.trim())) {
+      const newThemes = [...(details.themes || []), newCustomTheme.trim()]
+      setDetails((prev) => ({
         ...prev,
-        themes: [...prev.themes, ...newThemes]
-      }));
+        themes: newThemes,
+      }))
+      setNewCustomTheme("")
     }
-  };
+  }
+
+  const handleRemoveCustomTheme = (theme) => {
+    const newThemes = (details.themes || []).filter((t) => t !== theme)
+    setDetails((prev) => ({
+      ...prev,
+      themes: newThemes,
+    }))
+  }
+
+  const customThemes = (details.themes || []).filter((theme) => !popularThemes.includes(theme))
 
   return (
-    <Card className="">
-      <CardHeader className="py-8 bg-gradient-to-r from-pink-50 to-pink-100">
-        <CardTitle className="flex items-center gap-3 text-xl">
-          <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+    <Card>
+      <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-pink-50 to-pink-100">
+        <CardTitle
+          className="flex items-center justify-between text-lg sm:text-xl cursor-pointer"
+          onClick={() => toggleSection("themes")}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-500 rounded-xl flex items-center justify-center">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            Party Themes You Offer
           </div>
-          Party Themes You Offer
+          <div className="sm:hidden">
+            {expandedSections.themes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </div>
         </CardTitle>
-        <CardDescription className="text-base">
-          Select all the party themes you can accommodate - this is crucial for customers finding you!
+        <CardDescription className="text-sm sm:text-base">
+          Select popular themes and add your own custom themes
         </CardDescription>
       </CardHeader>
-      
-      <CardContent className="p-8 space-y-8">
-        {/* Quick Actions */}
-        {/* <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => handleQuickAdd(popularThemes)}
-              size="sm"
-              variant="outline"
-              className="bg-gradient-to-r from-pink-500 to-purple-500 text-white border-0 hover:from-pink-600 hover:to-purple-600"
-            >
-              <Star className="mr-2 h-4 w-4" />
-              Add Top 10 Popular
-            </Button>
-            <Button
-              onClick={() => handleQuickAdd(themeCategories.characters.themes)}
-              size="sm"
-              variant="outline"
-              className="bg-blue-500 text-white border-0 hover:bg-blue-600"
-            >
-              🦸 Add All Characters
-            </Button>
-            <Button
-              onClick={() => handleQuickAdd(themeCategories.seasonal.themes)}
-              size="sm"
-              variant="outline"
-              className="bg-green-500 text-white border-0 hover:bg-green-600"
-            >
-              🎄 Add All Seasonal
-            </Button>
+      <CardContent className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.themes ? "hidden sm:block" : ""}`}>
+        {/* Popular Themes */}
+        <div>
+          <h4 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Popular Themes</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {popularThemes.map((theme) => (
+              <div
+                key={theme}
+                className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-pink-50 transition-colors"
+              >
+                <Checkbox
+                  id={`theme-${theme}`}
+                  checked={details.themes?.includes(theme) || false}
+                  onCheckedChange={() => handleThemeToggle(theme)}
+                  className="w-4 h-4 sm:w-5 sm:h-5"
+                />
+                <Label htmlFor={`theme-${theme}`} className="text-sm sm:text-base font-medium cursor-pointer flex-1">
+                  {theme}
+                </Label>
+              </div>
+            ))}
           </div>
-          
-          <p className="text-sm text-gray-600">
-            💡 <strong>Pro tip:</strong> The more themes you offer, the more likely customers are to find and book you!
-          </p>
-        </div> */}
+        </div>
 
-        {/* Selected Themes Summary */}
-        <div className="bg-pink-50 rounded-xl p-6">
+        {/* Custom Themes */}
+        <div>
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-              <Tag className="w-5 h-5 text-pink-500" />
-              Your Selected Themes ({details.themes.length})
-            </h4>
-            {details.themes.length > 0 && (
-              <Button
-                onClick={() => setDetails(prev => ({ ...prev, themes: [] }))}
-                size="sm"
-                variant="outline"
-                className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Clear All
-              </Button>
-            )}
+            <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Custom Themes</h4>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => toggleSection("customThemes")}
+              className="text-xs sm:text-sm"
+            >
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              Add Custom
+            </Button>
           </div>
-          
-          {details.themes.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">
-              No themes selected yet. Choose from the options below or add your own!
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {details.themes.map((theme, index) => (
-                <div
-                  key={index}
-                  className="inline-flex items-center gap-2 bg-white px-3 py-2 rounded-full border border-pink-200 shadow-sm"
-                >
-                  <span className="text-sm font-medium text-gray-700">{theme}</span>
-                  <button
-                    onClick={() => handleRemoveTheme(theme)}
-                    className="text-red-500 hover:text-red-700 ml-1"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Search and Filter */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              placeholder="Search themes (e.g., princess, dinosaur, magic...)"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-            />
-          </div>
-          
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="md:w-48 h-12 bg-white border-2 border-gray-200 rounded-xl">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {Object.entries(themeCategories).map(([key, category]) => (
-                <SelectItem key={key} value={key}>
-                  {category.emoji} {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Theme Categories and Selection */}
-        <div className="space-y-6">
-          {/* Show selected category or first category by default */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h5 className="font-semibold text-gray-900 flex items-center gap-2">
-                <span className="text-lg">
-                  {selectedCategory === 'all' 
-                    ? themeCategories.characters.emoji 
-                    : themeCategories[selectedCategory]?.emoji
-                  }
-                </span>
-                {selectedCategory === 'all' 
-                  ? themeCategories.characters.label 
-                  : themeCategories[selectedCategory]?.label
-                }
-              </h5>
-              <Button
-                onClick={() => {
-                  const categoryToAdd = selectedCategory === 'all' ? 'characters' : selectedCategory;
-                  handleQuickAdd(themeCategories[categoryToAdd].themes);
-                }}
-                size="sm"
-                variant="outline"
-                className="text-xs"
-              >
-                Add All ({selectedCategory === 'all' 
-                  ? themeCategories.characters.themes.length 
-                  : themeCategories[selectedCategory]?.themes.length
-                })
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {getFilteredThemes().map(theme => (
-                <div
-                  key={theme}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    details.themes.includes(theme)
-                      ? 'border-pink-300 bg-pink-100 text-pink-800'
-                      : 'border-gray-200 bg-white hover:border-pink-200 hover:bg-pink-50'
-                  }`}
-                  onClick={() => handleThemeToggle(theme)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{theme}</span>
-                    {details.themes.includes(theme) && (
-                      <span className="text-pink-600">✓</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Theme Input */}
-        <div className="border-t pt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h5 className="font-semibold text-gray-900">Add Custom Theme</h5>
-            {!isAddingCustom && (
-              <Button
-                onClick={() => setIsAddingCustom(true)}
-                size="sm"
-                className="bg-pink-500 hover:bg-pink-600"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Custom
-              </Button>
-            )}
-          </div>
-          
-          {isAddingCustom && (
-            <div className="flex gap-3">
+          {/* Add Custom Theme Form */}
+          {expandedSections.customThemes && (
+            <div className="flex gap-2 mb-4 p-3 sm:p-4 bg-pink-50 rounded-xl">
               <Input
-                placeholder="Enter custom theme name (e.g., My Little Pony, Pokemon, etc.)"
-                value={customThemeName}
-                onChange={(e) => setCustomThemeName(e.target.value)}
-                className="flex-1 h-12 bg-white border-2 border-gray-200 rounded-xl"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddCustomTheme()}
+                value={newCustomTheme}
+                onChange={(e) => setNewCustomTheme(e.target.value)}
+                placeholder="Enter custom theme name"
+                className="flex-1 h-8 sm:h-10 text-sm sm:text-base"
+                onKeyPress={(e) => e.key === "Enter" && handleAddCustomTheme()}
               />
               <Button
+                type="button"
                 onClick={handleAddCustomTheme}
-                disabled={!customThemeName.trim()}
-                className="bg-green-500 hover:bg-green-600"
+                size="sm"
+                className="h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm"
+                disabled={!newCustomTheme.trim()}
               >
                 Add
               </Button>
-              <Button
-                onClick={() => {
-                  setIsAddingCustom(false);
-                  setCustomThemeName('');
-                }}
-                variant="outline"
-              >
-                Cancel
-              </Button>
             </div>
           )}
-          
-          <p className="text-sm text-gray-500 mt-2">
-            Don't see a theme you offer? Add it here and it will appear in your selected themes above.
-          </p>
+
+          {/* Custom Themes List */}
+          {customThemes.length > 0 && (
+            <div className="space-y-2">
+              {customThemes.map((theme) => (
+                <div key={theme} className="flex items-center justify-between p-2 sm:p-3 bg-pink-50 rounded-lg">
+                  <span className="text-sm sm:text-base font-medium text-gray-900">{theme}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveCustomTheme(theme)}
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700"
+                  >
+                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {customThemes.length === 0 && !expandedSections.customThemes && (
+            <p className="text-xs sm:text-sm text-gray-500 italic">No custom themes added yet</p>
+          )}
         </div>
+
+        {/* Selected Themes Summary */}
+        {details.themes && details.themes.length > 0 && (
+          <div className="p-3 sm:p-4 bg-green-50 rounded-xl">
+            <h5 className="font-medium text-green-900 mb-2 text-sm sm:text-base">
+              Selected Themes ({details.themes.length})
+            </h5>
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              {details.themes.map((theme) => (
+                <span key={theme} className="px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs">
+                  {theme}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default EnhancedThemesSection;
+export default EnhancedThemesSection
