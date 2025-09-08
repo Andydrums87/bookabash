@@ -1408,12 +1408,12 @@ const calculatePackagePrice = useMemo(() => {
                   ) : (
                     <>{isLeadTimeBased ? 'Add to Cart' : 'Add to Plan'}</>
                   )}
-                  {selectedDate && (
+                  {/* {selectedDate && (
                     <>
                       {' '}({getSelectedDateDisplay()}
                       {!isLeadTimeBased && getSelectedTimeSlotDisplay()})
                     </>
-                  )}
+                  )} */}
                   {isFromDashboard && partyDate && (
                     <>
                       {' '}({partyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

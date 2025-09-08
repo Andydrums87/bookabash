@@ -824,7 +824,8 @@ export default function LocalStoragePartyHeader({
   const displayDate = getDisplayDate();
   const displayTimeRange = getDisplayTimeRange();
 
-  console.log('Current editingModal state:', editingModal); // Debug log
+
+  const capitalizedTheme = currentTheme?.charAt(0).toUpperCase() + currentTheme?.slice(1);
   
   if (!partyDetails) {
     return (
@@ -872,15 +873,15 @@ export default function LocalStoragePartyHeader({
               <div className="flex items-center gap-2 md:gap-3">
                 <h1
                   suppressHydrationWarning={true}
-                  className="text-5xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
+                  className="text-3xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
                   style={{
                     textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
                   }}
                 >
                   <span className="md:hidden">{getFirstName()}'s</span>
                   <span className="hidden md:inline">{getFullName()}'s</span>
-                  <span className="md:hidden"> Big Day!</span>
-                  <span className="hidden md:inline"><br />Big Day!</span>
+                  <span className="md:hidden"> {`${capitalizedTheme} Party`}!</span>
+                  <span className="hidden md:inline"><br />{`${capitalizedTheme} Party`}</span>
                 </h1>
                 <button
                   onClick={() => handleCardClick('name')}
@@ -889,9 +890,7 @@ export default function LocalStoragePartyHeader({
                   <Edit2 className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
               </div>
-              <p className="text-base md:text-2xl text-white/95 drop-shadow-lg font-medium">
-                {currentTheme?.description || `An amazing ${currentTheme} celebration`}
-              </p>
+             
             </div>
 
             {/* Mobile: Horizontal Scrolling Cards */}
@@ -905,10 +904,10 @@ export default function LocalStoragePartyHeader({
                     <div className="p-1 bg-white/20 rounded-full">
                       <Calendar className="w-3 h-3" />
                     </div>
-                    <p className="text-xs opacity-90 font-medium">Date</p>
+                    <p className="text-xs  opacity-90 font-medium">Date</p>
                   </div>
-                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
-                    {displayDate}
+                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight whitespace-nowrap overflow-hidden">
+                    {getDisplayDate(true)}
                   </p>
                 </button>
 
@@ -922,7 +921,7 @@ export default function LocalStoragePartyHeader({
                     </div>
                     <p className="text-xs opacity-90 font-medium">Time</p>
                   </div>
-                  <p suppressHydrationWarning={true} className="font-bold text-xs leading-tight">
+                  <p suppressHydrationWarning={true} className="font-bold text-xs leading-tight whitespace-nowrap overflow-hidden">
                     {displayTimeRange}
                   </p>
                 </button>
@@ -937,7 +936,7 @@ export default function LocalStoragePartyHeader({
                     </div>
                     <p className="text-xs opacity-90 font-medium">Age</p>
                   </div>
-                  <p suppressHydrationWarning={true} className="font-bold text-sm">
+                  <p suppressHydrationWarning={true} className="font-bold text-sm whitespace-nowrap">
                     {getChildAge()}
                   </p>
                 </button>
@@ -952,7 +951,7 @@ export default function LocalStoragePartyHeader({
                     </div>
                     <p className="text-xs opacity-90 font-medium">Guests</p>
                   </div>
-                  <p suppressHydrationWarning={true} className="font-bold text-sm">
+                  <p suppressHydrationWarning={true} className="font-bold text-sm whitespace-nowrap">
                     {getGuestCount()}
                   </p>
                 </button>
@@ -967,18 +966,10 @@ export default function LocalStoragePartyHeader({
                     </div>
                     <p className="text-xs opacity-90 font-medium">Where</p>
                   </div>
-                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight">
+                  <p suppressHydrationWarning={true} className="font-bold text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
                     {getLocation()}
                   </p>
                 </button>
-              </div>
-              
-              <div className="flex justify-center gap-1 mt-3">
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
               </div>
             </div>
 

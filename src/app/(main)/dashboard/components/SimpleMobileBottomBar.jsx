@@ -313,8 +313,8 @@ const SimpleMobileBottomTabBar = ({
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-lg">
-        <div className="px-4 py-2 safe-area-pb">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-primary-400  z-30 shadow-2xl">
+        <div className="px-3 py-2 safe-area-pb">
           <div className="flex justify-between items-center max-w-sm mx-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon
@@ -324,22 +324,22 @@ const SimpleMobileBottomTabBar = ({
                 <button
                   key={tab.id}
                   onClick={() => handleTabPress(tab)}
-                  className={`relative flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all duration-300 min-w-[60px] ${
+                  className={`relative flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all duration-300 min-w-[80px] ${
                     isActive
-                      ? "bg-teal-50 shadow-md scale-105"
-                      : "bg-transparent hover:bg-gray-50"
+                      ? "bg-white shadow-md scale-105 transform"
+                      : "bg-transparent hover:bg-white/20 hover:backdrop-blur-sm"
                   }`}
                   data-tour={tab.id === "progress" ? "progress-tab" : undefined}
                 >
                   <div className="relative mb-0.5">
                     <Icon
                       className={`w-4 h-4 transition-colors duration-200 ${
-                        isActive ? "text-teal-600" : "text-gray-500"
+                        isActive ? "text-primary-600" : "text-white"
                       }`}
                     />
 
                     {tab.badge && (
-                      <span className="absolute -top-1 -right-1 bg-teal-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-sm border-2 border-white text-[10px]">
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-lg border-2 border-white text-[9px]">
                         {tab.badge.split("/")[0]}
                       </span>
                     )}
@@ -350,8 +350,8 @@ const SimpleMobileBottomTabBar = ({
                   </div>
 
                   <span
-                    className={`text-xs font-medium transition-colors duration-200 text-center leading-tight ${
-                      isActive ? "text-teal-600" : "text-gray-600"
+                    className={`text-[10px] font-semibold transition-colors duration-200 text-center leading-tight ${
+                      isActive ? "text-primary-700" : "text-white/90"
                     }`}
                   >
                     {tab.label}

@@ -1183,10 +1183,10 @@ const handleNameSubmit = (nameData) => {
               {/* Action Section */}
               <div className="flex flex-col sm:flex-row gap-4"  data-tour="review-book">
                 <Button
-                  className="flex-3 bg-primary rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-6 text-base font-semibold"
+                  className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-4 text-xl font-bold"
                   asChild
                 >
-                  <Link href="/review-book">Let's Make this happen!</Link>
+                  <Link href="/review-book">Let's Make This happen!</Link>
                 </Button>
               
                 <Button variant="ghost" className="sm:w-auto">
