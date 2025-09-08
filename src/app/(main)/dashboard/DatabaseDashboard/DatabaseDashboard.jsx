@@ -1,12 +1,15 @@
-// DatabaseDashboard.jsx - FIXED with single loading state
+// DatabaseDashboard.jsx - UPDATED with unified pricing system
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { useSearchParams, useRouter } from "next/navigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+
+// Import unified pricing system
+import { calculateFinalPrice, calculatePartyTotal } from '@/utils/unifiedPricing'
 
 // Hooks
 import { usePartyData } from '../hooks/usePartyData'
@@ -25,7 +28,7 @@ import { useChatNotifications } from '../hooks/useChatNotifications'
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
-import  DatabasePartyHeader  from "../components/ui/DatabaseDashboardPartyHeader"
+import DatabasePartyHeader from "../components/ui/DatabaseDashboardPartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 
 // Feature Components
@@ -37,6 +40,30 @@ import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
 import SnappyLoader from "@/components/ui/SnappyLoader"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
+
+// ADD: Unified pricing helper function (same as LocalStorageDashboard)
+const getSupplierDisplayPricing = (supplier, partyDetails, supplierAddons = []) => {
+  if (!supplier) return null;
+  
+  const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+  
+  return {
+    totalPrice: pricing.finalPrice,
+    basePrice: pricing.basePrice,
+    weekendInfo: pricing.details.isWeekend ? {
+      premiumAmount: pricing.breakdown.weekend,
+      isApplied: pricing.breakdown.weekend > 0
+    } : null,
+    durationInfo: pricing.breakdown.extraHours > 0 ? {
+      hasDurationPremium: true,
+      extraHours: pricing.details.extraHours,
+      extraCost: pricing.breakdown.extraHours
+    } : { hasDurationPremium: false },
+    isTimeBased: pricing.details.extraHours > 0,
+    breakdown: pricing.breakdown,
+    details: pricing.details
+  };
+};
 
 export default function DatabaseDashboard() {
   const router = useRouter()
@@ -87,8 +114,6 @@ export default function DatabaseDashboard() {
     themeLoaded
   } = usePartyData()
 
-
-
   // PARTY PHASE HOOK - No longer has loading state
   const {
     partyPhase,
@@ -98,10 +123,65 @@ export default function DatabaseDashboard() {
     enquiries,
     isPaymentConfirmed,
     paymentDetails,
-    // REMOVED: loading from usePartyPhase - no longer needed
   } = usePartyPhase(partyData, partyId)
 
-  // OTHER HOOKS
+  // UNIFIED PRICING CALCULATION (same pattern as LocalStorageDashboard)
+  const enhancedTotalCost = useMemo(() => {
+    let total = 0;
+  
+    // Calculate each supplier's cost, checking for pre-calculated pricing
+    Object.entries(visibleSuppliers).forEach(([type, supplier]) => {
+      if (!supplier) return;
+  
+      // Get addons for this specific supplier
+      const supplierAddons = addons.filter(addon => 
+        addon.supplierId === supplier.id || 
+        addon.supplierType === type ||
+        addon.attachedToSupplier === type
+      );
+  
+      // Check if pricing has already been enhanced
+      let supplierCost = 0;
+  
+      if (supplier.enhancedPrice && supplier.originalPrice) {
+        // Use pre-calculated enhanced price
+        console.log('📊 Database Dashboard Total: Using pre-calculated enhanced pricing for', supplier.name, ':', supplier.enhancedPrice);
+        supplierCost = supplier.enhancedPrice;
+      } else if (supplier.packageData?.enhancedPrice && supplier.packageData?.originalPrice) {
+        // Use package enhanced price
+        console.log('📊 Database Dashboard Total: Using package enhanced pricing for', supplier.name, ':', supplier.packageData.enhancedPrice);
+        supplierCost = supplier.packageData.enhancedPrice;
+      } else if (supplier.packageData?.totalPrice && supplier.packageData?.price && 
+                 supplier.packageData.totalPrice !== supplier.packageData.price) {
+        // Use package total price
+        console.log('📊 Database Dashboard Total: Using package totalPrice for', supplier.name, ':', supplier.packageData.totalPrice);
+        supplierCost = supplier.packageData.totalPrice;
+      } else {
+        // Calculate fresh pricing only if no pre-calculated values exist
+        console.log('📊 Database Dashboard Total: Calculating fresh pricing for', supplier.name);
+        const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+        supplierCost = pricing.finalPrice;
+      }
+  
+      total += supplierCost;
+  
+      // Add addon costs (addons typically don't have enhanced pricing)
+      const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+      total += addonsCost;
+    });
+  
+    // Add standalone addons (not attached to any supplier)
+    const standaloneAddons = addons.filter(addon => 
+      !addon.supplierId && !addon.supplierType && !addon.attachedToSupplier
+    );
+    const standaloneAddonsTotal = standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+    total += standaloneAddonsTotal;
+  
+    console.log('📊 Database Dashboard Total: Final calculated total:', total);
+    return total;
+  }, [visibleSuppliers, addons, partyDetails]);
+
+  // OTHER HOOKS - Updated to use enhancedTotalCost
   const {
     tempBudget,
     setTempBudget,
@@ -110,7 +190,7 @@ export default function DatabaseDashboard() {
     showAdvancedControls,
     setShowAdvancedControls,
     updateSuppliersForBudget
-  } = useBudgetManager(totalCost, isUpdating, setIsUpdating)
+  } = useBudgetManager(enhancedTotalCost, isUpdating, setIsUpdating) // Use enhancedTotalCost instead of totalCost
 
   const {
     replacements,
@@ -126,6 +206,7 @@ export default function DatabaseDashboard() {
     setNotification,
     null
   )
+  
   const {
     unreadCount,
     hasNewMessages,
@@ -137,6 +218,7 @@ export default function DatabaseDashboard() {
     partyId,
     customerId: user?.id
   })
+
   // Supplier management functions
   const removeSupplier = async (supplierType) => {
     if (!partyId) {
@@ -157,7 +239,7 @@ export default function DatabaseDashboard() {
     getSupplierDisplayName,
   } = useSupplierManager(removeSupplier)
 
-  // ALL EFFECTS
+  // ALL EFFECTS (keeping existing effects unchanged)
   useEffect(() => {
     setIsClient(typeof window !== 'undefined')
   }, [])
@@ -169,8 +251,6 @@ export default function DatabaseDashboard() {
       const storedState = getStoredModalState()
       
       if (storedState) {
-
-        
         setModalConfig({
           category: storedState.category,
           theme: storedState.theme,
@@ -197,8 +277,6 @@ export default function DatabaseDashboard() {
       const { detail: modalState } = event
       
       if (modalState) {
-
-        
         setModalConfig({
           category: modalState.category,
           theme: modalState.theme,
@@ -230,20 +308,15 @@ export default function DatabaseDashboard() {
         const fromPage = searchParams.get('from')
         const source = searchParams.get('source')
         
-       
         if (scrollToSupplier && lastAction === 'supplier-added') {
-
           setActiveMobileSupplierType(scrollToSupplier)
 
           if (!showWelcomePopup && !showSupplierAddedModal) {
-
-            
             const scrollDelay = source === 'a_la_carte' ? 1000 : 500
             
             setTimeout(() => {
               const element = document.getElementById(`supplier-${scrollToSupplier}`)
               if (element && window.innerWidth >= 768) {
-
                 element.scrollIntoView({ 
                   behavior: 'smooth',
                   block: 'center',
@@ -259,7 +332,6 @@ export default function DatabaseDashboard() {
                     inline: 'nearest'
                   })
                 } else {
-      
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }
@@ -303,7 +375,7 @@ export default function DatabaseDashboard() {
   // Use disable scroll hook
   useDisableScroll([showSupplierModal, showWelcomePopup])
 
-  // COMPUTED VALUES (after all hooks)
+  // COMPUTED VALUES (after all hooks) - Updated to use enhancedTotalCost
   const trackableSuppliers = Object.entries(visibleSuppliers).filter(([key, supplier]) => 
     supplier && key !== "einvites"
   )
@@ -316,23 +388,15 @@ export default function DatabaseDashboard() {
   const allSuppliersConfirmed = confirmedSuppliers === totalSuppliers && totalSuppliers > 0
   const showSnappysParty = allSuppliersConfirmed || currentPhase === 'confirmed'
 
-  // Helper functions
+  // Helper functions - Updated to use enhancedTotalCost
   const getOutstandingSupplierData = () => {
-
-    
     const unpaidEnquiries = enquiries.filter(enquiry => {
       const isAccepted = enquiry.status === 'accepted'
       const isUnpaid = !enquiry.payment_status || enquiry.payment_status === 'unpaid'
-      
-   
-      
       return isAccepted && isUnpaid
     })
     
-
-    
     if (unpaidEnquiries.length === 0) {
-
       return { suppliers: [], totalCost: 0, totalDeposit: 0 }
     }
     
@@ -341,10 +405,7 @@ export default function DatabaseDashboard() {
         const supplierType = enquiry.supplier_category
         const supplier = visibleSuppliers[supplierType]
         
-     
-        
         if (!supplier) {
-      
           return null
         }
         
@@ -352,13 +413,29 @@ export default function DatabaseDashboard() {
       })
       .filter(Boolean)
     
-
-    
     const paymentData = outstandingSuppliers.map(({ enquiry, supplierType, supplier }) => {
-      const supplierPrice = supplier.totalPrice || supplier.price || 0
+      // Use unified pricing system to get supplier cost
+      const supplierAddons = addons.filter(addon => 
+        addon.supplierId === supplier.id || 
+        addon.supplierType === supplierType ||
+        addon.attachedToSupplier === supplierType
+      );
+      
+      let supplierPrice;
+      if (supplier.enhancedPrice && supplier.originalPrice) {
+        supplierPrice = supplier.enhancedPrice;
+      } else if (supplier.packageData?.enhancedPrice && supplier.packageData?.originalPrice) {
+        supplierPrice = supplier.packageData.enhancedPrice;
+      } else if (supplier.packageData?.totalPrice && supplier.packageData?.price && 
+                 supplier.packageData.totalPrice !== supplier.packageData.price) {
+        supplierPrice = supplier.packageData.totalPrice;
+      } else {
+        const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+        supplierPrice = pricing.finalPrice;
+      }
+      
       const supplierDepositAmount = Math.max(50, Math.round(supplierPrice * 0.3))
 
-      
       return {
         type: supplierType,
         name: supplier.name,
@@ -371,7 +448,6 @@ export default function DatabaseDashboard() {
     const totalOutstandingCost = paymentData.reduce((sum, item) => sum + item.totalAmount, 0)
     const totalDepositAmount = paymentData.reduce((sum, item) => sum + item.depositAmount, 0)
     
-  
     return {
       suppliers: paymentData,
       totalCost: totalOutstandingCost,
@@ -393,9 +469,8 @@ export default function DatabaseDashboard() {
     }
   }, [enquiries, visibleSuppliers])
 
-  // EVENT HANDLERS (after all hooks)
+  // EVENT HANDLERS (keeping all existing handlers unchanged)
   const openSupplierModal = (category, theme = 'superhero') => {
- 
     setModalConfig({
       category,
       theme,
@@ -406,25 +481,20 @@ export default function DatabaseDashboard() {
   }
 
   const closeSupplierModal = () => {
-
     setShowSupplierModal(false)
   }
 
   const handleSupplierSelection = async (supplierData) => {
-
     const supplier = supplierData?.supplier || supplierData
     const selectedPackage = supplierData?.package || null
 
-    
     if (!supplier) {
       console.error('No supplier data provided')
       return
     }
     
     try {
-
       await handleNormalSupplierAddition(supplier, selectedPackage)
-
       
       const supplierTypeMapping = {
         'Venues': 'venue',
@@ -449,21 +519,13 @@ export default function DatabaseDashboard() {
   }
 
   const handleNormalSupplierAddition = async (supplier, selectedPackage) => {
-  
-    
     setShowSupplierModal(false)
     
     setTimeout(() => {
-
-      
       const modalData = { supplier, selectedPackage }
       setAddedSupplierData(modalData)
       setShowSupplierAddedModal(true)
-      
-     
-      
       setEnquiryFeedback(null)
-      
     }, 200)
   }
 
@@ -471,7 +533,6 @@ export default function DatabaseDashboard() {
     setSendingEnquiry(true)
     
     try {
-     
       const addResult = await partyDatabaseBackend.addSupplierToParty(
         partyId,
         supplier,
@@ -482,7 +543,6 @@ export default function DatabaseDashboard() {
         throw new Error(addResult.error)
       }
       
-     
       const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
         partyId,
         supplier,
@@ -503,23 +563,18 @@ export default function DatabaseDashboard() {
       if (replacementContextString) {
         try {
           replacementContext = JSON.parse(replacementContextString)
-
         } catch (error) {
           console.error('Error parsing replacement context:', error)
         }
       }
 
       if (replacementContext?.isReplacementFlow && replacementContext?.originalSupplierCategory) {
-     
-        
         try {
           const markResult = await partyDatabaseBackend.markReplacementAsProcessed(
             partyId,
             replacementContext.originalSupplierCategory,
             supplier.id
           )
-          
-       
           
           if (markResult.success) {
             console.log('STEP 3: Replacement marked as processed successfully')
@@ -531,12 +586,10 @@ export default function DatabaseDashboard() {
         }
         
         sessionStorage.removeItem('replacementContext')
-     
       } else {
         console.log('Not a replacement flow - skipping replacement processing')
       }
 
-    
       await refreshPartyData()
       setShowSupplierAddedModal(false)
       setAddedSupplierData(null)
@@ -556,8 +609,6 @@ export default function DatabaseDashboard() {
   }
 
   const handleCancelEnquiry = async (supplierType) => {
-    
- 
     if (isCancelling || !partyId) {
       console.log('Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
       return
@@ -569,7 +620,6 @@ export default function DatabaseDashboard() {
       const result = await partyDatabaseBackend.cancelEnquiryAndRemoveSupplier(partyId, supplierType)
       
       if (result.success) {
-
         await refreshPartyData()
         setEnquiryFeedback(`Request cancelled for ${supplierType}`)
         setTimeout(() => setEnquiryFeedback(null), 3000)
@@ -586,7 +636,6 @@ export default function DatabaseDashboard() {
   }
 
   const handleMobileSupplierTabChange = (supplierType) => {
-
     setActiveMobileSupplierType(supplierType)
     
     setTimeout(() => {
@@ -597,7 +646,6 @@ export default function DatabaseDashboard() {
   }
 
   const handleModalClose = () => {
-   
     setShowSupplierAddedModal(false)
     setAddedSupplierData(null)
   }
@@ -656,8 +704,8 @@ export default function DatabaseDashboard() {
         suppliers={visibleSuppliers}
         enquiries={enquiries}
         paymentDetails={{
-          depositAmount: totalCost * 0.2,
-          remainingBalance: totalCost * 0.8
+          depositAmount: enhancedTotalCost * 0.2, // Use enhancedTotalCost
+          remainingBalance: enhancedTotalCost * 0.8 // Use enhancedTotalCost
         }}
       />
       <EnquirySuccessBanner 
@@ -739,7 +787,9 @@ export default function DatabaseDashboard() {
               paymentDetails={paymentDetails}
               handleCancelEnquiry={handleCancelEnquiry}
               activeSupplierType={activeMobileSupplierType}
-              onSupplierTabChange={handleMobileSupplierTabChange}   
+              onSupplierTabChange={handleMobileSupplierTabChange}
+              partyDetails={partyDetails} // ADD: Pass partyDetails for unified pricing
+              getSupplierDisplayPricing={getSupplierDisplayPricing} // ADD: Pass pricing function
             />
         
             <PartyPhaseContent
@@ -760,7 +810,7 @@ export default function DatabaseDashboard() {
           <Sidebar
             partyData={partyData}
             partyDate={partyDetails?.date}
-            totalCost={totalCost}
+            totalCost={enhancedTotalCost} // Use enhancedTotalCost instead of totalCost
             isPaymentConfirmed={isPaymentConfirmed}
             suppliers={visibleSuppliers}
             enquiries={enquiries}
@@ -778,38 +828,37 @@ export default function DatabaseDashboard() {
         onClose={() => setShowWelcomePopup(false)}
       />
       
-     
       {!showSupplierModal && (
-  <MobileBottomTabBar
-    suppliers={visibleSuppliers}
-    enquiries={enquiries}
-    totalCost={totalCost}
-    timeRemaining={24}
-    partyDetails={partyDetails}
-    onPaymentReady={handlePaymentReady}
-    isPaymentConfirmed={isPaymentConfirmed}
-    hasOutstandingPayments={outstandingData.suppliers.length > 0}
-    outstandingSuppliers={outstandingData.suppliers}
-    totalDepositAmount={outstandingData.totalDeposit}
-    ProgressWidget={
-      <SnappysPresentParty
-        suppliers={visibleSuppliers}
-        enquiries={enquiries}
-        timeRemaining={24}
-        onPaymentReady={handlePaymentReady}
-        showPaymentCTA={true}
-        isPaymentComplete={isPaymentConfirmed}
-        totalOutstandingCost={outstandingData.totalDeposit}
-        outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-      />
-    }
-    CountdownWidget={
-      <CountdownWidget
-        partyDate={partyDetails?.date}
-      />
-    }
-  />
-)}
+        <MobileBottomTabBar
+          suppliers={visibleSuppliers}
+          enquiries={enquiries}
+          totalCost={enhancedTotalCost} // Use enhancedTotalCost instead of totalCost
+          timeRemaining={24}
+          partyDetails={partyDetails}
+          onPaymentReady={handlePaymentReady}
+          isPaymentConfirmed={isPaymentConfirmed}
+          hasOutstandingPayments={outstandingData.suppliers.length > 0}
+          outstandingSuppliers={outstandingData.suppliers}
+          totalDepositAmount={outstandingData.totalDeposit}
+          ProgressWidget={
+            <SnappysPresentParty
+              suppliers={visibleSuppliers}
+              enquiries={enquiries}
+              timeRemaining={24}
+              onPaymentReady={handlePaymentReady}
+              showPaymentCTA={true}
+              isPaymentComplete={isPaymentConfirmed}
+              totalOutstandingCost={outstandingData.totalDeposit}
+              outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
+            />
+          }
+          CountdownWidget={
+            <CountdownWidget
+              partyDate={partyDetails?.date}
+            />
+          }
+        />
+      )}
     </div>
   )
 }

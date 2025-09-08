@@ -126,6 +126,26 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
 
   return (
     <div className="space-y-6">
+        <Card className="border-gray-300">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Building className="w-5 h-5 text-green-600" />
+            About Us
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            {serviceDetails.aboutUs && (
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Venue Type</h4>
+                <p className="text-gray-700">{serviceDetails.aboutUs}</p>
+              </div>
+            )}
+            
+          
+          </div>
+
+        </CardContent>
+      </Card>
       {/* Venue Information */}
       <Card className="border-gray-300">
         <CardContent className="p-6">

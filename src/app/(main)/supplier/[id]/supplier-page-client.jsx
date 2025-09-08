@@ -121,6 +121,7 @@ export default function SupplierProfilePage({ backendSupplier }) {
   const [databasePartyData, setDatabasePartyData] = useState(null)
   const [ currentPartyId, setCurrentPartyId] = useState(null)
 
+
 // 2. Call the data hook first (no selectedPackageId needed)
 const { supplier, packages: basePackages, portfolioImages, credentials, reviews, isCakeSupplier } = 
   useSupplierData(backendSupplier)
@@ -291,7 +292,8 @@ if (userTypeLoading) {
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           <main className="lg:col-span-2 space-y-8">
 
-          <SupplierPackagesRouter
+    
+<SupplierPackagesRouter
   supplier={supplier}
   packages={packages}
   selectedPackageId={booking.selectedPackageId}
@@ -301,6 +303,7 @@ if (userTypeLoading) {
   getSupplierInPartyDetails={booking.getSupplierInPartyDetails}
   onShowNotification={notifications.setNotification}
   isReplacementMode={replacement.isReplacementMode} 
+  selectedDate={availability.getSelectedCalendarDate()} 
 />
 
 
@@ -318,26 +321,30 @@ if (userTypeLoading) {
           </main>
           
           <aside className="hidden md:block lg:col-span-1">
-          <SupplierSidebar
-    supplier={supplier}
-    packages={packages}
-    selectedPackageId={booking.selectedPackageId}
-    handleAddToPlan={handleAddToPlanWithModals}
-    getAddToPartyButtonState={booking.getAddToPartyButtonState}
-    currentMonth={availability.currentMonth}
-    setCurrentMonth={availability.setCurrentMonth}
-    selectedDate={availability.selectedDate}
-    setSelectedDate={availability.setSelectedDate}
-    selectedTimeSlot={availability.selectedTimeSlot} // ✅ ADD THIS
-    setSelectedTimeSlot={availability.setSelectedTimeSlot} // ✅ ADD THIS
-    credentials={credentials}
-    isFromDashboard={availability.isFromDashboard()}
-    partyDate={availability.getPartyDate()}
-    partyTimeSlot={availability.getPartyTimeSlot()} // ✅ ADD THIS
-    openCakeModal={modals.openCakeModal}
-    showCakeModal={modals.showCakeModal}
-    isCakeSupplier={isCakeSupplier}
-  />
+
+<SupplierSidebar
+  supplier={supplier}
+  packages={packages}
+  selectedPackageId={booking.selectedPackageId}
+  handleAddToPlan={handleAddToPlanWithModals}
+  getAddToPartyButtonState={booking.getAddToPartyButtonState}
+  currentMonth={availability.currentMonth}
+  setCurrentMonth={availability.setCurrentMonth}
+  selectedDate={availability.selectedDate}
+  setSelectedDate={availability.setSelectedDate}
+  selectedTimeSlot={availability.selectedTimeSlot}
+  setSelectedTimeSlot={availability.setSelectedTimeSlot}
+  credentials={credentials}
+  isFromDashboard={availability.isFromDashboard()}
+  partyDate={availability.getPartyDate()}
+  partyTimeSlot={availability.getPartyTimeSlot()}
+  openCakeModal={modals.openCakeModal}
+  showCakeModal={modals.showCakeModal}
+  isCakeSupplier={isCakeSupplier}
+  // ✅ ADD THESE for smart pricing in sidebar too:
+  showWeekendPricing={true}  // Enable weekend pricing display in sidebar
+  enableSmartPricing={true}  // Enable smart pricing calculations
+/>
           </aside>
         </div>
       </div>
@@ -372,50 +379,53 @@ if (userTypeLoading) {
 
 
 
+
 <MobileBookingBar 
-        selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId) || packages[0] || null}
-        supplier={supplier}
-        onAddToPlan={handleAddToPlanWithModals}
-        addToPlanButtonState={booking.getAddToPartyButtonState(booking.selectedPackageId)}
-        selectedDate={availability.selectedDate}
-        currentMonth={availability.currentMonth}
-        setSelectedDate={availability.setSelectedDate}
-        setCurrentMonth={availability.setCurrentMonth}
-        hasValidPartyPlan={availability.hasPartyDate}
-        isFromDashboard={availability.isFromDashboard()}
-        partyDate={availability.getPartyDate()}
-        onSaveForLater={(data) => {
-          notifications.showSaveForLater(supplier.name)
-        }}
-        showAddonModal={modals.showAddonModal}
-        setShowAddonModal={modals.setShowAddonModal}
-        onAddonConfirm={(addonData) => modals.handleAddonConfirm(addonData, handleAddToPlanWithModals)}
-        isAddingToPlan={booking.isAddingToPlan}
-        hasEnquiriesPending={enquiries.hasEnquiriesPending}
-        onShowPendingEnquiryModal={() => {
-          // ✅ NEW: Instead of showing blocking modal, show informational notification
-          notifications.setNotification({
-            type: 'info',
-            title: 'Enquiries in Progress',
-            message: `You have ${enquiries.getPendingEnquiriesCount()} pending enquir${enquiries.getPendingEnquiriesCount() === 1 ? 'y' : 'ies'}. View them on your dashboard.`,
-            action: {
-              label: 'View Dashboard',
-              onClick: () => router.push('/dashboard?tab=enquiries')
-            },
-            duration: 6000
-          })
-        }}
-        pendingCount={enquiries.getPendingEnquiriesCount()}
-        isReplacementMode={replacement.isReplacementMode}
-        replacementSupplierName={replacement.replacementSupplierName}
-        onReturnToReplacement={replacement.handleReturnToReplacement}
-        packages={packages}
-        openCakeModal={modals.openCakeModal}
-        showCakeModal={modals.showCakeModal}
-        isCakeSupplier={isCakeSupplier}
-        databasePartyData={databasePartyData} // Add this
-        userType={userType} // Add this
-      />
+  selectedPackage={packages.find(pkg => pkg.id === booking.selectedPackageId) || packages[0] || null}
+  supplier={supplier}
+  onAddToPlan={handleAddToPlanWithModals}
+  addToPlanButtonState={booking.getAddToPartyButtonState(booking.selectedPackageId)}
+  selectedDate={availability.selectedDate}
+  currentMonth={availability.currentMonth}
+  setSelectedDate={availability.setSelectedDate}
+  setCurrentMonth={availability.setCurrentMonth}
+  hasValidPartyPlan={availability.hasPartyDate}
+  isFromDashboard={availability.isFromDashboard()}
+  partyDate={availability.getPartyDate()}
+  onSaveForLater={(data) => {
+    notifications.showSaveForLater(supplier.name)
+  }}
+  showAddonModal={modals.showAddonModal}
+  setShowAddonModal={modals.setShowAddonModal}
+  onAddonConfirm={(addonData) => modals.handleAddonConfirm(addonData, handleAddToPlanWithModals)}
+  isAddingToPlan={booking.isAddingToPlan}
+  hasEnquiriesPending={enquiries.hasEnquiriesPending}
+  onShowPendingEnquiryModal={() => {
+    notifications.setNotification({
+      type: 'info',
+      title: 'Enquiries in Progress',
+      message: `You have ${enquiries.getPendingEnquiriesCount()} pending enquir${enquiries.getPendingEnquiriesCount() === 1 ? 'y' : 'ies'}. View them on your dashboard.`,
+      action: {
+        label: 'View Dashboard',
+        onClick: () => router.push('/dashboard?tab=enquiries')
+      },
+      duration: 6000
+    })
+  }}
+  pendingCount={enquiries.getPendingEnquiriesCount()}
+  isReplacementMode={replacement.isReplacementMode}
+  replacementSupplierName={replacement.replacementSupplierName}
+  onReturnToReplacement={replacement.handleReturnToReplacement}
+  packages={packages}
+  openCakeModal={modals.openCakeModal}
+  showCakeModal={modals.showCakeModal}
+  isCakeSupplier={isCakeSupplier}
+  databasePartyData={databasePartyData}
+  userType={userType}
+  // ✅ ADD THESE for mobile smart pricing:
+  enableSmartPricing={true}
+  showWeekendPricing={true}  // ✅ Changed from showWeekendRates
+/>
 
 
 {modals.showCakeModal && isCakeSupplier && modals.selectedPackageForCake && (

@@ -1,21 +1,56 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Home, BarChart3, FileText, Clock, X, DollarSign, Sparkles, PoundSterling } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { calculateFinalPrice } from '@/utils/unifiedPricing'
+
 
 const SimpleMobileBottomTabBar = ({
   suppliers = {},
-  totalCost = 0,
   partyDetails = {},
+  addons = [], // Add addons prop
   // Budget props
   tempBudget = 0,
   budgetPercentage = 0,
   getBudgetCategory,
+  CountdownWidget
 }) => {
   const [activeTab, setActiveTab] = useState("party")
   const [showModal, setShowModal] = useState(false)
   const router = useRouter()
+
+  // Calculate unified total cost using the same logic as dashboard
+  const unifiedTotalCost = useMemo(() => {
+    let total = 0;
+
+    // Calculate each supplier's cost using ALWAYS FRESH pricing
+    Object.entries(suppliers).forEach(([type, supplier]) => {
+      if (!supplier) return;
+
+      // Get addons for this specific supplier
+      const supplierAddons = addons.filter(addon => 
+        addon.supplierId === supplier.id || 
+        addon.supplierType === type ||
+        addon.attachedToSupplier === type
+      );
+
+      // ALWAYS calculate fresh pricing - never use pre-enhanced values
+      const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+      const supplierCost = pricing.finalPrice;
+
+      total += supplierCost;
+    });
+
+    // Add standalone addons (not attached to any supplier)
+    const standaloneAddons = addons.filter(addon => 
+      !addon.supplierId && !addon.supplierType && !addon.attachedToSupplier
+    );
+    const standaloneAddonsTotal = standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+    total += standaloneAddonsTotal;
+
+    return total;
+  }, [suppliers, addons, partyDetails]);
 
   // Calculate progress - only count non-null suppliers
   const confirmedSuppliers = Object.values(suppliers).filter(supplier => supplier !== null).length
@@ -70,10 +105,10 @@ const SimpleMobileBottomTabBar = ({
   const getModalContent = () => {
     switch (activeTab) {
       case "budget":
-        // Calculate budget info
-        const isOverBudget = totalCost > tempBudget
-        const overBudgetAmount = Math.max(0, totalCost - tempBudget)
-        const remaining = isOverBudget ? -overBudgetAmount : Math.max(0, tempBudget - totalCost)
+        // Calculate budget info using unified total
+        const isOverBudget = unifiedTotalCost > tempBudget
+        const overBudgetAmount = Math.max(0, unifiedTotalCost - tempBudget)
+        const remaining = isOverBudget ? -overBudgetAmount : Math.max(0, tempBudget - unifiedTotalCost)
         const displayPercentage = Math.min(100, budgetPercentage)
         const budgetCategory = getBudgetCategory ? getBudgetCategory(tempBudget) : "Complete"
         
@@ -91,7 +126,7 @@ const SimpleMobileBottomTabBar = ({
               <div className="flex items-baseline justify-between mb-4">
                 <div className="flex items-baseline gap-2">
                   <PoundSterling className="w-6 h-6 text-teal-600 mb-1" />
-                  <span className="text-3xl font-bold text-gray-900">{totalCost}</span>
+                  <span className="text-3xl font-bold text-gray-900">{unifiedTotalCost}</span>
                   <span className="text-gray-600 font-medium">of £{tempBudget}</span>
                 </div>
                 <div className="text-right">
@@ -131,14 +166,23 @@ const SimpleMobileBottomTabBar = ({
               {Object.entries(suppliers).map(([type, supplier]) => {
                 if (!supplier) return null
                 
+                // Calculate unified pricing for this supplier
+                const supplierAddons = addons.filter(addon => 
+                  addon.supplierId === supplier.id || 
+                  addon.supplierType === type ||
+                  addon.attachedToSupplier === type
+                );
+                const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+                const supplierCost = pricing.finalPrice;
+                
                 const name = type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')
-                const percentage = tempBudget > 0 ? Math.round((supplier.price / tempBudget) * 100) : 0
+                const percentage = tempBudget > 0 ? Math.round((supplierCost / tempBudget) * 100) : 0
                 
                 return (
                   <div key={type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="font-medium text-gray-700">{name}</span>
                     <div className="text-right">
-                      <div className="font-bold text-gray-900">£{supplier.price}</div>
+                      <div className="font-bold text-gray-900">£{supplierCost}</div>
                       <div className="text-xs text-gray-500">{percentage}% of budget</div>
                     </div>
                   </div>
@@ -150,13 +194,27 @@ const SimpleMobileBottomTabBar = ({
 
       case "progress":
         // Get list of suppliers with their status
-        const supplierEntries = Object.entries(suppliers).map(([type, supplier]) => ({
-          type,
-          name: type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1'),
-          isBooked: supplier !== null,
-          supplierName: supplier?.name || null,
-          price: supplier?.price || null
-        }))
+        const supplierEntries = Object.entries(suppliers).map(([type, supplier]) => {
+          // Calculate unified pricing for display
+          let supplierCost = 0;
+          if (supplier) {
+            const supplierAddons = addons.filter(addon => 
+              addon.supplierId === supplier.id || 
+              addon.supplierType === type ||
+              addon.attachedToSupplier === type
+            );
+            const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+            supplierCost = pricing.finalPrice;
+          }
+
+          return {
+            type,
+            name: type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1'),
+            isBooked: supplier !== null,
+            supplierName: supplier?.name || null,
+            price: supplierCost || null
+          }
+        })
 
         return (
           <div className="space-y-6">
@@ -219,9 +277,9 @@ const SimpleMobileBottomTabBar = ({
               ))}
             </div>
 
-            {/* Total cost */}
+            {/* Total cost using unified pricing */}
             <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-teal-600">£{totalCost.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-teal-600">£{unifiedTotalCost.toLocaleString()}</div>
               <div className="text-sm text-teal-700">Total party cost</div>
             </div>
           </div>
@@ -230,44 +288,22 @@ const SimpleMobileBottomTabBar = ({
       case "timer":
         return (
           <div className="space-y-6">
+          {CountdownWidget ? (
+            <div>{CountdownWidget}</div>
+          ) : (
             <div className="text-center">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Party Countdown</h3>
-              <div className="bg-teal-50 border-2 border-teal-200 rounded-xl p-6 text-center">
-                {timeRemaining > 0 ? (
-                  <>
-                    <div className="text-4xl font-bold mb-2">
-                      <span className="text-teal-600">{timeRemaining}</span>
-                    </div>
-                    <p className="text-sm text-teal-700">
-                      {timeRemaining === 1 ? 'day' : 'days'} until {partyDetails.childName || 'the'} party!
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-4xl font-bold mb-2 text-purple-600">🎉</div>
-                    <p className="text-lg font-bold text-purple-600">Party time!</p>
-                    <p className="text-sm text-purple-700">Hope you have an amazing celebration!</p>
-                  </>
-                )}
-              </div>
-              
-              {partyDetails.date && (
-                <div className="mt-4 text-center">
-                  <div className="text-lg font-semibold text-gray-800">
-                    {new Date(partyDetails.date).toLocaleDateString('en-UK', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </div>
-                  {partyDetails.time && (
-                    <div className="text-gray-600">{partyDetails.time}</div>
-                  )}
+              <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-6 text-center">
+                <div className="text-4xl font-bold mb-2">
+                  <span className="text-primary-600">
+                    {Math.floor(timeRemaining)}h {Math.round((timeRemaining - Math.floor(timeRemaining)) * 60)}m
+                  </span>
                 </div>
-              )}
+                <p className="text-sm text-primary-700">Time remaining to secure your party</p>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
         )
 
       default:

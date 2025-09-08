@@ -5,6 +5,42 @@
  * Convert a Date object to YYYY-MM-DD string using local timezone
  * This prevents the off-by-one day error caused by toISOString()
  */
+
+// Updated isWeekendDate function for your supplierPricingHelpers.js
+// Import the date helper at the top of your file:
+
+
+/**
+ * Check if a given date falls on a weekend (Saturday or Sunday)
+ * @param {Date|string} date - The date to check
+ * @returns {boolean} - True if weekend, false otherwise
+ */
+export const isWeekendDate = (date) => {
+  if (!date) return false
+  
+  try {
+    // Use your date helper instead of direct Date constructor
+    const dateObj = parseSupplierDate(date)
+    if (!dateObj) return false
+    
+    const dayOfWeek = dateObj.getDay() // 0 = Sunday, 6 = Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    
+    // Debug logging to see what's happening
+    console.log('🗓️ Weekend check:', {
+      inputDate: date,
+      parsedDate: dateObj,
+      dayOfWeek,
+      dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
+      isWeekend
+    })
+    
+    return isWeekend
+  } catch (error) {
+    console.error('Error checking weekend date:', error)
+    return false
+  }
+}
 export const dateToLocalString = (date) => {
     if (!date) return null;
     

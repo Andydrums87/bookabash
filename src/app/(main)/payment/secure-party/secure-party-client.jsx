@@ -37,17 +37,198 @@ import { usePartyPlan } from '@/utils/partyPlanBackend'
 import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb'
 import { supabase } from '@/lib/supabase'
 
+// ONLY use unified pricing system
+import { 
+  calculateFinalPrice,
+  isLeadBasedSupplier,
+  getPriceBreakdownText 
+} from '@/utils/unifiedPricing'
+
 // Initialize Stripe with proper configuration
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, {
   locale: 'en-GB',
 })
 
-// Import helper functions
-import { 
-  isLeadTimeSupplier, 
-  calculatePaymentAmounts,
-  calculateSupplierPrice 
-} from '@/utils/supplierPricingHelpers'
+// Enhanced isLeadBasedSupplier for payment page
+const isLeadBasedSupplierEnhanced = (supplier) => {
+  if (!supplier) return false;
+  
+  const category = supplier.category?.toLowerCase() || '';
+  const type = supplier.type?.toLowerCase() || '';
+  
+  // Enhanced lead-based supplier categories - handle both formats
+  const leadBasedCategories = [
+    'party bags',
+    'party bag', 
+    'partybags',  // camelCase version
+    'cakes',
+    'cake', 
+    'decorations',
+    'decoration',
+    'balloons',
+    'balloon',
+    'photography'
+  ];
+  
+  return leadBasedCategories.some(leadCategory => 
+    category.includes(leadCategory) || type.includes(leadCategory)
+  );
+}
+
+// Enhanced calculateFinalPrice for party bags
+const calculateFinalPriceEnhanced = (supplier, partyDetails, addons = []) => {
+  if (!supplier) {
+    return {
+      finalPrice: 0,
+      breakdown: { base: 0, weekend: 0, extraHours: 0, addons: 0 },
+      details: { isWeekend: false, extraHours: 0, hasAddons: false, isLeadBased: false }
+    }
+  }
+
+  // Check if this is party bags using enhanced detection
+  const isPartyBags = supplier.category === 'partyBags' || 
+                     supplier.category === 'Party Bags' || 
+                     supplier.category?.toLowerCase().includes('party bag');
+
+  let basePrice = 0;
+
+  if (isPartyBags) {
+    // Special handling for party bags - multiply by guest count
+    const guestCount = partyDetails.guestCount || 15;
+    const pricePerBag = supplier.originalPrice || supplier.price || 5;
+    
+    // If price seems to be total already, use it directly
+    if (supplier.price && supplier.price > (pricePerBag * 2)) {
+      basePrice = supplier.price;
+    } else {
+      basePrice = pricePerBag * guestCount;
+    }
+    
+    console.log('🎒 PARTY BAGS CALCULATION:', {
+      pricePerBag,
+      guestCount,
+      totalCalculated: basePrice,
+      supplierPrice: supplier.price,
+      originalPrice: supplier.originalPrice
+    });
+  } else {
+    // Use unified pricing for non-party bags
+    const pricing = calculateFinalPrice(supplier, partyDetails, addons);
+    return pricing;
+  }
+
+  // Return party bags result in same format
+  return {
+    finalPrice: basePrice,
+    basePrice,
+    breakdown: {
+      base: basePrice,
+      weekend: 0,
+      extraHours: 0,
+      addons: 0
+    },
+    details: {
+      isWeekend: false,
+      extraHours: 0,
+      hasAddons: false,
+      isLeadBased: true,
+      guestCount: partyDetails.guestCount || 15
+    }
+  }
+}
+
+// Unified pricing payment calculation
+const calculatePaymentBreakdown = (suppliers, partyDetails) => {
+  let depositAmount = 0;
+  let fullPaymentAmount = 0;
+  const paymentDetails = [];
+
+  // Create party details object for pricing calculations
+  const pricingPartyDetails = {
+    date: partyDetails.party_date,
+    duration: partyDetails.duration || 2,
+    guestCount: partyDetails.guest_count || 15,
+    startTime: partyDetails.start_time
+  };
+
+  console.log('🔍 PAYMENT DEBUG: Party details for pricing:', pricingPartyDetails);
+
+  suppliers.forEach(supplier => {
+    console.log('🔍 PAYMENT DEBUG: Processing supplier:', {
+      name: supplier.name,
+      category: supplier.category,
+      price: supplier.price,
+      originalPrice: supplier.originalPrice
+    });
+
+    // Use enhanced pricing system
+    const pricing = calculateFinalPriceEnhanced(supplier, pricingPartyDetails, []);
+    const isLeadBased = isLeadBasedSupplierEnhanced(supplier);
+    const totalPrice = pricing.finalPrice;
+    
+    console.log('🔍 PAYMENT DEBUG: Enhanced pricing result:', {
+      name: supplier.name,
+      isLeadBased,
+      totalPrice,
+      breakdown: pricing.breakdown
+    });
+    
+    let paymentType;
+    let amountToday;
+    let remaining;
+    
+    if (isLeadBased) {
+      // Lead-based suppliers require full payment upfront
+      paymentType = 'full_payment';
+      amountToday = totalPrice;
+      remaining = 0;
+      fullPaymentAmount += totalPrice;
+    } else {
+      // Service suppliers require 30% deposit
+      paymentType = 'deposit';
+      amountToday = Math.round(totalPrice * 0.3);
+      remaining = totalPrice - amountToday;
+      depositAmount += amountToday;
+    }
+    
+    paymentDetails.push({
+      id: supplier.id,
+      name: supplier.name,
+      category: supplier.category,
+      image: supplier.image,
+      rating: supplier.rating || 4.5,
+      totalAmount: totalPrice,
+      amountToday,
+      remaining,
+      paymentType,
+      isLeadBased,
+      breakdown: getPriceBreakdownText(supplier, pricingPartyDetails, [])
+    });
+  });
+
+  const totalPaymentToday = depositAmount + fullPaymentAmount;
+  const totalCost = paymentDetails.reduce((sum, detail) => sum + detail.totalAmount, 0);
+  const remainingBalance = totalCost - totalPaymentToday;
+
+  console.log('🔍 PAYMENT DEBUG: Final breakdown:', {
+    depositAmount,
+    fullPaymentAmount,
+    totalPaymentToday,
+    totalCost,
+    remainingBalance
+  });
+
+  return {
+    depositAmount,
+    fullPaymentAmount,
+    totalPaymentToday,
+    totalCost,
+    remainingBalance,
+    hasDeposits: depositAmount > 0,
+    hasFullPayments: fullPaymentAmount > 0,
+    paymentDetails
+  };
+};
 
 function PaymentForm({ 
   partyDetails, 
@@ -266,7 +447,6 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
-
       
       {/* Apple Pay / Google Pay Button */}
       {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && (
@@ -419,7 +599,7 @@ function PaymentForm({
   )
 }
 
-// Main Payment Page Component
+// Main Payment Page Component - UNCHANGED
 export default function PaymentPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -512,6 +692,8 @@ export default function PaymentPageContent() {
             description: supplier.description || 'Professional service provider',
             category: key,
             price: supplier.price || 0,
+            originalPrice: supplier.originalPrice,
+            priceFrom: supplier.priceFrom,
             packageData: supplier.packageData,
             selectedAddons: supplier.selectedAddons || []
           }));
@@ -525,9 +707,9 @@ export default function PaymentPageContent() {
           return;
         }
         
-        // Calculate payment breakdown using your helper function
-        const breakdown = calculatePaymentAmounts(supplierList, partyResult.party);
-        console.log('Payment breakdown:', breakdown);
+        // UNIFIED PRICING: Calculate payment breakdown
+        const breakdown = calculatePaymentBreakdown(supplierList, partyResult.party);
+        console.log('Unified pricing payment breakdown:', breakdown);
         
         setConfirmedSuppliers(supplierList);
         setPaymentBreakdown(breakdown);
@@ -586,7 +768,7 @@ export default function PaymentPageContent() {
       const enquiriesAlreadyExist = supplierCategoriesToPay.every(category => 
         existingEnquiryCategories.includes(category)
       );
-  
+
       if (enquiriesAlreadyExist) {
         // Individual supplier payment
         console.log('Individual supplier payment - setting auto_accepted and updating payment status');
@@ -690,6 +872,7 @@ export default function PaymentPageContent() {
       alert('Payment was successful, but there was an issue setting up your booking. Please contact support.');
     }
   };
+
   const sendSupplierNotifications = async () => {
     try {
       console.log('Sending supplier notifications via email and SMS...');
@@ -914,104 +1097,104 @@ export default function PaymentPageContent() {
 
             {/* Available Services */}
             <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-  <h2 className="text-lg font-medium text-gray-900 mb-4">Selected Services</h2>
-  <div className="space-y-3">
-    {paymentBreakdown.paymentDetails.map((supplier) => (
-      <div key={supplier.id} className="p-3 sm:p-4 bg-gray-50 rounded-lg">
-        {/* Mobile Layout: Stack vertically */}
-        <div className="sm:hidden">
-          {/* Top Row: Image + Name */}
-          <div className="flex items-center space-x-3 mb-3">
-            <img 
-              src={supplier.image || "/placeholder.jpg"} 
-              alt={supplier.name}
-              className="w-10 h-10 rounded-lg object-cover bg-gray-200 flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900 truncate text-sm">{supplier.name}</h3>
-              <span className="text-xs text-gray-500 capitalize">{supplier.category}</span>
-            </div>
-          </div>
-          
-          {/* Middle Row: Rating + Payment Type */}
-          <div className="flex items-center justify-between mb-3 text-xs">
-            <div className="flex items-center space-x-1">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-gray-600">{supplier.rating}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              {supplier.paymentType === 'full_payment' ? (
-                <>
-                  <Package className="w-3 h-3 text-green-600" />
-                  <span className="text-green-600 font-medium">Full Payment</span>
-                </>
-              ) : (
-                <>
-                  <Clock className="w-3 h-3 text-blue-600" />
-                  <span className="text-blue-600 font-medium">Deposit</span>
-                </>
-              )}
-            </div>
-          </div>
-          
-          {/* Bottom Row: Price */}
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-blue-600 font-medium">Ready to book</div>
-            <div className="text-right">
-              <div className="font-semibold text-gray-900 text-sm">£{supplier.amountToday}</div>
-              {supplier.remaining > 0 && (
-                <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
-              )}
-            </div>
-          </div>
-        </div>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Selected Services</h2>
+              <div className="space-y-3">
+                {paymentBreakdown.paymentDetails.map((supplier) => (
+                  <div key={supplier.id} className="p-3 sm:p-4 bg-gray-50 rounded-lg">
+                    {/* Mobile Layout: Stack vertically */}
+                    <div className="sm:hidden">
+                      {/* Top Row: Image + Name */}
+                      <div className="flex items-center space-x-3 mb-3">
+                        <img 
+                          src={supplier.image || "/placeholder.jpg"} 
+                          alt={supplier.name}
+                          className="w-10 h-10 rounded-lg object-cover bg-gray-200 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-gray-900 truncate text-sm">{supplier.name}</h3>
+                          <span className="text-xs text-gray-500 capitalize">{supplier.category}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Middle Row: Rating + Payment Type */}
+                      <div className="flex items-center justify-between mb-3 text-xs">
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-gray-600">{supplier.rating}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          {supplier.paymentType === 'full_payment' ? (
+                            <>
+                              <Package className="w-3 h-3 text-green-600" />
+                              <span className="text-green-600 font-medium">Full Payment</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              <span className="text-blue-600 font-medium">Deposit</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Row: Price */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-blue-600 font-medium">Ready to book</div>
+                        <div className="text-right">
+                          <div className="font-semibold text-gray-900 text-sm">£{supplier.amountToday}</div>
+                          {supplier.remaining > 0 && (
+                            <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-        {/* Desktop Layout: Side by side (unchanged) */}
-        <div className="hidden sm:flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <img 
-              src={supplier.image || "/placeholder.jpg"} 
-              alt={supplier.name}
-              className="w-12 h-12 rounded-lg object-cover bg-gray-200"
-            />
-            <div>
-              <h3 className="font-medium text-gray-900">{supplier.name}</h3>
-              <div className="flex items-center space-x-3 text-sm text-gray-500">
-                <div className="flex items-center space-x-1">
-                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  <span>{supplier.rating}</span>
-                </div>
-                <span>•</span>
-                <span className="capitalize">{supplier.category}</span>
-                <span>•</span>
-                <div className="flex items-center space-x-1">
-                  {supplier.paymentType === 'full_payment' ? (
-                    <>
-                      <Package className="w-3 h-3 text-green-600" />
-                      <span className="text-green-600 font-medium">Full Payment</span>
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="w-3 h-3 text-blue-600" />
-                      <span className="text-blue-600 font-medium">Deposit</span>
-                    </>
-                  )}
-                </div>
+                    {/* Desktop Layout: Side by side */}
+                    <div className="hidden sm:flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <img 
+                          src={supplier.image || "/placeholder.jpg"} 
+                          alt={supplier.name}
+                          className="w-12 h-12 rounded-lg object-cover bg-gray-200"
+                        />
+                        <div>
+                          <h3 className="font-medium text-gray-900">{supplier.name}</h3>
+                          <div className="flex items-center space-x-3 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              <span>{supplier.rating}</span>
+                            </div>
+                            <span>•</span>
+                            <span className="capitalize">{supplier.category}</span>
+                            <span>•</span>
+                            <div className="flex items-center space-x-1">
+                              {supplier.paymentType === 'full_payment' ? (
+                                <>
+                                  <Package className="w-3 h-3 text-green-600" />
+                                  <span className="text-green-600 font-medium">Full Payment</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="w-3 h-3 text-blue-600" />
+                                  <span className="text-blue-600 font-medium">Deposit</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-gray-900">£{supplier.amountToday}</div>
+                        {supplier.remaining > 0 && (
+                          <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
+                        )}
+                        <div className="text-xs text-blue-600 font-medium">Ready to book</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-          <div className="text-right">
-            <div className="font-semibold text-gray-900">£{supplier.amountToday}</div>
-            {supplier.remaining > 0 && (
-              <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
-            )}
-            <div className="text-xs text-blue-600 font-medium">Ready to book</div>
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
           </div>
 
           {/* Right Column - Payment */}

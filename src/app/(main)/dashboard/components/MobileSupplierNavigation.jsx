@@ -35,6 +35,8 @@ export default function MobileSupplierNavigation({
   activeSupplierType, // NEW: Externally controlled active tab
   showFirstTimeHelp = false,
   isTourActiveOnNavigation = false,
+  getSupplierDisplayPricing, // ADD THIS
+  partyDetails,              // ADD THIS
 
 }) {
   
@@ -528,6 +530,8 @@ export default function MobileSupplierNavigation({
               currentPhase={currentPhase}
               handleCancelEnquiry={handleCancelEnquiry}
               onPaymentReady={onPaymentReady}
+              enhancedPricing={currentSupplier ? getSupplierDisplayPricing(currentSupplier, partyDetails) : null}
+              partyDetails={partyDetails}
             />
           </div>
         )}

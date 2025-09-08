@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, Calendar, Lock, Info, Clock, Sun, Moon, Package } from "lucide-react"
 import{ getAvailabilityType, AVAILABILITY_TYPES } from '../../app/suppliers/utils/supplierTypes'
 import { useEffect, useRef, useMemo, useState } from "react"
+import { shouldShowWeekendIndicator } from '@/utils/smartPricingSystem'
 import { 
   dateToLocalString, 
   stringToLocalDate, 
@@ -558,6 +559,11 @@ export default function SupplierAvailabilityCalendar({
               <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
             </div>
           )}
+
+           {/* ADD THE WEEKEND INDICATOR HERE */}
+    {shouldShowWeekendIndicator(date, migratedSupplier) && status === 'available' && !isPartyDay && (
+      <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400 opacity-60" />
+    )}
           
           {/* Time slot indicators - only for time-slot based suppliers */}
           {!isPartyDay && !isLeadTimeBased && availableSlots.length > 0 && availableSlots.length < 2 && (
@@ -661,7 +667,7 @@ export default function SupplierAvailabilityCalendar({
           )}
         </div>
 
-        {/* Party date status banner with time slot info */}
+
        {/* Party date status banner with lead-time info */}
        {isFromDashboard && partyDate && partyDateStatus && (
           <div className={`mb-6 p-4 rounded-lg border-2 ${

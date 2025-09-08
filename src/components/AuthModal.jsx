@@ -247,16 +247,32 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
     setError("")
     setSuccess("")
     setOauthLoading(provider)
-
+  
     try {
       console.log(`🔐 Starting ${provider} OAuth ${isSignUp ? "sign-up" : "sign-in"}...`)
-
-      let redirectUrl = `${window.location.origin}/auth/callback?type=${isSignUp ? "signup" : "signin"}`
+  
+      // Use current origin to ensure we stay on localhost during development
+      const currentOrigin = window.location.origin
+      let redirectUrl = `${currentOrigin}/auth/callback/customer?user_type=customer`
+      
+      // Check if we're coming from party planning context
+      const isFromReviewBook = returnTo && returnTo.includes('/review-book')
+      const isPartyPlanningContext = window.location.pathname === '/review-book' || isFromReviewBook
+      
+      if (isPartyPlanningContext) {
+        // Always preserve party context when coming from review-book
+        redirectUrl += `&preserve_party=true`
+        redirectUrl += `&context=review_book`
+      }
+      
       if (returnTo) {
         redirectUrl += `&return_to=${encodeURIComponent(returnTo)}`
       }
-      redirectUrl += `&user_type=customer`
-
+  
+      console.log("🔗 OAuth redirect URL:", redirectUrl)
+      console.log("🏠 Current origin:", currentOrigin)
+      console.log("🎉 Party context:", isPartyPlanningContext)
+  
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -266,28 +282,35 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
           },
         },
       })
-
+  
       if (error) {
         console.error(`❌ ${provider} OAuth error:`, error)
-        const errorMessage = `Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`
-        setError(errorMessage)
-        setOauthLoading(null)
-        
+        throw error
+      }
+  
+      // OAuth redirect will happen automatically, no need to handle success here
+  
+    } catch (err) {
+      console.error(`❌ ${provider} OAuth error:`, err)
+      
+      let errorMessage
+      if (err.message.includes('popup')) {
+        errorMessage = "Please allow popups and try again, or use email sign-in instead."
+      } else if (err.message.includes('network')) {
+        errorMessage = "Network error. Please check your connection and try again."
+      } else {
+        errorMessage = `Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`
+      }
+      
+      setError(errorMessage)
+      setOauthLoading(null)
+      
+      if (toast) {
         toast.error(errorMessage, {
           title: `${provider} Authentication Failed`,
           duration: 4000
         })
       }
-    } catch (err) {
-      console.error(`❌ ${provider} OAuth error:`, err)
-      const errorMessage = `Failed to ${isSignUp ? "sign up" : "sign in"} with ${provider}. Please try again.`
-      setError(errorMessage)
-      setOauthLoading(null)
-      
-      toast.error(errorMessage, {
-        title: `${provider} Error`,
-        duration: 4000
-      })
     }
   }
 

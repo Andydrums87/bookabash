@@ -8,7 +8,7 @@ const acceptedEmailTemplate = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<title>Party Booking Confirmed - BookABash</title>
+<title>Message from {{SUPPLIER_NAME}} - PartySnap</title>
 <style>
   /* Reset and base styles */
   body, html {
@@ -53,18 +53,17 @@ const acceptedEmailTemplate = `<!DOCTYPE html>
   .cta-button:hover {
     background: #e55c48; box-shadow: 0 8px 25px rgba(229, 92, 72, 0.4);
   }
-  .success-banner {
-    background: linear-gradient(135deg, #10b981, #059669);
+  .message-banner {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: white;
     padding: 20px;
     text-align: center;
   }
-  .price-highlight {
+  .contact-card {
     background: #f0fdf4;
     border: 2px solid #22c55e;
     border-radius: 12px;
     padding: 20px;
-    text-align: center;
     margin: 20px 0;
   }
   @media (prefers-color-scheme: dark) {
@@ -75,13 +74,13 @@ const acceptedEmailTemplate = `<!DOCTYPE html>
     .email-container {
       background: #1e1e1e !important;
     }
-    .content, .steps, .highlight-box, .price-highlight {
+    .content, .contact-card {
       background: #2c2c2c !important;
     }
-    h1, h3, .highlight-box h3, .step-content h4 {
+    h1, h3 {
       color: #ffffff !important;
     }
-    p, .step-content p, .highlight-box p {
+    p {
       color: #e0e0e0 !important;
     }
     a, .cta-button, .footer a, .social-links a {
@@ -99,95 +98,80 @@ const acceptedEmailTemplate = `<!DOCTYPE html>
 </style>
 </head>
 <body style="background-color:#f8f9fa; color:#2F2F2F;">
-  <div class="email-container" role="main" aria-label="Party booking confirmation email" style="background-color:#ffffff; color:#2F2F2F;">
+  <div class="email-container" role="main" aria-label="Supplier message via PartySnap" style="background-color:#ffffff; color:#2F2F2F;">
     <div class="header">
-      <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755787342/iajcwwtirjnd0spfkley.png" alt="BookABash Logo" class="logo" />
+      <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755787342/iajcwwtirjnd0spfkley.png" alt="PartySnap Logo" class="logo" />
     </div>
 
-    <div class="success-banner">
-      <h2 style="margin: 0; font-size: 24px; font-weight: bold;">🎉 Your Party is Confirmed!</h2>
-      <p style="margin: 10px 0 0 0; font-size: 16px;">{{SUPPLIER_NAME}} has accepted your booking</p>
+    <div class="message-banner">
+      <h2 style="margin: 0; font-size: 24px; font-weight: bold;">💬 {{SUPPLIER_NAME}} sent you a message!</h2>
+      <p style="margin: 10px 0 0 0; font-size: 16px;">Your {{SERVICE_TYPE}} provider is excited about {{CHILD_NAME}}'s party</p>
     </div>
 
     <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755683368/bg9f9i7jqo16c5ojwxzj.jpg" alt="Celebration scene with party decorations" class="hero-image" />
 
     <div class="content" style="background-color:#FFFFFF; color:#2F2F2F; padding: 40px 30px;">
-      <h1 style="color:#2F2F2F;">Great News, {{CUSTOMER_NAME}}!</h1>
-      <p style="color:#707070;">{{SUPPLIER_NAME}} has confirmed they can provide {{SERVICE_TYPE}} for {{CHILD_NAME}}'s {{THEME}} party on {{PARTY_DATE}}.</p>
+      <h1 style="color:#2F2F2F;">Hello {{CUSTOMER_NAME}}!</h1>
+      <p style="color:#707070;">We've got great news! {{SUPPLIER_NAME}} has responded to your booking request for {{CHILD_NAME}}'s {{THEME}} party on {{PARTY_DATE}}.</p>
 
-      <div class="price-highlight">
-        <h3 style="color:#22c55e; margin: 0; font-size: 18px;">Final Price Confirmed</h3>
-        <div style="font-size: 36px; font-weight: bold; color: #16a34a; margin: 10px 0;">£{{FINAL_PRICE}}</div>
-        <p style="color: #15803d; margin: 0; font-size: 14px;">{{PRICE_STATUS}}</p>
-      </div>
-
-      <div style="background-color:#FFF8F7; border-radius:12px; padding:25px; margin:25px 0; border-left: 4px solid #FC6B57;">
-        <h3 style="color:#FC6B57; margin-bottom: 15px;">📨 Message from {{SUPPLIER_NAME}}:</h3>
-        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #fecaca;">
-          <p style="color:#374151; font-style: italic; margin: 0;">{{SUPPLIER_MESSAGE}}</p>
+      <div style="background-color:#f0f8ff; border-radius:12px; padding:25px; margin:25px 0; border-left: 4px solid #6366f1;">
+        <h3 style="color:#4f46e5; margin-bottom: 15px;">👋 Personal Message from {{SUPPLIER_NAME}}:</h3>
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #c7d2fe;">
+          <p style="color:#374151; font-style: italic; margin: 0; font-size: 16px; line-height: 1.6;">{{SUPPLIER_MESSAGE}}</p>
         </div>
       </div>
 
-      <div style="background-color:#f3f4f6; border-radius:12px; padding:25px; margin:25px 0;">
-        <h3 style="text-align:center; font-weight:bold; font-size:18px; margin-bottom:20px; color:#2F2F2F;">🎪 What Happens Next:</h3>
-
-        <div style="display:flex; align-items:flex-start; margin-bottom:15px;">
-          <div style="background:#10b981;color:white;width:28px;height:28px;border-radius:50%;font-weight:bold;font-size:12px;margin-right:12px;display:flex;justify-content:center;align-items:center;flex-shrink:0;">1</div>
-          <div>
-            <h4 style="margin:0 0 5px 0;color:#2F2F2F; font-size: 14px;">Party Details Finalized</h4>
-            <p style="margin:0;color:#707070; font-size: 13px;">Your supplier will contact you 2-3 days before the party to confirm final details.</p>
+      <div class="contact-card">
+        <h3 style="color:#22c55e; margin: 0 0 15px 0; font-size: 18px;">Let's Connect Directly</h3>
+        <p style="color: #15803d; margin: 0 0 15px 0; font-size: 14px;">
+          {{SUPPLIER_NAME}} would love to connect with you directly to discuss any specific requirements for {{CHILD_NAME}}'s special day.
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+          <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid #bbf7d0;">
+            <div style="font-weight: bold; color: #16a34a; margin-bottom: 5px;">💬 WhatsApp/Call</div>
+            <a href="tel:{{SUPPLIER_PHONE}}" style="color: #16a34a; text-decoration: none; font-size: 14px;">{{SUPPLIER_PHONE}}</a>
           </div>
-        </div>
-
-        <div style="display:flex; align-items:flex-start; margin-bottom:15px;">
-          <div style="background:#10b981;color:white;width:28px;height:28px;border-radius:50%;font-weight:bold;font-size:12px;margin-right:12px;display:flex;justify-content:center;align-items:center;flex-shrink:0;">2</div>
-          <div>
-            <h4 style="margin:0 0 5px 0;color:#2F2F2F; font-size: 14px;">Payment Processing</h4>
-            <p style="margin:0;color:#707070; font-size: 13px;">{{PAYMENT_INFO}}</p>
-          </div>
-        </div>
-
-        <div style="display:flex; align-items:flex-start;">
-          <div style="background:#10b981;color:white;width:28px;height:28px;border-radius:50%;font-weight:bold;font-size:12px;margin-right:12px;display:flex;justify-content:center;align-items:center;flex-shrink:0;">3</div>
-          <div>
-            <h4 style="margin:0 0 5px 0;color:#2F2F2F; font-size: 14px;">Party Day Magic</h4>
-            <p style="margin:0;color:#707070; font-size: 13px;">Sit back and enjoy {{CHILD_NAME}}'s special day - everything is taken care of!</p>
+          <div style="text-align: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid #bbf7d0;">
+            <div style="font-weight: bold; color: #16a34a; margin-bottom: 5px;">📧 Email</div>
+            <a href="mailto:{{SUPPLIER_EMAIL}}" style="color: #16a34a; text-decoration: none; font-size: 14px;">{{SUPPLIER_EMAIL}}</a>
           </div>
         </div>
       </div>
 
       <div style="text-align:center; margin: 30px 0;">
         <a href="{{DASHBOARD_LINK}}" class="cta-button" target="_blank" rel="noopener noreferrer" style="background-color:#FC6B57;color:white;">
-          📱 View Your Booking Details
+          📱 View Full Booking Details
         </a>
       </div>
 
-      <div style="background-color:#e0f2fe; border-radius:12px; padding:20px; margin:25px 0;">
-        <h4 style="color:#0277bd; margin-bottom: 10px;">💬 Need to Contact Your Supplier?</h4>
-        <p style="color:#01579b; margin: 0; font-size: 14px;">
-          You can message {{SUPPLIER_NAME}} directly through your BookABash dashboard or reply to this email.
-          Need help? Call us at <strong>0800 123 4567</strong>.
+      <div style="background-color:#f8fafc; border-radius:12px; padding:20px; margin:25px 0; border: 1px solid #e2e8f0;">
+        <h4 style="color:#475569; margin-bottom: 10px;">🌟 What's Next?</h4>
+        <p style="color:#64748b; margin: 0; font-size: 14px; line-height: 1.5;">
+          Connect with {{SUPPLIER_NAME}} directly using the contact details above. They'll work with you to ensure {{CHILD_NAME}}'s {{THEME}} party is absolutely perfect!
+        </p>
+        <p style="color:#64748b; margin: 10px 0 0 0; font-size: 13px; font-style: italic;">
+          Need help? Our PartySnap team is always here at <strong>0800 123 4567</strong>
         </p>
       </div>
 
       <p style="text-align:center;font-style:italic;color:#707070;">
         Best regards,<br>
-        <strong>The BookABash Team</strong><br>
-        Making party planning magical ✨
+        <strong>The PartySnap Team</strong><br>
+        Connecting families with amazing party professionals ✨
       </p>
     </div>
 
     <div class="footer" role="contentinfo" style="background-color:#2F2F2F;color:#FFFFFF;padding:30px;text-align:center;font-size:14px;">
-      <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755683308/htcj5jfuh96hf6r65csk.png" alt="BookABash" class="footer-logo" style="max-width:120px;height:auto;margin-bottom:20px;opacity:0.9;" />
+      <img src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1755683308/htcj5jfuh96hf6r65csk.png" alt="PartySnap" class="footer-logo" style="max-width:120px;height:auto;margin-bottom:20px;opacity:0.9;" />
       <div class="social-links" role="list">
         <a href="#" role="listitem" style="color:#FC6B57;">📘 Facebook</a>
         <a href="#" role="listitem" style="color:#FC6B57;">🐦 Twitter</a>
         <a href="#" role="listitem" style="color:#FC6B57;">📸 Instagram</a>
         <a href="#" role="listitem" style="color:#FC6B57;">💼 LinkedIn</a>
       </div>
-      <p>BookABash Ltd, 123 Party Street, London, UK</p>
+      <p>PartySnap Ltd, 123 Party Street, London, UK</p>
       <p style="font-size:12px;opacity:0.8;">
-        You received this email because you booked a party through BookABash.<br />
+        You received this email because {{SUPPLIER_NAME}} responded to your party booking.<br />
         <a href="#" style="color:#FC6B57;">Unsubscribe</a> | <a href="#" style="color:#FC6B57;">Privacy Policy</a>
       </p>
     </div>
@@ -423,7 +407,7 @@ export async function POST(req) {
     let template, subject;
     if (responseType === 'accepted') {
       template = acceptedEmailTemplate;
-      subject = `🎉 Great News! Your ${theme || ''} Party is Confirmed`;
+      subject = `🎭 ${supplierName || 'Your supplier'} can't wait to meet you!`;
     } else {
       template = declinedEmailTemplate;
       subject = `📅 Booking Update for ${childName || 'Your Child'}'s Party`;

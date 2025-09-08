@@ -1,4 +1,4 @@
-// Enhanced SupplierSelectionModal with lead-time supplier support
+// Enhanced SupplierSelectionModal with unified pricing system integration
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -56,6 +56,15 @@ import {
   formatDate
 } from '@/utils/dateHelpers'
 
+// ✅ UPDATED: Import unified pricing system
+import { 
+  calculateFinalPrice, 
+  isLeadBasedSupplier,
+  isTimeBasedSupplier,
+  getDisplayPrice,
+  formatDuration 
+} from '@/utils/unifiedPricing'
+
 // Time slot definitions - matching other components
 const TIME_SLOTS = {
   morning: {
@@ -108,6 +117,42 @@ export default function SupplierSelectionModal({
   // Get suppliers from backend
   const { suppliers, loading, error } = useSuppliers()
   const { addSupplier, removeSupplier, addAddon } = usePartyPlan()
+
+  // ✅ NEW: Get current month for date calculations
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  // ✅ NEW: Create party details object for pricing calculations
+  const partyDetailsForPricing = useMemo(() => {
+    let pricingDate = date
+    let duration = 2 // Default
+    let guestCount = null
+
+    // Try to get from party data prop
+    if (partyData?.date) pricingDate = partyData.date
+    if (partyData?.duration) duration = partyData.duration
+    if (partyData?.guestCount) guestCount = partyData.guestCount
+
+    // Try to get from localStorage if not in props
+    if (!pricingDate || !guestCount) {
+      try {
+        const partyDetails = localStorage.getItem('party_details')
+        if (partyDetails) {
+          const parsed = JSON.parse(partyDetails)
+          if (!pricingDate && parsed.date) pricingDate = parsed.date
+          if (!guestCount && parsed.guestCount) guestCount = parsed.guestCount
+          if (duration === 2 && parsed.duration) duration = parsed.duration
+        }
+      } catch (error) {
+        console.warn('Could not get party details from localStorage for pricing')
+      }
+    }
+
+    return {
+      date: pricingDate ? new Date(pricingDate) : null,
+      duration,
+      guestCount
+    }
+  }, [date, partyData])
 
   // Update filters when initialFilters change (for restoration)
   useEffect(() => {
@@ -178,6 +223,83 @@ export default function SupplierSelectionModal({
     return migrated
   }
 
+  // ✅ FIXED: Supplier card pricing - show per-unit price for browsing, not total
+  const calculateSupplierCardPricing = (supplier, partyDetails) => {
+    if (!supplier) {
+      return {
+        displayPrice: 0,
+        formattedPrice: 'From £0',
+        hasEnhancedPricing: false,
+        isLeadBased: false
+      }
+    }
+
+    const isLeadBased = isLeadBasedSupplier(supplier)
+
+    console.log('🔍 Supplier Card: Calculating pricing for browsing:', {
+      supplierName: supplier.name,
+      category: supplier.category,
+      basePrice: supplier.price || supplier.priceFrom,
+      isLeadBased,
+      partyDetails
+    })
+
+    // ✅ FIXED: For lead-based suppliers (like party bags), show per-unit price for browsing
+    if (isLeadBased) {
+      const unitPrice = supplier.price || supplier.priceFrom || 5
+      
+      // For party bags, show per-bag pricing in cards
+      if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
+        console.log('🎁 Party bags card: Showing per-bag price for browsing:', unitPrice)
+        return {
+          displayPrice: unitPrice,
+          formattedPrice: `From £${unitPrice} per bag`,
+          hasEnhancedPricing: false, // Lead-based suppliers don't have enhanced pricing
+          isLeadBased: true,
+          pricingBreakdown: { base: unitPrice, weekend: 0, extraHours: 0, addons: 0 },
+          pricingDetails: { isLeadBased: true }
+        }
+      } else {
+        // Other lead-based suppliers (cakes, decorations, etc.)
+        return {
+          displayPrice: unitPrice,
+          formattedPrice: `From £${unitPrice}`,
+          hasEnhancedPricing: false,
+          isLeadBased: true,
+          pricingBreakdown: { base: unitPrice, weekend: 0, extraHours: 0, addons: 0 },
+          pricingDetails: { isLeadBased: true }
+        }
+      }
+    }
+
+    // For time-based suppliers, apply enhanced pricing (weekend/duration premiums)
+    const supplierForPricing = {
+      ...supplier,
+      price: supplier.price || supplier.priceFrom || 100
+    }
+
+    const pricingResult = calculateFinalPrice(supplierForPricing, partyDetails, [])
+    const hasEnhancedPricing = pricingResult.finalPrice !== supplierForPricing.price
+
+    console.log('🔍 Supplier Card: Time-based pricing result:', {
+      supplierName: supplier.name,
+      isLeadBased,
+      finalPrice: pricingResult.finalPrice,
+      basePrice: supplierForPricing.price,
+      hasEnhancedPricing,
+      breakdown: pricingResult.breakdown
+    })
+
+    return {
+      displayPrice: pricingResult.finalPrice,
+      formattedPrice: `From £${pricingResult.finalPrice}`,
+      hasEnhancedPricing,
+      isLeadBased: false,
+      pricingBreakdown: pricingResult.breakdown,
+      pricingDetails: pricingResult.details
+    }
+  }
+
   // ENHANCED: Lead-time availability checking
   const getLeadTimeAvailability = (supplier, date) => {
     if (!supplier || !date) {
@@ -240,28 +362,23 @@ export default function SupplierSelectionModal({
   // ENHANCED: Time slot availability check (existing logic but cleaner)
   const isTimeSlotAvailable = (supplier, date, timeSlot) => {
     if (!supplier || !date) {
-
       return true
     }
     
     const migratedSupplier = getSupplierWithTimeSlots(supplier)
     
     if (!migratedSupplier) {
-      
       return true
     }
     
     try {
       const checkDate = parseSupplierDate(date)
       if (!checkDate) {
-     
         return true
       }
       
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
-      
-   
       
       // LENIENT: Only check if we have working hours data
       if (migratedSupplier.workingHours?.[dayName]) {
@@ -269,7 +386,6 @@ export default function SupplierSelectionModal({
         
         // If day is explicitly marked as inactive, respect that
         if (workingDay.active === false) {
-    
           return false
         }
         
@@ -277,7 +393,6 @@ export default function SupplierSelectionModal({
         if (workingDay.timeSlots?.[timeSlot]) {
           const slotAvailable = workingDay.timeSlots[timeSlot].available
           if (slotAvailable === false) {
-          
             return false
           }
         }
@@ -294,24 +409,25 @@ export default function SupplierSelectionModal({
     }
   }
 
-  // ENHANCED: Unified availability checking that handles both types
+  // ✅ UPDATED: Unified availability checking that uses lead-based detection
   const checkSupplierAvailability = (supplier, date, timeSlot = null) => {
     if (!date || !supplier) {
-
       return { available: true, reason: 'no-data-provided' }
     }
     
-
+    // ✅ Use unified pricing system to determine supplier type
+    const isLeadBased = isLeadBasedSupplier(supplier)
     
-    // Determine supplier type
-    const supplierAvailabilityType = getAvailabilityType(supplier.category)
-    const isLeadTimeSupplier = supplierAvailabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
+    console.log('🔍 Availability Check:', {
+      supplierName: supplier.name,
+      category: supplier.category,
+      isLeadBased,
+      checkingDate: date
+    })
     
-    if (isLeadTimeSupplier) {
-
+    if (isLeadBased) {
       return getLeadTimeAvailability(supplier, date)
     } else {
-
       
       // Convert the check date
       let checkDate
@@ -322,7 +438,6 @@ export default function SupplierSelectionModal({
       }
       
       if (!checkDate) {
- 
         return { available: true, reason: 'date-parse-error' }
       }
       
@@ -330,7 +445,6 @@ export default function SupplierSelectionModal({
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (checkDate < today) {
-
         return { available: false, reason: 'past-date' }
       }
 
@@ -364,15 +478,12 @@ export default function SupplierSelectionModal({
       // If we have a specific time slot, check it
       if (timeSlot) {
         const isSlotAvailable = isTimeSlotAvailable(supplier, checkDate, timeSlot)
-        const result = {
+        return {
           available: isSlotAvailable,
           reason: isSlotAvailable ? 'available' : 'time-slot-blocked',
           timeSlot: timeSlot,
           checkedDate: dateToLocalString(checkDate)
         }
-        
-
-        return result
       }
 
       // Fallback: check both morning and afternoon (lenient approach)
@@ -384,15 +495,12 @@ export default function SupplierSelectionModal({
       if (morningAvailable) availableSlots.push('morning')
       if (afternoonAvailable) availableSlots.push('afternoon')
 
-      const result = {
+      return {
         available: anyAvailable,
         reason: anyAvailable ? 'slots-available' : 'all-slots-blocked',
         availableSlots: availableSlots,
         checkedDate: dateToLocalString(checkDate)
       }
-
-
-      return result
     }
   }
 
@@ -404,8 +512,6 @@ export default function SupplierSelectionModal({
 
   const handleCustomizationAddToPlan = async (customizationData) => {
     const { supplier, package: selectedPackage, addons, totalPrice } = customizationData
-    
-
     
     if (!supplier || !selectedPackage) {
       console.error("❌ Missing supplier or package data")
@@ -435,12 +541,8 @@ export default function SupplierSelectionModal({
         autoEnquiry: false
       }
   
- 
-      
       // This should call handleSupplierSelection in the dashboard
       const result = await onSelectSupplier(supplierSelectionData)
-      
-
       
       // Close the customization modal
       setShowCustomizationModal(false)
@@ -476,7 +578,7 @@ export default function SupplierSelectionModal({
     return new Date(date);
   }, [date]);
 
-  // ENHANCED: Filter with lead-time awareness
+  // ✅ UPDATED: Filter with unified lead-based awareness
   const filteredSuppliers = useMemo(() => {
     const getPartyDetails = () => {
       try {
@@ -496,7 +598,6 @@ export default function SupplierSelectionModal({
     };
   
     const partyDetails = getPartyDetails();
-
     
     const filtered = suppliers.filter((supplier) => {
       const targetCategories = Array.isArray(categoryMapping[category]) 
@@ -504,7 +605,6 @@ export default function SupplierSelectionModal({
         : [categoryMapping[category]];
     
       if (!supplier.category) {
-      
         return false;
       }
     
@@ -516,9 +616,8 @@ export default function SupplierSelectionModal({
     
       if (!matchesCategory) return false;
   
-      // ENHANCED: Availability filtering with lead-time support
+      // ✅ UPDATED: Availability filtering with unified lead-based support
       if (availableOnly && selectedDate) {
-     
         const availabilityResult = checkSupplierAvailability(supplier, selectedDate, partyDetails.timeSlot)
         
         // Only exclude if we're really sure they're unavailable
@@ -529,19 +628,13 @@ export default function SupplierSelectionModal({
                                        availabilityResult.reason === 'out-of-stock'
         
         if (isDefinitelyUnavailable) {
-
           return false
-        } else {
-          console.log(`✅ ENHANCED FILTERING: ${supplier.name} - Keeping (${availabilityResult.reason})`)
         }
-      } else if (availableOnly) {
-        console.log(`✅ ENHANCED FILTERING: ${supplier.name} - availableOnly ON but no date, keeping supplier`)
       }
       
       // Other filters remain the same...
       if (distance !== "all" && partyLocation) {
         if (!supplier.location) {
-
           return false
         }
         
@@ -561,7 +654,6 @@ export default function SupplierSelectionModal({
         )
         
         if (!canServe) {
-
           return false
         }
       }
@@ -582,7 +674,6 @@ export default function SupplierSelectionModal({
   
       return true
     });
-  
   
     // Sorting logic remains the same...
     if (partyLocation) {
@@ -607,7 +698,7 @@ export default function SupplierSelectionModal({
 
   if (!isOpen) return null
 
-  // ENHANCED: AvailabilityStatus component with lead-time support
+  // ✅ UPDATED: AvailabilityStatus component with unified lead-based support
   const AvailabilityStatus = ({ supplier, selectedDate }) => {
     if (!selectedDate) {
       return (
@@ -618,12 +709,17 @@ export default function SupplierSelectionModal({
       );
     }
 
-    const supplierAvailabilityType = getAvailabilityType(supplier.category)
-    const isLeadTimeSupplier = supplierAvailabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
+    const isLeadBased = isLeadBasedSupplier(supplier)
     const availabilityResult = checkSupplierAvailability(supplier, selectedDate)
 
+    console.log('🔍 Availability Status:', {
+      supplierName: supplier.name,
+      isLeadBased,
+      availabilityResult
+    })
+
     if (availabilityResult.available) {
-      if (isLeadTimeSupplier) {
+      if (isLeadBased) {
         return (
           <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
             <Package className="w-3 h-3" />
@@ -681,7 +777,7 @@ export default function SupplierSelectionModal({
       }
     } else {
       // Handle different unavailability reasons
-      if (isLeadTimeSupplier) {
+      if (isLeadBased) {
         if (availabilityResult.reason === 'insufficient-lead-time') {
           return (
             <Badge variant="destructive" className="text-xs bg-amber-100 text-amber-800 border-amber-200 flex items-center gap-1">
@@ -932,7 +1028,7 @@ export default function SupplierSelectionModal({
               </Select>
             </div>
 
-            {/* ENHANCED: Availability checkbox with lead-time awareness */}
+            {/* ✅ UPDATED: Availability checkbox with unified lead-based awareness */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">
                 <Calendar className="w-4 h-4 inline mr-1" />
@@ -967,7 +1063,7 @@ export default function SupplierSelectionModal({
                 >
                   Only show suppliers available for {selectedDate ? 'selected date' : 'party date'}
                   <div className="text-xs text-gray-500 ml-1">
-                    (includes lead-time requirements)
+                    (includes lead-time and party bags)
                   </div>
                 </label>
               </div>
@@ -1065,7 +1161,7 @@ export default function SupplierSelectionModal({
               }}
             />
             <label htmlFor="available-only" className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Available for {selectedDate ? 'date' : 'party date'} (inc. lead time)
+              Available for {selectedDate ? 'date' : 'party date'} (inc. lead & party bags)
             </label>
           </div>
           
@@ -1081,16 +1177,24 @@ export default function SupplierSelectionModal({
     );
   };
 
-  // ENHANCED: SupplierCard with lead-time support
+  // ✅ UPDATED: SupplierCard with unified pricing
   const SupplierCard = ({ supplier }) => {
     const { navigateWithContext } = useContextualNavigation();
     
-    const supplierAvailabilityType = getAvailabilityType(supplier.category)
-    const isLeadTimeSupplier = supplierAvailabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
+    const isLeadBased = isLeadBasedSupplier(supplier)
     const availabilityResult = selectedDate ? checkSupplierAvailability(supplier, selectedDate) : { available: true }
     
-    // Enhanced unavailability checking for lead-time suppliers
-    const isDefinitelyUnavailable = isLeadTimeSupplier 
+    // ✅ UPDATED: Calculate unified pricing for this supplier
+    const supplierPricing = calculateSupplierCardPricing(supplier, partyDetailsForPricing)
+    
+    console.log('🔍 Supplier Card:', {
+      supplierName: supplier.name,
+      isLeadBased,
+      pricing: supplierPricing
+    })
+    
+    // Enhanced unavailability checking for lead-based suppliers
+    const isDefinitelyUnavailable = isLeadBased 
       ? (availabilityResult.reason === 'insufficient-lead-time' || 
          availabilityResult.reason === 'out-of-stock' ||
          availabilityResult.reason === 'past-date')
@@ -1170,29 +1274,37 @@ export default function SupplierSelectionModal({
           </div>
 
           <div className="flex items-center gap-3 text-sm text-gray-700 mb-2">
-            <div className="text-sm font-bold text-gray-400">From £{supplier.priceFrom}</div>
-            {/* ENHANCED: Add supplier type indicator */}
+            {/* ✅ UPDATED: Show unified pricing */}
+            <div className="text-sm font-bold text-gray-400">
+              {supplierPricing.formattedPrice}
+              {supplierPricing.hasEnhancedPricing && (
+                <span className="text-xs text-blue-600 ml-1">
+                  (enhanced)
+                </span>
+              )}
+            </div>
+            {/* ✅ UPDATED: Add supplier type indicator */}
             <div className="flex items-center gap-1">
-              {isLeadTimeSupplier ? (
+              {isLeadBased ? (
                 <Package className="w-3 h-3 text-amber-600" />
               ) : (
                 <Clock className="w-3 h-3 text-blue-600" />
               )}
               <span className="text-xs text-gray-500">
-                {isLeadTimeSupplier ? 'Lead time' : 'Time slots'}
+                {isLeadBased ? 'Lead time' : 'Time slots'}
               </span>
             </div>
           </div>
 
-          {/* ENHANCED: Availability display with lead-time support */}
+          {/* ✅ UPDATED: Availability display with unified support */}
           <div className="mb-3 space-y-2">
             <AvailabilityStatus 
               supplier={supplier} 
               selectedDate={selectedDate}
             />
             
-            {/* Show specific availability info for lead-time suppliers */}
-            {isLeadTimeSupplier && selectedDate && availabilityResult.reason && (
+            {/* Show specific availability info for lead-based suppliers */}
+            {isLeadBased && selectedDate && availabilityResult.reason && (
               <div className="text-xs text-gray-600">
                 {availabilityResult.reason === 'available' && availabilityResult.leadTimeDays && (
                   <span className="text-green-700">Ready in {availabilityResult.leadTimeDays} days</span>
@@ -1203,10 +1315,25 @@ export default function SupplierSelectionModal({
               </div>
             )}
             
+            {/* Show pricing breakdown for enhanced pricing */}
+            {supplierPricing.hasEnhancedPricing && (
+              <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                {supplierPricing.pricingDetails?.isWeekend && supplierPricing.pricingBreakdown?.weekend > 0 && (
+                  <span>Weekend +£{supplierPricing.pricingBreakdown.weekend}</span>
+                )}
+                {supplierPricing.pricingBreakdown?.extraHours > 0 && (
+                  <span className="ml-2">Extra time +£{supplierPricing.pricingBreakdown.extraHours}</span>
+                )}
+                {supplierPricing.pricingDetails?.guestCount && supplier.category === 'Party Bags' && (
+                  <span className="ml-2">{supplierPricing.pricingDetails.guestCount} bags</span>
+                )}
+              </div>
+            )}
+            
             {/* Show availability reason if debugging needed */}
             {selectedDate && !isAvailableOnDate && (
               <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
-                {isLeadTimeSupplier ? 
+                {isLeadBased ? 
                   (availabilityResult.reason === 'insufficient-lead-time' ? 
                     'Insufficient lead time' : 
                     availabilityResult.reason === 'out-of-stock' ? 
@@ -1233,7 +1360,7 @@ export default function SupplierSelectionModal({
                     setTimeout(() => {
                       button.style.transform = ''
                       button.style.transition = 'transform 0.2s ease'
-                    }, 100)
+                    }, 20)
                   }
                   
                   handleViewDetails(supplier)
@@ -1257,7 +1384,7 @@ export default function SupplierSelectionModal({
                 )}
               </Button>
               
-              {/* ENHANCED: Quick Add Button with lead-time awareness */}
+              {/* ✅ UPDATED: Quick Add Button with unified lead-based awareness */}
               <Button
                 size="lg"
                 className={`py-3 flex-1 relative rounded-full transition-all duration-200 ${
@@ -1275,7 +1402,7 @@ export default function SupplierSelectionModal({
                   </>
                 ) : isDefinitelyUnavailable ? (
                   <>
-                    {isLeadTimeSupplier ? (
+                    {isLeadBased ? (
                       availabilityResult.reason === 'insufficient-lead-time' ? (
                         <>
                           <Clock className="w-4 h-4 mr-2" />
@@ -1301,7 +1428,7 @@ export default function SupplierSelectionModal({
                   </>
                 ) : (
                   <>
-                    {isLeadTimeSupplier ? (
+                    {isLeadBased ? (
                       <Truck className="w-4 h-4 mr-2" />
                     ) : (
                       <Sparkles className="w-4 h-4 mr-2" />
@@ -1384,7 +1511,7 @@ export default function SupplierSelectionModal({
                       <p>Try adjusting your search criteria{availableOnly && selectedDate ? ' or selecting a different date' : ''}.</p>
                       {availableOnly && selectedDate && (
                         <p className="text-sm text-gray-400 mt-2">
-                          Note: Lead-time suppliers need sufficient advance notice
+                          Note: Lead-based suppliers (like party bags) need sufficient advance notice
                         </p>
                       )}
                     </div>
@@ -1396,6 +1523,7 @@ export default function SupplierSelectionModal({
         </div>
       </div>
 
+      {/* ✅ UPDATED: Pass unified pricing props to SupplierCustomizationModal */}
       <SupplierCustomizationModal
         isOpen={showCustomizationModal}
         onClose={() => {
@@ -1404,7 +1532,12 @@ export default function SupplierSelectionModal({
         }}
         supplier={selectedSupplierForCustomization}
         isAdding={addingSupplier === selectedSupplierForCustomization?.id}
-        onAddToPlan={onSelectSupplier}
+        onAddToPlan={handleCustomizationAddToPlan}
+        // ✅ UPDATED: Pass unified pricing props
+        selectedDate={null} // We don't have a selected calendar date in this context
+        currentMonth={currentMonth}
+        partyDate={selectedDate} // Use the modal's selected date as party date
+        partyDetails={partyDetailsForPricing} // Pass complete party details for pricing
       />
     </>
   )

@@ -8,7 +8,13 @@ import { usePartyPlan } from '@/utils/partyPlanBackend'
 import { useUserTypeDetection, getHandleAddToPlanBehavior } from '@/hooks/useUserTypeDetection'
 import { useContextualNavigation } from "@/hooks/useContextualNavigation"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+
 import { supabase } from "@/lib/supabase"
+
+
+import { calculateFinalPrice, getPartyDuration } from '@/utils/unifiedPricing'
+
+
 
 export const useSupplierBooking = (
   supplier, 
@@ -95,13 +101,80 @@ export const useSupplierBooking = (
     return { inParty: false, currentPackage: null, supplierType: null }
   }, [supplier, hasAddon, partyPlan])
 
-  // Updated packages with popular flag based on selection
-  const packagesWithPopular = useMemo(() => {
-    return packages.map((pkg, index) => ({
+  
+
+// Add this new useMemo to get party duration - place this before packagesWithSmartPricing
+const effectivePartyDuration = useMemo(() => {
+  // Priority 1: From database party data
+  if (userType === 'DATABASE_USER' && databasePartyData?.duration) {
+    console.log('🕐 Using duration from database:', databasePartyData.duration)
+    return databasePartyData.duration
+  }
+  
+  // Priority 2: Try to get from localStorage party details
+  try {
+    const partyDetails = localStorage.getItem('party_details')
+    if (partyDetails) {
+      const parsed = JSON.parse(partyDetails)
+      if (parsed.duration && parsed.duration > 0) {
+        console.log('🕐 Using duration from localStorage:', parsed.duration)
+        return parsed.duration
+      }
+      
+      // Try to calculate from start/end times if available
+      if (parsed.startTime && parsed.endTime) {
+        const duration = getPartyDuration(parsed)
+        console.log('🕐 Calculated duration from times:', duration)
+        return duration
+      }
+    }
+  } catch (error) {
+    console.warn('Could not get party duration from localStorage:', error)
+  }
+  
+  // Priority 3: Default calculation
+  const defaultDuration = getPartyDuration({
+    date: selectedDate ? new Date(currentMonth?.getFullYear(), currentMonth?.getMonth(), selectedDate) : null
+  })
+  
+  console.log('🕐 Using default duration:', defaultDuration)
+  return defaultDuration
+}, [userType, databasePartyData, selectedDate, currentMonth])
+
+const packagesWithSmartPricing = useMemo(() => {
+  if (!packages || packages.length === 0) return []
+  
+  console.log('🔍 DEBUG: Original packages received:', packages.map(pkg => ({
+    id: pkg.id,
+    name: pkg.name,
+    price: pkg.price,
+    originalPrice: pkg.originalPrice,
+    hasOriginalPrice: !!pkg.originalPrice
+  })))
+  
+  // COMPLETELY RAW - no pricing enhancement whatsoever
+  const rawPackages = packages.map((pkg, index) => {
+    const cleanPackage = {
       ...pkg,
+      // Ensure we preserve the TRUE original price
+      originalPrice: pkg.originalPrice || pkg.price,
       popular: pkg.id === selectedPackageId || (!selectedPackageId && index === 0)
-    }))
-  }, [packages, selectedPackageId])
+    }
+    
+    console.log(`🔍 DEBUG: Package "${pkg.name}" - Original: £${pkg.originalPrice || pkg.price}, Current: £${pkg.price}`)
+    
+    return cleanPackage
+  })
+  
+  console.log('🔍 DEBUG: Clean packages output:', rawPackages.map(pkg => ({
+    id: pkg.id,
+    name: pkg.name,
+    price: pkg.price,
+    originalPrice: pkg.originalPrice
+  })))
+  
+  return rawPackages
+}, [packages, selectedPackageId])
 
   // Set initial package selection
   useEffect(() => {
@@ -116,319 +189,460 @@ export const useSupplierBooking = (
     }
   }, [packages, selectedPackageId, getSupplierInPartyDetails])
 
-// COMPLETELY REWRITTEN handleAddToPlan with correct date priority logic
-const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
-
-
-  if (!supplier || !selectedPackageId) {
-
-    return { 
-      success: false, 
-      message: "Please select a package first." 
-    }
-  }
-  
-  // CHECK IF WE CAME FROM REVIEW-BOOK
-  const urlParams = new URLSearchParams(window.location.search)
-  const fromReviewBook = urlParams.get('from') === 'review-book-missing'
-
-  
-  // Get behavior based on user type
-  const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
-
-  
-  // 1. DATE PICKER FLOW (for users without parties)
-  if (behavior.shouldShowDatePicker) {
-
-    return { 
-      showDatePicker: true,
-      message: "📅 Please select an available date from the calendar below first!"
-    }
-  }
-
-  // 2. CRITICAL FIX: ALWAYS CHECK PARTY DATE FIRST FOR EXISTING PARTIES
-  // This is the core fix - check party date regardless of selected calendar date
-  
-  let partyDateToCheck = null
-  let partyTimeSlotToCheck = null
-  
-  // Extract party date and time slot based on user type
-  if (userType === 'DATABASE_USER' && databasePartyData) {
-    partyDateToCheck = databasePartyData.party_date || databasePartyData.date
-    partyTimeSlotToCheck = databasePartyData.time_slot || databasePartyData.timeSlot
-    
-    // Map from start_time/party_time if timeSlot not set
-    if (!partyTimeSlotToCheck) {
-      const timeField = databasePartyData.start_time || databasePartyData.party_time || databasePartyData.time
-      if (timeField) {
-        const hour = parseInt(timeField.toString().split(':')[0])
-        if (!isNaN(hour)) {
-          partyTimeSlotToCheck = hour < 13 ? 'morning' : 'afternoon'
-
-        }
-      }
-    }
-  } 
-  else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
-    try {
-      const partyDetails = localStorage.getItem('party_details')
-      if (partyDetails) {
-        const parsed = JSON.parse(partyDetails)
-        partyDateToCheck = parsed.date
-        partyTimeSlotToCheck = parsed.timeSlot
-        
-        if (!partyTimeSlotToCheck && parsed.time) {
-          const timeStr = parsed.time.toLowerCase()
-          if (timeStr.includes('am')) {
-            partyTimeSlotToCheck = 'morning'
-          } else if (timeStr.includes('pm')) {
-            partyTimeSlotToCheck = 'afternoon'
-          }
-        }
-      }
-    } catch (error) {
-      console.log('❌ Could not parse localStorage party details')
-    }
-  }
-
-  // 3. PARTY DATE AVAILABILITY CHECK - THE CRITICAL CHECK
-  if (partyDateToCheck) {
- 
-    
-     // For lead-time suppliers, only check date availability (no time slot)
-  const timeSlotToCheck = isLeadTimeBased ? null : partyTimeSlotToCheck;
-  const partyDateAvailability = checkSupplierAvailability(partyDateToCheck, timeSlotToCheck);
-    
-    
-    
-    if (!partyDateAvailability || !partyDateAvailability.available) {
+  const handleAddToPlan = useCallback(async (skipAddonModal = false, addonData = null) => {
+    // Initial validation
+    if (!supplier || !selectedPackageId) {
       return { 
-        showUnavailableModal: true,
-        unavailableDate: partyDateToCheck,
-        unavailableTimeSlot: isLeadTimeBased ? null : partyTimeSlotToCheck,
-        availableSlots: isLeadTimeBased ? [] : (partyDateAvailability?.timeSlots || []),
-        reason: 'party_date_unavailable'
+        success: false, 
+        message: "Please select a package first." 
       }
     }
+  
+    const urlParams = new URLSearchParams(window.location.search)
+    const fromReviewBook = urlParams.get('from') === 'review-book-missing'
+    const behavior = getHandleAddToPlanBehavior(userType, userContext, supplier, selectedDate)
+  
+    // 1. Handle date picker flow
+    if (behavior.shouldShowDatePicker) {
+      return { 
+        showDatePicker: true,
+        message: "Please select an available date from the calendar below first!"
+      }
+    }
+  
+    // 2. Extract party date and time slot
+    const { partyDate, partyTimeSlot } = extractPartyDateTime()
     
-
-  }
-
-  // 4. SELECTED CALENDAR DATE VALIDATION (only if different from party date)
-  if (selectedDate && currentMonth) {
-    const selectedCalendarDateString = getSelectedCalendarDate()
-    
-    if (selectedCalendarDateString && selectedCalendarDateString !== partyDateToCheck) {
-
+    // 3. Check party date availability
+    if (partyDate) {
+      const timeSlotToCheck = isLeadTimeBased ? null : partyTimeSlot
+      const partyDateAvailability = checkSupplierAvailability(partyDate, timeSlotToCheck)
       
-      let calendarTimeSlot = selectedTimeSlot || partyTimeSlotToCheck
-      
-      const calendarDateAvailability = checkSupplierAvailability(selectedCalendarDateString, calendarTimeSlot)
-      
-      if (!calendarDateAvailability || !calendarDateAvailability.available) {
-       
+      if (!partyDateAvailability?.available) {
         return { 
           showUnavailableModal: true,
-          unavailableInfo: {
-            date: selectedCalendarDateString,
-            timeSlot: calendarTimeSlot,
-            availableSlots: calendarDateAvailability?.timeSlots || []
-          },
-          reason: 'calendar_date_unavailable'
+          unavailableDate: partyDate,
+          unavailableTimeSlot: timeSlotToCheck,
+          availableSlots: partyDateAvailability?.timeSlots || [],
+          reason: 'party_date_unavailable'
         }
       }
     }
-  }
-
-  // 5. À LA CARTE FLOW
-  if (behavior.shouldShowAlaCarteModal) {
-
-    return { showAlaCarteModal: true }
-  }
   
-  // 6. CATEGORY OCCUPATION CHECK
-  if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-
-    try {
-      const partyResult = await partyDatabaseBackend.getCurrentParty()
-      if (partyResult.success && partyResult.party?.party_plan) {
-        const dbPartyPlan = partyResult.party.party_plan
+    // 4. Check selected calendar date if different from party date
+    if (selectedDate && currentMonth) {
+      const selectedCalendarDateString = getSelectedCalendarDate()
+      
+      if (selectedCalendarDateString && selectedCalendarDateString !== partyDate) {
+        const calendarTimeSlot = selectedTimeSlot || partyTimeSlot
+        const calendarDateAvailability = checkSupplierAvailability(selectedCalendarDateString, calendarTimeSlot)
         
-        const categoryMap = {
-          'Entertainment': 'entertainment',
-          'Venues': 'venue', 
-          'Catering': 'catering',
-          'Decorations': 'decorations',
-          'Party Bags': 'partyBags',
-          'Photography': 'photography',
-          'Activities': 'activities',
-          'Face Painting': 'facePainting',
-          'Cakes': 'cakes',   
-        }
-        
-        const slotName = categoryMap[supplier.category]
-        const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
-        
-        if (isSlotOccupied) {
-         
-          return {
-            success: false,
-            message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`
+        if (!calendarDateAvailability?.available) {
+          return { 
+            showUnavailableModal: true,
+            unavailableInfo: {
+              date: selectedCalendarDateString,
+              timeSlot: calendarTimeSlot,
+              availableSlots: calendarDateAvailability?.timeSlots || []
+            },
+            reason: 'calendar_date_unavailable'
           }
         }
       }
-    } catch (error) {
-      console.log('❌ Database check failed, continuing...', error)
-      if (userType === 'DATABASE_USER') {
-        return { 
+    }
+  
+    // 5. Handle a la carte flow
+    if (behavior.shouldShowAlaCarteModal) {
+      return { showAlaCarteModal: true }
+    }
+    
+    // 6. Check category occupation for database users
+    if (behavior.shouldCheckCategoryOccupation && userType === 'DATABASE_USER') {
+      const categoryOccupied = await checkCategoryOccupation()
+      if (categoryOccupied.occupied) {
+        return {
           success: false,
-          message: "Unable to verify party status. Please try again." 
+          message: categoryOccupied.message
         }
       }
     }
-  }
-  
-  // 7. PACKAGE VALIDATION
-  const selectedPkg = packagesWithPopular.find((pkg) => pkg.id === selectedPackageId)
-  if (!selectedPkg) {
-    return { 
-      success: false, 
-      message: "Selected package not found." 
-    }
-  }
-
-  // 8. ADDON MODAL CHECK
-  const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
-  const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
-
-  if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
-
-    return { showAddonModal: true }
-  }
-  
-  const shouldShowLoadingModal = !fromReviewBook
-  
-  if (shouldShowLoadingModal) {
-    setIsAddingToPlan(true)
-    setLoadingStep(0)
-    setProgress(10)
-  }
-
-  try {
-    // Prepare package data with correct time slot information
-    const packageToAdd = addonData?.package || selectedPkg
-    const finalPrice = addonData ? addonData.totalPrice : selectedPkg.price
     
-    // Use the party time slot for booking
-    const bookingTimeSlot = partyTimeSlotToCheck || selectedTimeSlot
-    const bookingDate = partyDateToCheck || (selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null)
-    
-    const enhancedPackage = {
-      ...packageToAdd,
-      addons: addonData?.addons || [],
-      originalPrice: selectedPkg.price,
-      totalPrice: finalPrice,
-      addonsPriceTotal: addonData ? (addonData.totalPrice - selectedPkg.price) : 0,
-      cakeCustomization: packageToAdd.cakeCustomization || null,
-      packageType: packageToAdd.packageType || 'standard',
-      supplierType: packageToAdd.supplierType || 'standard',
-      // Use party date and time slot for booking
-      selectedTimeSlot: isLeadTimeBased ? null : bookingTimeSlot,
-      selectedDate: bookingDate,
-      bookingTimeSlot: isLeadTimeBased ? null : bookingTimeSlot,
-      partyDate: partyDateToCheck,
-      partyTimeSlot: isLeadTimeBased ? null : partyTimeSlotToCheck,
-        supplierDeliveryType: isLeadTimeBased ? 'lead_time' : 'time_slot'
+    // 7. Validate selected package
+    const selectedPkg = packagesWithSmartPricing.find((pkg) => pkg.id === selectedPackageId)
+    if (!selectedPkg) {
+      return { 
+        success: false, 
+        message: "Selected package not found." 
+      }
     }
-
-    if (shouldShowLoadingModal) setProgress(30)
-
-    let result
-    if (shouldShowLoadingModal) setLoadingStep(1)
-
-    // 10. DATABASE USER FLOW
-    if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
-      if (shouldShowLoadingModal) setProgress(50)
+  
+    // 8. Handle addon modal for entertainers
+    const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
+    const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
+  
+    if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
+      return { showAddonModal: true }
+    }
+    
+    // 9. Start loading process
+    const shouldShowLoadingModal = !fromReviewBook
+    if (shouldShowLoadingModal) {
+      setIsAddingToPlan(true)
+      setLoadingStep(0)
+      setProgress(10)
+    }
+  
+    try {
+      // 10. Calculate unified pricing
+      const pricingData = calculateUnifiedPricing(selectedPkg, partyDate, addonData)
       
-      const addResult = await partyDatabaseBackend.addSupplierToParty(
-        userContext.currentPartyId,
-        backendSupplier,
-        enhancedPackage
+      if (shouldShowLoadingModal) setProgress(30)
+  
+      // 11. Prepare enhanced package and supplier data
+      const { enhancedPackage, enhancedSupplierData } = prepareEnhancedData(
+        selectedPkg, 
+        pricingData, 
+        addonData, 
+        partyDate, 
+        partyTimeSlot
       )
+  
+      if (shouldShowLoadingModal) setProgress(50)
+      if (shouldShowLoadingModal) setLoadingStep(1)
+  
+      // 12. Add supplier to plan based on user type
+      const result = await addSupplierToPlan(enhancedSupplierData, enhancedPackage)
       
       if (shouldShowLoadingModal) setProgress(70)
       if (shouldShowLoadingModal) setLoadingStep(2)
-      
-// DON'T send enquiry - it will be sent after payment
-if (addResult.success) {
-
   
-  // Create accepted enquiry record but mark as unpaid
-  if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
-    if (shouldShowLoadingModal) setLoadingStep(3)
-    
-    const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
-      ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquir${enquiryStatus.pendingCount === 1 ? 'y' : 'ies'}`
-      : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
-    
-      const enquiryResult = await partyDatabaseBackend.createUnpaidBookingRecord(
-        userContext.currentPartyId,
-        backendSupplier,
-        enhancedPackage,
-        enquiryReason
-      )
-    
-    if (enquiryResult.success) {
-      console.log('✅ Enquiry record created as accepted but unpaid')
-    }
-  }
-}
-      
-      result = addResult
-    }
-    // 11. LOCALSTORAGE USER FLOW
-    else {
-
-      if (shouldShowLoadingModal) setProgress(50)
-      if (shouldShowLoadingModal) setLoadingStep(2)
-      
-      const partyDetails = getSupplierInPartyDetails()
-      if (partyDetails.inParty) {
-        if (partyDetails.supplierType === "addon") {
-          await removeAddon(supplier.id)
-          result = await addSupplier(backendSupplier, enhancedPackage)
-        } else {
-          result = await addSupplier(backendSupplier, enhancedPackage)
-        }
+      // 13. Handle enquiry creation if needed
+      if (result.success && shouldSendEnquiry()) {
+        await handleEnquiryCreation(enhancedSupplierData, enhancedPackage)
+        if (shouldShowLoadingModal) setLoadingStep(3)
+      }
+  
+      if (shouldShowLoadingModal) setProgress(100)
+      if (shouldShowLoadingModal) setLoadingStep(4)
+  
+      // 14. Handle success response
+      if (result.success) {
+        return await handleSuccessResponse(pricingData, enhancedPackage, partyTimeSlot)
       } else {
-        const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
-        if (mainCategories.includes(supplier.category || "")) {
-          result = await addSupplier(backendSupplier, enhancedPackage)
-        } else {
-          const addonDataToAdd = {
-            ...supplier,
-            price: finalPrice,
-            packageId: enhancedPackage.id,
-            selectedAddons: enhancedPackage.addons,
-            packageData: enhancedPackage,
-            selectedTimeSlot: bookingTimeSlot,
-            bookingTimeSlot: bookingTimeSlot
+        throw new Error(result?.error || "Failed to add supplier")
+      }
+  
+    } catch (error) {
+      console.error("Error in handleAddToPlan:", error)
+      return { 
+        success: false, 
+        message: error.message || "Failed to add supplier. Please try again." 
+      }
+    } finally {
+      if (shouldShowLoadingModal) {
+        setIsAddingToPlan(false)
+        setProgress(0)
+        setLoadingStep(0)
+      }
+      setFinalPackageData(null)
+    }
+  
+    // Helper functions for the main flow:
+  
+    function extractPartyDateTime() {
+      let partyDate = null
+      let partyTimeSlot = null
+      
+      if (userType === 'DATABASE_USER' && databasePartyData) {
+        partyDate = databasePartyData.party_date || databasePartyData.date
+        partyTimeSlot = databasePartyData.time_slot || databasePartyData.timeSlot
+        
+        if (!partyTimeSlot) {
+          const timeField = databasePartyData.start_time || databasePartyData.party_time || databasePartyData.time
+          if (timeField) {
+            const hour = parseInt(timeField.toString().split(':')[0])
+            if (!isNaN(hour)) {
+              partyTimeSlot = hour < 13 ? 'morning' : 'afternoon'
+            }
           }
-          result = await addAddon(addonDataToAdd)
+        }
+      } else if (userType === 'LOCALSTORAGE_USER' || userType === 'MIGRATION_NEEDED') {
+        try {
+          const partyDetails = localStorage.getItem('party_details')
+          if (partyDetails) {
+            const parsed = JSON.parse(partyDetails)
+            partyDate = parsed.date
+            partyTimeSlot = parsed.timeSlot
+            
+            if (!partyTimeSlot && parsed.time) {
+              const timeStr = parsed.time.toLowerCase()
+              if (timeStr.includes('am')) {
+                partyTimeSlot = 'morning'
+              } else if (timeStr.includes('pm')) {
+                partyTimeSlot = 'afternoon'
+              }
+            }
+          }
+        } catch (error) {
+          console.log('Could not parse localStorage party details')
+        }
+      }
+      
+      return { partyDate, partyTimeSlot }
+    }
+  
+    async function checkCategoryOccupation() {
+      try {
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+        if (partyResult.success && partyResult.party?.party_plan) {
+          const dbPartyPlan = partyResult.party.party_plan
+          
+          const categoryMap = {
+            'Entertainment': 'entertainment',
+            'Venues': 'venue', 
+            'Catering': 'catering',
+            'Decorations': 'decorations',
+            'Party Bags': 'partyBags',
+            'Photography': 'photography',
+            'Activities': 'activities',
+            'Face Painting': 'facePainting',
+            'Cakes': 'cakes',   
+          }
+          
+          const slotName = categoryMap[supplier.category]
+          const isSlotOccupied = slotName && dbPartyPlan[slotName] && dbPartyPlan[slotName].name
+          
+          if (isSlotOccupied) {
+            return {
+              occupied: true,
+              message: `You already have a ${supplier.category.toLowerCase()} provider (${dbPartyPlan[slotName].name}). Remove them first to add ${supplier.name}.`
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Database check failed, continuing...', error)
+        if (userType === 'DATABASE_USER') {
+          return {
+            occupied: true,
+            message: "Unable to verify party status. Please try again."
+          }
+        }
+      }
+      
+      return { occupied: false }
+    }
+  
+    function calculateUnifiedPricing(selectedPkg, partyDate, addonData) {
+      console.log('🔍 DEBUG: calculateUnifiedPricing START')
+      console.log('🔍 DEBUG: selectedPkg input:', {
+        id: selectedPkg.id,
+        name: selectedPkg.name,
+        price: selectedPkg.price,
+        originalPrice: selectedPkg.originalPrice
+      })
+      
+      const partyDetailsForPricing = {
+        date: partyDate || (selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null),
+        duration: effectivePartyDuration,
+        guestCount: null
+      }
+      
+      console.log('🔍 DEBUG: Party details for pricing:', partyDetailsForPricing)
+      
+      // CRITICAL: Determine the TRUE base price
+      const trueBasePrice = selectedPkg.originalPrice || selectedPkg.price
+      
+      console.log('🔍 DEBUG: True base price determined:', trueBasePrice)
+      console.log('🔍 DEBUG: Extra hour rate from supplier:', supplier.extraHourRate)
+      console.log('🔍 DEBUG: Extra hour rate from serviceDetails:', supplier.serviceDetails?.extraHourRate)
+      
+      const supplierForPricing = {
+        ...supplier,
+        price: trueBasePrice, // Force use of true base price
+        originalPrice: trueBasePrice, // Ensure originalPrice is set
+        weekendPremium: supplier.weekendPremium || backendSupplier?.weekendPremium,
+        extraHourRate: supplier.extraHourRate || backendSupplier?.extraHourRate,
+        category: supplier.category
+      }
+      
+      console.log('🔍 DEBUG: Supplier for pricing:', {
+        name: supplierForPricing.name,
+        price: supplierForPricing.price,
+        originalPrice: supplierForPricing.originalPrice,
+        extraHourRate: supplierForPricing.extraHourRate,
+        duration: effectivePartyDuration
+      })
+      
+      const pricingResult = calculateFinalPrice(
+        supplierForPricing,
+        partyDetailsForPricing,
+        addonData?.addons || []
+      )
+      
+      console.log('🔍 DEBUG: Unified pricing result:', {
+        finalPrice: pricingResult.finalPrice,
+        basePrice: pricingResult.basePrice,
+        breakdown: pricingResult.breakdown,
+        details: pricingResult.details
+      })
+      
+      // Check if there's unexpected enhancement
+      const expectedPrice = trueBasePrice + (pricingResult.breakdown.weekend || 0) + (pricingResult.breakdown.extraHours || 0)
+      const actualPrice = pricingResult.finalPrice
+      
+      if (Math.abs(expectedPrice - actualPrice) > 0.01) {
+        console.error('🚨 DEBUG: PRICE MISMATCH DETECTED!')
+        console.error('🚨 Expected:', expectedPrice)
+        console.error('🚨 Actual:', actualPrice)
+        console.error('🚨 Difference:', actualPrice - expectedPrice)
+      }
+      
+      return {
+        pricingResult,
+        finalPrice: pricingResult.finalPrice,
+        weekendAdjustedBasePrice: pricingResult.basePrice,
+        debugInfo: {
+          inputPrice: selectedPkg.price,
+          inputOriginalPrice: selectedPkg.originalPrice,
+          trueBasePrice,
+          expectedPrice,
+          actualPrice
         }
       }
     }
-
-    if (shouldShowLoadingModal) setLoadingStep(4)
-    if (shouldShowLoadingModal) setProgress(100)
-
-    // 12. SUCCESS HANDLING
-    if (result?.success) {
+  
+    function prepareEnhancedData(selectedPkg, pricingData, addonData, partyDate, partyTimeSlot) {
+      const { pricingResult, finalPrice, weekendAdjustedBasePrice } = pricingData
+      const packageToAdd = addonData?.package || selectedPkg
+      const bookingTimeSlot = partyTimeSlot || selectedTimeSlot
+      const bookingDate = partyDate || (selectedDate ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate) : null)
+      
+      const enhancedPackage = {
+        ...packageToAdd,
+        addons: addonData?.addons || [],
+        originalPrice: selectedPkg.originalPrice || selectedPkg.price,
+        totalPrice: finalPrice,
+        addonsPriceTotal: pricingResult.breakdown.addons,
+        cakeCustomization: packageToAdd.cakeCustomization || null,
+        packageType: packageToAdd.packageType || 'standard',
+        supplierType: packageToAdd.supplierType || 'standard',
+        selectedTimeSlot: isLeadTimeBased ? null : bookingTimeSlot,
+        selectedDate: bookingDate,
+        bookingTimeSlot: isLeadTimeBased ? null : bookingTimeSlot,
+        partyDate: partyDate,
+        partyTimeSlot: isLeadTimeBased ? null : partyTimeSlot,
+        supplierDeliveryType: isLeadTimeBased ? 'lead_time' : 'time_slot',
+        weekendPremiumApplied: pricingResult.breakdown.weekend > 0,
+        weekendPremiumAmount: pricingResult.breakdown.weekend,
+        weekendAdjustedPrice: weekendAdjustedBasePrice,
+        pricingBreakdown: {
+          basePrice: selectedPkg.price,
+          weekendPremium: pricingResult.breakdown.weekend,
+          extraHours: pricingResult.breakdown.extraHours,
+          addons: pricingResult.breakdown.addons,
+          finalBasePrice: weekendAdjustedBasePrice,
+          grandTotal: finalPrice
+        }
+      }
+  
+      console.log('Enhanced package with unified pricing:', {
+        name: packageToAdd.name,
+        originalPrice: enhancedPackage.originalPrice,
+        weekendAdjustedPrice: enhancedPackage.weekendAdjustedPrice,
+        totalPrice: enhancedPackage.totalPrice,
+        weekendPremiumApplied: enhancedPackage.weekendPremiumApplied,
+        weekendPremiumAmount: enhancedPackage.weekendPremiumAmount
+      })
+      
+      const enhancedSupplierData = {
+        ...backendSupplier,
+        weekendPremium: supplier.weekendPremium || backendSupplier?.weekendPremium,
+        extraHourRate: supplier.extraHourRate || backendSupplier?.extraHourRate,
+        price: finalPrice,
+        originalPrice: selectedPkg.price,
+        weekendAdjustedPrice: weekendAdjustedBasePrice
+      }
+  
+      return { enhancedPackage, enhancedSupplierData }
+    }
+  
+    async function addSupplierToPlan(enhancedSupplierData, enhancedPackage) {
+      if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
+        return await partyDatabaseBackend.addSupplierToParty(
+          userContext.currentPartyId,
+          enhancedSupplierData,
+          enhancedPackage
+        )
+      } else {
+        const partyDetails = getSupplierInPartyDetails()
+        if (partyDetails.inParty) {
+          if (partyDetails.supplierType === "addon") {
+            await removeAddon(supplier.id)
+            return await addSupplier(enhancedSupplierData, enhancedPackage)
+          } else {
+            return await addSupplier(enhancedSupplierData, enhancedPackage)
+          }
+        } else {
+          const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
+          if (mainCategories.includes(supplier.category || "")) {
+            return await addSupplier(enhancedSupplierData, enhancedPackage)
+          } else {
+            const addonDataToAdd = {
+              ...supplier,
+              price: finalPrice,
+              originalPrice: selectedPkg.price,
+              weekendAdjustedPrice: weekendAdjustedBasePrice,
+              packageId: enhancedPackage.id,
+              selectedAddons: enhancedPackage.addons,
+              packageData: enhancedPackage,
+              selectedTimeSlot: bookingTimeSlot,
+              bookingTimeSlot: bookingTimeSlot,
+              weekendPremium: supplier.weekendPremium,
+              weekendPremiumApplied: pricingResult.breakdown.weekend > 0,
+              weekendPremiumAmount: pricingResult.breakdown.weekend
+            }
+            return await addAddon(addonDataToAdd)
+          }
+        }
+      }
+    }
+  
+    function shouldSendEnquiry() {
+      return behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)
+    }
+  
+    async function handleEnquiryCreation(enhancedSupplierData, enhancedPackage) {
+      if (userType === 'DATABASE_USER' && userContext?.currentPartyId) {
+        const enquiryReason = enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0
+          ? `Added to party plan while managing ${enquiryStatus.pendingCount} other pending enquiry${enquiryStatus.pendingCount === 1 ? '' : 's'}`
+          : `Added to expand party team for your ${supplier.category.toLowerCase()} needs`
+        
+        const enquiryResult = await partyDatabaseBackend.createUnpaidBookingRecord(
+          userContext.currentPartyId,
+          enhancedSupplierData,
+          enhancedPackage,
+          enquiryReason
+        )
+      
+        if (enquiryResult.success) {
+          console.log('Enquiry record created as accepted but unpaid')
+        }
+      }
+    }
+  
+    async function handleSuccessResponse(pricingData, enhancedPackage, partyTimeSlot) {
+      const { pricingResult } = pricingData
+      const bookingTimeSlot = partyTimeSlot || selectedTimeSlot
+      
       let successMessage = `${supplier.name} added to your party`
       
       if (bookingTimeSlot) {
         const timeSlotLabel = bookingTimeSlot === 'morning' ? 'morning' : 'afternoon'
         successMessage += ` for ${timeSlotLabel}`
+      }
+      
+      if (pricingResult.breakdown.weekend > 0) {
+        successMessage += ` (weekend premium applied: +£${pricingResult.breakdown.weekend})`
       }
       
       if (enhancedPackage.cakeCustomization) {
@@ -438,7 +652,7 @@ if (addResult.success) {
       const addonMessage = addonData?.addons?.length > 0 ? ` with ${addonData.addons.length} add-on${addonData.addons.length > 1 ? 's' : ''}` : ''
       successMessage += addonMessage
       
-      if (behavior.shouldSendEnquiry || (enquiryStatus.isAwaiting && enquiryStatus.pendingCount > 0)) {
+      if (shouldSendEnquiry()) {
         successMessage += ' and enquiry sent!'
       } else {
         successMessage += '!'
@@ -449,6 +663,8 @@ if (addResult.success) {
           pendingCount: enquiryStatus.pendingCount,
           addedSupplier: supplier.name,
           selectedTimeSlot: bookingTimeSlot,
+          weekendPremiumApplied: pricingResult.breakdown.weekend > 0,
+          weekendPremiumAmount: pricingResult.breakdown.weekend,
           timestamp: Date.now()
         }))
       }
@@ -456,17 +672,18 @@ if (addResult.success) {
       const waitTime = fromReviewBook ? 500 : 1000
       await new Promise((resolve) => setTimeout(resolve, waitTime))
       
+      // Handle navigation
       if (fromReviewBook) {
         localStorage.setItem('reviewBookToast', JSON.stringify({
           type: 'success',
           title: 'Supplier Added Successfully',
           message: `${supplier.name} added to your party plan!`,
           timeSlot: bookingTimeSlot,
+          weekendPremium: pricingResult.breakdown.weekend > 0,
           timestamp: Date.now()
         }))
         
         const reviewUrl = `/review-book?restore=step4&added=true&supplier=${encodeURIComponent(supplier.name)}`
-        
         router.push(reviewUrl)
       } else {
         const categoryMap = {
@@ -482,21 +699,18 @@ if (addResult.success) {
           'Cakes': 'cakes',
           'Balloons': 'balloons'
         }
-
+  
         const supplierType = categoryMap[supplier.category] || 'entertainment'
-    // For database users - show enquiry banner (they send real enquiries)
-if (userType === 'DATABASE_USER') {
-  const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail&enquiry_sent=true&timestamp=${Date.now()}`
-  router.push(dashboardUrl)
-} else {
-  // For localStorage users - just navigate normally (no enquiry banner)
-  const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
-  router.push(dashboardUrl)
-}
-
-        router.push(dashboardUrl)
+        
+        if (userType === 'DATABASE_USER') {
+          const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail&enquiry_sent=true&timestamp=${Date.now()}`
+          router.push(dashboardUrl)
+        } else {
+          const dashboardUrl = `/dashboard?scrollTo=${supplierType}&action=supplier-added&from=supplier-detail`
+          router.push(dashboardUrl)
+        }
       }
-
+  
       return { 
         success: true, 
         message: successMessage,
@@ -507,48 +721,38 @@ if (userType === 'DATABASE_USER') {
         timeSlotInfo: bookingTimeSlot ? {
           selectedTimeSlot: bookingTimeSlot,
           timeSlotLabel: bookingTimeSlot === 'morning' ? 'Morning' : 'Afternoon'
+        } : null,
+        weekendPremiumInfo: pricingResult.breakdown.weekend > 0 ? {
+          applied: true,
+          amount: pricingResult.breakdown.weekend,
+          originalPrice: selectedPkg.price,
+          adjustedPrice: pricingResult.basePrice
         } : null
       }
-    } else {
-      throw new Error(result?.error || "Failed to add supplier")
     }
-
-  } catch (error) {
-    console.error("❌ Error in handleAddToPlan:", error)
-    return { 
-      success: false, 
-      message: error.message || "Failed to add supplier. Please try again." 
-    }
-  } finally {
-    if (shouldShowLoadingModal) {
-      setIsAddingToPlan(false)
-      setProgress(0)
-      setLoadingStep(0)
-    }
-    setFinalPackageData(null)
-
-  }
-}, [
-  userType, 
-  userContext, 
-  supplier, 
-  selectedPackageId, 
-  selectedDate, 
-  selectedTimeSlot,
-  currentMonth,
-  packagesWithPopular, 
-  getSupplierInPartyDetails, 
-  addSupplier, 
-  addAddon, 
-  removeAddon, 
-  backendSupplier, 
-  router, 
-  checkSupplierAvailability, 
-  getSelectedCalendarDate,
-  isCurrentSelectionBookable,
-  enquiryStatus,
-  databasePartyData // CRITICAL: Must be in dependencies
-])
+  
+  }, [
+    userType, 
+    userContext, 
+    supplier, 
+    selectedPackageId, 
+    selectedDate, 
+    selectedTimeSlot,
+    currentMonth,
+    packagesWithSmartPricing,
+    getSupplierInPartyDetails, 
+    addSupplier, 
+    addAddon, 
+    removeAddon, 
+    backendSupplier, 
+    router, 
+    checkSupplierAvailability, 
+    getSelectedCalendarDate,
+    isCurrentSelectionBookable,
+    enquiryStatus,
+    databasePartyData,
+    effectivePartyDuration
+  ]);
 
 // ✅ UPDATED: handleAlaCarteBooking with enhanced time slot support and availability checks
 // const handleAlaCarteBooking = useCallback(async (partyDetails) => {
@@ -1224,11 +1428,11 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
             const dateObj = new Date(parsed.date)
             partyDateText = ` (${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
             
-            if (parsed.timeSlot || parsed.time) {
-              const timeSlot = parsed.timeSlot || (parsed.time?.toLowerCase().includes('am') ? 'morning' : 'afternoon')
-              const timeSlotLabel = timeSlot === 'morning' ? 'AM' : 'PM'
-              timeSlotText = ` ${timeSlotLabel}`
-            }
+            // if (parsed.timeSlot || parsed.time) {
+            //   const timeSlot = parsed.timeSlot || (parsed.time?.toLowerCase().includes('am') ? 'morning' : 'afternoon')
+            //   const timeSlotLabel = timeSlot === 'morning' ? 'AM' : 'PM'
+            //   timeSlotText = ` ${timeSlotLabel}`
+            // }
           }
         }
       } catch (error) {
@@ -1396,7 +1600,7 @@ const handleAlaCarteBooking = useCallback(async (partyDetails) => {
     setFinalPackageData,
     
     // Updated packages with popular flags
-    packages: packagesWithPopular,
+    packages: packagesWithSmartPricing,  // ✅ Change this line
     
     // Functions
     handleAddToPlan,

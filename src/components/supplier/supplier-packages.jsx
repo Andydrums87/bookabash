@@ -1,9 +1,10 @@
-// Enhanced SupplierPackages component with improved mobile layout and image handling
+// Enhanced SupplierPackages component with smart pricing integration
 "use client"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Plus, X, Clock, Users, Star, ChevronLeft, ChevronRight, ImageIcon } from "lucide-react"
+import { CheckCircle, Plus, X, Clock, Users, Star, ChevronLeft, ChevronRight, ImageIcon, Calendar } from "lucide-react"
+import { calculateFinalPrice, isWeekendDate, getPartyDuration } from '@/utils/unifiedPricing'
 
 const useIsMobile = (breakpoint = 640) => {
   const [isMobile, setIsMobile] = useState(false)
@@ -16,7 +17,7 @@ const useIsMobile = (breakpoint = 640) => {
   return isMobile
 }
 
-const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
+const PackageDetailsModal = ({ pkg, isOpen, onClose, showWeekendIndicator }) => {
   if (!isOpen) return null
   return (
     <div className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-4">
@@ -38,12 +39,28 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
           <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-2xl p-4">
             <h2 className="text-2xl font-bold text-gray-900">{pkg.name}</h2>
             <div className="flex items-center gap-4 mt-2">
-              <span className="text-3xl font-bold text-primary">£{pkg.price}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-primary">
+                  {pkg.displayPrice || `£${pkg.price}`}
+                </span>
+                {/* Weekend indicator in modal */}
+                {showWeekendIndicator && pkg._smartPricing?.isWeekendRate && (
+                  <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded-full">
+                    Weekend Rate
+                  </span>
+                )}
+              </div>
               <div className="flex items-center text-gray-600">
                 <Clock className="w-4 h-4 mr-1" />
                 <span>{pkg.duration}</span>
               </div>
             </div>
+            {/* Show pricing breakdown if weekend premium applied */}
+            {pkg._smartPricing?.breakdown && (
+              <p className="text-sm text-gray-600 mt-1">
+                {pkg._smartPricing.breakdown}
+              </p>
+            )}
           </div>
         </div>
 
@@ -71,6 +88,24 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
             </div>
           </div>
 
+          {/* Pricing Information */}
+          {pkg._smartPricing?.isWeekendRate && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Pricing Information</h3>
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5 text-amber-600" />
+                  <span className="font-medium text-amber-800">Weekend Premium Applied</span>
+                </div>
+                <div className="text-sm text-amber-700">
+                  <p>Base Price: £{pkg.originalPrice}</p>
+                  <p>Weekend Premium: +£{pkg._smartPricing.premiumAmount}</p>
+                  <p className="font-semibold">Total: £{pkg.price}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Package Stats */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-primary-50 rounded-xl p-4 text-center">
@@ -90,7 +125,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
   )
 }
 
-// Enhanced PackageCard with better mobile sizing and image handling
+// Enhanced PackageCard with weekend pricing display
 const PackageCard = ({
   pkg,
   isSelected,
@@ -101,7 +136,8 @@ const PackageCard = ({
   isInPlanPackage,
   onShowNotification,
   isReplacementMode = false,
-  isMobileView = false // New prop for mobile-specific styling
+  isMobileView = false,
+  showWeekendIndicator = false
 }) => {
   const [showModal, setShowModal] = useState(false)
   const [imageError, setImageError] = useState(false)
@@ -124,18 +160,20 @@ const PackageCard = ({
           id: selectedPackage.id,
           name: selectedPackage.name,
           price: selectedPackage.price,
+          originalPrice: selectedPackage.originalPrice,
           duration: selectedPackage.duration || '2 hours',
           features: selectedPackage.features || [],
           description: selectedPackage.description || `${selectedPackage.name} package`,
-          originalPrice: selectedPackage.originalPrice || selectedPackage.price,
           totalPrice: selectedPackage.totalPrice || selectedPackage.price,
-          basePrice: selectedPackage.basePrice || selectedPackage.price,
+          basePrice: selectedPackage.basePrice || selectedPackage.originalPrice || selectedPackage.price,
           addonsPriceTotal: selectedPackage.addonsPriceTotal || 0,
           addons: selectedPackage.addons || [],
           selectedAddons: selectedPackage.selectedAddons || [],
           selectedAt: new Date().toISOString(),
           selectionSource: 'package_card_click',
-          isReplacementSelection: true
+          isReplacementSelection: true,
+          // Include smart pricing data
+          _smartPricing: selectedPackage._smartPricing
         }
         
         context.selectedPackageId = packageId
@@ -192,41 +230,42 @@ const PackageCard = ({
             Replacement
           </div>
         )}
-     {pkg.image || pkg.imageUrl ? (
+
+       
+        {pkg.image || pkg.imageUrl ? (
           <div onClick={(e) => {
             e.stopPropagation()
             setShowModal(true)
           }} className="relative w-full ">
                 
-                 <div
-                                 className="relative w-[90%] h-[280px] mask-image mx-auto"
-                                 style={{
-                                   WebkitMaskImage: 'url("/image.svg")',
-                                   WebkitMaskRepeat: 'no-repeat',
-                                   WebkitMaskSize: 'contain',
-                                   WebkitMaskPosition: 'center',
-                                   maskImage: 'url("/image.svg")',
-                                   maskRepeat: 'no-repeat',
-                                   maskSize: 'contain',
-                                   maskPosition: 'center',
-                                 }}
-                               >
-                                 <Image
-                                   src={
-                                     pkg.image || pkg.imageUrl || "/placeholder.png"
-                                   }
-                                   alt={pkg.name || "Package image"}
-                                   fill
-                                   className="object-cover group-hover:brightness-110 transition-all duration-300 "
-                                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                 />
-                               </div>
-               </div>
- ) : (
-  <div className="w-full h-48 bg-muted flex items-center justify-center">
-    <ImageIcon className="h-16 w-16 text-gray-400" />
-  </div>
-)}
+            <div
+              className="relative w-[90%] h-[280px] mask-image mx-auto"
+              style={{
+                WebkitMaskImage: 'url("/image.svg")',
+                WebkitMaskRepeat: 'no-repeat',
+                WebkitMaskSize: 'contain',
+                WebkitMaskPosition: 'center',
+                maskImage: 'url("/image.svg")',
+                maskRepeat: 'no-repeat',
+                maskSize: 'contain',
+                maskPosition: 'center',
+              }}
+            >
+              <Image
+                src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+                alt={pkg.name || "Package image"}
+                fill
+                className="object-cover group-hover:brightness-110 transition-all duration-300 "
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="w-full h-48 bg-muted flex items-center justify-center">
+            <ImageIcon className="h-16 w-16 text-gray-400" />
+          </div>
+        )}
+
         {/* Title */}
         <h3 className={`font-bold text-gray-800 truncate mb-1 px-1 group-hover:text-gray-900 transition-colors duration-200 ${
           isMobileView ? 'text-base' : 'text-base sm:text-lg md:text-xl px-2'
@@ -234,43 +273,22 @@ const PackageCard = ({
           {pkg.name}
         </h3>
 
-        {/* Price + Meta */}
+        {/* Price + Meta with weekend indicator */}
         <div className="mb-2">
-          <p className={`font-bold text-primary group-hover:text-primary transition-colors duration-200 ${
-            isMobileView ? 'text-lg' : 'text-base sm:text-lg'
-          }`}>
-            £{pkg.price} <span className="text-gray-400 text-xs">{pkg.duration}</span>
-          </p>
-          <div className={`flex items-center justify-center gap-2 text-gray-500 mt-1 ${
-            isMobileView ? 'text-xs gap-1' : 'text-xs sm:text-sm gap-2 sm:gap-3'
-          }`}>
-         
-        
-          </div>
-        </div>
-
-        {/* Features - Show fewer on mobile */}
-        {/* <div className={`flex flex-wrap justify-center items-center gap-1 mb-2 px-1 ${
-          isMobileView ? 'gap-1 mb-3' : 'gap-1 sm:gap-2 mb-2 sm:mb-4 px-1 sm:px-2'
-        }`}>
-          {features.slice(0, visibleCount).map((feature, i) => (
-            <span
-              key={i}
-              className={`bg-primary-400 text-white font-medium rounded-full group-hover:bg-[hsl(var(--primary-500))] group-hover:scale-105 transition-all duration-200 ${
-                isMobileView ? 'text-xs px-2 py-1' : 'text-xs px-2 sm:px-2.5 py-1'
-              }`}
-            >
-              {truncate(feature)}
-            </span>
-          ))}
-          {extraCount > 0 && (
-            <span className={`bg-gray-100 text-gray-600 font-medium rounded-full ${
-              isMobileView ? 'text-xs px-2 py-1' : 'text-xs px-2 sm:px-2.5 py-1'
+          <div className="flex items-center justify-center gap-2">
+            <p className={`font-bold text-primary group-hover:text-primary transition-colors duration-200 ${
+              isMobileView ? 'text-lg' : 'text-base sm:text-lg'
             }`}>
-              +{extraCount} more
-            </span>
-          )}
-        </div> */}
+              {pkg.displayPrice || `£${pkg.price}`}
+            </p>
+         
+          </div>
+          
+          <div className="flex items-center justify-center gap-2 text-gray-500 mt-1">
+            <span className="text-gray-400 text-xs">{pkg.duration}</span>
+          </div>
+
+        </div>
 
         {/* Buttons with mobile-optimized sizing */}
         {isInPlanPackage ? (
@@ -416,7 +434,12 @@ const PackageCard = ({
       </div>
 
       {/* Modal */}
-      <PackageDetailsModal pkg={pkg} isOpen={showModal} onClose={() => setShowModal(false)} />
+      <PackageDetailsModal 
+        pkg={pkg} 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        showWeekendIndicator={showWeekendIndicator}
+      />
     </>
   )
 }
@@ -484,7 +507,6 @@ const MobilePackageSlider = ({ children, packagesLength }) => {
   )
 }
 
-// Main component with enhanced mobile support
 export default function SupplierPackages({
   packages,
   selectedPackageId,
@@ -493,14 +515,154 @@ export default function SupplierPackages({
   getAddToPartyButtonState,
   getSupplierInPartyDetails,
   onShowNotification,
-  isReplacementMode = false
+  isReplacementMode = false,
+  supplier,
+  selectedDate
 }) {
   const isMobile = useIsMobile(768)
   
+  // Calculate effective party duration (same logic as mobile booking bar)
+  const effectivePartyDuration = useMemo(() => {
+    console.log('📦 SupplierPackages: Calculating effective party duration')
+    
+    // Try to get from localStorage party details first
+    try {
+      const partyDetails = localStorage.getItem('party_details')
+      if (partyDetails) {
+        const parsed = JSON.parse(partyDetails)
+        if (parsed.duration && parsed.duration > 0) {
+          console.log('📦 Using duration from localStorage:', parsed.duration)
+          return parsed.duration
+        }
+        
+        // Try to calculate from start/end times if available
+        if (parsed.startTime && parsed.endTime) {
+          const duration = getPartyDuration(parsed)
+          console.log('📦 Calculated duration from times:', duration)
+          return duration
+        }
+      }
+    } catch (error) {
+      console.warn('Could not get party duration from localStorage:', error)
+    }
+    
+    // Default calculation - use the same as mobile booking bar
+    const defaultDuration = getPartyDuration({
+      date: selectedDate ? new Date(selectedDate) : null
+    })
+    
+    console.log('📦 Using default duration:', defaultDuration)
+    return defaultDuration
+  }, [selectedDate])
+
   if (!packages || packages.length === 0) return null
 
+  const smartPricedPackages = useMemo(() => {
+    if (!supplier || !selectedDate) {
+      console.log('📦 No supplier or selected date, returning original packages')
+      return packages
+    }
+    
+    console.log('📦 Package pricing calculation:', {
+      supplierName: supplier.name,
+      selectedDate,
+      effectivePartyDuration,
+      extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate,
+      packageCount: packages.length
+    })
+    
+    // Import the lead-based check
+    const { isLeadBasedSupplier } = require('@/utils/unifiedPricing')
+    const isLeadBased = isLeadBasedSupplier(supplier)
+    
+    return packages.map(pkg => {
+      console.log(`📦 Processing package "${pkg.name}":`, {
+        originalPrice: pkg.price,
+        isLeadBased,
+        duration: effectivePartyDuration
+      })
+      
+      // Skip enhanced pricing for lead-based suppliers
+      if (isLeadBased) {
+        console.log('📦 Lead-based supplier - no enhanced pricing:', supplier.name, pkg.name)
+        return {
+          ...pkg,
+          originalPrice: pkg.price,
+          displayPrice: `£${pkg.price}`,
+          _smartPricing: {
+            isWeekendRate: false,
+            premiumAmount: 0,
+            breakdown: null
+          }
+        }
+      }
+      
+      // FIXED: Include duration in pricing calculation
+      const pricing = calculateFinalPrice(
+        { 
+          ...supplier, 
+          price: pkg.price,
+          originalPrice: pkg.price 
+        }, 
+        { 
+          date: selectedDate, 
+          duration: effectivePartyDuration // Now includes duration!
+        }, 
+        []
+      );
+      
+      console.log(`📦 Package "${pkg.name}" enhanced pricing:`, {
+        originalPrice: pkg.price,
+        finalPrice: pricing.finalPrice,
+        breakdown: pricing.breakdown,
+        weekendPremium: pricing.breakdown.weekend,
+        extraHourCost: pricing.breakdown.extraHours,
+        calculation: `£${pkg.price} + £${pricing.breakdown.weekend} (weekend) + £${pricing.breakdown.extraHours} (extra ${pricing.details.extraHours}h) = £${pricing.finalPrice}`
+      })
+      
+      // Build breakdown text
+      const breakdownParts = []
+      if (pricing.breakdown.weekend > 0) {
+        breakdownParts.push(`+£${pricing.breakdown.weekend} weekend`)
+      }
+      if (pricing.breakdown.extraHours > 0) {
+        breakdownParts.push(`+£${pricing.breakdown.extraHours} extra ${pricing.details.extraHours}h`)
+      }
+      
+      return {
+        ...pkg,
+        originalPrice: pkg.price,
+        price: pricing.finalPrice,
+        displayPrice: `£${pricing.finalPrice}`,
+        _smartPricing: {
+          isWeekendRate: pricing.breakdown.weekend > 0,
+          premiumAmount: pricing.breakdown.weekend,
+          extraHourPremium: pricing.breakdown.extraHours,
+          breakdown: breakdownParts.length > 0 ? breakdownParts.join(', ') : null,
+          hasEnhancedPricing: pricing.finalPrice !== pkg.price,
+          details: {
+            basePrice: pkg.price,
+            weekendCost: pricing.breakdown.weekend,
+            extraHourCost: pricing.breakdown.extraHours,
+            extraHours: pricing.details.extraHours,
+            finalPrice: pricing.finalPrice
+          }
+        }
+      }
+    })
+  }, [packages, supplier, selectedDate, effectivePartyDuration]) // Add effectivePartyDuration to dependencies
+
+  console.log('📦 Final smartPricedPackages:', smartPricedPackages.map(pkg => ({
+    name: pkg.name,
+    originalPrice: pkg.originalPrice,
+    finalPrice: pkg.price,
+    displayPrice: pkg.displayPrice,
+    breakdown: pkg._smartPricing?.breakdown
+  })))
+
+  // Rest of your component stays exactly the same...
   const partyDetails = getSupplierInPartyDetails()
-  const packagesData = packages
+  const packagesData = smartPricedPackages
 
   // Sort packages for mobile: put "In Plan" packages first
   const sortedPackagesData = isMobile 
@@ -508,11 +670,9 @@ export default function SupplierPackages({
         const aIsInPlan = partyDetails.inParty && partyDetails.currentPackage === a.id
         const bIsInPlan = partyDetails.inParty && partyDetails.currentPackage === b.id
         
-        // If one is in plan and the other isn't, prioritize the one in plan
         if (aIsInPlan && !bIsInPlan) return -1
         if (!aIsInPlan && bIsInPlan) return 1
         
-        // Otherwise maintain original order
         return 0
       })
     : packagesData
@@ -539,7 +699,7 @@ export default function SupplierPackages({
         </div>
       )}
       
-      {/* Conditional layout: Mobile horizontal scroll vs Desktop grid */}
+      {/* Rest of your existing JSX stays the same */}
       {isMobile ? (
         <MobilePackageSlider packagesLength={sortedPackagesData.length}>
           {sortedPackagesData.map((pkg) => {

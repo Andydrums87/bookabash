@@ -87,6 +87,9 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   // Wizard state management
   const wizard = useWizardSteps(inviteData, generatedImage)
 
+  // Local loading state for the complete operation
+  const [isCompleting, setIsCompleting] = useState(false)
+
   // Enhanced invite data for preview
   const enhancedInviteData = {
     ...inviteData,
@@ -123,12 +126,16 @@ const EInvitesPage = ({ onSaveSuccess }) => {
 
   const handleComplete = async () => {
     try {
+      // Set loading state immediately
+      setIsCompleting(true)
+      
       console.log("🚀 Starting final invite completion...")
       console.log("📊 Selected AI Option:", selectedAiOption)
       console.log("📝 Invite Data:", inviteData)
       
       if (!selectedAiOption) {
         alert("Please select an AI option first!")
+        setIsCompleting(false)
         return
       }
       
@@ -144,8 +151,14 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       }
     } catch (error) {
       console.error("❌ Complete failed:", error)
+    } finally {
+      // Reset loading state
+      setIsCompleting(false)
     }
   }
+
+  // Combine both loading states for the wizard navigation
+  const isOperationInProgress = isSaving || isCompleting
 
   const renderStepContent = () => {
     switch (wizard.currentStep) {
@@ -303,7 +316,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
         getValidationErrors={wizard.getValidationErrors}
         stepConfig={wizard.stepConfig}
         onComplete={handleComplete}
-        isSaving={isSaving}
+        isSaving={isOperationInProgress} // Use combined loading state
         selectedAiOption={selectedAiOption}
       />
 

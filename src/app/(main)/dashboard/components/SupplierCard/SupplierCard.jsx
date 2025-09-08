@@ -1,6 +1,7 @@
-// SupplierCard.jsx - Updated to use helper functions
+// SupplierCard.jsx - FIXED to always use fresh pricing calculation
 "use client"
 import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 import EmptySupplierCard from './EmptySupplierCard'
 import SelectedSupplierCard from './SelectedSupplierCard'
 import AwaitingResponseSupplierCard from './AwaitingResponseSupplierCard'
@@ -10,7 +11,7 @@ import DeclinedSupplierCard from './DeclinedSupplierCard'
 import DepositPaidSupplierCard from './DepositPaidSupplierCard'
 
 // Import the helper functions
-import { calculateSupplierTotalPrice } from '@/utils/supplierPricingHelpers'
+import { calculateFinalPrice } from '@/utils/unifiedPricing'
 
 export default function SupplierCard({
   type,
@@ -30,7 +31,9 @@ export default function SupplierCard({
   enquirySentAt = null,
   currentPhase,
   onPaymentReady,
-  handleCancelEnquiry
+  handleCancelEnquiry,
+  enhancedPricing,
+  pricingRefreshKey
 }) {
   const router = useRouter()
 
@@ -88,10 +91,8 @@ export default function SupplierCard({
                                     enquiry.supplier_response &&
                                     !enquiry.supplier_response.includes('Auto-')
     
-
     // Handle declined enquiries first
     if (enquiryStatus === "declined") {
-  
       return "declined"
     }
     
@@ -100,30 +101,25 @@ export default function SupplierCard({
       
       // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
       if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
-   
         return "payment_confirmed"
       }
       
       // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
       if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
-        
         return "deposit_paid_confirmed"  
       }
       
       // If accepted but not paid = CONFIRMED
       if (thisSupplierPaymentStatus !== "paid") {
-        
         return "confirmed"
       }
     }
     
     // ENQUIRY FLOW: Handle pending enquiries
     if (enquiryStatus === "pending") {
-
       return "awaiting_response"
     }
     
-
     return "selected"
   }
 
@@ -182,8 +178,26 @@ export default function SupplierCard({
     return uniqueAddons
   })()
 
-  // Use the helper function to calculate total price
-  const { totalPrice } = calculateSupplierTotalPrice(supplier, supplierAddons, partyDetails)
+  // FIXED: Always calculate fresh pricing - never use pre-enhanced prices
+  const pricing = useMemo(() => {
+    if (!supplier) {
+      return { finalPrice: 0, breakdown: {}, details: {} }
+    }
+
+    console.log('📊 SupplierCard: ALWAYS calculating fresh pricing:', {
+      supplierName: supplier.name,
+      supplierType: type,
+      hasPartyDetails: !!partyDetails,
+      partyDate: partyDetails?.date,
+      partyDuration: partyDetails?.duration,
+      addonsCount: supplierAddons.length,
+      // Remove these logs about pre-enhanced pricing since we're not using them
+      basePrice: supplier.originalPrice || supplier.price || supplier.priceFrom
+    })
+
+    // ALWAYS calculate fresh pricing - ignore any pre-enhanced values
+    return calculateFinalPrice(supplier, partyDetails, supplierAddons)
+  }, [supplier, partyDetails, supplierAddons, type, pricingRefreshKey])
   
   const isLoading = loadingCards.includes(type)
   const isDeleting = suppliersToDelete.includes(type)
@@ -193,6 +207,7 @@ export default function SupplierCard({
     supplier,
     addons: supplierAddons,
     isLoading,
+    partyDetails,
     isDeleting,
     openSupplierModal,
     handleDeleteSupplier,
@@ -204,13 +219,13 @@ export default function SupplierCard({
     enquiries,
     onPaymentReady,
     handleCancelEnquiry,
+    enhancedPricing,
     onClick: handleCardClick,
-    totalPrice // Pass the calculated total price
+    totalPrice: pricing.finalPrice // Use the fresh final price
   }
 
   // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
-
 
   // Render the appropriate card component based on state
   switch (supplierState) {

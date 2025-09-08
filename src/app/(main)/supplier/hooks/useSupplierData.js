@@ -5,9 +5,14 @@ import { useMemo } from 'react'
 import { Shield, Award, CheckCircle } from "lucide-react"
 
 // Transform backend supplier data to frontend format
+
+
+
+
 const transformSupplierData = (backendSupplier) => {
+
   if (!backendSupplier) return null
-  
+
   return {
     id: backendSupplier.id,
     name: backendSupplier.name,
@@ -43,6 +48,7 @@ const transformSupplierData = (backendSupplier) => {
     stats: backendSupplier?.stats,
     ownerName: backendSupplier?.ownerName,
     owner: backendSupplier?.owner,
+    weekendPremium: backendSupplier.weekendPremium, // ✅ ADD THIS LINE
   }
 }
 

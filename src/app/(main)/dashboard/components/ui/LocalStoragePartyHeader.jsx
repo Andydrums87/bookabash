@@ -884,7 +884,7 @@ export default function LocalStoragePartyHeader({
                 </h1>
                 <button
                   onClick={() => handleCardClick('name')}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors flex-shrink-0 mt-2"
+                  className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors flex-shrink-0"
                 >
                   <Edit2 className="w-4 h-4 md:w-5 md:h-5" />
                 </button>

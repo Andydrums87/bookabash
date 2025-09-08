@@ -20,12 +20,12 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
       entertainment: 'Entertainment', 
       catering: 'Catering',
       cakes: 'Cakes',  // 🎂 NEW: Add cakes display name
-      facePainting: 'Face Painting & Activities',
+      facePainting: 'Face Painting',
       activities: 'Activities',
       partyBags: 'Party Bags',
       decorations: 'Decorations',
       balloons: 'Balloons',
-      einvites: 'E-Invites'
+      // einvites: 'E-Invites'
     }
     return displayNames[type] || type
   }

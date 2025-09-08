@@ -46,7 +46,7 @@ export default function EmptySupplierCard({
         return {
           badgeText: "Available",
           badgeClass: "bg-gray-500 text-white",
-          buttonText: `Snap Me Up! ${getDisplayName(type)} 🎉`,
+          buttonText: `Snap Me Up! ${getDisplayName(type)}`,
           buttonIcon: <Plus className="w-5 h-5 mr-2" />,
           subtitle: "Snappy is excited to help you pick the perfect option!"
         }
@@ -145,7 +145,7 @@ export default function EmptySupplierCard({
             openSupplierModal(type)
           }}
         >
-          {phaseContent.buttonIcon}
+          {/* {phaseContent.buttonIcon} */}
           {phaseContent.buttonText}
         </Button>
         <p className="text-xs text-gray-500 text-center mt-3">

@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { useSupplier } from "@/hooks/useSupplier"
+import { ProfilePageSkeleton } from './components/ProfileSkeletons'
 
 
 
@@ -575,17 +576,9 @@ useEffect(() => {
   }
 }, [currentBusiness?.id]);
 
-  // Show loading state while fetching supplier data
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your profile...</p>
-        </div>
-      </div>
-    )
-  }
+if (loading) {
+  return <ProfilePageSkeleton />
+}
 
   // Show error if no supplier found
   if (error) {

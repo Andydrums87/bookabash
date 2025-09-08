@@ -193,7 +193,7 @@ export function transformSupplierRecord(row) {
   const portfolioImages = Array.isArray(d.portfolioImages) ? d.portfolioImages : [];
   const portfolioVideos = Array.isArray(d.portfolioVideos) ? d.portfolioVideos : [];
   const badges = Array.isArray(d.badges) ? d.badges : [];
-
+  const weekendPremium = d.weekendPremium ?? null;
   const serviceDetails = (d.serviceDetails && typeof d.serviceDetails === "object") ? d.serviceDetails : {};
   const stats = (d.stats && typeof d.stats === "object") ? d.stats : undefined;
 
@@ -207,6 +207,7 @@ export function transformSupplierRecord(row) {
     description,
     category,
     subcategory: d.subcategory ?? undefined,
+    weekendPremium, 
     location,
     priceFrom,
     priceUnit,

@@ -1,5 +1,5 @@
 // SupplierPackagesRouter.jsx
-// Enhanced version that intercepts handleAddToPlan for cake suppliers
+// Enhanced version that intercepts handleAddToPlan for cake suppliers + smart pricing
 "use client"
 import { useState, useMemo } from 'react'
 import SupplierPackages from '@/components/supplier/supplier-packages'
@@ -14,7 +14,8 @@ const SupplierPackagesRouter = ({
   getAddToPartyButtonState,
   getSupplierInPartyDetails,
   onShowNotification,
-  isReplacementMode = false
+  isReplacementMode = false,
+  selectedDate // ✅ NEW: Add selectedDate prop for smart pricing
 }) => {
   
   // State for cake customization modal
@@ -135,8 +136,9 @@ const SupplierPackagesRouter = ({
   
   return (
     <>
-      {/* Regular package view for all suppliers */}
+      {/* Regular package view for all suppliers with smart pricing */}
       <SupplierPackages
+        supplier={supplier} // ✅ NEW: Pass supplier data for weekend premium settings
         packages={packages}
         selectedPackageId={selectedPackageId}
         setSelectedPackageId={setSelectedPackageId}
@@ -145,6 +147,7 @@ const SupplierPackagesRouter = ({
         getSupplierInPartyDetails={getSupplierInPartyDetails}
         onShowNotification={onShowNotification}
         isReplacementMode={isReplacementMode}
+        selectedDate={selectedDate} // ✅ NEW: Pass selected date for pricing calculation
       />
       
       {/* Cake Customization Modal - only shows for cake suppliers */}

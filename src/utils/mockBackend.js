@@ -998,6 +998,7 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       availabilityNotes: updatedData.availabilityNotes !== undefined ? updatedData.availabilityNotes : (current.availabilityNotes || ''),
       advanceBookingDays: updatedData.advanceBookingDays || current.advanceBookingDays || 7,
       maxBookingDays: updatedData.maxBookingDays || current.maxBookingDays || 365,
+      weekendPremium: updatedData.weekendPremium !== undefined ? updatedData.weekendPremium : (current.weekendPremium || { enabled: false, type: 'percentage', amount: 25 }), // ADD THIS LINE
 
       // ✅ PRICING: Only update if packages are being updated
       priceFrom: shouldUpdatePackages ? 
@@ -1085,6 +1086,7 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
               availabilityNotes: merged.availabilityNotes,
               advanceBookingDays: merged.advanceBookingDays,
               maxBookingDays: merged.maxBookingDays,
+              weekendPremium: merged.weekendPremium, // ADD THIS LINE
               availabilityVersion: merged.availabilityVersion || '2.0',
               lastUpdated: merged.updatedAt,
               // Mark as inherited for debugging

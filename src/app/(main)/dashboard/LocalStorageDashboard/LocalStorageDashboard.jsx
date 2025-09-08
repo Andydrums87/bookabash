@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -53,64 +53,31 @@ import { usePartyPlan } from '@/utils/partyPlanBackend'
 import useDisableScroll from "@/hooks/useDisableScroll"
 import  SnappyLoader  from "@/components/ui/SnappyLoader"
 
-export const calculatePartyBagsDisplayPriceLocal = (supplier, guestCount) => {
-  // Only calculate for party bags
-  if (supplier?.category !== 'Party Bags' && supplier?.type !== 'partyBags') {
-    return {
-      totalPrice: supplier?.price || 0,
-      basePrice: supplier?.price || 0,
-      guestCount: 1,
-      displayText: `£${(supplier?.price || 0).toFixed(2)}`,
-      isCalculated: false
-    };
-  }
+import { calculateFinalPrice, calculatePartyTotal, getDisplayPrice, getPriceBreakdownText } from '@/utils/unifiedPricing'
 
-  let finalGuestCount = null;
-  
-  // Priority 1: Passed parameter
-  if (guestCount && guestCount > 0) {
-    finalGuestCount = parseInt(guestCount);
-  }
-  
-  // Priority 2: Get from localStorage (LOCAL STORAGE DASHBOARD)
-  if (!finalGuestCount && typeof window !== 'undefined') {
-    try {
-      const storedPartyDetails = localStorage.getItem('party_details');
-      if (storedPartyDetails) {
-        const parsed = JSON.parse(storedPartyDetails);
-        if (parsed.guestCount && parsed.guestCount > 0) {
-          finalGuestCount = parseInt(parsed.guestCount);
-        }
-      }
-    } catch (error) {
-      console.warn('Could not get guest count from localStorage:', error);
-    }
-  }
-  
-  // Priority 3: Supplier stored guest count
-  if (!finalGuestCount && supplier?.guestCount && supplier.guestCount > 0) {
-    finalGuestCount = parseInt(supplier.guestCount);
-  }
-  
-  // Priority 4: Fallback to default
-  if (!finalGuestCount || finalGuestCount < 1) {
-    finalGuestCount = 10;
-  }
 
-  const basePrice = supplier?.packageData?.basePrice || 
-                   supplier?.pricePerBag || 
-                   supplier?.basePrice || 
-                   supplier?.price || 
-                   5.00;
 
-  const totalPrice = basePrice * finalGuestCount;
 
+const getSupplierDisplayPricing = (supplier, partyDetails, supplierAddons = []) => {
+  if (!supplier) return null;
+  
+  const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+  
   return {
-    totalPrice,
-    basePrice,
-    guestCount: finalGuestCount,
-    displayText: `${finalGuestCount} bags × £${basePrice.toFixed(2)} = £${totalPrice.toFixed(2)}`,
-    isCalculated: true
+    totalPrice: pricing.finalPrice,
+    basePrice: pricing.basePrice,
+    weekendInfo: pricing.details.isWeekend ? {
+      premiumAmount: pricing.breakdown.weekend,
+      isApplied: pricing.breakdown.weekend > 0
+    } : null,
+    durationInfo: pricing.breakdown.extraHours > 0 ? {
+      hasDurationPremium: true,
+      extraHours: pricing.details.extraHours,
+      extraCost: pricing.breakdown.extraHours
+    } : { hasDurationPremium: false },
+    isTimeBased: pricing.details.extraHours > 0,
+    breakdown: pricing.breakdown,
+    details: pricing.details
   };
 };
 
@@ -125,6 +92,7 @@ export default function LocalStorageDashboard() {
   // ✅ PRODUCTION SAFETY: Core state management
   const [isMounted, setIsMounted] = useState(false)
   const [isClient, setIsClient] = useState(false)
+
   
   // Refs for tracking
   const welcomePopupShownRef = useRef(false)
@@ -151,7 +119,6 @@ export default function LocalStorageDashboard() {
   })
   // Debug state (remove in production)
   const [debugInfo, setDebugInfo] = useState({})
-
 
 
   useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
@@ -201,6 +168,7 @@ export default function LocalStorageDashboard() {
     handleNameSubmit: originalHandleNameSubmit,
     handlePartyDetailsUpdate
   } = usePartyDetails()
+  
 
   const {
     tempBudget,
@@ -968,9 +936,44 @@ const handleNameSubmit = (nameData) => {
 
   }
 
+  const enhancedTotalCost = useMemo(() => {
+    let total = 0;
+  
+    // Calculate each supplier's cost using ALWAYS FRESH pricing
+    Object.entries(suppliers).forEach(([type, supplier]) => {
+      if (!supplier) return;
+  
+      // Get addons for this specific supplier
+      const supplierAddons = addons.filter(addon => 
+        addon.supplierId === supplier.id || 
+        addon.supplierType === type ||
+        addon.attachedToSupplier === type
+      );
+  
+      // FIXED: ALWAYS calculate fresh pricing - never use pre-enhanced values
+      console.log('📊 Dashboard Total: ALWAYS calculating fresh pricing for', supplier.name);
+      const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+      const supplierCost = pricing.finalPrice;
+  
+      total += supplierCost;
+      
+      console.log('📊 Dashboard Total: Added supplier', supplier.name, 'cost:', supplierCost);
+    });
+  
+    // Add standalone addons (not attached to any supplier)
+    const standaloneAddons = addons.filter(addon => 
+      !addon.supplierId && !addon.supplierType && !addon.attachedToSupplier
+    );
+    const standaloneAddonsTotal = standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
+    total += standaloneAddonsTotal;
+  
+    console.log('📊 Dashboard Total: Final calculated total:', total);
+    return total;
+  }, [suppliers, addons, partyDetails]);
+
   // Budget control props
   const budgetControlProps = {
-    totalSpent: totalCost,
+    totalSpent: enhancedTotalCost, // Use PricingBrain total
     tempBudget,
     setTempBudget,
     budgetPercentage,
@@ -1033,7 +1036,6 @@ const handleNameSubmit = (nameData) => {
     }
   }
 
-
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
@@ -1093,27 +1095,38 @@ const handleNameSubmit = (nameData) => {
               <div className="w-full">
                 {/* Desktop Grid */}
                 <div className="hidden md:grid md:grid-cols-3 gap-6" >
-                  {Object.entries(suppliers).map(([type, supplier]) => (
-                    <SupplierCard 
-                      key={type}
-                      type={type} 
-                      supplier={supplier}
-                      loadingCards={loadingCards}
-                      suppliersToDelete={suppliersToDelete}
-                      openSupplierModal={openSupplierModal}
-                      handleDeleteSupplier={handleDeleteSupplier}
-                      getSupplierDisplayName={getSupplierDisplayName}
-                      addons={addons}
-                      handleRemoveAddon={handleRemoveAddon}
-                      enquiryStatus={getEnquiryStatus(type)}
-                      enquirySentAt={getEnquiryTimestamp(type)}
-                      isSignedIn={false}
-                      isPaymentConfirmed={false}
-                      enquiries={[]}
-                      partyDetails={partyDetails}
-                      currentPhase="planning"
-                    />
-                  ))}
+   
+{Object.entries(suppliers).map(([type, supplier]) => {
+  // Get addons for this specific supplier
+  const supplierAddons = addons.filter(addon => 
+    addon.supplierId === supplier?.id || 
+    addon.supplierType === type ||
+    addon.attachedToSupplier === type
+  );
+  
+  return (
+    <SupplierCard 
+      key={type}
+      type={type} 
+      supplier={supplier}
+      loadingCards={loadingCards}
+      suppliersToDelete={suppliersToDelete}
+      openSupplierModal={openSupplierModal}
+      handleDeleteSupplier={handleDeleteSupplier}
+      getSupplierDisplayName={getSupplierDisplayName}
+      addons={supplierAddons} // ✅ Pass specific addons
+      handleRemoveAddon={handleRemoveAddon}
+      enquiryStatus={getEnquiryStatus(type)}
+      enquirySentAt={getEnquiryTimestamp(type)}
+      isSignedIn={false}
+      isPaymentConfirmed={false}
+      enquiries={[]}
+      partyDetails={partyDetails} // ✅ Ensure this is passed
+      currentPhase="planning"
+      enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
+    />
+  )
+})}
                 </div>
 
                 {/* Mobile Navigation */}
@@ -1122,6 +1135,9 @@ const handleNameSubmit = (nameData) => {
                 <MobileSupplierNavigation
     suppliers={suppliers}
     loadingCards={loadingCards}
+    partyDetails={partyDetails}
+    // NEW: Add this function to calculate pricing
+    getSupplierDisplayPricing={getSupplierDisplayPricing}
     suppliersToDelete={suppliersToDelete}
     openSupplierModal={openSupplierModal}
     handleDeleteSupplier={handleDeleteSupplier}
@@ -1140,6 +1156,7 @@ const handleNameSubmit = (nameData) => {
     activeSupplierType={activeMobileSupplierType}
     onSupplierTabChange={handleMobileSupplierTabChange}
     isTourActiveOnNavigation={isTourActiveOnNavigation}
+  
   />
                 </div>
               </div>
@@ -1154,12 +1171,14 @@ const handleNameSubmit = (nameData) => {
                   maxItems={4}
                   onAddonClick={handleAddonClick}
                 />
-              </div><PartySummarySection
+              </div>
+              
+              {/* <PartySummarySection
   partyDetails={partyDetails}
   suppliers={suppliers}
   totalCost={totalCost}
   addons={addons}
-/>
+/> */}
 
               {/* Action Section */}
               <div className="flex flex-col sm:flex-row gap-4"  data-tour="review-book">
@@ -1249,7 +1268,7 @@ const handleNameSubmit = (nameData) => {
       />
 
       {/* Mobile Add Supplier Button */}
-      <div className="md:hidden fixed bottom-5 right-4 z-40" data-tour="mobile-add-supplier">
+      {/* <div className="md:hidden fixed bottom-5 right-4 z-40" data-tour="mobile-add-supplier">
         <button 
           onClick={handleAddSupplier}
           className="bg-primary-400 hover:bg-[hsl(var(--primary-600))] w-10 h-10 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
@@ -1258,14 +1277,19 @@ const handleNameSubmit = (nameData) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </button>
-      </div>
-      <SimpleMobileBottomTabBar
+      </div> */}
+  <SimpleMobileBottomTabBar
   suppliers={suppliers}
-  totalCost={totalCost}
   partyDetails={partyDetails}
+  addons={addons} // ✅ ADD THIS LINE
   tempBudget={tempBudget}
   budgetPercentage={budgetPercentage}
   getBudgetCategory={getBudgetCategory}
+  CountdownWidget={
+    <CountdownWidget
+      partyDate={partyDetails?.date}
+    />
+  }
 />
       <SnappyDashboardTour
         isOpen={isTourActive}

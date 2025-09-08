@@ -417,15 +417,16 @@ export default function EnquiryDetailsPage() {
           childName: party?.child_name,
           theme: party?.theme,
           partyDate: party?.party_date,
-          supplierName: "Your Supplier", // You may need to fetch actual supplier name
+          supplierName: enquiry.supplier?.name || 'Your Supplier', // ← Now using pre-loaded supplier name
           serviceType: enquiry.supplier_category,
           supplierMessage: responseMessage,
-          responseType: response, // 'accepted' or 'declined'
+          responseType: response,
           finalPrice: finalPrice || enquiry.quoted_price,
           originalPrice: enquiry.quoted_price,
           isPaid: enquiry.payment_status === "paid",
           dashboardLink: `${window.location.origin}/dashboard`,
         }
+        
 
         const emailResponse = await fetch("/api/email/customer-response", {
           method: "POST",

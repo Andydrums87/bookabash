@@ -1,4 +1,4 @@
-// Enhanced SupplierCustomizationModal with complete cake customization info
+// Enhanced SupplierCustomizationModal with unified pricing system integration
 "use client"
 
 import { useState, useMemo, useEffect } from 'react'
@@ -22,10 +22,21 @@ import {
   AlertCircle, 
   Heart,
   Truck,
-  Cake
+  Cake,
+  Package,
+  Gift
 } from "lucide-react"
 import Image from "next/image"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
+
+// ✅ UPDATED: Import unified pricing system
+import { 
+  calculateFinalPrice, 
+  isLeadBasedSupplier,
+  isTimeBasedSupplier, 
+  getPartyDuration, 
+  formatDuration 
+} from '@/utils/unifiedPricing'
 
 // Default cake flavors
 const DEFAULT_CAKE_FLAVORS = [
@@ -46,42 +57,115 @@ export default function SupplierCustomizationModal({
   currentPhase = "planning",
   partyData = {},
   enquiries = [],
-  hasEnquiriesPending = false
+  hasEnquiriesPending = false,
+  // ✅ ENHANCED: Add unified pricing support props
+  selectedDate = null,
+  currentMonth = new Date(),
+  partyDate = null,
+  partyDetails = null, // New prop for complete party details
+  databasePartyData = null,
+  userType = null
 }) {
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [showPendingModal, setShowPendingModal] = useState(false)
   const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: 'planning_empty_slot', showModal: false })
   
-  // 🎂 Enhanced cake customization state
+  // Cake customization state
   const [showCakeCustomization, setShowCakeCustomization] = useState(false)
   const [selectedFlavor, setSelectedFlavor] = useState('vanilla')
   const [customMessage, setCustomMessage] = useState('')
 
-  // 🎂 Detect if this is a cake supplier
-  const isCakeSupplier = useMemo(() => {
-    if (!supplier) return false
+  // ✅ UPDATED: Detect supplier types using unified system
+  const supplierTypeDetection = useMemo(() => {
+    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false }
     
-    // Catering with cake specialization
-    if (supplier?.category?.toLowerCase().includes('catering')) {
-      const serviceDetails = supplier?.serviceDetails
-      if (serviceDetails?.cateringType?.toLowerCase().includes('cake') ||
-          serviceDetails?.cateringType?.toLowerCase().includes('baker') ||
-          serviceDetails?.cakeFlavors?.length > 0 ||
-          serviceDetails?.cakeSpecialist === true) {
-        return true
-      }
+    const isLeadBased = isLeadBasedSupplier(supplier)
+    const isTimeBased = isTimeBasedSupplier(supplier)
+
+    console.log('🔍 DEBUG: Modal version check - LEAD_BASED_FIX_v2')
+    console.log('🔍 DEBUG: Supplier data:', supplier?.name, supplier?.category)
+    
+    // Detect if this is a cake supplier
+    const isCakeSupplier = supplier?.category?.toLowerCase().includes('cake') ||
+                          supplier?.type?.toLowerCase().includes('cake') ||
+                          (supplier?.category?.toLowerCase().includes('catering') && 
+                           (supplier?.serviceDetails?.cateringType?.toLowerCase().includes('cake') ||
+                            supplier?.serviceDetails?.cateringType?.toLowerCase().includes('baker') ||
+                            supplier?.serviceDetails?.cakeFlavors?.length > 0 ||
+                            supplier?.serviceDetails?.cakeSpecialist === true)) ||
+                          `${supplier?.name || ''} ${supplier?.description || ''}`.toLowerCase().includes('cake')
+
+    console.log('🔍 Supplier Type Detection:', {
+      supplierName: supplier.name,
+      category: supplier.category,
+      type: supplier.type,
+      isLeadBased,
+      isTimeBased,
+      isCakeSupplier
+    })
+
+    return {
+      isLeadBased,
+      isTimeBased,
+      isCake: isCakeSupplier
     }
-    
-    // Direct cake category
-    if (supplier?.category?.toLowerCase().includes('cake')) return true
-    
-    // Name/description contains cake keywords
-    const nameOrDesc = `${supplier?.name || ''} ${supplier?.description || ''}`.toLowerCase()
-    return nameOrDesc.includes('cake') || nameOrDesc.includes('bakery') || nameOrDesc.includes('patisserie')
   }, [supplier])
 
-  // 🎂 Get available cake flavors
+  // ✅ UPDATED: Create comprehensive party details for pricing
+  const effectivePartyDetails = useMemo(() => {
+    // Priority 1: Use provided partyDetails prop
+    if (partyDetails) {
+      console.log('🎭 Modal: Using provided party details:', partyDetails)
+      return partyDetails
+    }
+
+    // Priority 2: Build from various sources
+    let date = partyDate || selectedDate
+    let duration = 2 // Default
+    let guestCount = null
+
+    // Try to get from database party data
+    if (userType === 'DATABASE_USER' && databasePartyData) {
+      if (databasePartyData.date) date = databasePartyData.date
+      if (databasePartyData.duration) duration = databasePartyData.duration
+      if (databasePartyData.guestCount) guestCount = databasePartyData.guestCount
+      console.log('🎭 Modal: Using database party data for pricing')
+    }
+
+    // Try to get from localStorage
+    if (!date || !guestCount || duration === 2) {
+      try {
+        const partyDetailsStored = localStorage.getItem('party_details')
+        if (partyDetailsStored) {
+          const parsed = JSON.parse(partyDetailsStored)
+          if (!date && parsed.date) date = parsed.date
+          if (!guestCount && parsed.guestCount) guestCount = parsed.guestCount
+          if (duration === 2 && parsed.duration) duration = parsed.duration
+          
+          // Try to calculate duration from times
+          if (duration === 2 && parsed.startTime && parsed.endTime) {
+            duration = getPartyDuration(parsed)
+          }
+          console.log('🎭 Modal: Enhanced with localStorage party details')
+        }
+      } catch (error) {
+        console.warn('Could not get party details from localStorage:', error)
+      }
+    }
+
+    // Build final party details object
+    const finalDetails = {
+      date: date ? new Date(date) : null,
+      duration,
+      guestCount
+    }
+
+    console.log('🎭 Modal: Final party details for pricing:', finalDetails)
+    return finalDetails
+  }, [partyDetails, partyDate, selectedDate, userType, databasePartyData])
+
+  // Get available cake flavors
   const availableFlavors = useMemo(() => {
     if (!supplier) return DEFAULT_CAKE_FLAVORS
 
@@ -96,30 +180,77 @@ export default function SupplierCustomizationModal({
     return DEFAULT_CAKE_FLAVORS
   }, [supplier?.serviceDetails?.cakeFlavors])
 
+  const calculatePackageEnhancedPrice = useMemo(() => {
+    return (packagePrice) => {
+      if (!supplier || !effectivePartyDetails) {
+        console.log('🎭 Modal: No supplier or party details for pricing')
+        return packagePrice
+      }
+      
+      // ✅ REMOVED: Early return for lead-based suppliers
+      // Let calculateFinalPrice handle all supplier types including lead-based
+      
+      const supplierForPricing = {
+        ...supplier,
+        price: packagePrice
+      }
+      
+      console.log('🎭 Modal: Calculating package price:', {
+        packagePrice,
+        supplier: supplier.name,
+        partyDetails: effectivePartyDetails,
+        guestCount: effectivePartyDetails?.guestCount,
+        isLeadBased: supplierTypeDetection.isLeadBased,
+        isTimeBased: supplierTypeDetection.isTimeBased
+      })
+      
+      const pricing = calculateFinalPrice(supplierForPricing, effectivePartyDetails, [])
+      
+      console.log('🎭 Modal: Package pricing result:', {
+        originalPrice: packagePrice,
+        finalPrice: pricing.finalPrice,
+        breakdown: pricing.breakdown,
+        isEnhanced: pricing.finalPrice !== packagePrice
+      })
+      
+      return pricing.finalPrice
+    }
+  }, [supplier, effectivePartyDetails, supplierTypeDetection])
+
+  // ✅ UPDATED: Enhanced packages with unified pricing
   const packages = useMemo(() => {
     if (!supplier) return []
     
     if (supplier.packages && supplier.packages.length > 0) {
-      return supplier.packages.slice(0, 3).map((pkg, index) => ({
-        id: pkg.id || `real-${index}`,
-        name: pkg.name,
-        price: pkg.price,
-        duration: pkg.duration,
-        image: pkg.image,
-        features: pkg.whatsIncluded || pkg.features || [],
-        popular: index === 1,
-        description: pkg.description,
-      }))
+      return supplier.packages.slice(0, 3).map((pkg, index) => {
+        const enhancedPrice = calculatePackageEnhancedPrice(pkg.price)
+        return {
+          id: pkg.id || `real-${index}`,
+          name: pkg.name,
+          price: pkg.price,
+          enhancedPrice: enhancedPrice,
+          duration: pkg.duration,
+          image: pkg.image,
+          features: pkg.whatsIncluded || pkg.features || [],
+          popular: index === 1,
+          description: pkg.description,
+        }
+      })
     }
     
     const basePrice = supplier.priceFrom || 100
     const priceUnit = supplier.priceUnit || "per event"
     
+    const basicPrice = Math.round(basePrice * 1.0)
+    const premiumPrice = Math.round(basePrice * 1.5)
+    const deluxePrice = Math.round(basePrice * 2.0)
+    
     return [
       {
         id: "basic",
         name: "Basic Package",
-        price: Math.round(basePrice * 1.0),
+        price: basicPrice,
+        enhancedPrice: calculatePackageEnhancedPrice(basicPrice),
         duration: priceUnit,
         features: ["Standard service", "Up to 15 children", "Basic setup"],
         description: `Basic ${supplier.category?.toLowerCase()} package`,
@@ -128,7 +259,8 @@ export default function SupplierCustomizationModal({
       {
         id: "premium",
         name: "Premium Package", 
-        price: Math.round(basePrice * 1.5),
+        price: premiumPrice,
+        enhancedPrice: calculatePackageEnhancedPrice(premiumPrice),
         duration: priceUnit,
         features: ["Enhanced service", "Professional setup", "Up to 25 children"],
         description: `Enhanced ${supplier.category?.toLowerCase()} package`,
@@ -137,25 +269,75 @@ export default function SupplierCustomizationModal({
       {
         id: "deluxe",
         name: "Deluxe Package",
-        price: Math.round(basePrice * 2.0),
+        price: deluxePrice,
+        enhancedPrice: calculatePackageEnhancedPrice(deluxePrice),
         duration: priceUnit,
         features: ["Premium service", "Full setup & cleanup", "Up to 35 children"],
         description: `Complete ${supplier.category?.toLowerCase()} package`,
         popular: false,
       },
     ]
-  }, [supplier])
+  }, [supplier, calculatePackageEnhancedPrice])
 
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
   const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId)
   const selectedFlavorObj = availableFlavors.find(f => f.id === selectedFlavor) || availableFlavors[0]
-  
-  // Calculate total price
-  const totalPrice = (selectedPackage?.price || 0) + 
-    selectedAddons.reduce((sum, addonId) => {
+
+  // ✅ UPDATED: Unified pricing calculation for modal totals
+  const calculateModalPricing = useMemo(() => {
+    if (!selectedPackage || !supplier) {
+      return {
+        packagePrice: 0,
+        addonsTotalPrice: 0,
+        totalPrice: 0,
+        hasEnhancedPricing: false,
+        pricingInfo: null
+      }
+    }
+
+    // Use the pre-calculated enhanced price from packages
+    const packagePrice = selectedPackage.enhancedPrice
+    const hasEnhancedPricing = packagePrice !== selectedPackage.price
+
+    // Calculate addons price (addons typically don't have weekend/duration premiums for now)
+    const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
       const addon = availableAddons.find(a => a.id === addonId)
       return sum + (addon?.price || 0)
     }, 0)
+
+    // Final totals
+    const totalPrice = packagePrice + addonsTotalPrice
+
+    console.log('🎭 Modal: Final pricing calculation:', {
+      packageOriginalPrice: selectedPackage.price,
+      packageEnhancedPrice: packagePrice,
+      addonsTotalPrice,
+      totalPrice,
+      hasEnhancedPricing,
+      supplierType: {
+        isLeadBased: supplierTypeDetection.isLeadBased,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isCake: supplierTypeDetection.isCake
+      }
+    })
+
+    return {
+      packagePrice,
+      addonsTotalPrice,
+      totalPrice,
+      hasEnhancedPricing,
+      pricingInfo: hasEnhancedPricing ? {
+        originalPrice: selectedPackage.price,
+        finalPrice: packagePrice,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isLeadBased: supplierTypeDetection.isLeadBased,
+        duration: effectivePartyDetails?.duration
+      } : null
+    }
+  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails])
+
+  // Use the calculated totals
+  const totalPrice = calculateModalPricing.totalPrice
 
   // Initialize states when modal opens
   useEffect(() => {
@@ -189,7 +371,7 @@ export default function SupplierCustomizationModal({
     )
   }
 
-  // Handle add to plan with enhanced cake data
+  // ✅ UPDATED: Handle add to plan with unified pricing data
   const handleAddToPlan = () => {
     // Get selected addon objects
     const selectedAddonObjects = selectedAddons.map(addonId => {
@@ -208,14 +390,20 @@ export default function SupplierCustomizationModal({
       }
     }).filter(Boolean)
 
-    // Create enhanced package with cake customization
+    // Create enhanced package with unified pricing data
     let finalPackage = selectedPackage
     
-    if (isCakeSupplier && showCakeCustomization) {
+    if (supplierTypeDetection.isCake && showCakeCustomization) {
       finalPackage = {
         ...selectedPackage,
         
-        // Payment and delivery info (from CakeCustomizationModal)
+        // ✅ UPDATED: Use unified pricing
+        price: selectedPackage.price, // Keep original price
+        originalPrice: selectedPackage.price,
+        totalPrice: calculateModalPricing.packagePrice,
+        enhancedPrice: calculateModalPricing.packagePrice,
+        
+        // Payment and delivery info
         paymentType: 'full_payment',
         deliveryExpectation: 'pre_party_delivery',
         supplierContactRequired: true,
@@ -242,23 +430,55 @@ export default function SupplierCustomizationModal({
           `${selectedFlavorObj?.name || 'Custom'} cake`,
         
         packageType: 'cake',
-        supplierType: 'cake_specialist'
+        supplierType: 'cake_specialist',
+        
+        enhancedPricing: calculateModalPricing.pricingInfo,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isLeadBased: supplierTypeDetection.isLeadBased
+      }
+    } else {
+      // ✅ UPDATED: For non-cake suppliers, still apply unified pricing
+      finalPackage = {
+        ...selectedPackage,
+        price: selectedPackage.price, // Keep original price
+        originalPrice: selectedPackage.price,
+        enhancedPrice: calculateModalPricing.packagePrice, // Store enhanced price separately
+        totalPrice: calculateModalPricing.packagePrice,
+        enhancedPricing: calculateModalPricing.pricingInfo,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isLeadBased: supplierTypeDetection.isLeadBased
       }
     }
 
     const dataToSend = {
-      supplier,
+      supplier: {
+        ...supplier,
+         // ✅ FIX: Don't override the supplier's base price
+      originalPrice: supplier.price || supplier.priceFrom,
+      weekendPremium: supplier.weekendPremium,
+      extraHourRate: supplier.extraHourRate,
+      isLeadBased: supplierTypeDetection.isLeadBased,
+      isTimeBased: supplierTypeDetection.isTimeBased
+      },
       package: finalPackage,
       addons: selectedAddonObjects,
-      totalPrice,
+      totalPrice: calculateModalPricing.totalPrice,
       autoEnquiry: false
     }
 
-
+    console.log('🎭 Modal: Sending data with unified pricing:', {
+      packagePrice: finalPackage.price,
+      originalPrice: finalPackage.originalPrice,
+      totalPrice: dataToSend.totalPrice,
+      enhancedPricingApplied: calculateModalPricing.hasEnhancedPricing,
+      duration: effectivePartyDetails?.duration,
+      supplierType: supplierTypeDetection
+    })
 
     try {
       const result = onAddToPlan(dataToSend)
-
       onClose()
     } catch (error) {
       console.error('Error calling onAddToPlan:', error)
@@ -266,7 +486,7 @@ export default function SupplierCustomizationModal({
   }
 
   const isCakeCustomizationComplete = () => {
-    if (!isCakeSupplier || !showCakeCustomization) return true
+    if (!supplierTypeDetection.isCake || !showCakeCustomization) return true
     return selectedFlavorObj && availableFlavors.length > 0
   }
 
@@ -279,11 +499,11 @@ export default function SupplierCustomizationModal({
       return currentPhase === 'awaiting_responses' ? 'Slot Occupied' : 'Enquiry Pending'
     }
 
-    if (isCakeSupplier && !showCakeCustomization) {
+    if (supplierTypeDetection.isCake && !showCakeCustomization) {
       return `🎂 Customize Cake (£${totalPrice})`
     }
   
-    return `Book ${isCakeSupplier ? 'Cake' : 'Service'} - £${totalPrice}`
+    return `Book ${supplierTypeDetection.isCake ? 'Cake' : 'Service'} - £${totalPrice}`
   }
 
   const handleCakeCustomizeClick = () => {
@@ -306,11 +526,17 @@ export default function SupplierCustomizationModal({
       <ModalHeader 
         title={
           <div className="flex items-center gap-2">
-            {isCakeSupplier && <span className="text-xl">🎂</span>}
+            {supplierTypeDetection.isCake && <span className="text-xl">🎂</span>}
+            {supplierTypeDetection.isLeadBased && !supplierTypeDetection.isCake && <Package className="w-5 h-5 text-amber-600" />}
+            {supplierTypeDetection.isTimeBased && <Clock className="w-5 h-5 text-blue-600" />}
             {supplier.name}
           </div>
         }
-        subtitle={showCakeCustomization ? "Customize your cake order" : undefined}
+        subtitle={
+          showCakeCustomization ? "Customize your cake order" : 
+          supplierTypeDetection.isLeadBased ? "Lead-time based supplier" :
+          supplierTypeDetection.isTimeBased ? "Time-based pricing" : undefined
+        }
         theme="fun"
         icon={
           <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-white shadow-md">
@@ -335,8 +561,16 @@ export default function SupplierCustomizationModal({
               Choose Your Package
             </h3>
             
+            {/* ✅ UPDATED: Enhanced info for different supplier types */}
+            {!showCakeCustomization && (
+              <div className="mb-4 space-y-3">
+            
+                
+              </div>
+            )}
+            
             {/* Package Summary Card for Cake Suppliers */}
-            {isCakeSupplier && showCakeCustomization && selectedPackage && (
+            {supplierTypeDetection.isCake && showCakeCustomization && selectedPackage && (
               <div className="bg-white rounded-xl p-4 border border-[hsl(var(--primary-200))] mb-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
@@ -346,7 +580,9 @@ export default function SupplierCustomizationModal({
                     <p className="text-sm text-gray-600">{selectedPackage.duration}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-primary-600">£{selectedPackage.price}</div>
+                    <div className="text-2xl font-bold text-primary-600">
+                      £{calculateModalPricing.packagePrice}
+                    </div>
                     <div className="text-xs text-primary-700">Full Payment</div>
                   </div>
                 </div>
@@ -380,9 +616,9 @@ export default function SupplierCustomizationModal({
                       key={pkg.id}
                       className={`cursor-pointer transition-all duration-200 ${
                         selectedPackageId === pkg.id 
-                          ? `ring-2 ${isCakeSupplier ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
+                          ? `ring-2 ${supplierTypeDetection.isCake ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
                           : 'hover:shadow-md hover:bg-gray-50'
-                      } ${isCakeSupplier ? 'border-orange-200' : ''}`}
+                      } ${supplierTypeDetection.isCake ? 'border-orange-200' : ''}`}
                       onClick={() => setSelectedPackageId(pkg.id)}
                     >
                       <CardContent className="p-4">
@@ -390,11 +626,13 @@ export default function SupplierCustomizationModal({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <h4 className="font-semibold text-gray-900">
-                                {isCakeSupplier && '🎂 '}{pkg.name}
+                                {supplierTypeDetection.isCake && '🎂 '}
+                                {supplierTypeDetection.isLeadBased && !supplierTypeDetection.isCake && '📦 '}
+                                {pkg.name}
                               </h4>
                               {pkg.popular && (
                                 <Badge className={`text-xs px-2 py-0.5 ${
-                                  isCakeSupplier ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
+                                  supplierTypeDetection.isCake ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
                                 }`}>
                                   Popular
                                 </Badge>
@@ -410,15 +648,24 @@ export default function SupplierCustomizationModal({
                                 <Users className="w-3 h-3" />
                                 <span>{pkg.features[1] || "Multiple children"}</span>
                               </div>
+                              {supplierTypeDetection.isLeadBased && (
+                                <div className="flex items-center gap-1">
+                                  <Package className="w-3 h-3" />
+                                  <span>Lead-time</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="text-right ml-4">
                             <div className={`text-xl font-bold ${
-                              isCakeSupplier ? 'text-orange-600' : 'text-primary-600'
-                            }`}>£{pkg.price}</div>
+                              supplierTypeDetection.isCake ? 'text-orange-600' : 'text-primary-600'
+                            }`}>
+                              £{pkg.enhancedPrice}
+                            </div>
+                           
                             {selectedPackageId === pkg.id && (
                               <Check className={`w-5 h-5 mt-1 ml-auto ${
-                                isCakeSupplier ? 'text-orange-500' : 'text-primary-500'
+                                supplierTypeDetection.isCake ? 'text-orange-500' : 'text-primary-500'
                               }`} />
                             )}
                           </div>
@@ -436,9 +683,9 @@ export default function SupplierCustomizationModal({
                         key={pkg.id}
                         className={`flex-shrink-0 w-60 cursor-pointer transition-all duration-200 snap-center ${
                           selectedPackageId === pkg.id 
-                            ? `ring-2 ${isCakeSupplier ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
+                            ? `ring-2 ${supplierTypeDetection.isCake ? 'ring-orange-400 bg-orange-50' : 'ring-[hsl(var(--primary-500))] bg-primary-50'}` 
                             : 'hover:shadow-md hover:bg-gray-50'
-                        } ${isCakeSupplier ? 'border-orange-200' : ''} ${index === 0 ? 'ml-1' : ''} ${index === packages.length - 1 ? 'mr-1' : ''}`}
+                        } ${supplierTypeDetection.isCake ? 'border-orange-200' : ''} ${index === 0 ? 'ml-1' : ''} ${index === packages.length - 1 ? 'mr-1' : ''}`}
                         onClick={() => setSelectedPackageId(pkg.id)}
                       >
                         <CardContent className="p-4">
@@ -446,11 +693,13 @@ export default function SupplierCustomizationModal({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <h4 className="font-semibold text-gray-900">
-                                  {isCakeSupplier && '🎂 '}{pkg.name}
+                                  {supplierTypeDetection.isCake && '🎂 '}
+                                  {supplierTypeDetection.isLeadBased && !supplierTypeDetection.isCake && '📦 '}
+                                  {pkg.name}
                                 </h4>
                                 {pkg.popular && (
                                   <Badge className={`text-xs px-2 py-0.5 ${
-                                    isCakeSupplier ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
+                                    supplierTypeDetection.isCake ? 'bg-orange-500 text-white' : 'bg-primary-500 text-white'
                                   }`}>
                                     Popular
                                   </Badge>
@@ -458,14 +707,23 @@ export default function SupplierCustomizationModal({
                               </div>
                               {selectedPackageId === pkg.id && (
                                 <Check className={`w-5 h-5 flex-shrink-0 ${
-                                  isCakeSupplier ? 'text-orange-500' : 'text-primary-500'
+                                  supplierTypeDetection.isCake ? 'text-orange-500' : 'text-primary-500'
                                 }`} />
                               )}
                             </div>
                             
-                            <div className={`text-2xl font-bold ${
-                              isCakeSupplier ? 'text-orange-600' : 'text-primary-600'
-                            }`}>£{pkg.price}</div>
+                            <div className="text-right">
+                              <div className={`text-2xl font-bold ${
+                                supplierTypeDetection.isCake ? 'text-orange-600' : 'text-primary-600'
+                              }`}>
+                                £{pkg.enhancedPrice}
+                              </div>
+                              {pkg.enhancedPrice !== pkg.price && (
+                                <div className="text-xs text-gray-500 line-through">
+                                  was £{pkg.price}
+                                </div>
+                              )}
+                            </div>
                             
                             <div className="space-y-2">
                               <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -476,6 +734,12 @@ export default function SupplierCustomizationModal({
                                 <Users className="w-3 h-3 flex-shrink-0" />
                                 <span>{pkg.features[1] || "Multiple children"}</span>
                               </div>
+                              {supplierTypeDetection.isLeadBased && (
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Package className="w-3 h-3 flex-shrink-0" />
+                                  <span>Lead-time service</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -489,7 +753,7 @@ export default function SupplierCustomizationModal({
                         key={index}
                         className={`w-2 h-2 rounded-full transition-colors ${
                           selectedPackageId === packages[index]?.id 
-                            ? (isCakeSupplier ? 'bg-orange-500' : 'bg-primary-500')
+                            ? (supplierTypeDetection.isCake ? 'bg-orange-500' : 'bg-primary-500')
                             : 'bg-gray-300'
                         }`}
                       />
@@ -500,8 +764,8 @@ export default function SupplierCustomizationModal({
             )}
           </div>
 
-          {/* 🎂 Enhanced Cake Customization Section */}
-          {isCakeSupplier && showCakeCustomization && (
+          {/* Enhanced Cake Customization Section */}
+          {supplierTypeDetection.isCake && showCakeCustomization && (
             <>
               {/* Flavor Selection */}
               <div className="space-y-3">
@@ -525,11 +789,6 @@ export default function SupplierCustomizationModal({
                         <SelectItem key={flavor.id} value={flavor.id} className="text-base py-3">
                           <div className="flex items-center justify-between w-full">
                             <span>{flavor.name}</span>
-                            {/* {flavor.popular && (
-                              <Badge className="ml-2 text-xs bg-primary-100 text-primary-700 border-[hsl(var(--primary-200))]">
-                                Popular
-                              </Badge>
-                            )} */}
                           </div>
                         </SelectItem>
                       ))}
@@ -643,20 +902,34 @@ export default function SupplierCustomizationModal({
             </div>
           )}
 
-          {/* Price Summary - only show when not in detailed cake customization */}
+          {/* ✅ UPDATED: Price Summary with unified pricing info */}
           {!showCakeCustomization && (
-            <div className={`${isCakeSupplier ? 'bg-orange-50 border-orange-200' : 'bg-primary-50 border-[hsl(var(--primary-200))]'} rounded-xl p-4 border`}>
+            <div className={`${supplierTypeDetection.isCake ? 'bg-orange-50 border-orange-200' : 'bg-primary-50 border-[hsl(var(--primary-200))]'} rounded-xl p-4 border`}>
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Star className={`w-5 h-5 ${isCakeSupplier ? 'text-orange-500' : 'text-primary-500'}`} />
+                <Star className={`w-5 h-5 ${supplierTypeDetection.isCake ? 'text-orange-500' : 'text-primary-500'}`} />
                 Price Summary
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">
-                    {isCakeSupplier ? '🎂 ' : ''}{selectedPackage?.name}
+                    {supplierTypeDetection.isCake ? '🎂 ' : ''}
+                    {supplierTypeDetection.isLeadBased && !supplierTypeDetection.isCake ? '📦 ' : ''}
+                    {selectedPackage?.name}
+                    {calculateModalPricing.pricingInfo?.isTimeBased && (
+                      <span className="text-blue-600 ml-1">
+                        ({formatDuration(effectivePartyDetails?.duration || 2)})
+                      </span>
+                    )}
+                    {supplierTypeDetection.isLeadBased && (
+                      <span className="text-amber-600 ml-1">
+                        (lead-time)
+                      </span>
+                    )}
                   </span>
-                  <span className="font-medium">£{selectedPackage?.price}</span>
+                  <span className="font-medium">£{calculateModalPricing.packagePrice}</span>
                 </div>
+                
+                
                 {selectedAddons.map(addonId => {
                   const addon = availableAddons.find(a => a.id === addonId)
                   return addon ? (
@@ -666,12 +939,19 @@ export default function SupplierCustomizationModal({
                     </div>
                   ) : null
                 })}
+                
                 <div className={`border-t pt-2 flex justify-between font-bold text-lg ${
-                  isCakeSupplier ? 'border-orange-200' : 'border-primary-200'
+                  supplierTypeDetection.isCake ? 'border-orange-200' : 'border-primary-200'
                 }`}>
                   <span>Total</span>
-                  <span className={isCakeSupplier ? 'text-orange-600' : 'text-primary-600'}>£{totalPrice}</span>
+                  <span className={supplierTypeDetection.isCake ? 'text-orange-600' : 'text-primary-600'}>£{totalPrice}</span>
                 </div>
+                
+                {calculateModalPricing.hasEnhancedPricing && (
+                  <div className="text-xs text-gray-600 mt-2 p-2 bg-white/50 rounded">
+                    ✨ Enhanced pricing applied based on your party details
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -690,15 +970,15 @@ export default function SupplierCustomizationModal({
             Cancel
           </Button>
           <Button
-            onClick={isCakeSupplier && !showCakeCustomization ? handleCakeCustomizeClick : handleAddToPlan}
+            onClick={supplierTypeDetection.isCake && !showCakeCustomization ? handleCakeCustomizeClick : handleAddToPlan}
             className={`flex-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 ${
               !canAddCheck.canAdd 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : isCakeSupplier 
+                : supplierTypeDetection.isCake 
                   ? 'bg-primary-500  text-white'
                   : 'bg-primary-500 hover:bg-primary-600 text-white'
             }`}
-            disabled={!selectedPackageId || isAdding || !canAddCheck.canAdd || (isCakeSupplier && showCakeCustomization && !isCakeCustomizationComplete())}
+            disabled={!selectedPackageId || isAdding || !canAddCheck.canAdd || (supplierTypeDetection.isCake && showCakeCustomization && !isCakeCustomizationComplete())}
           >
             {isAdding ? (
               <>
@@ -712,10 +992,12 @@ export default function SupplierCustomizationModal({
               </>
             ) : (
               <>
-                {isCakeSupplier && !showCakeCustomization ? (
+                {supplierTypeDetection.isCake && !showCakeCustomization ? (
                   <ChefHat className="w-4 h-4 mr-2" />
                 ) : showCakeCustomization ? (
                   <Cake className="w-4 h-4 mr-2" />
+                ) : supplierTypeDetection.isLeadBased ? (
+                  <Package className="w-4 h-4 mr-2" />
                 ) : (
                   <Plus className="w-4 h-4 mr-2" />
                 )}

@@ -590,56 +590,77 @@ async getDefaultTemplate(supplierCategory, responseType) {
   }
 }
 
-  async getEnquiryDetails(enquiryId) {
-    try {
-      // Use manual join for single enquiry too
-      const { data: enquiry, error } = await supabase
-        .from('enquiries')
+async getEnquiryDetails(enquiryId) {
+  try {
+    // Use manual join for single enquiry too
+    const { data: enquiry, error } = await supabase
+      .from('enquiries')
+      .select('*')
+      .eq('id', enquiryId)
+      .single()
+
+    if (error) throw error
+
+    // Get the party and user data manually
+    if (enquiry.party_id) {
+      const { data: party, error: partyError } = await supabase
+        .from('parties')
         .select('*')
-        .eq('id', enquiryId)
+        .eq('id', enquiry.party_id)
         .single()
 
-      if (error) throw error
-
-      // Get the party and user data manually
-      if (enquiry.party_id) {
-        const { data: party, error: partyError } = await supabase
-          .from('parties')
+      if (!partyError && party && party.user_id) {
+        const { data: user, error: userError } = await supabase
+          .from('users')
           .select('*')
-          .eq('id', enquiry.party_id)
+          .eq('id', party.user_id)
           .single()
 
-        if (!partyError && party && party.user_id) {
-          const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', party.user_id)
-            .single()
-
-          if (!userError && user) {
-            enquiry.parties = {
-              ...party,
-              users: user
-            }
-          } else {
-            enquiry.parties = party
+        if (!userError && user) {
+          enquiry.parties = {
+            ...party,
+            users: user
           }
+        } else {
+          enquiry.parties = party
         }
       }
-
-      // Auto-mark as viewed if it was pending
-      if (enquiry.status === 'pending') {
-        await this.markEnquiryViewed(enquiryId)
-        enquiry.status = 'viewed'
-      }
-
-      return { success: true, enquiry }
-
-    } catch (error) {
-      console.error('❌ Error getting enquiry details:', error)
-      return { success: false, error: error.message }
     }
+
+    // 🆕 ADD THIS: Get supplier data manually
+    if (enquiry.supplier_id) {
+      const { data: supplier, error: supplierError } = await supabase
+        .from('suppliers')
+        .select('id, data, business_name')
+        .eq('id', enquiry.supplier_id)
+        .single()
+
+      if (!supplierError && supplier) {
+        // Parse the supplier data to get the name
+        const supplierInfo = typeof supplier.data === 'string' 
+          ? JSON.parse(supplier.data) 
+          : supplier.data
+        
+        enquiry.supplier = {
+          ...supplier,
+          name: supplierInfo?.name || supplier.business_name || 'Supplier'
+        }
+      }
+    }
+
+    // Auto-mark as viewed if it was pending
+    if (enquiry.status === 'pending') {
+      await this.markEnquiryViewed(enquiryId)
+      enquiry.status = 'viewed'
+    }
+
+    return { success: true, enquiry }
+
+  } catch (error) {
+    console.error('❌ Error getting enquiry details:', error)
+    return { success: false, error: error.message }
   }
+}
 }
 
 // Create singleton instance

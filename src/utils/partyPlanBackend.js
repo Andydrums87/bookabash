@@ -153,6 +153,15 @@ addSupplierToPlan(supplier, selectedPackage = null) {
   }
 
   try {
+    // DEBUG: Check what supplier data we're receiving
+    console.log('🔍 addSupplierToPlan called with:', {
+      supplierName: supplier.name,
+      supplierCategory: supplier.category,
+      hasWeekendPremium: !!supplier.weekendPremium,
+      weekendPremium: supplier.weekendPremium,
+      supplierKeys: Object.keys(supplier)
+    });
+
     const plan = this.getPartyPlan();
     
     const supplierType = CATEGORY_TYPE_MAP[supplier.category];
@@ -161,16 +170,12 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       return { success: false, error: `Unknown supplier category: ${supplier.category}` };
     }
 
-    // ✅ FIXED: Extract add-ons from selectedPackage if they exist
     const packageAddons = selectedPackage?.addons || selectedPackage?.selectedAddons || [];
     
-
-    // ✅ FIXED: Enhanced supplier data that preserves add-ons
     const supplierData = {
       id: supplier.id,
       name: supplier.name,
       description: supplier.description,
-      // ✅ Use total price (base + add-ons) instead of just base price
       price: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
       status: "pending",
       image: supplier.image,
@@ -188,20 +193,25 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       maxBookingDays: supplier.maxBookingDays,
       advanceBookingDays: supplier.advanceBookingDays,
       availabilityNotes: supplier.availabilityNotes,
+      weekendPremium: supplier.weekendPremium, // This line was added
       
-      
-      // ✅ NEW: Store the complete package data with add-ons
       packageData: selectedPackage || null,
-      selectedAddons: packageAddons, // ✅ FIXED: Use extracted add-ons
+      selectedAddons: packageAddons,
       totalPrice: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
       originalPrice: selectedPackage?.originalPrice || selectedPackage?.price || supplier.priceFrom,
       addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0
     };
 
+    // DEBUG: Check what we're about to save
+    console.log('🔍 About to save supplierData:', {
+      name: supplierData.name,
+      hasWeekendPremium: !!supplierData.weekendPremium,
+      weekendPremium: supplierData.weekendPremium
+    });
+
     plan[supplierType] = supplierData;
     
     this.savePartyPlan(plan);
-    
     
     return { 
       success: true, 

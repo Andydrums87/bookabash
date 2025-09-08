@@ -65,6 +65,31 @@ const [notificationPreferences, setNotificationPreferences] = useState({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [needsVerification, setNeedsVerification] = useState(false)
 
+  // Add this helper function at the top of your SupplierForm component, after the imports
+const sendOnboardingEmail = async (emailData) => {
+  try {
+    const response = await fetch('/api/email/supplier-onboarding', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Onboarding email sent successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Failed to send onboarding email:', error);
+    // Don't throw - we don't want email failures to break the signup process
+    return null;
+  }
+};
+
   // Step 1: Business Details Validation
   const validateStep1 = () => {
     const { businessName, phone, postcode, supplierType } = businessData
@@ -134,100 +159,111 @@ const [notificationPreferences, setNotificationPreferences] = useState({
     setCurrentStep(currentStep - 1)
   }
 
-  // Handle account creation (Step 2 → Step 3)
-  const handleAccountCreation = async () => {
-    setLoading(true)
-    setError("")
+ // Then update your handleAccountCreation function:
+const handleAccountCreation = async () => {
+  setLoading(true)
+  setError("")
 
-    try {
-      console.log('🚀 Creating supplier account...')
+  try {
+    console.log('🚀 Creating supplier account...')
 
-      // Step 1: Save to onboarding_drafts first
-      console.log('💾 Saving to onboarding_drafts...')
-      
-      const { data: draftResult, error: draftError } = await supabase
-        .from("onboarding_drafts")
-        .insert({
-          email: accountData.email,
-          your_name: accountData.yourName,
-          business_name: businessData.businessName,
-          phone: businessData.phone,
-          postcode: businessData.postcode,
-          supplier_type: businessData.supplierType,
-        })
-        .select()
-        .single()
-
-      if (draftError) {
-        // If email already exists in drafts, update it
-        if (draftError.code === '23505') {
-          console.log('📝 Email exists in drafts, updating...')
-          const { error: updateError } = await supabase
-            .from("onboarding_drafts")
-            .update({
-              your_name: accountData.yourName,
-              business_name: businessData.businessName,
-              phone: businessData.phone,
-              postcode: businessData.postcode,
-              supplier_type: businessData.supplierType,
-            })
-            .eq("email", accountData.email)
-
-          if (updateError) throw updateError
-        } else {
-          throw draftError
-        }
-      }
-
-      console.log('✅ Onboarding draft saved')
-
-      // Step 2: Create Supabase auth user
-      console.log('🔐 Creating auth user...')
-      
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Step 1: Save to onboarding_drafts first
+    console.log('💾 Saving to onboarding_drafts...')
+    
+    const { data: draftResult, error: draftError } = await supabase
+      .from("onboarding_drafts")
+      .insert({
         email: accountData.email,
-        password: accountData.password,
-        options: {
-          data: {
-            user_type: 'supplier',
-            full_name: accountData.yourName,
+        your_name: accountData.yourName,
+        business_name: businessData.businessName,
+        phone: businessData.phone,
+        postcode: businessData.postcode,
+        supplier_type: businessData.supplierType,
+      })
+      .select()
+      .single()
+
+    if (draftError) {
+      // If email already exists in drafts, update it
+      if (draftError.code === '23505') {
+        console.log('📝 Email exists in drafts, updating...')
+        const { error: updateError } = await supabase
+          .from("onboarding_drafts")
+          .update({
+            your_name: accountData.yourName,
             business_name: businessData.businessName,
             phone: businessData.phone,
             postcode: businessData.postcode,
-            supplier_type: businessData.supplierType
-          }
-        }
-      })
+            supplier_type: businessData.supplierType,
+          })
+          .eq("email", accountData.email)
 
-      if (authError) {
-        console.error('❌ Auth signup error:', authError)
-        
-        switch (authError.message) {
-          case 'User already registered':
-            setError("An account with this email already exists. Please try signing in instead.")
-            break
-          default:
-            setError(`Account creation failed: ${authError.message}`)
-        }
-        return
+        if (updateError) throw updateError
+      } else {
+        throw draftError
       }
-
-      console.log('✅ Auth user created:', authData.user?.id)
-
-      // Step 3: Move to success step
-      if (authData.user && !authData.session) {
-        setNeedsVerification(true)
-      }
-      
-      setCurrentStep(3)
-      
-    } catch (error) {
-      console.error("💥 Error during account creation:", error)
-      setError(error.message || "An unexpected error occurred. Please try again.")
-    } finally {
-      setLoading(false)
     }
+
+    console.log('✅ Onboarding draft saved')
+
+    // Step 2: Create Supabase auth user
+    console.log('🔐 Creating auth user...')
+    
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: accountData.email,
+      password: accountData.password,
+      options: {
+        data: {
+          user_type: 'supplier',
+          full_name: accountData.yourName,
+          business_name: businessData.businessName,
+          phone: businessData.phone,
+          postcode: businessData.postcode,
+          supplier_type: businessData.supplierType
+        }
+      }
+    })
+
+    if (authError) {
+      console.error('❌ Auth signup error:', authError)
+      
+      switch (authError.message) {
+        case 'User already registered':
+          setError("An account with this email already exists. Please try signing in instead.")
+          break
+        default:
+          setError(`Account creation failed: ${authError.message}`)
+      }
+      return
+    }
+
+    console.log('✅ Auth user created:', authData.user?.id)
+
+    // 🎯 NEW: Send onboarding email right after successful account creation
+    console.log('📧 Sending onboarding email...')
+    await sendOnboardingEmail({
+      supplierEmail: accountData.email,
+      supplierName: accountData.yourName,
+      businessName: businessData.businessName,
+      serviceType: businessData.supplierType,
+      needsVerification: !authData.session, // true if they need email verification
+      dashboardLink: `${window.location.origin}/suppliers/dashboard`
+    })
+
+    // Step 3: Move to success step
+    if (authData.user && !authData.session) {
+      setNeedsVerification(true)
+    }
+    
+    setCurrentStep(3)
+    
+  } catch (error) {
+    console.error("💥 Error during account creation:", error)
+    setError(error.message || "An unexpected error occurred. Please try again.")
+  } finally {
+    setLoading(false)
   }
+}
 
   // Handle OAuth signup
   const handleOAuthSignup = async (provider) => {

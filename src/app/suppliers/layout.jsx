@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation"
 import { UserMenu } from "./UserMenu"
 import { BusinessProvider } from "../../contexts/BusinessContext"
 import BusinessPageWrapper from "./dashboard/components/BusinessPageWrapper"
+import { DashboardSkeleton } from "./dashboard/components/DashboardSkeletons"
 
 // 👈 ADD THIS IMPORT
 import CompactBusinessSwitcher from "./dashboard/components/MutliBusinessDashboard"
@@ -59,7 +60,19 @@ export default function SupplierLayout({ children }) {
 
   return (
     <BusinessProvider>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={
+  <div className="min-h-screen bg-primary-50">
+    <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] md:p-2 bg-primary-50">
+      <div className="hidden md:block bg-muted/40">
+        {/* Sidebar skeleton */}
+      </div>
+      <div className="flex flex-col">
+        {/* Header skeleton */}
+        <DashboardSkeleton />
+      </div>
+    </div>
+  </div>
+}>
         <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] md:p-2 bg-primary-50 overflow-hidden">
           {/* Desktop Sidebar */}
           <div className="hidden bg-muted/40 md:block">

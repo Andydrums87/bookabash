@@ -71,7 +71,7 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
         <img
   src="/output-4-.gif"
   alt="Celebration"
-  className="w-full rounded-xl mx-auto"
+  className="§ rounded-xl mx-auto"
 />
       </div>
 

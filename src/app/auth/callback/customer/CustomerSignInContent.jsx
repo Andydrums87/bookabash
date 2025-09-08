@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { AlertCircle, Loader2 } from "lucide-react"
-import { buildUrl } from "@/utils/env"
 
 export default function CustomerAuthCallback() {
   const router = useRouter()
@@ -14,6 +13,8 @@ export default function CustomerAuthCallback() {
   const [status, setStatus] = useState("processing")
   const [progress, setProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState("")
+
+
 
   useEffect(() => {
     const video = videoRef.current
@@ -40,34 +41,71 @@ export default function CustomerAuthCallback() {
   }, [status])
 
   useEffect(() => {
-    const handleCustomerCallback = async () => {
+    const handleAuthCallback = async () => {
       try {
         console.log("👤 Processing customer OAuth callback...")
         
-        // Check for OAuth errors
-        const error = searchParams.get("error")
-        if (error) {
-          throw new Error(`OAuth error: ${error}`)
-        }
+        // Get URL parameters first
+        const returnTo = searchParams.get("return_to")
+        const preserveParty = searchParams.get("preserve_party")
+        const context = searchParams.get("context")
+        const userType = searchParams.get("user_type")
+        
+        console.log("📋 Callback parameters:", {
+          returnTo,
+          preserveParty,
+          context,
+          userType
+        })
 
-        // Get user session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        // Let Supabase handle the OAuth session
+        console.log("🔍 Checking for Supabase session...")
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
         
         if (sessionError) {
+          console.error("❌ Session error:", sessionError)
           throw new Error(`Authentication failed: ${sessionError.message}`)
         }
 
-        const user = sessionData.session?.user
-        if (!user) {
-          throw new Error("Authentication incomplete - please try again")
+        if (!session || !session.user) {
+          // No session yet - might need to wait or handle URL-based auth
+          console.log("⏳ No session found, trying getSessionFromUrl...")
+          
+          const { data, error: urlError } = await supabase.auth.getSessionFromUrl()
+          
+          if (urlError) {
+            console.error("❌ URL session error:", urlError)
+            throw new Error(`URL authentication failed: ${urlError.message}`)
+          }
+          
+          if (!data.session || !data.session.user) {
+            throw new Error("No authentication session found")
+          }
+          
+          console.log("✅ Found session from URL:", data.session.user.email)
+          var user = data.session.user
+        } else {
+          console.log("✅ Found existing session:", session.user.email)
+          var user = session.user
         }
 
-        console.log("✅ Customer authenticated:", user.email)
+        // Check if this is actually a supplier trying to use customer auth
+        const { data: supplierRecord } = await supabase
+          .from("suppliers")
+          .select("id")
+          .eq("auth_user_id", user.id)
+          .maybeSingle()
+
+        if (supplierRecord) {
+          console.log("🏢 Detected supplier account, redirecting to supplier dashboard")
+          window.location.href = `${window.location.origin}/suppliers/dashboard`
+          return
+        }
 
         // Create or get customer profile
         const userResult = await partyDatabaseBackend.createOrGetUser({
-          firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
-          lastName: user.user_metadata?.full_name?.split(' ')[1] || '',
+          firstName: user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || '',
+          lastName: user.user_metadata?.family_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
           email: user.email,
           phone: user.user_metadata?.phone || '',
           postcode: ''
@@ -81,21 +119,42 @@ export default function CustomerAuthCallback() {
 
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 300))
-        
+
+        // Determine where to redirect based on context
+        const currentOrigin = window.location.origin
+        let redirectUrl = `${currentOrigin}/dashboard` // Default fallback
+        let successMessage = 'Welcome to PartySnap!'
+
+        if (preserveParty === 'true' && context === 'review_book') {
+          // User was in the middle of party planning - redirect back to review book
+          console.log("🎉 Preserving party context, redirecting to review book")
+          redirectUrl = `${currentOrigin}/review-book`
+          successMessage = `Welcome ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || 'back'}! Let's continue with your party booking.`
+          
+        } else if (returnTo && returnTo.includes('/review-book')) {
+          // Alternative: use returnTo URL if it's the review book page
+          console.log("🔗 Using returnTo URL for review book")
+          redirectUrl = returnTo.startsWith('http') ? decodeURIComponent(returnTo) : `${currentOrigin}${decodeURIComponent(returnTo)}`
+          successMessage = `Welcome ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || 'back'}! Let's finish your party booking.`
+          
+        } else if (returnTo) {
+          // Use the returnTo URL
+          redirectUrl = returnTo.startsWith('http') ? decodeURIComponent(returnTo) : `${currentOrigin}${decodeURIComponent(returnTo)}`
+          successMessage = `Welcome back ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || ''}!`
+          
+        } else {
+          // Default dashboard redirect
+          successMessage = `Welcome to PartySnap ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || ''}!`
+        }
+
         // Store success message for toast
         sessionStorage.setItem('auth_success', JSON.stringify({
-          type: 'customer_signin',
-          message: 'Welcome to PartySnap! Ready to plan amazing parties?',
+          type: preserveParty === 'true' ? 'oauth_signin_party' : 'oauth_signin',
+          message: successMessage,
           timestamp: Date.now()
         }))
         
-        // Redirect
-        const returnTo = searchParams.get("return_to")
-        const redirectUrl = returnTo 
-          ? decodeURIComponent(returnTo) 
-          : buildUrl('/dashboard')
-        
-        console.log("🚀 Redirecting customer to:", redirectUrl)
+        console.log("🚀 Redirecting to:", redirectUrl)
         window.location.href = redirectUrl
 
       } catch (error) {
@@ -105,7 +164,12 @@ export default function CustomerAuthCallback() {
       }
     }
 
-    handleCustomerCallback()
+    // Add a small delay to ensure the page is fully loaded
+    const timer = setTimeout(() => {
+      handleAuthCallback()
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [searchParams, router])
 
   if (status === "processing") {
@@ -188,14 +252,14 @@ export default function CustomerAuthCallback() {
 
           <div className="space-y-3">
             <button
-              onClick={() => window.location.href = buildUrl('/auth/signin')}
+              onClick={() => window.location.href = `${window.location.origin}/review-book`}
               className="w-full bg-[hsl(var(--primary-500))] text-white py-3 px-6 rounded-xl hover:bg-[hsl(var(--primary-600))] transition-colors font-semibold shadow-lg"
             >
-              Try Again
+              Back to Review & Book
             </button>
             
             <button
-              onClick={() => window.location.href = buildUrl('/')}
+              onClick={() => window.location.href = window.location.origin}
               className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors"
             >
               Return Home

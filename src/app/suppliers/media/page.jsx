@@ -13,6 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import { useBusiness } from "@/contexts/BusinessContext" // 👈 ADD THIS
+import { MediaPageSkeleton } from './MediaSkeletons'
 
 const PortfolioGalleryTabContent = () => {
   const [portfolioImages, setPortfolioImages] = useState([])
@@ -70,64 +71,54 @@ const PortfolioGalleryTabContent = () => {
     }
   }, [currentBusiness?.id, loading, supplierData, currentSupplier, isPrimaryBusiness])
 
-  // Save portfolio to backend
   const handleSaveGallery = async (galleryData) => {
     setLocalSaving(true)
     try {
       console.log("💾 Saving portfolio for business:", currentBusiness?.name, galleryData)
-
-      // Check if required functions are available
-      if (!updateProfile) {
-        throw new Error("updateProfile function not available")
+  
+      if (!updateProfile || !supplierData || !supplier) {
+        throw new Error("Required functions or data not available")
       }
-      if (!supplierData) {
-        throw new Error("supplierData not available")
-      }
-      if (!supplier) {
-        throw new Error("supplier not available")
-      }
-
-      // Update the supplier with portfolio data
+  
+      // 🔧 REMOVE LOGO FROM PORTFOLIO SAVE - logo is handled separately now
       const updatedSupplierData = {
         ...supplierData,
         portfolioImages: galleryData.images,
         portfolioVideos: galleryData.videoLinks,
         coverPhoto: galleryData.coverPhoto,
-        image: galleryData.logoUrl, // Save logo as image (this is what backend handles)
-        avatar: galleryData.logoUrl, // Also set avatar for frontend compatibility
+        // 🔧 REMOVE THESE LOGO LINES:
+        // image: galleryData.logoUrl,
+        // avatar: galleryData.logoUrl,
       }
-
+  
       console.log("💾 Updated supplier data for business:", currentBusiness?.name)
-      console.log("💾 Logo URL being saved as image:", galleryData.logoUrl)
-      console.log("💾 Full supplier data being sent:", JSON.stringify(updatedSupplierData, null, 2))
-
-      // ✅ Pass the business ID to save to the correct business
+  
       const result = await updateProfile(updatedSupplierData, null, supplier.id)
-
+  
       if (result.success) {
         console.log("✅ Portfolio saved successfully for business:", currentBusiness?.name)
         setPortfolioImages(galleryData.images)
         setPortfolioVideos(galleryData.videoLinks)
-        setLogoUrl(galleryData.logoUrl)
-
-        // Update local supplier data
+        // 🔧 DON'T UPDATE LOGO HERE - it's handled separately
+        // setLogoUrl(galleryData.logoUrl)
+  
         if (setSupplierData) {
           setSupplierData((prev) => ({
             ...prev,
             portfolioImages: galleryData.images,
             portfolioVideos: galleryData.videoLinks,
             coverPhoto: galleryData.coverPhoto,
-            avatar: galleryData.logoUrl, // Update avatar field
+            // 🔧 DON'T UPDATE LOGO IN LOCAL STATE HERE
+            // avatar: galleryData.logoUrl,
           }))
         }
-
-        // Trigger supplier updated event
+  
         window.dispatchEvent(
           new CustomEvent("supplierUpdated", {
             detail: { supplierId: result.supplier.id },
           }),
         )
-
+  
         setLocalSaveSuccess(true)
         setTimeout(() => setLocalSaveSuccess(false), 3000)
         return { success: true }
@@ -142,74 +133,104 @@ const PortfolioGalleryTabContent = () => {
       setLocalSaving(false)
     }
   }
+  
 
-  // Logo upload handler
+  useEffect(() => {
+    if (currentBusiness?.id && !loading) {
+      console.log('🔄 Portfolio page updating for business:', currentBusiness?.name);
+      
+      // Reset any form-specific state here
+      setLocalSaveSuccess(false);
+      setEditingImage(null);
+      setNewVideoUrl("");
+      
+      // KEEP YOUR EXISTING PORTFOLIO LOADING (don't change this)
+      if (supplierData) {
+        console.log("📸 Loading portfolio data from supplierData for business:", currentBusiness?.name)
+        setPortfolioImages(supplierData.portfolioImages || [])
+        setPortfolioVideos(supplierData.portfolioVideos || [])
+        setCoverPhoto(supplierData.coverPhoto || null)
+      }
+      
+      // 🔧 ONLY CHANGE THIS PART - Load logo from primary business
+      if (primaryBusiness?.data) {
+        console.log("🎨 Loading SHARED logo from primary business:", primaryBusiness?.name)
+        setLogoUrl(primaryBusiness.data.avatar || primaryBusiness.data.image || null)
+      } else if (supplierData) {
+        // Fallback to current business if no primary found
+        setLogoUrl(supplierData.avatar || supplierData.image || null)
+      }
+    }
+  }, [currentBusiness?.id, loading, supplierData, primaryBusiness])
+  
   const handleLogoUpload = async (event) => {
     const file = event.target.files[0]
     if (!file) {
       console.log("❌ No file selected")
       return
     }
-
+  
     console.log("📤 Starting logo upload for business:", currentBusiness?.name)
-    console.log("📤 File details:", {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    })
-    
     setUploadingLogo(true)
-
+  
     try {
-      // Validate file type
+      // KEEP YOUR EXISTING VALIDATION (don't change)
       if (!file.type.startsWith('image/')) {
         throw new Error('Please select a valid image file')
       }
-
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         throw new Error('File size must be less than 10MB')
       }
-
-      // Create FormData for Cloudinary upload
+  
+      // KEEP YOUR EXISTING CLOUDINARY UPLOAD (don't change)
       const formData = new FormData()
       formData.append("file", file)
       formData.append("upload_preset", "portfolio_images")
-
-      console.log("📤 FormData created, uploading to Cloudinary...")
-
-      // Upload to Cloudinary
+  
       const response = await fetch("https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload", {
         method: "POST",
         body: formData,
       })
-
-      console.log("📤 Cloudinary response status:", response.status)
-
+  
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("❌ Cloudinary error response:", response.status, errorText)
         throw new Error(`Cloudinary upload failed: ${response.status} - ${errorText}`)
       }
-
+  
       const cloudinaryData = await response.json()
-      console.log("✅ Cloudinary logo upload successful:", cloudinaryData)
-
-      // Update logo URL state
       const newLogoUrl = cloudinaryData.secure_url
-      console.log("📤 Setting logo URL:", newLogoUrl)
-      setLogoUrl(newLogoUrl)
-
-      // Auto-save after upload
-      console.log("📤 Auto-saving gallery data...")
-      const saveResult = await handleSaveGallery({
-        images: portfolioImages,
-        videoLinks: portfolioVideos,
-        coverPhoto: coverPhoto,
-        logoUrl: newLogoUrl,
-      })
-
-      console.log("✅ Logo upload and save completed:", saveResult)
+      console.log("✅ Cloudinary logo upload successful:", cloudinaryData)
+  
+      // 🔧 ONLY CHANGE THIS SAVE PART - Save logo to primary business
+      const targetBusiness = primaryBusiness || currentBusiness
+      
+      if (!targetBusiness) {
+        throw new Error("No business found to save logo to")
+      }
+  
+      console.log("📤 Saving logo to:", targetBusiness.name, "(affects all businesses)")
+  
+      // Create minimal update just for logo
+      const logoUpdateData = {
+        avatar: newLogoUrl,
+        image: newLogoUrl
+      }
+  
+      const result = await updateProfile(logoUpdateData, null, targetBusiness.id)
+  
+      if (result.success) {
+        console.log("✅ Logo saved successfully to all businesses")
+        setLogoUrl(newLogoUrl)
+        
+        // Trigger refresh for business context
+        window.dispatchEvent(new CustomEvent("businessUpdated"))
+        
+        setLocalSaveSuccess(true)
+        setTimeout(() => setLocalSaveSuccess(false), 3000)
+      } else {
+        throw new Error(result.error)
+      }
+  
     } catch (error) {
       console.error("❌ Logo upload failed:", error)
       alert(`Failed to upload logo: ${error.message}`)
@@ -220,22 +241,36 @@ const PortfolioGalleryTabContent = () => {
       }
     }
   }
+  
+// 3. REPLACE ONLY YOUR handleDeleteLogo function  
+const handleDeleteLogo = async () => {
+  if (confirm("Are you sure you want to delete your logo? This will remove it from ALL your businesses.")) {
+    console.log("🗑️ Deleting logo from all businesses")
+    
+    try {
+      const targetBusiness = primaryBusiness || currentBusiness
+      
+      const logoUpdateData = {
+        avatar: null,
+        image: null
+      }
 
-  // Delete logo handler
-  const handleDeleteLogo = async () => {
-    if (confirm("Are you sure you want to delete your logo?")) {
-      console.log("🗑️ Deleting logo for business:", currentBusiness?.name)
-      setLogoUrl(null)
-
-      // Auto-save after deletion
-      await handleSaveGallery({
-        images: portfolioImages,
-        videoLinks: portfolioVideos,
-        coverPhoto: coverPhoto,
-        logoUrl: null,
-      })
+      const result = await updateProfile(logoUpdateData, null, targetBusiness.id)
+      
+      if (result.success) {
+        setLogoUrl(null)
+        window.dispatchEvent(new CustomEvent("businessUpdated"))
+        setLocalSaveSuccess(true)
+        setTimeout(() => setLocalSaveSuccess(false), 3000)
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error("❌ Failed to delete logo:", error)
+      alert(`Failed to delete logo: ${error.message}`)
     }
   }
+}
 
   // Image upload handler - Upload to Cloudinary
   const handleImageUpload = async (event) => {
@@ -392,14 +427,7 @@ const PortfolioGalleryTabContent = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading portfolio...</p>
-        </div>
-      </div>
-    )
+    return <MediaPageSkeleton />
   }
 
   return (
@@ -426,7 +454,7 @@ const PortfolioGalleryTabContent = () => {
                 images: portfolioImages,
                 videoLinks: portfolioVideos,
                 coverPhoto: coverPhoto,
-                logoUrl: logoUrl,
+                // logoUrl: logoUrl,
               })
             }
             isLoading={saving}

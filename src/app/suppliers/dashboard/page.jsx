@@ -13,20 +13,27 @@ import { HeaderEnquiryBadge } from "@/components/EnquiryNotificationBanner"
 import { BusinessProvider } from "../../../contexts/BusinessContext"
 import EnquiryOverviewSection from "./components/EnquiryOverviewSection"
 
+import { 
+  DashboardSkeleton, 
+  CalendarSkeleton, 
+  ActionButtonsSkeleton, 
+  StatsCardsSkeleton,
+  Skeleton 
+} from "./components/DashboardSkeletons"
+
 export default function SupplierDashboard() {
   const { supplier, supplierData, loading } = useSupplier()
   const [currentMonth, setCurrentMonth] = useState("June 2025")
 
+  // REPLACE: Simple loading check with skeleton
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your dashboard...</p>
-        </div>
-      </div>
+      <BusinessProvider>
+        <DashboardSkeleton />
+      </BusinessProvider>
     )
   }
+
 
   // Sample data - replace with actual data from your supplier
   const name = supplierData?.owner?.name || "Paul"
@@ -64,59 +71,63 @@ export default function SupplierDashboard() {
 
   return (
     <BusinessProvider>
-      <div className="min-h-screen bg-primary-50">
-        <div className="max-w-7xl mx-auto">
-          <EnquiryNotificationBanner />
+    <div className="min-h-screen bg-primary-50">
+      <div className="max-w-7xl mx-auto">
+        <EnquiryNotificationBanner />
 
-          {/* Welcome Header - Mobile Optimized */}
-          <div className="p-3 sm:p-4 lg:p-6">
-            <HeaderEnquiryBadge />
-            <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
-                Welcome back, {name}
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                See new requests, update your profile, and manage availability—all in one place
-              </p>
-            </div>
+        {/* Welcome Header - Mobile Optimized */}
+        <div className="p-3 sm:p-4 lg:p-6">
+          <HeaderEnquiryBadge />
+          <div className="space-y-2 sm:space-y-3">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
+              Welcome back, {name}
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              See new requests, update your profile, and manage availability—all in one place
+            </p>
           </div>
+        </div>
 
-          {/* Main Content Grid - Mobile Optimized */}
-          <div className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-              {/* Leads Table - Mobile Optimized */}
-              <div className="xl:col-span-2">
-                <Card className="shadow-sm">
-                  <CardContent className="p-0">
-                    {/* Mobile Table Header */}
-                    <div className="p-4 sm:p-6 border-b border-gray-200 bg-muted/20">
-                      <h2 className="text-base sm:text-lg lg:text-xl font-semibold">Recent Enquiries</h2>
-                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                        Manage your latest booking requests
-                      </p>
-                    </div>
+        {/* Main Content Grid - Mobile Optimized */}
+        <div className="p-3 sm:p-4 lg:p-6 pt-0">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+            {/* Leads Table - Mobile Optimized */}
+            <div className="xl:col-span-2">
+              <Card className="shadow-sm">
+                <CardContent className="p-0">
+                  {/* Mobile Table Header */}
+                  <div className="p-4 sm:p-6 border-b border-gray-200 bg-muted/20">
+                    <h2 className="text-base sm:text-lg lg:text-xl font-semibold">Recent Enquiries</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Manage your latest booking requests
+                    </p>
+                  </div>
 
-                    <EnquiryOverviewSection />
-                  </CardContent>
-                </Card>
-              </div>
+                  {/* REPLACE: EnquiryOverviewSection with built-in skeleton loading */}
+                  <EnquiryOverviewSection />
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Calendar Section - Mobile Optimized */}
-              <div className="space-y-4">
-                <Card className="shadow-sm">
-                  <CardContent className="p-4 sm:p-6">
-                    {/* Calendar Header */}
-                    <div className="flex justify-between items-center mb-4 sm:mb-6">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 touch-manipulation">
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <h2 className="font-semibold text-sm sm:text-base">{currentMonth}</h2>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 touch-manipulation">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
+            {/* Calendar Section - Mobile Optimized */}
+            <div className="space-y-4">
+              <Card className="shadow-sm">
+                <CardContent className="p-4 sm:p-6">
+                  {/* Calendar Header */}
+                  <div className="flex justify-between items-center mb-4 sm:mb-6">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 touch-manipulation">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <h2 className="font-semibold text-sm sm:text-base">{currentMonth}</h2>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 touch-manipulation">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                    {/* Upcoming Events */}
+                  {/* ADD: Calendar loading state with skeleton */}
+                  {loading ? (
+                    <CalendarSkeleton />
+                  ) : (
                     <div className="space-y-3 sm:space-y-4">
                       <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-3">Upcoming Events</h3>
                       {upcomingEvents.map((day) => (
@@ -141,23 +152,19 @@ export default function SupplierDashboard() {
                           )}
                         </div>
                       ))}
-
-                      {/* Empty Calendar State */}
-                      {upcomingEvents.length === 0 && (
-                        <div className="text-center py-6">
-                          <Calendar className="mx-auto h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mb-2" />
-                          <p className="text-xs sm:text-sm text-gray-500">No upcoming events</p>
-                        </div>
-                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons - Mobile Optimized */}
-          <div className="p-3 sm:p-4 lg:p-6 pt-0">
+        {/* Action Buttons - ADD loading state */}
+        <div className="p-3 sm:p-4 lg:p-6 pt-0">
+          {loading ? (
+            <ActionButtonsSkeleton />
+          ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
               <Button
                 variant="outline"
@@ -189,10 +196,14 @@ export default function SupplierDashboard() {
                 <span className="sm:hidden">Profile</span>
               </Button>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Quick Stats Cards - Mobile Optimized */}
-          <div className="p-3 sm:p-4 lg:p-6 pt-0">
+        {/* Quick Stats Cards - ADD loading state */}
+        <div className="p-3 sm:p-4 lg:p-6 pt-0">
+          {loading ? (
+            <StatsCardsSkeleton />
+          ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
               <Card className="shadow-sm">
                 <CardContent className="p-3 sm:p-4 text-center">
@@ -219,9 +230,10 @@ export default function SupplierDashboard() {
                 </CardContent>
               </Card>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </BusinessProvider>
+    </div>
+  </BusinessProvider>
   )
 }

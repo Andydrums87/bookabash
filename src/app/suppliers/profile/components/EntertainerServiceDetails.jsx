@@ -19,6 +19,7 @@ import {
   Target,
   ChevronDown,
   ChevronUp,
+  AlertCircle
 } from "lucide-react"
 import EnhancedThemesSection from "../../dashboard/EnchancedThemesSection"
 import { Button } from "@/components/ui/button"
@@ -424,114 +425,175 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           </div>
         </CardContent>
       </Card>
-      {/* Basic Performance Info */}
-      <Card className="">
-        <CardHeader className="p-4 sm:p-8 bg-gradient-to-r from-[hsl(var(-primary-50))] to-[hsl(var(--primary-100))]">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            Basic Performance Info
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Tell customers about your core entertainment offering
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="performerType" className="text-sm sm:text-base font-semibold text-gray-700">
-                What type of performer are you? *
-              </Label>
-              <Select
-                value={details.performerType}
-                onValueChange={(value) => handleFieldChange("performerType", value)}
-              >
-                <SelectTrigger className="py-4 sm:py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-sm sm:text-base">
-                  <SelectValue placeholder="Choose your performer type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {performerTypes.map((type) => (
-                    <SelectItem key={type} value={type} className="text-sm sm:text-base py-2 sm:py-3">
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+    {/* Basic Performance Info */}
+<Card className="">
+  <CardHeader className="p-4 sm:p-8 bg-gradient-to-r from-[hsl(var(-primary-50))] to-[hsl(var(--primary-100))]">
+    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-xl flex items-center justify-center">
+        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      </div>
+      Basic Performance Info
+    </CardTitle>
+    <CardDescription className="text-sm sm:text-base">
+      Tell customers about your core entertainment offering and pricing
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="performerType" className="text-sm sm:text-base font-semibold text-gray-700">
+          What type of performer are you? *
+        </Label>
+        <Select
+          value={details.performerType}
+          onValueChange={(value) => handleFieldChange("performerType", value)}
+        >
+          <SelectTrigger className="py-4 sm:py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-sm sm:text-base">
+            <SelectValue placeholder="Choose your performer type" />
+          </SelectTrigger>
+          <SelectContent>
+            {performerTypes.map((type) => (
+              <SelectItem key={type} value={type} className="text-sm sm:text-base py-2 sm:py-3">
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="travelRadius" className="text-sm sm:text-base font-semibold text-gray-700">
-                How far will you travel? (miles) *
-              </Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <Input
-                  id="travelRadius"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={details.travelRadius}
-                  onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
-                  className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                  placeholder="e.g., 25"
-                />
-              </div>
-            </div>
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="travelRadius" className="text-sm sm:text-base font-semibold text-gray-700">
+          How far will you travel? (miles) *
+        </Label>
+        <div className="relative">
+          <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+          <Input
+            id="travelRadius"
+            type="number"
+            min="1"
+            max="100"
+            value={details.travelRadius}
+            onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
+            className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+            placeholder="e.g., 25"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* NEW: Duration Pricing Section - Prominently placed */}
+    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6">
+      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <Clock className="w-5 h-5 text-orange-600" />
+        Party Duration Pricing *
+      </h4>
+      <p className="text-sm text-gray-700 mb-4">
+        Most children's parties are 2 hours. What do you charge for parties that run longer?
+      </p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Standard Duration</Label>
+          <div className="h-10 sm:h-12 px-3 sm:px-4 bg-gray-100 border-2 border-gray-200 rounded-xl flex items-center text-sm sm:text-base text-gray-600">
+            2 hours (included in all packages)
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
-                Minimum Group Size
-              </Label>
-              <Input
-                id="groupSizeMin"
-                type="number"
-                min="1"
-                value={details.groupSizeMin}
-                onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
-                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                placeholder="e.g., 5"
-              />
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
-                Maximum Group Size
-              </Label>
-              <Input
-                id="groupSizeMax"
-                type="number"
-                min="1"
-                value={details.groupSizeMax}
-                onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
-                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                placeholder="e.g., 30"
-              />
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
-                Setup Time (minutes)
-              </Label>
-              <div className="relative">
-                <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <Input
-                  id="setupTime"
-                  type="number"
-                  min="0"
-                  max="120"
-                  value={details.setupTime}
-                  onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
-                  className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                  placeholder="e.g., 30"
-                />
-              </div>
-            </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">
+            Extra Hour Rate (£) *
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
+            <Input
+              id="extraHourRate"
+              type="number"
+              min="10"
+              max="200"
+              value={details.extraHourRate || ''}
+              onChange={(e) => handleFieldChange("extraHourRate", Number.parseInt(e.target.value))}
+              className="h-10 sm:h-12 pl-8 sm:pl-10 bg-white border-2 border-orange-200 rounded-xl text-sm sm:text-base"
+              placeholder="45"
+              required
+            />
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-xs text-gray-600">
+            Typical range: £30-80 per hour
+          </p>
+        </div>
+      </div>
+      
+      {/* Visual Example */}
+      {details.extraHourRate && (
+        <div className="mt-4 p-3 bg-white/70 rounded-lg border border-orange-200">
+          <p className="text-sm text-gray-700">
+            <strong>Example:</strong> If your Premium Package costs £180 (2 hours), a 3-hour party would cost £{180 + (details.extraHourRate || 0)} total
+          </p>
+        </div>
+      )}
+      
+      {!details.extraHourRate && (
+        <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-sm text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            <strong>Required:</strong> Please set your extra hour rate to complete your profile
+          </p>
+        </div>
+      )}
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
+          Minimum Group Size
+        </Label>
+        <Input
+          id="groupSizeMin"
+          type="number"
+          min="1"
+          value={details.groupSizeMin}
+          onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
+          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+          placeholder="e.g., 5"
+        />
+      </div>
+
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
+          Maximum Group Size
+        </Label>
+        <Input
+          id="groupSizeMax"
+          type="number"
+          min="1"
+          value={details.groupSizeMax}
+          onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
+          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+          placeholder="e.g., 30"
+        />
+      </div>
+
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
+          Setup Time (minutes)
+        </Label>
+        <div className="relative">
+          <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+          <Input
+            id="setupTime"
+            type="number"
+            min="0"
+            max="120"
+            value={details.setupTime}
+            onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
+            className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+            placeholder="e.g., 30"
+          />
+        </div>
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
       {/* Age Groups - Mobile Optimized */}
       <Card className="">

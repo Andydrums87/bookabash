@@ -1,8 +1,13 @@
-// utils/partyBuilderBackend.js - Rewritten Party Builder with Reliable Supplier Selection
+// utils/partyBuilderBackend.js - Fixed to use unified pricing system
 
+
+"use client"
+
+import { useState } from 'react';
 import { suppliersAPI } from './mockBackend';
 import { LocationService } from './locationService';
 import { partyDatabaseBackend } from './partyDatabaseBackend';
+import { calculateFinalPrice } from './unifiedPricing'; // ✅ Import unified pricing
 
 const THEMES = {
   'no-theme': {
@@ -75,6 +80,220 @@ class PartyBuilderBackend {
     if (guests <= 20) return 700;
     if (guests <= 25) return 800;
     return 900;
+  }
+
+  // ✅ UPDATED: Get cheapest package for supplier (budget-conscious)
+  getBasicPackageForSupplier(supplier, theme = 'no-theme') {
+    console.log('🔍 DEBUG getBasicPackageForSupplier called with:', {
+      supplierName: supplier.name,
+      hasPackages: !!supplier.packages,
+      packagesLength: supplier.packages?.length || 0,
+      packages: supplier.packages,
+      theme,
+      supplierKeys: Object.keys(supplier)
+    });
+    // Check if supplier already has packages
+    if (supplier.packages && supplier.packages.length > 0) {
+      // Sort packages by price (cheapest first)
+      const sortedPackages = [...supplier.packages].sort((a, b) => {
+        const priceA = a.price || a.originalPrice || 0;
+        const priceB = b.price || b.originalPrice || 0;
+        return priceA - priceB;
+      });
+      
+      // Try to find cheapest theme-specific package first
+      const themePackages = sortedPackages.filter(pkg => 
+        pkg.theme === theme || pkg.themes?.includes(theme)
+      );
+      
+      if (themePackages.length > 0) {
+        console.log(`📦 Using cheapest theme package for ${supplier.name}:`, themePackages[0].name, `(£${themePackages[0].price})`);
+        return themePackages[0];
+      }
+      
+      // Otherwise use the cheapest package overall
+      const cheapestPackage = sortedPackages[0];
+      console.log(`📦 Using cheapest package for ${supplier.name}:`, cheapestPackage.name, `(£${cheapestPackage.price || cheapestPackage.originalPrice})`);
+      return cheapestPackage;
+    }
+    
+    // Create a basic package if none exists
+    const basicPackage = this.createBasicPackage(supplier, theme);
+    console.log(`📦 Created basic package for ${supplier.name}:`, basicPackage.name);
+    return basicPackage;
+  }
+
+  // ✅ NEW: Create basic package for supplier
+  createBasicPackage(supplier, theme = 'no-theme') {
+    const category = supplier.category?.toLowerCase() || '';
+    
+    // Define basic packages by category
+    const packageTemplates = {
+      'entertainment': {
+        name: 'Standard Entertainment Package',
+        duration: 2,
+        description: 'Professional entertainment for your party',
+        includes: ['Performance', 'Music system', 'Basic props']
+      },
+      'venues': {
+        name: 'Basic Venue Package', 
+        duration: 3,
+        description: 'Venue hire with essential facilities',
+        includes: ['Venue space', 'Tables and chairs', 'Basic decorations']
+      },
+      'cakes': {
+        name: 'Custom Theme Cake',
+        description: 'Themed cake for your celebration',
+        includes: ['Custom design', 'Theme decorations', 'Delivery']
+      },
+      'catering': {
+        name: 'Party Food Package',
+        description: 'Delicious food for your guests',
+        includes: ['Hot food', 'Drinks', 'Serving equipment']
+      },
+      'party bags': {
+        name: 'Themed Party Bags',
+        description: 'Fun party bags for all guests',
+        includes: ['Themed items', 'Sweets', 'Small toys']
+      },
+      'decorations': {
+        name: 'Basic Decoration Package',
+        description: 'Transform your space with themed decorations',
+        includes: ['Banners', 'Balloons', 'Table decorations']
+      },
+      'activities': {
+        name: 'Fun Activities Package',
+        description: 'Engaging activities for children',
+        includes: ['Supervised activities', 'Equipment', 'Setup and cleanup']
+      }
+    };
+
+    const template = packageTemplates[category] || packageTemplates['entertainment'];
+    
+    return {
+      id: `${supplier.id}-basic-package`,
+      name: template.name,
+      description: template.description,
+      price: supplier.priceFrom || supplier.price || 0,
+      originalPrice: supplier.priceFrom || supplier.price || 0,
+      duration: template.duration || 2,
+      includes: template.includes,
+      theme: theme !== 'no-theme' ? theme : null,
+      isBasicPackage: true,
+      supplierId: supplier.id,
+      supplierName: supplier.name
+    };
+  }
+
+  // ✅ UPDATED: Enhanced supplier selection with package setup and unified pricing
+  selectBestSupplier(suppliers, category, theme, timeSlot, duration, date, location, categoryBudget, partyDetails) {
+    console.log('🔍 DEBUG: selectBestSupplier called with:', {
+      category,
+      date,
+      dateType: typeof date,
+      partyDetails
+    });
+    if (!suppliers || suppliers.length === 0) {
+      return { supplier: null, reason: 'no-suppliers-found' };
+    }
+    
+    console.log(`Selecting ${category} from ${suppliers.length} candidates (budget: £${categoryBudget})`);
+    
+    // Filter by budget first (with some flexibility)
+    const budgetFiltered = suppliers.filter(s => s.priceFrom <= categoryBudget * 1.3);
+    
+    if (budgetFiltered.length === 0) {
+      return { supplier: null, reason: 'no-suppliers-in-budget' };
+    }
+    
+    // Score all suppliers and set up packages
+    const scoredSuppliers = budgetFiltered.map(supplier => {
+     
+      const availabilityCheck = this.checkSupplierAvailability(supplier, new Date(date), timeSlot);
+      const locationCheck = this.checkSupplierLocation(supplier, location);
+      const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
+      
+      // ✅ NEW: Set up basic package for supplier
+      const basicPackage = this.getBasicPackageForSupplier(supplier, theme);
+      
+      // ✅ NEW: Create enhanced supplier with package data
+      const enhancedSupplier = {
+        ...supplier,
+        packageData: basicPackage,
+        // Preserve original pricing for reference
+        originalPrice: supplier.priceFrom || supplier.price || 0
+      };
+      
+      // ✅ NEW: Calculate pricing using unified pricing system
+      const pricingResult = calculateFinalPrice(enhancedSupplier, partyDetails, []);
+      
+      console.log(`💰 Pricing for ${supplier.name}:`, {
+        originalPrice: enhancedSupplier.originalPrice,
+        finalPrice: pricingResult.finalPrice,
+        hasWeekendPremium: pricingResult.breakdown.weekend > 0,
+        breakdown: pricingResult.breakdown
+      });
+      
+      // ✅ NEW: Add enhanced pricing to supplier
+      enhancedSupplier.enhancedPrice = pricingResult.finalPrice;
+      enhancedSupplier.enhancedPricing = pricingResult;
+      
+      // Calculate composite score
+      let compositeScore = themeScore;
+      
+      // Availability bonuses/penalties
+      if (availabilityCheck.available) {
+        compositeScore += availabilityCheck.confidence === 'high' ? 25 : 10;
+      } else {
+        compositeScore -= 30;
+      }
+      
+      // Location bonuses/penalties
+      if (locationCheck.canServe) {
+        compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
+      } else {
+        compositeScore -= 20;
+      }
+      
+      return {
+        ...enhancedSupplier,
+        compositeScore,
+        themeScore,
+        availabilityCheck,
+        locationCheck,
+        isAvailable: availabilityCheck.available,
+        canServeLocation: locationCheck.canServe
+      };
+    });
+    
+    // Sort by composite score
+    const sorted = scoredSuppliers.sort((a, b) => b.compositeScore - a.compositeScore);
+    
+    // Try to find the best available supplier first
+    const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
+    
+    if (bestAvailable) {
+      console.log(`✅ Selected available ${category}: ${bestAvailable.name} (score: ${bestAvailable.compositeScore}, price: £${bestAvailable.enhancedPrice})`);
+      return { 
+        supplier: bestAvailable, 
+        reason: 'best-available-match',
+        requiresConfirmation: false
+      };
+    }
+    
+    // Fallback: Best supplier regardless of availability
+    const bestFallback = sorted[0];
+    
+    return { 
+      supplier: {
+        ...bestFallback,
+        isFallbackSelection: true
+      }, 
+      reason: 'best-fallback-match',
+      requiresConfirmation: true,
+      availabilityIssue: !bestFallback.isAvailable,
+      locationIssue: !bestFallback.canServeLocation
+    };
   }
 
   // Comprehensive availability checking
@@ -254,88 +473,7 @@ class PartyBuilderBackend {
     }
   }
 
-  // Smart supplier filtering with guaranteed selection
-  selectBestSupplier(suppliers, category, theme, timeSlot, duration, date, location, categoryBudget) {
-    if (!suppliers || suppliers.length === 0) {
-      return { supplier: null, reason: 'no-suppliers-found' };
-    }
-    
-    console.log(`Selecting ${category} from ${suppliers.length} candidates (budget: £${categoryBudget})`);
-    
-    // Filter by budget first
-    const budgetFiltered = suppliers.filter(s => s.priceFrom <= categoryBudget * 1.3);
-    
-    if (budgetFiltered.length === 0) {
-
-      return { supplier: null, reason: 'no-suppliers-in-budget' };
-    }
-    
-    // Score all suppliers
-    const scoredSuppliers = budgetFiltered.map(supplier => {
-      const availabilityCheck = this.checkSupplierAvailability(supplier, new Date(date), timeSlot);
-      const locationCheck = this.checkSupplierLocation(supplier, location);
-      const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
-      
-      // Calculate composite score
-      let compositeScore = themeScore;
-      
-      // Availability bonuses/penalties
-      if (availabilityCheck.available) {
-        compositeScore += availabilityCheck.confidence === 'high' ? 25 : 10;
-      } else {
-        compositeScore -= 30; // Penalty for unavailable
-      }
-      
-      // Location bonuses/penalties
-      if (locationCheck.canServe) {
-        compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
-      } else {
-        compositeScore -= 20;
-      }
-      
-      return {
-        ...supplier,
-        compositeScore,
-        themeScore,
-        availabilityCheck,
-        locationCheck,
-        isAvailable: availabilityCheck.available,
-        canServeLocation: locationCheck.canServe
-      };
-    });
-    
-    // Sort by composite score
-    const sorted = scoredSuppliers.sort((a, b) => b.compositeScore - a.compositeScore);
-    
-    // Try to find the best available supplier first
-    const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
-    
-    if (bestAvailable) {
-      console.log(`Selected available ${category}: ${bestAvailable.name} (score: ${bestAvailable.compositeScore})`);
-      return { 
-        supplier: bestAvailable, 
-        reason: 'best-available-match',
-        requiresConfirmation: false
-      };
-    }
-    
-    // Fallback: Best supplier regardless of availability
-    const bestFallback = sorted[0];
-
-    
-    return { 
-      supplier: {
-        ...bestFallback,
-        isFallbackSelection: true
-      }, 
-      reason: 'best-fallback-match',
-      requiresConfirmation: true,
-      availabilityIssue: !bestFallback.isAvailable,
-      locationIssue: !bestFallback.canServeLocation
-    };
-  }
-
-  // Improved supplier selection with guaranteed results
+  // ✅ UPDATED: Improved supplier selection with package setup and unified pricing
   selectSuppliersForParty({
     suppliers, 
     themedEntertainment, 
@@ -353,7 +491,15 @@ class PartyBuilderBackend {
     const guests = parseInt(guestCount);
     const isLargeParty = guests >= 30;
     
-
+    // ✅ NEW: Create party details object for pricing calculations
+    const partyDetails = {
+      date: new Date(date),
+      duration,
+      guestCount: guests,
+      timeSlot,
+      theme,
+      location
+    };
     
     // Define budget allocation based on budget size
     let budgetAllocation, includedCategories;
@@ -374,19 +520,18 @@ class PartyBuilderBackend {
       }
     }
     
-    
     // 1. SELECT ENTERTAINMENT FIRST (theme priority)
     const entertainmentBudget = budget * budgetAllocation.entertainment;
     
     if (themedEntertainment && themedEntertainment.length > 0) {
       const entertainmentResult = this.selectBestSupplier(
-        themedEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget
+        themedEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
       );
       
       if (entertainmentResult.supplier) {
         selected.entertainment = entertainmentResult.supplier;
-        remainingBudget -= entertainmentResult.supplier.priceFrom;
-
+        remainingBudget -= entertainmentResult.supplier.enhancedPrice;
+        console.log(`Entertainment selected: ${entertainmentResult.supplier.name} (Enhanced price: £${entertainmentResult.supplier.enhancedPrice})`);
       }
     }
     
@@ -394,13 +539,13 @@ class PartyBuilderBackend {
     if (!selected.entertainment) {
       const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
       const entertainmentResult = this.selectBestSupplier(
-        generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget
+        generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
       );
       
       if (entertainmentResult.supplier) {
         selected.entertainment = entertainmentResult.supplier;
-        remainingBudget -= entertainmentResult.supplier.priceFrom;
-
+        remainingBudget -= entertainmentResult.supplier.enhancedPrice;
+        console.log(`General entertainment selected: ${entertainmentResult.supplier.name} (Enhanced price: £${entertainmentResult.supplier.enhancedPrice})`);
       }
     }
     
@@ -427,24 +572,108 @@ class PartyBuilderBackend {
       
       if (categorySuppliers.length > 0) {
         const result = this.selectBestSupplier(
-          categorySuppliers, category, theme, timeSlot, duration, date, location, categoryBudget
+          categorySuppliers, category, theme, timeSlot, duration, date, location, categoryBudget, partyDetails
         );
         
         if (result.supplier) {
           selected[category] = result.supplier;
-          remainingBudget -= result.supplier.priceFrom;
-          console.log(`${category} selected: ${result.supplier.name} (${result.reason})`);
+          remainingBudget -= result.supplier.enhancedPrice;
+          console.log(`${category} selected: ${result.supplier.name} (Enhanced price: £${result.supplier.enhancedPrice})`);
         }
       }
     }
     
     // Summary
-    const totalCost = Object.values(selected).reduce((sum, supplier) => sum + (supplier.priceFrom || 0), 0);
+    const totalCost = Object.values(selected).reduce((sum, supplier) => sum + (supplier.enhancedPrice || supplier.priceFrom || 0), 0);
     const budgetUsed = Math.round((totalCost / budget) * 100);
     
-
+    console.log(`Party selection complete. Total cost: £${totalCost} (${budgetUsed}% of £${budget} budget)`);
     
     return selected;
+  }
+
+  convertSuppliersToPartyPlan(selectedSuppliers) {
+    const partyPlan = {
+      venue: null,
+      entertainment: null,
+      cakes: null,
+      catering: null,
+      facePainting: null,
+      activities: null,
+      partyBags: null,
+      decorations: null,
+      balloons: null,
+      softPlay: null,
+      einvites: {
+        id: "digital-invites",
+        name: "Digital Themed Invites",
+        description: "Themed e-invitations with RSVP tracking",
+        price: 25,
+        status: "confirmed",
+        image: "/placeholder.jpg",
+        category: "Digital Services",
+        priceUnit: "per set",
+        addedAt: new Date().toISOString()
+      },
+      addons: []
+    };
+  
+    Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
+      if (supplier && partyPlan.hasOwnProperty(category)) {
+        
+        console.log(`🔍 Converting ${supplier.name} to party plan:`, {
+          originalPrice: supplier.originalPrice,
+          enhancedPrice: supplier.enhancedPrice,
+          hasWeekendPremium: !!supplier.weekendPremium,
+          weekendPremiumConfig: supplier.weekendPremium
+        });
+        
+        partyPlan[category] = {
+          id: supplier.id,
+          name: supplier.name,
+          description: supplier.description || '',
+          
+          // ✅ FIXED: Store base price for dynamic calculation, not enhanced price
+          // To this (add debugging to see what's happening):
+price: (() => {
+  const finalPrice = supplier.enhancedPrice || supplier.priceFrom || 0;
+  console.log(`💾 STORING ${supplier.name}: enhancedPrice=${supplier.enhancedPrice}, priceFrom=${supplier.priceFrom}, storing=${finalPrice}`);
+  return finalPrice;
+})(),
+          originalPrice: supplier.originalPrice || supplier.priceFrom || 0,
+          
+          status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
+          image: supplier.image || '',
+          category: supplier.category || category,
+          priceUnit: supplier.priceUnit || "per event",
+          addedAt: new Date().toISOString(),
+          
+          // ✅ FIXED: Preserve ALL pricing configuration for dynamic calculation
+          packageData: supplier.packageData,
+          
+          // ✅ CRITICAL: Preserve weekend premium configuration
+          weekendPremium: supplier.weekendPremium,
+          extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate || 0,
+          serviceDetails: supplier.serviceDetails,
+          
+          originalSupplier: {
+            ...supplier,
+            // ✅ CRITICAL: Ensure weekend premium is preserved in original supplier
+            weekendPremium: supplier.weekendPremium,
+            extraHourRate: supplier.extraHourRate,
+            serviceDetails: supplier.serviceDetails
+          },
+          isFallbackSelection: supplier.isFallbackSelection || false
+        };
+        
+        console.log(`✅ Stored ${supplier.name} with weekend premium:`, {
+          storedWeekendPremium: partyPlan[category].weekendPremium,
+          originalSupplierWeekendPremium: partyPlan[category].originalSupplier.weekendPremium
+        });
+      }
+    });
+    
+    return partyPlan;
   }
 
   // Map dashboard categories to supplier categories
@@ -461,7 +690,7 @@ class PartyBuilderBackend {
     return mapping[dashboardCategory] || dashboardCategory;
   }
 
-  // Main party building method
+  // ✅ UPDATED: Main party building method with enhanced pricing
   async buildParty(partyDetails) {
     try {
       const {
@@ -493,12 +722,13 @@ class PartyBuilderBackend {
         processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
       }
 
+      console.log(`Building party for ${processedFirstName} ${processedLastName} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
 
       // Get suppliers
       const allSuppliers = await suppliersAPI.getAllSuppliers();
       const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
       
-      // Select suppliers
+      // Select suppliers with enhanced pricing
       const selectedSuppliers = this.selectSuppliersForParty({
         suppliers: allSuppliers,
         themedEntertainment,
@@ -512,50 +742,8 @@ class PartyBuilderBackend {
         date
       });
 
-      // Create party plan
-      const partyPlan = {
-        venue: null,
-        entertainment: null,
-        cakes: null,
-        catering: null,
-        facePainting: null,
-        activities: null,
-        partyBags: null,
-        decorations: null,
-        balloons: null,
-        softPlay: null,
-        einvites: {
-          id: "digital-invites",
-          name: "Digital Themed Invites",
-          description: "Themed e-invitations with RSVP tracking",
-          price: 25,
-          status: "confirmed",
-          image: "/placeholder.jpg",
-          category: "Digital Services",
-          priceUnit: "per set",
-          addedAt: new Date().toISOString()
-        },
-        addons: []
-      };
-
-      // Convert selected suppliers to party plan format
-      Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
-        if (supplier && partyPlan.hasOwnProperty(category)) {
-          partyPlan[category] = {
-            id: supplier.id,
-            name: supplier.name,
-            description: supplier.description || '',
-            price: supplier.priceFrom || 0,
-            status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
-            image: supplier.image || '',
-            category: supplier.category || category,
-            priceUnit: supplier.priceUnit || "per event",
-            addedAt: new Date().toISOString(),
-            originalSupplier: supplier,
-            isFallbackSelection: supplier.isFallbackSelection || false
-          };
-        }
-      });
+      // ✅ UPDATED: Create party plan with enhanced pricing
+      const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
       
       // Save to localStorage
       const enhancedPartyDetails = {
@@ -574,19 +762,22 @@ class PartyBuilderBackend {
       this.savePartyDetailsToLocalStorage(enhancedPartyDetails);
       this.savePartyPlanToLocalStorage(partyPlan);
 
+      const totalCost = this.calculateTotalCost(partyPlan);
 
+      console.log(`Party built successfully! Total cost: £${totalCost} (Budget: £${finalBudget})`);
 
       return {
         success: true,
         partyPlan,
         selectedSuppliers,
-        totalCost: this.calculateTotalCost(partyPlan),
+        totalCost,
         theme: THEMES[theme] || { name: theme },
         budget: finalBudget,
         timeSlot: processedTimeSlot,
         duration,
         timeWindow: this.getTimeWindowForSlot(processedTimeSlot),
-        fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length
+        fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length,
+        enhancedPricingUsed: true // ✅ NEW: Flag to indicate enhanced pricing was used
       };
 
     } catch (error) {
@@ -596,6 +787,22 @@ class PartyBuilderBackend {
         error: error.message
       };
     }
+  }
+
+  // ✅ UPDATED: Calculate total cost using enhanced pricing
+  calculateTotalCost(partyPlan) {
+    let total = 0;
+    Object.entries(partyPlan).forEach(([key, supplier]) => {
+      if (supplier && supplier.price && key !== 'addons') {
+        total += supplier.price; // This is now the enhanced price
+      }
+    });
+    if (partyPlan.addons) {
+      partyPlan.addons.forEach(addon => {
+        if (addon && addon.price) total += addon.price;
+      });
+    }
+    return total;
   }
 
   // Utility methods
@@ -634,21 +841,6 @@ class PartyBuilderBackend {
     } catch (error) {
       console.error('Error saving party plan:', error);
     }
-  }
-
-  calculateTotalCost(partyPlan) {
-    let total = 0;
-    Object.entries(partyPlan).forEach(([key, supplier]) => {
-      if (supplier && supplier.price && key !== 'addons') {
-        total += supplier.price;
-      }
-    });
-    if (partyPlan.addons) {
-      partyPlan.addons.forEach(addon => {
-        if (addon && addon.price) total += addon.price;
-      });
-    }
-    return total;
   }
 
   // Get party details (database first, localStorage fallback)
@@ -746,9 +938,7 @@ class PartyBuilderBackend {
 // Export singleton instance
 export const partyBuilderBackend = new PartyBuilderBackend();
 
-// React hook
-import { useState } from 'react';
-
+// React hook for using the party builder
 export function usePartyBuilder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

@@ -331,7 +331,7 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
         backgroundRepeat: 'repeat',
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
-      }} className="relative w-full h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
+      }} className="relative hidden md:block w-full h-[40vh] md:h-[45vh] lg:h-[50vh] overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-300))] via-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))]">
       <div className="absolute inset-0 bg-black/10"></div>
 
       {/* Decorative elements */}

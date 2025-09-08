@@ -17,6 +17,7 @@ export default function ConfirmedSupplierCard({
   showContactInfo = false, // Show contact details after payment
   handleCancelEnquiry, // New prop for cancel functionality
   allowCancellation = true, // New prop to control if cancellation is allowed
+
 }) {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)

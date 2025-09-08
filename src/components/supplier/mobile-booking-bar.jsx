@@ -30,6 +30,10 @@ import {
 
 import { getAvailabilityType, AVAILABILITY_TYPES } from '../../app/suppliers/utils/supplierTypes';
 
+
+
+import { isLeadBasedSupplier, calculateFinalPrice, getPartyDuration, formatDuration } from '@/utils/unifiedPricing';
+
 // Time slot definitions - matching the supplier settings
 const TIME_SLOTS = {
   morning: {
@@ -71,7 +75,7 @@ const MobileBookingBar = ({
   hasEnquiriesPending = () => false,
   onShowPendingEnquiryModal = () => {},
   pendingCount = 0,
-  
+  showWeekendPricing = true, 
   // Replacement mode props
   isReplacementMode = false,
   replacementSupplierName = '',
@@ -81,7 +85,11 @@ const MobileBookingBar = ({
   // Cake modal props
   openCakeModal,
   showCakeModal = false,
-  isCakeSupplier = false
+  isCakeSupplier = false,
+  
+  // NEW: Duration support props
+  databasePartyData = null,
+  userType = null
 }) => {
 
   // State
@@ -94,6 +102,156 @@ const MobileBookingBar = ({
   const supplierCategory = supplier?.category
   const availabilityType = getAvailabilityType(supplierCategory)
   const isLeadTimeBased = availabilityType === AVAILABILITY_TYPES.LEAD_TIME_BASED
+
+  const effectivePartyDuration = useMemo(() => {
+    // Priority 1: From database party data
+    if (userType === 'DATABASE_USER' && databasePartyData?.duration) {
+      console.log('📱 Mobile Bar: Using duration from database:', databasePartyData.duration)
+      return databasePartyData.duration
+    }
+    
+    // Priority 2: Use unified pricing helper
+    const defaultDuration = getPartyDuration({
+      date: selectedDate ? new Date(currentMonth?.getFullYear(), currentMonth?.getMonth(), selectedDate) : null
+    })
+    
+    console.log('📱 Mobile Bar: Using unified pricing duration:', defaultDuration)
+    return defaultDuration
+  }, [userType, databasePartyData, selectedDate, currentMonth])
+
+
+
+
+
+const calculatePackagePrice = useMemo(() => {
+  console.log('MOBILE BAR TEST'); // This should show in console
+  if (!selectedPackage || !supplier) {
+    return {
+      displayPrice: selectedPackage?.price || 0,
+      formattedPrice: `£${(selectedPackage?.price || 0).toFixed(2)}`,
+      hasEnhancedPricing: false,
+      pricingInfo: null
+    }
+  }
+
+  // Get party date for pricing
+  let pricingDate = null
+  if (selectedDate && currentMonth) {
+    pricingDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate)
+  } else if (isFromDashboard && partyDate) {
+    pricingDate = partyDate
+  }
+
+  const partyDetailsForPricing = {
+    date: pricingDate,
+    duration: effectivePartyDuration,
+    guestCount: null
+  }
+
+  console.log('📱 DEBUG: Step 1 - Input data:', {
+    packageName: selectedPackage.name,
+    packagePrice: selectedPackage.price,
+    packageOriginalPrice: selectedPackage.originalPrice,
+    supplierPriceFrom: supplier.priceFrom,
+    duration: effectivePartyDuration,
+    extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate
+  })
+
+  // Use package-specific price
+  const packageBasePrice = selectedPackage.originalPrice || selectedPackage.price
+  
+  console.log('📱 DEBUG: Step 2 - Base price decision:', {
+    packagePrice: selectedPackage.price,
+    packageOriginalPrice: selectedPackage.originalPrice,
+    selectedBasePrice: packageBasePrice,
+    reasoning: selectedPackage.originalPrice ? 'Used originalPrice' : 'Used price'
+  })
+
+  const supplierForPricing = {
+    ...supplier,
+    price: packageBasePrice,
+    originalPrice: packageBasePrice,
+    weekendPremium: supplier.weekendPremium,
+    extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate
+  }
+
+  console.log('📱 DEBUG: Step 3 - Supplier for pricing:', {
+    name: supplier.name,
+    price: supplierForPricing.price,
+    originalPrice: supplierForPricing.originalPrice,
+    extraHourRate: supplierForPricing.extraHourRate,
+    weekendPremiumEnabled: !!supplier.weekendPremium?.enabled,
+    weekendPremiumAmount: supplier.weekendPremium?.amount
+  })
+
+  // Calculate manually first to compare
+  const standardDuration = 2
+  const extraHours = Math.max(0, effectivePartyDuration - standardDuration)
+  const extraHourCost = extraHours * (supplierForPricing.extraHourRate || 0)
+  const weekendCost = (pricingDate && (pricingDate.getDay() === 0 || pricingDate.getDay() === 6)) ? 
+    (supplier.weekendPremium?.amount || 0) : 0
+  
+  const manualCalculation = packageBasePrice + extraHourCost + weekendCost
+  
+  console.log('📱 DEBUG: Step 4 - Manual calculation:', {
+    basePrice: packageBasePrice,
+    extraHours: extraHours,
+    extraHourRate: supplierForPricing.extraHourRate,
+    extraHourCost: extraHourCost,
+    weekendCost: weekendCost,
+    manualTotal: manualCalculation,
+    breakdown: `£${packageBasePrice} + £${extraHourCost} (${extraHours}h × £${supplierForPricing.extraHourRate}) + £${weekendCost} = £${manualCalculation}`
+  })
+
+  const pricingResult = calculateFinalPrice(supplierForPricing, partyDetailsForPricing, [])
+
+  console.log('📱 DEBUG: Step 5 - Unified pricing result:', {
+    finalPrice: pricingResult.finalPrice,
+    basePrice: pricingResult.basePrice,
+    breakdown: pricingResult.breakdown,
+    details: pricingResult.details
+  })
+
+  console.log('📱 DEBUG: Step 6 - Comparison:', {
+    manualCalculation: manualCalculation,
+    unifiedResult: pricingResult.finalPrice,
+    difference: pricingResult.finalPrice - manualCalculation,
+    issue: pricingResult.finalPrice !== manualCalculation ? 'PRICES DONT MATCH!' : 'Prices match'
+  })
+
+  // Check if the package price already includes extra hour cost
+  const possibleOriginalPrice = selectedPackage.price - extraHourCost
+  console.log('📱 DEBUG: Step 7 - Pre-enhancement check:', {
+    packagePrice: selectedPackage.price,
+    calculatedExtraHourCost: extraHourCost,
+    possibleOriginalPrice: possibleOriginalPrice,
+    supplierPriceFrom: supplier.priceFrom,
+    isPossiblyPreEnhanced: Math.abs(possibleOriginalPrice - supplier.priceFrom) < 5
+  })
+
+  const hasEnhancedPricing = pricingResult.finalPrice !== packageBasePrice
+
+  return {
+    displayPrice: pricingResult.finalPrice,
+    formattedPrice: `£${pricingResult.finalPrice.toFixed(2)}`,
+    hasEnhancedPricing,
+    pricingInfo: hasEnhancedPricing ? {
+      originalPrice: packageBasePrice,
+      finalPrice: pricingResult.finalPrice,
+      weekendInfo: pricingResult.details.isWeekend ? {
+        premiumAmount: pricingResult.breakdown.weekend,
+        isApplied: pricingResult.breakdown.weekend > 0
+      } : null,
+      durationInfo: pricingResult.breakdown.extraHours > 0 ? {
+        hasDurationPremium: true,
+        extraHours: pricingResult.details.extraHours,
+        extraCost: pricingResult.breakdown.extraHours
+      } : { hasDurationPremium: false },
+      breakdown: pricingResult.breakdown,
+      duration: effectivePartyDuration
+    } : null
+  }
+}, [selectedPackage, supplier, selectedDate, currentMonth, isFromDashboard, partyDate, effectivePartyDuration])
 
   // Set initial month to party date if coming from dashboard
   useEffect(() => {
@@ -325,24 +483,32 @@ const MobileBookingBar = ({
           completePackageData = fullPackageData
         }
       }
+
+      // ✅ ENHANCED: Use comprehensive enhanced pricing for approval
+      const finalPrice = calculatePackagePrice.displayPrice
+      const pricingInfo = calculatePackagePrice.pricingInfo
       
       const enhancedPackageData = {
         id: completePackageData.id,
         name: completePackageData.name,
-        price: completePackageData.price,
+        price: finalPrice, // ✅ Use enhanced final price
+        originalPrice: completePackageData.price, // Keep original price
         duration: completePackageData.duration || '2 hours',
         features: completePackageData.features || completePackageData.whatsIncluded || [],
         description: completePackageData.description || `${completePackageData.name} package`,
-        originalPrice: completePackageData.originalPrice || completePackageData.price,
-        totalPrice: completePackageData.totalPrice || completePackageData.price,
-        basePrice: completePackageData.basePrice || completePackageData.price,
-        addonsPriceTotal: completePackageData.addonsPriceTotal || 0,
+        totalPrice: finalPrice,
+        basePrice: completePackageData.price,
+        addonsPriceTotal: 0,
         addons: completePackageData.addons || [],
         selectedAddons: completePackageData.selectedAddons || [],
         selectedAt: new Date().toISOString(),
         selectionSource: 'mobile_booking_bar_approval',
         approvedFromMobile: true,
-        replacementApproval: true
+        replacementApproval: true,
+        // ✅ ENHANCED: Comprehensive pricing information
+        enhancedPricing: pricingInfo,
+        partyDuration: effectivePartyDuration,
+        isTimeBased: isTimeBasedSupplier(supplier)
       }
       
       const enhancedSupplierData = {
@@ -350,7 +516,8 @@ const MobileBookingBar = ({
         name: supplier.name,
         category: supplier.category,
         description: supplier.description,
-        price: completePackageData.price,
+        price: finalPrice, // ✅ Use enhanced final price
+        originalPrice: supplier.priceFrom,
         priceFrom: supplier.priceFrom,
         image: supplier.image,
         rating: supplier.rating,
@@ -358,7 +525,11 @@ const MobileBookingBar = ({
         location: supplier.location,
         phone: supplier.phone,
         email: supplier.email,
-        verified: supplier.verified
+        verified: supplier.verified,
+        // ✅ ENHANCED: Preserve pricing configuration
+        weekendPremium: supplier.weekendPremium,
+        extraHourRate: supplier.extraHourRate,
+        enhancedPricing: pricingInfo
       }
       
       const currentContext = sessionStorage.getItem('replacementContext')
@@ -385,7 +556,9 @@ const MobileBookingBar = ({
             packagePrice: enhancedPackageData.price,
             supplierName: enhancedSupplierData.name,
             supplierCategory: enhancedSupplierData.category,
-            approved: true
+            approved: true,
+            enhancedPricing: pricingInfo,
+            duration: effectivePartyDuration
           }
         }
       } else {
@@ -409,7 +582,9 @@ const MobileBookingBar = ({
             packagePrice: enhancedPackageData.price,
             supplierName: enhancedSupplierData.name,
             supplierCategory: enhancedSupplierData.category,
-            approved: true
+            approved: true,
+            enhancedPricing: pricingInfo,
+            duration: effectivePartyDuration
           }
         }
       }
@@ -436,14 +611,26 @@ const MobileBookingBar = ({
     window.location.href = '/dashboard'
   }
 
-  // Default package if none provided
-  const packageInfo = selectedPackage || {
+  // ✅ SIMPLIFIED: Package info with final enhanced pricing only
+  const packageInfo = selectedPackage ? {
+    name: selectedPackage.name,
+    price: calculatePackagePrice.displayPrice,
+    originalPrice: selectedPackage.price,
+    duration: selectedPackage.duration || "Various options",
+    description: selectedPackage.description || "Choose a package to continue",
+    features: selectedPackage.features || [],
+    hasEnhancedPricing: calculatePackagePrice.hasEnhancedPricing,
+    pricingInfo: calculatePackagePrice.pricingInfo
+  } : {
     name: "Select Package",
     price: 0,
+    originalPrice: 0,
     duration: "Various options",
     description: "Choose a package to continue",
-    features: []
-  };
+    features: [],
+    hasEnhancedPricing: false,
+    pricingInfo: null
+  }
 
   const getPackageFeatures = () => {
     if (selectedPackage?.features) return selectedPackage.features
@@ -712,7 +899,7 @@ const MobileBookingBar = ({
     
     let buttonText
     if (isCakeSupplier && isCustomizablePackage(selectedPackage)) {
-      buttonText = "🎂 Customize & Add"
+      buttonText = "Customize & Add"
     } else if (isLeadTimeBased) {
       buttonText = hasPartyPlan ? "Add to Plan" : "Add to Cart"
     } else {
@@ -801,7 +988,15 @@ const MobileBookingBar = ({
                 </p>
                 <p className="text-sm text-gray-600">
                   {selectedPackage ? (
-                    `£${selectedPackage.price} • ${selectedPackage.duration || '2 hours'}`
+                    <>
+                      {calculatePackagePrice.formattedPrice}
+                      {' '} • {selectedPackage.duration || '2 hours'}
+                      {packageInfo.pricingInfo?.isTimeBased && (
+                        <span className="ml-1 text-blue-600">
+                          ({formatDuration(effectivePartyDuration)})
+                        </span>
+                      )}
+                    </>
                   ) : (
                     'Select package above'
                   )}
@@ -851,7 +1046,19 @@ const MobileBookingBar = ({
                   )}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {packageInfo.price ? `£${packageInfo.price}` : 'Select package'} • {packageInfo.duration}
+                  {packageInfo.price ? (
+                    <>
+                      {calculatePackagePrice.formattedPrice}
+                      {/* Show duration info for time-based suppliers */}
+                      {packageInfo.pricingInfo?.isTimeBased && (
+                        <span className="text-blue-600 text-xs ml-1">
+                          ({formatDuration(effectivePartyDuration)})
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    'Select package'
+                  )} • {packageInfo.duration}
                   {selectedDate && (
                     <span className="ml-2 text-primary-500 font-medium">
                      {getSelectedDateDisplay()}
@@ -938,6 +1145,24 @@ const MobileBookingBar = ({
                           Select when you need your order delivered or ready for pickup.
                           {migratedSupplier?.leadTimeSettings?.minLeadTimeDays && (
                             ` Minimum ${migratedSupplier.leadTimeSettings.minLeadTimeDays} days notice required.`
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Duration info for time-based suppliers */}
+                {packageInfo.pricingInfo?.isTimeBased && !isFromDashboard && (
+                  <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">Time-Based Pricing</h4>
+                        <p className="text-sm text-blue-700">
+                          Current party duration: {formatDuration(effectivePartyDuration)}
+                          {packageInfo.pricingInfo.durationInfo?.hasDurationPremium && (
+                            ` (includes +${packageInfo.pricingInfo.durationInfo.extraHours}h extra time)`
                           )}
                         </p>
                       </div>

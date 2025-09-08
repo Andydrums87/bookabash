@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,11 +9,14 @@ import { Gift, X, ChevronDown, ChevronUp } from "lucide-react"
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import { useCheckIfNewlyAdded } from "@/hooks/useCheckIfNewlyAdded"
 
+// Import unified pricing system
+import { calculateFinalPrice } from '@/utils/unifiedPricing'
+
 export default function SelectedSupplierCard({
   type,
   supplier,
-  addons, // ← FIX: Use 'addons' not 'supplierAddons' 
-  partyDetails, // ← ADD: Need partyDetails for party bag calculation
+  addons = [], // Default to empty array
+  partyDetails,
   isLoading,
   isDeleting,
   openSupplierModal,
@@ -48,86 +51,34 @@ export default function SelectedSupplierCard({
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
 
-  // ← ADD: Calculate total price including party bags and addons
-  const getTotalPrice = () => {
-    if (!supplier) return 0
-    
-    let basePrice = supplier.price || 0
-    
-    // For party bags, multiply by guest count
-    if (supplier.category === 'Party Bags' || type === 'partyBags') {
-      const pricePerBag = supplier.packageData?.basePrice || supplier.pricePerBag || supplier.price || 5.00
-      
-      let guestCount = 10; // Default fallback
-      
-      // Try to get guest count from partyDetails first
-      if (partyDetails?.guestCount && partyDetails.guestCount > 0) {
-        guestCount = parseInt(partyDetails.guestCount)
-      }
-      // Fallback: try localStorage (for localStorage dashboard)
-      else if (typeof window !== 'undefined') {
-        try {
-          const storedPartyDetails = localStorage.getItem('party_details')
-          if (storedPartyDetails) {
-            const parsed = JSON.parse(storedPartyDetails)
-            if (parsed.guestCount && parsed.guestCount > 0) {
-              guestCount = parseInt(parsed.guestCount)
-            }
-          }
-        } catch (error) {
-          console.warn('Could not get guest count from localStorage:', error)
-        }
-      }
-      
-      basePrice = pricePerBag * guestCount
+  // FIXED: Always calculate fresh pricing - no more enhanced price checks
+  const pricing = useMemo(() => {
+    if (!supplier) {
+      return { finalPrice: 0, breakdown: {}, details: {} }
     }
-    
-    const addonsPrice = addons?.reduce((sum, addon) => sum + (addon.price || 0), 0) || 0
-    
-    return basePrice + addonsPrice
-  }
 
+  
+
+    // ALWAYS use fresh calculation - never use pre-enhanced prices
+    return calculateFinalPrice(supplier, partyDetails, addons)
+  }, [supplier, partyDetails, addons, type])
+  
+  const displayPrice = pricing.finalPrice
+  
+  const hasAddons = addons && addons.length > 0
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization || type === 'cakes'
-  
-  // ← UPDATED: Use calculated total price
-  const displayPrice = getTotalPrice()
-  const hasAddons = addons && addons.length > 0
-  
-  // Calculate breakdown for display
-  const basePrice = supplier.price || 0
-  const addonsTotal = addons?.reduce((sum, addon) => sum + (addon.price || 0), 0) || 0
 
-  // ← ADD: Show party bag breakdown if applicable
-  const isPartyBag = supplier.category === 'Party Bags' || type === 'partyBags'
-  let partyBagBreakdown = null
-  
-  if (isPartyBag) {
-    const pricePerBag = supplier.packageData?.basePrice || supplier.pricePerBag || supplier.price || 5.00
-    let guestCount = 10
-    
-    if (partyDetails?.guestCount && partyDetails.guestCount > 0) {
-      guestCount = parseInt(partyDetails.guestCount)
-    } else if (typeof window !== 'undefined') {
-      try {
-        const storedPartyDetails = localStorage.getItem('party_details')
-        if (storedPartyDetails) {
-          const parsed = JSON.parse(storedPartyDetails)
-          if (parsed.guestCount && parsed.guestCount > 0) {
-            guestCount = parseInt(parsed.guestCount)
-          }
-        }
-      } catch (error) {
-        console.warn('Could not get guest count from localStorage:', error)
-      }
-    }
-    
-    partyBagBreakdown = {
-      guestCount,
-      pricePerBag,
-      totalBagPrice: pricePerBag * guestCount
-    }
-  }
+  // Show duration info if supplier has extra hour rates and duration > 2 hours
+  const showDurationInfo = !!(
+    (supplier?.extraHourRate || supplier?.serviceDetails?.extraHourRate) &&
+    partyDetails?.duration && 
+    partyDetails.duration > 2 &&
+    pricing.breakdown.extraHours > 0
+  )
+
+  // Show weekend info if weekend premium was applied
+  const showWeekendInfo = pricing.details?.isWeekend && pricing.breakdown?.weekend > 0
 
   const getTypeConfig = (supplierType) => {
     const configs = {
@@ -151,7 +102,6 @@ export default function SelectedSupplierCard({
       isNewlyAdded={isNewlyAdded}
       onAnimationComplete={handleAnimationComplete}>
       <Card onClick={onClick} className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
-        {/* ... existing image and header content ... */}
         <div className="relative h-64 w-full">
           {isLoading ? (
             <Skeleton className="w-full h-full" />
@@ -177,9 +127,13 @@ export default function SelectedSupplierCard({
                   <Badge className="bg-blue-500 text-white border-blue-400 shadow-lg backdrop-blur-sm">
                     Selected
                   </Badge>
+                  
                 </div>
                 <button
-                  onClick={() => handleDeleteSupplier(type)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteSupplier(type)
+                  }}
                   className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg"
                 >
                   <X className="w-5 h-5" />
@@ -205,17 +159,15 @@ export default function SelectedSupplierCard({
                   <div className="flex items-center justify-between">
                     <div className="text-white">
                       <span className="text-3xl font-black drop-shadow-lg">£{displayPrice}</span>
-                      {/* ← UPDATED: Show breakdown based on supplier type */}
-                      {isPartyBag && partyBagBreakdown ? (
-                        <div className="text-xs text-white/80 mt-1">
-                          {partyBagBreakdown.guestCount} bags × £{partyBagBreakdown.pricePerBag} = £{partyBagBreakdown.totalBagPrice}
-                          {hasAddons && addonsTotal > 0 && ` + £${addonsTotal} add-ons`}
+                      
+                      {/* Show price breakdown if there are premiums applied */}
+                      {/* {(showDurationInfo || showWeekendInfo) && (
+                        <div className="text-xs text-white/90 mt-1 drop-shadow">
+                           £{pricing.breakdown.base}
+                          {showWeekendInfo && ` + Weekend £${pricing.breakdown.weekend}`}
+                          {showDurationInfo && ` + ${pricing.details.extraHours}h £${pricing.breakdown.extraHours}`}
                         </div>
-                      ) : hasAddons && addonsTotal > 0 ? (
-                        <div className="text-xs text-white/80 mt-1">
-                          Base: £{basePrice} + Add-ons: £{addonsTotal}
-                        </div>
-                      ) : null}
+                      )} */}
                     </div>
                   </div>
                 </div>
@@ -229,7 +181,10 @@ export default function SelectedSupplierCard({
           {hasAddons && (
             <div className="mb-6">
               <button
-                onClick={() => setShowAddons(!showAddons)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowAddons(!showAddons)
+                }}
                 className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))] hover:from-[hsl(var(--primary-100))] transition-colors"
               >
                 <div className="flex items-center gap-2">
@@ -274,7 +229,10 @@ export default function SelectedSupplierCard({
 
           <Button
             className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white shadow-lg"
-            onClick={() => openSupplierModal(type)}
+            onClick={(e) => {
+              e.stopPropagation()
+              openSupplierModal(type)
+            }}
             disabled={isDeleting}
             size="lg"
             data-tour={`change-supplier-${type}`}

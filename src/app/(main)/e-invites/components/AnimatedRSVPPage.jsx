@@ -642,7 +642,7 @@ export default function AnimatedRSVPPage() {
             value={rsvpData.guestName}
             onChange={(e) => setRsvpData(prev => ({ ...prev, guestName: e.target.value }))}
             placeholder="Enter your name"
-            className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+            className="rounded-xl border-2 border-gray-200 bg-white focus:border-[hsl(var(--primary-400))]"
           />
         </div>
         <div>
@@ -653,7 +653,7 @@ export default function AnimatedRSVPPage() {
     value={rsvpData.childName}
     onChange={(e) => setRsvpData(prev => ({ ...prev, childName: e.target.value }))}
     placeholder="Which child is invited?"
-    className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+    className="rounded-xl border-2 border-gray-200 bg-white focus:border-[hsl(var(--primary-400))]"
   />
 </div>
 
@@ -667,7 +667,7 @@ export default function AnimatedRSVPPage() {
               value={rsvpData.email}
               onChange={(e) => setRsvpData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="your@email.com"
-              className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+              className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
             />
           </div>
           <div>
@@ -679,103 +679,57 @@ export default function AnimatedRSVPPage() {
               value={rsvpData.phone}
               onChange={(e) => setRsvpData(prev => ({ ...prev, phone: e.target.value }))}
               placeholder="Phone number"
-              className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+              className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
             />
           </div>
         </div>
 
         {rsvpData.status === 'yes' && (
           <>
-            {/* Improved number inputs with + - buttons for mobile */}
+            {/* Updated dropdowns for better mobile experience */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Users className="w-4 h-4 inline mr-1" />
                   Total Guests
                 </label>
-                <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
-                  <button
-                    type="button"
-                    onClick={() => setRsvpData(prev => ({ 
-                      ...prev, 
-                      guestCount: Math.max(1, prev.guestCount - 1) 
-                    }))}
-                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    min="1"
-                    value={rsvpData.guestCount}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value) || 1;
-                      setRsvpData(prev => ({ ...prev, guestCount: Math.max(1, value) }));
-                    }}
-                    className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setRsvpData(prev => ({ 
-                      ...prev, 
-                      guestCount: Math.min(20, prev.guestCount + 1) 
-                    }))}
-                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
+                <select
+                  value={rsvpData.guestCount}
+                  onChange={(e) => setRsvpData(prev => ({ 
+                    ...prev, 
+                    guestCount: parseInt(e.target.value) 
+                  }))}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white text-center font-medium"
+                >
+                  {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
+                    <option key={num} value={num}>
+                      {num} {num === 1 ? 'guest' : 'guests'}
+                    </option>
+                  ))}
+                </select>
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Baby className="w-4 h-4 inline mr-1" />
                   Children
                 </label>
-                <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[hsl(var(--primary-400))]">
-                  <button
-                    type="button"
-                    onClick={() => setRsvpData(prev => ({ 
-                      ...prev, 
-                      childrenCount: Math.max(0, prev.childrenCount - 1) 
-                    }))}
-                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    min="0"
-                    value={rsvpData.childrenCount}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      // Handle NaN case properly
-                      const finalValue = isNaN(value) ? 0 : Math.max(0, value);
-                      setRsvpData(prev => ({ ...prev, childrenCount: finalValue }));
-                    }}
-                    onBlur={(e) => {
-                      // Ensure valid value on blur
-                      const value = parseInt(e.target.value);
-                      if (isNaN(value) || value < 0) {
-                        setRsvpData(prev => ({ ...prev, childrenCount: 0 }));
-                      }
-                    }}
-                    className="flex-1 px-3 py-3 text-center border-0 focus:outline-none focus:ring-0"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setRsvpData(prev => ({ 
-                      ...prev, 
-                      childrenCount: Math.min(10, prev.childrenCount + 1) 
-                    }))}
-                    className="px-3 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
+                <select
+                  value={rsvpData.childrenCount}
+                  onChange={(e) => setRsvpData(prev => ({ 
+                    ...prev, 
+                    childrenCount: parseInt(e.target.value) 
+                  }))}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white text-center font-medium"
+                >
+                  {Array.from({ length: 11 }, (_, i) => i).map(num => (
+                    <option key={num} value={num}>
+                      {num === 0 ? 'No children' : 
+                       num === 1 ? '1 child' : 
+                       `${num} children`}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -788,7 +742,7 @@ export default function AnimatedRSVPPage() {
                 value={rsvpData.dietaryRequirements}
                 onChange={(e) => setRsvpData(prev => ({ ...prev, dietaryRequirements: e.target.value }))}
                 placeholder="Any allergies or dietary needs?"
-                className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+                className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
               />
             </div>
           </>
@@ -803,7 +757,7 @@ export default function AnimatedRSVPPage() {
             onChange={(e) => setRsvpData(prev => ({ ...prev, message: e.target.value }))}
             placeholder={rsvpData.status === 'yes' ? "Can't wait to celebrate! 🎉" : "Sorry I'll miss the fun!"}
             rows={3}
-            className="rounded-xl border-2 border-gray-200 focus:border-[hsl(var(--primary-400))]"
+            className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
           />
         </div>
 

@@ -533,16 +533,9 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
       }} className="w-full h-full absolute">
-    {/* <Image
-      src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1754515959/iStock-1716501930__1_-removebg_bn6x4d.png"
-      alt="People celebrating at a party"
-      fill
-      className="object-contain object-right "
-    /> */}
+  
 
 
-    {/* Optional overlay for text contrast */}
-    {/* <div className="absolute inset-0 bg-black/10" /> */}
   </div>
         {/* Strong dark overlay */}
         <div className="absolute inset-0 bg-black/1"></div>

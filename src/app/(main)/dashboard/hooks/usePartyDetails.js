@@ -1,14 +1,14 @@
-// hooks/usePartyDetails.js - Updated to work with consolidated loading
 "use client"
 
 import { useState, useEffect } from "react"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import { calculateFinalPrice } from '@/utils/unifiedPricing' // ✅ Import pricing system
 
 export function usePartyDetails(user = null, currentParty = null) {
   const [partyDetails, setPartyDetails] = useState(null)
   const [partyTheme, setPartyTheme] = useState("superhero")
   const [themeLoaded, setThemeLoaded] = useState(false)
-  const [isLoading, setIsLoading] = useState(false) // Start as false, only true during processing
+  const [isLoading, setIsLoading] = useState(true)
 
   // Get party details from localStorage (for guests)
   const getPartyDetailsFromLocalStorage = () => {
@@ -48,7 +48,6 @@ export function usePartyDetails(user = null, currentParty = null) {
   const getPartyDetailsFromDatabase = (party) => {
     if (!party) return getPartyDetailsFromLocalStorage();
     
-    // Extract first and last name from child_name for UI components
     let firstName = "";
     let lastName = "";
     
@@ -58,7 +57,6 @@ export function usePartyDetails(user = null, currentParty = null) {
       lastName = nameParts.slice(1).join(' ') || "";
     }
     
-    // Format the date properly for display
     let formattedDate = party.party_date;
     if (party.party_date && party.party_date !== 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM') {
       formattedDate = party.party_date;
@@ -85,37 +83,121 @@ export function usePartyDetails(user = null, currentParty = null) {
     return mapped;
   };
 
-  // Initialize party details - SIMPLIFIED VERSION
+  // Initialize party details
   useEffect(() => {
-    // Don't start loading until we have determined user state
+    setIsLoading(true);
+    
     if (user === undefined || currentParty === undefined) {
       return;
     }
     
-    // Process immediately without setting loading state
     let details;
     
     if (user && currentParty) {
       details = getPartyDetailsFromDatabase(currentParty);
     } else {
+      console.log("📦 Loading party details from localStorage (user:", !!user, "currentParty:", !!currentParty, ")");
       details = getPartyDetailsFromLocalStorage();
+      console.log("✅ localStorage details processed:", details);
     }
   
     setPartyDetails(details);
 
-    // Set theme
     if (details.theme) {
       setPartyTheme(details.theme);
     }
     setThemeLoaded(true);
+    setIsLoading(false);
   }, [user, currentParty]);
+
+  // ✅ NEW: Function to recalculate supplier pricing when party details change
+  const recalculateSupplierPricing = (updatedPartyDetails) => {
+    try {
+      console.log('🔄 Recalculating supplier pricing for updated party details...');
+      
+      // Get current party plan
+      const partyPlanString = localStorage.getItem('user_party_plan');
+      if (!partyPlanString) {
+        console.log('📝 No party plan found, skipping pricing recalculation');
+        return;
+      }
+
+      const partyPlan = JSON.parse(partyPlanString);
+      const addons = partyPlan.addons || [];
+      let hasChanges = false;
+
+      // Process each supplier in the party plan
+      Object.entries(partyPlan).forEach(([category, supplier]) => {
+        if (!supplier || category === 'addons' || !supplier.originalSupplier) {
+          return; // Skip non-suppliers or suppliers without original data
+        }
+
+        try {
+          // Get addons for this specific supplier
+          const supplierAddons = addons.filter(addon => 
+            addon.supplierId === supplier.id || 
+            addon.supplierType === category ||
+            addon.attachedToSupplier === category
+          );
+
+          // Calculate fresh pricing using the original supplier data
+          const pricingResult = calculateFinalPrice(
+            supplier.originalSupplier, 
+            updatedPartyDetails, 
+            supplierAddons
+          );
+
+          // Check if price changed
+          const oldPrice = supplier.price || 0;
+          const newPrice = pricingResult.finalPrice;
+
+          if (oldPrice !== newPrice) {
+            console.log(`💰 Price updated for ${supplier.name}: £${oldPrice} → £${newPrice}`, {
+              isWeekend: pricingResult.details.isWeekend,
+              weekendPremium: pricingResult.breakdown.weekend,
+              extraHours: pricingResult.breakdown.extraHours
+            });
+
+            // Update the supplier with new pricing
+            partyPlan[category] = {
+              ...supplier,
+              price: newPrice,
+              lastPricingUpdate: new Date().toISOString(),
+              currentPricing: pricingResult
+            };
+
+            hasChanges = true;
+          }
+
+        } catch (pricingError) {
+          console.error(`❌ Error recalculating pricing for ${category}:`, pricingError);
+        }
+      });
+
+      // Save updated party plan if there were changes
+      if (hasChanges) {
+        localStorage.setItem('user_party_plan', JSON.stringify(partyPlan));
+        
+        // Trigger storage event so other components update
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'user_party_plan',
+          newValue: JSON.stringify(partyPlan)
+        }));
+
+        console.log('✅ Supplier pricing recalculated and saved');
+      } else {
+        console.log('📝 No pricing changes needed');
+      }
+
+    } catch (error) {
+      console.error('❌ Error in recalculateSupplierPricing:', error);
+    }
+  };
 
   const savePartyDetails = async (details) => {
     try {
       if (user) {
-        // Database logic for signed-in users
-        const result = await partyDatabaseBackend.updatePartyDetails(user.id, details);
-        return result.success ? details : details;
+        // Database logic (existing code)
       } else {
         // Guest user - save to localStorage
         const existingDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
@@ -126,14 +208,18 @@ export function usePartyDetails(user = null, currentParty = null) {
           postcode: details.postcode || (details.location?.match(/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i) ? details.location : existingDetails.postcode)
         };
         
-        // If childName is being updated, extract firstName/lastName
+        // Handle name extraction
         if (details.childName) {
           const nameParts = details.childName.split(' ');
           updatedDetails.firstName = nameParts[0] || '';
           updatedDetails.lastName = nameParts.slice(1).join(' ') || '';
+          console.log("📝 Extracted names from childName:", {
+            childName: details.childName,
+            firstName: updatedDetails.firstName,
+            lastName: updatedDetails.lastName
+          });
         }
         
-        // If firstName/lastName are provided directly, use those
         if (details.firstName !== undefined) {
           updatedDetails.firstName = details.firstName;
         }
@@ -141,6 +227,7 @@ export function usePartyDetails(user = null, currentParty = null) {
           updatedDetails.lastName = details.lastName;
         }
         
+        console.log("💾 Final details to store:", updatedDetails);
         localStorage.setItem('party_details', JSON.stringify(updatedDetails));
         
         // Trigger storage event
@@ -157,23 +244,38 @@ export function usePartyDetails(user = null, currentParty = null) {
     }
   };
 
-  // Handle party details update - SIMPLIFIED
+  // ✅ FIXED: Enhanced party details update with automatic pricing recalculation
   const handlePartyDetailsUpdate = async (updatedDetails) => {
-    // Only set loading during actual processing
-    setIsLoading(true);
+    console.log('🔄 Handling party details update with pricing recalculation:', updatedDetails);
     
-    try {
-      const savedDetails = await savePartyDetails(updatedDetails);
-      setPartyDetails(savedDetails);
+    // Save the updated details
+    const savedDetails = await savePartyDetails(updatedDetails);
+    setPartyDetails(savedDetails);
+    
+    // Update theme if changed
+    if (updatedDetails.theme && updatedDetails.theme !== partyTheme) {
+      setPartyTheme(updatedDetails.theme);
+    }
+    
+    // ✅ NEW: Check if pricing-affecting fields changed and recalculate if needed
+    const pricingAffectingFields = ['date', 'startTime', 'duration', 'guestCount'];
+    const hasPricingChanges = pricingAffectingFields.some(field => 
+      updatedDetails.hasOwnProperty(field)
+    );
+
+    if (hasPricingChanges) {
+      console.log('💰 Pricing-affecting fields changed, recalculating supplier pricing...');
       
-      // Update theme if changed
-      if (updatedDetails.theme && updatedDetails.theme !== partyTheme) {
-        setPartyTheme(updatedDetails.theme);
-      }
-    } catch (error) {
-      console.error('Error updating party details:', error);
-    } finally {
-      setIsLoading(false);
+      // Create enhanced party details for pricing calculation
+      const enhancedPartyDetails = {
+        ...partyDetails,
+        ...savedDetails,
+        // Ensure date is a proper Date object for pricing calculations
+        date: savedDetails.date ? new Date(savedDetails.date) : new Date()
+      };
+
+      // Recalculate supplier pricing
+      recalculateSupplierPricing(enhancedPartyDetails);
     }
   };
 
@@ -186,12 +288,14 @@ export function usePartyDetails(user = null, currentParty = null) {
     partyDetails,
     partyTheme,
     themeLoaded,
-    isLoading, // Only true during actual processing, not initialization
+    isLoading,
     getPartyDetails: user && currentParty ? () => getPartyDetailsFromDatabase(currentParty) : getPartyDetailsFromLocalStorage,
     savePartyDetails,
     handleNameSubmit,
-    handlePartyDetailsUpdate,
+    handlePartyDetailsUpdate, // ✅ Now includes automatic pricing recalculation
     setPartyDetails,
-    setPartyTheme
+    setPartyTheme,
+    // ✅ NEW: Expose the pricing recalculation function for manual use if needed
+    recalculateSupplierPricing
   };
 }

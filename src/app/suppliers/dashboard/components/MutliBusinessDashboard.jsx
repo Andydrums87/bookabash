@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useBusiness } from '@/contexts/BusinessContext';
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from '@/components/ui/UniversalModal';
+import { BusinessSwitcherSkeleton } from './DashboardSkeletons';
 
 const CompactBusinessSwitcher = ({ className = "" }) => {
   const { 
@@ -266,12 +267,7 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
   };
 
   if (loading) {
-    return (
-      <div className={`flex items-center gap-3 py-4 px-4 bg-white rounded-full ${className}`}>
-        <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
-        <span className="text-sm text-gray-500">Loading businesses...</span>
-      </div>
-    );
+    return <BusinessSwitcherSkeleton className={className} />
   }
 
   if (!businesses || businesses.length === 0) {

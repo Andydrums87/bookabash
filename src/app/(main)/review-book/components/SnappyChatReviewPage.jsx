@@ -15,6 +15,7 @@ import { useContextualNavigation } from '@/hooks/useContextualNavigation';
 import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestions';
 import { usePartyPlan } from "@/utils/partyPlanBackend";
 import { useToast } from '@/components/ui/toast';
+import SnappyLoader from '@/components/ui/SnappyLoader';
 import Image from 'next/image';
 
 import { 
@@ -51,14 +52,20 @@ import { useRouter } from "next/navigation"
 // Import auth and database functions
 import { supabase } from "@/lib/supabase";
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend";
-import { calculateSupplierPrice, isLeadTimeSupplier } from '@/utils/supplierPricingHelpers'
+import { 
+  calculateFinalPrice, 
+  isLeadBasedSupplier, 
+  getDisplayPrice,
+  getPriceBreakdownText 
+} from '@/utils/unifiedPricing'
 
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 
 export default function SnappyChatReviewPage() {
   const router = useRouter();
   const { removeSupplier } = usePartyPlan();
-  
+
+
   // State management
   const [currentStep, setCurrentStep] = useState(0);
   const [showFinalCTA, setShowFinalCTA] = useState(false);
@@ -320,6 +327,7 @@ const { navigateWithContext} = useContextualNavigation()
         location: details.location || "TBD",
         age: details.childAge || "TBD",
         childName: details.childName || "Your Child",
+        guestCount: details.guestCount || 15, // This is essential for party bags
         
         // Keep raw data for migration and PartySummaryCard
         rawDate: details.date,
@@ -357,17 +365,51 @@ const { navigateWithContext} = useContextualNavigation()
             cakes: <Palette className="w-5 h-5" />,
           };
       
-          suppliers.push({
-            id: supplier.id || key,
-            name: supplier.name,
-            category: supplier.category || key.charAt(0).toUpperCase() + key.slice(1),
-            icon: iconMap[key] || <Info className="w-5 h-5" />,
-            image: supplier.image || supplier.imageUrl || supplier.originalSupplier?.image,
-            price: supplier.price,
-            description: supplier.description,
-            supplierType: key, // Add this for removal functionality
-          });
-          
+          // Special handling for party bags to ensure correct price structure
+          let supplierData;
+          if (key === 'partyBags' || supplier.category === 'Party Bags') {
+            // For party bags, ensure we have the right price structure
+            const storedPrice = supplier.price || supplier.originalPrice || supplier.priceFrom || 0;
+            const guestCount = details.guestCount || 15;
+            
+            // If stored price seems to be total price (reasonable per-bag when divided)
+            const potentialPerBag = storedPrice / guestCount;
+            
+            supplierData = {
+              id: supplier.id || key,
+              name: supplier.name,
+              category: 'Party Bags',
+              icon: iconMap[key] || <Info className="w-5 h-5" />,
+              image: supplier.image || supplier.imageUrl || supplier.originalSupplier?.image,
+              description: supplier.description,
+              supplierType: key,
+              
+              // Set both originalPrice and price to help unified pricing detect correctly
+              originalPrice: potentialPerBag >= 2 && potentialPerBag <= 15 ? potentialPerBag : 5.00,
+              price: potentialPerBag >= 2 && potentialPerBag <= 15 ? potentialPerBag : 5.00,
+              priceFrom: potentialPerBag >= 2 && potentialPerBag <= 15 ? potentialPerBag : 5.00,
+              
+              // Store original data for reference
+              _originalStoredPrice: storedPrice,
+              _calculatedPerBag: potentialPerBag >= 2 && potentialPerBag <= 15 ? potentialPerBag : 5.00
+            };
+          } else {
+            // Regular suppliers
+            supplierData = {
+              id: supplier.id || key,
+              name: supplier.name,
+              category: supplier.category || key.charAt(0).toUpperCase() + key.slice(1),
+              icon: iconMap[key] || <Info className="w-5 h-5" />,
+              image: supplier.image || supplier.imageUrl || supplier.originalSupplier?.image,
+              price: supplier.price,
+              originalPrice: supplier.originalPrice,
+              priceFrom: supplier.priceFrom,
+              description: supplier.description,
+              supplierType: key,
+            };
+          }
+      
+          suppliers.push(supplierData);
           fullSupplierData[key] = supplier;
         }
       });
@@ -907,8 +949,17 @@ const migratePartyToDatabase = async (authenticatedUser) => {
   };
   
   const totalPrice = selectedSuppliers.reduce((sum, supplier) => {
-    const { price } = calculateSupplierPrice(supplier, partyDetails);
-    return sum + price;
+    // Create proper party details object for pricing
+    const pricingPartyDetails = {
+      date: partyDetails.rawDate || partyDetails.date,
+      duration: partyDetails.duration || 2,
+      guestCount: partyDetails.guestCount || 15,
+      startTime: partyDetails.startTime
+    };
+    
+    const pricing = calculateFinalPrice(supplier, pricingPartyDetails, []);
+    console.log('Review page pricing:', supplier.name, pricing.finalPrice);
+    return sum + pricing.finalPrice;
   }, 0);
   
   const totalAddonsPrice = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
@@ -1168,12 +1219,9 @@ const getButtonIcon = (stepData) => {
   // Loading state - show loading until auth is resolved
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-primary-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your profile...</p>
-        </div>
-      </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+             <SnappyLoader text="Setting up your party....." />
+           </div>
     );
   }
 
@@ -1551,11 +1599,47 @@ const getButtonIcon = (stepData) => {
        
        <div className="mb-6">
 
+
+     
 <div className="bg-gray-50 rounded-lg p-2 space-y-1.5 max-h-48 overflow-y-auto">
 {selectedSuppliers.map(supplier => {
-  // Add this calculation for each supplier
-  const pricingInfo = calculateSupplierPrice(supplier, partyDetails);
-  const isLeadTime = isLeadTimeSupplier(supplier);
+  // ✅ UPDATED: Use unified pricing system  
+  const fullPartyDetails = {
+    date: partyDetails.rawDate,
+    duration: partyDetails.duration || 2,
+    guestCount: partyDetails.guestCount || 15,
+    startTime: partyDetails.startTime
+  };
+  
+  const pricing = calculateFinalPrice(supplier, fullPartyDetails, []);
+  const isLeadBased = isLeadBasedSupplier(supplier);
+  
+  // ✅ FIXED: Use same approach as dashboard for consistent display
+  let breakdownText = '';
+  if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
+    // For party bags, calculate the per-bag price from the base price in supplier data
+    const guestCount = fullPartyDetails.guestCount || 15;
+    const basePrice = supplier.originalPrice || supplier.price || supplier.priceFrom || 0;
+    
+    // Check if base price is total or per-bag by testing if it's reasonable as per-bag price
+    const potentialPerBagPrice = basePrice / guestCount;
+    let perBagPrice;
+    
+    if (potentialPerBagPrice >= 2 && potentialPerBagPrice <= 15 && guestCount > 1) {
+      // Base price appears to be total, so calculate per-bag
+      perBagPrice = potentialPerBagPrice;
+    } else if (basePrice >= 2 && basePrice <= 15) {
+      // Base price appears to be per-bag
+      perBagPrice = basePrice;
+    } else {
+      // Fallback
+      perBagPrice = 5.00;
+    }
+    
+    breakdownText = `${guestCount} bags × £${perBagPrice.toFixed(2)}`;
+  } else {
+    breakdownText = getPriceBreakdownText(supplier, fullPartyDetails, []);
+  }
   
   return (
     <div key={supplier.id} className="flex justify-between items-center bg-white rounded-md p-2 border border-gray-100 group">
@@ -1575,13 +1659,11 @@ const getButtonIcon = (stepData) => {
           </div>
           <div className="text-xs text-gray-500 truncate">
             ({supplier.category})
-            {/* Show breakdown for party bags */}
-            {pricingInfo.breakdown && (
-              <span className="ml-1">- {pricingInfo.breakdown}</span>
+            {breakdownText && (
+              <span className="ml-1">- {breakdownText}</span>
             )}
           </div>
-          {/* Show payment type indicator */}
-          {isLeadTime && (
+          {isLeadBased && (
             <div className="text-xs text-orange-600 font-medium">
               Full payment required
             </div>
@@ -1590,7 +1672,7 @@ const getButtonIcon = (stepData) => {
       </div>
       <div className="flex items-center space-x-2">
         <div className="font-bold text-[hsl(var(--primary-600))] text-xs flex-shrink-0">
-          £{pricingInfo.price.toFixed(2)}
+          £{pricing.finalPrice.toFixed(2)}
         </div>
         <button
           onClick={() => handleRemoveSupplier(supplier.supplierType || supplier.category.toLowerCase(), supplier.id)}

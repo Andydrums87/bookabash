@@ -16,7 +16,7 @@ function WizardNavigation({
 
   const getNextButtonText = () => {
     if (isSaving) {
-      return "Saving..."
+      return isLastStep ? "Completing..." : "Saving..."
     }
     
     switch (currentStep) {
@@ -31,9 +31,15 @@ function WizardNavigation({
     }
   }
 
+  const getLoadingSpinner = () => (
+    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+  )
+
   const getNextButtonIcon = () => {
     if (isSaving) {
-      return <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+      return isLastStep ? 
+        <div className="mr-2">{getLoadingSpinner()}</div> : 
+        <div className="ml-2">{getLoadingSpinner()}</div>
     }
     
     if (isLastStep) {
@@ -43,10 +49,13 @@ function WizardNavigation({
     return <ChevronRight className="w-4 h-4 ml-2" />
   }
 
-  const handleNextClick = () => {
+  const handleNextClick = async () => {
+    // Prevent multiple clicks when already processing
+    if (isSaving) return
+
     if (isLastStep) {
       // This is the final complete step
-      onComplete()
+      await onComplete()
     } else if (currentStep === WIZARD_STEPS.CREATE_INVITE) {
       // This is the save step - check if AI option is selected
       if (!selectedAiOption) {
@@ -61,7 +70,9 @@ function WizardNavigation({
   }
 
   const isNextDisabled = () => {
+    // Immediately disable if saving/processing
     if (isSaving) return true
+    
     if (!canProceedToNext()) return true
     
     // For CREATE_INVITE step, require AI option selection
@@ -83,6 +94,7 @@ function WizardNavigation({
                 variant="outline" 
                 onClick={prevStep}
                 disabled={isSaving}
+                className={isSaving ? 'opacity-50 cursor-not-allowed' : ''}
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Back
@@ -102,9 +114,9 @@ function WizardNavigation({
             <Button
               onClick={handleNextClick}
               disabled={isNextDisabled()}
-              className={`bg-primary-500 text-white hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))]${
-                isSaving ? 'cursor-not-allowed' : ''
-              }`}
+              className={`bg-primary-500 text-white hover:from-[hsl(var(--primary-700))] hover:to-[hsl(var(--primary-800))] ${
+                isSaving ? 'cursor-not-allowed opacity-75' : ''
+              } transition-all duration-150`}
             >
               {isLastStep ? (
                 <>
@@ -114,8 +126,7 @@ function WizardNavigation({
               ) : (
                 <>
                   {getNextButtonText()}
-                  {!isSaving && <ChevronRight className="w-4 h-4 ml-2" />}
-                  {isSaving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>}
+                  {getNextButtonIcon()}
                 </>
               )}
             </Button>
@@ -123,10 +134,22 @@ function WizardNavigation({
         </div>
         
         {/* Validation Messages */}
-        {currentStep === WIZARD_STEPS.CREATE_INVITE && !selectedAiOption && (
+        {currentStep === WIZARD_STEPS.CREATE_INVITE && !selectedAiOption && !isSaving && (
           <div className="mt-2 text-center">
             <p className="text-sm text-amber-600">
               ⚠️ Please select an AI option to continue
+            </p>
+          </div>
+        )}
+
+        {/* Loading Message */}
+        {isSaving && (
+          <div className="mt-2 text-center">
+            <p className="text-sm text-blue-600 font-medium">
+              {isLastStep ? 
+                "🚀 Finalizing your invitation..." : 
+                "💾 Saving your progress..."
+              }
             </p>
           </div>
         )}
