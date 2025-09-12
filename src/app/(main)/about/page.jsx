@@ -13,7 +13,7 @@ export default function AboutUs() {
         backgroundRepeat: 'repeat',
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
-      }} className="py-20 bg-gradient-to-b from-[hsl(var(--primary-50))] to-white relative overflow-hidden">
+      }} className="md:py-20 pt-10 bg-gradient-to-b from-[hsl(var(--primary-50))] to-white relative overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h1 className="text-5xl md:text-6xl font-black text-white mb-6">

@@ -109,17 +109,48 @@
   --accent-800: 210 11% 23%; /* #343A40 */
   --accent-900: 210 12% 15%; /* #212529 */
 }
+/* Add these to your .dark section in globals.css */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
+  --background: 224 71.4% 15%; /* Similar to your #2F2F2F */
+  --foreground: 0 0% 100%; /* Your white text */
+  --muted-foreground: 0 0% 64%; /* Similar to your text-gray-400 */
+  --card: 224 71.4% 18%; /* Slightly lighter than background */
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
+  
+  /* Updated primary colors for dark mode */
+  --primary: 14 100% 64%; /* Keep your brand orange */
+  --primary-foreground: 0 0% 100%;
+  --ghost: 11 80% 49%;
+  
+  /* Dark mode primary shades - adjusted for better contrast */
+  --primary-50: 8 85% 15%;   /* Much darker */
+  --primary-100: 8 85% 20%;  /* Darker */
+  --primary-200: 10 80% 25%; /* Darker */
+  --primary-300: 11 80% 35%; /* Darker */
+  --primary-400: 12 90% 45%; /* Medium */
+  --primary-500: 14 100% 64%; /* Your main brand color */
+  --primary-600: 14 100% 70%; /* Lighter */
+  --primary-700: 11 80% 75%;  /* Lighter */
+  --primary-800: 10 80% 80%;  /* Much lighter */
+  --primary-900: 9 84% 85%;   /* Very light */
+  --primary-950: 8 85% 90%;   /* Almost white */
+  
+  /* Secondary colors for dark mode */
+  --secondary: 174 100% 29%;
+  --secondary-foreground: 0 0% 100%;
+  --secondary-50: 174 100% 15%;
+  --secondary-100: 174 100% 20%;
+  --secondary-200: 174 61% 25%;
+  --secondary-300: 174 39% 35%;
+  --secondary-400: 174 61% 45%;
+  --secondary-500: 174 100% 30%;
+  --secondary-600: 174 100% 40%;
+  --secondary-700: 174 100% 50%;
+  --secondary-800: 174 100% 60%;
+  --secondary-900: 174 100% 70%;
+  
+  /* Rest of your existing dark mode variables */
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);

@@ -67,6 +67,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                     alt="People celebrating at a party"
                     fill
                     className="object-cover rounded-2xl"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                 </div>
               </div>
@@ -83,7 +84,8 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
                 alt="Snappy the crocodile"
                 fill
-                sizes="100vw"
+                className="object-contain"
+                sizes="160px"
                 priority
               />
             </div>
@@ -292,6 +294,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   alt="People celebrating at a party"
                   fill
                   className="object-cover"
+                  sizes="(max-width: 384px) 100vw, 384px"
                 />
               </div>
             </div>
@@ -327,6 +330,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   alt="Snappy the crocodile"
                   fill
                   className="object-contain"
+                  sizes="80px"
                 />
               </div>
             </div>

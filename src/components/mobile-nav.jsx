@@ -291,17 +291,17 @@ const hasLocalStorageParty = () => {
       {/* Mobile Menu */}
       <div
         className={`
-          fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-[300] md:hidden
+          fixed top-0 right-0 h-full w-80 bg-primary-500 shadow-xl z-[300] md:hidden
           transform transition-all duration-300 ease-out flex flex-col
           ${isOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
         {/* Fixed Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-white/20 flex-shrink-0">
           {!loading && user ? (
             <div className="px-0 py-2">
-              <h2 className="text-2xl font-normal text-gray-900">
-                Hello, <span className="text-primary-500">{getUserDisplayName()}</span>
+              <h2 className="text-2xl font-normal text-white">
+                Hello, <span className="text-white font-medium">{getUserDisplayName()}</span>
               </h2>
             </div>
           ) : (
@@ -311,7 +311,7 @@ const hasLocalStorageParty = () => {
                 alt="PartySnap"
                 width={120}
                 height={32}
-                className="h-auto w-auto object-contain"
+                className="h-auto w-auto object-contain brightness-0 invert"
               />
             </div>
           )}
@@ -320,16 +320,16 @@ const hasLocalStorageParty = () => {
             variant="ghost"
             size="sm"
             onClick={closeMenu}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            className="p-2 hover:bg-white/10 rounded-lg transition-all duration-200"
           >
-            <X className="h-5 w-5 text-primary-500 hover:text-[hsl(var(--primary-500))]" />
+            <X className="h-5 w-5 text-white" />
           </Button>
         </div>
 
         {/* Loading State */}
         {loading && (
           <div className="px-6 py-8 flex-shrink-0">
-            <div className="h-8 bg-gray-200 rounded animate-pulse w-3/4"></div>
+            <div className="h-8 bg-white/20 rounded animate-pulse w-3/4"></div>
           </div>
         )}
 
@@ -340,34 +340,34 @@ const hasLocalStorageParty = () => {
               {/* Home */}
               <Link
                 href="/"
-                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                className="flex items-center py-4 text-white hover:text-white/80 transition-colors duration-200 border-b border-white/10"
                 onClick={closeMenu}
               >
-                <Home className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <Home className="w-6 h-6 mr-4 text-white/80" />
                 <span className="text-md">Home</span>
               </Link>
 
               {/* Snap Suppliers */}
               <Link
                 href="/browse"
-                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                className="flex items-center py-4 text-white hover:text-white/80 transition-colors duration-200 border-b border-white/10"
                 onClick={closeMenu}
               >
-                <Search className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <Search className="w-6 h-6 mr-4 text-white/80" />
                 <span className="text-md">Snap Suppliers</span>
               </Link>
 
  {/* Dashboard - ALWAYS show, regardless of user state */}
-<div className="border-b border-gray-50">
+<div className="border-b border-white/10">
   <button
     onClick={() => setDashboardExpanded(!dashboardExpanded)}
-    className="flex items-center justify-between w-full py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+    className="flex items-center justify-between w-full py-4 text-white hover:text-white/80 transition-colors duration-200"
   >
     <div className="flex items-center">
-      <Calendar className="w-6 h-6 mr-4 text-gray-600" />
+      <Calendar className="w-6 h-6 mr-4 text-white/80" />
       <span className="text-md">My Snapboard</span>
     </div>
-    <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? 'rotate-90' : ''}`} />
+    <ChevronRight className={`w-4 h-4 transition-transform duration-200 text-white/80 ${dashboardExpanded ? 'rotate-90' : ''}`} />
   </button>
 
   {/* Dashboard Sub-items */}
@@ -381,12 +381,12 @@ const hasLocalStorageParty = () => {
           closeMenu()
           router.push("/dashboard")
         }}
-        className="flex items-center w-full py-3 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200"
+        className="flex items-center w-full py-3 text-white/90 hover:text-white transition-colors duration-200"
       >
-        <Calendar className="w-4 h-4 mr-3 text-gray-500" />
+        <Calendar className="w-4 h-4 mr-3 text-white/70" />
         <div className="text-left">
           <div className="text-sm font-medium">Party Dashboard</div>
-          <div className="text-xs text-gray-500">Overview & planning</div>
+          <div className="text-xs text-white/60">Overview & planning</div>
         </div>
       </button>
 
@@ -394,7 +394,7 @@ const hasLocalStorageParty = () => {
       {user && (
         <>
           <div className="pt-3 pb-1">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="text-xs font-semibold text-white/60 uppercase tracking-wide">
               Party Tools
             </div>
           </div>
@@ -404,12 +404,12 @@ const hasLocalStorageParty = () => {
               key={item.href}
               onClick={() => handleDashboardNavigation(item)}
               disabled={loadingPartyData}
-              className="flex items-center w-full py-2 text-gray-700 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 disabled:opacity-50"
+              className="flex items-center w-full py-2 text-white/90 hover:text-white transition-colors duration-200 disabled:opacity-50"
             >
-              <item.icon className="w-4 h-4 mr-3 text-gray-500" />
+              <item.icon className="w-4 h-4 mr-3 text-white/70" />
               <div className="text-left">
                 <div className="text-sm font-medium">{item.label}</div>
-                <div className="text-xs text-gray-500">{item.description}</div>
+                <div className="text-xs text-white/60">{item.description}</div>
               </div>
             </button>
           ))}
@@ -421,20 +421,20 @@ const hasLocalStorageParty = () => {
               {/* Snapspiration */}
               <Link
                 href="/blog"
-                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                className="flex items-center py-4 text-white hover:text-white/80 transition-colors duration-200 border-b border-white/10"
                 onClick={closeMenu}
               >
-                <BookOpen className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <BookOpen className="w-6 h-6 mr-4 text-white/80" />
                 <span className="text-md">Snapspiration</span>
               </Link>
 
               {/* My Favorites */}
               <Link
                 href="/favorites"
-                className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                className="flex items-center py-4 text-white hover:text-white/80 transition-colors duration-200 border-b border-white/10"
                 onClick={closeMenu}
               >
-                <Heart className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                <Heart className="w-6 h-6 mr-4 text-white/80" />
                 <span className="text-md">My Favorites</span>
               </Link>
 
@@ -442,10 +442,10 @@ const hasLocalStorageParty = () => {
               {user && (
                 <Link
                   href="/profile"
-                  className="flex items-center py-4 text-gray-900 hover:text-[hsl(var(--primary-500))] transition-colors duration-200 border-b border-gray-50"
+                  className="flex items-center py-4 text-white hover:text-white/80 transition-colors duration-200 border-b border-white/10"
                   onClick={closeMenu}
                 >
-                  <Settings className="w-6 h-6 mr-4 text-gray-600 hover:text-[hsl(var(--primary-500))]" />
+                  <Settings className="w-6 h-6 mr-4 text-white/80" />
                   <span className="text-md">Account Settings</span>
                 </Link>
               )}
@@ -457,9 +457,9 @@ const hasLocalStorageParty = () => {
                     closeMenu()
                     router.push("/dashboard")
                   }}
-                  className="flex items-center w-full py-4 text-red-500 hover:text-red-600 transition-colors duration-200 border-b border-gray-50"
+                  className="flex items-center w-full py-4 text-white hover:text-yellow-200 transition-colors duration-200 border-b border-white/10"
                 >
-                  <Star className="w-6 h-6 mr-4 text-red-500" />
+                  <Star className="w-6 h-6 mr-4 text-white" />
                   <span className="text-lg font-normal">Start Planning</span>
                 </button>
               )}
@@ -471,13 +471,13 @@ const hasLocalStorageParty = () => {
         </div>
 
         {/* Fixed Bottom Actions */}
-        <div className="p-6 border-t border-gray-100 flex-shrink-0 bg-white">
+        <div className="p-6 border-t border-white/20 flex-shrink-0 bg-primary-500">
           {!loading && user ? (
             <div className="space-y-3">
               {/* NEW: Quick Profile Access Button */}
               <Button
                 variant="outline"
-                className="w-full border-[hsl(var(--primary-500))] text-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-50))] font-normal py-3 text-base rounded-full transition-all duration-200"
+                className="w-full border-white text-white hover:bg-white/10 font-normal py-3 text-base rounded-full transition-all duration-200"
                 asChild
               >
                 <Link href="/profile" onClick={closeMenu}>
@@ -490,7 +490,7 @@ const hasLocalStorageParty = () => {
               <Button
                 onClick={handleSignOut}
                 variant="ghost"
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 py-3 text-base rounded-full transition-all duration-200"
+                className="w-full text-red-300 hover:text-red-200 hover:bg-red-500/20 py-3 text-base rounded-full transition-all duration-200"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
@@ -499,7 +499,7 @@ const hasLocalStorageParty = () => {
           ) : !loading ? (
             <div className="space-y-3">
               <Button
-                className="w-full bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white font-normal py-3 text-base rounded-full transition-all duration-200"
+                className="w-full bg-white hover:bg-gray-100 text-primary-500 font-normal py-3 text-base rounded-full transition-all duration-200"
                 asChild
               >
                 <Link href="/signin" onClick={closeMenu}>
@@ -508,7 +508,7 @@ const hasLocalStorageParty = () => {
               </Button>
               <Button
                 variant="outline"
-                className="w-full border-[hsl(var(--primary-500))] text-gray-900 hover:bg-gray-50 font-normal py-3 text-base rounded-full transition-all duration-200"
+                className="w-full border-white text-primary-500 hover:bg-white/10 font-normal py-3 text-base rounded-full transition-all duration-200"
                 asChild
               >
                 <Link href="/suppliers/onboarding" onClick={closeMenu}>
@@ -517,7 +517,7 @@ const hasLocalStorageParty = () => {
               </Button>
             </div>
           ) : (
-            <div className="h-12 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-12 bg-white/20 rounded-full animate-pulse"></div>
           )}
 
           {/* App Info */}
@@ -529,7 +529,7 @@ const hasLocalStorageParty = () => {
                   alt="PartySnap"
                   width={120}
                   height={32}
-                  className="h-auto w-auto object-contain"
+                  className="h-auto w-auto object-contain "
                 />
               </div>
             </Link>

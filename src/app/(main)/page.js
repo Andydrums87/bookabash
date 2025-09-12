@@ -287,6 +287,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+
       <PartyBuildingLoader
         isVisible={showPartyLoader}
         theme={mapThemeValue(formData.theme)}
@@ -320,7 +321,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
       <CategoryGrid />
       <FeaturesGrid />
 
-      <HowItWorks />
+      {/* <HowItWorks /> */}
       <CustomerStories />
       <FinalCTA />
     

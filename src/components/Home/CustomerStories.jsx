@@ -9,7 +9,7 @@ export default function CustomerStories() {
     {
       name: "Emma's Superhero Adventure",
       theme: "Superhero",
-      quote: "BookABash made planning so easy! All the suppliers worked perfectly together.",
+      quote: "PartySnap made planning so easy! All the suppliers worked perfectly together.",
       image: "/superhero.webp",
       gradient: "from-blue-400 to-purple-500",
     },
@@ -50,7 +50,13 @@ export default function CustomerStories() {
             >
               <div className="relative h-56">
                 <div className={`absolute inset-0 bg-gradient-to-br ${story.gradient} opacity-20`}></div>
-                <Image src={story.image || "/placeholder.svg"} alt={story.name} fill className="object-cover" />
+                <Image 
+                  src={story.image || "/placeholder.svg"} 
+                  alt={story.name} 
+                  fill 
+                  className="object-cover" 
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" 
+                />
                 <div className="absolute top-4 left-4">
                   <Badge className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold">{story.theme} Theme</Badge>
                 </div>
@@ -80,7 +86,13 @@ export default function CustomerStories() {
               >
                 <div className="relative h-48">
                   <div className={`absolute inset-0 bg-gradient-to-br ${story.gradient} opacity-20`}></div>
-                  <Image src={story.image || "/placeholder.svg"} alt={story.name} fill className="object-cover" />
+                  <Image 
+                    src={story.image || "/placeholder.svg"} 
+                    alt={story.name} 
+                    fill 
+                    className="object-cover" 
+                    sizes="320px" 
+                  />
                   <div className="absolute top-4 left-4">
                     <Badge className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold">{story.theme} Theme</Badge>
                   </div>

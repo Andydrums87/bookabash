@@ -3,6 +3,8 @@ import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
 
 
+
+
 // Add this
 const poppins = Poppins({
   variable: "--font-poppins",

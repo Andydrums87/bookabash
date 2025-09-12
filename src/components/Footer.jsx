@@ -4,9 +4,7 @@ import Image from 'next/image';
 
 const Footer = () => {
     return (
-
       <footer className="bg-[#2F2F2F] text-white py-12 relative">
-
         <div className="absolute top-0 left-0 w-full overflow-hidden">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-12 -mt-12">
             <path
@@ -19,14 +17,16 @@ const Footer = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578794/Transparent_With_Text_1_nfb1pi.png"
-                alt="PartySnap Logo"
-                width={160} // Adjust as needed
-                height={160} // Maintain aspect ratio accordingly
-                priority
-                className="relative h-auto w-auto" // remove absolute, handled by next/image
-              />
+              <div className="w-40 h-20 relative">
+                <Image
+                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578794/Transparent_With_Text_1_nfb1pi.png"
+                  alt="PartySnap Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                  sizes="160px"
+                />
+              </div>
               <p className="text-gray-400 mt-4">The all-in-one platform for booking children's parties.</p>
               <div className="mt-6">
                 <p className="text-gray-400 flex items-center">
@@ -177,19 +177,19 @@ const Footer = () => {
                   </a>
                 </li>
                 <li>
-      <a href="/suppliers/onboarding/auth/signin" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        Supplier Sign In
-      </a>
-    </li>
+                  <a href="/suppliers/onboarding/auth/signin" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    Supplier Sign In
+                  </a>
+                </li>
               </ul>
             </div>
   
@@ -216,4 +216,3 @@ const Footer = () => {
   }
   
   export default Footer
-  

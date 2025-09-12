@@ -180,13 +180,7 @@ export default function AddonSelectionModal({
       {/* Fixed Footer */}
       <ModalFooter theme="fun" className="flex-shrink-0 border-t bg-white">
         <div className="flex gap-3 w-full">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="flex-1 h-12"
-          >
-            Skip
-          </Button>
+        
           <Button
             onClick={handleConfirm}
             className="flex-2 h-12 bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white"

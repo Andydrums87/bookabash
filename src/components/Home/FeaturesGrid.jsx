@@ -37,13 +37,15 @@ export default function FeaturesGrid() {
               {/* Floating UI Card */}
               <div className="transform rotate-2 hover:rotate-0 transition-transform duration-300">
                 <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                  <Image
-                    src="/themeselection.png"
-                    alt="PartySnap theme selection interface"
-                    width={800}
-                    height={600}
-                    className="w-full h-80 object-cover object-top"
-                  />
+                  <div className="relative w-full h-80">
+                    <Image
+                      src="/themeselection.png"
+                      alt="PartySnap theme selection interface"
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  </div>
                 </div>
               </div>
               {/* Background decoration */}
@@ -69,13 +71,15 @@ export default function FeaturesGrid() {
               {/* Floating UI Card */}
               <div className="transform -rotate-1 hover:rotate-0 transition-transform duration-300">
                 <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                  <Image
-                    src="/userdashboard2.png"
-                    alt="PartySnap user dashboard"
-                    width={800}
-                    height={600}
-                    className="w-full h-80 object-cover object-top"
-                  />
+                  <div className="relative w-full h-80">
+                    <Image
+                      src="/userdashboard2.png"
+                      alt="PartySnap user dashboard"
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  </div>
                 </div>
               </div>
               {/* Background decoration */}
@@ -101,13 +105,15 @@ export default function FeaturesGrid() {
               {/* Floating UI Card */}
               <div className="transform rotate-1 hover:rotate-0 transition-transform duration-300">
                 <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                  <Image
-                    src="/supplierpage.png"
-                    alt="PartySnap supplier profile page"
-                    width={800}
-                    height={600}
-                    className="w-full h-80 object-cover object-top"
-                  />
+                  <div className="relative w-full h-80">
+                    <Image
+                      src="/supplierpage.png"
+                      alt="PartySnap supplier profile page"
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  </div>
                 </div>
               </div>
               {/* Background decoration */}

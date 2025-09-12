@@ -12,7 +12,7 @@ export default function PrivacyPolicy() {
         backgroundRepeat: 'repeat',
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
-      }} className="py-20 bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+      }} className="md:py-20 py-8 bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 max-w-4xl mx-auto">
             <div className="flex justify-center mb-6">
