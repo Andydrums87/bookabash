@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense } from 'react'
-import SupplierTermsPage from './supplier-terms-content'
+import SupplierTermsContent from './supplier-terms-content'
 
 // Loading component for the suspense fallback
 function SupplierTermsLoading() {
@@ -18,7 +18,7 @@ function SupplierTermsLoading() {
 export default function SupplierTermsPage() {
   return (
     <Suspense fallback={<SupplierTermsLoading />}>
-      <SupplierTermsPage />
+      <SupplierTermsContent />
     </Suspense>
   )
 }
