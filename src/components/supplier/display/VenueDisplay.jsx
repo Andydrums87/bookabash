@@ -16,7 +16,14 @@ import {
   XCircle,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Ban,
+  Gift,
+  Star,
+  AlertTriangle,
+  Key,
+  Music,
+  Truck
 } from "lucide-react";
 
 const VenueDisplay = ({ supplier, serviceDetails }) => {
@@ -25,6 +32,8 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   const [showAllFacilities, setShowAllFacilities] = useState(false);
   const [showAllSetupOptions, setShowAllSetupOptions] = useState(false);
   const [showAllCateringOptions, setShowAllCateringOptions] = useState(false);
+  const [showAllRestrictions, setShowAllRestrictions] = useState(false);
+  const [showAllRules, setShowAllRules] = useState(false);
 
   // Helper function to render expandable badge list
   const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
@@ -96,28 +105,175 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
     );
   };
 
-  // Helper function to render add-on services
+  // Helper function to get category icon and color
+  const getCategoryInfo = (category) => {
+    const categories = {
+      service: { icon: <Gift className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
+      access: { icon: <Key className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
+      equipment: { icon: <Music className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
+      premium: { icon: <Star className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
+      logistics: { icon: <Truck className="w-4 h-4" />, color: "text-gray-700 border-gray-300 bg-gray-50" },
+    };
+    return categories[category] || categories.service;
+  };
+
+  // Helper function to render add-on services with horizontal scroll
   const renderAddOnServices = (addOnServices) => {
     if (!addOnServices?.length) return null;
+    
     return (
       <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary-600" />
-            Additional Services
+            <Gift className="w-5 h-5 text-primary-500" />
+            Additional Services Available
           </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {addOnServices.map((addon, index) => (
-              <div key={index} className="p-4 bg-teal-50 border border-teal-300 rounded-lg hover:bg-teal-100 transition-colors cursor-pointer">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-gray-900">{addon.name}</h4>
-                  <span className="font-bold text-teal-600">£{addon.price}</span>
+          <p className="text-gray-600 mb-4">Optional extras you can add to enhance your booking</p>
+          
+          {/* Horizontal scrolling container */}
+          <div className="overflow-x-auto pb-2">
+            <div className="flex gap-4 min-w-max">
+              {addOnServices.map((addon, index) => {
+                const categoryInfo = getCategoryInfo(addon.category);
+                
+                return (
+                  <div key={index} className="flex-shrink-0 w-72 p-4 bg-white border border-[hsl(var(--primary-500))] rounded-lg hover:bg-primary-100 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="text-primary-500">
+                          {categoryInfo.icon}
+                        </div>
+                        <h4 className="font-semibold text-gray-900">{addon.name}</h4>
+                      </div>
+                      <span className="font-bold text-primary-600 text-lg">£{addon.price}</span>
+                    </div>
+                    {addon.description && (
+                      <p className="text-gray-700 text-sm mt-2">{addon.description}</p>
+                    )}
+                    <div className="mt-2">
+                      <Badge variant="outline" className="text-xs text-primary-700 border-primary-300 bg-primary-100">
+                        {addon.category === 'service' && 'Additional Service'}
+                        {addon.category === 'access' && 'Facility Access'}
+                        {addon.category === 'equipment' && 'Equipment Rental'}
+                        {addon.category === 'premium' && 'Premium Upgrade'}
+                        {addon.category === 'logistics' && 'Logistics'}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* Scroll indicator */}
+          {addOnServices.length > 2 && (
+            <p className="text-xs text-primary-600 mt-2 text-center">
+              Scroll horizontally to see all {addOnServices.length} services
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Helper function to render restricted items (simplified colors)
+  const renderRestrictedItems = (restrictedItems) => {
+    if (!restrictedItems?.length) return null;
+    
+    const displayItems = showAllRestrictions ? restrictedItems : restrictedItems.slice(0, 8);
+    const hasMore = restrictedItems.length > 8;
+
+    return (
+      <Card className="border-gray-300">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Ban className="w-5 h-5 text-gray-600" />
+            Items Not Permitted
+          </h2>
+          <p className="text-gray-600 mb-4">Please note these items are not allowed at this venue</p>
+          
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {displayItems.map((item, index) => (
+                <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <Ban className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                  <span className="text-gray-800 text-sm font-medium">{item}</span>
                 </div>
-                {addon.description && (
-                  <p className="text-gray-700 text-sm">{addon.description}</p>
+              ))}
+            </div>
+            
+            {hasMore && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllRestrictions(!showAllRestrictions)}
+                className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+              >
+                {showAllRestrictions ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Show less restrictions
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1" />
+                    Show {restrictedItems.length - 8} more restrictions
+                  </>
                 )}
-              </div>
-            ))}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Helper function to render house rules (simplified colors)
+  const renderHouseRules = (houseRules) => {
+    if (!houseRules?.length) return null;
+    
+    const displayRules = showAllRules ? houseRules : houseRules.slice(0, 6);
+    const hasMore = houseRules.length > 6;
+
+    return (
+      <Card className="border-gray-300">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-gray-600" />
+            House Rules
+          </h2>
+          <p className="text-gray-600 mb-4">Please follow these important venue guidelines</p>
+          
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {displayRules.map((rule, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-900 text-sm">{rule}</span>
+                </div>
+              ))}
+            </div>
+            
+            {hasMore && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllRules(!showAllRules)}
+                className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+              >
+                {showAllRules ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Show fewer rules
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1" />
+                    Show {houseRules.length - 6} more rules
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -126,31 +282,27 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
 
   return (
     <div className="space-y-6">
-        <Card className="border-gray-300">
+      {/* About Us Section */}
+      <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Building className="w-5 h-5 text-green-600" />
-            About Us
+            <Building className="w-5 h-5 text-gray-600" />
+            About Our Venue
           </h2>
           
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            {serviceDetails.aboutUs && (
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Venue Type</h4>
-                <p className="text-gray-700">{serviceDetails.aboutUs}</p>
-              </div>
-            )}
-            
-          
-          </div>
-
+          {serviceDetails.aboutUs && (
+            <div className="mb-6">
+              <p className="text-gray-700 leading-relaxed">{serviceDetails.aboutUs}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
       {/* Venue Information */}
       <Card className="border-gray-300">
         <CardContent className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Building className="w-5 h-5 text-green-600" />
+            <Building className="w-5 h-5 text-gray-600" />
             Venue Information
           </h2>
           
@@ -208,7 +360,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
             serviceDetails.facilities,
             "Available Facilities",
             <Settings className="w-4 h-4" />,
-            "text-green-700 border-green-300 bg-green-50",
+            "text-gray-700 border-gray-300 bg-gray-50",
             showAllFacilities,
             setShowAllFacilities,
             8
@@ -219,7 +371,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
             serviceDetails.setupOptions,
             "Setup Options",
             <Settings className="w-4 h-4" />,
-            "text-teal-700 border-teal-300 bg-teal-50",
+            "text-gray-700 border-gray-300 bg-gray-50",
             showAllSetupOptions,
             setShowAllSetupOptions,
             6
@@ -230,7 +382,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
             serviceDetails.cateringOptions,
             "Catering Options",
             <Sparkles className="w-4 h-4" />,
-            "text-primary-700 border-[hsl(var(--primary-300))] bg-primary-50",
+            "text-gray-700 border-gray-300 bg-gray-50",
             showAllCateringOptions,
             setShowAllCateringOptions,
             6
@@ -245,14 +397,14 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
         <Card className="border-gray-300">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-blue-600" />
+              <MapPin className="w-5 h-5 text-gray-600" />
               Location & Access
             </h2>
             
             {supplier?.owner?.address && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Address</h4>
-                <p className="text-blue-800">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Address</h4>
+                <p className="text-gray-800">
                   {supplier.owner.address.street}, {supplier.owner.address.city}, {supplier.owner.address.postcode}
                 </p>
               </div>
@@ -296,65 +448,12 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
         </Card>
       )}
 
-      {/* Pricing */}
-      {serviceDetails.pricing && Object.keys(serviceDetails.pricing).some(key => serviceDetails.pricing[key]) && (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-yellow-600" />
-              Pricing
-            </h2>
-            
-            <div className="grid md:grid-cols-3 gap-4 mb-4">
-              {serviceDetails.pricing.hourlyRate && (
-                <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-700">£{serviceDetails.pricing.hourlyRate}</div>
-                  <div className="text-yellow-600">per hour</div>
-                </div>
-              )}
-              
-              {serviceDetails.pricing.halfDayRate && (
-                <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-700">£{serviceDetails.pricing.halfDayRate}</div>
-                  <div className="text-yellow-600">half day</div>
-                </div>
-              )}
-              
-              {serviceDetails.pricing.fullDayRate && (
-                <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-700">£{serviceDetails.pricing.fullDayRate}</div>
-                  <div className="text-yellow-600">full day</div>
-                </div>
-              )}
-            </div>
-
-            {/* Additional Fees */}
-            {(serviceDetails.pricing.cleaningFee || serviceDetails.pricing.securityDeposit || serviceDetails.pricing.minimumSpend) && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Additional Fees</h4>
-                <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-700">
-                  {serviceDetails.pricing.cleaningFee && (
-                    <p>Cleaning fee: £{serviceDetails.pricing.cleaningFee}</p>
-                  )}
-                  {serviceDetails.pricing.securityDeposit && (
-                    <p>Security deposit: £{serviceDetails.pricing.securityDeposit}</p>
-                  )}
-                  {serviceDetails.pricing.minimumSpend && (
-                    <p>Minimum spend: £{serviceDetails.pricing.minimumSpend}</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Equipment & Tables */}
       {serviceDetails.equipment && Object.keys(serviceDetails.equipment).some(key => serviceDetails.equipment[key]) && (
         <Card className="border-gray-300">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-indigo-600" />
+              <Settings className="w-5 h-5 text-gray-600" />
               Equipment & Setup
             </h2>
             
@@ -459,7 +558,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
               {serviceDetails.policies.childSupervision !== undefined && (
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   {serviceDetails.policies.childSupervision ? (
-                    <AlertCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                    <AlertCircle className="w-5 h-5 text-gray-600 flex-shrink-0" />
                   ) : (
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                   )}
@@ -473,19 +572,35 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
             </div>
 
             {serviceDetails.policies.endTime && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   Event End Time
                 </h4>
-                <p className="text-blue-800">
+                <p className="text-gray-800">
                   Events must end by {serviceDetails.policies.endTime === 'flexible' ? 'flexible times (arranged with venue)' : serviceDetails.policies.endTime}
                 </p>
+              </div>
+            )}
+
+            {serviceDetails.bookingTerms && (
+              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="font-semibold text-gray-900 mb-1">Booking Terms & Conditions</h4>
+                <p className="text-gray-700 text-sm">{serviceDetails.bookingTerms}</p>
               </div>
             )}
           </CardContent>
         </Card>
       )}
+
+      {/* Add-on Services - Now with horizontal scrolling */}
+      {renderAddOnServices(serviceDetails.addOnServices)}
+
+      {/* Restricted Items - Simplified colors */}
+      {renderRestrictedItems(serviceDetails.restrictedItems)}
+
+      {/* House Rules - Simplified colors */}
+      {renderHouseRules(serviceDetails.houseRules)}
 
       {/* Special Features */}
       {serviceDetails.specialFeatures && (
@@ -496,9 +611,6 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
           </CardContent>
         </Card>
       )}
-
-      {/* Add-on Services */}
-      {renderAddOnServices(serviceDetails.addOnServices)}
 
       {/* Legacy Support */}
       {serviceDetails.aboutService && (

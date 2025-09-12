@@ -523,14 +523,6 @@ const applyAISuggestions = () => {
     const email = supplierData?.owner?.email
     const description = supplierData?.description
 
-    console.log('💾 Saving profile for business:', currentBusiness?.name, {
-      businessName,
-      contactName, 
-      email,
-      description,
-      businessId: supplier?.id
-    });
-
     if (!businessName || !contactName || !email) {
       setSaveError('Please fill in all required fields (Business Name, Contact Person, Email)')
       return
@@ -621,14 +613,14 @@ if (loading) {
                   )}
                 </div>
 
-                <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                {/* <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                   {isNewSupplier
                     ? "Welcome! Complete your profile to go live on the marketplace and start receiving bookings."
                     : "Keep your public information and service details up to date."}
-                </p>
+                </p> */}
 
                 {/* Welcome message for new suppliers */}
-                {isNewSupplier && (
+                {/* {isNewSupplier && (
                   <Alert className="border-blue-200 bg-blue-50">
                     <CheckCircle className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800 text-sm">
@@ -636,7 +628,7 @@ if (loading) {
                       packages below, then click "Save Changes" to go live on the marketplace.
                     </AlertDescription>
                   </Alert>
-                )}
+                )} */}
 
                 {/* Success/Error alerts */}
                 {saveSuccess && (

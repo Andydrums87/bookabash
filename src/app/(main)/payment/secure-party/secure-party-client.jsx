@@ -35,6 +35,7 @@ import {
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
 import { ContextualBreadcrumb } from '@/components/ContextualBreadcrumb'
+import { BookingTermsAcceptance } from '@/components/booking-terms-modal'
 import { supabase } from '@/lib/supabase'
 
 // ONLY use unified pricing system
@@ -246,6 +247,7 @@ function PaymentForm({
   const [paymentError, setPaymentError] = useState(null)
   const [paymentRequest, setPaymentRequest] = useState(null)
   const [canMakePayment, setCanMakePayment] = useState(false)
+  const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false)
   const [billingDetails, setBillingDetails] = useState({
     name: partyDetails.parentName || '',
     postalCode: partyDetails.location || ''
@@ -307,6 +309,30 @@ function PaymentForm({
         setPaymentError(null)
       
         try {
+
+          const { data: { user } } = await supabase.auth.getUser()
+  
+          if (user) {
+            console.log('Logging booking terms acceptance for Payment Request API...')
+            const { error: termsError } = await supabase
+              .from('terms_acceptances')
+              .insert({
+                user_id: user.id,
+                user_email: user.email,
+                booking_id: partyDetails.id,
+                terms_version: "1.0",
+                privacy_version: "1.0",
+                ip_address: await getUserIP(),
+                user_agent: navigator.userAgent,
+                accepted_at: new Date().toISOString(),
+                acceptance_context: 'booking'
+              })
+        
+            if (termsError) {
+              console.warn('Failed to log booking terms acceptance:', termsError)
+            }
+          }
+
           const response = await fetch('/api/create-payment-intent', {
             method: 'POST',
             headers: {
@@ -366,77 +392,122 @@ function PaymentForm({
     }
   }, [stripe, paymentBreakdown, partyDetails, confirmedSuppliers, addons, onPaymentSuccess, onPaymentError])
 
-  // Handle regular card payment
-  const handleCardPayment = async (event) => {
-    event.preventDefault()
-    
-    if (!stripe || !elements) {
-      return
-    }
-
-    setIsProcessing(true)
-    setPaymentError(null)
-
-    const cardElement = elements.getElement(CardElement)
-
-    try {
-      console.log('Processing card payment...')
-
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: paymentBreakdown.totalPaymentToday * 100,
-          currency: 'gbp',
-          partyDetails,
-          suppliers: confirmedSuppliers,
-          addons,
-          billingDetails,
-          paymentType: 'card'
-        }),
-      })
-
-      const { clientSecret, error: backendError } = await response.json()
-
-      if (backendError) {
-        throw new Error(backendError)
-      }
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: billingDetails.name || partyDetails.parentName || 'Parent',
-            email: partyDetails.email,
-            address: {
-              postal_code: billingDetails.postalCode || partyDetails.location || ''
-            }
-          },
-        },
-      })
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      if (paymentIntent.status === 'succeeded') {
-        console.log('Card payment successful:', paymentIntent.id)
-        
-        setIsProcessing(false)
-        setIsRedirecting(true)
-        
-        onPaymentSuccess(paymentIntent)
-      }
-
-    } catch (error) {
-      console.error('Card payment error:', error)
-      setPaymentError(error.message)
-      onPaymentError(error)
-      setIsProcessing(false)
-    }
+// Handle regular card payment
+const handleCardPayment = async (event) => {
+  event.preventDefault()
+  
+  if (!stripe || !elements) {
+    return
   }
+
+  // Validate terms acceptance first
+  if (!bookingTermsAccepted) {
+    setPaymentError('Please accept the booking terms to continue')
+    return
+  }
+
+  setIsProcessing(true)
+  setPaymentError(null)
+
+  const cardElement = elements.getElement(CardElement)
+
+  try {
+    console.log('Processing card payment...')
+
+    // Get current user for terms logging
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // Log booking terms acceptance BEFORE processing payment
+    if (user) {
+      console.log('Logging booking terms acceptance...')
+      const { error: termsError } = await supabase
+        .from('terms_acceptances')
+        .insert({
+          user_id: user.id,
+          user_email: user.email,
+          booking_id: partyDetails.id,
+          terms_version: "1.0",
+          privacy_version: "1.0",
+          ip_address: await getUserIP(),
+          user_agent: navigator.userAgent,
+          accepted_at: new Date().toISOString(),
+          acceptance_context: 'booking'
+        })
+
+      if (termsError) {
+        console.warn('Failed to log booking terms acceptance:', termsError)
+        // Continue with payment - don't block for logging issues
+      } else {
+        console.log('Booking terms acceptance logged successfully')
+      }
+    }
+
+    const response = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: paymentBreakdown.totalPaymentToday * 100,
+        currency: 'gbp',
+        partyDetails,
+        suppliers: confirmedSuppliers,
+        addons,
+        billingDetails,
+        paymentType: 'card'
+      }),
+    })
+
+    const { clientSecret, error: backendError } = await response.json()
+
+    if (backendError) {
+      throw new Error(backendError)
+    }
+
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: billingDetails.name || partyDetails.parentName || 'Parent',
+          email: partyDetails.email,
+          address: {
+            postal_code: billingDetails.postalCode || partyDetails.location || ''
+          }
+        },
+      },
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (paymentIntent.status === 'succeeded') {
+      console.log('Card payment successful:', paymentIntent.id)
+      
+      setIsProcessing(false)
+      setIsRedirecting(true)
+      
+      onPaymentSuccess(paymentIntent)
+    }
+
+  } catch (error) {
+    console.error('Card payment error:', error)
+    setPaymentError(error.message)
+    onPaymentError(error)
+    setIsProcessing(false)
+  }
+}
+
+// Helper function for IP address (add if not already present)
+const getUserIP = async () => {
+  try {
+    const response = await fetch('/api/get-ip')
+    const data = await response.json()
+    return data.ip
+  } catch {
+    return 'unknown'
+  }
+}
 
   const handleInputChange = (field, value) => {
     setBillingDetails(prev => ({
@@ -559,10 +630,18 @@ function PaymentForm({
           </div>
         )}
 
+<BookingTermsAcceptance
+  termsAccepted={bookingTermsAccepted}
+  setTermsAccepted={setBookingTermsAccepted}
+  partyDetails={partyDetails}
+  required={true}
+/>
+
+
         {/* Payment Button with Enhanced States */}
         <button 
           type="submit"
-          disabled={!stripe || isProcessing || isRedirecting}
+          disabled={!stripe || isProcessing || isRedirecting || !bookingTermsAccepted}
           className="cursor-pointer w-full bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRedirecting ? (

@@ -115,7 +115,8 @@ export default function LocalStorageDashboard() {
     category: '',
     theme: '',
     date: null,
-    filters: {}
+    filters: {
+    },
   })
   // Debug state (remove in production)
   const [debugInfo, setDebugInfo] = useState({})
@@ -1183,7 +1184,7 @@ const handleNameSubmit = (nameData) => {
               {/* Action Section */}
               <div className="flex flex-col sm:flex-row gap-4"  data-tour="review-book">
                 <Button
-                  className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-[hsl(var(--primary-600))] text-primary-foreground py-4 text-xl font-bold"
+                  className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 py-4 text-xl font-bold"
                   asChild
                 >
                   <Link href="/review-book">Let's Make This happen!</Link>

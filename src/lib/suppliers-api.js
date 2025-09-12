@@ -37,6 +37,9 @@ export const getSuppliers = cache(async () => {
         business_slug,
         business_type,
         is_active,
+        profile_status,           
+        can_go_live,                
+        profile_completion_percentage,  
         created_at,
         data,
         json_name:data->>name,
@@ -49,6 +52,8 @@ export const getSuppliers = cache(async () => {
         json_rating:data->>rating
       `)
       .eq("is_active", true)
+      .eq("profile_status", "live")      // 🔧 ADD: Only live profiles
+      .eq("can_go_live", true)           // 🔧 ADD: Only complete profiles
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -91,6 +96,7 @@ export const getSupplierById = cache(async (id) => {
         json_rating:data->>rating
       `)
       .eq("id", id)
+      // Remove ALL filtering temporarily
       .single();
 
     if (!error && data) return transformSupplierRecord(data);
@@ -102,7 +108,6 @@ export const getSupplierById = cache(async (id) => {
     return null;
   }
 });
-
 export const getRelatedSuppliers = cache(async (category, excludeId) => {
   try {
     const all = await getSuppliers();

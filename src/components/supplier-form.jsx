@@ -7,10 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "./ui/checkbox"
-import { MapPin, Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from "lucide-react"
+import { MapPin, Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getBaseUrl } from "@/utils/env"
+import Link from "next/link"
+import { BasicTermsModal } from "./basic-terms-modal"
+import { PrivacyPolicyModal } from "./privacy-policy-modal"
 
 const serviceTypes = [
   { id: "Entertainment", name: "Entertainment" },
@@ -29,24 +32,17 @@ const serviceTypes = [
 export function SupplierForm() {
   const router = useRouter()
 
-  useEffect(() => {
-    // This runs client-side only
-    console.log("OAuth redirect should go to:", `${window.location.origin}/auth/callback/supplier?step=onboarding`)
-  }, [])
-  
-  // Current step state
+  // State variables
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  // Add to your form state
-const [notificationPreferences, setNotificationPreferences] = useState({
-  emailBookings: true,
-  emailMessages: true,
-  smsBookings: false,  // Default to false - requires explicit opt-in
-  smsReminders: false
-});
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [termsError, setTermsError] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
 
-  // Form data for all steps
+  // Form data state
   const [businessData, setBusinessData] = useState({
     businessName: "",
     phone: "",
@@ -61,36 +57,169 @@ const [notificationPreferences, setNotificationPreferences] = useState({
     confirmPassword: "",
   })
 
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [needsVerification, setNeedsVerification] = useState(false)
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    emailBookings: true,
+    emailMessages: true,
+    smsBookings: false,
+    smsReminders: false
+  })
 
-  // Add this helper function at the top of your SupplierForm component, after the imports
-const sendOnboardingEmail = async (emailData) => {
-  try {
-    const response = await fetch('/api/email/supplier-onboarding', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+  // Local Storage Functions
+  const saveFormData = () => {
+    const formData = {
+      businessData,
+      accountData: {
+        yourName: accountData.yourName,
+        email: accountData.email
+        // Don't save passwords for security
       },
-      body: JSON.stringify(emailData)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      currentStep,
+      termsAccepted,
+      notificationPreferences,
+      timestamp: Date.now()
     }
-
-    const result = await response.json();
-    console.log('✅ Onboarding email sent successfully:', result);
-    return result;
-  } catch (error) {
-    console.error('❌ Failed to send onboarding email:', error);
-    // Don't throw - we don't want email failures to break the signup process
-    return null;
+    localStorage.setItem('supplierFormData', JSON.stringify(formData))
+    console.log('💾 Form data saved to localStorage')
   }
-};
 
-  // Step 1: Business Details Validation
+  const loadFormData = () => {
+    try {
+      const savedData = localStorage.getItem('supplierFormData')
+      if (savedData) {
+        const parsed = JSON.parse(savedData)
+        
+        // Only restore if saved within last 24 hours (prevent stale data)
+        const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000
+        
+        if (isRecent) {
+          setBusinessData(parsed.businessData || {
+            businessName: "",
+            phone: "",
+            postcode: "",
+            supplierType: "",
+          })
+          
+          setAccountData(prev => ({
+            ...prev,
+            yourName: parsed.accountData?.yourName || "",
+            email: parsed.accountData?.email || ""
+            // Passwords remain empty for security
+          }))
+          
+          setCurrentStep(parsed.currentStep || 1)
+          setTermsAccepted(parsed.termsAccepted || false)
+          setNotificationPreferences(parsed.notificationPreferences || {
+            emailBookings: true,
+            emailMessages: true,
+            smsBookings: false,
+            smsReminders: false
+          })
+          
+          console.log('✅ Form data restored from localStorage')
+          return true
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load form data:', error)
+    }
+    return false
+  }
+
+  const clearFormData = () => {
+    localStorage.removeItem('supplierFormData')
+    console.log('🗑️ Form data cleared from localStorage')
+  }
+
+  // Load saved data on component mount
+  useEffect(() => {
+    loadFormData()
+  }, [])
+
+  // Helper function to get user IP
+  const getUserIP = async () => {
+    try {
+      const response = await fetch('/api/get-ip')
+      if (!response.ok) throw new Error('Failed to get IP')
+      const data = await response.json()
+      return data.ip
+    } catch (error) {
+      console.warn('Could not get user IP:', error)
+      return 'unknown'
+    }
+  }
+
+  // Onboarding email function
+  const sendOnboardingEmail = async (emailData) => {
+    try {
+      const response = await fetch('/api/email/supplier-onboarding', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log('✅ Onboarding email sent successfully:', result)
+      return result
+    } catch (error) {
+      console.error('❌ Failed to send onboarding email:', error)
+      return null
+    }
+  }
+
+  // Form field update handlers with auto-save
+  const updateBusinessData = (field, value) => {
+    setBusinessData(prev => {
+      const newData = { ...prev, [field]: value }
+      // Save after a short delay to avoid too many saves
+      setTimeout(() => {
+        const formData = {
+          businessData: newData,
+          accountData: {
+            yourName: accountData.yourName,
+            email: accountData.email
+          },
+          currentStep,
+          termsAccepted,
+          notificationPreferences,
+          timestamp: Date.now()
+        }
+        localStorage.setItem('supplierFormData', JSON.stringify(formData))
+      }, 500)
+      return newData
+    })
+  }
+
+  const updateAccountData = (field, value) => {
+    setAccountData(prev => {
+      const newData = { ...prev, [field]: value }
+      // Save non-password fields
+      if (field !== 'password' && field !== 'confirmPassword') {
+        setTimeout(() => {
+          const formData = {
+            businessData,
+            accountData: {
+              yourName: newData.yourName,
+              email: newData.email
+            },
+            currentStep,
+            termsAccepted,
+            notificationPreferences,
+            timestamp: Date.now()
+          }
+          localStorage.setItem('supplierFormData', JSON.stringify(formData))
+        }, 500)
+      }
+      return newData
+    })
+  }
+
+  // Validation functions
   const validateStep1 = () => {
     const { businessName, phone, postcode, supplierType } = businessData
 
@@ -112,7 +241,6 @@ const sendOnboardingEmail = async (emailData) => {
     return true
   }
 
-  // Step 2: Account Details Validation
   const validateStep2 = () => {
     const { yourName, email, password, confirmPassword } = accountData
 
@@ -139,16 +267,18 @@ const sendOnboardingEmail = async (emailData) => {
     return true
   }
 
-  // Handle step navigation
+  // Step navigation with data persistence
   const nextStep = async () => {
     setError("")
     
     if (currentStep === 1) {
       if (validateStep1()) {
         setCurrentStep(2)
+        saveFormData()
       }
     } else if (currentStep === 2) {
       if (validateStep2()) {
+        saveFormData()
         await handleAccountCreation()
       }
     }
@@ -157,123 +287,181 @@ const sendOnboardingEmail = async (emailData) => {
   const prevStep = () => {
     setError("")
     setCurrentStep(currentStep - 1)
+    saveFormData()
   }
 
- // Then update your handleAccountCreation function:
-const handleAccountCreation = async () => {
-  setLoading(true)
-  setError("")
+  // Account creation handler
+  const handleAccountCreation = async () => {
+    setLoading(true)
+    setError("")
+    setTermsError(false)
 
-  try {
-    console.log('🚀 Creating supplier account...')
-
-    // Step 1: Save to onboarding_drafts first
-    console.log('💾 Saving to onboarding_drafts...')
-    
-    const { data: draftResult, error: draftError } = await supabase
-      .from("onboarding_drafts")
-      .insert({
-        email: accountData.email,
-        your_name: accountData.yourName,
-        business_name: businessData.businessName,
-        phone: businessData.phone,
-        postcode: businessData.postcode,
-        supplier_type: businessData.supplierType,
-      })
-      .select()
-      .single()
-
-    if (draftError) {
-      // If email already exists in drafts, update it
-      if (draftError.code === '23505') {
-        console.log('📝 Email exists in drafts, updating...')
-        const { error: updateError } = await supabase
-          .from("onboarding_drafts")
-          .update({
-            your_name: accountData.yourName,
-            business_name: businessData.businessName,
-            phone: businessData.phone,
-            postcode: businessData.postcode,
-            supplier_type: businessData.supplierType,
-          })
-          .eq("email", accountData.email)
-
-        if (updateError) throw updateError
-      } else {
-        throw draftError
-      }
-    }
-
-    console.log('✅ Onboarding draft saved')
-
-    // Step 2: Create Supabase auth user
-    console.log('🔐 Creating auth user...')
-    
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: accountData.email,
-      password: accountData.password,
-      options: {
-        data: {
-          user_type: 'supplier',
-          full_name: accountData.yourName,
-          business_name: businessData.businessName,
-          phone: businessData.phone,
-          postcode: businessData.postcode,
-          supplier_type: businessData.supplierType
-        }
-      }
-    })
-
-    if (authError) {
-      console.error('❌ Auth signup error:', authError)
+    // Validate terms acceptance
+    if (!termsAccepted) {
+      setError("Please read and accept our Terms & Conditions to continue with account creation.")
+      setTermsError(true)
+      setLoading(false)
       
-      switch (authError.message) {
-        case 'User already registered':
-          setError("An account with this email already exists. Please try signing in instead.")
-          break
-        default:
-          setError(`Account creation failed: ${authError.message}`)
-      }
+      // Scroll to terms section
+      document.getElementById('terms-acceptance')?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
       return
     }
 
-    console.log('✅ Auth user created:', authData.user?.id)
+    try {
+      console.log('🚀 Creating supplier account...')
 
-    // 🎯 NEW: Send onboarding email right after successful account creation
-    console.log('📧 Sending onboarding email...')
-    await sendOnboardingEmail({
-      supplierEmail: accountData.email,
-      supplierName: accountData.yourName,
-      businessName: businessData.businessName,
-      serviceType: businessData.supplierType,
-      needsVerification: !authData.session, // true if they need email verification
-      dashboardLink: `${window.location.origin}/suppliers/dashboard`
-    })
+      // Step 1: Prepare terms acceptance data
+      const termsData = {
+        email: accountData.email,
+        ip_address: await getUserIP(),
+        terms_version: "1.0",
+        privacy_version: "1.0",
+        accepted_at: new Date().toISOString(),
+        user_agent: navigator.userAgent
+      }
 
-    // Step 3: Move to success step
-    if (authData.user && !authData.session) {
-      setNeedsVerification(true)
+      console.log('📋 Terms acceptance data prepared:', {
+        email: termsData.email,
+        ip: termsData.ip_address,
+        timestamp: termsData.accepted_at
+      })
+
+      // Step 2: Save to onboarding_drafts (temporary storage)
+      console.log('💾 Saving to onboarding_drafts...')
+      
+      const { data: draftResult, error: draftError } = await supabase
+        .from("onboarding_drafts")
+        .insert({
+          email: accountData.email,
+          your_name: accountData.yourName,
+          business_name: businessData.businessName,
+          phone: businessData.phone,
+          postcode: businessData.postcode,
+          supplier_type: businessData.supplierType,
+          terms_accepted: termsData
+        })
+        .select()
+        .single()
+
+      if (draftError) {
+        if (draftError.code === '23505') {
+          console.log('📝 Email exists in drafts, updating...')
+          const { error: updateError } = await supabase
+            .from("onboarding_drafts")
+            .update({
+              your_name: accountData.yourName,
+              business_name: businessData.businessName,
+              phone: businessData.phone,
+              postcode: businessData.postcode,
+              supplier_type: businessData.supplierType,
+              terms_accepted: termsData
+            })
+            .eq("email", accountData.email)
+
+          if (updateError) throw updateError
+        } else {
+          throw draftError
+        }
+      }
+
+      console.log('✅ Onboarding draft saved')
+
+      // Step 3: Create Supabase auth user
+      console.log('🔐 Creating auth user...')
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: accountData.email,
+        password: accountData.password,
+        options: {
+          data: {
+            user_type: 'supplier',
+            full_name: accountData.yourName,
+            business_name: businessData.businessName,
+            phone: businessData.phone,
+            postcode: businessData.postcode,
+            supplier_type: businessData.supplierType
+          }
+        }
+      })
+
+      if (authError) {
+        console.error('❌ Auth signup error:', authError)
+        
+        switch (authError.message) {
+          case 'User already registered':
+            setError("An account with this email already exists. Please try signing in instead.")
+            break
+          default:
+            setError(`Account creation failed: ${authError.message}`)
+        }
+        return
+      }
+
+      console.log('✅ Auth user created:', authData.user?.id)
+
+      // Step 4: Save terms acceptance to permanent table
+      if (authData.user) {
+        console.log('📝 Saving terms acceptance to permanent table...')
+        
+        const { data: termsRecord, error: termsError } = await supabase
+          .from('terms_acceptances')
+          .insert({
+            user_id: authData.user.id,
+            user_email: accountData.email,
+            terms_version: termsData.terms_version,
+            privacy_version: termsData.privacy_version,
+            ip_address: termsData.ip_address,
+            user_agent: termsData.user_agent,
+            accepted_at: termsData.accepted_at
+          })
+          .select()
+          .single()
+
+        if (termsError) {
+          console.error('❌ CRITICAL: Failed to save terms acceptance:', termsError)
+          throw new Error('Failed to save terms acceptance. Please try again.')
+        } else {
+          console.log('✅ Terms acceptance saved permanently with ID:', termsRecord.id)
+        }
+      }
+
+      // Step 5: Send onboarding email
+      console.log('📧 Sending onboarding email...')
+      await sendOnboardingEmail({
+        supplierEmail: accountData.email,
+        supplierName: accountData.yourName,
+        businessName: businessData.businessName,
+        serviceType: businessData.supplierType,
+        needsVerification: !authData.session,
+        dashboardLink: `${window.location.origin}/suppliers/dashboard`
+      })
+
+      // Step 6: Clear saved form data and move to success step
+      clearFormData()
+      if (authData.user && !authData.session) {
+        setNeedsVerification(true)
+      }
+      setCurrentStep(3)
+      
+    } catch (error) {
+      console.error("💥 Error during account creation:", error)
+      setError(error.message || "An unexpected error occurred. Please try again.")
+    } finally {
+      setLoading(false)
     }
-    
-    setCurrentStep(3)
-    
-  } catch (error) {
-    console.error("💥 Error during account creation:", error)
-    setError(error.message || "An unexpected error occurred. Please try again.")
-  } finally {
-    setLoading(false)
   }
-}
 
-  // Handle OAuth signup
+  // OAuth signup handler
   const handleOAuthSignup = async (provider) => {
     setError("")
     setLoading(true)
-  
+
     try {
       console.log(`🔐 Starting ${provider} OAuth signup...`)
       
-      // Just store business data - no draft creation
       const oauthBusinessData = {
         ...businessData,
         timestamp: Date.now(),
@@ -283,7 +471,6 @@ const handleAccountCreation = async () => {
       localStorage.setItem('pendingBusinessData', JSON.stringify(oauthBusinessData))
       console.log('💾 Stored business data for OAuth:', oauthBusinessData)
       
-      // Start OAuth flow
       const redirectUrl = `${getBaseUrl()}/auth/callback/supplier?step=onboarding`
       
       const { error } = await supabase.auth.signInWithOAuth({
@@ -310,13 +497,10 @@ const handleAccountCreation = async () => {
     }
   }
 
+  // Styling constants
   const labelClasses = "text-gray-700 dark:text-gray-300 font-medium"
   const inputClasses = "p-6 mt-1 bg-white dark:bg-slate-700 border-slate-400 dark:border-slate-600 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] rounded-md shadow-sm"
   const requiredStar = <span className="text-primary-500">*</span>
-
-  if (typeof window !== 'undefined') {
-    console.log("OAuth redirect should go to:", `${window.location.origin}/auth/callback/supplier?step=onboarding`)
-  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -378,7 +562,7 @@ const handleAccountCreation = async () => {
               <Input
                 id="businessName"
                 value={businessData.businessName}
-                onChange={(e) => setBusinessData(prev => ({...prev, businessName: e.target.value}))}
+                onChange={(e) => updateBusinessData('businessName', e.target.value)}
                 placeholder="Your business name"
                 className={inputClasses}
                 disabled={loading}
@@ -393,7 +577,7 @@ const handleAccountCreation = async () => {
                 id="phone"
                 type="tel"
                 value={businessData.phone}
-                onChange={(e) => setBusinessData(prev => ({...prev, phone: e.target.value}))}
+                onChange={(e) => updateBusinessData('phone', e.target.value)}
                 placeholder="07xxx xxx xxx"
                 className={inputClasses}
                 disabled={loading}
@@ -406,7 +590,7 @@ const handleAccountCreation = async () => {
               </Label>
               <Select 
                 value={businessData.supplierType} 
-                onValueChange={(value) => setBusinessData(prev => ({...prev, supplierType: value}))}
+                onValueChange={(value) => updateBusinessData('supplierType', value)}
                 disabled={loading}
               >
                 <SelectTrigger className={`mt-1 w-full ${inputClasses.replace("placeholder:text-gray-400 dark:placeholder:text-gray-500", "")}`}>
@@ -431,7 +615,7 @@ const handleAccountCreation = async () => {
                 <Input
                   id="postcode"
                   value={businessData.postcode}
-                  onChange={(e) => setBusinessData(prev => ({...prev, postcode: e.target.value}))}
+                  onChange={(e) => updateBusinessData('postcode', e.target.value)}
                   placeholder="e.g. SW1A 1AA"
                   className={`pl-10 ${inputClasses}`}
                   disabled={loading}
@@ -460,7 +644,7 @@ const handleAccountCreation = async () => {
               <Input
                 id="yourName"
                 value={accountData.yourName}
-                onChange={(e) => setAccountData(prev => ({...prev, yourName: e.target.value}))}
+                onChange={(e) => updateAccountData('yourName', e.target.value)}
                 placeholder="Your full name"
                 className={inputClasses}
                 disabled={loading}
@@ -475,7 +659,7 @@ const handleAccountCreation = async () => {
                 id="email"
                 type="email"
                 value={accountData.email}
-                onChange={(e) => setAccountData(prev => ({...prev, email: e.target.value}))}
+                onChange={(e) => updateAccountData('email', e.target.value)}
                 placeholder="you@example.com"
                 className={inputClasses}
                 disabled={loading}
@@ -491,7 +675,7 @@ const handleAccountCreation = async () => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={accountData.password}
-                  onChange={(e) => setAccountData(prev => ({...prev, password: e.target.value}))}
+                  onChange={(e) => updateAccountData('password', e.target.value)}
                   placeholder="••••••••"
                   className={inputClasses}
                   disabled={loading}
@@ -519,7 +703,7 @@ const handleAccountCreation = async () => {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={accountData.confirmPassword}
-                  onChange={(e) => setAccountData(prev => ({...prev, confirmPassword: e.target.value}))}
+                  onChange={(e) => updateAccountData('confirmPassword', e.target.value)}
                   placeholder="••••••••"
                   className={inputClasses}
                   disabled={loading}
@@ -581,31 +765,102 @@ const handleAccountCreation = async () => {
               </Button>
             </div>
           </div>
-          <div className="space-y-4 mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-  <h3 className="font-semibold text-blue-900">📱 Notification Preferences</h3>
-  
-  <div className="space-y-3">
-    <div className="flex items-start space-x-3">
-      <Checkbox
-        id="smsBookingsOnboard"
-        checked={notificationPreferences.smsBookings}
-        onCheckedChange={(checked) => setNotificationPreferences(prev => ({ ...prev, smsBookings: !!checked }))}
-        className="mt-1"
-      />
-      <Label htmlFor="smsBookingsOnboard" className="text-sm text-blue-800">
-        <strong>Enable urgent SMS alerts</strong> - Get instant notifications when customers pay deposits (highly recommended for faster response times)
-      </Label>
-    </div>
+
+
+<div className="border-t border-gray-200 pt-6 mt-6">
+  <div className="rounded-lg p-4 sm:p-6 bg-blue-50 border border-blue-200">
     
-    <div className="text-xs text-blue-700 ml-6">
-      ✓ Instant alerts when payments are made<br/>
-      ✓ 2-hour response window reminders<br/>
-      ✓ Reply STOP anytime to opt out
+    {/* Basic Terms Acceptance - SIMPLIFIED */}
+    <div className="space-y-3">
+      <div className="flex items-start space-x-3">
+        <Checkbox
+          id="basic-terms-acceptance"
+          checked={termsAccepted}
+          onCheckedChange={(checked) => {
+            setTermsAccepted(checked)
+            if (checked) setTermsError(false)
+            saveFormData()
+          }}
+          className="mt-1 flex-shrink-0 data-[state=checked]:bg-[hsl(var(--primary-600))] data-[state=checked]:border-[hsl(var(--primary-600))]"
+          required
+        />
+        <div className="flex-1 min-w-0">
+          <Label 
+            htmlFor="basic-terms-acceptance" 
+            className="text-sm leading-relaxed cursor-pointer font-medium block text-gray-800"
+          >
+            I agree to PartySnap's{" "}
+            <BasicTermsModal>
+              <button 
+                type="button"
+                className="hover:underline font-medium inline-block text-primary-600"
+              >
+                Terms of Service
+              </button>
+            </BasicTermsModal>
+            {" "}and{" "}
+            <PrivacyPolicyModal>
+              <button 
+                type="button"
+                className="hover:underline font-medium inline-block text-primary-600"
+              >
+                Privacy Policy
+              </button>
+            </PrivacyPolicyModal>
+          </Label>
+          
+          <p className="text-xs text-gray-500 mt-2">
+            Full supplier terms will be presented when you're ready to go live.
+          </p>
+          
+          {termsError && (
+            <p className="text-xs text-red-600 mt-2 font-medium">
+              Please accept our basic terms to create your account.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* Divider */}
+    <div className="border-t border-blue-200 my-4"></div>
+
+    {/* Notification Preferences - UNCHANGED */}
+    <div>
+      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2 text-base">
+        <span>📱</span> Notification Preferences
+      </h4>
+      
+      <div className="space-y-3">
+        <div className="flex items-start space-x-3">
+          <Checkbox
+            id="smsBookingsOnboard"
+            checked={notificationPreferences.smsBookings}
+            onCheckedChange={(checked) => {
+              setNotificationPreferences(prev => ({ ...prev, smsBookings: !!checked }))
+              saveFormData()
+            }}
+            className="mt-1 flex-shrink-0 data-[state=checked]:bg-[hsl(var(--primary-600))] data-[state=checked]:border-[hsl(var(--primary-600))]"
+          />
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="smsBookingsOnboard" className="text-sm text-blue-800 font-medium cursor-pointer block">
+              Enable urgent SMS alerts
+            </Label>
+            <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+              Get instant notifications when customers pay deposits (highly recommended for faster response times)
+            </p>
+            <div className="text-xs text-blue-600 mt-2 space-y-1">
+              <div>✓ Instant alerts when payments are made</div>
+              <div>✓ 2-hour response window reminders</div>
+              <div>✓ Reply STOP anytime to opt out</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
         </div>
-        
       )}
 
       {/* Step 3: Success */}
@@ -616,7 +871,7 @@ const handleAccountCreation = async () => {
           </div>
           
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Welcome to BookABash!</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Welcome to PartySnap!</h2>
             {needsVerification ? (
               <div className="mt-4 space-y-3">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -684,10 +939,23 @@ const handleAccountCreation = async () => {
           <Button
             type="button"
             onClick={nextStep}
-            disabled={loading}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-8"
+            disabled={loading || (currentStep === 2 && !termsAccepted)}
+            className={`px-8 transition-all ${
+              currentStep === 2 && !termsAccepted 
+                ? 'bg-gray-400 cursor-not-allowed hover:bg-gray-400' 
+                : 'bg-primary-600 hover:bg-primary-700'
+            } text-white`}
           >
-            {loading ? "Processing..." : currentStep === 2 ? "Create Account" : "Continue"}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : currentStep === 2 ? (
+              termsAccepted ? "Create Account" : "Accept Terms to Continue"
+            ) : (
+              "Continue"
+            )}
           </Button>
         </div>
       )}

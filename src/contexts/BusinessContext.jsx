@@ -3,6 +3,7 @@
 import { useState, useEffect, useContext, createContext, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, usePathname } from 'next/navigation';
+import { suppliersAPI } from '@/utils/mockBackend'
 
 const BusinessContext = createContext();
 
@@ -37,212 +38,237 @@ export const BusinessProvider = ({ children }) => {
     }
   }, []);
 
-  // OPTIMIZED: Load businesses with better state management
-  const loadBusinesses = useCallback(async (isInitialLoad = false) => {
-    try {
-      console.log('🏢 Loading businesses for owner...');
-      
-      // Only show loading on initial load, not subsequent refreshes
-      if (isInitialLoad) {
-        setLoading(true);
-      }
-      
-      const { data: userResult, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
-
-      const userId = userResult?.user?.id;
-      if (!userId) throw new Error("No logged-in user");
-
-      const { data: businessRows, error: businessErr } = await supabase
-        .from("suppliers")
-        .select(`
-          id,
-          business_name,
-          business_type,
-          is_primary,
-          parent_business_id,
-          created_from_theme,
-          business_slug,
-          data,
-          created_at,
-          updated_at
-        `)
-        .eq("auth_user_id", userId)
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: true });
-
-      if (businessErr) throw businessErr;
-
-      if (!businessRows || businessRows.length === 0) {
-        console.log('❌ No businesses found for user');
-        setBusinesses([]);
-        setCurrentBusiness(null);
-        setOwnerInfo(null);
-        storeBusinessId(null);
-        return;
-      }
-
-      const primaryBusiness = businessRows.find(b => b.is_primary) || businessRows[0];
-      const ownerData = primaryBusiness.data.owner;
-      setOwnerInfo(ownerData);
-
-      const businessList = businessRows.map((business) => {
-        const businessData = business.data || {};
-        
-        return {
-          id: business.id,
-          name: business.business_name || businessData.name || 'Unnamed Business',
-          serviceType: businessData.serviceType || 'entertainer',
-          theme: business.created_from_theme || businessData.themes?.[0] || 'general',
-          description: businessData.description || '',
-          location: businessData.location || '',
-          priceFrom: businessData.priceFrom || 0,
-          status: businessData.isComplete ? 'active' : 'draft',
-          
-          isPrimary: business.is_primary,
-          businessType: business.business_type,
-          parentBusinessId: business.parent_business_id,
-          businessSlug: business.business_slug,
-          
-          data: businessData,
-          supplierData: business,
-          owner: businessData.owner || {}
-        };
-      });
-
-      setBusinesses(businessList);
-      
-      // OPTIMIZED: Better business selection logic
-      if (isInitialLoad || !currentBusiness) {
-        let selectedBusiness = null;
-        const storedId = getStoredBusinessId();
-        
-        if (storedId) {
-          selectedBusiness = businessList.find(b => b.id === storedId);
-        }
-        
-        if (!selectedBusiness) {
-          selectedBusiness = businessList.find(b => b.isPrimary) || businessList[0];
-        }
-
-        if (selectedBusiness) {
-          setCurrentBusiness(selectedBusiness);
-          storeBusinessId(selectedBusiness.id);
-          console.log('🏢 Set current business to:', selectedBusiness.name);
-        }
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to load businesses:', error);
-    } finally {
-      if (isInitialLoad) {
-        setLoading(false);
-        setInitialized(true);
-      }
+// Updated loadBusinesses - make it properly async and return businesses
+const loadBusinesses = useCallback(async (isInitialLoad = false) => {
+  try {
+    console.log('🏢 Loading businesses for owner...');
+    
+    if (isInitialLoad) {
+      setLoading(true);
     }
-  }, [getStoredBusinessId, storeBusinessId, currentBusiness]);
+    
+    const { data: userResult, error: userErr } = await supabase.auth.getUser();
+    if (userErr) throw userErr;
 
-  // OPTIMIZED: Switch business without full page refresh
-  const switchBusiness = useCallback(async (businessId) => {
-    try {
-      console.log('🔄 Switching to business:', businessId);
-      setSwitching(true);
+    const userId = userResult?.user?.id;
+    if (!userId) throw new Error("No logged-in user");
 
-      const business = businesses.find(b => b.id === businessId);
-      if (!business) {
-        throw new Error("Business not found");
-      }
+    const { data: businessRows, error: businessErr } = await supabase
+      .from("suppliers")
+      .select(`
+        id,
+        business_name,
+        business_type,
+        is_primary,
+        parent_business_id,
+        created_from_theme,
+        business_slug,
+        data,
+        created_at,
+        updated_at
+      `)
+      .eq("auth_user_id", userId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true });
 
-      // Simulate loading for UX
-      await new Promise(resolve => setTimeout(resolve, 300));
+    if (businessErr) throw businessErr;
 
-      setCurrentBusiness(business);
-      storeBusinessId(businessId);
-      
-      // REMOVED: router.refresh() - this was causing the double loading
-      // Instead, dispatch custom event for components to react
-      window.dispatchEvent(new CustomEvent('businessSwitched', { 
-        detail: { businessId, business } 
-      }));
-      
-      console.log('✅ Switched to:', business.name);
-
-    } catch (error) {
-      console.error('❌ Error switching business:', error);
-      throw error;
-    } finally {
-      setSwitching(false);
+    if (!businessRows || businessRows.length === 0) {
+      console.log('❌ No businesses found for user');
+      setBusinesses([]);
+      setCurrentBusiness(null);
+      setOwnerInfo(null);
+      storeBusinessId(null);
+      return [];
     }
-  }, [businesses, storeBusinessId]);
 
-  // OPTIMIZED: Create new business
-  const createNewBusiness = useCallback(async (businessData) => {
-    try {
-      console.log('🎭 Creating new themed business:', businessData);
+    const primaryBusiness = businessRows.find(b => b.is_primary) || businessRows[0];
+    const ownerData = primaryBusiness.data.owner;
+    setOwnerInfo(ownerData);
 
-      const { data: userResult, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
-
-      const userId = userResult?.user?.id;
-      if (!userId) throw new Error("No logged-in user");
-
-      const primaryBusiness = businesses.find(b => b.isPrimary);
-      if (!primaryBusiness) {
-        throw new Error("No primary business found");
-      }
-
-      const businessSlug = generateBusinessSlug(businessData.name);
-
-      const themedBusinessData = {
-        ...primaryBusiness.data,
-        name: businessData.name,
-        description: `Professional ${businessData.serviceType} services specializing in ${businessData.theme} themes.`,
-        serviceType: businessData.serviceType,
-        themes: [businessData.theme],
-        rating: 0,
-        reviewCount: 0,
-        bookingCount: 0,
-        packages: [],
-        portfolioImages: [],
-        portfolioVideos: [],
-        isComplete: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    const businessList = businessRows.map((business) => {
+      const businessData = business.data || {};
+      
+      return {
+        id: business.id,
+        name: business.business_name || businessData.name || 'Unnamed Business',
+        supplierData: business,
+        serviceType: businessData.serviceType || 'entertainer',
+        theme: business.created_from_theme || businessData.themes?.[0] || 'general',
+        description: businessData.description || '',
+        location: businessData.location || '',
+        priceFrom: businessData.priceFrom || 0,
+        status: businessData.isComplete ? 'active' : 'draft',
+        
+        isPrimary: business.is_primary,
+        businessType: business.business_type,
+        parentBusinessId: business.parent_business_id,
+        businessSlug: business.business_slug,
+        
+        data: businessData,
+        owner: businessData.owner || {}
       };
+    });
 
-      const { data: newBusiness, error: insertErr } = await supabase
-        .from('suppliers')
-        .insert({
-          auth_user_id: userId,
-          business_name: businessData.name,
-          business_type: 'themed',
-          is_primary: false,
-          parent_business_id: primaryBusiness.id,
-          created_from_theme: businessData.theme,
-          business_slug: businessSlug,
-          data: themedBusinessData
-        })
-        .select()
-        .single();
-
-      if (insertErr) {
-        console.error('❌ Insert error:', insertErr);
-        throw insertErr;
+    setBusinesses(businessList);
+    
+    // OPTIMIZED: Better business selection logic
+    if (isInitialLoad || !currentBusiness) {
+      let selectedBusiness = null;
+      const storedId = getStoredBusinessId();
+      
+      if (storedId) {
+        selectedBusiness = businessList.find(b => b.id === storedId);
+      }
+      
+      if (!selectedBusiness) {
+        selectedBusiness = businessList.find(b => b.isPrimary) || businessList[0];
       }
 
-      console.log('✅ New themed business created:', newBusiness.id);
-
-      // Reload businesses and switch to new one
-      await loadBusinesses(false); // Not initial load
-      await switchBusiness(newBusiness.id);
-
-      return { success: true, business: newBusiness };
-
-    } catch (error) {
-      console.error('❌ Error creating themed business:', error);
-      throw error;
+      if (selectedBusiness) {
+        setCurrentBusiness(selectedBusiness);
+        storeBusinessId(selectedBusiness.id);
+        console.log('🏢 Set current business to:', selectedBusiness.name);
+      }
     }
-  }, [businesses, loadBusinesses, switchBusiness]);
+    
+    return businessList; // Return the businesses for waiting
+    
+  } catch (error) {
+    console.error('❌ Failed to load businesses:', error);
+    return [];
+  } finally {
+    if (isInitialLoad) {
+      setLoading(false);
+      setInitialized(true);
+    }
+  }
+}, [getStoredBusinessId, storeBusinessId, currentBusiness]);
+
+const switchBusiness = useCallback(async (businessId) => {
+  try {
+    console.log('🔄 Switching to business:', businessId);
+    setSwitching(true);
+
+    // FIXED: Wait for businesses to be available and include the target business
+    let business = businesses.find(b => b.id === businessId);
+    let retries = 0;
+    
+    while (!business && retries < 5) {
+      console.log(`⏳ Business not found in state, waiting... (attempt ${retries + 1})`);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      business = businesses.find(b => b.id === businessId);
+      retries++;
+    }
+
+    if (!business) {
+      // Last resort: fetch directly from database
+      console.log('📡 Fetching business directly from database...');
+      const { data: directBusiness, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('id', businessId)
+        .single();
+        
+      if (error || !directBusiness) {
+        throw new Error(`Business ${businessId} not found in database`);
+      }
+      
+      // Create business object in expected format
+      business = {
+        id: directBusiness.id,
+        name: directBusiness.business_name,
+        supplierData: directBusiness,
+        serviceType: directBusiness.data?.serviceType || 'entertainer',
+        isPrimary: directBusiness.is_primary,
+        businessType: directBusiness.business_type,
+        data: directBusiness.data || {},
+        owner: directBusiness.data?.owner || {}
+      };
+    }
+
+    // Simulate loading for UX
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    setCurrentBusiness(business);
+    storeBusinessId(businessId);
+    
+    window.dispatchEvent(new CustomEvent('businessSwitched', { 
+      detail: { businessId, business } 
+    }));
+    
+    console.log('✅ Switched to:', business.name);
+
+  } catch (error) {
+    console.error('❌ Error switching business:', error);
+    throw error;
+  } finally {
+    setSwitching(false);
+  }
+}, [businesses, storeBusinessId]);
+
+// Updated createNewBusiness - wait for businesses to actually load
+const createNewBusiness = useCallback(async (businessData) => {
+  try {
+    console.log('🎭 Creating new themed business:', businessData);
+
+    const { data: userResult, error: userErr } = await supabase.auth.getUser();
+    if (userErr) throw userErr;
+
+    const userId = userResult?.user?.id;
+    if (!userId) throw new Error("No logged-in user");
+
+    const primaryBusiness = businesses.find(b => b.isPrimary);
+    if (!primaryBusiness) {
+      throw new Error("No primary business found");
+    }
+
+    // Create the themed business using the API
+    const result = await suppliersAPI.createThemedBusiness(primaryBusiness.id, {
+      name: businessData.name,
+      serviceType: businessData.serviceType,
+      theme: businessData.theme || '',
+      description: businessData.description || ''
+    });
+
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    console.log('✅ New themed business created:', result.business.id);
+
+    // FIXED: Wait for businesses to reload and get the updated list
+    const updatedBusinesses = await loadBusinesses(false);
+    
+    // Check if the new business exists in the updated list
+    const newBusiness = updatedBusinesses.find(b => b.id === result.business.id);
+    if (!newBusiness) {
+      // If not found, wait a bit more and try again
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const retryBusinesses = await loadBusinesses(false);
+      const retryBusiness = retryBusinesses.find(b => b.id === result.business.id);
+      
+      if (!retryBusiness) {
+        throw new Error("Created business not found after reload");
+      }
+    }
+    
+    // Now switch to the new business
+    await switchBusiness(result.business.id);
+
+    return result;
+
+  } catch (error) {
+    console.error('❌ Error creating themed business:', error);
+    throw error;
+  }
+}, [businesses, loadBusinesses, switchBusiness]);
+
+
+
+
+
+
 
   const generateBusinessSlug = useCallback((businessName) => {
     const baseSlug = businessName

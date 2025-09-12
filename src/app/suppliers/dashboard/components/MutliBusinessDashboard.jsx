@@ -31,6 +31,29 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
   const [creating, setCreating] = useState(false);
   const [switchingTo, setSwitchingTo] = useState(null); // Track which business we're switching to
 
+  // Helper function to truncate business names for mobile
+  const getTruncatedBusinessName = (name, maxLength = 20) => {
+    if (!name) return 'Select Business';
+    return name.length > maxLength ? `${name.substring(0, maxLength)}...` : name;
+  };
+
+  // Helper function to get abbreviated service type
+  const getAbbreviatedServiceType = (serviceType) => {
+    const abbreviations = {
+      'Entertainment': 'Entertainment',
+      'Photography': 'Photo',
+      'Face Painting': 'Face Paint',
+      'Bouncy Castle': 'Bouncy',
+      'Activities': 'Activities',
+      'Party Bags': 'Party Bags',
+      'Decorations': 'Decor',
+      'Catering': 'Catering',
+      'Venues': 'Venues',
+      'Cakes': 'Cakes'
+    };
+    return abbreviations[serviceType] || serviceType;
+  };
+
   // Keep service types consistent with your onboarding flow
   const serviceTypes = [
     { value: 'Entertainment', label: 'Entertainment' },
@@ -285,7 +308,7 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
   return (
     <>
       {/* Enhanced Business Switcher with Loading States */}
-      <div className={`flex items-center gap-3 py-2 px-4 bg-white rounded-full shadow-sm ${className} ${isSwitching ? 'opacity-75' : ''}`}>
+      <div className={`flex items-center gap-2 sm:gap-3 py-2 px-3 sm:px-4 bg-white rounded-full shadow-sm ${className} ${isSwitching ? 'opacity-75' : ''}`}>
         
         {/* Loading Indicator */}
         {isSwitching && (
@@ -295,48 +318,63 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
         )}
         
         {/* Business Selector */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <Select 
             value={currentBusiness?.id || ''} 
             onValueChange={handleBusinessSwitch}
             disabled={isSwitching}
           >
-            <SelectTrigger className="border-0 bg-transparent p-0 h-auto focus:ring-0 disabled:opacity-100">
-              <div className="flex items-center gap-2 min-w-0">
-                {currentBusiness?.isPrimary && <Crown className="h-4 w-4 text-yellow-500 flex-shrink-0" />}
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm truncate">
-                    {currentBusiness?.name || 'Select Business'}
-                  </div>
-                  {currentBusiness && (
-                    <div className="text-xs text-gray-500 capitalize truncate">
-                      {currentBusiness.serviceType}
-                      {currentBusiness.theme && ` • ${currentBusiness.theme}`}
+            <SelectTrigger className="border-0 bg-transparent p-0 h-auto focus:ring-0 disabled:opacity-100 w-full">
+              <div className="flex items-center gap-2 min-w-0 w-full overflow-hidden">
+                {/* Crown Icon - always visible but smaller on mobile */}
+                {currentBusiness?.isPrimary && (
+                  <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 flex-shrink-0" />
+                )}
+                
+                {/* Business Info - responsive layout */}
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  {/* Mobile Layout: Single line with truncated name */}
+                  <div className="sm:hidden">
+                    <div className="font-medium text-sm truncate leading-tight">
+                      {getTruncatedBusinessName(currentBusiness?.name, 15)}
                     </div>
-                  )}
+                  </div>
+                  
+                  {/* Desktop Layout: Two lines */}
+                  <div className="hidden sm:block">
+                    <div className="font-medium text-sm truncate leading-tight">
+                      {currentBusiness?.name || 'Select Business'}
+                    </div>
+                    {currentBusiness && (
+                      <div className="text-xs text-gray-500 capitalize truncate leading-tight">
+                        {currentBusiness.serviceType}
+                        {currentBusiness.theme && ` • ${currentBusiness.theme}`}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                {/* Switch Success Indicator */}
+                {/* Switch Success Indicator - smaller on mobile */}
                 {!isSwitching && currentBusiness && (
-                  <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" />
                 )}
               </div>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-[280px]">
               {/* Primary Business */}
               {primaryBusiness && (
                 <SelectItem 
                   value={primaryBusiness.id}
                   disabled={switchingTo === primaryBusiness.id}
                 >
-                  <div className="flex items-center gap-2 py-1">
-                    <Crown className="h-4 w-4 text-yellow-500" />
-                    <div>
-                      <div className="font-medium">{primaryBusiness.name}</div>
+                  <div className="flex items-center gap-2 py-1 w-full">
+                    <Crown className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{primaryBusiness.name}</div>
                       <div className="text-xs text-gray-500">Primary Business</div>
                     </div>
                     {switchingTo === primaryBusiness.id && (
-                      <Loader2 className="h-3 w-3 animate-spin ml-auto" />
+                      <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
                     )}
                   </div>
                 </SelectItem>
@@ -349,17 +387,17 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
                   value={business.id}
                   disabled={switchingTo === business.id}
                 >
-                  <div className="flex items-center gap-2 py-1">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <div>
-                      <div className="font-medium">{business.name}</div>
-                      <div className="text-xs text-gray-500 capitalize">
-                        {business.serviceType}
+                  <div className="flex items-center gap-2 py-1 w-full">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{business.name}</div>
+                      <div className="text-xs text-gray-500 capitalize truncate">
+                        {getAbbreviatedServiceType(business.serviceType)}
                         {business.theme && ` • ${business.theme}`}
                       </div>
                     </div>
                     {switchingTo === business.id && (
-                      <Loader2 className="h-3 w-3 animate-spin ml-auto" />
+                      <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
                     )}
                   </div>
                 </SelectItem>
@@ -373,7 +411,7 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
                 </div>
                 <SelectItem value="__add_business__" disabled={isSwitching}>
                   <div className="flex items-center gap-2 py-1 text-primary-600">
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 flex-shrink-0" />
                     <div className="font-medium">Add New Business</div>
                   </div>
                 </SelectItem>
@@ -383,7 +421,7 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
         </div>
 
         {/* Business Count - Hidden on mobile */}
-        <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
+        <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
           <Building2 className="h-3 w-3" />
           {businesses.length}
         </div>
@@ -394,7 +432,7 @@ const CompactBusinessSwitcher = ({ className = "" }) => {
           size="sm"
           onClick={() => setShowCreateForm(true)}
           disabled={isSwitching}
-          className="hidden sm:flex h-8 w-8 p-0 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+          className="hidden sm:flex h-8 w-8 p-0 text-gray-500 hover:text-gray-700 disabled:opacity-50 flex-shrink-0"
           title="Add Business"
         >
           <Plus className="h-4 w-4" />

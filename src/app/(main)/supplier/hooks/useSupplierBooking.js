@@ -280,7 +280,7 @@ const packagesWithSmartPricing = useMemo(() => {
     const isEntertainer = supplier?.category?.toLowerCase().includes("entertain") || supplier?.category === "Entertainment"
     const hasAddons = supplier?.serviceDetails?.addOnServices?.length > 0
   
-    if (isEntertainer && hasAddons && !skipAddonModal && !addonData) {
+    if (hasAddons && !skipAddonModal && !addonData) {
       return { showAddonModal: true }
     }
     

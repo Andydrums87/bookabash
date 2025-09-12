@@ -873,7 +873,7 @@ export default function LocalStoragePartyHeader({
               <div className="flex items-center gap-2 md:gap-3">
                 <h1
                   suppressHydrationWarning={true}
-                  className="text-3xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
+                  className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
                   style={{
                     textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
                   }}

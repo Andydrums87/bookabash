@@ -42,7 +42,7 @@ export default function CustomerStories() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="hidden md:grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {stories.map((story, index) => (
             <Card
               key={index}
@@ -69,6 +69,45 @@ export default function CustomerStories() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="md:hidden">
+          <div className="flex gap-6 overflow-x-auto pb-6 px-4 -mx-4 scrollbar-hide">
+            {stories.map((story, index) => (
+              <Card
+                key={index}
+                className="flex-shrink-0 w-80 overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-white rounded-2xl transform hover:-translate-y-2"
+              >
+                <div className="relative h-48">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${story.gradient} opacity-20`}></div>
+                  <Image src={story.image || "/placeholder.svg"} alt={story.name} fill className="object-cover" />
+                  <div className="absolute top-4 left-4">
+                    <Badge className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold">{story.theme} Theme</Badge>
+                  </div>
+                </div>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{story.name}</h3>
+                  <p className="text-gray-600 italic mb-4 leading-relaxed text-sm">"{story.quote}"</p>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">Happy Parent</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="flex justify-center mt-4">
+            <div className="flex gap-2">
+              {stories.map((_, index) => (
+                <div key={index} className="w-2 h-2 rounded-full bg-primary-300"></div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -357,14 +357,14 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   return (
     <div className="space-y-4 sm:space-y-8">
       {/* Business Context Header */}
-      {currentBusiness && (
+      {/* {currentBusiness && (
         <Alert className="border-blue-200 bg-blue-50">
           <Info className="h-4 w-4" />
           <AlertDescription>
             <strong>Editing:</strong> {currentBusiness.name} • {currentBusiness.serviceType} • {currentBusiness.theme}
           </AlertDescription>
         </Alert>
-      )}
+      )} */}
       {/* About Us Section */}
       <Card className="">
         <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
@@ -440,7 +440,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   </CardHeader>
   <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-      <div className="space-y-2 sm:space-y-3">
+      {/* <div className="space-y-2 sm:space-y-3">
         <Label htmlFor="performerType" className="text-sm sm:text-base font-semibold text-gray-700">
           What type of performer are you? *
         </Label>
@@ -459,7 +459,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </div> */}
 
       <div className="space-y-2 sm:space-y-3">
         <Label htmlFor="travelRadius" className="text-sm sm:text-base font-semibold text-gray-700">
@@ -479,17 +479,68 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           />
         </div>
       </div>
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
+          Setup Time (minutes)
+        </Label>
+        <div className="relative">
+          <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+          <Input
+            id="setupTime"
+            type="number"
+            min="0"
+            max="120"
+            value={details.setupTime}
+            onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
+            className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+            placeholder="e.g., 30"
+          />
+        </div>
+      </div>
     </div>
 
-    {/* NEW: Duration Pricing Section - Prominently placed */}
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6">
+   
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
+          Minimum Group Size
+        </Label>
+        <Input
+          id="groupSizeMin"
+          type="number"
+          min="1"
+          value={details.groupSizeMin}
+          onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
+          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+          placeholder="e.g., 5"
+        />
+      </div>
+
+      <div className="space-y-2 sm:space-y-3">
+        <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
+          Maximum Group Size
+        </Label>
+        <Input
+          id="groupSizeMax"
+          type="number"
+          min="1"
+          value={details.groupSizeMax}
+          onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
+          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+          placeholder="e.g., 30"
+        />
+      </div>
+
+  
+    </div>
+     {/* NEW: Duration Pricing Section - Prominently placed */}
+     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6">
       <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
         <Clock className="w-5 h-5 text-orange-600" />
         Party Duration Pricing *
       </h4>
-      <p className="text-sm text-gray-700 mb-4">
-        Most children's parties are 2 hours. What do you charge for parties that run longer?
-      </p>
+    
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -524,13 +575,13 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       </div>
       
       {/* Visual Example */}
-      {details.extraHourRate && (
+      {/* {details.extraHourRate && (
         <div className="mt-4 p-3 bg-white/70 rounded-lg border border-orange-200">
           <p className="text-sm text-gray-700">
             <strong>Example:</strong> If your Premium Package costs £180 (2 hours), a 3-hour party would cost £{180 + (details.extraHourRate || 0)} total
           </p>
         </div>
-      )}
+      )} */}
       
       {!details.extraHourRate && (
         <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
@@ -540,57 +591,6 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           </p>
         </div>
       )}
-    </div>
-
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
-          Minimum Group Size
-        </Label>
-        <Input
-          id="groupSizeMin"
-          type="number"
-          min="1"
-          value={details.groupSizeMin}
-          onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
-          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-          placeholder="e.g., 5"
-        />
-      </div>
-
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
-          Maximum Group Size
-        </Label>
-        <Input
-          id="groupSizeMax"
-          type="number"
-          min="1"
-          value={details.groupSizeMax}
-          onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
-          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-          placeholder="e.g., 30"
-        />
-      </div>
-
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
-          Setup Time (minutes)
-        </Label>
-        <div className="relative">
-          <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-          <Input
-            id="setupTime"
-            type="number"
-            min="0"
-            max="120"
-            value={details.setupTime}
-            onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
-            className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-            placeholder="e.g., 30"
-          />
-        </div>
-      </div>
     </div>
   </CardContent>
 </Card>
@@ -879,7 +879,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           <div>
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Gift className="w-5 h-5" />🎁 Your Add-on Services ({details.addOnServices.length})
+                <Gift className="w-5 h-5" />Your Add-on Services ({details.addOnServices.length})
               </h4>
               <Button
                 onClick={() => setIsAddingAddon(true)}
@@ -912,11 +912,11 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
                           <div className="flex items-center gap-3 mb-2">
                             <h5 className="font-semibold text-gray-900">{addon.name}</h5>
                             <span className="font-bold text-primary-400">£{addon.price}</span>
-                            {categoryInfo && (
+                            {/* {categoryInfo && (
                               <span className="text-xs px-2 py-1 bg-primary-400 text-white rounded-full">
-                                {categoryInfo.emoji} {categoryInfo.label}
+                             {categoryInfo.label}
                               </span>
-                            )}
+                            )} */}
                           </div>
                           {addon.description && <p className="text-gray-600 text-sm">{addon.description}</p>}
                         </div>

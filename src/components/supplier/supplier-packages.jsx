@@ -55,12 +55,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, showWeekendIndicator }) => 
                 <span>{pkg.duration}</span>
               </div>
             </div>
-            {/* Show pricing breakdown if weekend premium applied */}
-            {pkg._smartPricing?.breakdown && (
-              <p className="text-sm text-gray-600 mt-1">
-                {pkg._smartPricing.breakdown}
-              </p>
-            )}
+           
           </div>
         </div>
 
@@ -677,13 +672,26 @@ export default function SupplierPackages({
       })
     : packagesData
 
+    // In SupplierPackages component
+const isVenue = supplier?.serviceType === 'venue' || 
+supplier?.category === 'Venues' || 
+supplier?.serviceDetails?.venueType;
+
   return (
     <div className={isMobile ? "px-2" : "px-4 md:px-0"}>
       {/* Header */}
       <h2 className={`font-bold text-gray-900 mb-4 sm:mb-6 ${isMobile ? "text-lg px-2" : "text-xl sm:text-2xl"}`}>
         {isReplacementMode ? "Choose Replacement Package" : "Choose a Package"}
       </h2>
-      
+      {isVenue && (
+  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <h4 className="font-semibold text-blue-900 mb-2">How Venue Pricing Works</h4>
+    <p className="text-blue-800 text-sm">
+      All venue bookings include 1 hour setup + party time + 1 hour cleanup. 
+      This ensures you have adequate time to prepare and clean up after your celebration.
+    </p>
+  </div>
+)}
       {/* Replacement mode instructions */}
       {isReplacementMode && (
         <div className={`bg-primary-50 border border-[hsl(var(--primary-200))] rounded-xl p-4 mb-6 ${isMobile ? "mx-2" : ""}`}>
@@ -727,6 +735,7 @@ export default function SupplierPackages({
           {packagesData.map((pkg) => {
             const isInPlanPackage = partyDetails.inParty && partyDetails.currentPackage === pkg.id
             const isSelected = pkg.id === selectedPackageId && !isInPlanPackage
+            
             return (
               <PackageCard
                 key={pkg.id}
@@ -740,6 +749,7 @@ export default function SupplierPackages({
                 onShowNotification={onShowNotification}
                 isReplacementMode={isReplacementMode}
                 isMobileView={false}
+                partyDuration={partyDetails.duration || 2} // Pass current duration
               />
             )
           })}

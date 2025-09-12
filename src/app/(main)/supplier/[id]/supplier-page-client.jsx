@@ -234,7 +234,23 @@ const handleAddToPlanWithModals = async (...args) => {
 
 
 
-
+const getPartyDuration = () => {
+  if (databasePartyData?.duration) {
+    return databasePartyData.duration;
+  }
+  
+  try {
+    const stored = localStorage.getItem('party_details');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.duration || 2;
+    }
+  } catch (error) {
+    console.warn('Could not get party duration:', error);
+  }
+  
+  return 2;
+}
 
   if (hasLoadedOnce && (supplierError || !supplier)) {
     return (
@@ -304,6 +320,8 @@ if (userTypeLoading) {
   onShowNotification={notifications.setNotification}
   isReplacementMode={replacement.isReplacementMode} 
   selectedDate={availability.getSelectedCalendarDate()} 
+  partyDuration={getPartyDuration()} // Add this
+
 />
 
 

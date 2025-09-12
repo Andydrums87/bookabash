@@ -96,12 +96,12 @@ export default function SupplierDashboard() {
               <Card className="shadow-sm">
                 <CardContent className="p-0">
                   {/* Mobile Table Header */}
-                  <div className="p-4 sm:p-6 border-b border-gray-200 bg-muted/20">
+                  {/* <div className="p-4 sm:p-6 border-b border-gray-200 bg-muted/20">
                     <h2 className="text-base sm:text-lg lg:text-xl font-semibold">Recent Enquiries</h2>
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       Manage your latest booking requests
                     </p>
-                  </div>
+                  </div> */}
 
                   {/* REPLACE: EnquiryOverviewSection with built-in skeleton loading */}
                   <EnquiryOverviewSection />

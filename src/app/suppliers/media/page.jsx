@@ -464,7 +464,7 @@ const handleDeleteLogo = async () => {
         {/* Header - Mobile Optimized */}
         <div className="p-4 sm:p-6">
           {/* ✅ Business Context Header */}
-          {currentBusiness && (
+          {/* {currentBusiness && (
             <Alert className="border-blue-200 bg-blue-50 mb-4">
               <Info className="h-4 w-4" />
               <AlertDescription>
@@ -472,7 +472,7 @@ const handleDeleteLogo = async () => {
                 {currentBusiness.isPrimary && <span className="ml-2 text-blue-600 font-medium">• Primary Business</span>}
               </AlertDescription>
             </Alert>
-          )}
+          )} */}
 
       
           

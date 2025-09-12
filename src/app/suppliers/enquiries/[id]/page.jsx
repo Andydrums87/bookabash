@@ -567,13 +567,13 @@ export default function EnquiryDetailsPage() {
               asChild
               className="border-[hsl(var(--primary-200))] text-primary-700 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-300))] bg-transparent w-fit"
             >
-              <Link href="/suppliers/enquiries">
+              <Link href="/suppliers/dashboard">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Enquiries
               </Link>
             </Button>
 
-            <div className="flex items-center gap-2 sm:gap-4">
+            {/* <div className="flex items-center gap-2 sm:gap-4">
               {enquiry?.auto_accepted && enquiry?.status === "accepted" ? (
                 <Badge className="bg-red-100 text-red-800 border-red-200 px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium">
                   <span className="text-red-600 font-bold mr-1">🚨</span>
@@ -590,9 +590,9 @@ export default function EnquiryDetailsPage() {
               {enquiry?.auto_accepted && enquiry?.status === "accepted" && (
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse" />
               )}
-            </div>
+            </div> */}
           </div>
-
+{/* 
           {enquiry?.auto_accepted && enquiry?.status === "accepted" && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
               <div className="flex items-start gap-3">
@@ -610,7 +610,7 @@ export default function EnquiryDetailsPage() {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-[hsl(var(--primary-100))] p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
@@ -1235,31 +1235,7 @@ export default function EnquiryDetailsPage() {
               <CardContent className="p-4 sm:p-6 lg:p-8">
                 {!showResponseForm ? (
                   <div className="space-y-4 sm:space-y-6">
-                    {enquiry?.auto_accepted ? (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-bold text-xs sm:text-sm">!</span>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-yellow-900 mb-1 sm:mb-2 text-sm sm:text-base">
-                              🚨 PRIORITY BOOKING - DEPOSIT PAID
-                            </h4>
-                            <p className="text-yellow-800 text-xs sm:text-sm">
-                              The customer has already paid a £{Math.round(enquiry.quoted_price * 0.2)} deposit for this
-                              booking. They believe their party is confirmed. If you cannot fulfill this booking,
-                              <strong> PartySnap will immediately find a replacement</strong> and handle the customer
-                              communication.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-gray-600 text-sm sm:text-base">
-                        How would you like to respond to this party enquiry? The customer will be notified immediately
-                        of your decision.
-                      </p>
-                    )}
+                 
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <Button
@@ -1276,7 +1252,7 @@ export default function EnquiryDetailsPage() {
                         className="border-2 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 py-3 sm:py-4 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl h-auto"
                       >
                         <XCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                        {enquiry?.auto_accepted ? "❌ I'm Unavailable (Need Replacement)" : "Decline Enquiry"}
+                        {enquiry?.auto_accepted ? "❌ I'm Unavailable" : "Decline Enquiry"}
                       </Button>
                     </div>
                   </div>

@@ -4,6 +4,9 @@
 import { supabase } from '@/lib/supabase'
 import { create } from 'canvas-confetti';
 import { useState, useEffect } from 'react';
+import { calculateProfileCompletion } from './profileCompletion'
+
+
 
 const generateBusinessSlug = (businessName) => {
   const baseSlug = businessName
@@ -60,50 +63,52 @@ const createThemedBusiness = async (primaryBusinessId, themedBusinessData) => {
     const inheritedData = primaryBusiness.data
     const businessSlug = generateBusinessSlug(themedBusinessData.name)
 
-    // Create themed business data (inherits from primary)
-const themedData = {
-  // ✅ INHERITED SETTINGS (Shared across businesses)
-  workingHours: inheritedData.workingHours,
-  unavailableDates: inheritedData.unavailableDates,
-  busyDates: inheritedData.busyDates,
-  availabilityNotes: inheritedData.availabilityNotes,
-  advanceBookingDays: inheritedData.advanceBookingDays,
-  maxBookingDays: inheritedData.maxBookingDays,
-  packages: inheritedData.packages,
-  addOnServices: inheritedData.addOnServices || [],
-  serviceDetails: {
-    ...inheritedData.serviceDetails,
-    // Keep most service details but allow theme-specific overrides
-    performerType: inheritedData.serviceDetails?.performerType,
-    ageGroups: inheritedData.serviceDetails?.ageGroups,
-    equipment: inheritedData.serviceDetails?.equipment,
-    travelRadius: inheritedData.serviceDetails?.travelRadius,
-  },
-  owner: inheritedData.owner, // Contact info stays the same
-  location: inheritedData.location, // Service area
-  
-  // ✅ BUSINESS-SPECIFIC (Unique per business)
-  name: themedBusinessData.name,
-  description: themedBusinessData.description || `Professional ${themedBusinessData.serviceType} services specializing in ${themedBusinessData.theme} themes.`,
-  serviceType: themedBusinessData.serviceType,
-  themes: [themedBusinessData.theme],
-  
-  // Reset business-specific content
-  coverPhoto: null, // Each business gets its own cover photo
-  image: null,
-  portfolioImages: [], // Each business gets its own portfolio
-  portfolioVideos: [],
-  
-  // Reset metrics
-  rating: 0,
-  reviewCount: 0,
-  bookingCount: 0,
-  isComplete: false,
-  
-  // Timestamps
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-}
+    const themedData = {
+      // ONLY inherit operational data
+      workingHours: inheritedData.workingHours,
+      unavailableDates: inheritedData.unavailableDates,
+      busyDates: inheritedData.busyDates,
+      availabilityNotes: inheritedData.availabilityNotes,
+      advanceBookingDays: inheritedData.advanceBookingDays,
+      maxBookingDays: inheritedData.maxBookingDays,
+      owner: inheritedData.owner,
+      location: inheritedData.location,
+      
+      // FRESH business-specific data
+      name: themedBusinessData.name,
+      description: '',  // Empty - needs completion
+      serviceType: themedBusinessData.serviceType,
+      themes: [themedBusinessData.theme],
+      
+      // EMPTY arrays/objects that need completion
+      packages: [],  // Each business creates own packages
+      addOnServices: [],  // Each business has own add-ons
+      serviceDetails: {},  // Each business sets own service details
+      portfolioImages: [],
+      portfolioVideos: [],
+      coverPhoto: '/placeholder.svg?height=400&width=800&text=Cover+Photo',
+      image: '/placeholder.svg?height=300&width=400&text=' + encodeURIComponent(themedBusinessData.name),
+      
+      // Reset metrics
+      rating: 0,
+      reviewCount: 0, 
+      bookingCount: 0,
+      isComplete: false,
+      
+      // Timestamps
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    console.log('🔍 NEW THEMED BUSINESS DATA BEING CREATED:', {
+      'name': themedData.name,
+      'serviceDetails empty?': Object.keys(themedData.serviceDetails || {}).length === 0,
+      'has hourlyRate?': !!themedData.serviceDetails?.pricing?.hourlyRate,
+      'has venueType?': !!themedData.serviceDetails?.venueType,
+      'has aboutUs?': !!themedData.serviceDetails?.aboutUs,
+      'portfolioImages count': themedData.portfolioImages?.length || 0,
+      'coverPhoto': themedData.coverPhoto?.includes('placeholder') ? 'placeholder' : 'real'
+    });
 
     // Insert themed business
     const { data: newThemedBusiness, error: insertError } = await supabase
@@ -558,6 +563,80 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
   ]
 }
 
+// Updated generateVenuePackages function with dynamic image and duration
+
+const generateVenuePackages = (venueServiceDetails, supplierData = null, partyDuration = 2) => {
+  const hourlyRate = venueServiceDetails.pricing?.hourlyRate || 0;
+  const venueType = venueServiceDetails.venueType || 'Venue';
+  const capacity = venueServiceDetails.capacity?.max || 50;
+  const cleaningFee = venueServiceDetails.pricing?.cleaningFee || 0;
+  const securityDeposit = venueServiceDetails.pricing?.securityDeposit || 0;
+
+  if (hourlyRate <= 0) {
+    console.warn('⚠️ Cannot generate venue packages: No hourly rate set');
+    return [];
+  }
+
+  console.log('🏢 Generating venue package with:', {
+    hourlyRate,
+    partyDuration,
+    hasPortfolioImages: supplierData?.portfolioImages?.length > 0
+  });
+
+  // Calculate pricing based on actual party duration
+  const totalVenueHours = partyDuration + 2; // party + 1h setup + 1h cleanup
+  const standardPrice = hourlyRate * totalVenueHours + cleaningFee;
+
+  // Use portfolio image if available, fallback to Snappy
+  const packageImage = supplierData?.portfolioImages?.length > 0 
+    ? supplierData.portfolioImages[0] 
+    : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png";
+
+  const packages = [
+    {
+      id: "venue-standard",
+      name: "Standard Party Package", 
+      price: standardPrice,
+      duration: `${partyDuration} hours party time`, // Dynamic duration
+      priceType: "flat",
+      features: [
+        `${partyDuration} hours party time`, // Dynamic
+        "1 hour setup time included", 
+        "1 hour cleanup time included",
+        `Accommodates up to ${capacity} guests`,
+        "Tables and chairs included",
+        `Total venue access: ${totalVenueHours} hours`, // Dynamic
+        "Additional hours charged at £" + hourlyRate + "/hour",
+        ...(cleaningFee > 0 ? [`£${cleaningFee} cleaning fee included`] : []),
+        ...(securityDeposit > 0 ? [`£${securityDeposit} security deposit required`] : [])
+      ],
+      description: `Perfect for children's birthday parties. Package for ${partyDuration}-hour celebrations with 1 hour setup and cleanup. Total venue time: ${totalVenueHours} hours.`,
+      image: packageImage, // Dynamic image
+      popular: true,
+      venueSpecific: true,
+      isGenerated: true,
+      totalVenueTime: totalVenueHours, // Dynamic
+      breakdown: {
+        partyTime: partyDuration, // Dynamic
+        setupTime: 60,
+        cleanupTime: 60, 
+        hourlyRate: hourlyRate,
+        totalPrice: standardPrice
+      }
+    }
+  ];
+
+  console.log('✅ Generated venue package:', {
+    name: packages[0].name,
+    duration: packages[0].duration,
+    price: packages[0].price,
+    image: packages[0].image.includes('portfolioImages') ? 'Portfolio Image' : 'Snappy Image'
+  });
+
+  return packages;
+};
+
+
 
 const getAllSuppliers = async () => {
   try {
@@ -955,6 +1034,16 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
 
     const current = row.data || {}
 
+     // 🆕 NEW: Determine if this is a primary business
+     const isPrimary = row.is_primary === true
+    
+     console.log('📝 Updating business:', {
+       id: supplierId,
+       name: current.name,
+       isPrimary,
+       businessType: row.business_type
+     })
+
 
     // ✅ SMART MERGING: Only update fields that are provided
     const shouldUpdatePackages = packages !== null && Array.isArray(packages)
@@ -965,6 +1054,7 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       ...current,
       name: updatedData.name || current.name,
       description: updatedData.businessDescription || updatedData.description || current.description,
+      aboutUs: updatedData.aboutUs || current.aboutUs, // Add this field
       location: updatedData.postcode || updatedData.location || current.location,
       serviceType: updatedData.serviceType || current.serviceType,
 
@@ -1041,13 +1131,42 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       updatedAt: new Date().toISOString(),
       createdAt: current.createdAt || new Date().toISOString()
     }
-    // Save to database (PRIMARY BUSINESS)
-    const { data: updated, error: updateError } = await supabase
-      .from('suppliers')
-      .update({ data: merged })
-      .eq('id', supplierId)
-      .select()
-      .single()
+
+        // 🆕 UPDATED: Calculate profile completion with isPrimary flag
+    const businessType = merged.serviceType || merged.category
+    const completion = calculateProfileCompletion(merged, businessType, isPrimary)
+
+
+    console.log('📊 Profile completion calculated:', {
+      businessType,
+      isPrimary,
+      percentage: completion.percentage,
+      canGoLive: completion.canGoLive,
+      missingFields: completion.missingFields.map(f => f.field)
+    })
+
+
+          // 🆕 NEW: Add completion data to merged object
+    merged.profileCompletionPercentage = completion.percentage
+    merged.canGoLive = completion.canGoLive
+    // 🆕 UPDATED: Different status logic for primary vs themed
+  merged.profileStatus = completion.canGoLive ? 'ready_for_review' : 'draft'
+
+
+ // Save to database (PRIMARY BUSINESS)
+const { data: updated, error: updateError } = await supabase
+.from('suppliers')
+.update({ 
+  data: merged,
+  profile_completion_percentage: completion.percentage,
+  can_go_live: completion.canGoLive,
+  // Preserve live status if already live, otherwise use completion logic
+  profile_status: row.profile_status === 'live' ? 'live' : 
+                 (completion.canGoLive ? 'ready_for_review' : 'draft')
+})
+.eq('id', supplierId)
+.select()
+.single()
 
     if (updateError) {
       console.error('❌ Database update error:', updateError)
@@ -1126,7 +1245,15 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
 
     return {
       success: true,
-      supplier: updated
+  supplier: {
+    id: updated.id,
+    profile_status: updated.profile_status,    // Include database fields
+    can_go_live: updated.can_go_live,
+    profile_completion_percentage: updated.profile_completion_percentage,
+    data: updated.data,
+    isPrimary, // 🆕 NEW: Include isPrimary in response
+  },
+  completion
     }
 
   } catch (error) {
@@ -1212,6 +1339,8 @@ export function useSupplier(supplierId) {
 }
 
 
+// In your mockBackend.js - REPLACE the useSupplierDashboard hook
+
 export function useSupplierDashboard() {
   const [currentSupplier, setCurrentSupplier] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -1223,9 +1352,7 @@ export function useSupplierDashboard() {
       try {
         setLoading(true)
         setError(null)
-        
 
-        
         // Get current authenticated user
         const { data: userResult, error: userErr } = await supabase.auth.getUser()
         if (userErr) {
@@ -1239,60 +1366,103 @@ export function useSupplierDashboard() {
           throw new Error("No logged-in user")
         }
 
+        // 🚨 FIXED: Get the currently selected business from localStorage
+        const selectedBusinessId = localStorage.getItem('selectedBusinessId')
+        
+        let businessToLoad = null
 
+        if (selectedBusinessId) {
+          // Load the specific selected business
+          console.log('🎯 Loading selected business:', selectedBusinessId)
+          const { data: selectedBusiness, error: selectedErr } = await supabase
+            .from("suppliers")
+            .select(`*`)
+            .eq("id", selectedBusinessId)
+            .eq("auth_user_id", userId)
+            .single()
 
-        // Load user's PRIMARY business (for dashboard compatibility)
-        const { data: primaryBusiness, error: primaryErr } = await supabase
-          .from("suppliers")
-          .select(`
-            id,
-            business_name,
-            business_type,
-            is_primary,
-            data,
-            auth_user_id
-          `)
-          .eq("auth_user_id", userId)
-          .eq("is_primary", true)
-          .maybeSingle()
-
-        if (primaryErr) {
-          console.error('❌ Database error:', primaryErr)
-          throw primaryErr
+          if (!selectedErr && selectedBusiness) {
+            console.log('✅ Found selected business:', selectedBusiness.business_name)
+            businessToLoad = selectedBusiness
+          } else {
+            console.warn('⚠️ Selected business not found, falling back to primary')
+          }
         }
 
-        console.log('🔍 Primary business query result:', primaryBusiness)
+        // Fallback to primary business if no specific business selected or not found
+        if (!businessToLoad) {
+          console.log('🏢 Loading primary business as fallback')
+          const { data: primaryBusiness, error: primaryErr } = await supabase
+            .from("suppliers")
+            .select(`*`)
+            .eq("auth_user_id", userId)
+            .eq("is_primary", true)
+            .maybeSingle()
 
-        if (!primaryBusiness) {
+          if (primaryErr) {
+            console.error('❌ Database error:', primaryErr)
+            throw primaryErr
+          }
 
-          setError('No supplier account found - please complete onboarding first')
-          setCurrentSupplier(null)
-        } else {
-
-          // Check if the data object exists and has essential fields
-          if (!primaryBusiness.data) {
-            console.warn('⚠️ Primary business has no data object')
-            setError('Incomplete supplier account - please complete setup')
+          if (!primaryBusiness) {
+            setError('No supplier account found - please complete onboarding first')
             setCurrentSupplier(null)
             return
           }
 
-          // Convert NEW database format to OLD dashboard format
-          const supplierForDashboard = {
-            id: primaryBusiness.id, // Use the real UUID
-            ...primaryBusiness.data // Spread all the business data
-          }
-          
-          console.log('✅ Supplier for dashboard:', {
-            id: supplierForDashboard.id,
-            name: supplierForDashboard.name,
-            owner: supplierForDashboard.owner,
-            serviceType: supplierForDashboard.serviceType
-          })
-          
-          setCurrentSupplier(supplierForDashboard)
-
+          businessToLoad = primaryBusiness
         }
+
+        // Check if the data object exists and has essential fields
+        if (!businessToLoad.data) {
+          console.warn('⚠️ Business has no data object')
+          setError('Incomplete supplier account - please complete setup')
+          setCurrentSupplier(null)
+          return
+        }
+
+        console.log('📊 Business to load:', {
+          'id': businessToLoad.id,
+          'name': businessToLoad.business_name,
+          'is_primary': businessToLoad.is_primary,
+          'profile_status': businessToLoad.profile_status,
+          'can_go_live': businessToLoad.can_go_live,
+          'completion_%': businessToLoad.profile_completion_percentage
+        })
+
+        // 🚨 FIXED: Use the actually selected business data, not always primary
+        const supplierForDashboard = {
+          id: businessToLoad.id,
+          ...businessToLoad.data, // Spread data first
+          // Database values override JSON data values
+          profile_status: businessToLoad.profile_status,
+          can_go_live: businessToLoad.can_go_live,
+          profile_completion_percentage: businessToLoad.profile_completion_percentage,
+          // Also override any conflicting properties in the data object
+          profileStatus: businessToLoad.profile_status,
+          canGoLive: businessToLoad.can_go_live,
+          profileCompletionPercentage: businessToLoad.profile_completion_percentage,
+          // Add business metadata
+          isPrimary: businessToLoad.is_primary,
+          businessType: businessToLoad.business_type,
+          parentBusinessId: businessToLoad.parent_business_id
+        }
+
+        console.log('🔍 RAW DATABASE VALUES:', {
+          'profile_status': businessToLoad.profile_status,
+          'can_go_live': businessToLoad.can_go_live, 
+          'completion_%': businessToLoad.profile_completion_percentage
+        })
+        
+        console.log('🔍 FINAL DASHBOARD OBJECT:', {
+          'profile_status': supplierForDashboard.profile_status,
+          'can_go_live': supplierForDashboard.can_go_live,
+          'completion_%': supplierForDashboard.profile_completion_percentage
+        })
+
+       
+        setCurrentSupplier(supplierForDashboard)
+
       } catch (err) {
         console.error('❌ Error loading current supplier:', err)
         setError(err.message || 'Failed to load supplier data')
@@ -1302,57 +1472,84 @@ export function useSupplierDashboard() {
       }
     }
 
+    // Load initially
     loadCurrentSupplier()
-  }, [])
 
-  // Function to update the supplier profile - UPDATED for new structure
-// Replace your updateSupplierProfile function in mockBackend.js with this:
-
-
-const updateProfile = async (profileData, packages = null, specificBusinessId = null) => {
-  if (!currentSupplier) {
-    console.warn("⚠️ No currentSupplier in updateProfile")
-    return { success: false, error: 'No current supplier loaded' }
-  }
-
-  setSaving(true)
-  setError(null)
-
-  try {
-    // Determine which business to update
-    const businessIdToUpdate = specificBusinessId || currentSupplier.id
-
-    // Call the updated API function
-    const result = await suppliersAPI.updateSupplierProfile(
-      businessIdToUpdate,
-      profileData,
-      packages  // null means "don't update packages", array means "update packages"
-    )
-    if (result.success && result.supplier) {
-      // Update local state with the result
-      const updatedSupplierForDashboard = {
-        id: result.supplier.id,
-        ...result.supplier.data
-      }
-      
-      setCurrentSupplier(updatedSupplierForDashboard)
-   
-      // Trigger global update event
-      window.dispatchEvent(new CustomEvent('supplierUpdated', {
-        detail: { supplierId: result.supplier.id }
-      }))
+    // 🚨 NEW: Listen for business switches and reload data
+    const handleBusinessSwitch = (event) => {
+      console.log('🔄 Dashboard detected business switch, reloading data...')
+      loadCurrentSupplier()
     }
 
-    return result
+    // Listen for the custom business switch event
+    window.addEventListener('businessSwitched', handleBusinessSwitch)
 
-  } catch (error) {
-    console.error("❌ updateProfile error:", error)
-    setError(error.message)
-    return { success: false, error: error.message }
-  } finally {
-    setSaving(false)
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('businessSwitched', handleBusinessSwitch)
+    }
+  }, []) // No dependencies - listens to events instead
+
+  // Your existing updateProfile function stays the same...
+  const updateProfile = async (profileData, packages = null, specificBusinessId = null) => {
+    if (!currentSupplier) {
+      console.warn("⚠️ No currentSupplier in updateProfile")
+      return { success: false, error: 'No current supplier loaded' }
+    }
+
+    setSaving(true)
+    setError(null)
+
+    try {
+      // Determine which business to update
+      const businessIdToUpdate = specificBusinessId || currentSupplier.id
+
+      // Call the updated API function
+      const result = await suppliersAPI.updateSupplierProfile(
+        businessIdToUpdate,
+        profileData,
+        packages  // null means "don't update packages", array means "update packages"
+      )
+      
+      if (result.success && result.supplier) {
+        const updatedSupplierForDashboard = {
+          id: result.supplier.id,
+          profile_status: result.supplier.profile_status,
+          can_go_live: result.supplier.can_go_live,
+          profile_completion_percentage: result.supplier.profile_completion_percentage,
+          ...result.supplier.data
+        }
+        
+        setCurrentSupplier(updatedSupplierForDashboard)
+        
+        if (result.completion) {
+          console.log('Profile completion updated:', {
+            percentage: result.completion.percentage,
+            canGoLive: result.completion.canGoLive,
+            missingFields: result.completion.missingFields.length
+          })
+        }
+
+        // Trigger global update event
+        window.dispatchEvent(new CustomEvent('supplierUpdated', {
+          detail: { 
+            supplierId: result.supplier.id,
+            completion: result.completion
+          }
+        }))
+      }
+
+      return result
+
+    } catch (error) {
+      console.error("❌ updateProfile error:", error)
+      setError(error.message)
+      return { success: false, error: error.message }
+    } finally {
+      setSaving(false)
+    }
   }
-}
+
   return {
     currentSupplier,
     loading,
@@ -1361,3 +1558,5 @@ const updateProfile = async (profileData, packages = null, specificBusinessId = 
     updateProfile
   }
 }
+
+export { generateVenuePackages }

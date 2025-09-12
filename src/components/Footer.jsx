@@ -59,7 +59,7 @@ const Footer = () => {
               <h4 className="text-lg font-semibold mb-4">Company</h4>
               <ul className="space-y-3">
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                  <a href="/about" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 mr-2"
@@ -73,7 +73,7 @@ const Footer = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                  <a href="/blog" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 mr-2"
@@ -121,7 +121,7 @@ const Footer = () => {
               <h4 className="text-lg font-semibold mb-4">Support</h4>
               <ul className="space-y-3">
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                  <a href="/contact" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 mr-2"
@@ -135,7 +135,7 @@ const Footer = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                  <a href="/faq" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 mr-2"
@@ -149,7 +149,7 @@ const Footer = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                  <a href="/terms" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 mr-2"
@@ -163,7 +163,7 @@ const Footer = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
+                  <a href="/privacy-policy" className="text-gray-400 hover:text-[#FC6B57] transition-colors flex items-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 mr-2"

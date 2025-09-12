@@ -1,6 +1,6 @@
 "use client"
 
-import { PackageIcon, PlusCircle, Loader2, Check, Camera, Upload, X, Info } from "lucide-react"
+import { PackageIcon, PlusCircle, Loader2, Check, Camera, Upload, X, Info, AlertTriangle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SupplierPackageCard, AddPackageCard } from "@/components/supplier-package-card"
 import { useSupplier } from "@/hooks/useSupplier"
-import { useSupplierDashboard } from "@/utils/mockBackend"
+import { useSupplierDashboard, generateVenuePackages } from "@/utils/mockBackend"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 
 const Packages = () => {
@@ -19,13 +19,17 @@ const Packages = () => {
   const [localSaving, setLocalSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [packages, setPackages] = useState([])
+  const [isVenue, setIsVenue] = useState(false)
+  const [venuePackagesGenerated, setVenuePackagesGenerated] = useState(false)
+
   const [packageFormData, setPackageFormData] = useState({
     name: "",
     description: "",
     price: "",
     duration: "",
-    features: [""], // Changed from whatsIncluded to features
-    image: "", // Changed from imageUrl to image
+    features: [""],
+    image: "",
     popular: false,
   })
 
@@ -35,55 +39,71 @@ const Packages = () => {
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
   const { saving, updateProfile } = useSupplierDashboard()
 
-
-
-  const [packages, setPackages] = useState([])
-
-
+  // Check if this is a venue business
   useEffect(() => {
- 
-    
-    // ✅ FIXED: Handle both multi-business AND single business scenarios
+    if (supplierData) {
+      const businessIsVenue = supplierData.serviceType === 'venue' || supplierData.category === 'Venues'
+      setIsVenue(businessIsVenue)
+      console.log('🏢 Business type check:', {
+        serviceType: supplierData.serviceType,
+        category: supplierData.category,
+        isVenue: businessIsVenue
+      })
+    }
+  }, [supplierData])
+
+  // Auto-generate venue packages when venue data is ready
+  useEffect(() => {
+    if (isVenue && supplierData && !venuePackagesGenerated) {
+      const serviceDetails = supplierData.serviceDetails
+      const hasHourlyRate = serviceDetails?.pricing?.hourlyRate > 0
+      
+      console.log('🏢 Checking venue package generation conditions:', {
+        isVenue,
+        hasServiceDetails: !!serviceDetails,
+        hasHourlyRate,
+        hourlyRate: serviceDetails?.pricing?.hourlyRate,
+        currentPackages: supplierData.packages?.length || 0
+      })
+
+      if (hasHourlyRate && (!supplierData.packages || supplierData.packages.length === 0)) {
+        console.log('🎯 Auto-generating venue packages...')
+        const generatedPackages = generateVenuePackages(serviceDetails)
+        console.log('✅ Generated venue packages:', generatedPackages)
+        
+        if (generatedPackages.length > 0) {
+          setPackages(generatedPackages)
+          setVenuePackagesGenerated(true)
+          // Auto-save the generated packages
+          savePackagesToBackend(generatedPackages)
+        }
+      }
+    }
+  }, [isVenue, supplierData, venuePackagesGenerated])
+
+  // Load existing packages
+  useEffect(() => {
     const shouldLoad = !loading && supplierData && (
-      // Multi-business mode: wait for currentBusiness
       (currentBusiness?.id) ||
-      // Single business mode: no currentBusiness needed
       (!currentBusiness && supplierData)
     )
     
-    if (shouldLoad) {
-      console.log('✅ Conditions met, proceeding with package loading')
-      const businessName = currentBusiness?.name || supplierData?.name || 'Primary Business'
-      console.log('🔄 Packages page updating for business:', businessName);
+    if (shouldLoad && !venuePackagesGenerated) {
+      console.log('✅ Loading existing packages for business:', currentBusiness?.name || supplierData?.name)
       
-      // Reset any form-specific state here
-      setSaveSuccess(false);
-      setIsPackageFormOpen(false);
-      setEditingPackage(null);
-      
- 
+      setSaveSuccess(false)
+      setIsPackageFormOpen(false)
+      setEditingPackage(null)
       
       const packagesToLoad = supplierData.packages || []
-   
-      
       setPackages(packagesToLoad)
       
       if (packagesToLoad.length > 0) {
-
-        packagesToLoad.forEach((pkg, index) => {
-          console.log(`  ${index + 1}. ${pkg.name} - £${pkg.price} (ID: ${pkg.id})`)
-        })
-      } else {
-        console.log("📦 No packages found in supplier data")
+        console.log('📦 Loaded packages:', packagesToLoad.map(p => `${p.name} - £${p.price}`))
       }
-    } else {
-      console.log('❌ Conditions not met:')
-      console.log('  - Not loading?:', !loading)
-      console.log('  - Has supplierData?:', !!supplierData)
-      console.log('  - Has business ID?:', !!currentBusiness?.id)
-      console.log('  - Single business mode?:', !currentBusiness && !!supplierData)
     }
-  }, [currentBusiness?.id, loading, supplierData]) // Keep the same dependencies
+  }, [currentBusiness?.id, loading, supplierData, venuePackagesGenerated])
+
   // Save packages to backend
   const savePackagesToBackend = async (updatedPackages) => {
     setLocalSaving(true)
@@ -101,12 +121,11 @@ const Packages = () => {
 
       console.log("💾 Updated supplier data for business:", currentBusiness?.name, updatedSupplierData)
       
-      // ✅ Pass the business ID to save to the correct business
-      const result = await updateProfile(supplierData, packages, supplier.id)
+      const result = await updateProfile(supplierData, updatedPackages, supplier.id)
 
       if (result.success) {
         console.log("✅ Packages saved successfully for business:", currentBusiness?.name)
-        // Update local supplier data
+        
         if (setSupplierData) {
           setSupplierData((prev) => ({
             ...prev,
@@ -114,7 +133,6 @@ const Packages = () => {
           }))
         }
 
-        // Trigger supplier updated event
         window.dispatchEvent(
           new CustomEvent("supplierUpdated", {
             detail: { supplierId: result.supplier.id },
@@ -136,9 +154,28 @@ const Packages = () => {
     }
   }
 
+  // Regenerate venue packages when pricing changes
+  const handleRegenerateVenuePackages = async () => {
+    if (!isVenue || !supplierData?.serviceDetails) return
+    
+    console.log('🔄 Regenerating venue packages...')
+    const generatedPackages = generateVenuePackages(supplierData.serviceDetails)
+    
+    if (generatedPackages.length > 0) {
+      setPackages(generatedPackages)
+      await savePackagesToBackend(generatedPackages)
+      alert('Venue packages have been regenerated based on your current pricing!')
+    }
+  }
+
   const handleOpenPackageForm = (pkg) => {
+    // For venues, don't allow adding custom packages if no hourly rate is set
+    if (isVenue && !pkg && (!supplierData?.serviceDetails?.pricing?.hourlyRate || supplierData.serviceDetails.pricing.hourlyRate <= 0)) {
+      alert('Please set your hourly rate in Service Details first before creating packages.')
+      return
+    }
+
     setEditingPackage(pkg)
-    // Initialize form data
     if (pkg) {
       setPackageFormData({
         name: pkg.name || "",
@@ -146,7 +183,7 @@ const Packages = () => {
         price: pkg.price || "",
         duration: pkg.duration || "",
         features: pkg.features || pkg.whatsIncluded || [""],
-        image: pkg.image || "", // Changed from imageUrl to image
+        image: pkg.image || "",
         popular: pkg.popular || false,
       })
     } else {
@@ -156,7 +193,7 @@ const Packages = () => {
         price: "",
         duration: "",
         features: [""],
-        image: "", // Changed from imageUrl to image
+        image: "",
         popular: false,
       })
     }
@@ -188,10 +225,9 @@ const Packages = () => {
       const cloudinaryData = await response.json()
       console.log("✅ Package image upload successful:", cloudinaryData.secure_url)
 
-      // Update form data with new image URL
       setPackageFormData((prev) => ({
         ...prev,
-        image: cloudinaryData.secure_url, // Changed from imageUrl to image
+        image: cloudinaryData.secure_url,
       }))
     } catch (error) {
       console.error("❌ Package image upload failed:", error)
@@ -212,7 +248,7 @@ const Packages = () => {
     }))
   }
 
-  // Handle features array changes (was whatsIncluded)
+  // Handle features array changes
   const handleFeatureChange = (index, value) => {
     setPackageFormData((prev) => ({
       ...prev,
@@ -242,8 +278,8 @@ const Packages = () => {
       description: "",
       price: "",
       duration: "",
-      features: [""], // Changed from whatsIncluded to features
-      image: "", // Changed from imageUrl to image
+      features: [""],
+      image: "",
       popular: false,
     })
   }
@@ -261,11 +297,13 @@ const Packages = () => {
     const newPackageData = {
       ...packageFormData,
       features: filteredFeatures,
-      whatsIncluded: filteredFeatures, // ✅ Keep both for compatibility
+      whatsIncluded: filteredFeatures,
       price: Number.parseFloat(packageFormData.price) || 0,
       priceType: "flat",
-      // Ensure image is properly set
       image: packageFormData.image,
+      // Mark custom packages for venues
+      venueSpecific: isVenue,
+      isCustom: isVenue ? true : false
     }
 
     let updatedPackages
@@ -292,12 +330,10 @@ const Packages = () => {
     if (window.confirm("Are you sure you want to delete this package?")) {
       const updatedPackages = packages.filter((p) => p.id !== packageId)
       setPackages(updatedPackages)
-      // Auto-save to backend
       await savePackagesToBackend(updatedPackages)
     }
   }
 
-  // Manual save function for save button
   const handleManualSave = async () => {
     await savePackagesToBackend(packages)
   }
@@ -328,41 +364,68 @@ const Packages = () => {
           </div>
         )}
 
-        {/* Global Save Button - Mobile Optimized */}
+        {/* Venue-specific alerts */}
+        {isVenue && (
+          <div className="p-4 sm:p-6">
+            {!supplierData?.serviceDetails?.pricing?.hourlyRate ? (
+              <Alert className="border-orange-200 bg-orange-50">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Set your hourly rate first:</strong> Go to Service Details and set your hourly rate to automatically generate venue packages.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Venue Packages:</strong> Your packages are automatically generated based on your hourly rate (£{supplierData.serviceDetails.pricing.hourlyRate}/hour). 
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto ml-2 text-blue-600 underline"
+                    onClick={handleRegenerateVenuePackages}
+                  >
+                    Regenerate packages
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
+
+        {/* Global Save Button */}
         <div className="absolute right-10">
           <GlobalSaveButton position="responsive" onSave={handleManualSave} isLoading={saving} />
         </div>
 
-        {/* Header - Mobile Optimized */}
+        {/* Header */}
         <div className="p-4 sm:p-6">
-          {/* ✅ Business Context Header */}
-          {currentBusiness && (
-            <Alert className="border-blue-200 bg-blue-50 mb-4">
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Managing Packages:</strong> {currentBusiness.name} • {currentBusiness.serviceType} • {currentBusiness.theme}
-                {currentBusiness.isPrimary && <span className="ml-2 text-blue-600 font-medium">• Primary Business</span>}
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <div className="flex flex-col gap-2 sm:gap-3">
-            <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">Packages</h2>
+            <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">
+              {isVenue ? 'Venue Packages' : 'Packages'}
+            </h2>
             <p className="text-sm sm:text-base text-gray-600">
-              Create and manage service packages to offer customers different options
+              {isVenue 
+                ? 'Your venue packages are automatically generated based on your hourly rate and can be customized'
+                : 'Create and manage service packages to offer customers different options'
+              }
             </p>
           </div>
         </div>
 
-        {/* Main Content - Mobile Optimized */}
+        {/* Main Content */}
         <div className="p-4 sm:p-6 pt-0">
           <Card className="shadow-sm">
             <CardHeader className="p-4 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                 <div className="space-y-1">
-                  <CardTitle className="text-lg sm:text-xl">Service Packages</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">
+                    {isVenue ? 'Venue Hire Packages' : 'Service Packages'}
+                  </CardTitle>
                   <CardDescription className="text-sm sm:text-base">
-                    Define and manage the packages you offer to customers
+                    {isVenue 
+                      ? 'Standardized packages based on your hourly rate with setup and cleanup time included'
+                      : 'Define and manage the packages you offer to customers'
+                    }
                   </CardDescription>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -381,9 +444,13 @@ const Packages = () => {
                       <>Save Changes ({packages.length})</>
                     )}
                   </Button>
-                  <Button onClick={() => handleOpenPackageForm(null)} className="w-full sm:w-auto">
+                  <Button 
+                    onClick={() => handleOpenPackageForm(null)} 
+                    className="w-full sm:w-auto"
+                    disabled={isVenue && (!supplierData?.serviceDetails?.pricing?.hourlyRate || supplierData.serviceDetails.pricing.hourlyRate <= 0)}
+                  >
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Package
+                    {isVenue ? 'Add Custom Package' : 'Add New Package'}
                   </Button>
                 </div>
               </div>
@@ -392,16 +459,23 @@ const Packages = () => {
               {packages.length === 0 ? (
                 <div className="text-center py-8 sm:py-12 border-2 border-dashed rounded-lg">
                   <PackageIcon className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-base sm:text-lg font-medium text-foreground">No packages yet</h3>
+                  <h3 className="mt-2 text-base sm:text-lg font-medium text-foreground">
+                    {isVenue ? 'No venue packages yet' : 'No packages yet'}
+                  </h3>
                   <p className="mt-1 text-sm sm:text-base text-muted-foreground px-4">
-                    Get started by adding your first service package.
+                    {isVenue 
+                      ? 'Set your hourly rate in Service Details to automatically generate venue packages.'
+                      : 'Get started by adding your first service package.'
+                    }
                   </p>
-                  <div className="mt-6">
-                    <Button onClick={() => handleOpenPackageForm(null)}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add New Package
-                    </Button>
-                  </div>
+                  {!isVenue && (
+                    <div className="mt-6">
+                      <Button onClick={() => handleOpenPackageForm(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New Package
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
@@ -411,29 +485,31 @@ const Packages = () => {
                       packageData={pkg}
                       onEdit={() => handleOpenPackageForm(pkg)}
                       onDelete={() => handleDeletePackage(pkg.id)}
+                      isVenuePackage={isVenue}
                     />
                   ))}
-                  <AddPackageCard onAdd={() => handleOpenPackageForm(null)} />
+                  {(!isVenue || (isVenue && supplierData?.serviceDetails?.pricing?.hourlyRate > 0)) && (
+                    <AddPackageCard onAdd={() => handleOpenPackageForm(null)} />
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Package Form Modal - Mobile Optimized */}
+        {/* Package Form Modal - Same as before */}
         {isPackageFormOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[95vh] overflow-y-auto">
               <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
-                {editingPackage ? "Edit Package" : "Add New Package"}
+                {editingPackage ? "Edit Package" : (isVenue ? "Add Custom Venue Package" : "Add New Package")}
               </h3>
 
               <div className="space-y-4 sm:space-y-6">
-                {/* Package Image - Mobile Optimized */}
+                {/* Package Image */}
                 <div>
                   <Label className="text-sm font-medium">Package Image</Label>
                   <div className="mt-2 flex flex-col gap-4">
-                    {/* Image Preview */}
                     <div className="flex justify-center sm:justify-start">
                       <div className="relative w-full max-w-xs sm:w-48 h-32 rounded-lg overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300">
                         {packageFormData.image ? (
@@ -461,7 +537,6 @@ const Packages = () => {
                       </div>
                     </div>
 
-                    {/* Upload Controls */}
                     <div className="space-y-2">
                       <label
                         htmlFor="package-image-upload"
@@ -524,7 +599,7 @@ const Packages = () => {
                   />
                 </div>
 
-                {/* Price and Duration - Mobile Optimized */}
+                {/* Price and Duration */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="package-price" className="text-sm font-medium">
@@ -538,6 +613,11 @@ const Packages = () => {
                       placeholder="150"
                       className="mt-1 px-4 py-3 text-sm"
                     />
+                    {isVenue && supplierData?.serviceDetails?.pricing?.hourlyRate && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Your hourly rate: £{supplierData.serviceDetails.pricing.hourlyRate}/hour
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="package-duration" className="text-sm font-medium">
@@ -553,7 +633,7 @@ const Packages = () => {
                   </div>
                 </div>
 
-                {/* Package Features - Mobile Optimized */}
+                {/* Package Features */}
                 <div>
                   <Label className="text-sm font-medium">Package Features</Label>
                   <div className="space-y-3 mt-2">
@@ -592,7 +672,7 @@ const Packages = () => {
                 </div>
               </div>
 
-              {/* Form Actions - Mobile Optimized */}
+              {/* Form Actions */}
               <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t">
                 <Button variant="outline" onClick={handleClosePackageForm} className="flex-1 py-3 bg-transparent">
                   Cancel

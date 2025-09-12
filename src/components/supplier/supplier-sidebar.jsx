@@ -332,11 +332,7 @@ export default function SupplierSidebar({
               <p className="text-lg text-primary-600 font-bold">
                 {calculateSidebarPrice.formattedPrice}
               </p>
-              {(calculateSidebarPrice.hasWeekendPremium || calculateSidebarPrice.hasExtraHourCost) && (
-                <span className="text-sm text-gray-500 line-through">
-                  £{selectedPkgDetails.price.toFixed(2)}
-                </span>
-              )}
+            
             </div>
             
             {/* Show breakdown for lead-based suppliers */}
@@ -346,26 +342,9 @@ export default function SupplierSidebar({
               </p>
             )}
             
-            {/* Show premium badges */}
-            <div className="flex flex-wrap gap-2 mt-1">
-              {calculateSidebarPrice.hasWeekendPremium && (
-                <WeekendPremiumBadge weekendInfo={calculateSidebarPrice.weekendInfo} />
-              )}
-              {calculateSidebarPrice.hasExtraHourCost && (
-                <ExtraHourBadge extraHourInfo={calculateSidebarPrice.extraHourInfo} />
-              )}
-            </div>
+         
             
-            {/* Show date context */}
-            {calculateSidebarPrice.weekendInfo?.date && (
-              <p className="text-xs text-gray-500 mt-1">
-                Weekend rate for {calculateSidebarPrice.weekendInfo.date.toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
-              </p>
-            )}
+         
           </div>
           
           <Button
@@ -397,37 +376,7 @@ export default function SupplierSidebar({
         />
       )}
 
-      {/* UPDATED: Enhanced pricing info section */}
-      {(calculateSidebarPrice.hasWeekendPremium || calculateSidebarPrice.hasExtraHourCost) && (
-        <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
-          <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
-            🌅 Enhanced Pricing Applied
-          </h4>
-          <div className="text-sm text-amber-700 space-y-1">
-            <div className="flex justify-between">
-              <span>Base Price:</span>
-              <span>£{calculateSidebarPrice.pricingBreakdown.base.toFixed(2)}</span>
-            </div>
-            {calculateSidebarPrice.hasWeekendPremium && (
-              <div className="flex justify-between">
-                <span>Weekend Premium:</span>
-                <span>+£{calculateSidebarPrice.pricingBreakdown.weekend.toFixed(2)}</span>
-              </div>
-            )}
-            {calculateSidebarPrice.hasExtraHourCost && (
-              <div className="flex justify-between">
-                <span>Extra {calculateSidebarPrice.extraHourInfo?.extraHours}h:</span>
-                <span>+£{calculateSidebarPrice.pricingBreakdown.extraHours.toFixed(2)}</span>
-              </div>
-            )}
-            <hr className="border-amber-300" />
-            <div className="flex justify-between font-semibold">
-              <span>Total:</span>
-              <span>£{calculateSidebarPrice.displayPrice.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-      )}
+    
 
       {/* Verification Documents Section */}
       {verificationDocs && verificationDocs.length > 0 && (

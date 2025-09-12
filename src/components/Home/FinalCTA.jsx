@@ -52,7 +52,10 @@ export default function FinalCTA() {
           <div className="bg-primary-50 p-8 text-center border-t border-primary-100">
             <p className="text-gray-700 font-medium text-lg">
               Have questions?{" "}
-              <Link href="#" className="text-primary-600 hover:text-[hsl(var(--primary-700))] font-bold hover:underline">
+              <Link
+                href="#"
+                className="text-primary-600 hover:text-[hsl(var(--primary-700))] font-bold hover:underline"
+              >
                 Chat with our team
               </Link>{" "}
               or call us at <span className="text-primary-600 font-bold">0800 123 4567</span>

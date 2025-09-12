@@ -615,26 +615,72 @@ export default function SupplierSignInPage() {
   }
   
 
-  // Helper function to create supplier from draft
   const createSupplierFromDraft = async (user, draft) => {
     try {
-      console.log('🏗️ Creating supplier from draft with smart packages...')
+      console.log('Creating supplier from draft with DRAFT status...')
       
-      // ✅ NEW: Import and use the smart packages function
-      // (You'll need to make sure getDefaultPackagesForServiceType is accessible here)
-      
-      // ✅ NEW: Generate smart default packages
       const serviceType = draft.supplier_type
       const defaultPackages = getDefaultPackagesForServiceType(serviceType, 'general')
       
-      console.log('📦 Generated packages for', serviceType, ':', defaultPackages.length, 'packages')
-      
-      // ✅ NEW: Calculate pricing from packages
+      // Calculate basic pricing from packages
       const hasPackages = defaultPackages.length > 0
       const priceFrom = hasPackages ? Math.min(...defaultPackages.map(p => p.price)) : 0
-      const priceUnit = hasPackages ? (defaultPackages[0].priceType === 'per_child' ? 'per child' : 
-                                      defaultPackages[0].priceType === 'per_bag' ? 'per bag' : 'per event') : 'per event'
+      const priceUnit = hasPackages ? (
+        defaultPackages[0].priceType === 'per_child' ? 'per child' : 
+        defaultPackages[0].priceType === 'per_bag' ? 'per bag' : 
+        'per event'
+      ) : 'per event'
   
+      // 🚨 IMPORTANT: Create proper serviceDetails structure for venues
+      let serviceDetails = {}
+      if (serviceType.toLowerCase() === 'venues') {
+        serviceDetails = {
+          aboutUs: '', // EMPTY - will fail minWords validation
+          pricing: {
+            hourlyRate: 0, // ZERO - will fail min validation
+            setupTime: 30,
+            cleanupTime: 30,
+            cleaningFee: 0,
+            securityDeposit: 0,
+            minimumSpend: 0
+          },
+          venueType: '', // EMPTY - will fail required validation
+          venueDetails: {
+            parkingInfo: '', // EMPTY - will fail minLength validation
+            landmarks: '',
+            nearestStation: '',
+            accessInstructions: ''
+          },
+          capacity: {
+            min: 10,
+            max: 50,
+            seated: 30,
+            standing: 50
+          },
+          policies: {
+            alcohol: false,
+            ownFood: false,
+            smoking: false,
+            music: true,
+            ownDecorations: true,
+            endTime: '22:00',
+            cancellationPolicy: '24_hours'
+          },
+          facilities: [],
+          equipment: {
+            tables: 0,
+            chairs: 0,
+            kitchen: false,
+            soundSystem: false,
+            projector: false,
+            bar: false
+          },
+          addOnServices: [],
+          houseRules: []
+        }
+      }
+  
+      // Create supplier data - starts incomplete
       const supplierData = {
         name: draft.business_name,
         businessName: draft.business_name,
@@ -643,108 +689,141 @@ export default function SupplierSignInPage() {
         subcategory: draft.supplier_type,
         location: draft.postcode,
         
-        // ✅ NEW: Add smart pricing
+        // Basic pricing info
         priceFrom: priceFrom,
         priceUnit: priceUnit,
         
+        // Owner/contact info from onboarding
         owner: {
-          name: draft.your_name || user.user_metadata?.full_name,
+          name: draft.your_name || user.user_metadata?.full_name || '',
           email: user.email,
-          phone: draft.phone || user.user_metadata?.phone || ""
+          phone: draft.phone || user.user_metadata?.phone || ''
         },
         contactInfo: {
           email: user.email,
-          phone: draft.phone || user.user_metadata?.phone || "",
+          phone: draft.phone || user.user_metadata?.phone || '',
           postcode: draft.postcode
         },
         
-        // ✅ NEW: Better description based on packages
-        description: hasPackages ? 
-          `Professional ${serviceType.toLowerCase()} services with ${defaultPackages.length} package option${defaultPackages.length > 1 ? 's' : ''} available.` :
-          "New supplier - profile setup in progress",
-        businessDescription: "New supplier - profile setup in progress",
+        // 🚨 CRITICAL: Essential missing fields (need completion)
+        description: '', // EMPTY - needs completion
+        businessDescription: '', // EMPTY - needs completion  
+        aboutUs: '', // EMPTY - needs completion
         
-        // ✅ NEW: Add smart default packages
+        // 🚨 CRITICAL: Add serviceDetails structure
+        serviceDetails: serviceDetails,
+        
+        // 🚨 PLACEHOLDER IMAGES - will fail notPlaceholder validation
+        image: '/placeholder.svg?height=300&width=400&text=' + encodeURIComponent(draft.business_name),
+        coverPhoto: '/placeholder.svg?height=400&width=800&text=Cover+Photo', // ADD THIS
+        
+        // Default packages created but profile still incomplete
         packages: defaultPackages,
         
-        // ✅ NEW: Add proper badges
-        badges: hasPackages ? ["New Provider", "Packages Available"] : ["New Provider"],
+        // 🚨 EMPTY ARRAYS - need user uploads
+        portfolioImages: [], // Will fail minimum validation
+        portfolioVideos: [],
         
-        // ✅ NEW: Set complete status based on packages
-        isComplete: hasPackages,
+        themes: getThemesFromServiceType(draft.supplier_type),
+        badges: ['New Provider'], // Don't add "Packages Available" yet
         
-        // ✅ NEW: Add missing fields that packages need
-        image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(draft.business_name),
+        // 🚨 PROFILE COMPLETION TRACKING - All false/0
+        isComplete: false,
+        profileStatus: 'draft',
+        profileCompletionPercentage: 0,
+        canGoLive: false,
+        
+        // Basic defaults
         rating: 0,
         reviewCount: 0,
         bookingCount: 0,
-        availability: "Contact for availability",
-        themes: getThemesFromServiceType(draft.supplier_type),
-        portfolioImages: [],
-        portfolioVideos: [],
+        availability: 'Contact for availability',
         
-        // ✅ NEW: Add working hours and availability
+        // Working hours (default schedule)
         workingHours: {
-          Monday: { active: true, start: "09:00", end: "17:00" },
-          Tuesday: { active: true, start: "09:00", end: "17:00" },
-          Wednesday: { active: true, start: "09:00", end: "17:00" },
-          Thursday: { active: true, start: "09:00", end: "17:00" },
-          Friday: { active: true, start: "09:00", end: "17:00" },
-          Saturday: { active: true, start: "10:00", end: "16:00" },
-          Sunday: { active: false, start: "10:00", end: "16:00" },
+          Monday: { active: true, start: '09:00', end: '17:00' },
+          Tuesday: { active: true, start: '09:00', end: '17:00' },
+          Wednesday: { active: true, start: '09:00', end: '17:00' },
+          Thursday: { active: true, start: '09:00', end: '17:00' },
+          Friday: { active: true, start: '09:00', end: '17:00' },
+          Saturday: { active: true, start: '10:00', end: '16:00' },
+          Sunday: { active: false, start: '10:00', end: '16:00' }
         },
         unavailableDates: [],
         busyDates: [],
-        availabilityNotes: "",
+        availabilityNotes: '',
         advanceBookingDays: 7,
         maxBookingDays: 365,
         
+        // Metadata
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         onboardingCompleted: true,
-        createdFrom: "supplier_signin"
+        createdFrom: 'supplier_signin'
       }
   
-      // ✅ NEW: Enhanced supplier record with proper structure
+   
       const supplierRecord = {
         auth_user_id: user.id,
         business_name: draft.business_name,
         business_type: 'primary',
         is_primary: true,
         parent_business_id: null,
-        business_slug: generateBusinessSlug(draft.business_name), // You'll need this helper
+        business_slug: generateBusinessSlug(draft.business_name),
         data: supplierData,
+        profile_status: 'draft',
+        profile_completion_percentage: 0,
+        can_go_live: false,
+        is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
   
-      console.log('💾 Inserting supplier with packages:', {
-        businessName: supplierData.name,
-        serviceType: supplierData.serviceType,
-        packagesCount: supplierData.packages.length,
-        priceFrom: supplierData.priceFrom,
-        isComplete: supplierData.isComplete
-      })
-  
-      const { error: insertError } = await supabase
-        .from("suppliers")
+      console.log('Creating supplier record...')
+      
+      const { data: supplierResult, error: insertError } = await supabase
+        .from('suppliers')
         .insert(supplierRecord)
+        .select()
+        .single()
   
       if (insertError) {
-        console.error("❌ Failed to create supplier:", insertError)
-        throw new Error("Failed to create supplier profile. Please contact support.")
+        console.error('Failed to create supplier:', insertError)
+        throw new Error('Failed to create supplier profile. Please contact support.')
       }
   
-      // Clean up draft
-      await supabase
-        .from("onboarding_drafts")
-        .delete()
-        .eq("email", user.email)
+      console.log('Supplier created successfully:', supplierResult.id)
   
-      console.log("✅ Supplier profile created from draft with", defaultPackages.length, "packages!")
+      // STEP 4: Link terms acceptance to supplier record
+      console.log('Linking terms acceptance to supplier...')
+      
+      const { data: linkedTerms, error: linkError } = await supabase
+        .from('terms_acceptances')
+        .update({ supplier_id: supplierResult.id })
+        .eq('user_id', user.id)
+        .eq('user_email', user.email)
+        .is('supplier_id', null) // Only update records without supplier_id
+        .select()
+  
+      if (linkError) {
+        console.error('Warning: Failed to link terms acceptance:', linkError)
+        // Don't fail the whole process, but log the issue
+      } else if (linkedTerms && linkedTerms.length > 0) {
+        console.log('Terms acceptance linked successfully:', linkedTerms[0].id)
+      } else {
+        console.log('No terms acceptance record found to link (may be legacy account)')
+      }
+  
+      // Clean up onboarding draft
+      await supabase
+        .from('onboarding_drafts')
+        .delete()
+        .eq('email', user.email)
+  
+      console.log('Supplier profile created and terms linked successfully')
       
     } catch (error) {
-      console.error('💥 Error in createSupplierFromDraft:', error)
+      console.error('Error in createSupplierFromDraft:', error)
       throw error
     }
   }

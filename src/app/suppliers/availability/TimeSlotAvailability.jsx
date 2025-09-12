@@ -144,10 +144,7 @@ const getDefaultWorkingHours = () => ({
 })
 // Also add debugging to the migrateDateArray function:
 const migrateDateArray = (dateArray) => {
-  console.log("=== MIGRATING DATE ARRAY ===")
-  console.log("Input dateArray:", dateArray)
-  console.log("Type:", typeof dateArray)
-  console.log("Is array:", Array.isArray(dateArray))
+
 
   if (!Array.isArray(dateArray)) {
     console.log("Not an array, returning empty array")
@@ -155,32 +152,30 @@ const migrateDateArray = (dateArray) => {
   }
 
   const result = dateArray.map((dateItem, index) => {
-    console.log(`Processing dateItem ${index}:`, dateItem)
-    console.log(`Type: ${typeof dateItem}`)
+
 
     if (typeof dateItem === "string") {
       const migrated = {
         date: dateItem.split("T")[0],
         timeSlots: ["morning", "afternoon"],
       }
-      console.log(`String migration result:`, migrated)
+
       return migrated
     } else if (dateItem && typeof dateItem === "object" && dateItem.date) {
-      console.log(`Object with date property:`, dateItem)
+
       return dateItem
     } else {
-      console.log(`Converting to date object:`, dateItem)
+
       const date = new Date(dateItem)
       const migrated = {
         date: date.toISOString().split("T")[0],
         timeSlots: ["morning", "afternoon"],
       }
-      console.log(`Date conversion result:`, migrated)
+
       return migrated
     }
   })
 
-  console.log("Final migration result:", result)
   return result
 }
 
@@ -519,33 +514,57 @@ const TimeSlotAvailabilityContent = ({
   })
   
 
-  console.log(weekendPremium)
-  useEffect(() => {
-    const loadAvailabilityData = () => {
-      if (currentSupplier) {
 
-        let effectiveSupplier = currentSupplier
+// Fix the useEffect that loads availability data
+useEffect(() => {
+  const loadAvailabilityData = () => {
+    if (currentSupplier) {
+      console.log('🔄 Loading availability data for supplier:', currentSupplier.name)
 
-        if (!isPrimaryBusiness && primaryBusiness) {
-          effectiveSupplier = {
-            // ... existing inheritance code
-          }
-        }
-        // Load unavailable dates with debugging
-        if (effectiveSupplier.unavailableDates) {
-          console.log("Before migration:", effectiveSupplier.unavailableDates)
-          const migratedUnavailable = migrateDateArray(effectiveSupplier.unavailableDates)
-          console.log("After migration:", migratedUnavailable)
-          console.log("Setting unavailableDates to:", migratedUnavailable)
-          setUnavailableDates(migratedUnavailable)
-        } else {
-          console.log("No unavailableDates found, setting to empty array")
-          setUnavailableDates([])
+      let effectiveSupplier = currentSupplier
+
+      if (!isPrimaryBusiness && primaryBusiness) {
+        effectiveSupplier = {
+          // ... existing inheritance code
         }
       }
-       // Load weekend premium settings
-       if (currentSupplier.weekendPremium) {
-        setWeekendPremium(currentSupplier.weekendPremium)
+
+      // 🔧 FIX: Load working hours from database
+      if (effectiveSupplier.workingHours) {
+        console.log('📅 Loading working hours from database:', effectiveSupplier.workingHours)
+        const migratedHours = migrateWorkingHours(effectiveSupplier.workingHours)
+        setWorkingHours(migratedHours)
+      } else {
+        console.log('📅 No working hours in database, using defaults')
+        setWorkingHours(getDefaultWorkingHours())
+      }
+
+      // Load unavailable dates with debugging
+      if (effectiveSupplier.unavailableDates) {
+        console.log('📅 Loading unavailable dates:', effectiveSupplier.unavailableDates)
+        const migratedUnavailable = migrateDateArray(effectiveSupplier.unavailableDates)
+        setUnavailableDates(migratedUnavailable)
+      } else {
+        console.log('📅 No unavailable dates in database')
+        setUnavailableDates([])
+      }
+
+      // 🔧 FIX: Load other availability settings
+      if (effectiveSupplier.availabilityNotes !== undefined) {
+        setAvailabilityNotes(effectiveSupplier.availabilityNotes)
+      }
+      
+      if (effectiveSupplier.advanceBookingDays !== undefined) {
+        setAdvanceBookingDays(effectiveSupplier.advanceBookingDays)
+      }
+      
+      if (effectiveSupplier.maxBookingDays !== undefined) {
+        setMaxBookingDays(effectiveSupplier.maxBookingDays)
+      }
+
+      // Load weekend premium settings
+      if (effectiveSupplier.weekendPremium) {
+        setWeekendPremium(effectiveSupplier.weekendPremium)
       } else {
         // Default settings
         setWeekendPremium({
@@ -555,9 +574,10 @@ const TimeSlotAvailabilityContent = ({
         })
       }
     }
+  }
 
-    loadAvailabilityData()
-  }, [currentSupplier, isPrimaryBusiness, primaryBusiness])
+  loadAvailabilityData()
+}, [currentSupplier, isPrimaryBusiness, primaryBusiness])
 
   const handleSave = async () => {
     try {
@@ -567,9 +587,7 @@ const TimeSlotAvailabilityContent = ({
         throw new Error("No primary business found. Cannot save shared availability.")
       }
 
-      console.log("INHERITANCE: Saving availability to primary business:", targetBusiness.name)
-      console.log("INHERITANCE: This will affect all themed businesses under this primary")
-
+     
       const availabilityData = {
         availabilityType: "time_slot_based",
         workingHours: workingHours,
@@ -592,8 +610,7 @@ const TimeSlotAvailabilityContent = ({
       const result = await updateProfile(updatedPrimaryData, null, targetBusiness.id)
 
       if (result.success) {
-        console.log("INHERITANCE: Availability saved to primary business")
-        console.log("INHERITANCE: All themed businesses will inherit these settings")
+   
 
         setSupplierData(updatedPrimaryData)
         setSaveSuccess(true)
@@ -634,7 +651,7 @@ const TimeSlotAvailabilityContent = ({
   }
 
   const handleTimeSlotChange = (day, timeSlot, field, value) => {
-    console.log(`Changing ${day} ${timeSlot} ${field} to ${value}`)
+
     setWorkingHours((prev) => {
       const updated = { ...prev }
 
@@ -657,7 +674,7 @@ const TimeSlotAvailabilityContent = ({
   }
 
   const markUnavailableRange = (days, timeSlots = ["morning", "afternoon"]) => {
-    console.log(`Marking ${days} days as unavailable for slots:`, timeSlots)
+   
     const dates = []
     for (let i = 0; i < days; i++) {
       const date = addDays(startOfDay(new Date()), i)
@@ -679,18 +696,18 @@ const TimeSlotAvailabilityContent = ({
         }
         return acc
       }, [])
-      console.log("Updated unavailable dates:", merged)
+      
       return merged
     })
   }
 
   const clearAllDates = () => {
-    console.log("Clearing all unavailable dates")
+
     setUnavailableDates([])
   }
 
   const applyTemplate = (template) => {
-    console.log(`Applying template: ${template}`)
+
     switch (template) {
       case "business":
         setWorkingHours({
@@ -785,7 +802,7 @@ const TimeSlotAvailabilityContent = ({
   }
 
   const removeTimeSlotFromDate = (dateIndex, timeSlot) => {
-    console.log(`Removing ${timeSlot} from date at index ${dateIndex}`)
+  
     setUnavailableDates((prev) => {
       const updated = [...prev]
       const item = updated[dateIndex]
@@ -796,7 +813,7 @@ const TimeSlotAvailabilityContent = ({
         item.timeSlots = item.timeSlots.filter((slot) => slot !== timeSlot)
       }
 
-      console.log("Updated unavailable dates after removal:", updated)
+     
       return updated
     })
   }
@@ -868,21 +885,16 @@ const TimeSlotAvailabilityContent = ({
                 Set morning and afternoon availability for each day • Applies to all {businesses?.length || 0}{" "}
                 businesses
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  <Clock className="w-3 h-3 mr-1" />
-                  Time Slot Management v2.0
-                </Badge>
-              </div>
+           
             </div>
-            <div className="absolute right-10 top-1">
+            <div className="absolute right-10 top-[-100px]">
               <GlobalSaveButton position="responsive" onSave={handleSave} isLoading={saving} />
             </div>
           </div>
         </div>
 
         {/* Configuration info for time slot based */}
-        <div className="p-4 sm:p-6 pb-0">
+        {/* <div className="p-4 sm:p-6 pb-0">
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
@@ -903,7 +915,7 @@ const TimeSlotAvailabilityContent = ({
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         <Tabs defaultValue="hours" className="w-full">
           <div className="px-4 sm:px-6 pb-0">
@@ -1223,12 +1235,12 @@ const TimeSlotAvailabilityContent = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="settings" className="p-3 sm:p-6">
+          <TabsContent value="settings" className="p-3 sm:p-6 mb-15">
   <div className="max-w-2xl bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-    <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Time Slot Booking Rules</h3>
-    <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+    {/* <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Time Slot Booking Rules</h3> */}
+    {/* <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
       Configure how customers can book your morning and afternoon time slots
-    </p>
+    </p> */}
 
     <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -1381,7 +1393,7 @@ const TimeSlotAvailabilityContent = ({
       </div>
 
       {/* Existing availability notes */}
-      <div>
+      {/* <div>
         <Label htmlFor="availability-notes" className="text-sm font-medium text-gray-900">
           Time slot availability notes
         </Label>
@@ -1393,9 +1405,9 @@ const TimeSlotAvailabilityContent = ({
           className="w-full mt-1 p-3 border border-gray-300 rounded-md text-sm h-28 sm:h-32 resize-none focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))]"
         />
         <p className="text-xs text-gray-500 mt-1">Help customers choose the best time slot for their party</p>
-      </div>
+      </div> */}
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
@@ -1408,7 +1420,7 @@ const TimeSlotAvailabilityContent = ({
             </ul>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   </div>
 </TabsContent>
