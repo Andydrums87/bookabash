@@ -26,6 +26,87 @@ import {
   Truck
 } from "lucide-react";
 
+// Add this MapWidget component at the top of your VenueDisplay.jsx file
+// Place it right after your imports and before the main VenueDisplay component
+
+
+
+const MapWidget = ({ address, venueAddress, venueName }) => {
+  // Determine which address format to use
+  const addressData = venueAddress || address;
+  
+  if (!addressData) return null;
+
+  // Handle different address formats
+  let addressString;
+  
+  if (venueAddress) {
+    // New venueAddress format: { addressLine1, addressLine2, city, postcode, country }
+    const parts = [
+      venueAddress.addressLine1,
+      venueAddress.addressLine2,
+      venueAddress.city,
+      venueAddress.postcode,
+      venueAddress.country
+    ].filter(Boolean); // Remove empty strings
+    
+    addressString = parts.join(', ');
+  } else if (address) {
+    // Original address format: { street, city, postcode }
+    addressString = `${address.street}, ${address.city}, ${address.postcode}`;
+  } else {
+    return null;
+  }
+
+  const encodedAddress = encodeURIComponent(addressString);
+  
+  // Google Maps embed URL
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const mapSrc = `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodedAddress}`;
+
+  // Use venue business name if available, otherwise fall back to venueName prop
+  const displayName = venueAddress?.businessName || venueName || 'venue';
+
+  return (
+    <div className="mt-4">
+      <h4 className="font-semibold text-gray-900 mb-3">Location Map</h4>
+      <div className="rounded-lg overflow-hidden border border-gray-200">
+        <iframe
+          src={mapSrc}
+          width="100%"
+          height="300"
+          style={{ border: 0 }}
+          allowFullScreen=""
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={`Map showing location of ${displayName}`}
+        />
+      </div>
+      <div className="my-5 flex gap-2">
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+        >
+          <MapPin className="w-4 h-4" />
+          Open in Google Maps
+        </a>
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+        >
+          <Car className="w-4 h-4" />
+          Get Directions
+        </a>
+      </div>
+    </div>
+  );
+};
+
+
 const VenueDisplay = ({ supplier, serviceDetails }) => {
 
   // State for expandable sections
@@ -34,6 +115,8 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   const [showAllCateringOptions, setShowAllCateringOptions] = useState(false);
   const [showAllRestrictions, setShowAllRestrictions] = useState(false);
   const [showAllRules, setShowAllRules] = useState(false);
+
+
 
   // Helper function to render expandable badge list
   const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
@@ -409,6 +492,11 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
                 </p>
               </div>
             )}
+            {/* Add the map widget */}
+<MapWidget 
+  address={supplier?.venueAddress || supplier?.owner?.address} 
+  venueName={supplier?.businessName || supplier?.name}
+/>
 
             {serviceDetails.venueDetails && (
               <div className="grid md:grid-cols-2 gap-6">

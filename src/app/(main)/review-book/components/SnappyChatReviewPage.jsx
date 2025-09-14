@@ -16,6 +16,7 @@ import MissingSuppliersSuggestions from '@/components/MissingSuppliersSuggestion
 import { usePartyPlan } from "@/utils/partyPlanBackend";
 import { useToast } from '@/components/ui/toast';
 import SnappyLoader from '@/components/ui/SnappyLoader';
+import PartyReadinessModal from '@/components/party-readiness-modal';
 import Image from 'next/image';
 
 import { 
@@ -85,6 +86,7 @@ const [initialSupplierCount, setInitialSupplierCount] = useState(0);
 const [ loadingError, setLoadingError] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState(null);
+  const [showReadinessModal, setShowReadinessModal] = useState(false)
 
   const { toast } = useToast()
 
@@ -119,25 +121,38 @@ const { navigateWithContext} = useContextualNavigation()
     checkAuthStatusAndLoadProfile();
   }, []);
 
-  // Show auth modal immediately if user is not signed in
-  useEffect(() => {
-    console.log("🔄 Auth effect triggered:", { 
-      loadingProfile, 
-      user: !!user, 
-      authRequired, 
-      showAuthModal 
-    });
-    
-    if (!loadingProfile && !user && !authRequired) {
-      console.log("🔐 User not authenticated, showing auth modal");
+// Replace the existing auth modal useEffect with this updated version
+useEffect(() => {
+  console.log("🔄 Auth effect triggered:", { 
+    loadingProfile, 
+    user: !!user, 
+    authRequired, 
+    showAuthModal,
+    showReadinessModal  // Add this
+  });
+  
+  // Check if coming from dashboard with readiness check
+  const urlParams = new URLSearchParams(window.location.search)
+  const needsReadinessCheck = urlParams.get('check_readiness') === 'true'
+  
+  if (!loadingProfile && !user && !authRequired) {
+    if (needsReadinessCheck && !showReadinessModal) {
+      console.log("🎯 Showing readiness check first");
+      setShowReadinessModal(true);
+      // Clean up URL parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else if (!needsReadinessCheck) {
+      console.log("🔐 User not authenticated, showing auth modal directly");
       setAuthRequired(true);
       setShowAuthModal(true);
-    } else if (!loadingProfile && user && authRequired) {
-      console.log("✅ User authenticated, clearing auth requirement");
-      setAuthRequired(false);
-      setShowAuthModal(false);
     }
-  }, [loadingProfile, user, authRequired, showAuthModal]);
+  } else if (!loadingProfile && user && authRequired) {
+    console.log("✅ User authenticated, clearing auth requirement");
+    setAuthRequired(false);
+    setShowAuthModal(false);
+  }
+}, [loadingProfile, user, authRequired, showAuthModal, showReadinessModal]);
 
 
   useEffect(() => {
@@ -1796,6 +1811,25 @@ const getButtonIcon = (stepData) => {
           selectedSuppliersCount={selectedSuppliers.length}
         />
       )}
+
+      {/* Party Readiness Check Modal */}
+<PartyReadinessModal
+  isOpen={showReadinessModal}
+  onClose={() => {
+    setShowReadinessModal(false);
+    // If they close without proceeding, redirect back to dashboard
+    router.push('/dashboard');
+  }}
+  onProceed={() => {
+    setShowReadinessModal(false);
+    // After readiness check, show auth modal
+    setAuthRequired(true);
+    setShowAuthModal(true);
+  }}
+  suppliers={fullSupplierData} // Use your existing suppliers object
+  partyDetails={partyDetails}
+  totalCost={grandTotal}
+/>
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmDialog

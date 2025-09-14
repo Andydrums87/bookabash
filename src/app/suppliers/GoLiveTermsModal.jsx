@@ -47,7 +47,22 @@ export function GoLiveTermsModal({ isOpen, onClose, onSuccess, supplierData, bus
           <p className="text-sm text-gray-600 mt-1">
             Review and accept the terms below to make your business visible to customers.
           </p>
+          <Button
+            onClick={handleGoLive}
+            disabled={!termsAccepted || loading}
+            className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Going Live...
+              </>
+            ) : (
+              "Go Live Now"
+            )}
+          </Button>
         </DialogHeader>
+        
 
         <ScrollArea className="flex-1 px-6">
           <div className="space-y-4 py-4">
@@ -126,20 +141,7 @@ export function GoLiveTermsModal({ isOpen, onClose, onSuccess, supplierData, bus
           <Button variant="outline" onClick={onClose} disabled={loading} className="flex-1 bg-transparent">
             Cancel
           </Button>
-          <Button
-            onClick={handleGoLive}
-            disabled={!termsAccepted || loading}
-            className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Going Live...
-              </>
-            ) : (
-              "Go Live Now"
-            )}
-          </Button>
+
         </div>
       </DialogContent>
     </Dialog>

@@ -631,15 +631,19 @@ export default function SupplierSignInPage() {
         'per event'
       ) : 'per event'
   
-      // 🚨 IMPORTANT: Create proper serviceDetails structure for venues
+      // Create serviceDetails structure based on service type
       let serviceDetails = {}
+      
       if (serviceType.toLowerCase() === 'venues') {
+        // WORKAROUND: Read venue address from terms_accepted metadata
+        const venueAddress = draft.terms_accepted?.venue_address || {}
+        
         serviceDetails = {
           aboutUs: '', // EMPTY - will fail minWords validation
           pricing: {
             hourlyRate: 0, // ZERO - will fail min validation
-            setupTime: 30,
-            cleanupTime: 30,
+            setupTime: 60, // 1 hour setup
+            cleanupTime: 60, // 1 hour cleanup
             cleaningFee: 0,
             securityDeposit: 0,
             minimumSpend: 0
@@ -650,6 +654,15 @@ export default function SupplierSignInPage() {
             landmarks: '',
             nearestStation: '',
             accessInstructions: ''
+          },
+          // Pre-populate venue address from onboarding data
+          venueAddress: {
+            businessName: venueAddress.businessName || '',
+            addressLine1: venueAddress.addressLine1 || '',
+            addressLine2: venueAddress.addressLine2 || '',
+            city: venueAddress.city || '',
+            postcode: venueAddress.postcode || '',
+            country: venueAddress.country || 'United Kingdom'
           },
           capacity: {
             min: 10,
@@ -680,6 +693,18 @@ export default function SupplierSignInPage() {
         }
       }
   
+      // Extract notification preferences from draft (NEW!)
+      const notificationPreferences = draft.terms_accepted?.notification_preferences || {
+        emailBookings: true,
+        emailMessages: true,
+        smsBookings: false,
+        smsReminders: false,
+        emailMarketing: false,
+        pushNotifications: true
+      }
+  
+      console.log('📱 Notification preferences from draft:', notificationPreferences)
+  
       // Create supplier data - starts incomplete
       const supplierData = {
         name: draft.business_name,
@@ -705,29 +730,37 @@ export default function SupplierSignInPage() {
           postcode: draft.postcode
         },
         
-        // 🚨 CRITICAL: Essential missing fields (need completion)
+        // NEW: Include notification preferences from onboarding
+        notifications: notificationPreferences,
+        
+        // CRITICAL: Essential missing fields (need completion)
         description: '', // EMPTY - needs completion
         businessDescription: '', // EMPTY - needs completion  
         aboutUs: '', // EMPTY - needs completion
         
-        // 🚨 CRITICAL: Add serviceDetails structure
+        // Add serviceDetails structure (including venue address for venues)
         serviceDetails: serviceDetails,
         
-        // 🚨 PLACEHOLDER IMAGES - will fail notPlaceholder validation
-        image: '/placeholder.svg?height=300&width=400&text=' + encodeURIComponent(draft.business_name),
-        coverPhoto: '/placeholder.svg?height=400&width=800&text=Cover+Photo', // ADD THIS
+        // Store venue address at top level for venues too (from workaround location)
+        ...(serviceType.toLowerCase() === 'venues' && draft.terms_accepted?.venue_address && {
+          venueAddress: draft.terms_accepted.venue_address
+        }),
+        
+        // PLACEHOLDER IMAGES - will fail notPlaceholder validation
+        image: '/placeholder.jpg',
+        coverPhoto: '/placeholder.jpg',
         
         // Default packages created but profile still incomplete
         packages: defaultPackages,
         
-        // 🚨 EMPTY ARRAYS - need user uploads
+        // EMPTY ARRAYS - need user uploads
         portfolioImages: [], // Will fail minimum validation
         portfolioVideos: [],
         
         themes: getThemesFromServiceType(draft.supplier_type),
-        badges: ['New Provider'], // Don't add "Packages Available" yet
+        badges: ['New Provider'],
         
-        // 🚨 PROFILE COMPLETION TRACKING - All false/0
+        // PROFILE COMPLETION TRACKING - All false/0
         isComplete: false,
         profileStatus: 'draft',
         profileCompletionPercentage: 0,
@@ -762,7 +795,6 @@ export default function SupplierSignInPage() {
         createdFrom: 'supplier_signin'
       }
   
-   
       const supplierRecord = {
         auth_user_id: user.id,
         business_name: draft.business_name,
@@ -779,7 +811,10 @@ export default function SupplierSignInPage() {
         updated_at: new Date().toISOString()
       }
   
-      console.log('Creating supplier record...')
+      console.log('Creating supplier record with notifications:', {
+        hasNotifications: !!supplierData.notifications,
+        notificationSettings: supplierData.notifications
+      })
       
       const { data: supplierResult, error: insertError } = await supabase
         .from('suppliers')
@@ -792,9 +827,9 @@ export default function SupplierSignInPage() {
         throw new Error('Failed to create supplier profile. Please contact support.')
       }
   
-      console.log('Supplier created successfully:', supplierResult.id)
+      console.log('Supplier created successfully with notification preferences:', supplierResult.id)
   
-      // STEP 4: Link terms acceptance to supplier record
+      // Link terms acceptance to supplier record
       console.log('Linking terms acceptance to supplier...')
       
       const { data: linkedTerms, error: linkError } = await supabase
@@ -802,12 +837,11 @@ export default function SupplierSignInPage() {
         .update({ supplier_id: supplierResult.id })
         .eq('user_id', user.id)
         .eq('user_email', user.email)
-        .is('supplier_id', null) // Only update records without supplier_id
+        .is('supplier_id', null)
         .select()
   
       if (linkError) {
         console.error('Warning: Failed to link terms acceptance:', linkError)
-        // Don't fail the whole process, but log the issue
       } else if (linkedTerms && linkedTerms.length > 0) {
         console.log('Terms acceptance linked successfully:', linkedTerms[0].id)
       } else {
@@ -820,7 +854,7 @@ export default function SupplierSignInPage() {
         .delete()
         .eq('email', user.email)
   
-      console.log('Supplier profile created and terms linked successfully')
+      console.log('Supplier profile created with notification preferences preserved')
       
     } catch (error) {
       console.error('Error in createSupplierFromDraft:', error)

@@ -108,6 +108,8 @@ export default function LocalStorageDashboard() {
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
   const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('venue')
+  // Add these state variables near your other useState declarations
+
 
 
   const [showSupplierModal, setShowSupplierModal] = useState(false)
@@ -1187,8 +1189,11 @@ const handleNameSubmit = (nameData) => {
                   className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 py-4 text-xl font-bold"
                   asChild
                 >
-                  <Link href="/review-book">Let's Make This happen!</Link>
+            <Link href="/review-book?check_readiness=true">Review and Book!</Link>
                 </Button>
+                <p className="text-sm text-gray-500 text-center mt-2">
+  You'll review your full party plan before any payment
+</p>
               
                 <Button variant="ghost" className="sm:w-auto">
                   Get Help

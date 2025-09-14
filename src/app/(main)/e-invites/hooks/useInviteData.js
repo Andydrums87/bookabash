@@ -12,14 +12,62 @@ export const useInviteData = () => {
     try {
       console.log("🏢 Extracting venue from party plan:", partyPlan)
       
-      // NEW: Check for venue with full address details (your current data structure)
+      // NEW: Check for venue with venueAddress structure (your new format)
+      if (partyPlan?.venue?.originalSupplier?.venueAddress) {
+        const venue = partyPlan.venue
+        const venueAddress = venue.originalSupplier.venueAddress
+        const supplierName = venue.originalSupplier.name || venue.name
+        
+        console.log("✅ Found venue with venueAddress:", venueAddress)
+        
+        // Build full address from venueAddress structure
+        const addressParts = [
+          venueAddress.businessName || supplierName,
+          venueAddress.addressLine1,
+          venueAddress.addressLine2,
+          venueAddress.city,
+          venueAddress.postcode,
+          venueAddress.country !== 'United Kingdom' ? venueAddress.country : null
+        ].filter(Boolean)
+        
+        const fullVenue = addressParts.join(', ')
+        console.log("✅ Complete venue from venueAddress:", fullVenue)
+        
+        return fullVenue
+      }
+      
+      // NEW: Check for venue address in serviceDetails.venueAddress
+      if (partyPlan?.venue?.originalSupplier?.serviceDetails?.venueAddress) {
+        const venue = partyPlan.venue
+        const venueAddress = venue.originalSupplier.serviceDetails.venueAddress
+        const supplierName = venue.originalSupplier.name || venue.name
+        
+        console.log("✅ Found venue with serviceDetails.venueAddress:", venueAddress)
+        
+        // Build full address from serviceDetails.venueAddress structure
+        const addressParts = [
+          venueAddress.businessName || supplierName,
+          venueAddress.addressLine1,
+          venueAddress.addressLine2,
+          venueAddress.city,
+          venueAddress.postcode,
+          venueAddress.country !== 'United Kingdom' ? venueAddress.country : null
+        ].filter(Boolean)
+        
+        const fullVenue = addressParts.join(', ')
+        console.log("✅ Complete venue from serviceDetails.venueAddress:", fullVenue)
+        
+        return fullVenue
+      }
+      
+      // LEGACY: Check for venue with full address details (old data structure)
       if (partyPlan?.venue?.originalSupplier?.serviceDetails?.location?.fullAddress) {
         const venue = partyPlan.venue
         const fullAddress = venue.originalSupplier.serviceDetails.location.fullAddress
         const postcode = venue.originalSupplier.serviceDetails.location.postcode
         const venueName = venue.originalSupplier.name || venue.name
         
-        console.log("✅ Found venue with full address:")
+        console.log("✅ Found venue with legacy full address:")
         console.log("  - Name:", venueName)
         console.log("  - Address:", fullAddress)
         console.log("  - Postcode:", postcode)
@@ -45,6 +93,7 @@ export const useInviteData = () => {
         const venueName = venue.originalSupplier.name || venue.name
         
         const addressParts = [
+          venueName,
           ownerAddress.street,
           ownerAddress.city,
           ownerAddress.postcode
@@ -52,9 +101,8 @@ export const useInviteData = () => {
         
         if (addressParts.length > 0) {
           const fullAddress = addressParts.join(', ')
-          const fullVenue = `${venueName.trim()}, ${fullAddress}`
-          console.log("✅ Found venue with owner address:", fullVenue)
-          return fullVenue
+          console.log("✅ Found venue with owner address:", fullAddress)
+          return fullAddress
         }
       }
       

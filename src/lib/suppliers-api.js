@@ -199,6 +199,7 @@ export function transformSupplierRecord(row) {
   const portfolioVideos = Array.isArray(d.portfolioVideos) ? d.portfolioVideos : [];
   const badges = Array.isArray(d.badges) ? d.badges : [];
   const weekendPremium = d.weekendPremium ?? null;
+  const venueAddress = d.venueAddress ?? null;
   const serviceDetails = (d.serviceDetails && typeof d.serviceDetails === "object") ? d.serviceDetails : {};
   const stats = (d.stats && typeof d.stats === "object") ? d.stats : undefined;
 
@@ -226,7 +227,7 @@ export function transformSupplierRecord(row) {
     availabilityNotes,
     advanceBookingDays,
     maxBookingDays,
-
+venueAddress,
     packages,
     portfolioImages,
     portfolioVideos,

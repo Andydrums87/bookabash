@@ -64,6 +64,14 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
       seated: 50,
       standing: 80,
     },
+    venueAddress: {
+      businessName: "", // e.g. "St Peter's Community Hall"
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      postcode: "",
+      country: "United Kingdom"
+    },
     facilities: [],
     pricing: {
       hourlyRate: 0,
@@ -130,135 +138,172 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
   const [isAddingRule, setIsAddingRule] = useState(false)
   const [customRule, setCustomRule] = useState("")
 
-  // Update form when business data changes from parent
-  useEffect(() => {
-    if (supplierData) {
-      console.log("🔄 VenueServiceDetails updating with business data:", supplierData.name)
+// Update the useEffect in VenueServiceDetails that loads supplier data
+useEffect(() => {
+  if (supplierData) {
+    console.log("🔄 VenueServiceDetails updating with business data:", supplierData.name)
 
-      const businessServiceDetails = supplierData.serviceDetails || {}
+    const businessServiceDetails = supplierData.serviceDetails || {}
 
-      setDetails({
-        venueType: "",
-        capacity: {
-          min: 10,
-          max: 100,
-          seated: 50,
-          standing: 80,
-        },
-        facilities: [],
-        pricing: {
-          hourlyRate: 0,
-          cleaningFee: 0,
-          securityDeposit: 0,
-          minimumSpend: 0,
-          setupTime: 30,
-          cleanupTime: 30,
-          weekendSurcharge: 0,
-          peakSeasonSurcharge: 0,
-        },
-        availability: {
-          daysOfWeek: [],
-          timeSlots: [],
-          minimumBookingHours: 3,
-          maxAdvanceBooking: 365,
-          bufferTimeBetweenBookings: 60,
-        },
-        equipment: {
-          tables: 0,
-          chairs: 0,
-          soundSystem: false,
-          projector: false,
-          kitchen: false,
-          bar: false,
-        },
-        policies: {
-          ownFood: true,
-          ownDecorations: true,
-          alcohol: false,
-          smoking: false,
-          music: true,
-          endTime: "22:00",
-          childSupervision: true,
-          depositRequired: true,
-          cancellationPolicy: "48_hours",
-        },
-        venueDetails: {
-          parkingInfo: "",
-          accessInstructions: "",
-          nearestStation: "",
-          landmarks: "",
-        },
-        specialFeatures: "",
-        setupOptions: [],
-        cateringOptions: [],
-        addOnServices: [],
-        restrictedItems: [],
-        houseRules: [],
-        bookingTerms: "",
-        venueRules: "",
-        // Override with actual business data
-        ...businessServiceDetails,
-        // Ensure nested objects are properly merged
-        capacity: {
-          min: 10,
-          max: 100,
-          seated: 50,
-          standing: 80,
-          ...businessServiceDetails.capacity,
-        },
-        pricing: {
-          hourlyRate: 0,
-          cleaningFee: 0,
-          securityDeposit: 0,
-          minimumSpend: 0,
-          setupTime: 30,
-          cleanupTime: 30,
-          weekendSurcharge: 0,
-          peakSeasonSurcharge: 0,
-          ...businessServiceDetails.pricing,
-        },
-        availability: {
-          daysOfWeek: [],
-          timeSlots: [],
-          minimumBookingHours: 3,
-          maxAdvanceBooking: 365,
-          bufferTimeBetweenBookings: 60,
-          ...businessServiceDetails.availability,
-        },
-        equipment: {
-          tables: 0,
-          chairs: 0,
-          soundSystem: false,
-          projector: false,
-          kitchen: false,
-          bar: false,
-          ...businessServiceDetails.equipment,
-        },
-        policies: {
-          ownFood: true,
-          ownDecorations: true,
-          alcohol: false,
-          smoking: false,
-          music: true,
-          endTime: "22:00",
-          childSupervision: true,
-          depositRequired: true,
-          cancellationPolicy: "48_hours",
-          ...businessServiceDetails.policies,
-        },
-        venueDetails: {
-          parkingInfo: "",
-          accessInstructions: "",
-          nearestStation: "",
-          landmarks: "",
-          ...businessServiceDetails.venueDetails,
-        },
-        addOnServices: businessServiceDetails.addOnServices || [],
-        restrictedItems: businessServiceDetails.restrictedItems || [],
-        houseRules: businessServiceDetails.houseRules || [],
-      })
-    }
-  }, [supplierData])
+    setDetails({
+      venueType: "",
+      capacity: {
+        min: 10,
+        max: 100,
+        seated: 50,
+        standing: 80,
+      },
+      // NEW: Pre-populate venue address from supplier data
+      venueAddress: {
+        businessName: "",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        postcode: "",
+        country: "United Kingdom",
+        // Try multiple sources for venue address data
+        ...(supplierData.venueAddress || {}), // Top-level venue address
+        ...(supplierData.serviceDetails?.venueAddress || {}), // Service details venue address
+        // Fall back to business data if no specific venue address
+        ...((!supplierData.venueAddress && !supplierData.serviceDetails?.venueAddress) && {
+          businessName: supplierData.name || "",
+          postcode: supplierData.location || ""
+        })
+      },
+      facilities: [],
+      pricing: {
+        hourlyRate: 0,
+        cleaningFee: 0,
+        securityDeposit: 0,
+        minimumSpend: 0,
+        setupTime: 60, // Changed to 60 minutes (1 hour)
+        cleanupTime: 60, // Changed to 60 minutes (1 hour)
+        weekendSurcharge: 0,
+        peakSeasonSurcharge: 0,
+      },
+      availability: {
+        daysOfWeek: [],
+        timeSlots: [],
+        minimumBookingHours: 3,
+        maxAdvanceBooking: 365,
+        bufferTimeBetweenBookings: 60,
+      },
+      equipment: {
+        tables: 0,
+        chairs: 0,
+        soundSystem: false,
+        projector: false,
+        kitchen: false,
+        bar: false,
+      },
+      policies: {
+        ownFood: true,
+        ownDecorations: true,
+        alcohol: false,
+        smoking: false,
+        music: true,
+        endTime: "22:00",
+        childSupervision: true,
+        depositRequired: true,
+        cancellationPolicy: "48_hours",
+      },
+      venueDetails: {
+        parkingInfo: "",
+        accessInstructions: "",
+        nearestStation: "",
+        landmarks: "",
+      },
+      specialFeatures: "",
+      setupOptions: [],
+      cateringOptions: [],
+      addOnServices: [],
+      restrictedItems: [],
+      houseRules: [],
+      bookingTerms: "",
+      venueRules: "",
+      // Override with actual business data
+      ...businessServiceDetails,
+      // Ensure nested objects are properly merged
+      venueAddress: {
+        businessName: "",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        postcode: "",
+        country: "United Kingdom",
+        // Apply the same logic for nested venue address
+        ...(supplierData.venueAddress || {}),
+        ...(businessServiceDetails.venueAddress || {}),
+        ...((!supplierData.venueAddress && !businessServiceDetails.venueAddress) && {
+          businessName: supplierData.name || "",
+          postcode: supplierData.location || ""
+        })
+      },
+      capacity: {
+        min: 10,
+        max: 100,
+        seated: 50,
+        standing: 80,
+        ...businessServiceDetails.capacity,
+      },
+      pricing: {
+        hourlyRate: 0,
+        cleaningFee: 0,
+        securityDeposit: 0,
+        minimumSpend: 0,
+        setupTime: 60,
+        cleanupTime: 60,
+        weekendSurcharge: 0,
+        peakSeasonSurcharge: 0,
+        ...businessServiceDetails.pricing,
+      },
+      availability: {
+        daysOfWeek: [],
+        timeSlots: [],
+        minimumBookingHours: 3,
+        maxAdvanceBooking: 365,
+        bufferTimeBetweenBookings: 60,
+        ...businessServiceDetails.availability,
+      },
+      equipment: {
+        tables: 0,
+        chairs: 0,
+        soundSystem: false,
+        projector: false,
+        kitchen: false,
+        bar: false,
+        ...businessServiceDetails.equipment,
+      },
+      policies: {
+        ownFood: true,
+        ownDecorations: true,
+        alcohol: false,
+        smoking: false,
+        music: true,
+        endTime: "22:00",
+        childSupervision: true,
+        depositRequired: true,
+        cancellationPolicy: "48_hours",
+        ...businessServiceDetails.policies,
+      },
+      venueDetails: {
+        parkingInfo: "",
+        accessInstructions: "",
+        nearestStation: "",
+        landmarks: "",
+        ...businessServiceDetails.venueDetails,
+      },
+      addOnServices: businessServiceDetails.addOnServices || [],
+      restrictedItems: businessServiceDetails.restrictedItems || [],
+      houseRules: businessServiceDetails.houseRules || [],
+    })
+
+    console.log("✅ VenueServiceDetails loaded with address:", {
+      venueAddress: businessServiceDetails.venueAddress || supplierData.venueAddress,
+      businessName: supplierData.name
+    })
+  }
+}, [supplierData])
 
   // Data options
   const venueTypes = [
@@ -687,33 +732,90 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
         </div>
       </div>
 
-          {/* Location Details */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-8 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg">
-          <h2 className="flex items-center gap-3 text-xl font-bold text-gray-900">
-            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
-            Venue Address & Location
-          </h2>
-          <p className="text-base text-gray-600 mt-2">
-            Enhance your existing business address with venue-specific details
-          </p>
-        </div>
-        <div className="p-8 space-y-8">
-          {/* Show existing address */}
-          {supplierData?.owner?.address && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-              <h4 className="font-semibold text-blue-900 mb-2">Current Business Address:</h4>
-              <p className="text-blue-800">
-                {supplierData.owner.address.street}, {supplierData.owner.address.city},{" "}
-                {supplierData.owner.address.postcode}
-              </p>
-              <p className="text-sm text-blue-600 mt-1">✓ This address will be used for your venue location</p>
-            </div>
-          )}
+        {/* Venue Address - Replace existing location section */}
+<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+  <div className="p-8 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg">
+    <h2 className="flex items-center gap-3 text-xl font-bold text-gray-900">
+      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+        <MapPin className="w-5 h-5 text-white" />
+      </div>
+      Venue Address & Location
+    </h2>
+    <p className="text-base text-gray-600 mt-2">
+      The actual venue location where parties take place
+    </p>
+  </div>
+  <div className="p-8 space-y-6">
+    
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-3">
+        <label className="text-base font-semibold text-gray-700 block">
+          Address Line 1 *
+        </label>
+        <input
+          value={details.venueAddress?.addressLine1 || ""}
+          onChange={(e) => handleNestedFieldChange("venueAddress", "addressLine1", e.target.value)}
+          placeholder="123 Church Street"
+          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-base font-semibold text-gray-700 block">
+          Address Line 2
+        </label>
+        <input
+          value={details.venueAddress?.addressLine2 || ""}
+          onChange={(e) => handleNestedFieldChange("venueAddress", "addressLine2", e.target.value)}
+          placeholder="Optional"
+          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="space-y-3">
+        <label className="text-base font-semibold text-gray-700 block">
+          City *
+        </label>
+        <input
+          value={details.venueAddress?.city || ""}
+          onChange={(e) => handleNestedFieldChange("venueAddress", "city", e.target.value)}
+          placeholder="London"
+          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-base font-semibold text-gray-700 block">
+          Postcode *
+        </label>
+        <input
+          value={details.venueAddress?.postcode || ""}
+          onChange={(e) => handleNestedFieldChange("venueAddress", "postcode", e.target.value.toUpperCase())}
+          placeholder="SW1A 1AA"
+          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-base font-semibold text-gray-700 block">
+          Country *
+        </label>
+        <select
+          value={details.venueAddress?.country || "United Kingdom"}
+          onChange={(e) => handleNestedFieldChange("venueAddress", "country", e.target.value)}
+          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
+        >
+          <option value="United Kingdom">United Kingdom</option>
+          <option value="Ireland">Ireland</option>
+        </select>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-3">
               <label className="text-base font-semibold text-gray-700 block">Parking Information *</label>
               <textarea
@@ -759,7 +861,10 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
             </div>
           </div>
         </div>
-      </div>
+      
+    
+
+</div>
 
       {/* Venue Type & Capacity */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">

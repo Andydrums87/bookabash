@@ -49,6 +49,7 @@ const transformSupplierData = (backendSupplier) => {
     ownerName: backendSupplier?.ownerName,
     owner: backendSupplier?.owner,
     weekendPremium: backendSupplier.weekendPremium, // ✅ ADD THIS LINE
+    venueAddress: backendSupplier?.venueAddress
   }
 }
 

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "./ui/checkbox"
-import { MapPin, Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Loader2 } from "lucide-react"
+import { MapPin, Eye, EyeOff, ArrowLeft, CheckCircle, Mail, Loader2, Building } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getBaseUrl } from "@/utils/env"
@@ -48,6 +48,15 @@ export function SupplierForm() {
     phone: "",
     postcode: "",
     supplierType: "",
+    // NEW: Venue address fields
+    venueAddress: {
+      businessName: "",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      postcode: "",
+      country: "United Kingdom"
+    }
   })
 
   const [accountData, setAccountData] = useState({
@@ -63,6 +72,9 @@ export function SupplierForm() {
     smsBookings: false,
     smsReminders: false
   })
+
+  // Check if current selection is a venue
+  const isVenue = businessData.supplierType === "Venues"
 
   // Local Storage Functions
   const saveFormData = () => {
@@ -97,6 +109,14 @@ export function SupplierForm() {
             phone: "",
             postcode: "",
             supplierType: "",
+            venueAddress: {
+              businessName: "",
+              addressLine1: "",
+              addressLine2: "",
+              city: "",
+              postcode: "",
+              country: "United Kingdom"
+            }
           })
           
           setAccountData(prev => ({
@@ -195,6 +215,35 @@ export function SupplierForm() {
     })
   }
 
+  // NEW: Handler for venue address updates
+  const updateVenueAddress = (field, value) => {
+    setBusinessData(prev => {
+      const newData = {
+        ...prev,
+        venueAddress: {
+          ...prev.venueAddress,
+          [field]: value
+        }
+      }
+      // Save after a short delay
+      setTimeout(() => {
+        const formData = {
+          businessData: newData,
+          accountData: {
+            yourName: accountData.yourName,
+            email: accountData.email
+          },
+          currentStep,
+          termsAccepted,
+          notificationPreferences,
+          timestamp: Date.now()
+        }
+        localStorage.setItem('supplierFormData', JSON.stringify(formData))
+      }, 500)
+      return newData
+    })
+  }
+
   const updateAccountData = (field, value) => {
     setAccountData(prev => {
       const newData = { ...prev, [field]: value }
@@ -221,11 +270,25 @@ export function SupplierForm() {
 
   // Validation functions
   const validateStep1 = () => {
-    const { businessName, phone, postcode, supplierType } = businessData
+    const { businessName, phone, postcode, supplierType, venueAddress } = businessData
 
     if (!businessName || !phone || !postcode || !supplierType) {
       setError("All fields are required.")
       return false
+    }
+    
+    // NEW: Additional validation for venues
+    if (supplierType === "Venues") {
+      if (!venueAddress.businessName || !venueAddress.addressLine1 || !venueAddress.city || !venueAddress.postcode) {
+        setError("All venue address fields are required for venue listings.")
+        return false
+      }
+      
+      // Validate venue postcode format
+      if (!/^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i.test(venueAddress.postcode.replace(/\s/g, ''))) {
+        setError("Please enter a valid UK postcode for the venue location.")
+        return false
+      }
     }
     
     if (!/^[\d\s\+\-\(\)]+$/.test(phone)) {
@@ -332,17 +395,31 @@ export function SupplierForm() {
       // Step 2: Save to onboarding_drafts (temporary storage)
       console.log('💾 Saving to onboarding_drafts...')
       
+      const draftData = {
+        email: accountData.email,
+        your_name: accountData.yourName,
+        business_name: businessData.businessName,
+        phone: businessData.phone,
+        postcode: businessData.postcode,
+        supplier_type: businessData.supplierType,
+        terms_accepted: {
+          ...termsData,
+          // NEW: Store notification preferences in terms metadata
+          notification_preferences: notificationPreferences,
+          // WORKAROUND: Store venue address here temporarily
+          ...(businessData.supplierType === "Venues" && {
+            venue_address: businessData.venueAddress
+          })
+        }
+      }
+      // NEW: Add venue address if it's a venue
+      if (businessData.supplierType === "Venues") {
+        draftData.venue_address = businessData.venueAddress
+      }
+      
       const { data: draftResult, error: draftError } = await supabase
         .from("onboarding_drafts")
-        .insert({
-          email: accountData.email,
-          your_name: accountData.yourName,
-          business_name: businessData.businessName,
-          phone: businessData.phone,
-          postcode: businessData.postcode,
-          supplier_type: businessData.supplierType,
-          terms_accepted: termsData
-        })
+        .insert(draftData)
         .select()
         .single()
 
@@ -351,14 +428,7 @@ export function SupplierForm() {
           console.log('📝 Email exists in drafts, updating...')
           const { error: updateError } = await supabase
             .from("onboarding_drafts")
-            .update({
-              your_name: accountData.yourName,
-              business_name: businessData.businessName,
-              phone: businessData.phone,
-              postcode: businessData.postcode,
-              supplier_type: businessData.supplierType,
-              terms_accepted: termsData
-            })
+            .update(draftData)
             .eq("email", accountData.email)
 
           if (updateError) throw updateError
@@ -382,7 +452,9 @@ export function SupplierForm() {
             business_name: businessData.businessName,
             phone: businessData.phone,
             postcode: businessData.postcode,
-            supplier_type: businessData.supplierType
+            supplier_type: businessData.supplierType,
+            // NEW: Include venue address in user metadata
+            venue_address: businessData.supplierType === "Venues" ? businessData.venueAddress : null
           }
         }
       })
@@ -623,10 +695,120 @@ export function SupplierForm() {
               </div>
             </div>
           </div>
+
+          {/* NEW: Venue Address Section - Only show for venues */}
+          {isVenue && (
+            <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-3 mb-4">
+                <Building className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+                  Venue Location Details
+                </h3>
+              </div>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mb-6">
+                Please provide the full address where parties will take place
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="venueBusinessName" className={labelClasses}>
+                    Venue/Hall Name {requiredStar}
+                  </Label>
+                  <Input
+                    id="venueBusinessName"
+                    value={businessData.venueAddress.businessName}
+                    onChange={(e) => updateVenueAddress('businessName', e.target.value)}
+                    placeholder="e.g. St Peter's Community Hall"
+                    className={inputClasses}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="venueAddressLine1" className={labelClasses}>
+                      Address Line 1 {requiredStar}
+                    </Label>
+                    <Input
+                      id="venueAddressLine1"
+                      value={businessData.venueAddress.addressLine1}
+                      onChange={(e) => updateVenueAddress('addressLine1', e.target.value)}
+                      placeholder="123 Church Street"
+                      className={inputClasses}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="venueAddressLine2" className={labelClasses}>
+                      Address Line 2
+                    </Label>
+                    <Input
+                      id="venueAddressLine2"
+                      value={businessData.venueAddress.addressLine2}
+                      onChange={(e) => updateVenueAddress('addressLine2', e.target.value)}
+                      placeholder="Optional"
+                      className={inputClasses}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="venueCity" className={labelClasses}>
+                      City {requiredStar}
+                    </Label>
+                    <Input
+                      id="venueCity"
+                      value={businessData.venueAddress.city}
+                      onChange={(e) => updateVenueAddress('city', e.target.value)}
+                      placeholder="London"
+                      className={inputClasses}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="venuePostcode" className={labelClasses}>
+                      Venue Postcode {requiredStar}
+                    </Label>
+                    <Input
+                      id="venuePostcode"
+                      value={businessData.venueAddress.postcode}
+                      onChange={(e) => updateVenueAddress('postcode', e.target.value.toUpperCase())}
+                      placeholder="SW1A 1AA"
+                      className={inputClasses}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="venueCountry" className={labelClasses}>
+                      Country {requiredStar}
+                    </Label>
+                    <Select
+                      value={businessData.venueAddress.country}
+                      onValueChange={(value) => updateVenueAddress('country', value)}
+                      disabled={loading}
+                    >
+                      <SelectTrigger className={`mt-1 w-full ${inputClasses.replace("placeholder:text-gray-400 dark:placeholder:text-gray-500", "")}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                        <SelectItem value="Ireland">Ireland</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Step 2: Account Creation */}
+      {/* Step 2: Account Creation - Keep existing code */}
       {currentStep === 2 && (
         <div className="space-y-6">
           <div className="text-center">
@@ -717,7 +899,7 @@ export function SupplierForm() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={loading}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 h-5" />}
                 </Button>
               </div>
             </div>
@@ -766,100 +948,99 @@ export function SupplierForm() {
             </div>
           </div>
 
+          <div className="border-t border-gray-200 pt-6 mt-6">
+            <div className="rounded-lg p-4 sm:p-6 bg-blue-50 border border-blue-200">
+              
+              {/* Basic Terms Acceptance - SIMPLIFIED */}
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="basic-terms-acceptance"
+                    checked={termsAccepted}
+                    onCheckedChange={(checked) => {
+                      setTermsAccepted(checked)
+                      if (checked) setTermsError(false)
+                      saveFormData()
+                    }}
+                    className="mt-1 flex-shrink-0 data-[state=checked]:bg-[hsl(var(--primary-600))] data-[state=checked]:border-[hsl(var(--primary-600))]"
+                    required
+                  />
+                  <div className="flex-1 min-w-0">
+                    <Label 
+                      htmlFor="basic-terms-acceptance" 
+                      className="text-sm leading-relaxed cursor-pointer font-medium block text-gray-800"
+                    >
+                      I agree to PartySnap's{" "}
+                      <BasicTermsModal>
+                        <button 
+                          type="button"
+                          className="hover:underline font-medium inline-block text-primary-600"
+                        >
+                          Terms of Service
+                        </button>
+                      </BasicTermsModal>
+                      {" "}and{" "}
+                      <PrivacyPolicyModal>
+                        <button 
+                          type="button"
+                          className="hover:underline font-medium inline-block text-primary-600"
+                        >
+                          Privacy Policy
+                        </button>
+                      </PrivacyPolicyModal>
+                    </Label>
+                    
+                    <p className="text-xs text-gray-500 mt-2">
+                      Full supplier terms will be presented when you're ready to go live.
+                    </p>
+                    
+                    {termsError && (
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        Please accept our basic terms to create your account.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-<div className="border-t border-gray-200 pt-6 mt-6">
-  <div className="rounded-lg p-4 sm:p-6 bg-blue-50 border border-blue-200">
-    
-    {/* Basic Terms Acceptance - SIMPLIFIED */}
-    <div className="space-y-3">
-      <div className="flex items-start space-x-3">
-        <Checkbox
-          id="basic-terms-acceptance"
-          checked={termsAccepted}
-          onCheckedChange={(checked) => {
-            setTermsAccepted(checked)
-            if (checked) setTermsError(false)
-            saveFormData()
-          }}
-          className="mt-1 flex-shrink-0 data-[state=checked]:bg-[hsl(var(--primary-600))] data-[state=checked]:border-[hsl(var(--primary-600))]"
-          required
-        />
-        <div className="flex-1 min-w-0">
-          <Label 
-            htmlFor="basic-terms-acceptance" 
-            className="text-sm leading-relaxed cursor-pointer font-medium block text-gray-800"
-          >
-            I agree to PartySnap's{" "}
-            <BasicTermsModal>
-              <button 
-                type="button"
-                className="hover:underline font-medium inline-block text-primary-600"
-              >
-                Terms of Service
-              </button>
-            </BasicTermsModal>
-            {" "}and{" "}
-            <PrivacyPolicyModal>
-              <button 
-                type="button"
-                className="hover:underline font-medium inline-block text-primary-600"
-              >
-                Privacy Policy
-              </button>
-            </PrivacyPolicyModal>
-          </Label>
-          
-          <p className="text-xs text-gray-500 mt-2">
-            Full supplier terms will be presented when you're ready to go live.
-          </p>
-          
-          {termsError && (
-            <p className="text-xs text-red-600 mt-2 font-medium">
-              Please accept our basic terms to create your account.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
+              {/* Divider */}
+              <div className="border-t border-blue-200 my-4"></div>
 
-    {/* Divider */}
-    <div className="border-t border-blue-200 my-4"></div>
-
-    {/* Notification Preferences - UNCHANGED */}
-    <div>
-      <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2 text-base">
-        <span>📱</span> Notification Preferences
-      </h4>
-      
-      <div className="space-y-3">
-        <div className="flex items-start space-x-3">
-          <Checkbox
-            id="smsBookingsOnboard"
-            checked={notificationPreferences.smsBookings}
-            onCheckedChange={(checked) => {
-              setNotificationPreferences(prev => ({ ...prev, smsBookings: !!checked }))
-              saveFormData()
-            }}
-            className="mt-1 flex-shrink-0 data-[state=checked]:bg-[hsl(var(--primary-600))] data-[state=checked]:border-[hsl(var(--primary-600))]"
-          />
-          <div className="flex-1 min-w-0">
-            <Label htmlFor="smsBookingsOnboard" className="text-sm text-blue-800 font-medium cursor-pointer block">
-              Enable urgent SMS alerts
-            </Label>
-            <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-              Get instant notifications when customers pay deposits (highly recommended for faster response times)
-            </p>
-            <div className="text-xs text-blue-600 mt-2 space-y-1">
-              <div>✓ Instant alerts when payments are made</div>
-              <div>✓ 2-hour response window reminders</div>
-              <div>✓ Reply STOP anytime to opt out</div>
+              {/* Notification Preferences - UNCHANGED */}
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2 text-base">
+                  <span>📱</span> Notification Preferences
+                </h4>
+                
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="smsBookingsOnboard"
+                      checked={notificationPreferences.smsBookings}
+                      onCheckedChange={(checked) => {
+                        setNotificationPreferences(prev => ({ ...prev, smsBookings: !!checked }))
+                        saveFormData()
+                      }}
+                      className="mt-1 flex-shrink-0 data-[state=checked]:bg-[hsl(var(--primary-600))] data-[state=checked]:border-[hsl(var(--primary-600))]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Label htmlFor="smsBookingsOnboard" className="text-sm text-blue-800 font-medium cursor-pointer block">
+                        Enable urgent SMS alerts
+                      </Label>
+                      <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+                        Get instant notifications when customers pay deposits (highly recommended for faster response times)
+                      </p>
+                      <div className="text-xs text-blue-600 mt-2 space-y-1">
+                        <div>✓ Instant alerts when payments are made</div>
+                        <div>✓ 2-hour response window reminders</div>
+                        <div>✓ Reply STOP anytime to opt out</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
         </div>
       )}
 

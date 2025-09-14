@@ -190,7 +190,6 @@ const Settings = () => {
     }
   };
 
-  // Save settings to backend
   const handleSaveSettings = async () => {
     setLocalSaving(true);
     
@@ -201,6 +200,9 @@ const Settings = () => {
         throw new Error('Required functions not available');
       }
       
+      // Check if this is a venue business
+      const isVenue = businessInfo.businessType?.toLowerCase() === 'venues';
+      
       // Merge settings data with existing supplier data
       const updatedSupplierData = {
         ...supplierData,
@@ -210,6 +212,21 @@ const Settings = () => {
         registrationNumber: businessInfo.registrationNumber,
         vatNumber: businessInfo.vatNumber,
         businessAddress: businessInfo.businessAddress,
+        
+        // Handle venue address - keep existing venue address data intact
+        ...(isVenue && {
+          venueAddress: {
+            ...supplierData.venueAddress, // Keep existing venue address
+            // Don't override with personal address for venues
+          },
+          serviceDetails: {
+            ...supplierData.serviceDetails,
+            venueAddress: {
+              ...supplierData.serviceDetails?.venueAddress, // Keep existing venue address in serviceDetails
+            }
+          }
+        }),
+        
         owner: {
           ...supplierData.owner,
           name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim(),
@@ -220,13 +237,18 @@ const Settings = () => {
           profilePhoto: personalInfo.profilePhoto,
           bio: personalInfo.bio,
           dateOfBirth: personalInfo.dateOfBirth,
-          address: personalInfo.address
+          // For venues, don't override with personal address
+          address: isVenue ? supplierData.owner?.address : personalInfo.address
         },
         notifications: notifications
       };
-
-      console.log('💾 Updated supplier data:', updatedSupplierData);
-
+  
+      console.log('💾 Updated supplier data for venue:', {
+        isVenue,
+        hasVenueAddress: !!updatedSupplierData.venueAddress,
+        venueAddressData: updatedSupplierData.venueAddress
+      });
+  
       const result = await updateProfile(updatedSupplierData, null, updatedSupplierData.id);
       
       if (result.success) {
@@ -440,90 +462,306 @@ const Settings = () => {
                 />
               </div>
 
-              {/* Personal Address - Mobile Optimized */}
               <div className="space-y-4">
-                <Label className="text-base font-medium">Personal Address</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="personalStreet" className="text-sm font-medium">
-                      Street Address
-                    </Label>
-                    <Input
-                      id="personalStreet"
-                      value={personalInfo.address.street}
-                      onChange={(e) =>
-                        setPersonalInfo((prev) => ({
-                          ...prev,
-                          address: { ...prev.address, street: e.target.value },
-                        }))
+  {businessInfo.businessType?.toLowerCase() === 'venues' ? (
+    // Venue Address Section
+    <>
+      <Label className="text-base font-medium">Venue Address</Label>
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-2 mb-3">
+          <Building className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">
+            This is where your parties take place
+          </span>
+        </div>
+        
+        {/* Venue Name */}
+        <div className="space-y-2 mb-4">
+          <Label htmlFor="venueName" className="text-sm font-medium">
+            Venue/Hall Name
+          </Label>
+          <Input
+            id="venueName"
+            value={supplierData?.venueAddress?.businessName || supplierData?.serviceDetails?.venueAddress?.businessName || ""}
+            onChange={(e) => {
+              // Update venue address in supplier data
+              if (setSupplierData && supplierData) {
+                const updatedData = {
+                  ...supplierData,
+                  venueAddress: {
+                    ...supplierData.venueAddress,
+                    businessName: e.target.value
+                  },
+                  serviceDetails: {
+                    ...supplierData.serviceDetails,
+                    venueAddress: {
+                      ...supplierData.serviceDetails?.venueAddress,
+                      businessName: e.target.value
+                    }
+                  }
+                }
+                setSupplierData(updatedData)
+              }
+            }}
+            placeholder="e.g. St Peter's Community Hall"
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+          />
+        </div>
+
+        {/* Address Fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="venueStreet" className="text-sm font-medium">
+              Street Address
+            </Label>
+            <Input
+              id="venueStreet"
+              value={supplierData?.venueAddress?.addressLine1 || supplierData?.serviceDetails?.venueAddress?.addressLine1 || ""}
+              onChange={(e) => {
+                if (setSupplierData && supplierData) {
+                  const updatedData = {
+                    ...supplierData,
+                    venueAddress: {
+                      ...supplierData.venueAddress,
+                      addressLine1: e.target.value
+                    },
+                    serviceDetails: {
+                      ...supplierData.serviceDetails,
+                      venueAddress: {
+                        ...supplierData.serviceDetails?.venueAddress,
+                        addressLine1: e.target.value
                       }
-                      placeholder="123 Main Street"
-                      className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="personalCity" className="text-sm font-medium">
-                      City
-                    </Label>
-                    <Input
-                      id="personalCity"
-                      value={personalInfo.address.city}
-                      onChange={(e) =>
-                        setPersonalInfo((prev) => ({
-                          ...prev,
-                          address: { ...prev.address, city: e.target.value },
-                        }))
+                    }
+                  }
+                  setSupplierData(updatedData)
+                }
+              }}
+              placeholder="123 Church Street"
+              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="venueStreet2" className="text-sm font-medium">
+              Address Line 2
+            </Label>
+            <Input
+              id="venueStreet2"
+              value={supplierData?.venueAddress?.addressLine2 || supplierData?.serviceDetails?.venueAddress?.addressLine2 || ""}
+              onChange={(e) => {
+                if (setSupplierData && supplierData) {
+                  const updatedData = {
+                    ...supplierData,
+                    venueAddress: {
+                      ...supplierData.venueAddress,
+                      addressLine2: e.target.value
+                    },
+                    serviceDetails: {
+                      ...supplierData.serviceDetails,
+                      venueAddress: {
+                        ...supplierData.serviceDetails?.venueAddress,
+                        addressLine2: e.target.value
                       }
-                      placeholder="London"
-                      className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="personalPostcode" className="text-sm font-medium">
-                      Postcode
-                    </Label>
-                    <Input
-                      id="personalPostcode"
-                      value={personalInfo.address.postcode}
-                      onChange={(e) =>
-                        setPersonalInfo((prev) => ({
-                          ...prev,
-                          address: { ...prev.address, postcode: e.target.value },
-                        }))
+                    }
+                  }
+                  setSupplierData(updatedData)
+                }
+              }}
+              placeholder="Optional"
+              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="venueCity" className="text-sm font-medium">
+              City
+            </Label>
+            <Input
+              id="venueCity"
+              value={supplierData?.venueAddress?.city || supplierData?.serviceDetails?.venueAddress?.city || ""}
+              onChange={(e) => {
+                if (setSupplierData && supplierData) {
+                  const updatedData = {
+                    ...supplierData,
+                    venueAddress: {
+                      ...supplierData.venueAddress,
+                      city: e.target.value
+                    },
+                    serviceDetails: {
+                      ...supplierData.serviceDetails,
+                      venueAddress: {
+                        ...supplierData.serviceDetails?.venueAddress,
+                        city: e.target.value
                       }
-                      placeholder="SW1A 1AA"
-                      className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="personalCountry" className="text-sm font-medium">
-                      Country
-                    </Label>
-                    <Select
-                      value={personalInfo.address.country}
-                      onValueChange={(value) =>
-                        setPersonalInfo((prev) => ({
-                          ...prev,
-                          address: { ...prev.address, country: value },
-                        }))
+                    }
+                  }
+                  setSupplierData(updatedData)
+                }
+              }}
+              placeholder="London"
+              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="venuePostcode" className="text-sm font-medium">
+              Postcode
+            </Label>
+            <Input
+              id="venuePostcode"
+              value={supplierData?.venueAddress?.postcode || supplierData?.serviceDetails?.venueAddress?.postcode || ""}
+              onChange={(e) => {
+                if (setSupplierData && supplierData) {
+                  const updatedData = {
+                    ...supplierData,
+                    venueAddress: {
+                      ...supplierData.venueAddress,
+                      postcode: e.target.value.toUpperCase()
+                    },
+                    serviceDetails: {
+                      ...supplierData.serviceDetails,
+                      venueAddress: {
+                        ...supplierData.serviceDetails?.venueAddress,
+                        postcode: e.target.value.toUpperCase()
                       }
-                    >
-                      <SelectTrigger className="py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-base">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                        <SelectItem value="Ireland">Ireland</SelectItem>
-                        <SelectItem value="France">France</SelectItem>
-                        <SelectItem value="Germany">Germany</SelectItem>
-                        <SelectItem value="Spain">Spain</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+                    }
+                  }
+                  setSupplierData(updatedData)
+                }
+              }}
+              placeholder="SW1A 1AA"
+              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="venueCountry" className="text-sm font-medium">
+              Country
+            </Label>
+            <Select
+              value={supplierData?.venueAddress?.country || supplierData?.serviceDetails?.venueAddress?.country || "United Kingdom"}
+              onValueChange={(value) => {
+                if (setSupplierData && supplierData) {
+                  const updatedData = {
+                    ...supplierData,
+                    venueAddress: {
+                      ...supplierData.venueAddress,
+                      country: value
+                    },
+                    serviceDetails: {
+                      ...supplierData.serviceDetails,
+                      venueAddress: {
+                        ...supplierData.serviceDetails?.venueAddress,
+                        country: value
+                      }
+                    }
+                  }
+                  setSupplierData(updatedData)
+                }
+              }}
+            >
+              <SelectTrigger className="py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-base">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                <SelectItem value="Ireland">Ireland</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <p className="text-xs text-blue-600 mt-2">
+          This address will be shown to customers when they book your venue
+        </p>
+      </div>
+    </>
+  ) : (
+    // Personal Address Section (for non-venues)
+    <>
+      <Label className="text-base font-medium">Personal Address</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="personalStreet" className="text-sm font-medium">
+            Street Address
+          </Label>
+          <Input
+            id="personalStreet"
+            value={personalInfo.address.street}
+            onChange={(e) =>
+              setPersonalInfo((prev) => ({
+                ...prev,
+                address: { ...prev.address, street: e.target.value },
+              }))
+            }
+            placeholder="123 Main Street"
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="personalCity" className="text-sm font-medium">
+            City
+          </Label>
+          <Input
+            id="personalCity"
+            value={personalInfo.address.city}
+            onChange={(e) =>
+              setPersonalInfo((prev) => ({
+                ...prev,
+                address: { ...prev.address, city: e.target.value },
+              }))
+            }
+            placeholder="London"
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="personalPostcode" className="text-sm font-medium">
+            Postcode
+          </Label>
+          <Input
+            id="personalPostcode"
+            value={personalInfo.address.postcode}
+            onChange={(e) =>
+              setPersonalInfo((prev) => ({
+                ...prev,
+                address: { ...prev.address, postcode: e.target.value },
+              }))
+            }
+            placeholder="SW1A 1AA"
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="personalCountry" className="text-sm font-medium">
+            Country
+          </Label>
+          <Select
+            value={personalInfo.address.country}
+            onValueChange={(value) =>
+              setPersonalInfo((prev) => ({
+                ...prev,
+                address: { ...prev.address, country: value },
+              }))
+            }
+          >
+            <SelectTrigger className="py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-base">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+              <SelectItem value="Ireland">Ireland</SelectItem>
+              <SelectItem value="France">France</SelectItem>
+              <SelectItem value="Germany">Germany</SelectItem>
+              <SelectItem value="Spain">Spain</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </>
+  )}
+</div>
             </CardContent>
           </Card>
         </div>
