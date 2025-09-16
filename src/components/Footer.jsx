@@ -27,7 +27,7 @@ const Footer = () => {
                   sizes="160px"
                 />
               </div>
-              <p className="text-gray-400 mt-4">The all-in-one platform for booking kids parties.</p>
+              <p className="text-gray-400 mt-4">The all-in-one platform for booking children's parties.</p>
               <div className="mt-6">
                 <p className="text-gray-400 flex items-center">
                   <svg
