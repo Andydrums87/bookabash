@@ -2,7 +2,7 @@ name: Calendar Sync
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '0 */4 * * *'  # Every 4 hours
   workflow_dispatch:
 
 jobs:
