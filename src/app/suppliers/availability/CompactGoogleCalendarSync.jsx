@@ -435,4 +435,4 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier }) => {
   )
 }
 
-export default CompactCalendarSync
+export default CompactCalendarSync;
