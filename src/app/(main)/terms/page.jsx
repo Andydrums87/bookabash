@@ -1,344 +1,282 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { FileText, Shield, Users, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
+function CustomerTermsBody() {
+  return (
+    <>
+      {/* Quick Navigation */}
+      <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Navigation</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a href="#account" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <Users className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Account Terms</span>
+          </a>
+          <a href="#booking" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <CreditCard className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Booking Terms</span>
+          </a>
+          <a href="#liability" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <Shield className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Liability & Safety</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Account Terms Section */}
+      <div id="account" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">
+          Account & Platform Terms
+        </h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li>You must be at least 18 years old to create an account.</li>
+          <li>Provide accurate and complete information during registration.</li>
+          <li>Keep your login details secure and confidential.</li>
+          <li>Respect other users and use the platform lawfully.</li>
+        </ul>
+      </div>
+
+      {/* Booking Terms Section */}
+      <div id="booking" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">
+          Booking & Payment Terms
+        </h2>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">Booking Confirmation</h3>
+        <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
+          <li>Your booking is <strong>instantly confirmed</strong> once your deposit is processed.</li>
+          <li>You’ll receive an email confirmation with supplier details.</li>
+          <li>In the rare event a supplier cannot fulfil, PartySnap will find a replacement or provide a refund.</li>
+        </ul>
+
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">Payment & Fees</h3>
+        <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
+          <li>Deposit is taken at booking to secure services.</li>
+          <li>Remaining balance is collected <strong>14 days</strong> before the party.</li>
+          <li>A £5 booking fee may apply.</li>
+        </ul>
+
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">Cancellation Policy</h3>
+        <div className="ml-4 space-y-2">
+          <p><strong>Customer cancellations:</strong></p>
+          <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+            <li>More than 48h: Full refund minus 5% processing fee.</li>
+            <li>24–48h: 50% refund of deposit, no refund of full payments.</li>
+            <li>Less than 24h: No refund.</li>
+          </ul>
+          <p><strong>Supplier cancellations:</strong> Full refund provided; PartySnap will help find a replacement where possible.</p>
+        </div>
+      </div>
+
+      {/* Liability & Safety Section */}
+      <div id="liability" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-gray-200 border-b">
+          Liability & Safety
+        </h2>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">Safety</h3>
+        <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
+          <li>Parents/guardians must supervise children at all times.</li>
+          <li>Suppliers are background-checked where legally required.</li>
+          <li>Inform suppliers of allergies or special requirements.</li>
+        </ul>
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">Liability</h3>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li>Suppliers are independent businesses responsible for their services.</li>
+          <li>PartySnap’s liability is limited to amounts paid through the platform.</li>
+          <li>We are not responsible for supplier performance or child supervision.</li>
+        </ul>
+      </div>
+
+      {/* Data & Contact Section */}
+      <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6 pb-4 border-b border-gray-200">Data & Contact</h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li>Your data is processed under our <a href="/privacy" className="text-primary-600 hover:underline">Privacy Policy</a>.</li>
+          <li>Booking details are shared only with your selected suppliers.</li>
+          <li>For support: bookings@partysnap.co.uk · [YOUR PHONE]</li>
+        </ul>
+      </div>
+
+      {/* Customer Rights Summary */}
+      <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-3xl p-8 text-white">
+        <h3 className="text-2xl font-bold mb-6">Your Rights & Guarantees</h3>
+        <ul className="space-y-2 opacity-90">
+          <li>• Instant booking confirmation on deposit.</li>
+          <li>• Replacement or refund if a supplier cancels.</li>
+          <li>• Clear cancellation windows and policies.</li>
+          <li>• Support from PartySnap throughout your booking.</li>
+        </ul>
+        <div className="mt-6 pt-6 border-t border-white/20">
+          <Button 
+            className="bg-white text-primary-600 hover:bg-gray-50"
+            onClick={() => window.location.href = '/contact'}
+          >
+            Questions About These Terms?
+          </Button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+
+function SupplierTermsBody() {
+  return (
+    <>
+      {/* Quick Navigation specific to suppliers */}
+      <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Navigation</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a href="#listing" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <Users className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Listing & Quality</span>
+          </a>
+          <a href="#availability" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <Shield className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Availability & Instant Confirm</span>
+          </a>
+          <a href="#payments" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            <CreditCard className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Commission & Payments</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Supplier sections */}
+      <div id="listing" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">Listing & Quality</h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li>Accurate descriptions, pricing, photos; comply with laws & safeguarding.</li>
+          <li>Minimum public liability insurance: <strong>£5,000,000</strong> per claim (proof on request).</li>
+          <li>PartySnap may moderate content and suspend for quality/safety issues.</li>
+        </ul>
+      </div>
+
+      <div id="availability" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">Availability & Instant Confirmation</h2>
+        <div className="prose prose-gray max-w-none text-gray-700">
+          <p><strong>Venues:</strong> If a date/time is shown as available on PartySnap, a booking becomes <strong>instantly confirmed and binding</strong> when the parent pays the deposit. You must keep unavailability blocked. Repeated failures to honour bookings may result in suspension or removal.</p>
+          <p><strong>All suppliers:</strong> Keep availability accurate (or connect Google Calendar to auto-block busy times). PartySnap may show an “Availability Unverified” badge or pause instant booking if your calendar isn’t confirmed or synced within 14 days.</p>
+        </div>
+      </div>
+
+      <div id="payments" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">Commission, Payments & Cancellations</h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li>Commission: <strong>10%</strong> on total booking value. A £5 booking fee may be charged to parents.</li>
+          <li>Deposits are collected at booking; balances collected <strong>14 days</strong> before the event (unless otherwise stated).</li>
+          <li>Payouts to suppliers occur <strong>after the event</strong> (or as specified on the platform).</li>
+          <li>Supplier cancellations are a <strong>material breach</strong>. PartySnap may refund customers and set-off reasonable remediation costs from sums due.</li>
+        </ul>
+      </div>
+
+      <div id="liability" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-gray-200 border-b">Liability, Safeguarding & Anti-circumvention</h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-700">
+          <li>Entertainers working with children: appropriate checks (e.g., DBS) & safeguarding compliance required.</li>
+          <li>Anti-circumvention: no off-platform payment for PartySnap-originated bookings for <strong>12 months</strong> after first contact.</li>
+          <li>PartySnap liability is limited to the maximum extent permitted by law; suppliers indemnify PartySnap for their acts/omissions.</li>
+        </ul>
+      </div>
+
+      <div className="bg-primary-50 border border-primary-200 rounded-3xl p-8 mb-8">
+        <p className="text-primary-800">
+          This page is for reference. Suppliers accept the binding <strong>Supplier Terms</strong> in-app when pressing
+          <em> “Agree & Go Live”</em>. Customers accept the <strong>Customer Terms</strong> during checkout.
+        </p>
+      </div>
+    </>
+  )
+}
 
 export default function TermsOfService() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const initialRole = useMemo(() => {
+    const r = (searchParams.get("role") || "").toLowerCase()
+    return r === "supplier" ? "supplier" : "customer"
+  }, [searchParams])
+  const [role, setRole] = useState(initialRole)
+
+  useEffect(() => {
+    // keep URL in sync so it’s sharable
+    const current = (searchParams.get("role") || "").toLowerCase()
+    if (current !== role) {
+      const url = new URL(window.location.href)
+      url.searchParams.set("role", role)
+      router.replace(url.toString())
+    }
+  }, [role, router, searchParams])
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section style={{
-        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '100px, cover',
-        backgroundPosition: 'center',
-      }} className="md:py-20 py-10 bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
+      {/* Hero */}
+      <section
+        style={{
+          backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "100px, cover",
+          backgroundPosition: "center",
+        }}
+        className="md:py-20 py-10"
+      >
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16 max-w-4xl mx-auto">
+          <div className="text-center mb-10 md:mb-16 max-w-4xl mx-auto">
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
                 <FileText className="w-8 h-8 text-primary-600" />
               </div>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-6">
-              Terms of Service
-            </h1>
-            <p className="text-xl text-white">
-              These terms govern your use of PartySnap's platform and services. By using our service, you agree to these terms.
+            <h1 className="text-5xl md:text-6xl font-black text-white mb-4">Terms of Service</h1>
+            <p className="text-lg md:text-xl text-white/95">
+              View the terms that apply to you as a Customer/Parent or as a Supplier on PartySnap.
             </p>
-            <div className="mt-8 text-sm text-white">
-              <p>Last updated: January 2025</p>
+            <div className="mt-5 text-sm text-white/90">
+              <p>Last updated: 15 September 2025</p>
+            </div>
+
+            {/* Role switcher */}
+            <div className="mt-8 inline-flex rounded-2xl bg-white/20 p-1 backdrop-blur">
+              <button
+                className={cn(
+                  "px-4 md:px-6 py-2 rounded-xl text-sm font-medium transition",
+                  role === "customer" ? "bg-white text-primary-700 shadow" : "text-white/90 hover:text-white"
+                )}
+                onClick={() => setRole("customer")}
+              >
+                Customer / Parent
+              </button>
+              <button
+                className={cn(
+                  "px-4 md:px-6 py-2 rounded-xl text-sm font-medium transition",
+                  role === "supplier" ? "bg-white text-primary-700 shadow" : "text-white/90 hover:text-white"
+                )}
+                onClick={() => setRole("supplier")}
+              >
+                Supplier
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Terms Content */}
+      {/* Body */}
       <section className="md:py-20 py-10">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            
-            {/* Quick Navigation */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Navigation</h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <a href="#account" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <Users className="w-5 h-5 text-primary-600" />
-                  <span className="font-medium">Account Terms</span>
-                </a>
-                <a href="#booking" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <CreditCard className="w-5 h-5 text-primary-600" />
-                  <span className="font-medium">Booking Terms</span>
-                </a>
-                <a href="#liability" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <Shield className="w-5 h-5 text-primary-600" />
-                  <span className="font-medium">Liability & Safety</span>
-                </a>
-              </div>
-            </div>
+            {role === "customer" ? <CustomerTermsBody /> : <SupplierTermsBody />}
 
-            {/* Account Terms Section */}
-            <div id="account" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">
-                Account & Platform Terms
-              </h2>
-              
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">1. Account Registration</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>You must be at least 18 years old to create an account</li>
-                      <li>Provide accurate and complete information during registration</li>
-                      <li>Maintain one account per person or business entity</li>
-                      <li>Keep your login credentials secure and confidential</li>
-                      <li>Notify us immediately of any unauthorized account access</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">2. Platform Use Guidelines</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>Use the platform for legitimate business purposes only</li>
-                      <li>Do not engage in fraudulent, misleading, or deceptive activities</li>
-                      <li>Respect other users and maintain professional communication</li>
-                      <li>Follow all applicable laws and regulations in your jurisdiction</li>
-                      <li>Do not attempt to circumvent platform security measures</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">3. Content Guidelines</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>Upload only content you own or have permission to use</li>
-                      <li>No inappropriate, offensive, or illegal content permitted</li>
-                      <li>Business information must be accurate and truthful</li>
-                      <li>We reserve the right to remove content that violates guidelines</li>
-                      <li>Respect intellectual property rights of others</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">4. Prohibited Activities</h3>
-                  <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
-                    <div className="prose prose-gray max-w-none">
-                      <ul className="list-disc list-inside space-y-2 text-red-800">
-                        <li>Spam, harassment, or abusive behavior toward users</li>
-                        <li>Creating fake accounts, reviews, or misleading information</li>
-                        <li>Attempting to bypass platform fees or payment systems</li>
-                        <li>Misrepresenting your business, services, or qualifications</li>
-                        <li>Using the platform for any illegal activities</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Booking Terms Section */}
-            <div id="booking" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">
-                Booking & Payment Terms
-              </h2>
-              
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">5. Booking Process</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>Bookings are confirmed once payment is successfully processed</li>
-                      <li>You'll receive email confirmation with all booking details</li>
-                      <li>Suppliers are notified immediately and will contact you directly</li>
-                      <li>All bookings are subject to supplier availability and acceptance</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">6. Payment Terms</h3>
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg mb-4">
-                    <p className="text-blue-800 font-medium">PartySnap is free to use - you only pay suppliers directly for their services.</p>
-                  </div>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li><strong>Service Deposits:</strong> Typically 30% deposit required, remainder due on party day</li>
-                      <li><strong>Product Payments:</strong> Items like cakes and party bags require full payment upfront</li>
-                      <li><strong>Payment Processing:</strong> Secure processing via Stripe with immediate confirmation</li>
-                      <li><strong>Payment Methods:</strong> All major credit/debit cards and bank transfers accepted</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">7. Cancellation Policy</h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-3">Customer Cancellations</h4>
-                      <div className="space-y-2">
-                        <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
-                          <p className="font-medium text-green-800">More than 48 hours:</p>
-                          <p className="text-green-700 text-sm">Full refund minus 5% processing fee</p>
-                        </div>
-                        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
-                          <p className="font-medium text-yellow-800">24-48 hours:</p>
-                          <p className="text-yellow-700 text-sm">50% refund for deposits, no refund for full payments</p>
-                        </div>
-                        <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
-                          <p className="font-medium text-red-800">Less than 24 hours:</p>
-                          <p className="text-red-700 text-sm">No refund available</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-3">Supplier Cancellations</h4>
-                      <div className="bg-primary-50 border border-primary-200 p-4 rounded-lg">
-                        <ul className="list-disc list-inside space-y-1 text-primary-800 text-sm">
-                          <li>Full refund if supplier cancels for any reason</li>
-                          <li>We'll help find replacement suppliers when possible</li>
-                          <li>Additional compensation for late cancellations</li>
-                          <li>Emergency support during party hours</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Liability & Safety Section */}
-            <div id="liability" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-gray-200 border-b">
-                Liability & Safety
-              </h2>
-              
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">8. Safety & Child Protection</h3>
-                  <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg mb-4">
-                    <p className="text-orange-800 font-medium">Parents/guardians are responsible for child supervision at all times during events.</p>
-                  </div>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>All suppliers undergo background checks where required by law</li>
-                      <li>Inform suppliers of any medical conditions, allergies, or special requirements</li>
-                      <li>Ensure safe, suitable venue access for all suppliers and equipment</li>
-                      <li>Report any safety concerns to us immediately</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">9. Liability & Insurance</h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-3">Supplier Insurance</h4>
-                      <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
-                        <li>All suppliers carry public liability insurance</li>
-                        <li>Insurance coverage details available on request</li>
-                        <li>Suppliers responsible for their equipment and actions</li>
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-3">Platform Liability</h4>
-                      <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
-                        <li>PartySnap connects customers with independent suppliers</li>
-                        <li>We are not liable for supplier performance or safety incidents</li>
-                        <li>Our liability is limited to refund of payments made through our platform</li>
-                        <li>Use of the platform is at your own risk</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">10. Dispute Resolution</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-700 mb-4">
-                      We're committed to resolving issues quickly and fairly:
-                    </p>
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>Report service issues within 48 hours of your event</li>
-                      <li>We'll mediate between customers and suppliers</li>
-                      <li>Partial refunds may be offered for legitimate service issues</li>
-                      <li>Contact us before initiating bank chargebacks</li>
-                      <li>UK law governs all disputes and transactions</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Terms */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">
-                Additional Terms
-              </h2>
-              
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">11. Data Protection</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-700 mb-4">
-                      Your privacy is important to us. Please review our <a href="/privacy-policy" className="text-primary-600 hover:text-primary-700 font-medium">Privacy Policy</a> for detailed information about how we collect, use, and protect your data.
-                    </p>
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>Booking details shared with selected suppliers only</li>
-                      <li>Contact information used for booking coordination</li>
-                      <li>You can request data deletion after your events</li>
-                      <li>We comply with UK GDPR and data protection laws</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">12. Platform Rights & Updates</h3>
-                  <div className="prose prose-gray max-w-none">
-                    <ul className="list-disc list-inside space-y-2 text-gray-700">
-                      <li>We may update these terms with reasonable notice to users</li>
-                      <li>Platform availability may vary due to maintenance or technical issues</li>
-                      <li>We reserve the right to suspend accounts that violate these terms</li>
-                      <li>Continued use after updates constitutes acceptance of new terms</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">13. Contact Information</h3>
-                  <div className="bg-primary-50 border-l-4 border-primary-400 p-4 rounded-lg">
-                    <p className="text-primary-800 mb-2 font-medium">
-                      For questions about these terms or our services:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-primary-700">
-                      <li>Email: legal@partysnap.com</li>
-                      <li>Support: support@partysnap.com</li>
-                      <li>Phone: [YOUR PHONE NUMBER]</li>
-                      <li>Address: [YOUR BUSINESS ADDRESS]</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Your Rights Summary */}
-            <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-3xl p-8 text-white">
-              <h3 className="text-2xl font-bold mb-6">Your Rights & Guarantees</h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-3">Platform Guarantees</h4>
-                  <ul className="space-y-2 opacity-90">
-                    <li>• Professional service guarantee</li>
-                    <li>• Full refund if suppliers cancel</li>
-                    <li>• 48-hour booking protection</li>
-                    <li>• Customer support throughout your journey</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-3">Consumer Rights</h4>
-                  <ul className="space-y-2 opacity-90">
-                    <li>• Protected under UK consumer law</li>
-                    <li>• Right to fair dispute resolution</li>
-                    <li>• Clear cancellation policies</li>
-                    <li>• Transparent pricing with no hidden fees</li>
-                  </ul>
-                </div>
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/20">
-                <Button 
-                  className="bg-white text-primary-600 hover:bg-gray-50"
-                  onClick={() => window.location.href = '/contact'}
-                >
-                  Questions About These Terms?
-                </Button>
-              </div>
+            {/* Global links (helpful for SEO + navigation) */}
+            <div className="text-center mt-10">
+              <p className="text-sm text-gray-600">
+                Looking for privacy or cookies?{" "}
+                <a href="/privacy-policy" className="underline">Privacy Policy</a> ·{" "}
+                <a href="/cookies" className="underline">Cookies</a>
+              </p>
             </div>
           </div>
         </div>

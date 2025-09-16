@@ -234,7 +234,7 @@ const PackageCard = ({
           }} className="relative w-full ">
                 
             <div
-              className="relative w-[90%] h-[280px] mask-image mx-auto"
+              className="relative w-[90%] h-[200px] md:h-[280px] mask-image mx-auto"
               style={{
                 WebkitMaskImage: 'url("/image.svg")',
                 WebkitMaskRepeat: 'no-repeat',

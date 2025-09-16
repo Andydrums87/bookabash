@@ -22,6 +22,14 @@ const Packages = () => {
   const [packages, setPackages] = useState([])
   const [isVenue, setIsVenue] = useState(false)
   const [venuePackagesGenerated, setVenuePackagesGenerated] = useState(false)
+  const [isSettingUpVenue, setIsSettingupVenue] = useState(false)
+  const [venueSetupForm, setVenueSetupForm] = useState({
+    hourlyRate: '',
+    minimumHours: '3',
+    setupTime: '60',
+    cleanupTime: '60'
+  })
+ 
 
   const [packageFormData, setPackageFormData] = useState({
     name: "",
@@ -38,6 +46,56 @@ const Packages = () => {
   // ✅ Use business-aware hooks
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
   const { saving, updateProfile } = useSupplierDashboard()
+
+  const venueNeedsSetup = isVenue && !supplierData?.serviceDetails?.pricing?.hourlyRate
+
+    // Handle venue setup form
+    const handleVenueSetup = async () => {
+      if (!venueSetupForm.hourlyRate || parseFloat(venueSetupForm.hourlyRate) <= 0) {
+        alert('Please enter a valid hourly rate')
+        return
+      }
+  
+      setLocalSaving(true)
+      try {
+        // Update service details with pricing info
+        const updatedServiceDetails = {
+          ...supplierData.serviceDetails,
+          pricing: {
+            ...supplierData.serviceDetails?.pricing,
+            hourlyRate: parseFloat(venueSetupForm.hourlyRate),
+            setupTime: parseInt(venueSetupForm.setupTime),
+            cleanupTime: parseInt(venueSetupForm.cleanupTime)
+          },
+          availability: {
+            ...supplierData.serviceDetails?.availability,
+            minimumBookingHours: parseInt(venueSetupForm.minimumHours)
+          }
+        }
+  
+        // Generate packages based on the new pricing
+        const generatedPackages = generateVenuePackages(updatedServiceDetails, supplierData)
+  
+        // Save both service details and packages
+        const result = await updateProfile(
+          { serviceDetails: updatedServiceDetails },
+          generatedPackages,
+          supplier.id
+        )
+  
+        if (result.success) {
+          setPackages(generatedPackages)
+          setVenuePackagesGenerated(true)
+          setIsSettingupVenue(false)
+          alert('Venue packages created successfully!')
+        }
+      } catch (error) {
+        console.error('Failed to setup venue packages:', error)
+        alert('Failed to setup venue packages. Please try again.')
+      } finally {
+        setLocalSaving(false)
+      }
+    }
 
   // Check if this is a venue business
   useEffect(() => {
@@ -348,6 +406,108 @@ const Packages = () => {
       </div>
     )
   }
+
+  if (venueNeedsSetup) {
+    return (
+      <div className="min-h-screen bg-primary-50">
+        <div className="max-w-4xl mx-auto p-6">
+          <Card className="shadow-lg p-4">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Setup Your Venue Packages</CardTitle>
+              <CardDescription>
+                We'll create your venue hire packages automatically based on your hourly rate
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Your venue packages will include your party time plus 1 hour setup and 1 hour cleanup time.
+                </AlertDescription>
+              </Alert>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="hourlyRate" className="text-base font-semibold">
+                    Hourly Rate (£) *
+                  </Label>
+                  <Input
+                    id="hourlyRate"
+                    type="number"
+                    min="1"
+                    value={venueSetupForm.hourlyRate}
+                    onChange={(e) => setVenueSetupForm(prev => ({ ...prev, hourlyRate: e.target.value }))}
+                    placeholder="50"
+                    className="text-lg h-12"
+                  />
+                  <p className="text-sm text-gray-600">
+                    Your base rate per hour for venue hire
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="minimumHours" className="text-base font-semibold">
+                    Minimum Party Hours *
+                  </Label>
+                  <select
+                    id="minimumHours"
+                    value={venueSetupForm.minimumHours}
+                    onChange={(e) => setVenueSetupForm(prev => ({ ...prev, minimumHours: e.target.value }))}
+                    className="w-full h-12 px-3 border border-gray-300 rounded-md"
+                  >
+                    <option value="2">2 hours</option>
+                    <option value="3">3 hours (recommended)</option>
+                    <option value="4">4 hours</option>
+                    <option value="5">5 hours</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Preview calculation */}
+              {venueSetupForm.hourlyRate && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold mb-2">Package Preview:</h4>
+                  <div className="text-sm space-y-1">
+                    <div>Party time: {venueSetupForm.minimumHours} hours</div>
+                    <div>Setup + Cleanup: 2 hours included</div>
+                    <div>Total venue time: {parseInt(venueSetupForm.minimumHours) + 2} hours</div>
+                    <div className="font-semibold text-lg">
+                      Package price: £{(parseFloat(venueSetupForm.hourlyRate) * (parseInt(venueSetupForm.minimumHours) + 2)).toFixed(0)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => window.history.back()}
+                  className="flex-1"
+                >
+                  Go Back
+                </Button>
+                <Button
+                  onClick={handleVenueSetup}
+                  disabled={localSaving || !venueSetupForm.hourlyRate}
+                  className="flex-1"
+                >
+                  {localSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Packages...
+                    </>
+                  ) : (
+                    'Create Venue Packages'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
 
   return (
     <div className="min-h-screen bg-primary-50">

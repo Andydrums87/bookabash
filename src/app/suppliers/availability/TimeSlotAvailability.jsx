@@ -15,6 +15,7 @@ import { startOfDay } from "date-fns"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { getAvailabilityConfig } from "../utils/supplierTypes"
+import GoogleCalendarSync from "./GoogleCalendarSync"
 
 // Time slot definitions - FIXED to match exactly
 const TIME_SLOTS = {
@@ -198,6 +199,14 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
   const getBlockedSlots = (date) => {
     const dateStr = dateToLocalString(date)
     const blockedDate = unavailableDates.find((item) => item.date === dateStr)
+      // Add this debugging for September 25th specifically
+  if (dateStr === '2025-09-25') {
+    console.log('🔍 Checking September 25th:')
+    console.log('Date string:', dateStr)
+    console.log('All unavailable dates:', unavailableDates)
+    console.log('Found blocked date:', blockedDate)
+    console.log('Time slots:', blockedDate?.timeSlots || [])
+  }
     console.log(`Getting blocked slots for ${dateStr} (${date.toDateString()}):`, blockedDate?.timeSlots || [])
     return blockedDate?.timeSlots || []
   }
@@ -513,7 +522,10 @@ const TimeSlotAvailabilityContent = ({
     amount: 25 // 25% or £25
   })
   
-
+// Add this temporarily to your availability page where you use GoogleCalendarSync
+console.log('🔍 Current supplier ID:', currentSupplier?.id)
+console.log('🔍 Current supplier name:', currentSupplier?.name) 
+console.log('🔍 Google Calendar sync data:', currentSupplier?.googleCalendarSync)
 
 // Fix the useEffect that loads availability data
 useEffect(() => {
@@ -892,7 +904,16 @@ useEffect(() => {
             </div>
           </div>
         </div>
-
+        <GoogleCalendarSync 
+  onSyncToggle={(enabled) => {
+    // Update your supplier data with sync settings
+    setSupplierData(prev => ({
+      ...prev,
+      googleCalendarSync: { ...prev.googleCalendarSync, enabled }
+    }))
+  }}
+  currentSupplier={currentSupplier}
+/>
         {/* Configuration info for time slot based */}
         {/* <div className="p-4 sm:p-6 pb-0">
           <Card className="border-blue-200 bg-blue-50">

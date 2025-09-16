@@ -34,31 +34,79 @@ import {
 const MapWidget = ({ address, venueAddress, venueName }) => {
   // Determine which address format to use
   const addressData = venueAddress || address;
-  
+
   if (!addressData) return null;
 
-  // Handle different address formats
+  console.log('Full addressData received:', addressData);
+
+  // Handle different address formats with better formatting
   let addressString;
+  let businessQuery = '';
   
   if (venueAddress) {
-    // New venueAddress format: { addressLine1, addressLine2, city, postcode, country }
+ 
+    
+    // Clean up the postcode by trimming whitespace
+    const cleanPostcode = venueAddress.postcode?.trim();
+    
+    // Build address parts array
     const parts = [
       venueAddress.addressLine1,
       venueAddress.addressLine2,
       venueAddress.city,
-      venueAddress.postcode,
+      cleanPostcode,
       venueAddress.country
-    ].filter(Boolean); // Remove empty strings
+    ].filter(part => part && part.trim() !== ''); // Remove empty/null/undefined strings
+    
+
     
     addressString = parts.join(', ');
+
+    
+    // If we have a business name, create a separate business query
+    if (venueAddress.businessName && venueAddress.businessName.trim()) {
+      businessQuery = venueAddress.businessName.trim();
+
+    }
   } else if (address) {
+
     // Original address format: { street, city, postcode }
-    addressString = `${address.street}, ${address.city}, ${address.postcode}`;
+    const cleanPostcode = address.postcode?.trim();
+    addressString = `${address.street}, ${address.city}, ${cleanPostcode}`;
+
   } else {
+    console.log('No valid address data found');
     return null;
   }
 
-  const encodedAddress = encodeURIComponent(addressString);
+  // Try multiple search strategies
+  const queries = [
+    // First try just the address (often more reliable)
+    addressString || null,
+    // Then try with business name if available  
+    businessQuery && addressString ? `${businessQuery}, ${addressString}` : null,
+    // Finally try with just postcode and city as fallback
+    venueAddress ? `${venueAddress.city}, ${venueAddress.postcode?.trim()}` : 
+                   address ? `${address.city}, ${address.postcode?.trim()}` : null
+  ].filter(Boolean);
+
+
+
+  // Use the first (most specific) query for the map
+  const primaryQuery = queries[0];
+
+  
+  if (!primaryQuery) {
+    console.error('No valid query could be generated');
+    return (
+      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <h4 className="font-semibold text-red-900 mb-2">Address Error</h4>
+        <p className="text-red-700">Unable to generate a valid address for mapping.</p>
+      </div>
+    );
+  }
+  
+  const encodedAddress = encodeURIComponent(primaryQuery);
   
   // Google Maps embed URL
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -102,6 +150,8 @@ const MapWidget = ({ address, venueAddress, venueName }) => {
           Get Directions
         </a>
       </div>
+      
+   
     </div>
   );
 };
@@ -492,9 +542,19 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
                 </p>
               </div>
             )}
+            {supplier.venueAddress && (
+               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+               <h4 className="font-semibold text-gray-900 mb-2">Address</h4>
+               <p className="text-gray-800">
+                 {supplier?.venueAddress?.addressLine1}, {supplier.venueAddress?.addressLine2}, {supplier.venueAddress?.city}, {supplier.venueAddress.postcode}
+               </p>
+             </div>
+            )}
             {/* Add the map widget */}
 <MapWidget 
-  address={supplier?.venueAddress || supplier?.owner?.address} 
+  venueAddress={supplier?.venueAddress}
+  address={supplier?.owner?.address} 
+
   venueName={supplier?.businessName || supplier?.name}
 />
 
@@ -593,7 +653,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
       )}
 
       {/* Venue Policies */}
-      {serviceDetails.policies && Object.keys(serviceDetails.policies).some(key => serviceDetails.policies[key] !== undefined) && (
+      {/* {serviceDetails.policies && Object.keys(serviceDetails.policies).some(key => serviceDetails.policies[key] !== undefined) && (
         <Card className="border-gray-300">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Venue Policies</h2>
@@ -679,7 +739,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
             )}
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* Add-on Services - Now with horizontal scrolling */}
       {renderAddOnServices(serviceDetails.addOnServices)}

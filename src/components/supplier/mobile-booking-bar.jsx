@@ -1058,7 +1058,7 @@ const calculatePackagePrice = useMemo(() => {
                     </>
                   ) : (
                     'Select package'
-                  )} • {packageInfo.duration}
+                  )} • 
                   {selectedDate && (
                     <span className="ml-2 text-primary-500 font-medium">
                      {getSelectedDateDisplay()}

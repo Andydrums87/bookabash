@@ -565,76 +565,84 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 
 // Updated generateVenuePackages function with dynamic image and duration
 
-const generateVenuePackages = (venueServiceDetails, supplierData = null, partyDuration = 2) => {
-  const hourlyRate = venueServiceDetails.pricing?.hourlyRate || 0;
-  const venueType = venueServiceDetails.venueType || 'Venue';
-  const capacity = venueServiceDetails.capacity?.max || 50;
-  const cleaningFee = venueServiceDetails.pricing?.cleaningFee || 0;
-  const securityDeposit = venueServiceDetails.pricing?.securityDeposit || 0;
+// Replace the existing generateVenuePackages function in mockBackend.js
+
+ const generateVenuePackages = (venueServiceDetails, supplierData = null) => {
+  const hourlyRate = venueServiceDetails.pricing?.hourlyRate || 0
+  const minimumHours = venueServiceDetails.availability?.minimumBookingHours || 3
+  const setupTime = 1 // Always 1 hour
+  const cleanupTime = 1 // Always 1 hour
+  const capacity = venueServiceDetails.capacity?.max || 50
+  const venueType = venueServiceDetails.venueType || 'Venue'
+  
+  console.log('🏢 Generating venue packages with:', {
+    hourlyRate,
+    minimumHours,
+    setupTime,
+    cleanupTime,
+    totalHours: minimumHours + setupTime + cleanupTime
+  })
 
   if (hourlyRate <= 0) {
-    console.warn('⚠️ Cannot generate venue packages: No hourly rate set');
-    return [];
+    console.warn('⚠️ Cannot generate venue packages: No hourly rate set')
+    return []
   }
 
-  console.log('🏢 Generating venue package with:', {
-    hourlyRate,
-    partyDuration,
-    hasPortfolioImages: supplierData?.portfolioImages?.length > 0
-  });
-
-  // Calculate pricing based on actual party duration
-  const totalVenueHours = partyDuration + 2; // party + 1h setup + 1h cleanup
-  const standardPrice = hourlyRate * totalVenueHours + cleaningFee;
-
-  // Use portfolio image if available, fallback to Snappy
+  const totalVenueHours = minimumHours + setupTime + cleanupTime
+  const packagePrice = hourlyRate * totalVenueHours
+  
+  // Use portfolio image if available, fallback to default venue image
   const packageImage = supplierData?.portfolioImages?.length > 0 
     ? supplierData.portfolioImages[0] 
-    : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png";
+    : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
 
-  const packages = [
-    {
-      id: "venue-standard",
-      name: "Standard Party Package", 
-      price: standardPrice,
-      duration: `${partyDuration} hours party time`, // Dynamic duration
-      priceType: "flat",
-      features: [
-        `${partyDuration} hours party time`, // Dynamic
-        "1 hour setup time included", 
-        "1 hour cleanup time included",
-        `Accommodates up to ${capacity} guests`,
-        "Tables and chairs included",
-        `Total venue access: ${totalVenueHours} hours`, // Dynamic
-        "Additional hours charged at £" + hourlyRate + "/hour",
-        ...(cleaningFee > 0 ? [`£${cleaningFee} cleaning fee included`] : []),
-        ...(securityDeposit > 0 ? [`£${securityDeposit} security deposit required`] : [])
-      ],
-      description: `Perfect for children's birthday parties. Package for ${partyDuration}-hour celebrations with 1 hour setup and cleanup. Total venue time: ${totalVenueHours} hours.`,
-      image: packageImage, // Dynamic image
-      popular: true,
-      venueSpecific: true,
-      isGenerated: true,
-      totalVenueTime: totalVenueHours, // Dynamic
+  const venuePackage = {
+    id: "venue-standard",
+    name: `${minimumHours}-Hour Party Package`,
+    price: packagePrice,
+    duration: `${minimumHours} hours party time`,
+    priceType: "flat",
+    features: [
+      `${minimumHours} hours party time`,
+      "1 hour setup time included",
+      "1 hour cleanup time included", 
+      `Total venue access: ${totalVenueHours} hours`,
+      `Accommodates up to ${capacity} guests`,
+      "Tables and chairs included",
+      `Additional hours: £${hourlyRate}/hour`
+    ],
+    description: `Perfect for children's birthday parties. ${minimumHours}-hour celebration with setup and cleanup time included.`,
+    image: packageImage,
+    popular: true,
+    venueSpecific: true,
+    isGenerated: true,
+    
+    // Enhanced pricing breakdown for transparency
+    pricing: {
+      hourlyRate: hourlyRate,
+      partyHours: minimumHours,
+      setupHours: setupTime,
+      cleanupHours: cleanupTime,
+      totalHours: totalVenueHours,
+      calculation: `£${hourlyRate} × ${totalVenueHours} hours = £${packagePrice}`,
       breakdown: {
-        partyTime: partyDuration, // Dynamic
-        setupTime: 60,
-        cleanupTime: 60, 
-        hourlyRate: hourlyRate,
-        totalPrice: standardPrice
+        partyTime: `${minimumHours} hours × £${hourlyRate} = £${minimumHours * hourlyRate}`,
+        setupTime: `${setupTime} hour × £${hourlyRate} = £${setupTime * hourlyRate}`,
+        cleanupTime: `${cleanupTime} hour × £${hourlyRate} = £${cleanupTime * hourlyRate}`,
+        total: `Total: £${packagePrice}`
       }
     }
-  ];
+  }
 
   console.log('✅ Generated venue package:', {
-    name: packages[0].name,
-    duration: packages[0].duration,
-    price: packages[0].price,
-    image: packages[0].image.includes('portfolioImages') ? 'Portfolio Image' : 'Snappy Image'
-  });
+    name: venuePackage.name,
+    price: venuePackage.price,
+    duration: venuePackage.duration,
+    totalHours: totalVenueHours
+  })
 
-  return packages;
-};
+  return [venuePackage]
+}
 
 
 
@@ -969,7 +977,19 @@ export const suppliersAPI = {
         busyDates: [],
         availabilityNotes: "",
         advanceBookingDays: 7,
-        maxBookingDays: 365
+        maxBookingDays: 365,
+          // ADD THIS:
+  googleCalendarSync: {
+    enabled: false,
+    connected: false,
+    accessToken: null, // encrypted
+    refreshToken: null, // encrypted  
+    calendarId: 'primary',
+    syncFrequency: 'daily',
+    filterMode: 'all-day-events',
+    lastSync: null,
+    syncedEvents: []
+  },
       }
   
       // Insert using NEW multi-business structure
@@ -1089,7 +1109,18 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       advanceBookingDays: updatedData.advanceBookingDays || current.advanceBookingDays || 7,
       maxBookingDays: updatedData.maxBookingDays || current.maxBookingDays || 365,
       weekendPremium: updatedData.weekendPremium !== undefined ? updatedData.weekendPremium : (current.weekendPremium || { enabled: false, type: 'percentage', amount: 25 }), // ADD THIS LINE
-
+ // ADD THIS:
+ googleCalendarSync: updatedData.googleCalendarSync !== undefined ? updatedData.googleCalendarSync : (current.googleCalendarSync || {
+  enabled: false,
+  connected: false,
+  accessToken: null,
+  refreshToken: null,
+  calendarId: 'primary',
+  syncFrequency: 'daily',
+  filterMode: 'all-day-events',
+  lastSync: null,
+  syncedEvents: []
+}),
       // ✅ PRICING: Only update if packages are being updated
       priceFrom: shouldUpdatePackages ? 
         (packages.length > 0 ? Math.min(...packages.map(p => p.price)) : 0) : 
@@ -1206,6 +1237,7 @@ const { data: updated, error: updateError } = await supabase
               advanceBookingDays: merged.advanceBookingDays,
               maxBookingDays: merged.maxBookingDays,
               weekendPremium: merged.weekendPremium, // ADD THIS LINE
+              googleCalendarSync: merged.googleCalendarSync,
               availabilityVersion: merged.availabilityVersion || '2.0',
               lastUpdated: merged.updatedAt,
               // Mark as inherited for debugging
@@ -1481,12 +1513,21 @@ export function useSupplierDashboard() {
       loadCurrentSupplier()
     }
 
-    // Listen for the custom business switch event
-    window.addEventListener('businessSwitched', handleBusinessSwitch)
+      // Listen for calendar sync data refresh
+  const handleDataRefresh = (event) => {
+    console.log('🔄 Supplier data refresh triggered by calendar sync:', event.detail)
+    loadCurrentSupplier()
+  }
+
+    
+  // Add both event listeners
+  window.addEventListener('businessSwitched', handleBusinessSwitch)
+  window.addEventListener('supplierDataUpdated', handleDataRefresh)
 
     // Cleanup listener
     return () => {
       window.removeEventListener('businessSwitched', handleBusinessSwitch)
+      window.removeEventListener('supplierDataUpdated', handleDataRefresh)
     }
   }, []) // No dependencies - listens to events instead
 
