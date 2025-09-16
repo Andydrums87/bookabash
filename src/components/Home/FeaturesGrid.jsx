@@ -42,7 +42,7 @@ export default function FeaturesGrid() {
                       src="/themeselection.png"
                       alt="PartySnap theme selection interface"
                       fill
-                      className="object-cover object-top"
+                      className="object-contain md:object-cover object-top"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
@@ -76,7 +76,7 @@ export default function FeaturesGrid() {
                       src="/userdashboard2.png"
                       alt="PartySnap user dashboard"
                       fill
-                      className="object-cover object-top"
+                      className="object-contain md:object-cover object-top"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
@@ -110,7 +110,7 @@ export default function FeaturesGrid() {
                       src="/supplierpage.png"
                       alt="PartySnap supplier profile page"
                       fill
-                      className="object-cover object-top"
+                      className="object-contain md:object-cover md:object-top"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CalendarDays, Trash2, Check, Clock, Settings, CalendarIcon, Info, Sun, Moon } from "lucide-react"
+import { CalendarDays, Trash2, Check, Clock, Settings, CalendarIcon, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,12 +10,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent } from "@/components/ui/card"
 import { startOfDay } from "date-fns"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { getAvailabilityConfig } from "../utils/supplierTypes"
-import GoogleCalendarSync from "./GoogleCalendarSync"
+import CompactCalendarSync from "./CompactGoogleCalendarSync"
 
 // Time slot definitions - FIXED to match exactly
 const TIME_SLOTS = {
@@ -145,16 +144,12 @@ const getDefaultWorkingHours = () => ({
 })
 // Also add debugging to the migrateDateArray function:
 const migrateDateArray = (dateArray) => {
-
-
   if (!Array.isArray(dateArray)) {
     console.log("Not an array, returning empty array")
     return []
   }
 
   const result = dateArray.map((dateItem, index) => {
-
-
     if (typeof dateItem === "string") {
       const migrated = {
         date: dateItem.split("T")[0],
@@ -163,10 +158,8 @@ const migrateDateArray = (dateArray) => {
 
       return migrated
     } else if (dateItem && typeof dateItem === "object" && dateItem.date) {
-
       return dateItem
     } else {
-
       const date = new Date(dateItem)
       const migrated = {
         date: date.toISOString().split("T")[0],
@@ -199,14 +192,14 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
   const getBlockedSlots = (date) => {
     const dateStr = dateToLocalString(date)
     const blockedDate = unavailableDates.find((item) => item.date === dateStr)
-      // Add this debugging for September 25th specifically
-  if (dateStr === '2025-09-25') {
-    console.log('🔍 Checking September 25th:')
-    console.log('Date string:', dateStr)
-    console.log('All unavailable dates:', unavailableDates)
-    console.log('Found blocked date:', blockedDate)
-    console.log('Time slots:', blockedDate?.timeSlots || [])
-  }
+    // Add this debugging for September 25th specifically
+    if (dateStr === "2025-09-25") {
+      console.log("🔍 Checking September 25th:")
+      console.log("Date string:", dateStr)
+      console.log("All unavailable dates:", unavailableDates)
+      console.log("Found blocked date:", blockedDate)
+      console.log("Time slots:", blockedDate?.timeSlots || [])
+    }
     console.log(`Getting blocked slots for ${dateStr} (${date.toDateString()}):`, blockedDate?.timeSlots || [])
     return blockedDate?.timeSlots || []
   }
@@ -518,78 +511,78 @@ const TimeSlotAvailabilityContent = ({
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [weekendPremium, setWeekendPremium] = useState({
     enabled: false,
-    type: 'percentage', // 'percentage' or 'fixed'
-    amount: 25 // 25% or £25
+    type: "percentage", // 'percentage' or 'fixed'
+    amount: 25, // 25% or £25
   })
-  
-// Add this temporarily to your availability page where you use GoogleCalendarSync
-console.log('🔍 Current supplier ID:', currentSupplier?.id)
-console.log('🔍 Current supplier name:', currentSupplier?.name) 
-console.log('🔍 Google Calendar sync data:', currentSupplier?.googleCalendarSync)
 
-// Fix the useEffect that loads availability data
-useEffect(() => {
-  const loadAvailabilityData = () => {
-    if (currentSupplier) {
-      console.log('🔄 Loading availability data for supplier:', currentSupplier.name)
+  // Add this temporarily to your availability page where you use GoogleCalendarSync
+  console.log("🔍 Current supplier ID:", currentSupplier?.id)
+  console.log("🔍 Current supplier name:", currentSupplier?.name)
+  console.log("🔍 Google Calendar sync data:", currentSupplier?.googleCalendarSync)
 
-      let effectiveSupplier = currentSupplier
+  // Fix the useEffect that loads availability data
+  useEffect(() => {
+    const loadAvailabilityData = () => {
+      if (currentSupplier) {
+        console.log("🔄 Loading availability data for supplier:", currentSupplier.name)
 
-      if (!isPrimaryBusiness && primaryBusiness) {
-        effectiveSupplier = {
-          // ... existing inheritance code
+        let effectiveSupplier = currentSupplier
+
+        if (!isPrimaryBusiness && primaryBusiness) {
+          effectiveSupplier = {
+            // ... existing inheritance code
+          }
+        }
+
+        // 🔧 FIX: Load working hours from database
+        if (effectiveSupplier.workingHours) {
+          console.log("📅 Loading working hours from database:", effectiveSupplier.workingHours)
+          const migratedHours = migrateWorkingHours(effectiveSupplier.workingHours)
+          setWorkingHours(migratedHours)
+        } else {
+          console.log("📅 No working hours in database, using defaults")
+          setWorkingHours(getDefaultWorkingHours())
+        }
+
+        // Load unavailable dates with debugging
+        if (effectiveSupplier.unavailableDates) {
+          console.log("📅 Loading unavailable dates:", effectiveSupplier.unavailableDates)
+          const migratedUnavailable = migrateDateArray(effectiveSupplier.unavailableDates)
+          setUnavailableDates(migratedUnavailable)
+        } else {
+          console.log("📅 No unavailable dates in database")
+          setUnavailableDates([])
+        }
+
+        // 🔧 FIX: Load other availability settings
+        if (effectiveSupplier.availabilityNotes !== undefined) {
+          setAvailabilityNotes(effectiveSupplier.availabilityNotes)
+        }
+
+        if (effectiveSupplier.advanceBookingDays !== undefined) {
+          setAdvanceBookingDays(effectiveSupplier.advanceBookingDays)
+        }
+
+        if (effectiveSupplier.maxBookingDays !== undefined) {
+          setMaxBookingDays(effectiveSupplier.maxBookingDays)
+        }
+
+        // Load weekend premium settings
+        if (effectiveSupplier.weekendPremium) {
+          setWeekendPremium(effectiveSupplier.weekendPremium)
+        } else {
+          // Default settings
+          setWeekendPremium({
+            enabled: false,
+            type: "percentage",
+            amount: 25,
+          })
         }
       }
-
-      // 🔧 FIX: Load working hours from database
-      if (effectiveSupplier.workingHours) {
-        console.log('📅 Loading working hours from database:', effectiveSupplier.workingHours)
-        const migratedHours = migrateWorkingHours(effectiveSupplier.workingHours)
-        setWorkingHours(migratedHours)
-      } else {
-        console.log('📅 No working hours in database, using defaults')
-        setWorkingHours(getDefaultWorkingHours())
-      }
-
-      // Load unavailable dates with debugging
-      if (effectiveSupplier.unavailableDates) {
-        console.log('📅 Loading unavailable dates:', effectiveSupplier.unavailableDates)
-        const migratedUnavailable = migrateDateArray(effectiveSupplier.unavailableDates)
-        setUnavailableDates(migratedUnavailable)
-      } else {
-        console.log('📅 No unavailable dates in database')
-        setUnavailableDates([])
-      }
-
-      // 🔧 FIX: Load other availability settings
-      if (effectiveSupplier.availabilityNotes !== undefined) {
-        setAvailabilityNotes(effectiveSupplier.availabilityNotes)
-      }
-      
-      if (effectiveSupplier.advanceBookingDays !== undefined) {
-        setAdvanceBookingDays(effectiveSupplier.advanceBookingDays)
-      }
-      
-      if (effectiveSupplier.maxBookingDays !== undefined) {
-        setMaxBookingDays(effectiveSupplier.maxBookingDays)
-      }
-
-      // Load weekend premium settings
-      if (effectiveSupplier.weekendPremium) {
-        setWeekendPremium(effectiveSupplier.weekendPremium)
-      } else {
-        // Default settings
-        setWeekendPremium({
-          enabled: false,
-          type: 'percentage',
-          amount: 25
-        })
-      }
     }
-  }
 
-  loadAvailabilityData()
-}, [currentSupplier, isPrimaryBusiness, primaryBusiness])
+    loadAvailabilityData()
+  }, [currentSupplier, isPrimaryBusiness, primaryBusiness])
 
   const handleSave = async () => {
     try {
@@ -599,7 +592,6 @@ useEffect(() => {
         throw new Error("No primary business found. Cannot save shared availability.")
       }
 
-     
       const availabilityData = {
         availabilityType: "time_slot_based",
         workingHours: workingHours,
@@ -622,8 +614,6 @@ useEffect(() => {
       const result = await updateProfile(updatedPrimaryData, null, targetBusiness.id)
 
       if (result.success) {
-   
-
         setSupplierData(updatedPrimaryData)
         setSaveSuccess(true)
         setTimeout(() => setSaveSuccess(false), 3000)
@@ -663,7 +653,6 @@ useEffect(() => {
   }
 
   const handleTimeSlotChange = (day, timeSlot, field, value) => {
-
     setWorkingHours((prev) => {
       const updated = { ...prev }
 
@@ -686,7 +675,6 @@ useEffect(() => {
   }
 
   const markUnavailableRange = (days, timeSlots = ["morning", "afternoon"]) => {
-   
     const dates = []
     for (let i = 0; i < days; i++) {
       const date = addDays(startOfDay(new Date()), i)
@@ -708,18 +696,16 @@ useEffect(() => {
         }
         return acc
       }, [])
-      
+
       return merged
     })
   }
 
   const clearAllDates = () => {
-
     setUnavailableDates([])
   }
 
   const applyTemplate = (template) => {
-
     switch (template) {
       case "business":
         setWorkingHours({
@@ -814,7 +800,6 @@ useEffect(() => {
   }
 
   const removeTimeSlotFromDate = (dateIndex, timeSlot) => {
-  
     setUnavailableDates((prev) => {
       const updated = [...prev]
       const item = updated[dateIndex]
@@ -825,7 +810,6 @@ useEffect(() => {
         item.timeSlots = item.timeSlots.filter((slot) => slot !== timeSlot)
       }
 
-     
       return updated
     })
   }
@@ -897,23 +881,25 @@ useEffect(() => {
                 Set morning and afternoon availability for each day • Applies to all {businesses?.length || 0}{" "}
                 businesses
               </p>
-           
             </div>
             <div className="absolute right-10 top-[-100px]">
               <GlobalSaveButton position="responsive" onSave={handleSave} isLoading={saving} />
             </div>
           </div>
         </div>
-        <GoogleCalendarSync 
-  onSyncToggle={(enabled) => {
-    // Update your supplier data with sync settings
-    setSupplierData(prev => ({
-      ...prev,
-      googleCalendarSync: { ...prev.googleCalendarSync, enabled }
-    }))
-  }}
-  currentSupplier={currentSupplier}
-/>
+
+        <div className="px-4 sm:px-6 pb-4">
+          <CompactCalendarSync
+            onSyncToggle={(enabled) => {
+              setSupplierData((prev) => ({
+                ...prev,
+                googleCalendarSync: { ...prev.googleCalendarSync, enabled },
+              }))
+            }}
+            currentSupplier={currentSupplier}
+          />
+        </div>
+
         {/* Configuration info for time slot based */}
         {/* <div className="p-4 sm:p-6 pb-0">
           <Card className="border-blue-200 bg-blue-50">
@@ -1257,164 +1243,166 @@ useEffect(() => {
           </TabsContent>
 
           <TabsContent value="settings" className="p-3 sm:p-6 mb-15">
-  <div className="max-w-2xl bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-    {/* <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Time Slot Booking Rules</h3> */}
-    {/* <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            <div className="max-w-2xl bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              {/* <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Time Slot Booking Rules</h3> */}
+              {/* <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
       Configure how customers can book your morning and afternoon time slots
     </p> */}
 
-    <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <div>
-          <Label htmlFor="advance-booking" className="text-sm font-medium text-gray-900">
-            Minimum advance booking (days)
-          </Label>
-          <Input
-            id="advance-booking"
-            type="number"
-            min="0"
-            max="30"
-            value={advanceBookingDays}
-            onChange={(e) => setAdvanceBookingDays(Number.parseInt(e.target.value) || 0)}
-            className="mt-1 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))] h-10 sm:h-12"
-          />
-          <p className="text-xs text-gray-500 mt-1">Applies to both morning and afternoon slots</p>
-        </div>
-
-        <div>
-          <Label htmlFor="max-booking" className="text-sm font-medium text-gray-900">
-            Maximum advance booking (days)
-          </Label>
-          <Input
-            id="max-booking"
-            type="number"
-            min="1"
-            max="730"
-            value={maxBookingDays}
-            onChange={(e) => setMaxBookingDays(Number.parseInt(e.target.value) || 365)}
-            className="mt-1 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))] h-10 sm:h-12"
-          />
-          <p className="text-xs text-gray-500 mt-1">How far ahead customers can book</p>
-        </div>
-      </div>
-
-      {/* NEW: Weekend Premium Settings */}
-      <div className="border-t pt-6">
-        <div className="mb-4">
-          <h4 className="text-base font-semibold text-gray-900 mb-2">Weekend Premium Pricing</h4>
-          <p className="text-sm text-gray-600">Charge extra for Saturday and Sunday bookings</p>
-        </div>
-        
-        <div className="space-y-4">
-          {/* Weekend Premium Toggle */}
-          <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <Checkbox
-              id="weekend-premium-enabled"
-              checked={weekendPremium.enabled}
-              onCheckedChange={(checked) => 
-                setWeekendPremium(prev => ({ ...prev, enabled: checked }))
-              }
-              className="w-5 h-5"
-            />
-            <div className="flex-1">
-              <Label 
-                htmlFor="weekend-premium-enabled" 
-                className="text-sm font-medium cursor-pointer text-amber-900"
-              >
-                Enable weekend premium pricing
-              </Label>
-              <p className="text-xs text-amber-700 mt-1">
-                Automatically charge more for Saturday and Sunday time slots
-              </p>
-            </div>
-          </div>
-
-          {/* Premium Settings - Only show when enabled */}
-          {weekendPremium.enabled && (
-            <div className="ml-8 space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              {/* Premium Type Selection */}
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-2 block">
-                  Premium Type
-                </Label>
-                <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="premium-percentage"
-                      name="premium-type"
-                      checked={weekendPremium.type === 'percentage'}
-                      onChange={() => setWeekendPremium(prev => ({ ...prev, type: 'percentage' }))}
-                      className="w-4 h-4 text-primary-600"
-                    />
-                    <Label htmlFor="premium-percentage" className="text-sm cursor-pointer">
-                      Percentage increase
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div>
+                    <Label htmlFor="advance-booking" className="text-sm font-medium text-gray-900">
+                      Minimum advance booking (days)
                     </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="premium-fixed"
-                      name="premium-type"
-                      checked={weekendPremium.type === 'fixed'}
-                      onChange={() => setWeekendPremium(prev => ({ ...prev, type: 'fixed' }))}
-                      className="w-4 h-4 text-primary-600"
+                    <Input
+                      id="advance-booking"
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={advanceBookingDays}
+                      onChange={(e) => setAdvanceBookingDays(Number.parseInt(e.target.value) || 0)}
+                      className="mt-1 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))] h-10 sm:h-12"
                     />
-                    <Label htmlFor="premium-fixed" className="text-sm cursor-pointer">
-                      Fixed amount
+                    <p className="text-xs text-gray-500 mt-1">Applies to both morning and afternoon slots</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="max-booking" className="text-sm font-medium text-gray-900">
+                      Maximum advance booking (days)
                     </Label>
+                    <Input
+                      id="max-booking"
+                      type="number"
+                      min="1"
+                      max="730"
+                      value={maxBookingDays}
+                      onChange={(e) => setMaxBookingDays(Number.parseInt(e.target.value) || 365)}
+                      className="mt-1 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))] h-10 sm:h-12"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">How far ahead customers can book</p>
                   </div>
                 </div>
-              </div>
 
-              {/* Premium Amount */}
-              <div>
-                <Label htmlFor="premium-amount" className="text-sm font-medium text-gray-900">
-                  {weekendPremium.type === 'percentage' ? 'Percentage increase (%)' : 'Additional amount (£)'}
-                </Label>
-                <div className="relative mt-1">
-                  <Input
-                    id="premium-amount"
-                    type="number"
-                    min="0"
-                    max={weekendPremium.type === 'percentage' ? 100 : 1000}
-                    value={weekendPremium.amount}
-                    onChange={(e) => setWeekendPremium(prev => ({ 
-                      ...prev, 
-                      amount: Number.parseInt(e.target.value) || 0 
-                    }))}
-                    className="h-10 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))]"
-                    placeholder={weekendPremium.type === 'percentage' ? '25' : '50'}
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500 text-sm">
-                      {weekendPremium.type === 'percentage' ? '%' : '£'}
-                    </span>
+                {/* NEW: Weekend Premium Settings */}
+                <div className="border-t pt-6">
+                  <div className="mb-4">
+                    <h4 className="text-base font-semibold text-gray-900 mb-2">Weekend Premium Pricing</h4>
+                    <p className="text-sm text-gray-600">Charge extra for Saturday and Sunday bookings</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Weekend Premium Toggle */}
+                    <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <Checkbox
+                        id="weekend-premium-enabled"
+                        checked={weekendPremium.enabled}
+                        onCheckedChange={(checked) => setWeekendPremium((prev) => ({ ...prev, enabled: checked }))}
+                        className="w-5 h-5"
+                      />
+                      <div className="flex-1">
+                        <Label
+                          htmlFor="weekend-premium-enabled"
+                          className="text-sm font-medium cursor-pointer text-amber-900"
+                        >
+                          Enable weekend premium pricing
+                        </Label>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Automatically charge more for Saturday and Sunday time slots
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Premium Settings - Only show when enabled */}
+                    {weekendPremium.enabled && (
+                      <div className="ml-8 space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        {/* Premium Type Selection */}
+                        <div>
+                          <Label className="text-sm font-medium text-gray-900 mb-2 block">Premium Type</Label>
+                          <div className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="premium-percentage"
+                                name="premium-type"
+                                checked={weekendPremium.type === "percentage"}
+                                onChange={() => setWeekendPremium((prev) => ({ ...prev, type: "percentage" }))}
+                                className="w-4 h-4 text-primary-600"
+                              />
+                              <Label htmlFor="premium-percentage" className="text-sm cursor-pointer">
+                                Percentage increase
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="premium-fixed"
+                                name="premium-type"
+                                checked={weekendPremium.type === "fixed"}
+                                onChange={() => setWeekendPremium((prev) => ({ ...prev, type: "fixed" }))}
+                                className="w-4 h-4 text-primary-600"
+                              />
+                              <Label htmlFor="premium-fixed" className="text-sm cursor-pointer">
+                                Fixed amount
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Premium Amount */}
+                        <div>
+                          <Label htmlFor="premium-amount" className="text-sm font-medium text-gray-900">
+                            {weekendPremium.type === "percentage" ? "Percentage increase (%)" : "Additional amount (£)"}
+                          </Label>
+                          <div className="relative mt-1">
+                            <Input
+                              id="premium-amount"
+                              type="number"
+                              min="0"
+                              max={weekendPremium.type === "percentage" ? 100 : 1000}
+                              value={weekendPremium.amount}
+                              onChange={(e) =>
+                                setWeekendPremium((prev) => ({
+                                  ...prev,
+                                  amount: Number.parseInt(e.target.value) || 0,
+                                }))
+                              }
+                              className="h-10 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))]"
+                              placeholder={weekendPremium.type === "percentage" ? "25" : "50"}
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500 text-sm">
+                                {weekendPremium.type === "percentage" ? "%" : "£"}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {weekendPremium.type === "percentage"
+                              ? `If your base price is £100, weekend price will be £${100 + (100 * weekendPremium.amount) / 100}`
+                              : `If your base price is £100, weekend price will be £${100 + weekendPremium.amount}`}
+                          </p>
+                        </div>
+
+                        {/* Preview */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <h5 className="text-sm font-medium text-blue-900 mb-1">Preview</h5>
+                          <div className="text-xs text-blue-800">
+                            <div>Weekday price: Your base rate</div>
+                            <div>
+                              Weekend price: Base rate{" "}
+                              {weekendPremium.type === "percentage"
+                                ? `+ ${weekendPremium.amount}%`
+                                : `+ £${weekendPremium.amount}`}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {weekendPremium.type === 'percentage' 
-                    ? `If your base price is £100, weekend price will be £${100 + (100 * weekendPremium.amount / 100)}`
-                    : `If your base price is £100, weekend price will be £${100 + weekendPremium.amount}`
-                  }
-                </p>
-              </div>
 
-              {/* Preview */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <h5 className="text-sm font-medium text-blue-900 mb-1">Preview</h5>
-                <div className="text-xs text-blue-800">
-                  <div>Weekday price: Your base rate</div>
-                  <div>Weekend price: Base rate {weekendPremium.type === 'percentage' ? `+ ${weekendPremium.amount}%` : `+ £${weekendPremium.amount}`}</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Existing availability notes */}
-      {/* <div>
+                {/* Existing availability notes */}
+                {/* <div>
         <Label htmlFor="availability-notes" className="text-sm font-medium text-gray-900">
           Time slot availability notes
         </Label>
@@ -1428,7 +1416,7 @@ useEffect(() => {
         <p className="text-xs text-gray-500 mt-1">Help customers choose the best time slot for their party</p>
       </div> */}
 
-      {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
@@ -1442,9 +1430,9 @@ useEffect(() => {
           </div>
         </div>
       </div> */}
-    </div>
-  </div>
-</TabsContent>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </div>

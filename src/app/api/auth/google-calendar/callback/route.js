@@ -75,13 +75,11 @@ export async function GET(request) {
       }
     }
 
-    // Find all primary suppliers to update
-    console.log('🔄 Finding primary suppliers...')
+    console.log('🔄 Finding specific supplier for testing...')
     const { data: allPrimarySuppliers, error: queryError } = await supabase
       .from('suppliers')
       .select('*')
-      .eq('is_primary', true)
-
+      .eq('id', 'fd2a4e94-fb2b-4530-ae03-c73319305877')
     if (queryError) {
       console.error('❌ Database query error:', queryError)
       return NextResponse.redirect(new URL('/suppliers/dashboard?calendar_error=db_error', request.url))
