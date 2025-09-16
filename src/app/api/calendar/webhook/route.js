@@ -80,9 +80,9 @@ async function triggerAutomaticSync(supplier) {
     
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
     
-    // Fetch events from next 60 days
+    // Fetch events from next 1 year
     const timeMin = new Date().toISOString()
-    const timeMax = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString()
+    const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
     
     console.log('Fetching calendar events for automatic sync...')
     const response = await calendar.events.list({
