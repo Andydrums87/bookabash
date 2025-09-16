@@ -13,4 +13,4 @@ jobs:
       - name: Call calendar sync endpoint
         run: |
           echo "Calling endpoint..."
-          curl -v https://partysnap.co.uk/api/calendar/scheduled-sync
+          curl -v https://www.partysnap.co.uk/api/calendar/scheduled-sync
