@@ -126,7 +126,7 @@ const generatePortfolioImages = (supplier) => {
     const supplierProvidedImages = supplier.portfolioImages.map((img, index) => ({
       id: img.id || `portfolio-${index}`,
       title: img.title || `Portfolio Image ${index + 1}`,
-      image: img.image || img.src || `/placeholder.svg?height=400&width=300&query=portfolio+${index + 1}`,
+      image: img.image || img.src || `/placeholder.jpg`,
       description: img.description,
       alt: img.alt || img.title || `Portfolio image ${index + 1}`,
     }))
@@ -172,7 +172,7 @@ const generateReviews = () => [
   {
     id: 1,
     name: "Sarah T.",
-    avatar: "/andrew.jpg",
+    avatar: "/placeholder.png",
     rating: 5,
     date: "2 weeks ago",
     text: "Absolutely fantastic! Made my son's 6th birthday unforgettable.",
@@ -181,7 +181,7 @@ const generateReviews = () => [
   {
     id: 2,
     name: "Mike J.",
-    avatar: "/andrew.jpg",
+    avatar: "/placeholder.png",
     rating: 5,
     date: "1 month ago",
     text: "Professional, punctual, and incredibly entertaining.",
@@ -189,7 +189,7 @@ const generateReviews = () => [
   {
     id: 3,
     name: "Emma D.",
-    avatar: "/andrew.jpg",
+    avatar: "/placeholder.png",
     rating: 4,
     date: "2 months ago",
     text: "Great entertainment value. Kids loved it.",
