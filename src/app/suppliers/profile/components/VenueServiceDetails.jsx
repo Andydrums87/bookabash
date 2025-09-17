@@ -21,7 +21,8 @@ import {
   PlusCircle,
   Edit3,
   Trash2,
-  Ban
+  Ban,
+  CheckCircle
 } from "lucide-react"
 import { generateVenuePackages } from "@/utils/mockBackend"
 
@@ -35,6 +36,7 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
     pricing: false,
     addons: false,
     restrictions: false,
+    allowedItems: false,
   })
 
   const toggleSection = (section) => {
@@ -114,6 +116,7 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
     cateringOptions: [],
     addOnServices: [],
     restrictedItems: [],
+    allowedItems: [], // NEW: Items that are specifically allowed/encouraged
     houseRules: [],
     bookingTerms: "",
     venueRules: "",
@@ -133,6 +136,10 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
   // Restrictions management state
   const [isAddingRestriction, setIsAddingRestriction] = useState(false)
   const [customRestriction, setCustomRestriction] = useState("")
+
+  // NEW: Allowed items management state
+  const [isAddingAllowedItem, setIsAddingAllowedItem] = useState(false)
+  const [customAllowedItem, setCustomAllowedItem] = useState("")
 
   // House rules management state
   const [isAddingRule, setIsAddingRule] = useState(false)
@@ -218,6 +225,7 @@ useEffect(() => {
       cateringOptions: [],
       addOnServices: [],
       restrictedItems: [],
+      allowedItems: [], // NEW: Initialize allowed items
       houseRules: [],
       bookingTerms: "",
       venueRules: "",
@@ -295,6 +303,7 @@ useEffect(() => {
       },
       addOnServices: businessServiceDetails.addOnServices || [],
       restrictedItems: businessServiceDetails.restrictedItems || [],
+      allowedItems: businessServiceDetails.allowedItems || [], // NEW: Load allowed items
       houseRules: businessServiceDetails.houseRules || [],
     })
 
@@ -459,6 +468,28 @@ useEffect(() => {
     "Glass containers",
   ]
 
+  // NEW: Common allowed items that venues might want to highlight
+  const commonAllowedItems = [
+    "Bouncy castles",
+    "Soft play equipment",
+    "Musical instruments",
+    "Additional tables and chairs",
+    "Sound system",
+    "Toys and games",
+    "Face painting supplies",
+    "Balloon decorations",
+    "Party games equipment",
+    "Craft supplies",
+    "Photography equipment",
+    "Catering equipment",
+    "Dance mats",
+    "Karaoke machines",
+    "Projector screens",
+    "Outdoor games",
+    "Sports equipment",
+    "Arts and crafts materials",
+  ]
+
   // Common house rules
   const commonHouseRules = [
     "Please arrive no more than 15 minutes before the start time",
@@ -621,6 +652,35 @@ useEffect(() => {
     handleAddRestriction(customRestriction.trim())
     setCustomRestriction("")
     setIsAddingRestriction(false)
+  }
+
+  // NEW: Allowed items management functions
+  const handleAddAllowedItem = (item) => {
+    if (details.allowedItems.includes(item)) return
+    
+    const newDetails = {
+      ...details,
+      allowedItems: [...details.allowedItems, item],
+    }
+    setDetails(newDetails)
+    onUpdate(newDetails)
+  }
+
+  const handleRemoveAllowedItem = (item) => {
+    const newDetails = {
+      ...details,
+      allowedItems: details.allowedItems.filter(i => i !== item),
+    }
+    setDetails(newDetails)
+    onUpdate(newDetails)
+  }
+
+  const handleAddCustomAllowedItem = () => {
+    if (!customAllowedItem.trim()) return
+    
+    handleAddAllowedItem(customAllowedItem.trim())
+    setCustomAllowedItem("")
+    setIsAddingAllowedItem(false)
   }
 
   // House rules management
@@ -1036,48 +1096,6 @@ useEffect(() => {
             <p className="text-sm text-blue-600 mt-1">This ensures adequate time for proper party preparation and venue restoration.</p>
           </div>
 
-          {/* Additional Fees */}
-          {/* <div>
-            <h4 className="font-semibold text-gray-900 mb-4">Additional Fees (Optional)</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-3">
-                <label className="text-base font-semibold text-gray-700 block">Cleaning Fee (£)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={details.pricing?.cleaningFee || ""}
-                  onChange={(e) => handleNestedFieldChange("pricing", "cleaningFee", parseInt(e.target.value))}
-                  className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-orange-500 focus:outline-none"
-                  placeholder="25"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-base font-semibold text-gray-700 block">Security Deposit (£)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={details.pricing?.securityDeposit || ""}
-                  onChange={(e) => handleNestedFieldChange("pricing", "securityDeposit", parseInt(e.target.value))}
-                  className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-orange-500 focus:outline-none"
-                  placeholder="100"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-base font-semibold text-gray-700 block">Weekend Surcharge (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={details.pricing?.weekendSurcharge || ""}
-                  onChange={(e) => handleNestedFieldChange("pricing", "weekendSurcharge", parseInt(e.target.value))}
-                  className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-orange-500 focus:outline-none"
-                  placeholder="20"
-                />
-              </div>
-            </div>
-          </div> */}
         </div>
       </div>
 
@@ -1216,32 +1234,105 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Restricted Items */}
+      {/* NEW: Items Allowed & Items Not Permitted Section */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-red-50 to-red-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("restrictions")}
+          className="p-4 sm:p-8 bg-gradient-to-r from-green-50 to-green-100 rounded-t-lg cursor-pointer"
+          onClick={() => toggleSection("allowedItems")}
         >
           <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500 rounded-xl flex items-center justify-center">
-                <Ban className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              Restricted Items & House Rules
+              Items Allowed & Not Permitted
             </div>
             <div className="sm:hidden">
-              {expandedSections.restrictions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              {expandedSections.allowedItems ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </div>
           </h2>
           <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Set clear expectations about what's not allowed and venue rules
+            Set clear expectations about what is welcome and what is not allowed
           </p>
         </div>
-        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.restrictions ? "hidden sm:block" : ""}`}>
+        <div className={`p-4 sm:p-8 space-y-8 ${!expandedSections.allowedItems ? "hidden sm:block" : ""}`}>
           
-          {/* Restricted Items */}
+          {/* Items Allowed Section */}
           <div>
-            <h4 className="font-semibold text-gray-900 mb-4">Items Not Permitted</h4>
+            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Items We Welcome
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">Highlight special items or equipment that your venue welcomes and supports</p>
+            
+            {/* Common allowed items */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              {commonAllowedItems.map((item) => (
+                <div
+                  key={item}
+                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                    details.allowedItems.includes(item)
+                      ? "border-green-200 bg-green-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                  onClick={() => details.allowedItems.includes(item) ? handleRemoveAllowedItem(item) : handleAddAllowedItem(item)}
+                >
+                  <span className="text-sm font-medium">{item}</span>
+                  {details.allowedItems.includes(item) && (
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Custom allowed item */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customAllowedItem}
+                onChange={(e) => setCustomAllowedItem(e.target.value)}
+                placeholder="Add custom allowed item..."
+                className="flex-1 h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-green-500 focus:outline-none"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddCustomAllowedItem()}
+              />
+              <button
+                onClick={handleAddCustomAllowedItem}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+
+            {/* Current allowed items */}
+            {details.allowedItems.length > 0 && (
+              <div className="mt-4">
+                <h5 className="font-medium text-gray-900 mb-2">Items We Welcome:</h5>
+                <div className="flex flex-wrap gap-2">
+                  {details.allowedItems.map((item, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                    >
+                      {item}
+                      <button
+                        onClick={() => handleRemoveAllowedItem(item)}
+                        className="ml-1 text-green-600 hover:text-green-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Restricted Items Section */}
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Ban className="w-5 h-5 text-red-600" />
+              Items Not Permitted
+            </h4>
             <p className="text-sm text-gray-600 mb-4">Select items that are not allowed at your venue</p>
             
             {/* Common restrictions */}
@@ -1305,7 +1396,32 @@ useEffect(() => {
               </div>
             )}
           </div>
+        </div>
+      </div>
 
+      {/* House Rules */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div 
+          className="p-4 sm:p-8 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg cursor-pointer"
+          onClick={() => toggleSection("restrictions")}
+        >
+          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              House Rules
+            </div>
+            <div className="sm:hidden">
+              {expandedSections.restrictions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </div>
+          </h2>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
+            Set important venue guidelines for all bookings
+          </p>
+        </div>
+        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.restrictions ? "hidden sm:block" : ""}`}>
+          
           {/* House Rules */}
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">House Rules</h4>
@@ -1579,78 +1695,6 @@ useEffect(() => {
           </div>
         </div>
       </div>
-
-
-      {/* Special Features */}
-      {/* <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-8 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-t-lg">
-          <h2 className="flex items-center gap-3 text-xl font-bold text-gray-900">
-            <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
-              <Camera className="w-5 h-5 text-white" />
-            </div>
-            Special Features & Additional Info
-          </h2>
-          <p className="text-base text-gray-600 mt-2">Highlight what makes your venue unique</p>
-        </div>
-        <div className="p-8 space-y-8">
-          <div className="space-y-3">
-            <label className="text-base font-semibold text-gray-700 block">Special Features & Unique Selling Points</label>
-            <textarea
-              value={details.specialFeatures || ""}
-              onChange={(e) => handleFieldChange("specialFeatures", e.target.value)}
-              placeholder="e.g., Beautiful Victorian architecture, garden access, recently renovated, historic building, great acoustics, natural lighting, period features, outdoor terrace..."
-              rows={4}
-              className="w-full bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none focus:border-indigo-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4">Available Setup Options</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {setupOptions.map((setup) => (
-                <div
-                  key={setup}
-                  className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-indigo-50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    id={`setup-${setup}`}
-                    checked={details.setupOptions.includes(setup)}
-                    onChange={() => handleArrayToggle(details.setupOptions, setup, "setupOptions")}
-                    className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`setup-${setup}`} className="text-base font-medium cursor-pointer flex-1">
-                    {setup}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4">Catering Options</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cateringOptions.map((option) => (
-                <div
-                  key={option}
-                  className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-indigo-50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    id={`catering-${option}`}
-                    checked={details.cateringOptions.includes(option)}
-                    onChange={() => handleArrayToggle(details.cateringOptions, option, "cateringOptions")}
-                    className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`catering-${option}`} className="text-base font-medium cursor-pointer flex-1">
-                    {option}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div> */}
 
       {/* Add/Edit Add-on Modal */}
       {isAddingAddon && (

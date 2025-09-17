@@ -17,7 +17,7 @@ export default function MockSupplierSidebar({
   
   // Mock verification docs
   const mockVerificationDocs = [
-    { name: "DBS Certificate", verified: true },
+    // { name: "DBS Certificate", verified: true },
     { name: "Public Liability Insurance", verified: true },
     { name: "First Aid Certified", verified: true },
     { name: "ID Verified", verified: true }
@@ -59,16 +59,16 @@ export default function MockSupplierSidebar({
         {day}
         
         {/* Weekend premium indicator */}
-        {isWeekend && isAvailable && !isSelected && (
+        {/* {isWeekend && isAvailable && !isSelected && (
           <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400 opacity-60" />
-        )}
+        )} */}
         
         {/* Time slot indicators for some days */}
-        {isAvailable && !isSelected && day % 3 === 0 && (
+        {/* {isAvailable && !isSelected && day % 3 === 0 && (
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs font-bold">
             {day % 2 === 0 ? 'AM' : 'PM'}
           </div>
-        )}
+        )} */}
       </button>
     )
   }
@@ -161,7 +161,7 @@ export default function MockSupplierSidebar({
             </div>
 
             {/* Legend */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <h4 className="font-semibold text-gray-900">Legend:</h4>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
                 <div className="flex items-center gap-3">
@@ -181,7 +181,7 @@ export default function MockSupplierSidebar({
                 • AM/PM indicators show which time slots are available<br/>
                 • Orange dots indicate weekend premium pricing
               </p>
-            </div>
+            </div> */}
 
             {/* Selected Date Display */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">

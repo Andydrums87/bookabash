@@ -19,7 +19,7 @@ import SupplierQuickStats from "@/components/supplier/supplier-quick-stats"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import AboutMeComponent from "@/components/supplier/about-me"
 
-import { useSupplierData } from "@/app/(main)/supplier/hooks/useSupplierData"
+import { useSupplierData } from "./hooks/useSupplierData"
 import SnappyLoader from "@/components/ui/SnappyLoader"
 
 // Preview-specific components (non-interactive versions)
@@ -30,6 +30,7 @@ import { PreviewContextualBreadcrumb } from "./preview-components/PreviewContext
 
 export default function PreviewSupplierPageClient({ backendSupplier }) {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [showLoader, setShowLoader] = useState(true)
   
   // Call the data hook
   const { supplier, packages: basePackages, portfolioImages, credentials, reviews, isCakeSupplier } = 
@@ -44,11 +45,14 @@ export default function PreviewSupplierPageClient({ backendSupplier }) {
   const [showCakeModal, setShowCakeModal] = useState(false)
 
   useEffect(() => {
-    if (backendSupplier) {
-      // Small delay to ensure smooth transition
-      setTimeout(() => setIsLoaded(true), 100)
+    if (backendSupplier && supplier) {
+      // Small delay to ensure smooth transition, then hide loader
+      setTimeout(() => {
+        setIsLoaded(true)
+        setShowLoader(false)
+      }, 500) // Reduced delay since we're showing loader immediately
     }
-  }, [backendSupplier])
+  }, [backendSupplier, supplier])
 
   useEffect(() => {
     // Scroll to top when component mounts or when supplier changes
@@ -86,10 +90,11 @@ export default function PreviewSupplierPageClient({ backendSupplier }) {
     return 2 // Default duration for preview
   }
 
-  if (!supplier && !isLoaded) {
+  // Show loader immediately while data is processing
+  if (showLoader || !supplier || !isLoaded) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <SnappyLoader text="Loading Preview" />
+        <SnappyLoader text="Loading Your Supplier Preview" />
       </div>      
     )
   }

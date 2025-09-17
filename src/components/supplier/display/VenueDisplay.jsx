@@ -165,6 +165,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   const [showAllCateringOptions, setShowAllCateringOptions] = useState(false);
   const [showAllRestrictions, setShowAllRestrictions] = useState(false);
   const [showAllRules, setShowAllRules] = useState(false);
+  const [showAllAllowedItems, setShowAllAllowedItems] = useState(false); // NEW: State for allowed items
 
 
 
@@ -304,6 +305,58 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
               Scroll horizontally to see all {addOnServices.length} services
             </p>
           )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // NEW: Helper function to render allowed items
+  const renderAllowedItems = (allowedItems) => {
+    if (!allowedItems?.length) return null;
+    
+    const displayItems = showAllAllowedItems ? allowedItems : allowedItems.slice(0, 8);
+    const hasMore = allowedItems.length > 8;
+
+    return (
+      <Card className="border-gray-300">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            Items We Welcome
+          </h2>
+          <p className="text-gray-600 mb-4">These special items and equipment are welcome at our venue</p>
+          
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {displayItems.map((item, index) => (
+                <div key={index} className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span className="text-gray-800 text-sm font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
+            
+            {hasMore && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllAllowedItems(!showAllAllowedItems)}
+                className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+              >
+                {showAllAllowedItems ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Show fewer items
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1" />
+                    Show {allowedItems.length - 8} more items
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -652,97 +705,11 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
         </Card>
       )}
 
-      {/* Venue Policies */}
-      {/* {serviceDetails.policies && Object.keys(serviceDetails.policies).some(key => serviceDetails.policies[key] !== undefined) && (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Venue Policies</h2>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              {serviceDetails.policies.ownFood !== undefined && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  {serviceDetails.policies.ownFood ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  )}
-                  <span className="text-gray-700">External food & catering allowed</span>
-                </div>
-              )}
-              
-              {serviceDetails.policies.ownDecorations !== undefined && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  {serviceDetails.policies.ownDecorations ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  )}
-                  <span className="text-gray-700">Own decorations allowed</span>
-                </div>
-              )}
-              
-              {serviceDetails.policies.alcohol !== undefined && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  {serviceDetails.policies.alcohol ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  )}
-                  <span className="text-gray-700">Alcohol permitted</span>
-                </div>
-              )}
-              
-              {serviceDetails.policies.music !== undefined && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  {serviceDetails.policies.music ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  )}
-                  <span className="text-gray-700">Music/Entertainment allowed</span>
-                </div>
-              )}
-
-              {serviceDetails.policies.childSupervision !== undefined && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  {serviceDetails.policies.childSupervision ? (
-                    <AlertCircle className="w-5 h-5 text-gray-600 flex-shrink-0" />
-                  ) : (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  )}
-                  <span className="text-gray-700">
-                    {serviceDetails.policies.childSupervision 
-                      ? "Adult supervision required for children" 
-                      : "No supervision requirement"}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {serviceDetails.policies.endTime && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Event End Time
-                </h4>
-                <p className="text-gray-800">
-                  Events must end by {serviceDetails.policies.endTime === 'flexible' ? 'flexible times (arranged with venue)' : serviceDetails.policies.endTime}
-                </p>
-              </div>
-            )}
-
-            {serviceDetails.bookingTerms && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-1">Booking Terms & Conditions</h4>
-                <p className="text-gray-700 text-sm">{serviceDetails.bookingTerms}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )} */}
-
       {/* Add-on Services - Now with horizontal scrolling */}
       {renderAddOnServices(serviceDetails.addOnServices)}
+
+      {/* NEW: Items We Welcome - Show allowed items */}
+      {renderAllowedItems(serviceDetails.allowedItems)}
 
       {/* Restricted Items - Simplified colors */}
       {renderRestrictedItems(serviceDetails.restrictedItems)}
