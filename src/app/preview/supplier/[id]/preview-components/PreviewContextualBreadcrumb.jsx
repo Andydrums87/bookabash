@@ -34,12 +34,7 @@ export function PreviewContextualBreadcrumb({ currentPage, supplierName }) {
             ))}
           </ol>
           
-          {/* Preview indicator */}
-          <div className="ml-auto">
-            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-              Preview Mode
-            </span>
-          </div>
+      
         </div>
       </div>
     </nav>
