@@ -19,7 +19,7 @@ import SupplierQuickStats from "@/components/supplier/supplier-quick-stats"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import AboutMeComponent from "@/components/supplier/about-me"
 
-import { useSupplierData } from "./hooks/useSupplierData"
+import { useSupplierData } from "@/app/(main)/supplier/hooks/useSupplierData"
 import SnappyLoader from "@/components/ui/SnappyLoader"
 
 // Preview-specific components (non-interactive versions)
