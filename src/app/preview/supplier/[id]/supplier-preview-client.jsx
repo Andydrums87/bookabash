@@ -161,7 +161,7 @@ export default function PreviewSupplierPageClient({ backendSupplier }) {
             <SupplierReviews reviews={reviews} isPreview={true} />
             <SupplierBadges supplier={supplier} isPreview={true} />
             <SupplierQuickStats supplier={supplier} isPreview={true} />
-            <AboutMeComponent supplier={supplier} isPreview={true} />
+            {/* <AboutMeComponent supplier={supplier} isPreview={true} /> */}
           </main>
           
           <aside className="hidden md:block lg:col-span-1">
