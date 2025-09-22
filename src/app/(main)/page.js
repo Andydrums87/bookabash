@@ -38,9 +38,12 @@ export default function HomePage() {
   const [showPartyLoader, setShowPartyLoader] = useState(false)
   const [buildingProgress, setBuildingProgress] = useState(0)
   const [postcodeValid, setPostcodeValid] = useState(true)
+  
 
 
 const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+
 
   const handleFieldChange = (field, value) => {
     setFormData(prev => {
@@ -316,7 +319,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
         isSubmitting={isSubmitting}
         hasAttemptedSubmit={hasAttemptedSubmit}
       />
-<TrustIndicators />
+      <TrustIndicators />
   
       <CategoryGrid />
       <FeaturesGrid />
@@ -324,7 +327,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
       {/* <HowItWorks /> */}
       <CustomerStories />
       <FinalCTA />
-    
+   
     </div>
   )
 }

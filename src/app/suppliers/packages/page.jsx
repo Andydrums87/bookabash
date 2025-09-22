@@ -348,10 +348,10 @@ const Packages = () => {
       alert("Please fill in all required fields (Name, Price, Duration)")
       return
     }
-
+  
     // Filter out empty feature items
     const filteredFeatures = packageFormData.features.filter((item) => item.trim() !== "")
-
+  
     const newPackageData = {
       ...packageFormData,
       features: filteredFeatures,
@@ -363,24 +363,27 @@ const Packages = () => {
       venueSpecific: isVenue,
       isCustom: isVenue ? true : false
     }
-
+  
     let updatedPackages
     setPackages((prevPackages) => {
+      // Add this safety check to prevent the "not iterable" error
+      const safePackages = Array.isArray(prevPackages) ? prevPackages : []
+      
       if (editingPackage && editingPackage.id) {
         // Editing existing package
-        updatedPackages = prevPackages.map((p) => (p.id === editingPackage.id ? { ...p, ...newPackageData } : p))
+        updatedPackages = safePackages.map((p) => (p.id === editingPackage.id ? { ...p, ...newPackageData } : p))
       } else {
         // Adding new package
-        updatedPackages = [...prevPackages, { ...newPackageData, id: `pkg${Date.now()}` }]
+        updatedPackages = [...safePackages, { ...newPackageData, id: `pkg${Date.now()}` }]
       }
       return updatedPackages
     })
-
+  
     // Auto-save to backend
     if (updatedPackages) {
       await savePackagesToBackend(updatedPackages)
     }
-
+  
     handleClosePackageForm()
   }
 
@@ -639,7 +642,7 @@ const Packages = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                  {packages.map((pkg) => (
+                 {Array.isArray(packages) && packages.map((pkg) => (
                     <SupplierPackageCard
                       key={pkg.id}
                       packageData={pkg}

@@ -1,4 +1,5 @@
 "use client"
+import { useEffect } from "react"
 import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -17,9 +18,13 @@ export default function MobileSearchForm({
   setPostcodeValid,
   validateAndFormatPostcode,
   isSubmitting,
-  hasAttemptedSubmit
+  hasAttemptedSubmit,
+  setShowFloatingCTA,
+  showFloatingCTA
 }) {  
   
+
+
   // Form validation function
   const isFormValid = () => {
     return (
@@ -74,7 +79,7 @@ export default function MobileSearchForm({
           variant="outline"
           className={`
             w-full font-normal h-12 
-            bg-gray-50 border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
+            bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
             hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors 
             ${!formData.date && "text-gray-500"}
             ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
@@ -153,15 +158,16 @@ export default function MobileSearchForm({
       <label className="block text-sm font-semibold text-gray-700">
         Guests <span className="text-red-500">*</span>
       </label>
-      <div className="relative">
+      <div className="relative ">
         <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
         <Select 
           value={formData.guestCount} 
           onValueChange={(value) => handleFieldChange("guestCount", value)}
           required
+          
         >
           <SelectTrigger className={`
-            bg-gray-50 text-gray-600 w-full py-6 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 text-sm
+            bg-white text-gray-600 w-full py-6 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 text-sm
             ${!formData.guestCount ? 'border-red-300' : ''}
           `}>
             <SelectValue placeholder="Select guest count" />
@@ -213,7 +219,7 @@ export default function MobileSearchForm({
           }}
           placeholder="Enter your postcode"
           className={`
-            bg-gray-50 placeholder:text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-base
+            bg-white placeholder:text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-sm
             ${formData.postcode && !postcodeValid ? 'border-red-300 focus:border-red-500' : ''}
           `}
           required

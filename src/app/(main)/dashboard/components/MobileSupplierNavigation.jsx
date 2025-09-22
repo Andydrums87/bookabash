@@ -356,7 +356,7 @@ export default function MobileSupplierNavigation({
 
       {/* Sticky Tab Navigation */}
       <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
-        <div className="relative overflow-hidden bg-gradient-to-r from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
+        <div className="relative overflow-hidden bg-gray-50">
      
    
 
@@ -405,7 +405,7 @@ export default function MobileSupplierNavigation({
                           </div> */}
                           
                           {isActive && (
-                            <div className="absolute inset-0 rounded-full border-4 border-teal-500 shadow-lg"></div> 
+                            <div className="absolute inset-0 rounded-full border-5 border-[hsl(var(--primary-500))] shadow-lg"></div> 
                           )}
                           
                           {hasContent && (
@@ -416,7 +416,7 @@ export default function MobileSupplierNavigation({
                         </div>
                         
                         <div className="text-center">
-                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-teal-700 font-bold' : 'text-gray-700'}`}>
+                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-primary-700 font-bold' : 'text-gray-700'}`}>
                             {supplierType.name}
                           </p>
                         </div>

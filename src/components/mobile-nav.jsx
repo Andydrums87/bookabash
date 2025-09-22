@@ -305,13 +305,13 @@ const hasLocalStorageParty = () => {
               </h2>
             </div>
           ) : (
-            <div className="">
+            <div className="bg-white py-2 rounded-full px-3">
               <Image
                 src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
                 alt="PartySnap"
                 width={120}
                 height={32}
-                className="h-auto w-auto object-contain brightness-0 invert"
+                className="h-auto w-auto object-contain"
               />
             </div>
           )}
@@ -499,7 +499,7 @@ const hasLocalStorageParty = () => {
           ) : !loading ? (
             <div className="space-y-3">
               <Button
-                className="w-full bg-white hover:bg-gray-100 text-primary-500 font-normal py-3 text-base rounded-full transition-all duration-200"
+                className="w-full bg-white hover:bg-gray-100 text-primary-500 font-black py-3 text-base rounded-full transition-all duration-200"
                 asChild
               >
                 <Link href="/signin" onClick={closeMenu}>
@@ -508,7 +508,7 @@ const hasLocalStorageParty = () => {
               </Button>
               <Button
                 variant="outline"
-                className="w-full border-white text-primary-500 hover:bg-white/10 font-normal py-3 text-base rounded-full transition-all duration-200"
+                className="w-full border-white text-primary-500 hover:bg-white/10 font-black py-3 text-base rounded-full transition-all duration-200"
                 asChild
               >
                 <Link href="/suppliers/onboarding" onClick={closeMenu}>
