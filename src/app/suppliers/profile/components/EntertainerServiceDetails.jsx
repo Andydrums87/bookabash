@@ -366,65 +366,66 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
         </Alert>
       )} */}
       {/* About Us Section */}
-      <Card className="">
-        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            About Us
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Tell customers about your business and what makes you special (max 60 words)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="aboutUs" className="text-sm sm:text-base font-semibold text-gray-700">
-              Your Business Story *
-            </Label>
-            <div className="relative">
-              <Textarea
-                id="aboutUs"
-                value={details.aboutUs || ""}
-                onChange={(e) => {
-                  const text = e.target.value
-                  const words =
-                    text.trim() === ""
-                      ? []
-                      : text
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0)
-                  if (words.length <= 60) {
-                    handleFieldChange("aboutUs", e.target.value)
-                  }
-                }}
-                placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
-                rows={4}
-                className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-              />
-              <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-                {(() => {
-                  const text = details.aboutUs || ""
-                  const words =
-                    text.trim() === ""
-                      ? []
-                      : text
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0)
-                  return words.length
-                })()}/60 words
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600">
-              💡 <strong>Tip:</strong> Share your story, highlight what makes you different, and mention any awards or
-              recognition. Keep it friendly and engaging - no more than 2 paragraphs.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+{/* About Us Section */}
+<Card className="">
+  <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
+    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+        <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      </div>
+      About Us
+    </CardTitle>
+    <CardDescription className="text-sm sm:text-base">
+      Tell customers about your business and what makes you special (max 120 words)
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="p-4 sm:p-8 space-y-4 sm:space-y-6">
+    <div className="space-y-2 sm:space-y-3">
+      <Label htmlFor="aboutUs" className="text-sm sm:text-base font-semibold text-gray-700">
+        Your Business Story *
+      </Label>
+      <div className="relative">
+        <Textarea
+          id="aboutUs"
+          value={details.aboutUs || ""}
+          onChange={(e) => {
+            const text = e.target.value
+            const words =
+              text.trim() === ""
+                ? []
+                : text
+                    .trim()
+                    .split(/\s+/)
+                    .filter((word) => word.length > 0)
+            if (words.length <= 120) {
+              handleFieldChange("aboutUs", e.target.value)
+            }
+          }}
+          placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
+          rows={4}
+          className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
+        />
+        <div className="absolute bottom-2 right-2 text-xs text-gray-500">
+          {(() => {
+            const text = details.aboutUs || ""
+            const words =
+              text.trim() === ""
+                ? []
+                : text
+                    .trim()
+                    .split(/\s+/)
+                    .filter((word) => word.length > 0)
+            return words.length
+          })()}/120 words
+        </div>
+      </div>
+      <p className="text-xs sm:text-sm text-gray-600">
+        💡 <strong>Tip:</strong> Share your story, highlight what makes you different, and mention any awards or
+        recognition. Keep it friendly and engaging - no more than 2-3 paragraphs.
+      </p>
+    </div>
+  </CardContent>
+</Card>
     {/* Basic Performance Info */}
 <Card className="">
   <CardHeader className="p-4 sm:p-8 bg-gradient-to-r from-[hsl(var(-primary-50))] to-[hsl(var(--primary-100))]">

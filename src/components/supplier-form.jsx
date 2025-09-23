@@ -502,14 +502,14 @@ export function SupplierForm() {
 
       // Step 5: Send onboarding email
       console.log('📧 Sending onboarding email...')
-      await sendOnboardingEmail({
-        supplierEmail: accountData.email,
-        supplierName: accountData.yourName,
-        businessName: businessData.businessName,
-        serviceType: businessData.supplierType,
-        needsVerification: !authData.session,
-        dashboardLink: `${window.location.origin}/suppliers/dashboard`
-      })
+      // await sendOnboardingEmail({
+      //   supplierEmail: accountData.email,
+      //   supplierName: accountData.yourName,
+      //   businessName: businessData.businessName,
+      //   serviceType: businessData.supplierType,
+      //   needsVerification: !authData.session,
+      //   dashboardLink: `${window.location.origin}/suppliers/dashboard`
+      // })
 
       // Step 6: Clear saved form data and move to success step
       clearFormData()
