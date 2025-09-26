@@ -19,7 +19,7 @@ export default function MockSupplierSidebar({
   const mockVerificationDocs = [
     // { name: "DBS Certificate", verified: true },
     { name: "Public Liability Insurance", verified: true },
-    { name: "First Aid Certified", verified: true },
+    { name: "DBS Checked", verified: true },
     { name: "ID Verified", verified: true }
   ]
 
@@ -75,13 +75,7 @@ export default function MockSupplierSidebar({
 
   return (
     <div className="space-y-6 sticky top-8">
-      {/* Preview Mode Notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <p className="text-xs text-blue-700 text-center">
-          Preview Mode - Interactive features disabled
-        </p>
-      </div>
-
+     
       {/* Selected Package Section */}
       {selectedPackage && (
         <div className="bg-white p-6 rounded-2xl shadow-sm">

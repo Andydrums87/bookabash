@@ -319,7 +319,7 @@ const convertTimeSlotToLegacyTime = (timeSlot) => {
         isSubmitting={isSubmitting}
         hasAttemptedSubmit={hasAttemptedSubmit}
       />
-      <TrustIndicators />
+      {/* <TrustIndicators /> */}
   
       <CategoryGrid />
       <FeaturesGrid />

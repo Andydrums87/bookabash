@@ -1,165 +1,424 @@
-// components/ProfileCompletionBanner.jsx - UPDATED FOR MULTI-BUSINESS
+"use client"
 
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { AlertCircle, CheckCircle, ArrowRight, Crown, Building2 } from 'lucide-react'
-import { calculateProfileCompletion } from '@/utils/profileCompletion'
+import { Button } from "@/components/ui/button"
+import {
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+  Shield,
+  AlertTriangle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  Play,
+  RefreshCw,
+} from "lucide-react"
+import { useState, useEffect } from "react"
+import { ModalSetupTour } from './ModalSetupTour' // Import the new modal tour
+import { useSupplierDashboard } from '@/utils/mockBackend'
+import { NavigationTour } from './NavigationTour' // instead of ModalSetupTour
 
-export const ProfileCompletionBanner = ({ 
-  supplierData, 
-  businessType, 
-  onNavigate, 
+export const ProfileCompletionBanner = ({
+  supplierData,
+  businessType,
+  onNavigate,
   onGoLive,
-  isPrimary = true,  // 🆕 NEW: Add isPrimary flag
-  businessName       // 🆕 NEW: For better messaging
+  isPrimary = true,
+  businessName,
 }) => {
+  const { updateProfile } = useSupplierDashboard()
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [showTourModal, setShowTourModal] = useState(false)
 
-  
- // AFTER (fixed):
-const completion = supplierData?.profile_status === 'live' 
-? {
-    percentage: supplierData.profile_completion_percentage || 100,
-    canGoLive: supplierData.can_go_live || true,
-    missingFields: []
+  // Normalize business type to detect venues vs entertainment
+  const normalizeBusinessType = (type) => {
+    if (!type) return "entertainment"
+
+    const normalized = type.toLowerCase()
+    const venueTypes = ["venue", "venues", "venue_hire", "venue hire", "hall", "halls", "space", "spaces"]
+
+    return venueTypes.includes(normalized) ? "venues" : "entertainment"
   }
-: calculateProfileCompletion(supplierData, businessType, isPrimary)
-  
-console.log('📊 CALCULATED COMPLETION:', {
-    'percentage': completion.percentage,
-    'canGoLive': completion.canGoLive,
-    'missingFields': completion.missingFields.map(f => f.field)
-  })
+  const isVenue = normalizeBusinessType(businessType) === "venues"
+  const isEntertainment = normalizeBusinessType(businessType) === "entertainment"
 
-  // 🆕 UPDATED: More nuanced banner visibility logic
-  const shouldShowBanner = () => {
-    if (isPrimary) {
-      const isLive = supplierData?.profile_status === 'live'
-      const isComplete = completion.percentage >= 100
-      const shouldHide = isLive && isComplete
-      return !shouldHide
-    } else {
-      // FIXED: Themed business logic - show banner unless actually live
-      const isLive = supplierData?.profile_status === 'live'
-      return !isLive  // Show banner until actually live (not just ready_for_review)
+  // Auto-open tour for new users
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('hasSeenProfileTour') === 'true'
+    const justCompletedOnboarding = localStorage.getItem('justCompletedOnboarding') === 'true'
+    const tourSkipped = localStorage.getItem('tourSkipped') === 'true'
+    const isProfileLive = supplierData?.profile_status === 'live' || 
+                         supplierData?.profileStatus === 'live'
+    
+    // Auto-open tour for users who just completed onboarding
+    if (justCompletedOnboarding && !hasSeenTour && !isProfileLive && !tourSkipped && supplierData) {
+      setShowTourModal(true)
+      localStorage.removeItem('justCompletedOnboarding') // Clear the flag after opening
     }
-  }
-  if (!shouldShowBanner()) {
-    console.log('🚫 Banner hidden - criteria not met', {
-      isPrimary,
-      profile_status: supplierData?.profile_status,
-      completion: completion.percentage
-    })
-    return null
-  }
+  }, [supplierData])
 
-  // Different messaging for primary vs themed businesses
-  const getBannerContent = () => {
-    if (isPrimary) {
-      return {
-        title: `Your profile isn't live yet (${completion.percentage}% complete)`,
-        subtitle: "Complete these essential details to start receiving bookings from customers.",
-        icon: <AlertCircle className="w-5 h-5" />,
-        buttonText: "Complete Profile",
-        readyMessage: "Ready to go live! Click below to make your profile visible to customers."
-      }
+  // Calculate completion
+  const calculateRealCompletion = () => {
+    if (!supplierData) return { percentage: 0, missing: [], canGoLive: false }
+  
+    const missing = []
+    let total = 0
+    let completed = 0
+  
+    // Different checks for different business types
+    let essentialChecks = []
+  
+    if (isVenue) {
+      essentialChecks = [
+        {
+          field: "aboutUs",
+          value: supplierData.serviceDetails?.aboutUs && supplierData.serviceDetails.aboutUs.length >= 20,
+        },
+        {
+          field: "portfolioImages", 
+          value: supplierData.portfolioImages && supplierData.portfolioImages.length >= 1,
+        },
+        {
+          field: "serviceDetails.venueType",
+          value: supplierData.serviceDetails?.venueType,
+        },
+        {
+          field: "serviceDetails.pricing.hourlyRate",
+          value: supplierData.serviceDetails?.pricing?.hourlyRate && supplierData.serviceDetails.pricing.hourlyRate > 0,
+        },
+        {
+          field: "serviceDetails.capacity.max",
+          value: supplierData.serviceDetails?.capacity?.max && supplierData.serviceDetails.capacity.max > 0,
+        }
+      ]
     } else {
-      return {
-        title: `${businessName || 'Themed business'} setup (${completion.percentage}% complete)`,
-        subtitle: "Complete the theme-specific details for this business to make it bookable.",
-        icon: <Building2 className="w-5 h-5" />,
-        buttonText: "Complete Theme Setup", 
-        readyMessage: "Theme business ready! Click below to make this business visible to customers."
+      // Entertainment checks
+      essentialChecks = [
+        {
+          field: "aboutUs",
+          value: supplierData.serviceDetails?.aboutUs && supplierData.serviceDetails.aboutUs.length >= 20,
+        },
+        {
+          field: "portfolioImages", 
+          value: supplierData.portfolioImages && supplierData.portfolioImages.length >= 1,
+        },
+        {
+          field: "extraHourRate",
+          value: supplierData.extraHourRate && supplierData.extraHourRate > 0,
+        }
+      ]
+  
+      // Add verification for entertainers
+      if (businessType?.toLowerCase() === 'entertainment') {
+        essentialChecks.push({
+          field: "verification.dbs",
+          value: supplierData.verification?.documents?.dbs?.status === 'approved',
+        })
       }
     }
+  
+    total = essentialChecks.length
+    completed = essentialChecks.filter(check => check.value).length
+  
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+    const canGoLive = percentage >= 100
+  
+    return { percentage, missing, canGoLive, completed, total }
   }
 
-  const content = getBannerContent()
+  const completion = calculateRealCompletion()
 
-  return (
-    <div className={`border rounded-lg p-6 mb-6 ${
-      isPrimary 
-        ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200' 
-        : 'bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200'
-    }`}>
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className={`font-semibold mb-2 flex items-center gap-2 ${
-            isPrimary ? 'text-blue-900' : 'text-purple-900'
-          }`}>
-            {content.icon}
-            {content.title}
-            {!isPrimary && <Building2 className="w-4 h-4 ml-1" />}
-          </h3>
-          
-          <p className={`text-sm mb-4 ${
-            isPrimary ? 'text-blue-700' : 'text-purple-700'
-          }`}>
-            {content.subtitle}
-          </p>
-          
-          <Progress 
-            value={completion.percentage} 
-            className={`h-3 mb-4 ${
-              isPrimary ? 'bg-blue-100' : 'bg-purple-100'
-            }`} 
-          />
-          
-          {/* Missing items - show fewer for themed businesses */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-            {completion.missingFields.slice(0, isPrimary ? 4 : 3).map(field => (
-              <div key={field.field} className="flex items-center gap-2 text-sm">
-                <div className={`w-4 h-4 border-2 rounded ${
-                  isPrimary ? 'border-blue-400' : 'border-purple-400'
-                }`}></div>
-                <span className={isPrimary ? 'text-blue-700' : 'text-purple-700'}>
-                  {field.displayName}
-                </span>
+  // Check if tour is available/in progress
+  const tourProgress = localStorage.getItem('tourProgress')
+  const hasSeenTour = localStorage.getItem('hasSeenProfileTour') === 'true'
+  const tourInProgress = tourProgress && !hasSeenTour
+
+  // Don't show if already live and complete
+  if (supplierData?.profile_status === "live" && completion.percentage >= 100) {
+    return (
+      <>
+        <ModalSetupTour
+          isOpen={showTourModal}
+          onClose={() => setShowTourModal(false)}
+          supplierData={supplierData}
+          businessType={businessType}
+          onNavigate={onNavigate}
+          onGoLive={onGoLive}
+          businessName={businessName}
+          updateProfile={updateProfile}
+        />
+      </>
+    )
+  }
+
+  if (completion.canGoLive) {
+    return (
+      <>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+              <div>
+                <h3 className="font-semibold text-green-900">Ready to Go Live!</h3>
+                <p className="text-sm text-green-700">
+                  Your {isVenue ? "venue" : "profile"} has everything needed to start receiving bookings.
+                  {isEntertainment && " All verification documents have been processed."}
+                </p>
               </div>
-            ))}
-            {completion.missingFields.length > (isPrimary ? 4 : 3) && (
-              <div className={`text-sm ${isPrimary ? 'text-blue-600' : 'text-purple-600'}`}>
-                +{completion.missingFields.length - (isPrimary ? 4 : 3)} more items
-              </div>
-            )}
-          </div>
-          
-          {completion.canGoLive && (
-            <div className="bg-green-50 border border-green-200 rounded p-3 mb-4">
-              <p className="text-green-800 text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                {content.readyMessage}
-              </p>
             </div>
-          )}
-        </div>
-        
-        <div className="flex flex-col gap-2">
-          {completion.canGoLive ? (
-            <Button 
-              onClick={onGoLive}
-              className={isPrimary 
-                ? "bg-blue-600 hover:bg-blue-700" 
-                : "bg-purple-600 hover:bg-purple-700"
-              }
-            >
+            <Button onClick={onGoLive} className="bg-green-600 hover:bg-green-700 text-white">
               Go Live Now
             </Button>
-          ) : (
-            <Button 
-              onClick={() => onNavigate('/suppliers/profile')}
-              variant="outline"
-              className={`border-2 ${
-                isPrimary 
-                  ? 'border-blue-600 text-blue-600 hover:bg-blue-50' 
-                  : 'border-purple-600 text-purple-600 hover:bg-purple-50'
-              }`}
-            >
-              {content.buttonText}
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
+          </div>
         </div>
+
+        <ModalSetupTour
+          isOpen={showTourModal}
+          onClose={() => setShowTourModal(false)}
+          supplierData={supplierData}
+          businessType={businessType}
+          onNavigate={onNavigate}
+          onGoLive={onGoLive}
+          businessName={businessName}
+          updateProfile={updateProfile}
+        />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden mb-6">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 text-gray-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {isVenue ? "Venue Profile Setup" : "Profile Setup"}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {completion.percentage}% complete • {completion.total - completion.completed} items remaining
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Tour button - shows different text based on state */}
+              {!hasSeenTour && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTourModal(true)}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50 flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  {tourInProgress ? 'Continue Setup Tour' : 'Start Setup Tour'}
+                </Button>
+              )}
+
+              {/* For users who completed/skipped tour but want to restart */}
+              {hasSeenTour && completion.percentage < 100 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    localStorage.removeItem('hasSeenProfileTour')
+                    localStorage.removeItem('tourProgress')
+                    setShowTourModal(true)
+                  }}
+                  className="text-gray-500 hover:text-gray-700 flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Restart Tour
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="w-4 h-4 mr-1" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4 mr-1" />
+                    Show Details
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={() => {
+                  if (isVenue) {
+                    onNavigate("/suppliers/profile")
+                  } else {
+                    // Check if verification is missing first
+                    const needsVerification = isEntertainment && 
+                      supplierData?.verification?.documents?.dbs?.status !== 'approved'
+                    
+                    if (needsVerification) {
+                      onNavigate("/suppliers/verification")
+                    } else {
+                      onNavigate("/suppliers/profile")
+                    }
+                  }
+                }}
+                className="bg-primary-500 hover:bg-primary-600 text-white font-semibold shadow-lg"
+              >
+                {isVenue ? "Complete Venue" : "Complete Profile"}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div
+              className="bg-primary-400 h-3 rounded-full transition-all duration-300"
+              style={{ width: `${completion.percentage}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {isExpanded && (
+          <div className="border-t border-gray-200 bg-white p-4">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Complete these items:</h4>
+              <div className="space-y-2">
+                {!supplierData?.serviceDetails?.aboutUs && (
+                  <div className="flex items-center justify-between rounded-lg p-3 border bg-gray-50 border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary-400 rounded"></div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {isVenue ? "Venue Description" : "Business Description"}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigate("/suppliers/profile#about")}
+                      className="bg-primary-500 hover:bg-primary-600 text-white"
+                    >
+                      Add Now
+                    </Button>
+                  </div>
+                )}
+
+                {(!supplierData?.portfolioImages || supplierData.portfolioImages.length === 0) && (
+                  <div className="flex items-center justify-between rounded-lg p-3 border bg-gray-50 border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary-400 rounded"></div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {isVenue ? "Venue Photos" : "Portfolio Photos"}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigate("/suppliers/media")}
+                      className="bg-primary-500 hover:bg-primary-600 text-white"
+                    >
+                      Add Now
+                    </Button>
+                  </div>
+                )}
+
+                {isVenue && !supplierData?.serviceDetails?.venueType && (
+                  <div className="flex items-center justify-between rounded-lg p-3 border bg-gray-50 border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary-400 rounded"></div>
+                      <span className="text-sm font-medium text-gray-900">Venue Type</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigate("/suppliers/profile")}
+                      className="bg-primary-500 hover:bg-primary-600 text-white"
+                    >
+                      Add Now
+                    </Button>
+                  </div>
+                )}
+
+                {isVenue && (!supplierData?.serviceDetails?.pricing?.hourlyRate || supplierData.serviceDetails.pricing.hourlyRate <= 0) && (
+                  <div className="flex items-center justify-between rounded-lg p-3 border bg-gray-50 border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary-400 rounded"></div>
+                      <span className="text-sm font-medium text-gray-900">Hourly Rate</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigate("/suppliers/packages")}
+                      className="bg-primary-500 hover:bg-primary-600 text-white"
+                    >
+                      Add Now
+                    </Button>
+                  </div>
+                )}
+
+                {isEntertainment && (!supplierData?.extraHourRate || supplierData.extraHourRate <= 0) && (
+                  <div className="flex items-center justify-between rounded-lg p-3 border bg-gray-50 border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary-400 rounded"></div>
+                      <span className="text-sm font-medium text-gray-900">Extra Hour Rate</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigate("/suppliers/profile#pricing")}
+                      className="bg-primary-500 hover:bg-primary-600 text-white"
+                    >
+                      Add Now
+                    </Button>
+                  </div>
+                )}
+
+                {isEntertainment && supplierData?.verification?.documents?.dbs?.status !== 'approved' && (
+                  <div className="flex items-center justify-between rounded-lg p-3 border bg-red-50 border-red-200">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-4 h-4 text-red-600" />
+                      <div>
+                        <span className="text-sm font-medium text-red-900">
+                          DBS Certificate *
+                        </span>
+                        <p className="text-xs text-red-600 mt-1">
+                          Required by UK law for child safety
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => onNavigate("/suppliers/verification")}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Upload Now
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {isEntertainment && (
+                <p className="text-xs text-red-600 mt-3">
+                  * Verification documents are required by UK law for child safety
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Modal Tour Component */}
+      <ModalSetupTour
+        isOpen={showTourModal}
+        onClose={() => setShowTourModal(false)}
+        supplierData={supplierData}
+        businessType={businessType}
+        onNavigate={onNavigate}
+        onGoLive={onGoLive}
+        businessName={businessName}
+        updateProfile={updateProfile}
+      />
+    </>
   )
 }

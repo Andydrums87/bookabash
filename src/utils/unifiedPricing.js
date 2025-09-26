@@ -1,4 +1,4 @@
-// utils/unifiedPricing.js - Complete version with venue-specific logic
+// utils/unifiedPricing.js - Updated with additional entertainer logic
 
 /**
  * Check if supplier is lead-based (fixed price, not affected by date/duration)
@@ -70,6 +70,68 @@ const getExtraHourRate = (supplier) => {
 };
 
 /**
+ * Calculate additional entertainer requirements and costs
+ * @param {Object} supplier - Supplier object
+ * @param {number} guestCount - Number of guests at the party
+ * @returns {Object} Additional entertainer calculation result
+ */
+const calculateAdditionalEntertainerCost = (supplier, guestCount) => {
+  // Only apply to entertainment suppliers
+  if (!supplier || supplier.category !== 'Entertainment') {
+    return { 
+      additionalEntertainers: 0, 
+      additionalEntertainerCost: 0, 
+      guestsPerEntertainer: 0 
+    };
+  }
+
+  const serviceDetails = supplier.serviceDetails || {};
+  const groupSizeMax = serviceDetails.groupSizeMax || supplier.groupSizeMax || 30;
+  const additionalEntertainerPrice = serviceDetails.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0;
+
+  console.log('🎭 ENTERTAINER: Additional entertainer calculation:', {
+    supplier: supplier.name,
+    guestCount,
+    groupSizeMax,
+    additionalEntertainerPrice
+  });
+
+  // If no additional entertainer price is set, they don't offer this service
+  if (additionalEntertainerPrice <= 0) {
+    return { 
+      additionalEntertainers: 0, 
+      additionalEntertainerCost: 0, 
+      guestsPerEntertainer: groupSizeMax 
+    };
+  }
+
+  // Calculate how many additional entertainers are needed
+  if (guestCount > groupSizeMax) {
+    const excessGuests = guestCount - groupSizeMax;
+    const additionalEntertainers = Math.ceil(excessGuests / groupSizeMax);
+    const additionalEntertainerCost = additionalEntertainers * additionalEntertainerPrice;
+
+    console.log('🎭 ENTERTAINER: Additional entertainers required:', {
+      excessGuests,
+      additionalEntertainers,
+      additionalEntertainerCost
+    });
+
+    return {
+      additionalEntertainers,
+      additionalEntertainerCost,
+      guestsPerEntertainer: groupSizeMax
+    };
+  }
+
+  return { 
+    additionalEntertainers: 0, 
+    additionalEntertainerCost: 0, 
+    guestsPerEntertainer: groupSizeMax 
+  };
+};
+
+/**
 * Get the true base price - always the original price, never enhanced
 * @param {Object} supplier - Supplier object
 * @param {Object} partyDetails - Party details (for guest count calculation)
@@ -121,7 +183,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 };
 
 /**
-* Main pricing calculator with venue-specific extra hour logic
+* Main pricing calculator with venue-specific extra hour logic and additional entertainer costs
 * @param {Object} supplier - Supplier object with pricing data
 * @param {Object} partyDetails - Party details (date, duration, guestCount)
 * @param {Array} addons - Array of selected addons
@@ -131,18 +193,29 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
   if (!supplier) {
     return {
       finalPrice: 0,
-      breakdown: { base: 0, weekend: 0, extraHours: 0, addons: 0 },
-      details: { isWeekend: false, extraHours: 0, hasAddons: false, isLeadBased: false }
+      breakdown: { base: 0, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0 },
+      details: { 
+        isWeekend: false, 
+        extraHours: 0, 
+        hasAddons: false, 
+        isLeadBased: false,
+        additionalEntertainers: 0,
+        guestsPerEntertainer: 0
+      }
     }
   }
 
   // Check if this is a lead-based supplier
   const isLeadBased = isLeadBasedSupplier(supplier);
+  const guestCount = getGuestCount(partyDetails);
 
   // 1. ALWAYS start from true base price - never from enhanced price
   const basePrice = getTrueBasePrice(supplier, partyDetails);
 
-  // 2. Calculate weekend premium FRESH (don't use existing)
+  // 2. Calculate additional entertainer costs (NEW)
+  const entertainerCalc = calculateAdditionalEntertainerCost(supplier, guestCount);
+
+  // 3. Calculate weekend premium FRESH (don't use existing)
   let weekendPremium = 0;
   const isWeekend = partyDetails.date ? isWeekendDate(partyDetails.date) : false;
 
@@ -156,7 +229,7 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
     console.log('🌅 Weekend premium SKIPPED for lead-based supplier');
   }
 
-  // 3. Calculate extra hour costs FRESH - with venue-specific logic
+  // 4. Calculate extra hour costs FRESH - with venue-specific logic
   let extraHourCost = 0;
   let extraHours = 0;
   const standardDuration = 2;
@@ -182,11 +255,11 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
     console.log('⏰ Extra hour cost SKIPPED for lead-based supplier');
   }
 
-  // 4. Calculate addons total
+  // 5. Calculate addons total
   const addonsTotal = addons.reduce((sum, addon) => sum + (addon.price || 0), 0);
 
-  // 5. Calculate final price
-  const finalPrice = basePrice + weekendPremium + extraHourCost + addonsTotal;
+  // 6. Calculate final price (including additional entertainers)
+  const finalPrice = basePrice + weekendPremium + extraHourCost + addonsTotal + entertainerCalc.additionalEntertainerCost;
 
   return {
     finalPrice,
@@ -195,7 +268,8 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
       base: basePrice,
       weekend: weekendPremium,
       extraHours: extraHourCost,
-      addons: addonsTotal
+      addons: addonsTotal,
+      additionalEntertainers: entertainerCalc.additionalEntertainerCost
     },
     details: {
       isWeekend,
@@ -203,9 +277,12 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
       extraHours,
       extraHourRate,
       hasAddons: addons.length > 0,
-      guestCount: getGuestCount(partyDetails),
+      guestCount,
       isLeadBased,
-      isVenue: supplier.serviceType === 'venue' || supplier.category === 'Venues'
+      isVenue: supplier.serviceType === 'venue' || supplier.category === 'Venues',
+      additionalEntertainers: entertainerCalc.additionalEntertainers,
+      guestsPerEntertainer: entertainerCalc.guestsPerEntertainer,
+      additionalEntertainerPrice: supplier.serviceDetails?.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0
     }
   }
 }
@@ -249,6 +326,7 @@ export const calculatePartyTotal = (suppliers, addons = [], partyDetails = {}) =
   const supplierBreakdown = [];
   let totalWeekendPremium = 0;
   let totalExtraHourCost = 0;
+  let totalAdditionalEntertainerCost = 0;
 
   // Calculate each supplier using FRESH pricing
   Object.entries(suppliers).forEach(([type, supplier]) => {
@@ -267,6 +345,7 @@ export const calculatePartyTotal = (suppliers, addons = [], partyDetails = {}) =
     total += pricing.finalPrice;
     totalWeekendPremium += pricing.breakdown.weekend;
     totalExtraHourCost += pricing.breakdown.extraHours;
+    totalAdditionalEntertainerCost += pricing.breakdown.additionalEntertainers;
 
     supplierBreakdown.push({
       type,
@@ -288,10 +367,12 @@ export const calculatePartyTotal = (suppliers, addons = [], partyDetails = {}) =
     totals: {
       weekend: totalWeekendPremium,
       extraHours: totalExtraHourCost,
+      additionalEntertainers: totalAdditionalEntertainerCost,
       standaloneAddons: standaloneAddonsTotal
     },
     hasWeekendPremium: totalWeekendPremium > 0,
-    hasExtraHourCosts: totalExtraHourCost > 0
+    hasExtraHourCosts: totalExtraHourCost > 0,
+    hasAdditionalEntertainerCosts: totalAdditionalEntertainerCost > 0
   };
 };
 
@@ -341,6 +422,11 @@ export const getPriceBreakdownText = (supplier, partyDetails = {}, addons = []) 
 
   if (pricing.breakdown.extraHours > 0) {
     parts.push(`Extra ${pricing.details.extraHours}h +£${pricing.breakdown.extraHours}`);
+  }
+
+  if (pricing.breakdown.additionalEntertainers > 0) {
+    const count = pricing.details.additionalEntertainers;
+    parts.push(`+${count} entertainer${count > 1 ? 's' : ''} +£${pricing.breakdown.additionalEntertainers}`);
   }
 
   if (pricing.breakdown.addons > 0) {
@@ -596,6 +682,42 @@ export const hasExtraHourPricing = (supplier) => {
 */
 export const getExtraHourRateForDisplay = (supplier) => {
   return getExtraHourRate(supplier);
+};
+
+/**
+* Check if supplier requires additional entertainers for given guest count
+* @param {Object} supplier - Supplier object
+* @param {number} guestCount - Number of guests
+* @returns {boolean} True if additional entertainers are required
+*/
+export const requiresAdditionalEntertainers = (supplier, guestCount) => {
+  if (supplier?.category !== 'Entertainment') return false;
+  
+  const groupSizeMax = supplier.serviceDetails?.groupSizeMax || supplier.groupSizeMax || 30;
+  const additionalEntertainerPrice = supplier.serviceDetails?.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0;
+  
+  return guestCount > groupSizeMax && additionalEntertainerPrice > 0;
+};
+
+/**
+* Get additional entertainer info for display
+* @param {Object} supplier - Supplier object
+* @param {number} guestCount - Number of guests
+* @returns {Object} Additional entertainer display info
+*/
+export const getAdditionalEntertainerInfo = (supplier, guestCount) => {
+  const calc = calculateAdditionalEntertainerCost(supplier, guestCount);
+  
+  if (calc.additionalEntertainers === 0) {
+    return null;
+  }
+  
+  return {
+    count: calc.additionalEntertainers,
+    totalCost: calc.additionalEntertainerCost,
+    priceEach: supplier.serviceDetails?.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0,
+    message: `${calc.additionalEntertainers} additional entertainer${calc.additionalEntertainers > 1 ? 's' : ''} required for ${guestCount} guests`
+  };
 };
 
 // Export all helper functions

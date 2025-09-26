@@ -15,156 +15,50 @@ const ServiceDetailsRouter = ({
   supplierData, 
   currentBusiness, 
   onUpdate, 
-  saving 
+  saving,
+  // Add these new props:
+  setSupplierData,
+  updateProfile,
+  supplier
 }) => {
   const getServiceComponent = () => {
     const type = (serviceType || supplierData?.category || supplierData?.serviceType)?.toLowerCase();
     
     console.log('🔍 ServiceRouter detecting type:', type, 'for business:', currentBusiness?.name);
     
+    // Common props that all components need
+    const commonProps = {
+      serviceDetails,
+      onUpdate,
+      saving,
+      supplierData,
+      currentBusiness,
+      setSupplierData,    // Add these to all components
+      updateProfile,
+      supplier
+    };
+    
     switch (type) {
       case 'entertainment':
       case 'entertainer':
-        return (
-          <EntertainerServiceDetails
-            serviceDetails={serviceDetails}
-            onUpdate={onUpdate}
-            saving={saving}
-            supplierData={supplierData}
-            currentBusiness={currentBusiness}
-          />
-        );
-        case 'party bags':
+        return <EntertainerServiceDetails {...commonProps} />;
+        
+      case 'party bags':
       case 'partybags':
       case 'party_bags':
-        return (
-          <PartyBagsServiceDetails
-            serviceDetails={serviceDetails}
-            onUpdate={onUpdate}
-            saving={saving}
-            supplierData={supplierData}
-            currentBusiness={currentBusiness}
-          />
-        );
+        return <PartyBagsServiceDetails {...commonProps} />;
         
-        case 'cakes':
-          case 'cake':
-          case 'baker':
-          case 'bakery':
-            return (
-              <CateringServiceDetails  // Can reuse the same component
-                serviceDetails={serviceDetails}
-                onUpdate={onUpdate}
-                saving={saving}
-                supplierData={supplierData}
-                currentBusiness={currentBusiness}
-              />
-            );
       case 'venues':
       case 'venue':
-        return (
-          <VenueServiceDetails
-            serviceDetails={serviceDetails}
-            onUpdate={onUpdate}
-            saving={saving}
-            supplierData={supplierData}
-            currentBusiness={currentBusiness}
-          />
-        );
-        case 'face_painting':
-          case 'face painting':
-          case 'facepainting':
-          case 'face_painter': // Face painters often listed under decorations
-            return (
-              <FacePaintingServiceDetails
-                serviceDetails={serviceDetails}
-                onUpdate={onUpdate}
-                saving={saving}
-                supplierData={supplierData}
-                currentBusiness={currentBusiness}
-              />
-            );
-            case 'catering':
-              case 'caterer':
-                return (
-                  <CateringServiceDetails
-                    serviceDetails={serviceDetails}
-                    onUpdate={onUpdate}
-                    saving={saving}
-                    supplierData={supplierData}
-                    currentBusiness={currentBusiness}
-                  />
-                );
-                case 'decorations':
-                  case 'decoration':
-                  case 'party decorations':
-                  case 'balloon arch':
-                  case 'balloon arches':
-                  case 'event styling':
-                  case 'party styling':
-                  case 'balloon artist':
-                  case 'balloon designer':
-                    return (
-                      <DecorationsServiceDetails
-                        serviceDetails={serviceDetails}
-                        onUpdate={onUpdate}
-                        saving={saving}
-                        supplierData={supplierData}
-                        currentBusiness={currentBusiness}
-                      />
-                    );
-                case 'activities':
-                  case 'bouncy_castle':
-                  case 'bouncy castle hire':
-                  case 'inflatable hire':
-                  case 'soft play':
-                  case 'party equipment':
-                    return (
-                      <BouncyCastleServiceDetails
-                        serviceDetails={serviceDetails}
-                        onUpdate={onUpdate}
-                        saving={saving}
-                        supplierData={supplierData}
-                        currentBusiness={currentBusiness}
-                      />
-                    );
-      
-      // case 'activities':
-      // case 'bouncy_castle':
-      // case 'bouncy castle hire':
-      //   return (
-      //     <BouncyCastleServiceDetails
-      //       serviceDetails={serviceDetails}
-      //       onUpdate={onUpdate}
-      //       saving={saving}
-      //       supplierData={supplierData}
-      //       currentBusiness={currentBusiness}
-      //     />
-      //   );
-      
-      // case 'catering':
-      // case 'caterer':
-      //   return (
-      //     <CateringServiceDetails
-      //       serviceDetails={serviceDetails}
-      //       onUpdate={onUpdate}
-      //       saving={saving}
-      //       supplierData={supplierData}
-      //       currentBusiness={currentBusiness}
-      //     />
-      //   );
-      
+        return <VenueServiceDetails {...commonProps} />;
+        
+      // Add for all other cases...
+      case 'catering':
+      case 'caterer':
+        return <CateringServiceDetails {...commonProps} />;
+        
       default:
-        return (
-          <EntertainerServiceDetails
-            serviceDetails={serviceDetails}
-            onUpdate={onUpdate}
-            saving={saving}
-            supplierData={supplierData}
-            currentBusiness={currentBusiness}
-            serviceType={serviceType}
-          />
-        );
+        return <EntertainerServiceDetails {...commonProps} serviceType={serviceType} />;
     }
   };
 

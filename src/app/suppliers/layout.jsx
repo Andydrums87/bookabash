@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect } from "react"
 import { Suspense, useState } from "react"
-import { LayoutDashboard, UserCircle, Settings, Calendar, Camera, Package } from "lucide-react"
+import { LayoutDashboard, UserCircle, Settings, Calendar, Camera, Package, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
@@ -46,6 +46,7 @@ function SupplierLayoutContent({ children }) {
     { href: "/suppliers/availability", icon: Calendar, label: "Availability" },
     { href: "/suppliers/media", icon: Camera, label: "Media" },
     { href: "/suppliers/packages", icon: Package, label: "Packages" },
+    { href: "/suppliers/verification", icon: Shield, label: "Verification" },
     { href: "/suppliers/settings", icon: Settings, label: "Settings" },
   ]
 
@@ -186,6 +187,7 @@ function SupplierLayoutContent({ children }) {
                 businessName={currentBusiness?.name || currentSupplier?.name}
                 onNavigate={(path) => window.location.href = path}
                 onGoLive={handleGoLiveClick} // Updated to show modal instead
+ 
               />
             )}
             <BusinessPageWrapper requiresBusiness={true}>{children}</BusinessPageWrapper>

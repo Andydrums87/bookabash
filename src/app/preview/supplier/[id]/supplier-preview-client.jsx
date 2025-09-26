@@ -157,7 +157,7 @@ export default function PreviewSupplierPageClient({ backendSupplier }) {
               portfolioVideos={supplier?.portfolioVideos || []}
               isPreview={true}
             />
-            <SupplierCredentials credentials={credentials} isPreview={true} />
+            {/* <SupplierCredentials credentials={credentials} isPreview={true} /> */}
             <SupplierReviews reviews={reviews} isPreview={true} />
             <SupplierBadges supplier={supplier} isPreview={true} />
             <SupplierQuickStats supplier={supplier} isPreview={true} />

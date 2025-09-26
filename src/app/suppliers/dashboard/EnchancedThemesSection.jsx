@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { SectionSave } from '@/components/ui/SectionSave';
 
-const EnhancedThemesSection = ({ details, setDetails }) => {
+const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, sectionState }) => {
   const [expandedSections, setExpandedSections] = useState({
     themes: false,
     customThemes: false,
@@ -61,6 +62,11 @@ const EnhancedThemesSection = ({ details, setDetails }) => {
       ...prev,
       themes: newThemes,
     }))
+
+    // Call the change handler if provided
+    if (onThemesChange) {
+      onThemesChange(newThemes);
+    }
   }
 
   const handleAddCustomTheme = () => {
@@ -70,6 +76,12 @@ const EnhancedThemesSection = ({ details, setDetails }) => {
         ...prev,
         themes: newThemes,
       }))
+      
+      // Call the change handler if provided
+      if (onThemesChange) {
+        onThemesChange(newThemes);
+      }
+      
       setNewCustomTheme("")
     }
   }
@@ -80,6 +92,11 @@ const EnhancedThemesSection = ({ details, setDetails }) => {
       ...prev,
       themes: newThemes,
     }))
+
+    // Call the change handler if provided
+    if (onThemesChange) {
+      onThemesChange(newThemes);
+    }
   }
 
   const customThemes = (details.themes || []).filter((theme) => !popularThemes.includes(theme))
@@ -206,6 +223,18 @@ const EnhancedThemesSection = ({ details, setDetails }) => {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Section Save Component - Only show if props are provided */}
+        {onSave && sectionState && (
+          <SectionSave
+            sectionName="Party Themes"
+            hasChanges={sectionState.hasChanges}
+            onSave={onSave}
+            saving={sectionState.saving}
+            lastSaved={sectionState.lastSaved}
+            error={sectionState.error}
+          />
         )}
       </CardContent>
     </Card>

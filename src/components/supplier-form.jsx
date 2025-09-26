@@ -439,6 +439,8 @@ export function SupplierForm() {
 
       console.log('✅ Onboarding draft saved')
 
+      
+
       // Step 3: Create Supabase auth user
       console.log('🔐 Creating auth user...')
       
@@ -516,6 +518,7 @@ export function SupplierForm() {
       if (authData.user && !authData.session) {
         setNeedsVerification(true)
       }
+      localStorage.setItem('justCompletedOnboarding', 'true')
       setCurrentStep(3)
       
     } catch (error) {
@@ -541,6 +544,7 @@ export function SupplierForm() {
       }
       
       localStorage.setItem('pendingBusinessData', JSON.stringify(oauthBusinessData))
+      localStorage.setItem('justCompletedOnboarding', 'true')
       console.log('💾 Stored business data for OAuth:', oauthBusinessData)
       
       const redirectUrl = `${getBaseUrl()}/auth/callback/supplier?step=onboarding`

@@ -12,6 +12,8 @@ import { Package, Clock, Info, Truck, Check, Calendar, Settings, Building2 } fro
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { getAvailabilityConfig } from "../utils/supplierTypes"
+import { StickyBottomSaveBar, useAvailabilityChanges } from "@/components/StickyBottomSaveBar"
+import { useMemo } from 'react' // Add to existing imports
 
 const LeadTimeAvailabilityContent = ({
   supplier,
@@ -59,7 +61,131 @@ const LeadTimeAvailabilityContent = ({
   const [advanceBookingDays, setAdvanceBookingDays] = useState(0)
   const [maxBookingDays, setMaxBookingDays] = useState(365)
   const [availabilityNotes, setAvailabilityNotes] = useState("")
-  const [saveSuccess, setSaveSuccess] = useState(false)
+  const currentAvailabilityData = useMemo(() => ({
+    leadTimeSettings,
+    deliverySettings,
+    advanceBookingDays,
+    maxBookingDays,
+    availabilityNotes,
+  }), [leadTimeSettings, deliverySettings, advanceBookingDays, maxBookingDays, availabilityNotes])
+
+  const initialAvailabilityData = useMemo(() => ({
+    leadTimeSettings: currentSupplier?.leadTimeSettings || {
+      minLeadTimeDays: 3,
+      maxLeadTimeDays: 14,
+      processingNotes: "",
+      stockBased: true,
+      unlimitedStock: false,
+      stockQuantity: 100,
+      restockDays: 7,
+      customOrderLeadTime: 7,
+      rushOrdersAvailable: false,
+      rushOrderFee: 0,
+      rushOrderMinHours: 24,
+    },
+    deliverySettings: currentSupplier?.deliverySettings || {
+      localDelivery: false,
+      deliveryRadius: 10,
+      deliveryFee: 5.0,
+      freeDeliveryThreshold: 50,
+      collectionAvailable: true,
+      deliveryDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      deliveryTimeSlots: ["morning", "afternoon"],
+    },
+    advanceBookingDays: currentSupplier?.advanceBookingDays || 0,
+    maxBookingDays: currentSupplier?.maxBookingDays || 365,
+    availabilityNotes: currentSupplier?.availabilityNotes || "",
+  }), [currentSupplier])
+
+  const { hasChanges, resetChanges } = useAvailabilityChanges(
+    currentAvailabilityData,
+    initialAvailabilityData
+  )
+
+  // Update your handleSave function (remove setSaveSuccess)
+  const handleSave = async () => {
+    try {
+      const targetBusiness = primaryBusiness
+
+      if (!targetBusiness) {
+        throw new Error("No primary business found. Cannot save shared availability.")
+      }
+
+      console.log("LEAD TIME: Saving to primary business:", targetBusiness.name)
+
+      const availabilityData = {
+        availabilityType: "lead_time_based",
+        leadTimeSettings: leadTimeSettings,
+        deliverySettings: deliverySettings,
+        advanceBookingDays: Number(advanceBookingDays),
+        maxBookingDays: Number(maxBookingDays),
+        availabilityNotes: availabilityNotes,
+        availabilityVersion: "2.0",
+        lastUpdated: new Date().toISOString(),
+      }
+
+      const updatedPrimaryData = {
+        ...targetBusiness.data,
+        ...availabilityData,
+        updatedAt: new Date().toISOString(),
+      }
+
+      const result = await updateProfile(updatedPrimaryData, null, targetBusiness.id)
+
+      if (result.success) {
+        console.log("LEAD TIME: Availability saved successfully")
+        setSupplierData(updatedPrimaryData)
+        resetChanges(currentAvailabilityData) // Reset the change tracking
+        refresh()
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error("Failed to save lead time availability:", error)
+      alert("Failed to save availability: " + error.message)
+    }
+  }
+
+  // Add discard function
+  const handleDiscard = () => {
+    // Reset all state to initial values
+    if (currentSupplier) {
+      setLeadTimeSettings(prev => ({
+        ...prev,
+        ...(currentSupplier.leadTimeSettings || {
+          minLeadTimeDays: 3,
+          maxLeadTimeDays: 14,
+          processingNotes: "",
+          stockBased: true,
+          unlimitedStock: false,
+          stockQuantity: 100,
+          restockDays: 7,
+          customOrderLeadTime: 7,
+          rushOrdersAvailable: false,
+          rushOrderFee: 0,
+          rushOrderMinHours: 24,
+        })
+      }))
+
+      setDeliverySettings(prev => ({
+        ...prev,
+        ...(currentSupplier.deliverySettings || {
+          localDelivery: false,
+          deliveryRadius: 10,
+          deliveryFee: 5.0,
+          freeDeliveryThreshold: 50,
+          collectionAvailable: true,
+          deliveryDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+          deliveryTimeSlots: ["morning", "afternoon"],
+        })
+      }))
+
+      setAvailabilityNotes(currentSupplier.availabilityNotes || "")
+      setAdvanceBookingDays(currentSupplier.advanceBookingDays || 0)
+      setMaxBookingDays(currentSupplier.maxBookingDays || 365)
+    }
+    resetChanges(initialAvailabilityData)
+  }
 
   // Load existing settings
   useEffect(() => {
@@ -131,51 +257,51 @@ const LeadTimeAvailabilityContent = ({
     }))
   }
 
-  const handleSave = async () => {
-    try {
-      // Always save to primary business for shared availability
-      const targetBusiness = primaryBusiness
+  // const handleSave = async () => {
+  //   try {
+  //     // Always save to primary business for shared availability
+  //     const targetBusiness = primaryBusiness
 
-      if (!targetBusiness) {
-        throw new Error("No primary business found. Cannot save shared availability.")
-      }
+  //     if (!targetBusiness) {
+  //       throw new Error("No primary business found. Cannot save shared availability.")
+  //     }
 
-      console.log("LEAD TIME: Saving to primary business:", targetBusiness.name)
+  //     console.log("LEAD TIME: Saving to primary business:", targetBusiness.name)
 
-      const availabilityData = {
-        availabilityType: "lead_time_based",
-        leadTimeSettings: leadTimeSettings,
-        deliverySettings: deliverySettings,
-        advanceBookingDays: Number(advanceBookingDays),
-        maxBookingDays: Number(maxBookingDays),
-        availabilityNotes: availabilityNotes,
-        availabilityVersion: "2.0",
-        lastUpdated: new Date().toISOString(),
-      }
+  //     const availabilityData = {
+  //       availabilityType: "lead_time_based",
+  //       leadTimeSettings: leadTimeSettings,
+  //       deliverySettings: deliverySettings,
+  //       advanceBookingDays: Number(advanceBookingDays),
+  //       maxBookingDays: Number(maxBookingDays),
+  //       availabilityNotes: availabilityNotes,
+  //       availabilityVersion: "2.0",
+  //       lastUpdated: new Date().toISOString(),
+  //     }
 
-      const updatedPrimaryData = {
-        ...targetBusiness.data,
-        ...availabilityData,
-        updatedAt: new Date().toISOString(),
-      }
+  //     const updatedPrimaryData = {
+  //       ...targetBusiness.data,
+  //       ...availabilityData,
+  //       updatedAt: new Date().toISOString(),
+  //     }
 
-      const result = await updateProfile(updatedPrimaryData, null, targetBusiness.id)
+  //     const result = await updateProfile(updatedPrimaryData, null, targetBusiness.id)
 
-      if (result.success) {
-        console.log("LEAD TIME: Availability saved successfully")
+  //     if (result.success) {
+  //       console.log("LEAD TIME: Availability saved successfully")
 
-        setSupplierData(updatedPrimaryData)
-        setSaveSuccess(true)
-        setTimeout(() => setSaveSuccess(false), 3000)
-        refresh()
-      } else {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      console.error("Failed to save lead time availability:", error)
-      alert("Failed to save availability: " + error.message)
-    }
-  }
+  //       setSupplierData(updatedPrimaryData)
+  //       setSaveSuccess(true)
+  //       setTimeout(() => setSaveSuccess(false), 3000)
+  //       refresh()
+  //     } else {
+  //       throw new Error(result.error)
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to save lead time availability:", error)
+  //     alert("Failed to save availability: " + error.message)
+  //   }
+  // }
 
   const getCategoryDisplayName = () => {
     const names = {
@@ -231,16 +357,7 @@ const LeadTimeAvailabilityContent = ({
   return (
     <div className="min-h-screen bg-primary-50">
       <div className="max-w-6xl mx-auto">
-        {saveSuccess && (
-          <div className="p-4">
-            <Alert className="border-emerald-200 bg-emerald-50 shadow-lg animate-in slide-in-from-top-2 duration-300">
-              <Check className="h-5 w-5 text-emerald-600" />
-              <AlertDescription className="text-emerald-800 font-medium">
-                Lead time availability settings saved successfully across all businesses!
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
+    
 
         <div className="p-4 sm:p-6">
           <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-start sm:space-y-0">
@@ -263,9 +380,7 @@ const LeadTimeAvailabilityContent = ({
                 </Badge>
               </div>
             </div>
-            <div className="absolute right-10 top-1">
-              <GlobalSaveButton position="responsive" onSave={handleSave} isLoading={saving} />
-            </div>
+          
           </div>
         </div>
 
@@ -790,6 +905,14 @@ const LeadTimeAvailabilityContent = ({
           </Card>
         </div>
       </div>
+      <StickyBottomSaveBar
+          onSave={handleSave}
+          onDiscard={handleDiscard}
+          isLoading={saving}
+          hasChanges={hasChanges}
+          changesSummary={`You have unsaved ${getCategoryDisplayName().toLowerCase()} availability changes`}
+          saveLabel="Save Lead Time Settings"
+        />
     </div>
   )
 }

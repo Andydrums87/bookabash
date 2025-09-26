@@ -73,7 +73,24 @@ const createThemedBusiness = async (primaryBusinessId, themedBusinessData) => {
       maxBookingDays: inheritedData.maxBookingDays,
       owner: inheritedData.owner,
       location: inheritedData.location,
-      
+      avatar: inheritedData.avatar,
+      verification: inheritedData.verification || {
+        status: 'not_started',
+        submittedAt: null,
+        reviewedAt: null,
+        reviewedBy: null,
+        expiresAt: null,
+        documents: {
+          dbs: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null },
+          identity: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null },
+          address: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null },
+          insurance: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null, required: false }
+        },
+        auditLog: [],
+        adminNotes: '',
+        verificationLevel: 'none'
+      },
+      isVerified: inheritedData.isVerified || false,    
       // FRESH business-specific data
       name: themedBusinessData.name,
       description: '',  // Empty - needs completion
@@ -569,7 +586,7 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 
  const generateVenuePackages = (venueServiceDetails, supplierData = null) => {
   const hourlyRate = venueServiceDetails.pricing?.hourlyRate || 0
-  const minimumHours = venueServiceDetails.availability?.minimumBookingHours || 3
+  const minimumHours = venueServiceDetails.availability?.minimumBookingHours || 4
   const setupTime = 1 // Always 1 hour
   const cleanupTime = 1 // Always 1 hour
   const capacity = venueServiceDetails.capacity?.max || 50
@@ -931,6 +948,73 @@ export const suppliersAPI = {
           phone: formData.phone
         },
         category: serviceType,
+         // ADD THIS VERIFICATION STRUCTURE:
+  verification: {
+    status: 'not_started', // not_started | pending | verified | rejected | expired
+    submittedAt: null,
+    reviewedAt: null,
+    reviewedBy: null,
+    expiresAt: null,
+    
+    documents: {
+      dbs: {
+        status: 'not_submitted',
+        documentUrl: null,
+        metadata: {
+          certificateNumber: '',
+          issueDate: '',
+          expiryDate: '',
+          level: 'enhanced'
+        },
+        submittedAt: null,
+        reviewFeedback: null
+      },
+      
+      identity: {
+        status: 'not_submitted',
+        documentUrl: null,
+        metadata: {
+          documentType: 'passport',
+          documentNumber: '',
+          fullName: '',
+          dateOfBirth: ''
+        },
+        submittedAt: null,
+        reviewFeedback: null
+      },
+      
+      address: {
+        status: 'not_submitted',
+        documentUrl: null,
+        metadata: {
+          documentType: 'utility_bill',
+          address: '',
+          documentDate: ''
+        },
+        submittedAt: null,
+        reviewFeedback: null
+      },
+      
+      insurance: {
+        status: 'not_submitted',
+        documentUrl: null,
+        metadata: {
+          policyNumber: '',
+          provider: '',
+          coverageAmount: '',
+          expiryDate: ''
+        },
+        submittedAt: null,
+        reviewFeedback: null,
+        required: false
+      }
+    },
+    
+    auditLog: [],
+    adminNotes: '',
+    verificationLevel: 'none'
+  },
+  isVerified: false,
         subcategory: serviceType,
         serviceType: serviceType,
         image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(formData.businessName || formData.name),
@@ -1014,6 +1098,7 @@ export const suppliersAPI = {
   
       // Save the real UUID for future queries
       localStorage.setItem('currentSupplierId', newBusiness.id)
+      
   
       return {
         success: true,
@@ -1039,7 +1124,12 @@ export const suppliersAPI = {
 
 updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
   try {
-
+    console.log('UPDATE PROFILE CALLED WITH:', {
+      supplierId,
+      updatedData,
+      packages,
+      serviceDetailsReceived: updatedData.serviceDetails
+    })
     // Fetch current supplier data
     const { data: row, error: fetchError } = await supabase
       .from('suppliers')
@@ -1119,7 +1209,27 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
   syncFrequency: 'daily',
   filterMode: 'all-day-events',
   lastSync: null,
-  syncedEvents: []
+  syncedEvents: [],
+   // PRESERVE verification data unless explicitly updating it
+   verification: updatedData.verification !== undefined ? 
+   updatedData.verification : (current.verification || {
+     status: 'not_started',
+     submittedAt: null,
+     reviewedAt: null,
+     reviewedBy: null,
+     expiresAt: null,
+     documents: {
+       dbs: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null },
+       identity: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null },
+       address: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null },
+       insurance: { status: 'not_submitted', documentUrl: null, metadata: {}, submittedAt: null, reviewFeedback: null, required: false }
+     },
+     auditLog: [],
+     adminNotes: '',
+     verificationLevel: 'none'
+   }),
+   isVerified: updatedData.isVerified !== undefined ? 
+    updatedData.isVerified : (current.isVerified || false),
 }),
       // ✅ PRICING: Only update if packages are being updated
       priceFrom: shouldUpdatePackages ? 
@@ -1162,10 +1272,14 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
       updatedAt: new Date().toISOString(),
       createdAt: current.createdAt || new Date().toISOString()
     }
-
-        // 🆕 UPDATED: Calculate profile completion with isPrimary flag
     const businessType = merged.serviceType || merged.category
     const completion = calculateProfileCompletion(merged, businessType, isPrimary)
+    
+    // Override with banner calculation if available
+    if (typeof window !== 'undefined' && window.currentBannerCompletion) {
+      completion.percentage = window.currentBannerCompletion.percentage
+      completion.canGoLive = window.currentBannerCompletion.canGoLive
+    }
 
 
     console.log('📊 Profile completion calculated:', {
@@ -1183,7 +1297,16 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
     // 🆕 UPDATED: Different status logic for primary vs themed
   merged.profileStatus = completion.canGoLive ? 'ready_for_review' : 'draft'
 
-
+  console.log('DEBUG COMPLETION CALCULATION:', {
+    businessType,
+    isPrimary,
+    supplierDataFields: Object.keys(merged),
+    aboutUs: merged.aboutUs?.length || 'missing',
+    extraHourRate: merged.extraHourRate || 'missing',
+    portfolioImages: merged.portfolioImages?.length || 'missing',
+    dbsStatus: merged.verification?.documents?.dbs?.status || 'missing',
+    calculatedCompletion: completion
+  })
  // Save to database (PRIMARY BUSINESS)
 const { data: updated, error: updateError } = await supabase
 .from('suppliers')
@@ -1384,25 +1507,25 @@ export function useSupplierDashboard() {
       try {
         setLoading(true)
         setError(null)
-
+  
         // Get current authenticated user
         const { data: userResult, error: userErr } = await supabase.auth.getUser()
         if (userErr) {
           console.error('❌ Auth error:', userErr)
           throw userErr
         }
-
+  
         const userId = userResult?.user?.id
         if (!userId) {
           console.error('❌ No user ID found')
           throw new Error("No logged-in user")
         }
-
-        // 🚨 FIXED: Get the currently selected business from localStorage
+  
+        // Get the currently selected business from localStorage
         const selectedBusinessId = localStorage.getItem('selectedBusinessId')
         
         let businessToLoad = null
-
+  
         if (selectedBusinessId) {
           // Load the specific selected business
           console.log('🎯 Loading selected business:', selectedBusinessId)
@@ -1412,7 +1535,7 @@ export function useSupplierDashboard() {
             .eq("id", selectedBusinessId)
             .eq("auth_user_id", userId)
             .single()
-
+  
           if (!selectedErr && selectedBusiness) {
             console.log('✅ Found selected business:', selectedBusiness.business_name)
             businessToLoad = selectedBusiness
@@ -1420,7 +1543,7 @@ export function useSupplierDashboard() {
             console.warn('⚠️ Selected business not found, falling back to primary')
           }
         }
-
+  
         // Fallback to primary business if no specific business selected or not found
         if (!businessToLoad) {
           console.log('🏢 Loading primary business as fallback')
@@ -1430,21 +1553,21 @@ export function useSupplierDashboard() {
             .eq("auth_user_id", userId)
             .eq("is_primary", true)
             .maybeSingle()
-
+  
           if (primaryErr) {
             console.error('❌ Database error:', primaryErr)
             throw primaryErr
           }
-
+  
           if (!primaryBusiness) {
             setError('No supplier account found - please complete onboarding first')
             setCurrentSupplier(null)
             return
           }
-
+  
           businessToLoad = primaryBusiness
         }
-
+  
         // Check if the data object exists and has essential fields
         if (!businessToLoad.data) {
           console.warn('⚠️ Business has no data object')
@@ -1452,7 +1575,7 @@ export function useSupplierDashboard() {
           setCurrentSupplier(null)
           return
         }
-
+  
         console.log('📊 Business to load:', {
           'id': businessToLoad.id,
           'name': businessToLoad.business_name,
@@ -1461,8 +1584,8 @@ export function useSupplierDashboard() {
           'can_go_live': businessToLoad.can_go_live,
           'completion_%': businessToLoad.profile_completion_percentage
         })
-
-        // 🚨 FIXED: Use the actually selected business data, not always primary
+  
+        // Use the actually selected business data
         const supplierForDashboard = {
           id: businessToLoad.id,
           ...businessToLoad.data, // Spread data first
@@ -1479,22 +1602,15 @@ export function useSupplierDashboard() {
           businessType: businessToLoad.business_type,
           parentBusinessId: businessToLoad.parent_business_id
         }
-
-        console.log('🔍 RAW DATABASE VALUES:', {
-          'profile_status': businessToLoad.profile_status,
-          'can_go_live': businessToLoad.can_go_live, 
-          'completion_%': businessToLoad.profile_completion_percentage
-        })
-        
-        console.log('🔍 FINAL DASHBOARD OBJECT:', {
+  
+        console.log('🔄 Profile completion banner should update now:', {
           'profile_status': supplierForDashboard.profile_status,
           'can_go_live': supplierForDashboard.can_go_live,
           'completion_%': supplierForDashboard.profile_completion_percentage
         })
-
-       
+  
         setCurrentSupplier(supplierForDashboard)
-
+  
       } catch (err) {
         console.error('❌ Error loading current supplier:', err)
         setError(err.message || 'Failed to load supplier data')
@@ -1503,93 +1619,97 @@ export function useSupplierDashboard() {
         setLoading(false)
       }
     }
-
+  
     // Load initially
     loadCurrentSupplier()
-
-    // 🚨 NEW: Listen for business switches and reload data
+  
+    // Listen for business switches
     const handleBusinessSwitch = (event) => {
       console.log('🔄 Dashboard detected business switch, reloading data...')
       loadCurrentSupplier()
     }
-
-      // Listen for calendar sync data refresh
-  const handleDataRefresh = (event) => {
-    console.log('🔄 Supplier data refresh triggered by calendar sync:', event.detail)
-    loadCurrentSupplier()
-  }
-
-    
-  // Add both event listeners
-  window.addEventListener('businessSwitched', handleBusinessSwitch)
-  window.addEventListener('supplierDataUpdated', handleDataRefresh)
-
-    // Cleanup listener
+  
+    // ✅ NEW: Listen for supplier data updates
+    const handleDataRefresh = (event) => {
+      console.log('🔄 Dashboard detected supplier data update, reloading...', event.detail)
+      loadCurrentSupplier()
+    }
+  
+    // Add both event listeners
+    window.addEventListener('businessSwitched', handleBusinessSwitch)
+    window.addEventListener('supplierDataUpdated', handleDataRefresh) // This is the key one!
+  
+    // Cleanup listeners
     return () => {
       window.removeEventListener('businessSwitched', handleBusinessSwitch)
       window.removeEventListener('supplierDataUpdated', handleDataRefresh)
     }
   }, []) // No dependencies - listens to events instead
 
-  // Your existing updateProfile function stays the same...
-  const updateProfile = async (profileData, packages = null, specificBusinessId = null) => {
-    if (!currentSupplier) {
-      console.warn("⚠️ No currentSupplier in updateProfile")
-      return { success: false, error: 'No current supplier loaded' }
-    }
+// In your updateProfile function in useSupplierDashboard, REPLACE the existing function with this:
 
-    setSaving(true)
-    setError(null)
+const updateProfile = async (profileData, packages = null, specificBusinessId = null) => {
+  if (!currentSupplier) {
+    console.warn("⚠️ No currentSupplier in updateProfile")
+    return { success: false, error: 'No current supplier loaded' }
+  }
 
-    try {
-      // Determine which business to update
-      const businessIdToUpdate = specificBusinessId || currentSupplier.id
+  setSaving(true)
+  setError(null)
 
-      // Call the updated API function
-      const result = await suppliersAPI.updateSupplierProfile(
-        businessIdToUpdate,
-        profileData,
-        packages  // null means "don't update packages", array means "update packages"
-      )
+  try {
+    // Determine which business to update
+    const businessIdToUpdate = specificBusinessId || currentSupplier.id
+
+    // Call the updated API function
+    const result = await suppliersAPI.updateSupplierProfile(
+      businessIdToUpdate,
+      profileData,
+      packages  // null means "don't update packages", array means "update packages"
+    )
+    
+    if (result.success && result.supplier) {
+      const updatedSupplierForDashboard = {
+        id: result.supplier.id,
+        profile_status: result.supplier.profile_status,
+        can_go_live: result.supplier.can_go_live,
+        profile_completion_percentage: result.supplier.profile_completion_percentage,
+        ...result.supplier.data
+      }
       
-      if (result.success && result.supplier) {
-        const updatedSupplierForDashboard = {
-          id: result.supplier.id,
-          profile_status: result.supplier.profile_status,
-          can_go_live: result.supplier.can_go_live,
-          profile_completion_percentage: result.supplier.profile_completion_percentage,
-          ...result.supplier.data
-        }
-        
-        setCurrentSupplier(updatedSupplierForDashboard)
-        
-        if (result.completion) {
-          console.log('Profile completion updated:', {
-            percentage: result.completion.percentage,
-            canGoLive: result.completion.canGoLive,
-            missingFields: result.completion.missingFields.length
-          })
-        }
-
-        // Trigger global update event
-        window.dispatchEvent(new CustomEvent('supplierUpdated', {
-          detail: { 
-            supplierId: result.supplier.id,
-            completion: result.completion
-          }
-        }))
+      // ✅ CRITICAL FIX: Update the local state immediately
+      setCurrentSupplier(updatedSupplierForDashboard)
+      
+      if (result.completion) {
+        console.log('Profile completion updated:', {
+          percentage: result.completion.percentage,
+          canGoLive: result.completion.canGoLive,
+          missingFields: result.completion.missingFields.length
+        })
       }
 
-      return result
+      // ✅ NEW: Force re-render of all components that depend on supplier data
+      window.dispatchEvent(new CustomEvent('supplierDataUpdated', {
+        detail: { 
+          supplierId: result.supplier.id,
+          completion: result.completion,
+          updatedData: updatedSupplierForDashboard
+        }
+      }))
 
-    } catch (error) {
-      console.error("❌ updateProfile error:", error)
-      setError(error.message)
-      return { success: false, error: error.message }
-    } finally {
-      setSaving(false)
+      console.log('🔄 Supplier data updated, dispatched refresh event')
     }
+
+    return result
+
+  } catch (error) {
+    console.error("❌ updateProfile error:", error)
+    setError(error.message)
+    return { success: false, error: error.message }
+  } finally {
+    setSaving(false)
   }
+}
 
   return {
     currentSupplier,

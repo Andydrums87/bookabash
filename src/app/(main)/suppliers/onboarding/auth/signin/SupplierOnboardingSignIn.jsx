@@ -815,6 +815,8 @@ export default function SupplierSignInPage() {
         hasNotifications: !!supplierData.notifications,
         notificationSettings: supplierData.notifications
       })
+
+      localStorage.setItem('justCompletedOnboarding', 'true')
       
       const { data: supplierResult, error: insertError } = await supabase
         .from('suppliers')

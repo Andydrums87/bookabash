@@ -768,8 +768,8 @@ export default function SupplierSelectionModal({
             Available
             {TimeSlotIcon && partyTimeSlot && (
               <span className="flex items-center gap-1 ml-1">
-                <TimeSlotIcon className="w-3 h-3" />
-                <span className="text-xs">{TIME_SLOTS[partyTimeSlot].label}</span>
+                {/* <TimeSlotIcon className="w-3 h-3" />
+                <span className="text-xs">{TIME_SLOTS[partyTimeSlot].label}</span> */}
               </span>
             )}
           </Badge>
@@ -1277,23 +1277,10 @@ export default function SupplierSelectionModal({
             {/* ✅ UPDATED: Show unified pricing */}
             <div className="text-sm font-bold text-gray-400">
               {supplierPricing.formattedPrice}
-              {supplierPricing.hasEnhancedPricing && (
-                <span className="text-xs text-blue-600 ml-1">
-                  (enhanced)
-                </span>
-              )}
+             
             </div>
             {/* ✅ UPDATED: Add supplier type indicator */}
-            <div className="flex items-center gap-1">
-              {isLeadBased ? (
-                <Package className="w-3 h-3 text-amber-600" />
-              ) : (
-                <Clock className="w-3 h-3 text-blue-600" />
-              )}
-              <span className="text-xs text-gray-500">
-                {isLeadBased ? 'Lead time' : 'Time slots'}
-              </span>
-            </div>
+           
           </div>
 
           {/* ✅ UPDATED: Availability display with unified support */}
@@ -1304,7 +1291,7 @@ export default function SupplierSelectionModal({
             />
             
             {/* Show specific availability info for lead-based suppliers */}
-            {isLeadBased && selectedDate && availabilityResult.reason && (
+            {/* {isLeadBased && selectedDate && availabilityResult.reason && (
               <div className="text-xs text-gray-600">
                 {availabilityResult.reason === 'available' && availabilityResult.leadTimeDays && (
                   <span className="text-green-700">Ready in {availabilityResult.leadTimeDays} days</span>
@@ -1313,10 +1300,10 @@ export default function SupplierSelectionModal({
                   <span className="text-amber-700">Needs {availabilityResult.requiredLeadTime} days lead time</span>
                 )}
               </div>
-            )}
+            )} */}
             
             {/* Show pricing breakdown for enhanced pricing */}
-            {supplierPricing.hasEnhancedPricing && (
+            {/* {supplierPricing.hasEnhancedPricing && (
               <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
                 {supplierPricing.pricingDetails?.isWeekend && supplierPricing.pricingBreakdown?.weekend > 0 && (
                   <span>Weekend +£{supplierPricing.pricingBreakdown.weekend}</span>
@@ -1329,9 +1316,9 @@ export default function SupplierSelectionModal({
                 )}
               </div>
             )}
-            
+             */}
             {/* Show availability reason if debugging needed */}
-            {selectedDate && !isAvailableOnDate && (
+            {/* {selectedDate && !isAvailableOnDate && (
               <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
                 {isLeadBased ? 
                   (availabilityResult.reason === 'insufficient-lead-time' ? 
@@ -1343,7 +1330,7 @@ export default function SupplierSelectionModal({
                   `Reason: ${availabilityResult.reason}`
                 }
               </div>
-            )}
+            )} */}
           </div>
 
           <div className="mt-auto pt-4 border-t border-gray-100">

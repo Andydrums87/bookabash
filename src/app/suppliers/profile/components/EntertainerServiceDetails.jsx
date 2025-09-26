@@ -19,7 +19,8 @@ import {
   Target,
   ChevronDown,
   ChevronUp,
-  AlertCircle
+  AlertCircle,
+  UserPlus
 } from "lucide-react"
 import EnhancedThemesSection from "../../dashboard/EnchancedThemesSection"
 import { Button } from "@/components/ui/button"
@@ -30,9 +31,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { SectionSave, useSectionSave } from '@/components/ui/SectionSave';
+import { useSectionManager } from '../../hooks/useSectionManager';
 
 // Business-Aware Entertainer Service Details Form
-const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness }) => {
+const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier, setSupplierData }) => {
   // Use data passed from parent instead of calling useSupplier again
   const [loading, setLoading] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
@@ -40,7 +43,6 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     performanceStyles: false,
     themes: false,
   })
-
   const [details, setDetails] = useState({
     performerType: "",
     ageGroups: [],
@@ -52,6 +54,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     specialSkills: "",
     groupSizeMin: 1,
     groupSizeMax: 30,
+    additionalEntertainerPrice: 150,
     personalBio: {
       yearsExperience: "",
       inspiration: "",
@@ -68,6 +71,13 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     },
     ...serviceDetails,
   })
+
+  // Replace all your individual section state with this one hook
+  const { getSectionState, checkChanges, saveSection } = useSectionManager(
+    supplierData, 
+    updateProfile, 
+    supplier
+  );
 
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
@@ -94,6 +104,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
         specialSkills: "",
         groupSizeMin: 1,
         groupSizeMax: 30,
+        additionalEntertainerPrice: 150,
         personalBio: {
           yearsExperience: "",
           inspiration: "",
@@ -226,11 +237,40 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     },
   ]
 
-  // Fixed handlers that call onUpdate immediately
+  // Update your handleFieldChange to check for changes
   const handleFieldChange = (field, value) => {
     const newDetails = { ...details, [field]: value }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // Check for changes based on field
+    if (field === 'aboutUs') {
+      checkChanges('aboutUs', value);
+    } else if (['travelRadius', 'setupTime', 'groupSizeMin', 'groupSizeMax', 'additionalEntertainerPrice', 'extraHourRate'].includes(field)) {
+      const basicInfoData = {
+        travelRadius: field === 'travelRadius' ? value : details.travelRadius,
+        setupTime: field === 'setupTime' ? value : details.setupTime,
+        groupSizeMin: field === 'groupSizeMin' ? value : details.groupSizeMin,
+        groupSizeMax: field === 'groupSizeMax' ? value : details.groupSizeMax,
+        additionalEntertainerPrice: field === 'additionalEntertainerPrice' ? value : details.additionalEntertainerPrice,
+        extraHourRate: field === 'extraHourRate' ? value : details.extraHourRate,
+      };
+      checkChanges('basicInfo', basicInfoData);
+    } else if (field === 'equipment' || field === 'specialSkills') {
+      const equipmentData = {
+        equipment: field === 'equipment' ? value : details.equipment,
+        specialSkills: field === 'specialSkills' ? value : details.specialSkills,
+      };
+      checkChanges('equipment', equipmentData);
+    } else if (field === 'ageGroups') {
+      checkChanges('ageGroups', value);
+    } else if (field === 'performanceStyle') {
+      checkChanges('performanceStyles', value);
+    } else if (field === 'themes') {
+      checkChanges('themes', value);
+    } else if (field === 'addOnServices') {
+      checkChanges('addOnServices', value);
+    }
   }
 
   const handleNestedFieldChange = (parentField, childField, value) => {
@@ -243,15 +283,125 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // Check for personal bio changes
+    if (parentField === 'personalBio') {
+      checkChanges('personalBio', newDetails.personalBio);
+    }
   }
 
   const handleArrayToggle = (array, item, field) => {
     const newArray = array.includes(item) ? array.filter((i) => i !== item) : [...array, item]
-
     const newDetails = { ...details, [field]: newArray }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // Check for changes
+    if (field === 'ageGroups') {
+      checkChanges('ageGroups', newArray);
+    } else if (field === 'performanceStyle') {
+      checkChanges('performanceStyles', newArray);
+    } else if (field === 'themes') {
+      checkChanges('themes', newArray);
+    }
   }
+
+  // Create save handlers for each section
+  const handleAboutUsSave = () => {
+    saveSection('aboutUs', details.aboutUs, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        aboutUs: details.aboutUs
+      }
+    });
+  };
+
+  const handleBasicInfoSave = () => {
+    const basicInfoData = {
+      travelRadius: details.travelRadius,
+      setupTime: details.setupTime,
+      groupSizeMin: details.groupSizeMin,
+      groupSizeMax: details.groupSizeMax,
+      additionalEntertainerPrice: details.additionalEntertainerPrice,
+      extraHourRate: details.extraHourRate,
+    };
+    
+    saveSection('basicInfo', basicInfoData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...basicInfoData
+      }
+    });
+  };
+
+  const handleAgeGroupsSave = () => {
+    saveSection('ageGroups', details.ageGroups, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ageGroups: details.ageGroups
+      }
+    });
+  };
+
+  const handlePerformanceStylesSave = () => {
+    saveSection('performanceStyles', details.performanceStyle, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        performanceStyle: details.performanceStyle
+      }
+    });
+  };
+
+  const handleThemesSave = () => {
+    saveSection('themes', details.themes, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        themes: details.themes
+      }
+    });
+  };
+
+  const handleEquipmentSave = () => {
+    const equipmentData = {
+      equipment: details.equipment,
+      specialSkills: details.specialSkills,
+    };
+    
+    saveSection('equipment', equipmentData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...equipmentData
+      }
+    });
+  };
+
+  const handlePersonalBioSave = () => {
+    saveSection('personalBio', details.personalBio, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        personalBio: details.personalBio
+      }
+    });
+  };
+
+  const handleAddOnServicesSave = () => {
+    saveSection('addOnServices', details.addOnServices, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        addOnServices: details.addOnServices
+      }
+    });
+  };
+
+  // Get section states
+  const aboutUsState = getSectionState('aboutUs');
+  const basicInfoState = getSectionState('basicInfo');
+  const ageGroupsState = getSectionState('ageGroups');
+  const performanceStylesState = getSectionState('performanceStyles');
+  const themesState = getSectionState('themes');
+  const equipmentState = getSectionState('equipment');
+  const personalBioState = getSectionState('personalBio');
+  const addOnServicesState = getSectionState('addOnServices');
 
   // Add-ons management functions
   const handleAddonFormChange = (field, value) => {
@@ -298,6 +448,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
 
     setDetails(newDetails)
     onUpdate(newDetails)
+    checkChanges('addOnServices', newDetails.addOnServices);
     resetAddonForm()
   }
 
@@ -320,6 +471,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       }
       setDetails(newDetails)
       onUpdate(newDetails)
+      checkChanges('addOnServices', newDetails.addOnServices);
     }
   }
 
@@ -340,6 +492,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    checkChanges('addOnServices', newDetails.addOnServices);
   }
 
   // Show loading state if no data yet
@@ -356,245 +509,244 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
 
   return (
     <div className="space-y-4 sm:space-y-8">
-      {/* Business Context Header */}
-      {/* {currentBusiness && (
-        <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Editing:</strong> {currentBusiness.name} • {currentBusiness.serviceType} • {currentBusiness.theme}
-          </AlertDescription>
-        </Alert>
-      )} */}
       {/* About Us Section */}
-{/* About Us Section */}
-<Card className="">
-  <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
-    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-        <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-      </div>
-      About Us
-    </CardTitle>
-    <CardDescription className="text-sm sm:text-base">
-      Tell customers about your business and what makes you special (max 120 words)
-    </CardDescription>
-  </CardHeader>
-  <CardContent className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-    <div className="space-y-2 sm:space-y-3">
-      <Label htmlFor="aboutUs" className="text-sm sm:text-base font-semibold text-gray-700">
-        Your Business Story *
-      </Label>
-      <div className="relative">
-        <Textarea
-          id="aboutUs"
-          value={details.aboutUs || ""}
-          onChange={(e) => {
-            const text = e.target.value
-            const words =
-              text.trim() === ""
-                ? []
-                : text
-                    .trim()
-                    .split(/\s+/)
-                    .filter((word) => word.length > 0)
-            if (words.length <= 120) {
-              handleFieldChange("aboutUs", e.target.value)
-            }
-          }}
-          placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
-          rows={4}
-          className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-        />
-        <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-          {(() => {
-            const text = details.aboutUs || ""
-            const words =
-              text.trim() === ""
-                ? []
-                : text
-                    .trim()
-                    .split(/\s+/)
-                    .filter((word) => word.length > 0)
-            return words.length
-          })()}/120 words
-        </div>
-      </div>
-      <p className="text-xs sm:text-sm text-gray-600">
-        💡 <strong>Tip:</strong> Share your story, highlight what makes you different, and mention any awards or
-        recognition. Keep it friendly and engaging - no more than 2-3 paragraphs.
-      </p>
-    </div>
-  </CardContent>
-</Card>
-    {/* Basic Performance Info */}
-<Card className="">
-  <CardHeader className="p-4 sm:p-8 bg-gradient-to-r from-[hsl(var(-primary-50))] to-[hsl(var(--primary-100))]">
-    <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-xl flex items-center justify-center">
-        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-      </div>
-      Basic Performance Info
-    </CardTitle>
-    <CardDescription className="text-sm sm:text-base">
-      Tell customers about your core entertainment offering and pricing
-    </CardDescription>
-  </CardHeader>
-  <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-      {/* <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="performerType" className="text-sm sm:text-base font-semibold text-gray-700">
-          What type of performer are you? *
-        </Label>
-        <Select
-          value={details.performerType}
-          onValueChange={(value) => handleFieldChange("performerType", value)}
-        >
-          <SelectTrigger className="py-4 sm:py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-sm sm:text-base">
-            <SelectValue placeholder="Choose your performer type" />
-          </SelectTrigger>
-          <SelectContent>
-            {performerTypes.map((type) => (
-              <SelectItem key={type} value={type} className="text-sm sm:text-base py-2 sm:py-3">
-                {type}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div> */}
-
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="travelRadius" className="text-sm sm:text-base font-semibold text-gray-700">
-          How far will you travel? (miles) *
-        </Label>
-        <div className="relative">
-          <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-          <Input
-            id="travelRadius"
-            type="number"
-            min="1"
-            max="100"
-            value={details.travelRadius}
-            onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
-            className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-            placeholder="e.g., 25"
-          />
-        </div>
-      </div>
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
-          Setup Time (minutes)
-        </Label>
-        <div className="relative">
-          <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-          <Input
-            id="setupTime"
-            type="number"
-            min="0"
-            max="120"
-            value={details.setupTime}
-            onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
-            className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-            placeholder="e.g., 30"
-          />
-        </div>
-      </div>
-    </div>
-
-   
-
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
-          Minimum Group Size
-        </Label>
-        <Input
-          id="groupSizeMin"
-          type="number"
-          min="1"
-          value={details.groupSizeMin}
-          onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
-          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-          placeholder="e.g., 5"
-        />
-      </div>
-
-      <div className="space-y-2 sm:space-y-3">
-        <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
-          Maximum Group Size
-        </Label>
-        <Input
-          id="groupSizeMax"
-          type="number"
-          min="1"
-          value={details.groupSizeMax}
-          onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
-          className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-          placeholder="e.g., 30"
-        />
-      </div>
-
-  
-    </div>
-     {/* NEW: Duration Pricing Section - Prominently placed */}
-     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6">
-      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <Clock className="w-5 h-5 text-orange-600" />
-        Party Duration Pricing *
-      </h4>
-    
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Standard Duration</Label>
-          <div className="h-10 sm:h-12 px-3 sm:px-4 bg-gray-100 border-2 border-gray-200 rounded-xl flex items-center text-sm sm:text-base text-gray-600">
-            2 hours (included in all packages)
+      <Card className="">
+        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
+          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+              <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            About Us
+          </CardTitle>
+          <CardDescription className="text-sm sm:text-base">
+            Tell customers about your business and what makes you special (max 120 words)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-8 space-y-4 sm:space-y-6">
+          <div className="space-y-2 sm:space-y-3">
+            <Label htmlFor="aboutUs" className="text-sm sm:text-base font-semibold text-gray-700">
+              Your Business Story *
+            </Label>
+            <div className="relative">
+              <Textarea
+                id="aboutUs"
+                value={details.aboutUs || ""}
+                onChange={(e) => {
+                  const text = e.target.value
+                  const words =
+                    text.trim() === ""
+                      ? []
+                      : text
+                          .trim()
+                          .split(/\s+/)
+                          .filter((word) => word.length > 0)
+                  if (words.length <= 120) {
+                    handleFieldChange("aboutUs", e.target.value)
+                  }
+                }}
+                placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
+                rows={4}
+                className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
+              />
+              <div className="absolute bottom-2 right-2 text-xs text-gray-500">
+                {(() => {
+                  const text = details.aboutUs || ""
+                  const words =
+                    text.trim() === ""
+                      ? []
+                      : text
+                          .trim()
+                          .split(/\s+/)
+                          .filter((word) => word.length > 0)
+                  return words.length
+                })()}/120 words
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-600">
+              💡 <strong>Tip:</strong> Share your story, highlight what makes you different, and mention any awards or
+              recognition. Keep it friendly and engaging - no more than 2-3 paragraphs.
+            </p>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">
-            Extra Hour Rate (£) *
-          </Label>
-          <div className="relative">
-            <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
-            <Input
-              id="extraHourRate"
-              type="number"
-              min="10"
-              max="200"
-              value={details.extraHourRate || ''}
-              onChange={(e) => handleFieldChange("extraHourRate", Number.parseInt(e.target.value))}
-              className="h-10 sm:h-12 pl-8 sm:pl-10 bg-white border-2 border-orange-200 rounded-xl text-sm sm:text-base"
-              placeholder="45"
-              required
-            />
+          <SectionSave
+            sectionName="About Us"
+            hasChanges={aboutUsState.hasChanges}
+            onSave={handleAboutUsSave}
+            saving={aboutUsState.saving}
+            lastSaved={aboutUsState.lastSaved}
+            error={aboutUsState.error}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Basic Performance Info */}
+      <Card className="">
+        <CardHeader className="p-4 sm:p-8 bg-gradient-to-r from-[hsl(var(-primary-50))] to-[hsl(var(--primary-100))]">
+          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            </div>
+            Basic Performance Info
+          </CardTitle>
+          <CardDescription className="text-sm sm:text-base">
+            Tell customers about your core entertainment offering and pricing
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="travelRadius" className="text-sm sm:text-base font-semibold text-gray-700">
+                How far will you travel? (miles) *
+              </Label>
+              <div className="relative">
+                <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                <Input
+                  id="travelRadius"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={details.travelRadius}
+                  onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
+                  className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+                  placeholder="e.g., 25"
+                />
+              </div>
+            </div>
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
+                Setup Time (minutes)
+              </Label>
+              <div className="relative">
+                <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                <Input
+                  id="setupTime"
+                  type="number"
+                  min="0"
+                  max="120"
+                  value={details.setupTime}
+                  onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
+                  className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+                  placeholder="e.g., 30"
+                />
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-600">
-            Typical range: £30-80 per hour
-          </p>
-        </div>
-      </div>
-      
-      {/* Visual Example */}
-      {/* {details.extraHourRate && (
-        <div className="mt-4 p-3 bg-white/70 rounded-lg border border-orange-200">
-          <p className="text-sm text-gray-700">
-            <strong>Example:</strong> If your Premium Package costs £180 (2 hours), a 3-hour party would cost £{180 + (details.extraHourRate || 0)} total
-          </p>
-        </div>
-      )} */}
-      
-      {!details.extraHourRate && (
-        <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-          <p className="text-sm text-red-700 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <strong>Required:</strong> Please set your extra hour rate to complete your profile
-          </p>
-        </div>
-      )}
-    </div>
-  </CardContent>
-</Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
+                Minimum Group Size
+              </Label>
+              <Input
+                id="groupSizeMin"
+                type="number"
+                min="1"
+                value={details.groupSizeMin}
+                onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
+                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+                placeholder="e.g., 5"
+              />
+            </div>
+
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
+                Maximum Group Size (Single Entertainer)
+              </Label>
+              <Input
+                id="groupSizeMax"
+                type="number"
+                min="1"
+                value={details.groupSizeMax}
+                onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
+                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+                placeholder="e.g., 30"
+              />
+              <p className="text-xs text-gray-600">
+                If a party has more guests than this, additional entertainers will be required
+              </p>
+            </div>
+
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="additionalEntertainerPrice" className="text-sm sm:text-base font-semibold text-gray-700">
+                Additional Entertainer Price (£)
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
+                <Input
+                  id="additionalEntertainerPrice"
+                  type="number"
+                  min="50"
+                  max="500"
+                  value={details.additionalEntertainerPrice || ''}
+                  onChange={(e) => handleFieldChange("additionalEntertainerPrice", Number.parseInt(e.target.value))}
+                  className="h-10 sm:h-12 pl-8 sm:pl-10 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
+                  placeholder="150"
+                />
+              </div>
+              <p className="text-xs text-gray-600">
+                Price charged for each additional entertainer needed for larger groups
+              </p>
+            </div>
+          </div>
+
+          {/* Duration Pricing Section */}
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-600" />
+              Party Duration Pricing *
+            </h4>
+          
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Standard Duration</Label>
+                <div className="h-10 sm:h-12 px-3 sm:px-4 bg-gray-100 border-2 border-gray-200 rounded-xl flex items-center text-sm sm:text-base text-gray-600">
+                  2 hours (included in all packages)
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">
+                  Extra Hour Rate (£) *
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
+                  <Input
+                    id="extraHourRate"
+                    type="number"
+                    min="10"
+                    max="200"
+                    value={details.extraHourRate || ''}
+                    onChange={(e) => handleFieldChange("extraHourRate", Number.parseInt(e.target.value))}
+                    className="h-10 sm:h-12 pl-8 sm:pl-10 bg-white border-2 border-orange-200 rounded-xl text-sm sm:text-base"
+                    placeholder="45"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-600">
+                  Typical range: £30-80 per hour
+                </p>
+              </div>
+            </div>
+            
+            {!details.extraHourRate && (
+              <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-sm text-red-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <strong>Required:</strong> Please set your extra hour rate to complete your profile
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <SectionSave
+            sectionName="Basic Performance Info"
+            hasChanges={basicInfoState.hasChanges}
+            onSave={handleBasicInfoSave}
+            saving={basicInfoState.saving}
+            lastSaved={basicInfoState.lastSaved}
+            error={basicInfoState.error}
+          />
+        </CardContent>
+      </Card>
 
       {/* Age Groups - Mobile Optimized */}
       <Card className="">
@@ -617,7 +769,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
             Select all age groups that would enjoy your performances
           </CardDescription>
         </CardHeader>
-        <CardContent className={`p-4 sm:p-8 ${!expandedSections.ageGroups ? "hidden sm:block" : ""}`}>
+        <CardContent className={`p-4 sm:p-8 space-y-6 ${!expandedSections.ageGroups ? "hidden sm:block" : ""}`}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {ageGroupOptions.map((age) => (
               <div
@@ -636,6 +788,15 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               </div>
             ))}
           </div>
+          
+          <SectionSave
+            sectionName="Age Groups"
+            hasChanges={ageGroupsState.hasChanges}
+            onSave={handleAgeGroupsSave}
+            saving={ageGroupsState.saving}
+            lastSaved={ageGroupsState.lastSaved}
+            error={ageGroupsState.error}
+          />
         </CardContent>
       </Card>
 
@@ -662,7 +823,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           </CardTitle>
           <CardDescription className="text-sm sm:text-base">What types of entertainment do you offer?</CardDescription>
         </CardHeader>
-        <CardContent className={`p-4 sm:p-8 ${!expandedSections.performanceStyles ? "hidden sm:block" : ""}`}>
+        <CardContent className={`p-4 sm:p-8 space-y-6 ${!expandedSections.performanceStyles ? "hidden sm:block" : ""}`}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
             {performanceStyles.map((style) => (
               <div
@@ -681,11 +842,31 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               </div>
             ))}
           </div>
+          
+          <SectionSave
+            sectionName="Performance Styles"
+            hasChanges={performanceStylesState.hasChanges}
+            onSave={handlePerformanceStylesSave}
+            saving={performanceStylesState.saving}
+            lastSaved={performanceStylesState.lastSaved}
+            error={performanceStylesState.error}
+          />
         </CardContent>
       </Card>
 
       {/* Themes */}
-      <EnhancedThemesSection details={details} setDetails={setDetails} />
+      <EnhancedThemesSection 
+        details={details} 
+        setDetails={setDetails}
+        onThemesChange={(themes) => {
+          const newDetails = { ...details, themes };
+          setDetails(newDetails);
+          onUpdate(newDetails);
+          checkChanges('themes', themes);
+        }}
+        onSave={handleThemesSave}
+        sectionState={themesState}
+      />
 
       {/* Equipment & Skills */}
       <Card className="">
@@ -728,6 +909,15 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
             />
           </div>
+          
+          <SectionSave
+            sectionName="Equipment & Skills"
+            hasChanges={equipmentState.hasChanges}
+            onSave={handleEquipmentSave}
+            saving={equipmentState.saving}
+            lastSaved={equipmentState.lastSaved}
+            error={equipmentState.error}
+          />
         </CardContent>
       </Card>
 
@@ -817,6 +1007,15 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
             />
           </div>
+          
+          <SectionSave
+            sectionName="Personal Bio"
+            hasChanges={personalBioState.hasChanges}
+            onSave={handlePersonalBioSave}
+            saving={personalBioState.saving}
+            lastSaved={personalBioState.lastSaved}
+            error={personalBioState.error}
+          />
         </CardContent>
       </Card>
 
@@ -913,11 +1112,6 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
                           <div className="flex items-center gap-3 mb-2">
                             <h5 className="font-semibold text-gray-900">{addon.name}</h5>
                             <span className="font-bold text-primary-400">£{addon.price}</span>
-                            {/* {categoryInfo && (
-                              <span className="text-xs px-2 py-1 bg-primary-400 text-white rounded-full">
-                             {categoryInfo.label}
-                              </span>
-                            )} */}
                           </div>
                           {addon.description && <p className="text-gray-600 text-sm">{addon.description}</p>}
                         </div>
@@ -946,6 +1140,15 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               </div>
             )}
           </div>
+          
+          <SectionSave
+            sectionName="Add-on Services"
+            hasChanges={addOnServicesState.hasChanges}
+            onSave={handleAddOnServicesSave}
+            saving={addOnServicesState.saving}
+            lastSaved={addOnServicesState.lastSaved}
+            error={addOnServicesState.error}
+          />
         </CardContent>
       </Card>
 

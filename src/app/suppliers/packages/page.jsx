@@ -1,6 +1,6 @@
 "use client"
 
-import { PackageIcon, PlusCircle, Loader2, Check, Camera, Upload, X, Info, AlertTriangle } from "lucide-react"
+import { PackageIcon, PlusCircle, Loader2, Check, Camera, Upload, X, Info, AlertTriangle, Clock, Wifi, WifiOff } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,28 +8,26 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { SupplierPackageCard, AddPackageCard } from "@/components/supplier-package-card"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard, generateVenuePackages } from "@/utils/mockBackend"
-import { GlobalSaveButton } from "@/components/GlobalSaveButton"
+import { cn } from "@/lib/utils"
 
 const Packages = () => {
   const [editingPackage, setEditingPackage] = useState(null)
   const [isPackageFormOpen, setIsPackageFormOpen] = useState(false)
-  const [localSaving, setLocalSaving] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [packages, setPackages] = useState([])
   const [isVenue, setIsVenue] = useState(false)
-  const [venuePackagesGenerated, setVenuePackagesGenerated] = useState(false)
   const [isSettingUpVenue, setIsSettingupVenue] = useState(false)
+  const [savingPackageId, setSavingPackageId] = useState(null)
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false)
+  
+  // Simplified venue setup
   const [venueSetupForm, setVenueSetupForm] = useState({
-    hourlyRate: '',
-    minimumHours: '3',
-    setupTime: '60',
-    cleanupTime: '60'
+    hourlyRate: ''
   })
- 
 
   const [packageFormData, setPackageFormData] = useState({
     name: "",
@@ -43,193 +41,166 @@ const Packages = () => {
 
   const imageUploadRef = useRef(null)
 
-  // ✅ Use business-aware hooks
-  const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
-  const { saving, updateProfile } = useSupplierDashboard()
+  // Use business-aware hooks
+  const { supplier, supplierData, loading, currentBusiness, refresh } = useSupplier()
+  const { updateProfile } = useSupplierDashboard()
 
-  const venueNeedsSetup = isVenue && !supplierData?.serviceDetails?.pricing?.hourlyRate
-
-    // Handle venue setup form
-    const handleVenueSetup = async () => {
-      if (!venueSetupForm.hourlyRate || parseFloat(venueSetupForm.hourlyRate) <= 0) {
-        alert('Please enter a valid hourly rate')
-        return
-      }
-  
-      setLocalSaving(true)
-      try {
-        // Update service details with pricing info
-        const updatedServiceDetails = {
-          ...supplierData.serviceDetails,
-          pricing: {
-            ...supplierData.serviceDetails?.pricing,
-            hourlyRate: parseFloat(venueSetupForm.hourlyRate),
-            setupTime: parseInt(venueSetupForm.setupTime),
-            cleanupTime: parseInt(venueSetupForm.cleanupTime)
-          },
-          availability: {
-            ...supplierData.serviceDetails?.availability,
-            minimumBookingHours: parseInt(venueSetupForm.minimumHours)
-          }
-        }
-  
-        // Generate packages based on the new pricing
-        const generatedPackages = generateVenuePackages(updatedServiceDetails, supplierData)
-  
-        // Save both service details and packages
-        const result = await updateProfile(
-          { serviceDetails: updatedServiceDetails },
-          generatedPackages,
-          supplier.id
-        )
-  
-        if (result.success) {
-          setPackages(generatedPackages)
-          setVenuePackagesGenerated(true)
-          setIsSettingupVenue(false)
-          alert('Venue packages created successfully!')
-        }
-      } catch (error) {
-        console.error('Failed to setup venue packages:', error)
-        alert('Failed to setup venue packages. Please try again.')
-      } finally {
-        setLocalSaving(false)
-      }
-    }
+  const venueNeedsSetup = isVenue && (!supplierData?.serviceDetails?.pricing?.hourlyRate || supplierData.serviceDetails.pricing.hourlyRate <= 0)
 
   // Check if this is a venue business
   useEffect(() => {
     if (supplierData) {
       const businessIsVenue = supplierData.serviceType === 'venue' || supplierData.category === 'Venues'
       setIsVenue(businessIsVenue)
-      console.log('🏢 Business type check:', {
-        serviceType: supplierData.serviceType,
-        category: supplierData.category,
-        isVenue: businessIsVenue
-      })
     }
   }, [supplierData])
 
-  // Auto-generate venue packages when venue data is ready
+  // Load existing packages - SIMPLIFIED
   useEffect(() => {
-    if (isVenue && supplierData && !venuePackagesGenerated) {
-      const serviceDetails = supplierData.serviceDetails
-      const hasHourlyRate = serviceDetails?.pricing?.hourlyRate > 0
-      
-      console.log('🏢 Checking venue package generation conditions:', {
-        isVenue,
-        hasServiceDetails: !!serviceDetails,
-        hasHourlyRate,
-        hourlyRate: serviceDetails?.pricing?.hourlyRate,
-        currentPackages: supplierData.packages?.length || 0
-      })
-
-      if (hasHourlyRate && (!supplierData.packages || supplierData.packages.length === 0)) {
-        console.log('🎯 Auto-generating venue packages...')
-        const generatedPackages = generateVenuePackages(serviceDetails)
-        console.log('✅ Generated venue packages:', generatedPackages)
-        
-        if (generatedPackages.length > 0) {
-          setPackages(generatedPackages)
-          setVenuePackagesGenerated(true)
-          // Auto-save the generated packages
-          savePackagesToBackend(generatedPackages)
-        }
-      }
-    }
-  }, [isVenue, supplierData, venuePackagesGenerated])
-
-  // Load existing packages
-  useEffect(() => {
-    const shouldLoad = !loading && supplierData && (
-      (currentBusiness?.id) ||
-      (!currentBusiness && supplierData)
-    )
-    
-    if (shouldLoad && !venuePackagesGenerated) {
-      console.log('✅ Loading existing packages for business:', currentBusiness?.name || supplierData?.name)
-      
-      setSaveSuccess(false)
-      setIsPackageFormOpen(false)
-      setEditingPackage(null)
-      
+    if (!loading && supplierData) {
       const packagesToLoad = supplierData.packages || []
       setPackages(packagesToLoad)
       
-      if (packagesToLoad.length > 0) {
-        console.log('📦 Loaded packages:', packagesToLoad.map(p => `${p.name} - £${p.price}`))
+      // Load existing hourly rate if available
+      if (supplierData.serviceDetails?.pricing?.hourlyRate) {
+        setVenueSetupForm(prev => ({
+          ...prev,
+          hourlyRate: supplierData.serviceDetails.pricing.hourlyRate.toString()
+        }))
       }
     }
-  }, [currentBusiness?.id, loading, supplierData, venuePackagesGenerated])
+  }, [loading, supplierData])
 
-  // Save packages to backend
-  const savePackagesToBackend = async (updatedPackages) => {
-    setLocalSaving(true)
-    try {
-      console.log("💾 Saving packages for business:", currentBusiness?.name, updatedPackages)
-      if (!updateProfile || !supplierData || !supplier) {
-        throw new Error("Required functions not available")
-      }
-
-      // Update supplier data with new packages
-      const updatedSupplierData = {
-        ...supplierData,
-        packages: updatedPackages,
-      }
-
-      console.log("💾 Updated supplier data for business:", currentBusiness?.name, updatedSupplierData)
+  // Auto-update venue packages when hourly rate changes in profile
+  useEffect(() => {
+    // Skip if already updating to prevent loops
+    if (isUpdatingPrices || isSettingUpVenue || !supplierData || loading) return
+    
+    if (isVenue && supplierData.serviceDetails?.pricing?.hourlyRate) {
+      const currentHourlyRate = supplierData.serviceDetails.pricing.hourlyRate
+      const existingPackages = packages // Use current packages state, not supplierData.packages
       
-      const result = await updateProfile(supplierData, updatedPackages, supplier.id)
+      // Check if we have venue packages that need updating
+      const hasVenuePackages = existingPackages.some(pkg => pkg.isGenerated || pkg.venueSpecific)
+      
+      if (hasVenuePackages) {
+        // Find the current venue package
+        const currentVenuePackage = existingPackages.find(pkg => pkg.isGenerated || pkg.venueSpecific)
+        
+        // Calculate what the price should be with current hourly rate
+        const expectedPrice = currentHourlyRate * 4 // 2 hours party + 1 hour setup + 1 hour cleanup = 4 hours total
+        
+        // Only update if the price is actually different
+        if (currentVenuePackage && currentVenuePackage.price !== expectedPrice) {
+          console.log('Hourly rate changed - updating venue packages:', {
+            oldPrice: currentVenuePackage.price,
+            newPrice: expectedPrice,
+            newHourlyRate: currentHourlyRate
+          })
+          
+          setIsUpdatingPrices(true)
+          
+          // Regenerate packages with new hourly rate
+          const updatedServiceDetails = {
+            ...supplierData.serviceDetails,
+            pricing: {
+              ...supplierData.serviceDetails.pricing,
+              hourlyRate: currentHourlyRate
+            }
+          }
+          
+          const regeneratedPackages = generateVenuePackages(updatedServiceDetails, supplierData)
+          
+          // Update packages immediately
+          setPackages(regeneratedPackages)
+          
+          // Save updated packages to backend
+          updateProfile({}, regeneratedPackages, supplier.id)
+            .then(result => {
+              if (result.success) {
+                console.log('Venue packages updated successfully for new hourly rate')
+              }
+            })
+            .catch(error => {
+              console.error('Failed to update venue packages:', error)
+            })
+            .finally(() => {
+              setTimeout(() => setIsUpdatingPrices(false), 1000)
+            })
+        }
+      }
+    }
+  }, [
+    supplierData?.serviceDetails?.pricing?.hourlyRate, // Only watch hourly rate changes
+    isVenue, 
+    packages, // Watch current packages state instead of supplierData.packages
+    isUpdatingPrices, 
+    isSettingUpVenue, 
+    loading
+    // REMOVED: supplierData, supplier?.id, updateProfile to prevent loops
+  ])
+
+  // SIMPLIFIED venue setup
+  const handleVenueSetup = async () => {
+    console.log('=== VENUE SETUP STARTED ===')
+    console.log('Form hourly rate:', venueSetupForm.hourlyRate)
+    
+    if (!venueSetupForm.hourlyRate || parseFloat(venueSetupForm.hourlyRate) <= 0) {
+      alert('Please enter a valid hourly rate')
+      return
+    }
+
+    setIsSettingupVenue(true)
+
+    try {
+      const hourlyRate = parseFloat(venueSetupForm.hourlyRate)
+      
+      const updatedServiceDetails = {
+        ...supplierData.serviceDetails,
+        pricing: {
+          ...supplierData.serviceDetails?.pricing,
+          hourlyRate: hourlyRate,
+        },
+        availability: {
+          ...supplierData.serviceDetails?.availability,
+          minimumBookingHours: 2 // Changed from 4 to 2 for party time
+        }
+      }
+
+      const generatedPackages = generateVenuePackages(updatedServiceDetails, supplierData)
+      
+      // Save to backend first
+      const result = await updateProfile(
+        { serviceDetails: updatedServiceDetails },
+        generatedPackages,
+        supplier.id
+      )
 
       if (result.success) {
-        console.log("✅ Packages saved successfully for business:", currentBusiness?.name)
+        // Update local state immediately
+        setPackages(generatedPackages)
         
-        if (setSupplierData) {
-          setSupplierData((prev) => ({
-            ...prev,
-            packages: updatedPackages,
-          }))
+        // Force refresh supplier data to ensure consistency
+        if (refresh) {
+          await refresh()
         }
-
-        window.dispatchEvent(
-          new CustomEvent("supplierUpdated", {
-            detail: { supplierId: result.supplier.id },
-          }),
-        )
-
-        setSaveSuccess(true)
-        setTimeout(() => setSaveSuccess(false), 3000)
-        return { success: true }
+        
+        alert('Venue packages created successfully!')
       } else {
         throw new Error(result.error)
       }
+      
     } catch (error) {
-      console.error("❌ Failed to save packages:", error)
-      alert(`Failed to save packages: ${error.message}`)
-      throw error
+      console.error('Venue setup error:', error)
+      alert(`Failed to setup venue packages: ${error.message}`)
     } finally {
-      setLocalSaving(false)
-    }
-  }
-
-  // Regenerate venue packages when pricing changes
-  const handleRegenerateVenuePackages = async () => {
-    if (!isVenue || !supplierData?.serviceDetails) return
-    
-    console.log('🔄 Regenerating venue packages...')
-    const generatedPackages = generateVenuePackages(supplierData.serviceDetails)
-    
-    if (generatedPackages.length > 0) {
-      setPackages(generatedPackages)
-      await savePackagesToBackend(generatedPackages)
-      alert('Venue packages have been regenerated based on your current pricing!')
+      setIsSettingupVenue(false)
     }
   }
 
   const handleOpenPackageForm = (pkg) => {
-    // For venues, don't allow adding custom packages if no hourly rate is set
     if (isVenue && !pkg && (!supplierData?.serviceDetails?.pricing?.hourlyRate || supplierData.serviceDetails.pricing.hourlyRate <= 0)) {
-      alert('Please set your hourly rate in Service Details first before creating packages.')
+      alert('Please set your hourly rate first before creating packages.')
       return
     }
 
@@ -263,7 +234,6 @@ const Packages = () => {
     const file = event.target.files[0]
     if (!file) return
 
-    console.log("📷 Uploading package image to Cloudinary for business:", currentBusiness?.name)
     setUploadingImage(true)
 
     try {
@@ -281,14 +251,12 @@ const Packages = () => {
       }
 
       const cloudinaryData = await response.json()
-      console.log("✅ Package image upload successful:", cloudinaryData.secure_url)
-
       setPackageFormData((prev) => ({
         ...prev,
         image: cloudinaryData.secure_url,
       }))
     } catch (error) {
-      console.error("❌ Package image upload failed:", error)
+      console.error("Image upload failed:", error)
       alert(`Failed to upload image: ${error.message}`)
     } finally {
       setUploadingImage(false)
@@ -343,71 +311,85 @@ const Packages = () => {
   }
 
   const handleSavePackage = async () => {
-    // Validate required fields
-    if (!packageFormData.name || !packageFormData.price || !packageFormData.duration) {
-      alert("Please fill in all required fields (Name, Price, Duration)")
+    if (!packageFormData.name || 
+        !packageFormData.description || 
+        !packageFormData.price || 
+        !packageFormData.duration) {
+      alert("Please fill in all required fields (Name, Description, Price, Duration)")
       return
     }
-  
-    // Filter out empty feature items
+
+    const price = Number.parseFloat(packageFormData.price)
+    if (isNaN(price) || price <= 0) {
+      alert("Please enter a valid price (numbers only)")
+      return
+    }
+
     const filteredFeatures = packageFormData.features.filter((item) => item.trim() !== "")
-  
+    if (filteredFeatures.length === 0) {
+      alert("Please add at least one package feature")
+      return
+    }
+
     const newPackageData = {
       ...packageFormData,
       features: filteredFeatures,
       whatsIncluded: filteredFeatures,
-      price: Number.parseFloat(packageFormData.price) || 0,
+      price: price,
       priceType: "flat",
       image: packageFormData.image,
-      // Mark custom packages for venues
       venueSpecific: isVenue,
       isCustom: isVenue ? true : false
     }
-  
+
     let updatedPackages
-    setPackages((prevPackages) => {
-      // Add this safety check to prevent the "not iterable" error
-      const safePackages = Array.isArray(prevPackages) ? prevPackages : []
-      
-      if (editingPackage && editingPackage.id) {
-        // Editing existing package
-        updatedPackages = safePackages.map((p) => (p.id === editingPackage.id ? { ...p, ...newPackageData } : p))
-      } else {
-        // Adding new package
-        updatedPackages = [...safePackages, { ...newPackageData, id: `pkg${Date.now()}` }]
-      }
-      return updatedPackages
-    })
-  
-    // Auto-save to backend
-    if (updatedPackages) {
-      await savePackagesToBackend(updatedPackages)
+    let packageId
+    
+    if (editingPackage && editingPackage.id) {
+      packageId = editingPackage.id
+      updatedPackages = packages.map((p) => 
+        p.id === editingPackage.id ? { ...p, ...newPackageData } : p
+      )
+    } else {
+      packageId = `pkg${Date.now()}`
+      updatedPackages = [...packages, { ...newPackageData, id: packageId }]
     }
-  
+
     handleClosePackageForm()
+    setPackages(updatedPackages)
+    setSavingPackageId(packageId)
+    
+    try {
+      const result = await updateProfile({}, updatedPackages, supplier.id)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      alert(`Failed to save package: ${error.message}`)
+      // Revert on error
+      setPackages(packages)
+    } finally {
+      setTimeout(() => setSavingPackageId(null), 1000)
+    }
   }
 
   const handleDeletePackage = async (packageId) => {
     if (window.confirm("Are you sure you want to delete this package?")) {
+      const originalPackages = packages
       const updatedPackages = packages.filter((p) => p.id !== packageId)
       setPackages(updatedPackages)
-      await savePackagesToBackend(updatedPackages)
+
+      try {
+        const result = await updateProfile({}, updatedPackages, supplier.id)
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+      } catch (error) {
+        alert(`Failed to delete package: ${error.message}`)
+        // Revert on error
+        setPackages(originalPackages)
+      }
     }
-  }
-
-  const handleManualSave = async () => {
-    await savePackagesToBackend(packages)
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading packages...</p>
-        </div>
-      </div>
-    )
   }
 
   if (venueNeedsSetup) {
@@ -416,20 +398,20 @@ const Packages = () => {
         <div className="max-w-4xl mx-auto p-6">
           <Card className="shadow-lg p-4">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Setup Your Venue Packages</CardTitle>
+              <CardTitle className="text-2xl">Set Your Hourly Rate</CardTitle>
               <CardDescription>
-                We'll create your venue hire packages automatically based on your hourly rate
+                We'll create your venue packages automatically based on your hourly rate
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Your venue packages will include your party time plus 1 hour setup and 1 hour cleanup time.
+                  Your venue packages include 2 hours party time plus 1 hour setup and 1 hour cleanup time (4 hours total).
                 </AlertDescription>
               </Alert>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="max-w-md mx-auto">
                 <div className="space-y-3">
                   <Label htmlFor="hourlyRate" className="text-base font-semibold">
                     Hourly Rate (£) *
@@ -442,40 +424,37 @@ const Packages = () => {
                     onChange={(e) => setVenueSetupForm(prev => ({ ...prev, hourlyRate: e.target.value }))}
                     placeholder="50"
                     className="text-lg h-12"
+                    disabled={isSettingUpVenue}
                   />
                   <p className="text-sm text-gray-600">
                     Your base rate per hour for venue hire
                   </p>
                 </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="minimumHours" className="text-base font-semibold">
-                    Minimum Party Hours *
-                  </Label>
-                  <select
-                    id="minimumHours"
-                    value={venueSetupForm.minimumHours}
-                    onChange={(e) => setVenueSetupForm(prev => ({ ...prev, minimumHours: e.target.value }))}
-                    className="w-full h-12 px-3 border border-gray-300 rounded-md"
-                  >
-                    <option value="2">2 hours</option>
-                    <option value="3">3 hours (recommended)</option>
-                    <option value="4">4 hours</option>
-                    <option value="5">5 hours</option>
-                  </select>
-                </div>
               </div>
 
               {/* Preview calculation */}
-              {venueSetupForm.hourlyRate && (
-                <div className="bg-gray-50 p-4 rounded-lg">
+              {venueSetupForm.hourlyRate && !isSettingUpVenue && (
+                <div className="bg-gray-50 p-4 rounded-lg max-w-md mx-auto">
                   <h4 className="font-semibold mb-2">Package Preview:</h4>
                   <div className="text-sm space-y-1">
-                    <div>Party time: {venueSetupForm.minimumHours} hours</div>
+                    <div>Party time: 4 hours</div>
                     <div>Setup + Cleanup: 2 hours included</div>
-                    <div>Total venue time: {parseInt(venueSetupForm.minimumHours) + 2} hours</div>
-                    <div className="font-semibold text-lg">
-                      Package price: £{(parseFloat(venueSetupForm.hourlyRate) * (parseInt(venueSetupForm.minimumHours) + 2)).toFixed(0)}
+                    <div>Total venue time: 4 hours</div>
+                    <div className="font-semibold text-lg text-green-600">
+                      Package price: £{(parseFloat(venueSetupForm.hourlyRate) * 4).toFixed(0)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading state */}
+              {isSettingUpVenue && (
+                <div className="bg-blue-50 p-4 rounded-lg max-w-md mx-auto">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                    <div>
+                      <h4 className="font-semibold text-blue-900">Creating your venue package...</h4>
+                      <p className="text-sm text-blue-700">Saving to your account and updating display</p>
                     </div>
                   </div>
                 </div>
@@ -486,21 +465,25 @@ const Packages = () => {
                   variant="outline"
                   onClick={() => window.history.back()}
                   className="flex-1"
+                  disabled={isSettingUpVenue}
                 >
                   Go Back
                 </Button>
                 <Button
                   onClick={handleVenueSetup}
-                  disabled={localSaving || !venueSetupForm.hourlyRate}
+                  disabled={isSettingUpVenue || !venueSetupForm.hourlyRate}
                   className="flex-1"
                 >
-                  {localSaving ? (
+                  {isSettingUpVenue ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating Packages...
                     </>
                   ) : (
-                    'Create Venue Packages'
+                    <>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Create Venue Packages
+                    </>
                   )}
                 </Button>
               </div>
@@ -511,54 +494,30 @@ const Packages = () => {
     )
   }
 
-
   return (
     <div className="min-h-screen bg-primary-50">
       <div className="max-w-7xl mx-auto">
-        {/* Success Alert */}
-        {saveSuccess && (
-          <div className="p-4 sm:p-6">
-            <Alert className="border-green-200 bg-green-50 shadow-lg animate-in slide-in-from-top-2 duration-300">
-              <Check className="h-5 w-5 text-green-600" />
-              <AlertDescription className="text-green-800 font-medium">
-                Packages saved successfully! Your changes are now visible to customers.
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
+        
         {/* Venue-specific alerts */}
-        {isVenue && (
+        {/* {isVenue && (
           <div className="p-4 sm:p-6">
-            {!supplierData?.serviceDetails?.pricing?.hourlyRate ? (
-              <Alert className="border-orange-200 bg-orange-50">
-                <AlertTriangle className="h-4 w-4" />
+            {isUpdatingPrices ? (
+              <Alert className="border-yellow-200 bg-yellow-50">
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <AlertDescription>
-                  <strong>Set your hourly rate first:</strong> Go to Service Details and set your hourly rate to automatically generate venue packages.
+                  <strong>Updating packages:</strong> Your venue packages are being updated based on your new hourly rate...
                 </AlertDescription>
               </Alert>
             ) : (
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Venue Packages:</strong> Your packages are automatically generated based on your hourly rate (£{supplierData.serviceDetails.pricing.hourlyRate}/hour). 
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto ml-2 text-blue-600 underline"
-                    onClick={handleRegenerateVenuePackages}
-                  >
-                    Regenerate packages
-                  </Button>
+                  <strong>Venue Packages:</strong> Your packages are automatically generated based on your hourly rate (£{supplierData?.serviceDetails?.pricing?.hourlyRate}/hour).
                 </AlertDescription>
               </Alert>
             )}
           </div>
-        )}
-
-        {/* Global Save Button */}
-        <div className="absolute right-10">
-          <GlobalSaveButton position="responsive" onSave={handleManualSave} isLoading={saving} />
-        </div>
+        )} */}
 
         {/* Header */}
         <div className="p-4 sm:p-6">
@@ -578,46 +537,8 @@ const Packages = () => {
         {/* Main Content */}
         <div className="p-4 sm:p-6 pt-0">
           <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg sm:text-xl">
-                    {isVenue ? 'Venue Hire Packages' : 'Service Packages'}
-                  </CardTitle>
-                  <CardDescription className="text-sm sm:text-base">
-                    {isVenue 
-                      ? 'Standardized packages based on your hourly rate with setup and cleanup time included'
-                      : 'Define and manage the packages you offer to customers'
-                    }
-                  </CardDescription>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleManualSave}
-                    disabled={localSaving}
-                    className="w-full sm:w-auto bg-transparent"
-                  >
-                    {localSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>Save Changes ({packages.length})</>
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={() => handleOpenPackageForm(null)} 
-                    className="w-full sm:w-auto"
-                    disabled={isVenue && (!supplierData?.serviceDetails?.pricing?.hourlyRate || supplierData.serviceDetails.pricing.hourlyRate <= 0)}
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    {isVenue ? 'Add Custom Package' : 'Add New Package'}
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
+        
+            
             <CardContent className="p-4 sm:p-6 pt-0">
               {packages.length === 0 ? (
                 <div className="text-center py-8 sm:py-12 border-2 border-dashed rounded-lg">
@@ -627,7 +548,7 @@ const Packages = () => {
                   </h3>
                   <p className="mt-1 text-sm sm:text-base text-muted-foreground px-4">
                     {isVenue 
-                      ? 'Set your hourly rate in Service Details to automatically generate venue packages.'
+                      ? 'Set your hourly rate to automatically generate venue packages.'
                       : 'Get started by adding your first service package.'
                     }
                   </p>
@@ -643,13 +564,19 @@ const Packages = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                  {Array.isArray(packages) && packages.map((pkg) => (
-                    <SupplierPackageCard
-                      key={pkg.id}
-                      packageData={pkg}
-                      onEdit={() => handleOpenPackageForm(pkg)}
-                      onDelete={() => handleDeletePackage(pkg.id)}
-                      isVenuePackage={isVenue}
-                    />
+                    <div key={pkg.id} className="relative">
+                      <SupplierPackageCard
+                        packageData={pkg}
+                        onEdit={() => handleOpenPackageForm(pkg)}
+                        onDelete={() => handleDeletePackage(pkg.id)}
+                        isVenuePackage={isVenue}
+                      />
+                      {savingPackageId === pkg.id && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {(!isVenue || (isVenue && supplierData?.serviceDetails?.pricing?.hourlyRate > 0)) && (
                     <AddPackageCard onAdd={() => handleOpenPackageForm(null)} />
@@ -660,13 +587,15 @@ const Packages = () => {
           </Card>
         </div>
 
-        {/* Package Form Modal - Same as before */}
+        {/* Package Form Modal */}
         {isPackageFormOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[95vh] overflow-y-auto">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
-                {editingPackage ? "Edit Package" : (isVenue ? "Add Custom Venue Package" : "Add New Package")}
-              </h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg sm:text-xl font-semibold">
+                  {editingPackage ? "Edit Package" : (isVenue ? "Add Custom Venue Package" : "Add New Package")}
+                </h3>
+              </div>
 
               <div className="space-y-4 sm:space-y-6">
                 {/* Package Image */}
@@ -678,14 +607,14 @@ const Packages = () => {
                         {packageFormData.image ? (
                           <>
                             <img
-                              src={packageFormData.image || "/placeholder.svg"}
+                              src={packageFormData.image}
                               alt="Package preview"
                               className="w-full h-full object-cover"
                             />
                             <button
                               type="button"
                               onClick={() => handleFormChange("image", "")}
-                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded text-xs touch-manipulation"
+                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded text-xs"
                               title="Remove image"
                             >
                               <X className="w-3 h-3" />
@@ -703,7 +632,7 @@ const Packages = () => {
                     <div className="space-y-2">
                       <label
                         htmlFor="package-image-upload"
-                        className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer touch-manipulation ${
+                        className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer ${
                           uploadingImage ? "opacity-50 cursor-not-allowed" : ""
                         }`}
                       >
@@ -744,13 +673,14 @@ const Packages = () => {
                     onChange={(e) => handleFormChange("name", e.target.value)}
                     placeholder="e.g., Ultimate Party Package"
                     className="mt-1 px-4 py-3 text-sm"
+                    required
                   />
                 </div>
 
                 {/* Package Description */}
                 <div>
                   <Label htmlFor="package-description" className="text-sm font-medium">
-                    Description
+                    Description *
                   </Label>
                   <Textarea
                     id="package-description"
@@ -759,6 +689,7 @@ const Packages = () => {
                     placeholder="Describe what makes this package special..."
                     rows={3}
                     className="mt-1 px-4 py-3 text-sm resize-none"
+                    required
                   />
                 </div>
 
@@ -771,10 +702,13 @@ const Packages = () => {
                     <Input
                       id="package-price"
                       type="number"
+                      min="0.01"
+                      step="0.01"
                       value={packageFormData.price}
                       onChange={(e) => handleFormChange("price", e.target.value)}
                       placeholder="150"
                       className="mt-1 px-4 py-3 text-sm"
+                      required
                     />
                     {isVenue && supplierData?.serviceDetails?.pricing?.hourlyRate && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -792,13 +726,15 @@ const Packages = () => {
                       onChange={(e) => handleFormChange("duration", e.target.value)}
                       placeholder="e.g., 2 hours"
                       className="mt-1 px-4 py-3 text-sm"
+                      required
                     />
                   </div>
                 </div>
 
                 {/* Package Features */}
                 <div>
-                  <Label className="text-sm font-medium">Package Features</Label>
+                  <Label className="text-sm font-medium">Package Features *</Label>
+                  <p className="text-xs text-gray-500 mb-2">Add at least one feature that's included in this package</p>
                   <div className="space-y-3 mt-2">
                     {packageFormData.features.map((item, index) => (
                       <div key={index} className="flex gap-2">
@@ -814,7 +750,7 @@ const Packages = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => removeFeatureItem(index)}
-                            className="px-3 py-3 touch-manipulation"
+                            className="px-3 py-3"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -826,7 +762,7 @@ const Packages = () => {
                       variant="outline"
                       size="sm"
                       onClick={addFeatureItem}
-                      className="w-full py-3 touch-manipulation bg-transparent"
+                      className="w-full py-3 bg-transparent"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Add Feature
@@ -840,17 +776,8 @@ const Packages = () => {
                 <Button variant="outline" onClick={handleClosePackageForm} className="flex-1 py-3 bg-transparent">
                   Cancel
                 </Button>
-                <Button onClick={handleSavePackage} disabled={localSaving || uploadingImage} className="flex-1 py-3">
-                  {localSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : editingPackage ? (
-                    "Update Package"
-                  ) : (
-                    "Create Package"
-                  )}
+                <Button onClick={handleSavePackage} disabled={uploadingImage} className="flex-1 py-3">
+                  {editingPackage ? "Update Package" : "Create Package"}
                 </Button>
               </div>
             </div>

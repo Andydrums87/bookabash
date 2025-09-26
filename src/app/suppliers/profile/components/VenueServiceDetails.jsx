@@ -25,8 +25,16 @@ import {
   CheckCircle
 } from "lucide-react"
 import { generateVenuePackages } from "@/utils/mockBackend"
+import { SectionSave } from '@/components/ui/SectionSave';
+import { useSectionManager } from '../../hooks/useSectionManager';
 
-const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness }) => {
+const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier }) => {
+
+  const { getSectionState, checkChanges, saveSection } = useSectionManager(
+    supplierData, 
+    updateProfile, 
+    supplier
+  );
   const [loading, setLoading] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     facilities: false,
@@ -88,7 +96,7 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
     availability: {
       daysOfWeek: [],
       timeSlots: [],
-      minimumBookingHours: 3, // Updated default to 3 based on research
+      minimumBookingHours: 4, // Updated default to 4 based on research
       maxAdvanceBooking: 365,
       bufferTimeBetweenBookings: 60, // minutes
     },
@@ -191,7 +199,7 @@ useEffect(() => {
       availability: {
         daysOfWeek: [],
         timeSlots: [],
-        minimumBookingHours: 3,
+        minimumBookingHours: 4,
         maxAdvanceBooking: 365,
         bufferTimeBetweenBookings: 60,
       },
@@ -268,7 +276,7 @@ useEffect(() => {
       availability: {
         daysOfWeek: [],
         timeSlots: [],
-        minimumBookingHours: 3,
+        minimumBookingHours: 4,
         maxAdvanceBooking: 365,
         bufferTimeBetweenBookings: 60,
         ...businessServiceDetails.availability,
@@ -509,12 +517,30 @@ useEffect(() => {
     "Clean up any spills immediately for safety",
   ]
 
-  // Fixed handlers that call onUpdate immediately
   const handleFieldChange = (field, value) => {
     const newDetails = { ...details, [field]: value }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // Add change detection based on field
+    if (field === 'aboutUs') {
+      checkChanges('aboutUs', value);
+    } else if (field === 'venueType') {
+      const basicInfoData = {
+        venueType: value,
+        capacity: details.capacity,
+        minimumBookingHours: details.availability?.minimumBookingHours,
+      };
+      checkChanges('venueBasicInfo', basicInfoData);
+    } else if (field === 'bookingTerms') {
+      const policiesData = {
+        policies: details.policies,
+        bookingTerms: value,
+      };
+      checkChanges('venuePolicies', policiesData);
+    }
   }
+
 
   const handleNestedFieldChange = (parentField, childField, value) => {
     const newDetails = {
@@ -526,15 +552,194 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // Enhanced change detection for nested fields
+    if (parentField === 'venueAddress') {
+      checkChanges('venueAddress', newDetails.venueAddress);
+    } else if (parentField === 'venueDetails') {
+      // ADD THIS - handle venueDetails changes (parking, access instructions, etc.)
+      checkChanges('venueDetails', newDetails.venueDetails);
+    } else if (parentField === 'pricing') {
+      checkChanges('venuePricing', newDetails.pricing);
+    } else if (parentField === 'capacity') {
+      const basicInfoData = {
+        venueType: details.venueType,
+        capacity: newDetails.capacity,
+        minimumBookingHours: details.availability?.minimumBookingHours,
+      };
+      checkChanges('venueBasicInfo', basicInfoData);
+    } else if (parentField === 'equipment') {
+      const facilitiesData = {
+        facilities: details.facilities,
+        equipment: newDetails.equipment,
+      };
+      checkChanges('venueFacilities', facilitiesData);
+    } else if (parentField === 'policies') {
+      const policiesData = {
+        policies: newDetails.policies,
+        bookingTerms: details.bookingTerms,
+      };
+      checkChanges('venuePolicies', policiesData);
+    }
   }
+    // 6. Create save handlers for each section:
+    const handleAboutUsSave = () => {
+      saveSection('aboutUs', details.aboutUs, {
+        serviceDetails: {
+          ...supplierData.serviceDetails,
+          aboutUs: details.aboutUs
+        }
+      });
+    };
 
+    
+  const handleVenueAddressSave = () => {
+    saveSection('venueAddress', details.venueAddress, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        venueAddress: details.venueAddress
+      }
+    });
+  };
+
+  const handleVenueBasicInfoSave = () => {
+    const basicInfoData = {
+      venueType: details.venueType,
+      capacity: details.capacity,
+      availability: {
+        ...details.availability,
+        minimumBookingHours: details.availability?.minimumBookingHours
+      }
+    };
+    
+    saveSection('venueBasicInfo', basicInfoData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...basicInfoData
+      }
+    });
+  };
+
+  const handleVenuePricingSave = () => {
+    saveSection('venuePricing', details.pricing, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        pricing: details.pricing
+      }
+    });
+  };
+
+  const handleVenueAddOnsSave = () => {
+    saveSection('venueAddOns', details.addOnServices, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        addOnServices: details.addOnServices
+      }
+    });
+  };
+  const handleVenueItemsPolicySave = () => {
+    const itemsPolicyData = {
+      allowedItems: details.allowedItems,
+      restrictedItems: details.restrictedItems,
+    };
+    
+    saveSection('venueItemsPolicy', itemsPolicyData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...itemsPolicyData
+      }
+    });
+  };
+
+  const handleVenueHouseRulesSave = () => {
+    saveSection('venueHouseRules', details.houseRules, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        houseRules: details.houseRules
+      }
+    });
+  };
+
+  const handleVenueFacilitiesSave = () => {
+    const facilitiesData = {
+      facilities: details.facilities,
+      equipment: details.equipment,
+    };
+    
+    saveSection('venueFacilities', facilitiesData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...facilitiesData
+      }
+    });
+  };
+
+  const handleVenuePoliciesSave = () => {
+    const policiesData = {
+      policies: details.policies,
+      bookingTerms: details.bookingTerms,
+    };
+    
+    saveSection('venuePolicies', policiesData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...policiesData
+      }
+    });
+  };
+
+  // Add this new save handler for venue details
+const handleVenueDetailsSave = () => {
+  saveSection('venueDetails', details.venueDetails, {
+    serviceDetails: {
+      ...supplierData.serviceDetails,
+      venueDetails: details.venueDetails
+    }
+  });
+};
+
+  const aboutUsState = getSectionState('aboutUs');
+  const venueAddressState = getSectionState('venueAddress');
+  const venueBasicInfoState = getSectionState('venueBasicInfo');
+  const venuePricingState = getSectionState('venuePricing');
+  const venueAddOnsState = getSectionState('venueAddOns');
+  const venueItemsPolicyState = getSectionState('venueItemsPolicy');
+  const venueHouseRulesState = getSectionState('venueHouseRules');
+  const venueFacilitiesState = getSectionState('venueFacilities');
+  const venuePoliciesState = getSectionState('venuePolicies');
+  const venueDetailsState = getSectionState('venueDetails');
+
+  // 8. Update array toggle handlers:
   const handleArrayToggle = (array, item, field) => {
     const newArray = array.includes(item) ? array.filter((i) => i !== item) : [...array, item]
-
     const newDetails = { ...details, [field]: newArray }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // Add change detection for array fields
+    if (field === 'facilities') {
+      const facilitiesData = {
+        facilities: newArray,
+        equipment: details.equipment,
+      };
+      checkChanges('venueFacilities', facilitiesData);
+    } else if (field === 'houseRules') {
+      checkChanges('venueHouseRules', newArray);
+    } else if (field === 'allowedItems') {
+      const itemsPolicyData = {
+        allowedItems: newArray,
+        restrictedItems: details.restrictedItems,
+      };
+      checkChanges('venueItemsPolicy', itemsPolicyData);
+    } else if (field === 'restrictedItems') {
+      const itemsPolicyData = {
+        allowedItems: details.allowedItems,
+        restrictedItems: newArray,
+      };
+      checkChanges('venueItemsPolicy', itemsPolicyData);
+    }
   }
+
 
   // Add-ons management functions
   const handleAddonFormChange = (field, value) => {
@@ -557,7 +762,7 @@ useEffect(() => {
       alert("Please enter both name and price for the add-on")
       return
     }
-
+  
     const newAddon = {
       id: editingAddon ? editingAddon.id : `addon-${Date.now()}`,
       name: addonForm.name,
@@ -565,7 +770,7 @@ useEffect(() => {
       description: addonForm.description,
       category: addonForm.category,
     }
-
+  
     let newDetails
     if (editingAddon) {
       newDetails = {
@@ -578,11 +783,19 @@ useEffect(() => {
         addOnServices: [...details.addOnServices, newAddon],
       }
     }
-
+  
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE - notify section manager of changes
+    checkChanges('venueAddOns', newDetails.addOnServices);
+    
     resetAddonForm()
   }
+  
+
+  
+
 
   const handleEditAddon = (addon) => {
     setAddonForm({
@@ -595,6 +808,16 @@ useEffect(() => {
     setIsAddingAddon(true)
   }
 
+  const handleAddOnServicesSave = () => {
+    console.log('Saving add-ons:', details.addOnServices);
+    saveSection('addOnServices', details.addOnServices, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        addOnServices: details.addOnServices
+      }
+    });
+  };
+
   const handleDeleteAddon = (addonId) => {
     if (confirm("Are you sure you want to delete this add-on?")) {
       const newDetails = {
@@ -603,6 +826,9 @@ useEffect(() => {
       }
       setDetails(newDetails)
       onUpdate(newDetails)
+      
+      // ADD THIS LINE - notify section manager of changes
+      checkChanges('venueAddOns', newDetails.addOnServices);
     }
   }
 
@@ -611,21 +837,23 @@ useEffect(() => {
       alert("This add-on already exists!")
       return
     }
-
+  
     const newAddon = {
       id: `addon-${Date.now()}`,
       ...template,
     }
-
+  
     const newDetails = {
       ...details,
       addOnServices: [...details.addOnServices, newAddon],
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE - notify section manager of changes
+    checkChanges('venueAddOns', newDetails.addOnServices);
   }
 
-  // Restrictions management
   const handleAddRestriction = (item) => {
     if (details.restrictedItems.includes(item)) return
     
@@ -635,7 +863,15 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE
+    const itemsPolicyData = {
+      allowedItems: details.allowedItems,
+      restrictedItems: newDetails.restrictedItems,
+    };
+    checkChanges('venueItemsPolicy', itemsPolicyData);
   }
+  
 
   const handleRemoveRestriction = (item) => {
     const newDetails = {
@@ -644,6 +880,13 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE
+    const itemsPolicyData = {
+      allowedItems: details.allowedItems,
+      restrictedItems: newDetails.restrictedItems,
+    };
+    checkChanges('venueItemsPolicy', itemsPolicyData);
   }
 
   const handleAddCustomRestriction = () => {
@@ -654,7 +897,6 @@ useEffect(() => {
     setIsAddingRestriction(false)
   }
 
-  // NEW: Allowed items management functions
   const handleAddAllowedItem = (item) => {
     if (details.allowedItems.includes(item)) return
     
@@ -664,6 +906,13 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE
+    const itemsPolicyData = {
+      allowedItems: newDetails.allowedItems,
+      restrictedItems: details.restrictedItems,
+    };
+    checkChanges('venueItemsPolicy', itemsPolicyData);
   }
 
   const handleRemoveAllowedItem = (item) => {
@@ -673,7 +922,15 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE
+    const itemsPolicyData = {
+      allowedItems: newDetails.allowedItems,
+      restrictedItems: details.restrictedItems,
+    };
+    checkChanges('venueItemsPolicy', itemsPolicyData);
   }
+  
 
   const handleAddCustomAllowedItem = () => {
     if (!customAllowedItem.trim()) return
@@ -683,7 +940,6 @@ useEffect(() => {
     setIsAddingAllowedItem(false)
   }
 
-  // House rules management
   const handleAddRule = (rule) => {
     if (details.houseRules.includes(rule)) return
     
@@ -693,6 +949,9 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE
+    checkChanges('venueHouseRules', newDetails.houseRules);
   }
 
   const handleRemoveRule = (rule) => {
@@ -702,6 +961,9 @@ useEffect(() => {
     }
     setDetails(newDetails)
     onUpdate(newDetails)
+    
+    // ADD THIS LINE
+    checkChanges('venueHouseRules', newDetails.houseRules);
   }
 
   const handleAddCustomRule = () => {
@@ -789,7 +1051,16 @@ useEffect(() => {
               </div>
             </div>
           </div>
+          <SectionSave
+    sectionName="About Venue"
+    hasChanges={aboutUsState.hasChanges}
+    onSave={handleAboutUsSave}
+    saving={aboutUsState.saving}
+    lastSaved={aboutUsState.lastSaved}
+    error={aboutUsState.error}
+  />
         </div>
+
       </div>
 
         {/* Venue Address - Replace existing location section */}
@@ -879,7 +1150,7 @@ useEffect(() => {
             <div className="space-y-3">
               <label className="text-base font-semibold text-gray-700 block">Parking Information *</label>
               <textarea
-                value={details.venueDetails?.parkingInfo || ""}
+            value={details.venueDetails?.parkingInfo || ""}
                 onChange={(e) => handleNestedFieldChange("venueDetails", "parkingInfo", e.target.value)}
                 placeholder="Free parking available in car park. Street parking also available. Disabled parking spaces at entrance."
                 rows={4}
@@ -920,9 +1191,24 @@ useEffect(() => {
               />
             </div>
           </div>
+          <SectionSave
+  sectionName="Venue Details"
+  hasChanges={venueDetailsState.hasChanges}
+  onSave={handleVenueDetailsSave}
+  saving={venueDetailsState.saving}
+  lastSaved={venueDetailsState.lastSaved}
+  error={venueDetailsState.error}
+/>
+        <SectionSave
+    sectionName="Venue Address"
+    hasChanges={venueAddressState.hasChanges}
+    onSave={handleVenueAddressSave}
+    saving={venueAddressState.saving}
+    lastSaved={venueAddressState.lastSaved}
+    error={venueAddressState.error}
+  />
         </div>
-      
-    
+  
 
 </div>
 
@@ -964,12 +1250,12 @@ useEffect(() => {
                 Minimum Booking Hours *
               </label>
               <select 
-                value={details.availability?.minimumBookingHours?.toString() || "3"} 
+                value={details.availability?.minimumBookingHours?.toString() || "4"} 
                 onChange={(e) => handleNestedFieldChange("availability", "minimumBookingHours", parseInt(e.target.value))}
                 className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base focus:border-blue-500 focus:outline-none px-3"
               >
                 <option value="2">2 hours</option>
-                <option value="3">3 hours (recommended)</option>
+                <option value="3">3 hours</option>
                 <option value="4">4 hours</option>
                 <option value="5">5 hours</option>
                 <option value="6">6 hours</option>
@@ -1030,7 +1316,16 @@ useEffect(() => {
               />
             </div>
           </div>
+          <SectionSave
+    sectionName="Venue Basic Info"
+    hasChanges={venueBasicInfoState.hasChanges}
+    onSave={handleVenueBasicInfoSave}
+    saving={venueBasicInfoState.saving}
+    lastSaved={venueBasicInfoState.lastSaved}
+    error={venueBasicInfoState.error}
+  />
         </div>
+
       </div>
 
       {/* Enhanced Pricing Structure */}
@@ -1087,6 +1382,7 @@ useEffect(() => {
                 Minimum total booking amount (optional)
               </p>
             </div>
+
           </div>
 
           {/* Setup and Cleanup Times */}
@@ -1095,8 +1391,16 @@ useEffect(() => {
             <p className="text-blue-800">Standard 1 hour setup and 1 hour cleanup included with all bookings.</p>
             <p className="text-sm text-blue-600 mt-1">This ensures adequate time for proper party preparation and venue restoration.</p>
           </div>
-
+          <SectionSave
+    sectionName="Venue Pricing"
+    hasChanges={venuePricingState.hasChanges}
+    onSave={handleVenuePricingSave}
+    saving={venuePricingState.saving}
+    lastSaved={venuePricingState.lastSaved}
+    error={venuePricingState.error}
+  />
         </div>
+
       </div>
 
       {/* Add-on Services Management */}
@@ -1231,7 +1535,16 @@ useEffect(() => {
               </div>
             )}
           </div>
+          <SectionSave
+    sectionName="Venue Add-ons"
+    hasChanges={venueAddOnsState.hasChanges}
+    onSave={handleVenueAddOnsSave}
+    saving={venueAddOnsState.saving}
+    lastSaved={venueAddOnsState.lastSaved}
+    error={venueAddOnsState.error}
+  />
         </div>
+
       </div>
 
       {/* NEW: Items Allowed & Items Not Permitted Section */}
@@ -1396,7 +1709,16 @@ useEffect(() => {
               </div>
             )}
           </div>
+          <SectionSave
+    sectionName="Items Policy"
+    hasChanges={venueItemsPolicyState.hasChanges}
+    onSave={handleVenueItemsPolicySave}
+    saving={venueItemsPolicyState.saving}
+    lastSaved={venueItemsPolicyState.lastSaved}
+    error={venueItemsPolicyState.error}
+  />
         </div>
+
       </div>
 
       {/* House Rules */}
@@ -1488,7 +1810,16 @@ useEffect(() => {
               </div>
             )}
           </div>
+          <SectionSave
+    sectionName="House Rules"
+    hasChanges={venueHouseRulesState.hasChanges}
+    onSave={handleVenueHouseRulesSave}
+    saving={venueHouseRulesState.saving}
+    lastSaved={venueHouseRulesState.lastSaved}
+    error={venueHouseRulesState.error}
+  />
         </div>
+
       </div>
 
       {/* Facilities & Equipment */}
@@ -1595,7 +1926,16 @@ useEffect(() => {
               ))}
             </div>
           </div>
+          <SectionSave
+    sectionName="Facilities & Equipment"
+    hasChanges={venueFacilitiesState.hasChanges}
+    onSave={handleVenueFacilitiesSave}
+    saving={venueFacilitiesState.saving}
+    lastSaved={venueFacilitiesState.lastSaved}
+    error={venueFacilitiesState.error}
+  />
         </div>
+
       </div>
 
       {/* Enhanced Venue Policies */}
@@ -1680,6 +2020,14 @@ useEffect(() => {
                 ))}
               </select>
             </div>
+            <SectionSave
+    sectionName="Venue Policies"
+    hasChanges={venuePoliciesState.hasChanges}
+    onSave={handleVenuePoliciesSave}
+    saving={venuePoliciesState.saving}
+    lastSaved={venuePoliciesState.lastSaved}
+    error={venuePoliciesState.error}
+  />
           </div>
 
           {/* Booking Terms */}

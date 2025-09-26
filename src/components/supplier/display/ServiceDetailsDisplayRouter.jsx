@@ -182,12 +182,7 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview }) => {
   // Render based on detected category
   return (
     <div className="space-y-6">
-      {isPreview && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-          Preview Mode: Showing {detectedCategory} display component
-        </div>
-      )}
-      
+     
       {/* Service-specific details */}
       <React.Suspense fallback={<div className="p-6">Loading service details...</div>}>
         {(() => {

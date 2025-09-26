@@ -44,6 +44,54 @@ const CoverPhotoContent = ({ currentSupplier, supplierData, supplier, packages, 
   const [isSwitching, setIsSwitching] = useState(false)
   
 
+  useEffect(() => {
+    // Handle direct links with fragments AND cross-page navigation
+    const handleScroll = () => {
+      // Check URL hash first
+      let elementId = null;
+      
+      if (window.location.hash) {
+        elementId = window.location.hash.substring(1);
+        // Clear the hash to prevent browser's default scroll behavior
+        window.history.replaceState(null, null, window.location.pathname);
+      }
+      
+      // Check sessionStorage for cross-page navigation
+      if (!elementId) {
+        elementId = sessionStorage.getItem('scrollToElement');
+        if (elementId) {
+          sessionStorage.removeItem('scrollToElement');
+        }
+      }
+      
+      if (elementId) {
+        // Wait for page to render, then scroll
+        setTimeout(() => {
+          const element = document.getElementById(elementId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Highlight the field briefly to draw attention
+            element.style.transition = 'box-shadow 0.3s ease';
+            element.style.boxShadow = '0 0 10px 3px rgba(59, 130, 246, 0.5)';
+            
+            // Focus if it's an input/textarea
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+              element.focus();
+            }
+            
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+              element.style.boxShadow = '';
+            }, 2000);
+          }
+        }, 300); // Increased delay to ensure form is fully rendered
+      }
+    };
+    
+    handleScroll();
+  }, []); // Run once when component mounts
+
 
   // ✅ Update cover photo when supplier data changes (business switching)
   useEffect(() => {
@@ -759,6 +807,9 @@ if (loading) {
   currentBusiness={currentBusiness}
   onUpdate={handleServiceDetailsUpdate}
   saving={saving}
+  setSupplierData={setSupplierData}  // Pass the state setter
+  updateProfile={updateProfile}      // Pass the update function
+  supplier={supplier}                // Pass the supplier object
 />
           </div>
  
@@ -771,9 +822,9 @@ if (loading) {
       </div>
     )}
           {/* Verification Documents - Mobile Optimized */}
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <VerificationDocumentsTabContent />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
