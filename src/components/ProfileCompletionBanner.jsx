@@ -104,7 +104,7 @@ export const ProfileCompletionBanner = ({
         },
         {
           field: "extraHourRate",
-          value: supplierData.extraHourRate && supplierData.extraHourRate > 0,
+          value: supplierData.serviceDetails?.extraHourRate && supplierData.serviceDetails?.extraHourRate > 0,
         }
       ]
   

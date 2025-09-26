@@ -132,7 +132,7 @@ const AdminAuthWrapper = ({ children }) => {
             <Alert className="mb-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                You don't have admin privileges to access this page.
+                You do not have admin privileges to access this page.
               </AlertDescription>
             </Alert>
             <p className="text-sm text-gray-600 mb-4">

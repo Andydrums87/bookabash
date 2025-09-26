@@ -219,11 +219,11 @@ export const ModalSetupTour = ({
     
     switch (stepId) {
       case 'about':
-        return supplierData.aboutUs && supplierData.aboutUs.trim().length >= 20
+        return supplierData.serviceDetails?.aboutUs.trim().length >= 20
       case 'photos':
         return supplierData.portfolioImages && supplierData.portfolioImages.length >= 1
       case 'pricing':
-        return supplierData.extraHourRate && supplierData.extraHourRate > 0
+        return supplierData.serviceDetails?.extraHourRate && supplierData.serviceDetails?.extraHourRate > 0
       case 'venue-details':
         return supplierData.serviceDetails?.venueType && 
                supplierData.serviceDetails?.capacity?.max > 0
