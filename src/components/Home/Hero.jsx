@@ -16,26 +16,6 @@ import { useState, useEffect } from "react"
 
 export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
   const router = useRouter()
-  const [showFloatingCTA, setShowFloatingCTA] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // Show CTA when user scrolls down more than 50px
-      if (window.scrollY > 50) {
-        setShowFloatingCTA(true)
-      } else {
-        setShowFloatingCTA(false)
-      }
-    }
-
-    // Add scroll event listener
-    window.addEventListener('scroll', handleScroll)
-    
-    // Cleanup event listener on component unmount
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
 
   return (
     <section className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] h-screen">
@@ -167,7 +147,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 <div className="relative">
                   <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-400" />
                   <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)} required>
-                    <SelectTrigger className="bg-white py-6 px-22 text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
+                    <SelectTrigger className="bg-white py-6 px-28 text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
                       <SelectValue placeholder="Guests" />
                     </SelectTrigger>
                     <SelectContent>
@@ -296,41 +276,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               </div>
             </div>
 
-            {/* Floating CTA with Scroll-Triggered Visibility */}
-            <div className={`fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${
-              showFloatingCTA 
-                ? 'translate-y-0 opacity-100' 
-                : 'translate-y-16 opacity-0 pointer-events-none'
-            }`}>
-              <button 
-                onClick={() => {
-                  router.push('/party-builder')
-                }}
-                className="bg-white active:scale-200 active:bg-[hsl(var(--primary-100))] hover:bg-gray-50 text-[hsl(var(--primary-500))] font-bold h-16 w-64 sm:w-72 rounded-full transition-all duration-300 transform hover:scale-105 relative overflow-hidden group border-2 border-[hsl(var(--primary-500))] animate-bounce-gentle shadow-lg hover:shadow-2xl"
-                style={{
-                  boxShadow: '0 0 30px rgba(255, 107, 107, 0.4), 0 8px 32px rgba(0, 0, 0, 0.15)',
-                  animation: showFloatingCTA ? 'float 3s ease-in-out infinite' : 'none'
-                }}
-              >
-                {/* Button background animation */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[hsl(var(--primary-100))] to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500 transform -skew-x-12"></div>
-                
-                <div className="flex items-center justify-center relative z-10 h-full">
-                  Plan My Party! <span className="text-2xl ml-2">🎉</span>
-                </div>
-              </button>
-              
-              {/* Snappy the crocodile */}
-              <div className="w-20 h-20 absolute top-2 left-[-15px] z-200">
-                <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
-                  alt="Snappy the crocodile"
-                  fill
-                  className="object-contain"
-                  sizes="100vw 100vh"
-                />
-              </div>
-            </div>
+      
           </div>
  
           {/* Custom animations */}

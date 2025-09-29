@@ -309,7 +309,7 @@ const handleNavigation = async (item) => {
       {/* Dashboard Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
+        className="flex items-center cursor-pointer space-x-1 text-gray-900 hover:text-[hsl(var(--primary-500))] px-3 py-2 text-md font-medium transition-colors"
       >
         <span>My Snapboard</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

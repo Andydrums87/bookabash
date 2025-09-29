@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,25 +8,122 @@ import { useSupplier } from "@/hooks/useSupplier"
 import { TrendingUp, Calendar, Settings, Users } from "lucide-react"
 import EnquiryNotificationBanner from "@/components/EnquiryNotificationBanner"
 import { HeaderEnquiryBadge } from "@/components/EnquiryNotificationBanner"
-
-// 👈 ADD THESE IMPORTS
 import { BusinessProvider } from "../../../contexts/BusinessContext"
 import EnquiryOverviewSection from "./components/EnquiryOverviewSection"
-
+import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import { 
   DashboardSkeleton, 
   CalendarSkeleton, 
   ActionButtonsSkeleton, 
-  StatsCardsSkeleton,
-  Skeleton 
+  StatsCardsSkeleton 
 } from "./components/DashboardSkeletons"
 
 export default function SupplierDashboard() {
-  const { supplier, supplierData, loading } = useSupplier()
-  const [currentMonth, setCurrentMonth] = useState("June 2025")
+  const { supplier, supplierData, loading, currentBusiness } = useSupplier()
+  const { enquiries, loading: enquiriesLoading } = useSupplierEnquiries(null, currentBusiness?.id)
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date()
+    return now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  })
 
-  // REPLACE: Simple loading check with skeleton
-  if (loading) {
+  // Calculate real stats from enquiries
+  const stats = useMemo(() => {
+    if (!enquiries || enquiries.length === 0) {
+      return {
+        newEnquiries: 0,
+        monthlyEarnings: 0,
+        bookingsCount: 0,
+        rating: supplierData?.rating || 0
+      }
+    }
+
+    const now = new Date()
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    // Filter enquiries for current month
+    const thisMonthEnquiries = enquiries.filter(e => {
+      const createdDate = new Date(e.created_at)
+      return createdDate >= currentMonthStart
+    })
+
+    // Count new enquiries (pending + viewed)
+    const newEnquiries = thisMonthEnquiries.filter(
+      e => e.status === 'pending' || e.status === 'viewed'
+    ).length
+
+    // Calculate monthly earnings from accepted bookings
+    const monthlyEarnings = thisMonthEnquiries
+      .filter(e => e.status === 'accepted' && e.final_price)
+      .reduce((sum, e) => sum + (parseFloat(e.final_price) || 0), 0)
+
+    // Count total bookings (accepted enquiries)
+    const bookingsCount = enquiries.filter(e => e.status === 'accepted').length
+
+    return {
+      newEnquiries,
+      monthlyEarnings,
+      bookingsCount,
+      rating: supplierData?.rating || 0
+    }
+  }, [enquiries, supplierData])
+
+  // Get upcoming events from accepted enquiries
+  const upcomingEvents = useMemo(() => {
+    if (!enquiries || enquiries.length === 0) return []
+
+    const now = new Date()
+    const nextWeek = new Date(now)
+    nextWeek.setDate(nextWeek.getDate() + 7)
+
+    // Get accepted bookings for the next week
+    const acceptedBookings = enquiries.filter(e => {
+      if (e.status !== 'accepted' || !e.parties) return false
+      
+      const partyDate = new Date(e.parties.party_date)
+      return partyDate >= now && partyDate <= nextWeek
+    })
+
+    // Group by date
+    const eventsByDate = {}
+    acceptedBookings.forEach(booking => {
+      const partyDate = new Date(booking.parties.party_date)
+      const dateKey = partyDate.toLocaleDateString('en-GB', { 
+        month: 'long', 
+        day: 'numeric' 
+      })
+
+      if (!eventsByDate[dateKey]) {
+        eventsByDate[dateKey] = []
+      }
+
+      eventsByDate[dateKey].push({
+        name: booking.parties.party_name || `${booking.parties.child_name}'s Party`,
+        location: booking.parties.venue_location || 'Location TBD',
+        time: booking.parties.party_time || ''
+      })
+    })
+
+    // Convert to array format
+    const dates = []
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(now)
+      date.setDate(date.getDate() + i)
+      const dateKey = date.toLocaleDateString('en-GB', { 
+        month: 'long', 
+        day: 'numeric' 
+      })
+
+      dates.push({
+        date: dateKey,
+        events: eventsByDate[dateKey] || [],
+        free: !eventsByDate[dateKey] || eventsByDate[dateKey].length === 0
+      })
+    }
+
+    return dates
+  }, [enquiries])
+
+  if (loading || enquiriesLoading) {
     return (
       <BusinessProvider>
         <DashboardSkeleton />
@@ -34,118 +131,108 @@ export default function SupplierDashboard() {
     )
   }
 
-
-  // Sample data - replace with actual data from your supplier
-  const name = supplierData?.owner?.name || "Paul"
-  const leads = [
-    { service: "Jungle Safari", lead: "Sarah M.", date: "Jun 15", status: "Replied", id: 1 },
-    { service: "Dinosaur Discovery Day", lead: "Emily C.", date: "Mar 22", status: "Waiting", id: 2 },
-    { service: "Pirate Treasure Hunt", lead: "Michael T.", date: "Oct 5", status: "Replied", id: 3 },
-    { service: "Fairy Tale Carnival", lead: "Jessica L.", date: "Feb 14", status: "Waiting", id: 4 },
-    { service: "Space Explorer Adventure", lead: "Sophia M.", date: "Nov 11", status: "Replied", id: 5 },
-    { service: "Superhero Training Camp", lead: "James W.", date: "Apr 1", status: "Replied", id: 6 },
-    { service: "Rainbow Magic Festival", lead: "David J.", date: "Aug 30", status: "Waiting", id: 7 },
-  ]
-
-  const upcomingEvents = [
-    {
-      date: "June 15",
-      events: [
-        { name: "Jungle Safari", location: "12 Oxford Street, Soho" },
-        { name: "Space Explorer Adventure", location: "221B Baker Street" },
-      ],
-    },
-    {
-      date: "June 16",
-      events: [
-        { name: "Fairy Tale Carnival", location: "Flat 5, 10 Downing Street" },
-        { name: "Dinosaur Discovery Day", location: "45 Kings Road, Chelsea" },
-      ],
-    },
-    { date: "June 17", events: [], free: true },
-    {
-      date: "June 18",
-      events: [{ name: "Rainbow Magic Festival", location: "12 Oxford Street, Soho" }],
-    },
-  ]
+  const name = supplierData?.owner?.name || supplierData?.owner?.firstName || "there"
 
   return (
     <BusinessProvider>
-    <div className="min-h-screen bg-primary-50">
-      <div className="max-w-7xl mx-auto">
-        <EnquiryNotificationBanner />
+      <div className="min-h-screen bg-primary-50">
+        <div className="max-w-7xl mx-auto">
+          <EnquiryNotificationBanner />
 
-        {/* Welcome Header - Mobile Optimized */}
-        <div className="p-3 sm:p-4 lg:p-6">
-          <HeaderEnquiryBadge />
-          <div className="space-y-2 sm:space-y-3">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
-              Welcome back, {name}
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              See new requests, update your profile, and manage availability—all in one place
-            </p>
-          </div>
-        </div>
-
-        {/* Main Content Grid - Mobile Optimized */}
-        <div className="p-3 sm:p-4 lg:p-6 pt-0">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-            {/* Leads Table - Mobile Optimized */}
-            <div className="xl:col-span-2">
-              <Card className="shadow-sm">
-                <CardContent className="p-0">
-                  {/* Mobile Table Header */}
-                  {/* <div className="p-4 sm:p-6 border-b border-gray-200 bg-muted/20">
-                    <h2 className="text-base sm:text-lg lg:text-xl font-semibold">Recent Enquiries</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      Manage your latest booking requests
-                    </p>
-                  </div> */}
-
-                  {/* REPLACE: EnquiryOverviewSection with built-in skeleton loading */}
-                  <EnquiryOverviewSection />
-                </CardContent>
-              </Card>
+          {/* Welcome Header */}
+          <div className="p-3 sm:p-4 lg:p-6">
+            <HeaderEnquiryBadge />
+            <div className="space-y-2 sm:space-y-3">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
+                Welcome back, {name}
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                See new requests, update your profile, and manage availability—all in one place
+              </p>
             </div>
+          </div>
 
-            {/* Calendar Section - Mobile Optimized */}
-            <div className="space-y-4">
-              <Card className="shadow-sm">
-                <CardContent className="p-4 sm:p-6">
-                  {/* Calendar Header */}
-                  <div className="flex justify-between items-center mb-4 sm:mb-6">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 touch-manipulation">
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <h2 className="font-semibold text-sm sm:text-base">{currentMonth}</h2>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 touch-manipulation">
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+          {/* Main Content Grid */}
+          <div className="p-3 sm:p-4 lg:p-6 pt-0">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+              {/* Enquiries Table */}
+              <div className="xl:col-span-2">
+                <Card className="shadow-sm">
+                  <CardContent className="p-0">
+                    <EnquiryOverviewSection />
+                  </CardContent>
+                </Card>
+              </div>
 
-                  {/* ADD: Calendar loading state with skeleton */}
-                  {loading ? (
-                    <CalendarSkeleton />
-                  ) : (
+              {/* Calendar Section */}
+              <div className="space-y-4">
+                <Card className="shadow-sm">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex justify-between items-center mb-4 sm:mb-6">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 touch-manipulation"
+                        onClick={() => {
+                          const date = new Date(currentMonth)
+                          date.setMonth(date.getMonth() - 1)
+                          setCurrentMonth(date.toLocaleDateString('en-GB', { 
+                            month: 'long', 
+                            year: 'numeric' 
+                          }))
+                        }}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <h2 className="font-semibold text-sm sm:text-base">{currentMonth}</h2>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 touch-manipulation"
+                        onClick={() => {
+                          const date = new Date(currentMonth)
+                          date.setMonth(date.getMonth() + 1)
+                          setCurrentMonth(date.toLocaleDateString('en-GB', { 
+                            month: 'long', 
+                            year: 'numeric' 
+                          }))
+                        }}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+
                     <div className="space-y-3 sm:space-y-4">
-                      <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-3">Upcoming Events</h3>
-                      {upcomingEvents.map((day) => (
-                        <div key={day.date} className="space-y-2">
-                          <h4 className="font-medium text-xs sm:text-sm text-gray-700">{day.date}</h4>
+                      <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-3">
+                        Next 7 Days
+                      </h3>
+                      {upcomingEvents.map((day, idx) => (
+                        <div key={idx} className="space-y-2">
+                          <h4 className="font-medium text-xs sm:text-sm text-gray-700">
+                            {day.date}
+                          </h4>
                           {day.free ? (
                             <div className="py-2 sm:py-3 text-center text-muted-foreground text-sm bg-gray-50 rounded-lg">
                               Free
                             </div>
                           ) : (
                             <div className="space-y-2">
-                              {day.events?.map((event, idx) => (
+                              {day.events.map((event, eventIdx) => (
                                 <div
-                                  key={idx}
+                                  key={eventIdx}
                                   className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50 rounded-r-lg"
                                 >
-                                  <div className="font-medium text-xs sm:text-sm">{event.name}</div>
-                                  <div className="text-xs text-muted-foreground mt-1 break-words">{event.location}</div>
+                                  <div className="font-medium text-xs sm:text-sm">
+                                    {event.name}
+                                    {event.time && (
+                                      <span className="text-muted-foreground ml-2">
+                                        {event.time}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1 break-words">
+                                    {event.location}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -153,18 +240,14 @@ export default function SupplierDashboard() {
                         </div>
                       ))}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons - ADD loading state */}
-        <div className="p-3 sm:p-4 lg:p-6 pt-0">
-          {loading ? (
-            <ActionButtonsSkeleton />
-          ) : (
+          {/* Action Buttons */}
+          <div className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
               <Button
                 variant="outline"
@@ -190,50 +273,55 @@ export default function SupplierDashboard() {
                 <span className="hidden sm:inline">Manage upsells</span>
                 <span className="sm:hidden">Upsells</span>
               </Button>
-              <Button className="h-10 sm:h-12 lg:h-14 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white text-xs sm:text-sm lg:text-base touch-manipulation col-span-2 lg:col-span-1">
+              <Button 
+                className="h-10 sm:h-12 lg:h-14 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white text-xs sm:text-sm lg:text-base touch-manipulation col-span-2 lg:col-span-1"
+              >
                 <Users className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Edit profile</span>
                 <span className="sm:hidden">Profile</span>
               </Button>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Quick Stats Cards - ADD loading state */}
-        <div className="p-3 sm:p-4 lg:p-6 pt-0">
-          {loading ? (
-            <StatsCardsSkeleton />
-          ) : (
+          {/* Quick Stats Cards */}
+          <div className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
               <Card className="shadow-sm">
                 <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary-600">12</div>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary-600">
+                    {stats.newEnquiries}
+                  </div>
                   <div className="text-xs sm:text-sm text-muted-foreground">New Enquiries</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
                 <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">£2,450</div>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
+                    £{stats.monthlyEarnings.toLocaleString()}
+                  </div>
                   <div className="text-xs sm:text-sm text-muted-foreground">This Month</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
                 <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">8</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Bookings</div>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
+                    {stats.bookingsCount}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">Total Bookings</div>
                 </CardContent>
               </Card>
               <Card className="shadow-sm">
                 <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">4.9</div>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">
+                    {stats.rating > 0 ? stats.rating.toFixed(1) : 'New'}
+                  </div>
                   <div className="text-xs sm:text-sm text-muted-foreground">Rating</div>
                 </CardContent>
               </Card>
             </div>
-          )}
+          </div>
         </div>
       </div>
-    </div>
-  </BusinessProvider>
+    </BusinessProvider>
   )
 }

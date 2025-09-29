@@ -160,7 +160,7 @@ export default function SupplierSelectionModal({
       console.log('🔄 Applying restored filters:', initialFilters)
       setPriceRange(initialFilters.priceRange || "all")
       setRatingFilter(initialFilters.ratingFilter || "all")
-      setDistance(initialFilters.distance || "10")
+      setDistance(initialFilters.distance || "all")
       setAvailableOnly(initialFilters.availableOnly || false)
     }
   }, [initialFilters])

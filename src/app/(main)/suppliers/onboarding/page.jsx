@@ -170,7 +170,7 @@ export default function SuppliersLandingPage() {
                 <Button 
                   asChild
                   size="lg"
-                  className="bg-white text-primary-600 hover:bg-primary-50 hover:text-primary-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="bg-white text-primary-600 hover:bg-[hsl(var(--primary-50))] hover:text-[hsl(var(--primary-700))] shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Link href="/suppliers/onboarding/new-supplier">
                     Start Your Journey
@@ -180,7 +180,7 @@ export default function SuppliersLandingPage() {
                   asChild
                   size="lg"
                   variant="outline"
-                  className="border-2 border-white text-white hover:bg-white hover:text-primary-600 shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="border-2 border-white text-primary-600 hover:bg-white hover:text-[hsl(var(--primary-600))] shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Link href="/suppliers/onboarding/auth/signin">
                     Sign In

@@ -71,7 +71,7 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
         <img
   src="/output-4-.gif"
   alt="Celebration"
-  className="§ rounded-xl mx-auto"
+  className="rounded-xl mx-auto"
 />
       </div>
 
@@ -83,9 +83,9 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
       </p> */}
 
        {/* Progress Bar */}
-       <div style={{  height: '20px'}} className="rounded-full bg-gray-200 md:w-[40%] w-[80%]">
+       {/* <div style={{  height: '20px'}} className="rounded-full bg-gray-200 md:w-[40%] w-[80%]">
   <div style={{ width: `${progress}%`, height: '100%' }} className="rounded-full bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]" />
-</div> 
+</div>  */}
 
 
 
@@ -130,7 +130,7 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
       </div> */}
 
       {/* Success Box */}
-      {loadingStep >= 4 && (
+      {/* {loadingStep >= 4 && (
         <div className="p-4 bg-green-50 border-2 border-green-200 rounded-2xl w-full max-w-md">
           <div className="flex items-center justify-center gap-2 text-green-800 mb-2">
             <Check className="w-6 h-6" />
@@ -138,7 +138,7 @@ export default function AddingToPlanModal({ isAddingToPlan, loadingStep, theme =
           </div>
           <p className="text-sm text-green-600 font-medium">Redirecting to your dashboard...</p>
         </div>
-      )}
+      )} */}
 
       {/* Bouncing Dots Animation */}
       {loadingStep < 4 && (

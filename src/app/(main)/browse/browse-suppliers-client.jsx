@@ -731,13 +731,13 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-4 md:pt-20 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] md:max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
-              <h3 className="text-lg md:text-xl font-semibold text-gray-900">Search Suppliers</h3>
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100 bg-primary-500">
+              <h3 className="text-lg md:text-xl font-semibold text-white">Search Suppliers</h3>
               <button
                 onClick={() => setShowSearchModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-white cursor-pointer hover:text-gray-500" />
               </button>
             </div>
 
@@ -851,9 +851,9 @@ export default function BrowseSuppliersPage( { initialSuppliers = [] }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 md:p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] md:max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100 bg-primary-500">
               <div className="flex items-center space-x-3">
-                <h3 className="text-lg md:text-xl font-semibold text-gray-900">Filter Suppliers</h3>
+                <h3 className="text-lg md:text-xl font-semibold text-white">Filter Suppliers</h3>
                 {hasActiveFilters && (
                   <Badge className="bg-orange-100 text-orange-800 text-xs">
                     {activeFilterCount} active
