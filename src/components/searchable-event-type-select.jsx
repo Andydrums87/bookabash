@@ -11,6 +11,7 @@ const eventTypes = [
   { value: "no-theme", label: "No theme - Keep it simple!", category: "Popular"   },
   { value: "princess", label: "Princess", category: "Popular" },
   { value: "superhero", label: "Superhero", category: "Popular" },
+  { value: "spiderman", label: "Spiderman", category: "Popular" },
   { value: "unicorn", label: "Unicorn Magic", category: "Popular" },
   { value: "dinosaur", label: "Dinosaur", category: "Popular" },
   { value: "pirate", label: "Pirate Adventure", category: "Popular" },

@@ -111,64 +111,80 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
     );
   };
 
-    // Helper function to render add-on services with horizontal scroll
-    const renderAddOnServices = (addOnServices) => {
-      if (!addOnServices?.length) return null;
-      
-      return (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Gift className="w-5 h-5 text-primary-500" />
-              Additional Services Available
-            </h2>
-            <p className="text-gray-600 mb-4">Optional extras you can add to enhance your booking</p>
-            
-            {/* Horizontal scrolling container */}
-            <div className="overflow-x-auto pb-2">
-              <div className="flex gap-4 min-w-max">
-                {addOnServices.map((addon, index) => {
-                  const categoryInfo = getCategoryInfo(addon.category);
-                  
-                  return (
-                    <div key={index} className="flex-shrink-0 w-72 p-4 bg-white border border-[hsl(var(--primary-500))] rounded-lg hover:bg-primary-100 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="text-primary-500">
-                            {categoryInfo.icon}
-                          </div>
-                          <h4 className="font-semibold text-gray-900">{addon.name}</h4>
+ // Helper function to render add-on services with horizontal scroll
+const renderAddOnServices = (addOnServices) => {
+  if (!addOnServices?.length) return null;
+  
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Gift className="w-6 h-6 text-primary-500" />
+          <h2 className="text-2xl font-bold text-gray-900">
+            Additional Services Available
+          </h2>
+        </div>
+        <p className="text-gray-600 mb-6">Optional extras you can add to enhance your booking</p>
+        
+        {/* Horizontal scrolling container */}
+        <div className="relative">
+          <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex gap-4 min-w-max">
+              {addOnServices.map((addon, index) => {
+                const categoryInfo = getCategoryInfo(addon.category);
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="flex-shrink-0 w-72 p-5 bg-gradient-to-br from-white to-gray-50 border-2 border-[hsl(var(--primary-500))] rounded-xl hover:border-primary-400 hover:shadow-md transition-all duration-200 group"
+                  >
+                    {/* Header with icon and price */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary-100 rounded-lg text-primary-600 group-hover:bg-[hsl(var(--primary-500))] transition-colors">
+                          {categoryInfo.icon}
                         </div>
-                        <span className="font-bold text-primary-600 text-lg">£{addon.price}</span>
-                      </div>
-                      {addon.description && (
-                        <p className="text-gray-700 text-sm mt-2">{addon.description}</p>
-                      )}
-                      <div className="mt-2">
-                        <Badge variant="outline" className="text-xs text-primary-700 border-primary-300 bg-primary-100">
-                          {addon.category === 'service' && 'Additional Service'}
-                          {addon.category === 'access' && 'Facility Access'}
-                          {addon.category === 'equipment' && 'Equipment Rental'}
-                          {addon.category === 'premium' && 'Premium Upgrade'}
-                          {addon.category === 'logistics' && 'Logistics'}
-                        </Badge>
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-md">{addon.name}</h4>
+                          <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                            {categoryInfo.label}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    {/* Price badge */}
+                    <div className="mb-3">
+                      <span className="inline-block px-4 py-2 bg-primary-500 text-white font-bold text-xl rounded-lg">
+                        £{addon.price}
+                      </span>
+                    </div>
+                    
+                    {/* Description */}
+                    {addon.description && (
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {addon.description}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            
-            {/* Scroll indicator */}
-            {addOnServices.length > 2 && (
-              <p className="text-xs text-primary-600 mt-2 text-center">
-                Scroll horizontally to see all {addOnServices.length} services
+          </div>
+          
+          {/* Scroll indicator */}
+          {addOnServices.length > 3 && (
+            <div className="text-center mt-2">
+              <p className="text-sm text-primary-600 font-medium">
+                ← Scroll horizontally to see all {addOnServices.length} services →
               </p>
-            )}
-          </CardContent>
-        </Card>
-      );
-    };
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
   // Alternative: Categorized themes helper
   const renderCategorizedThemes = (themes) => {

@@ -58,13 +58,13 @@ export default function SupplierGrid({
   const allSupplierTypes = [
     'venue', 
     'entertainment', 
-    'catering', 
+    'cakes',
     'decorations', 
     'facePainting', 
     'activities', 
     'partyBags', 
     'balloons', 
-    'cakes'
+    'catering', 
   ]
 
   // Create complete supplier object with all types AND enhanced pricing (NEW)

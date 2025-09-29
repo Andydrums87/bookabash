@@ -165,7 +165,7 @@ export default function SelectedSupplierCard({
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                       {supplier.name}
                     </h3>
-                    <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p>
+                    {/* <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p> */}
                     
                     <div className="flex items-center justify-between">
                       <div className="text-white">

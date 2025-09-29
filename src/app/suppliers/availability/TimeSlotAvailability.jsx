@@ -1,8 +1,19 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CalendarDays, Trash2, Clock, Settings, CalendarIcon, Sun, Moon } from "lucide-react"
+import {
+  CalendarDays,
+  Trash2,
+  Clock,
+  Settings,
+  CalendarIcon,
+  Sun,
+  Moon,
+  Check,
+  Loader2,
+  AlertCircle,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,9 +22,39 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { startOfDay } from "date-fns"
-import { useSupplierDashboard } from "@/utils/mockBackend"
-import { getAvailabilityConfig } from "../utils/supplierTypes"
-import { StickyBottomSaveBar, useAvailabilityChanges } from "@/components/StickyBottomSaveBar"
+import { supabase } from "@/lib/supabase"
+
+// Auto-save indicator
+const AutoSaveIndicator = ({ status, lastSaved }) => {
+  if (status === "idle") return null
+
+  const config = {
+    saving: { icon: Loader2, text: "Saving...", className: "text-blue-600 animate-spin" },
+    saved: {
+      icon: Check,
+      text: lastSaved ? `Saved ${formatTimeAgo(lastSaved)}` : "Saved",
+      className: "text-green-600",
+    },
+    error: { icon: AlertCircle, text: "Failed to save", className: "text-red-600" },
+  }
+
+  const { icon: Icon, text, className } = config[status] || config.saved
+
+  return (
+    <div className="fixed bottom-6 right-6 bg-white shadow-lg rounded-lg px-4 py-3 border border-gray-200 flex items-center gap-2 z-50">
+      <Icon className={`w-4 h-4 ${className}`} />
+      <span className="text-sm font-medium text-gray-700">{text}</span>
+    </div>
+  )
+}
+
+function formatTimeAgo(date) {
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000)
+  if (seconds < 10) return "just now"
+  if (seconds < 60) return `${seconds}s ago`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  return `${Math.floor(seconds / 3600)}h ago`
+}
 
 const AVAILABILITY_OPTIONS = [
   { value: "closed", label: "Closed", description: "Not available" },
@@ -22,7 +63,6 @@ const AVAILABILITY_OPTIONS = [
   { value: "full", label: "Full Day", description: "9am - 5pm" },
 ]
 
-// Time slot definitions - FIXED to match exactly
 const TIME_SLOTS = {
   morning: {
     id: "morning",
@@ -31,7 +71,6 @@ const TIME_SLOTS = {
     defaultEnd: "13:00",
     displayTime: "9am - 1pm",
     icon: Sun,
-    description: "Ideal for younger children and quieter activities",
   },
   afternoon: {
     id: "afternoon",
@@ -40,85 +79,59 @@ const TIME_SLOTS = {
     defaultEnd: "17:00",
     displayTime: "1pm - 5pm",
     icon: Moon,
-    description: "Perfect for school-age kids and longer events",
   },
-  allday: {
-    id: "allday",
-    label: "All Day",
-    defaultStart: "09:00",
-    defaultEnd: "17:00",
-    icon: CalendarIcon,
-  },
+  allday: { id: "allday", label: "All Day", defaultStart: "09:00", defaultEnd: "17:00", icon: CalendarIcon },
 }
 
 const convertToWorkingHours = (availability) => {
-  switch (availability) {
-    case "closed":
-      return {
-        active: false,
-        timeSlots: {
-          morning: { available: false, startTime: "09:00", endTime: "13:00" },
-          afternoon: { available: false, startTime: "13:00", endTime: "17:00" },
-        },
-      }
-    case "morning":
-      return {
-        active: true,
-        timeSlots: {
-          morning: { available: true, startTime: "09:00", endTime: "13:00" },
-          afternoon: { available: false, startTime: "13:00", endTime: "17:00" },
-        },
-      }
-    case "afternoon":
-      return {
-        active: true,
-        timeSlots: {
-          morning: { available: false, startTime: "09:00", endTime: "13:00" },
-          afternoon: { available: true, startTime: "13:00", endTime: "17:00" },
-        },
-      }
-    case "full":
-      return {
-        active: true,
-        timeSlots: {
-          morning: { available: true, startTime: "09:00", endTime: "13:00" },
-          afternoon: { available: true, startTime: "13:00", endTime: "17:00" },
-        },
-      }
-    default:
-      return {
-        active: false,
-        timeSlots: {
-          morning: { available: false, startTime: "09:00", endTime: "13:00" },
-          afternoon: { available: false, startTime: "13:00", endTime: "17:00" },
-        },
-      }
+  const templates = {
+    closed: {
+      active: false,
+      timeSlots: {
+        morning: { available: false, startTime: "09:00", endTime: "13:00" },
+        afternoon: { available: false, startTime: "13:00", endTime: "17:00" },
+      },
+    },
+    morning: {
+      active: true,
+      timeSlots: {
+        morning: { available: true, startTime: "09:00", endTime: "13:00" },
+        afternoon: { available: false, startTime: "13:00", endTime: "17:00" },
+      },
+    },
+    afternoon: {
+      active: true,
+      timeSlots: {
+        morning: { available: false, startTime: "09:00", endTime: "13:00" },
+        afternoon: { available: true, startTime: "13:00", endTime: "17:00" },
+      },
+    },
+    full: {
+      active: true,
+      timeSlots: {
+        morning: { available: true, startTime: "09:00", endTime: "13:00" },
+        afternoon: { available: true, startTime: "13:00", endTime: "17:00" },
+      },
+    },
   }
+  return templates[availability] || templates.closed
 }
 
 const convertFromWorkingHours = (dayData) => {
   if (!dayData.active) return "closed"
-
-  const morningAvailable = dayData.timeSlots?.morning?.available || false
-  const afternoonAvailable = dayData.timeSlots?.afternoon?.available || false
-
-  if (morningAvailable && afternoonAvailable) return "full"
-  if (morningAvailable) return "morning"
-  if (afternoonAvailable) return "afternoon"
+  const morning = dayData.timeSlots?.morning?.available || false
+  const afternoon = dayData.timeSlots?.afternoon?.available || false
+  if (morning && afternoon) return "full"
+  if (morning) return "morning"
+  if (afternoon) return "afternoon"
   return "closed"
 }
 
-const formatDate = (date) => {
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
-
-const isDateEqual = (date1, date2) => {
-  return date1.toDateString() === date2.toDateString()
+const dateToLocalString = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 const addDays = (date, days) => {
@@ -127,71 +140,11 @@ const addDays = (date, days) => {
   return newDate
 }
 
-const isBefore = (date1, date2) => {
-  return date1.getTime() < date2.getTime()
-}
-
-// FIXED: Proper date to string conversion that preserves local date
-const dateToLocalString = (date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
-}
-
-// FIXED: Proper string to date conversion that preserves local date
-const stringToLocalDate = (dateString) => {
-  const [year, month, day] = dateString.split("-").map(Number)
-  return new Date(year, month - 1, day)
-}
-
-// Migration utility
-const migrateWorkingHours = (legacyHours) => {
-  if (!legacyHours) return getDefaultWorkingHours()
-
-  if (legacyHours.Monday?.timeSlots) {
-    return legacyHours
-  }
-
-  const migrated = {}
-  Object.entries(legacyHours).forEach(([day, hours]) => {
-    if (hours && typeof hours === "object" && "active" in hours) {
-      migrated[day] = {
-        active: hours.active,
-        timeSlots: {
-          morning: {
-            available: hours.active,
-            startTime: hours.start || "09:00",
-            endTime: "13:00",
-          },
-          afternoon: {
-            available: hours.active,
-            startTime: "13:00",
-            endTime: hours.end || "17:00",
-          },
-        },
-      }
-    } else {
-      migrated[day] = getDefaultDaySchedule()
-    }
-  })
-
-  return migrated
-}
-
 const getDefaultDaySchedule = (active = true) => ({
   active,
   timeSlots: {
-    morning: {
-      available: active,
-      startTime: "09:00",
-      endTime: "13:00",
-    },
-    afternoon: {
-      available: active,
-      startTime: "13:00",
-      endTime: "17:00",
-    },
+    morning: { available: active, startTime: "09:00", endTime: "13:00" },
+    afternoon: { available: active, startTime: "13:00", endTime: "17:00" },
   },
 })
 
@@ -204,117 +157,90 @@ const getDefaultWorkingHours = () => ({
   Saturday: getDefaultDaySchedule(false),
   Sunday: getDefaultDaySchedule(false),
 })
-// Also add debugging to the migrateDateArray function:
-const migrateDateArray = (dateArray) => {
-  if (!Array.isArray(dateArray)) {
-    console.log("Not an array, returning empty array")
-    return []
-  }
 
-  const result = dateArray.map((dateItem, index) => {
-    if (typeof dateItem === "string") {
-      const migrated = {
-        date: dateItem.split("T")[0],
-        timeSlots: ["morning", "afternoon"],
+const migrateWorkingHours = (legacyHours) => {
+  if (!legacyHours) return getDefaultWorkingHours()
+  if (legacyHours.Monday?.timeSlots) return legacyHours
+
+  const migrated = {}
+  Object.entries(legacyHours).forEach(([day, hours]) => {
+    if (hours && typeof hours === "object" && "active" in hours) {
+      migrated[day] = {
+        active: hours.active,
+        timeSlots: {
+          morning: { available: hours.active, startTime: hours.start || "09:00", endTime: "13:00" },
+          afternoon: { available: hours.active, startTime: "13:00", endTime: hours.end || "17:00" },
+        },
       }
+    } else {
+      migrated[day] = getDefaultDaySchedule()
+    }
+  })
+  return migrated
+}
 
-      return migrated
+const migrateDateArray = (dateArray) => {
+  if (!Array.isArray(dateArray)) return []
+  return dateArray.map((dateItem) => {
+    if (typeof dateItem === "string") {
+      return { date: dateItem.split("T")[0], timeSlots: ["morning", "afternoon"] }
     } else if (dateItem && typeof dateItem === "object" && dateItem.date) {
       return dateItem
     } else {
       const date = new Date(dateItem)
-      const migrated = {
-        date: date.toISOString().split("T")[0],
-        timeSlots: ["morning", "afternoon"],
-      }
-
-      return migrated
+      return { date: date.toISOString().split("T")[0], timeSlots: ["morning", "afternoon"] }
     }
   })
-
-  return result
 }
 
-// Time Slot Calendar Component
 const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, setUnavailableDates }) => {
   const [selectedDate, setSelectedDate] = useState(null)
   const [showTimeSlotPicker, setShowTimeSlotPicker] = useState(false)
 
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
-  }
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
-  }
-
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
   const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
   const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
 
   const getBlockedSlots = (date) => {
     const dateStr = dateToLocalString(date)
-    const blockedDate = unavailableDates.find((item) => item.date === dateStr)
-    // Add this debugging for September 25th specifically
-    if (dateStr === "2025-09-25") {
-      console.log("🔍 Checking September 25th:")
-      console.log("Date string:", dateStr)
-      console.log("All unavailable dates:", unavailableDates)
-      console.log("Found blocked date:", blockedDate)
-      console.log("Time slots:", blockedDate?.timeSlots || [])
-    }
-    console.log(`Getting blocked slots for ${dateStr} (${date.toDateString()}):`, blockedDate?.timeSlots || [])
-    return blockedDate?.timeSlots || []
+    return unavailableDates.find((item) => item.date === dateStr)?.timeSlots || []
   }
 
   const handleDateClick = (date) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-
     if (date < today) return
-
-    console.log("Date clicked:", date.toDateString(), "Local string:", dateToLocalString(date))
     setSelectedDate(date)
     setShowTimeSlotPicker(true)
   }
 
   const handleTimeSlotToggle = (timeSlot) => {
     if (!selectedDate) return
-
     const dateStr = dateToLocalString(selectedDate)
-    console.log(`Toggling time slot ${timeSlot} for date ${dateStr} (${selectedDate.toDateString()})`)
 
     setUnavailableDates((prev) => {
       const existing = prev.find((item) => item.date === dateStr)
-      console.log("Existing blocked data for this date:", existing)
 
       if (existing) {
         if (timeSlot === "allday") {
           if (existing.timeSlots.includes("morning") && existing.timeSlots.includes("afternoon")) {
-            console.log("Removing all blocks for this date")
             return prev.filter((item) => item.date !== dateStr)
           } else {
-            console.log("Setting to all day block")
             return prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: ["morning", "afternoon"] } : item))
           }
         } else {
           if (existing.timeSlots.includes(timeSlot)) {
-            console.log(`Removing ${timeSlot} from blocked slots`)
             const updatedSlots = existing.timeSlots.filter((slot) => slot !== timeSlot)
-            if (updatedSlots.length === 0) {
-              return prev.filter((item) => item.date !== dateStr)
-            } else {
-              return prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: updatedSlots } : item))
-            }
+            return updatedSlots.length === 0
+              ? prev.filter((item) => item.date !== dateStr)
+              : prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: updatedSlots } : item))
           } else {
-            console.log(`Adding ${timeSlot} to blocked slots`)
-            let newSlots = [...existing.timeSlots, timeSlot]
-            newSlots = [...new Set(newSlots)]
-
+            const newSlots = [...new Set([...existing.timeSlots, timeSlot])]
             return prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: newSlots } : item))
           }
         }
       } else {
-        console.log(`Creating new blocked date with ${timeSlot}`)
         if (timeSlot === "allday") {
           return [...prev, { date: dateStr, timeSlots: ["morning", "afternoon"] }]
         } else {
@@ -356,26 +282,10 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
         dayStyle += "bg-white text-gray-700 border-gray-200 cursor-pointer hover:bg-gray-50"
       }
 
-      if (isToday) {
-        dayStyle += " ring-2 ring-primary-500"
-      }
+      if (isToday) dayStyle += " ring-2 ring-primary-500"
 
       days.push(
-        <button
-          key={day}
-          onClick={() => !isPast && handleDateClick(date)}
-          className={dayStyle}
-          disabled={isPast}
-          title={
-            isPast
-              ? "Past date"
-              : blockedSlots.length === 2
-                ? "All day blocked"
-                : blockedSlots.length === 1
-                  ? `${TIME_SLOTS[blockedSlots[0]]?.label || blockedSlots[0]} blocked`
-                  : "Available"
-          }
-        >
+        <button key={day} onClick={() => !isPast && handleDateClick(date)} className={dayStyle} disabled={isPast}>
           {day}
           {!isPast && blockedSlots.length > 0 && (
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
@@ -385,7 +295,6 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
               })}
             </div>
           )}
-
           {!isPast && blockedSlots.length === 1 && (
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs font-bold">
               {blockedSlots[0] === "morning" ? "AM" : "PM"}
@@ -470,12 +379,7 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
                     className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                   />
                   <CalendarIcon
-                    className={`w-5 h-5 ${
-                      getBlockedSlots(selectedDate).includes("morning") &&
-                      getBlockedSlots(selectedDate).includes("afternoon")
-                        ? "text-red-600"
-                        : "text-purple-500"
-                    }`}
+                    className={`w-5 h-5 ${getBlockedSlots(selectedDate).includes("morning") && getBlockedSlots(selectedDate).includes("afternoon") ? "text-red-600" : "text-purple-500"}`}
                   />
                   <div>
                     <div className="font-medium">All Day</div>
@@ -495,15 +399,10 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
                 const SlotIcon = slotConfig.icon
                 const isBlocked = getBlockedSlots(selectedDate).includes(slotId)
 
-                console.log(`Rendering time slot picker for ${slotId}:`, { isBlocked, slotConfig })
-
                 return (
                   <div
                     key={slotId}
-                    onClick={() => {
-                      console.log(`User clicked ${slotId} - currently blocked: ${isBlocked}`)
-                      handleTimeSlotToggle(slotId)
-                    }}
+                    onClick={() => handleTimeSlotToggle(slotId)}
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       isBlocked
                         ? "border-red-300 bg-red-50"
@@ -543,7 +442,6 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
   )
 }
 
-// Main Time Slot Availability Component
 const TimeSlotAvailabilityContent = ({
   supplier,
   supplierData,
@@ -556,12 +454,9 @@ const TimeSlotAvailabilityContent = ({
   businesses,
   supplierCategory,
 }) => {
-  const { saving, updateProfile } = useSupplierDashboard()
-
   const isPrimaryBusiness = currentBusiness?.isPrimary || false
-  const availabilitySource = primaryBusiness || currentBusiness
+  const availabilitySource = primaryBusiness
   const currentSupplier = availabilitySource?.data || supplierData
-  const config = getAvailabilityConfig(supplierCategory)
 
   const [workingHours, setWorkingHours] = useState(() => getDefaultWorkingHours())
   const [unavailableDates, setUnavailableDates] = useState([])
@@ -570,341 +465,191 @@ const TimeSlotAvailabilityContent = ({
   const [availabilityNotes, setAvailabilityNotes] = useState("")
   const [advanceBookingDays, setAdvanceBookingDays] = useState(7)
   const [maxBookingDays, setMaxBookingDays] = useState(365)
+  const [weekendPremium, setWeekendPremium] = useState({ enabled: false, type: "percentage", amount: 25 })
 
-  const [weekendPremium, setWeekendPremium] = useState({
-    enabled: false,
-    type: "percentage", // 'percentage' or 'fixed'
-    amount: 25, // 25% or £25
-  })
+  const [saveStatus, setSaveStatus] = useState("idle")
+  const [lastSaved, setLastSaved] = useState(null)
+  const saveTimeoutRef = useRef(null)
+  const isSavingRef = useRef(false)
+  const lastSavedDataRef = useRef(null)
 
-  // Replace the currentAvailabilityData and initialAvailabilityData with:
-  const currentAvailabilityData = useMemo(
-    () => ({
-      workingHours,
-      unavailableDates,
-      busyDates,
-      availabilityNotes,
-      advanceBookingDays,
-      maxBookingDays,
-      weekendPremium,
-    }),
-    [workingHours, unavailableDates, busyDates, availabilityNotes, advanceBookingDays, maxBookingDays, weekendPremium],
+  // Direct save to Supabase
+  const saveToDatabase = useCallback(
+    async (data) => {
+      if (isSavingRef.current) return
+
+      const dataString = JSON.stringify(data)
+      if (lastSavedDataRef.current === dataString) return
+
+      try {
+        isSavingRef.current = true
+        setSaveStatus("saving")
+
+        const targetBusiness = primaryBusiness
+        if (!targetBusiness) throw new Error("No primary business found")
+
+        const availabilityData = {
+          availabilityType: "time_slot_based",
+          workingHours: data.workingHours,
+          unavailableDates: data.unavailableDates,
+          busyDates: data.busyDates,
+          availabilityNotes: data.availabilityNotes,
+          advanceBookingDays: Number(data.advanceBookingDays),
+          maxBookingDays: Number(data.maxBookingDays),
+          availabilityVersion: "2.0",
+          lastUpdated: new Date().toISOString(),
+          weekendPremium: data.weekendPremium,
+        }
+
+        const updatedData = {
+          ...targetBusiness.data,
+          ...availabilityData,
+          updatedAt: new Date().toISOString(),
+        }
+
+        const { error } = await supabase.from("suppliers").update({ data: updatedData }).eq("id", targetBusiness.id)
+
+        if (error) throw error
+
+        lastSavedDataRef.current = dataString
+        setSaveStatus("saved")
+        setLastSaved(new Date())
+
+        setTimeout(() => setSaveStatus("idle"), 3000)
+      } catch (error) {
+        console.error("Save error:", error)
+        setSaveStatus("error")
+        setTimeout(() => setSaveStatus("idle"), 5000)
+      } finally {
+        isSavingRef.current = false
+      }
+    },
+    [primaryBusiness],
   )
 
-  const initialAvailabilityData = useMemo(
-    () => ({
-      workingHours: currentSupplier?.workingHours || getDefaultWorkingHours(),
-      unavailableDates: currentSupplier?.unavailableDates || [],
-      busyDates: currentSupplier?.busyDates || [],
-      availabilityNotes: currentSupplier?.availabilityNotes || "",
-      advanceBookingDays: currentSupplier?.advanceBookingDays || 7,
-      maxBookingDays: currentSupplier?.maxBookingDays || 365,
-      weekendPremium: currentSupplier?.weekendPremium || {
-        enabled: false,
-        type: "percentage",
-        amount: 25,
-      },
-    }),
-    [currentSupplier],
-  )
-
-  const { hasChanges, resetChanges } = useAvailabilityChanges(currentAvailabilityData, initialAvailabilityData)
-
-  // Fix the useEffect that loads availability data
+  // Auto-save with debounce
   useEffect(() => {
-    const loadAvailabilityData = () => {
-      if (currentSupplier) {
-        console.log("🔄 Loading availability data for supplier:", currentSupplier.name)
+    if (!primaryBusiness) return
 
-        let effectiveSupplier = currentSupplier
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
 
-        if (!isPrimaryBusiness && primaryBusiness) {
-          effectiveSupplier = {
-            // ... existing inheritance code
-          }
-        }
-
-        // 🔧 FIX: Load working hours from database
-        if (effectiveSupplier.workingHours) {
-          console.log("📅 Loading working hours from database:", effectiveSupplier.workingHours)
-          const migratedHours = migrateWorkingHours(effectiveSupplier.workingHours)
-          setWorkingHours(migratedHours)
-        } else {
-          console.log("📅 No working hours in database, using defaults")
-          setWorkingHours(getDefaultWorkingHours())
-        }
-
-        // Load unavailable dates with debugging
-        if (effectiveSupplier.unavailableDates) {
-          console.log("📅 Loading unavailable dates:", effectiveSupplier.unavailableDates)
-          const migratedUnavailable = migrateDateArray(effectiveSupplier.unavailableDates)
-          setUnavailableDates(migratedUnavailable)
-        } else {
-          console.log("📅 No unavailable dates in database")
-          setUnavailableDates([])
-        }
-
-        // 🔧 FIX: Load other availability settings
-        if (effectiveSupplier.availabilityNotes !== undefined) {
-          setAvailabilityNotes(effectiveSupplier.availabilityNotes)
-        }
-
-        if (effectiveSupplier.advanceBookingDays !== undefined) {
-          setAdvanceBookingDays(effectiveSupplier.advanceBookingDays)
-        }
-
-        if (effectiveSupplier.maxBookingDays !== undefined) {
-          setMaxBookingDays(effectiveSupplier.maxBookingDays)
-        }
-
-        // Load weekend premium settings
-        if (effectiveSupplier.weekendPremium) {
-          setWeekendPremium(effectiveSupplier.weekendPremium)
-        } else {
-          // Default settings
-          setWeekendPremium({
-            enabled: false,
-            type: "percentage",
-            amount: 25,
-          })
-        }
+    saveTimeoutRef.current = setTimeout(() => {
+      const data = {
+        workingHours,
+        unavailableDates,
+        busyDates,
+        availabilityNotes,
+        advanceBookingDays,
+        maxBookingDays,
+        weekendPremium,
       }
+      saveToDatabase(data)
+    }, 1500)
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     }
+  }, [
+    workingHours,
+    unavailableDates,
+    busyDates,
+    availabilityNotes,
+    advanceBookingDays,
+    maxBookingDays,
+    weekendPremium,
+    saveToDatabase,
+  ])
 
-    loadAvailabilityData()
-  }, [currentSupplier, isPrimaryBusiness, primaryBusiness])
-  // Update your handleSave function
-  const handleSave = async () => {
-    try {
-      const targetBusiness = primaryBusiness
-
-      if (!targetBusiness) {
-        throw new Error("No primary business found. Cannot save shared availability.")
-      }
-
-      const availabilityData = {
-        availabilityType: "time_slot_based",
-        workingHours: workingHours,
-        unavailableDates: unavailableDates,
-        busyDates: busyDates,
-        availabilityNotes: availabilityNotes,
-        advanceBookingDays: Number(advanceBookingDays),
-        maxBookingDays: Number(maxBookingDays),
-        availabilityVersion: "2.0",
-        lastUpdated: new Date().toISOString(),
-        weekendPremium: weekendPremium,
-      }
-
-      const updatedPrimaryData = {
-        ...targetBusiness.data,
-        ...availabilityData,
-        updatedAt: new Date().toISOString(),
-      }
-
-      const result = await updateProfile(updatedPrimaryData, null, targetBusiness.id)
-
-      if (result.success) {
-        setSupplierData(updatedPrimaryData)
-        resetChanges(currentAvailabilityData) // Reset the change tracking
-        refresh()
-      } else {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      console.error("Failed to save availability:", error)
-      alert("Failed to save availability: " + error.message)
-    }
-  }
-
-  // Add discard function
-  const handleDiscard = () => {
-    // Reset all state to initial values
+  // Load initial data
+  useEffect(() => {
     if (currentSupplier) {
       setWorkingHours(migrateWorkingHours(currentSupplier.workingHours) || getDefaultWorkingHours())
       setUnavailableDates(migrateDateArray(currentSupplier.unavailableDates) || [])
       setBusyDates(currentSupplier.busyDates || [])
       setAvailabilityNotes(currentSupplier.availabilityNotes || "")
-      setAdvanceBookingDays(currentSupplier.advanceBookingDays || 7)
-      setMaxBookingDays(currentSupplier.maxBookingDays || 365)
-      setWeekendPremium(
-        currentSupplier.weekendPremium || {
-          enabled: false,
-          type: "percentage",
-          amount: 25,
-        },
-      )
+      setAdvanceBookingDays(currentSupplier.advanceBookingDays ?? 7)
+      setMaxBookingDays(currentSupplier.maxBookingDays ?? 365)
+      setWeekendPremium(currentSupplier.weekendPremium || { enabled: false, type: "percentage", amount: 25 })
+
+      // Set initial saved data
+      lastSavedDataRef.current = JSON.stringify({
+        workingHours: migrateWorkingHours(currentSupplier.workingHours) || getDefaultWorkingHours(),
+        unavailableDates: migrateDateArray(currentSupplier.unavailableDates) || [],
+        busyDates: currentSupplier.busyDates || [],
+        availabilityNotes: currentSupplier.availabilityNotes || "",
+        advanceBookingDays: currentSupplier.advanceBookingDays ?? 7,
+        maxBookingDays: currentSupplier.maxBookingDays ?? 365,
+        weekendPremium: currentSupplier.weekendPremium || { enabled: false, type: "percentage", amount: 25 },
+      })
     }
-    resetChanges(initialAvailabilityData)
+  }, [currentSupplier])
+
+  const handleDayAvailabilityChange = (day, value) => {
+    setWorkingHours((prev) => ({ ...prev, [day]: convertToWorkingHours(value) }))
   }
 
-  const handleWorkingHoursChange = (day, field, value) => {
-    setWorkingHours((prev) => {
-      const updated = { ...prev }
-
-      if (field === "active") {
-        updated[day] = {
-          ...updated[day],
-          active: value,
-          timeSlots: {
-            ...updated[day].timeSlots,
-            morning: { ...updated[day].timeSlots.morning, available: value },
-            afternoon: { ...updated[day].timeSlots.afternoon, available: value },
-          },
-        }
-      } else {
-        updated[day] = {
-          ...updated[day],
-          [field]: value,
-        }
-      }
-
-      return updated
-    })
-  }
-
-  const handleTimeSlotChange = (day, timeSlot, field, value) => {
-    setWorkingHours((prev) => {
-      const updated = { ...prev }
-
-      updated[day] = {
-        ...updated[day],
-        timeSlots: {
-          ...updated[day].timeSlots,
-          [timeSlot]: {
-            ...updated[day].timeSlots[timeSlot],
-            [field]: value,
-          },
-        },
-      }
-
-      const hasActiveSlots = Object.values(updated[day].timeSlots).some((slot) => slot.available)
-      updated[day].active = hasActiveSlots
-
-      return updated
-    })
+  const applyTemplate = (template) => {
+    const templates = {
+      business: {
+        Monday: convertToWorkingHours("full"),
+        Tuesday: convertToWorkingHours("full"),
+        Wednesday: convertToWorkingHours("full"),
+        Thursday: convertToWorkingHours("full"),
+        Friday: convertToWorkingHours("full"),
+        Saturday: convertToWorkingHours("closed"),
+        Sunday: convertToWorkingHours("closed"),
+      },
+      weekend: {
+        Monday: convertToWorkingHours("closed"),
+        Tuesday: convertToWorkingHours("closed"),
+        Wednesday: convertToWorkingHours("closed"),
+        Thursday: convertToWorkingHours("closed"),
+        Friday: convertToWorkingHours("closed"),
+        Saturday: convertToWorkingHours("full"),
+        Sunday: convertToWorkingHours("full"),
+      },
+      flexible: {
+        Monday: convertToWorkingHours("full"),
+        Tuesday: convertToWorkingHours("full"),
+        Wednesday: convertToWorkingHours("full"),
+        Thursday: convertToWorkingHours("full"),
+        Friday: convertToWorkingHours("full"),
+        Saturday: convertToWorkingHours("full"),
+        Sunday: convertToWorkingHours("full"),
+      },
+    }
+    if (templates[template]) setWorkingHours(templates[template])
   }
 
   const markUnavailableRange = (days, timeSlots = ["morning", "afternoon"]) => {
     const dates = []
     for (let i = 0; i < days; i++) {
       const date = addDays(startOfDay(new Date()), i)
-      dates.push({
-        date: date.toISOString().split("T")[0],
-        timeSlots: timeSlots,
-      })
+      dates.push({ date: date.toISOString().split("T")[0], timeSlots })
     }
 
     setUnavailableDates((prev) => {
       const combined = [...prev, ...dates]
-      const merged = combined.reduce((acc, current) => {
+      return combined.reduce((acc, current) => {
         const existing = acc.find((item) => item.date === current.date)
         if (existing) {
-          const combinedSlots = [...new Set([...existing.timeSlots, ...current.timeSlots])]
-          existing.timeSlots = combinedSlots
+          existing.timeSlots = [...new Set([...existing.timeSlots, ...current.timeSlots])]
         } else {
           acc.push(current)
         }
         return acc
       }, [])
-
-      return merged
     })
-  }
-
-  const clearAllDates = () => {
-    setUnavailableDates([])
-  }
-
-  const handleDayAvailabilityChange = (day, value) => {
-    const newDayData = convertToWorkingHours(value)
-    setWorkingHours((prev) => ({
-      ...prev,
-      [day]: newDayData,
-    }))
-  }
-
-  const applyTemplate = (template) => {
-    switch (template) {
-      case "business":
-        setWorkingHours({
-          Monday: convertToWorkingHours("full"),
-          Tuesday: convertToWorkingHours("full"),
-          Wednesday: convertToWorkingHours("full"),
-          Thursday: convertToWorkingHours("full"),
-          Friday: convertToWorkingHours("full"),
-          Saturday: convertToWorkingHours("closed"),
-          Sunday: convertToWorkingHours("closed"),
-        })
-        break
-      case "weekend":
-        setWorkingHours({
-          Monday: convertToWorkingHours("closed"),
-          Tuesday: convertToWorkingHours("closed"),
-          Wednesday: convertToWorkingHours("closed"),
-          Thursday: convertToWorkingHours("closed"),
-          Friday: convertToWorkingHours("closed"),
-          Saturday: convertToWorkingHours("full"),
-          Sunday: convertToWorkingHours("full"),
-        })
-        break
-      case "flexible":
-        setWorkingHours({
-          Monday: convertToWorkingHours("full"),
-          Tuesday: convertToWorkingHours("full"),
-          Wednesday: convertToWorkingHours("full"),
-          Thursday: convertToWorkingHours("full"),
-          Friday: convertToWorkingHours("full"),
-          Saturday: convertToWorkingHours("full"),
-          Sunday: convertToWorkingHours("full"),
-        })
-        break
-      default:
-        break
-    }
   }
 
   const removeTimeSlotFromDate = (dateIndex, timeSlot) => {
     setUnavailableDates((prev) => {
       const updated = [...prev]
       const item = updated[dateIndex]
-
       if (item.timeSlots.length === 1) {
         updated.splice(dateIndex, 1)
       } else {
         item.timeSlots = item.timeSlots.filter((slot) => slot !== timeSlot)
-      }
-
-      return updated
-    })
-  }
-
-  const handleDayToggle = (day, checked) => {
-    setWorkingHours((prev) => {
-      const updated = { ...prev }
-      updated[day] = {
-        ...updated[day],
-        active: checked,
-        timeSlots: {
-          morning: { ...updated[day].timeSlots.morning, available: checked },
-          afternoon: { ...updated[day].timeSlots.afternoon, available: checked },
-        },
-      }
-      return updated
-    })
-  }
-
-  const handleTimeSlotToggle = (day, slotId, checked) => {
-    setWorkingHours((prev) => {
-      const updated = { ...prev }
-      updated[day] = {
-        ...updated[day],
-        timeSlots: {
-          ...updated[day].timeSlots,
-          [slotId]: {
-            ...updated[day].timeSlots[slotId],
-            available: checked,
-          },
-        },
       }
       return updated
     })
@@ -931,14 +676,13 @@ const TimeSlotAvailabilityContent = ({
                 Time Slot Availability Settings
               </h2>
               <p className="text-sm sm:text-base text-gray-600">
-                Set morning and afternoon availability for each day • Applies to all {businesses?.length || 0}{" "}
-                businesses
+                Changes save automatically • Applies to all {businesses?.length || 0} businesses
               </p>
             </div>
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 pb-0">
+        <div className="px-4 sm:px-6 pb-6">
           <Tabs defaultValue="hours" className="w-full">
             <div className="overflow-x-auto">
               <TabsList className="w-full min-w-max grid grid-cols-3 p-1 rounded-lg h-auto bg-white border border-gray-200">
@@ -974,37 +718,41 @@ const TimeSlotAvailabilityContent = ({
                     Choose availability for each day of the week
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => applyTemplate("business")}
-                      className="border-gray-300 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-200))] text-xs sm:text-sm p-3 h-auto"
-                    >
-                      <div className="text-center">
-                        <div className="font-medium">Business Hours</div>
-                        <div className="text-xs text-gray-500">(Mon-Fri)</div>
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                      <div className="flex gap-2 sm:gap-3 min-w-max sm:grid sm:grid-cols-3 sm:w-full">
+                        <Button
+                          variant="outline"
+                          onClick={() => applyTemplate("business")}
+                          className="border-gray-300 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-200))] text-xs sm:text-sm p-3 h-auto min-w-[140px] sm:min-w-0 flex-shrink-0"
+                        >
+                          <div className="text-center">
+                            <div className="font-medium">Business Hours</div>
+                            <div className="text-xs text-gray-500">(Mon-Fri)</div>
+                          </div>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => applyTemplate("weekend")}
+                          className="border-gray-300 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-200))] text-xs sm:text-sm p-3 h-auto min-w-[140px] sm:min-w-0 flex-shrink-0"
+                        >
+                          <div className="text-center">
+                            <div className="font-medium">Weekends Only</div>
+                            <div className="text-xs text-gray-500">(Sat-Sun)</div>
+                          </div>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => applyTemplate("flexible")}
+                          className="border-gray-300 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-200))] text-xs sm:text-sm p-3 h-auto min-w-[140px] sm:min-w-0 flex-shrink-0"
+                        >
+                          <div className="text-center">
+                            <div className="font-medium">Flexible Hours</div>
+                            <div className="text-xs text-gray-500">(All Days)</div>
+                          </div>
+                        </Button>
                       </div>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => applyTemplate("weekend")}
-                      className="border-gray-300 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-200))] text-xs sm:text-sm p-3 h-auto"
-                    >
-                      <div className="text-center">
-                        <div className="font-medium">Weekends Only</div>
-                        <div className="text-xs text-gray-500">(Sat-Sun)</div>
-                      </div>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => applyTemplate("flexible")}
-                      className="border-gray-300 hover:bg-[hsl(var(--primary-50))] hover:border-[hsl(var(--primary-200))] text-xs sm:text-sm p-3 h-auto"
-                    >
-                      <div className="text-center">
-                        <div className="font-medium">Flexible Hours</div>
-                        <div className="text-xs text-gray-500">(All Days)</div>
-                      </div>
-                    </Button>
+                    </div>
                   </div>
                 </div>
 
@@ -1020,8 +768,7 @@ const TimeSlotAvailabilityContent = ({
                           key={day}
                           className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 transition-all duration-200 hover:shadow-md hover:border-[hsl(var(--primary-200))]"
                         >
-                          <div className="flex items-center justify-between gap-3 min-h-[60px]">
-                            {/* Day label with icon - fixed width */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-3 min-h-[60px]">
                             <div className="flex items-center gap-3 min-w-[120px] flex-shrink-0">
                               <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] border border-[hsl(var(--primary-200))] flex items-center justify-center flex-shrink-0">
                                 <span className="text-xs font-bold text-[hsl(var(--primary-700))]">
@@ -1034,24 +781,19 @@ const TimeSlotAvailabilityContent = ({
                               </div>
                             </div>
 
-                            {/* Dropdown and status - consistent sizing */}
                             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                              <div className="w-36 sm:w-48">
+                              <div className="flex-1 sm:w-36 lg:w-48">
                                 <Select
                                   value={currentValue}
                                   onValueChange={(value) => handleDayAvailabilityChange(day, value)}
                                 >
-                                  <SelectTrigger className="w-full h-10 sm:h-12 bg-white border-gray-300 hover:border-gray-400 focus:border-[hsl(var(--primary-500))] focus:ring-2 focus:ring-[hsl(var(--primary-200))] transition-all duration-200 px-2 sm:px-4 text-xs sm:text-sm">
+                                  <SelectTrigger className="w-full pl-2 h-10 sm:h-12 bg-white border-gray-300">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-white border border-gray-200 shadow-lg rounded-lg p-1">
+                                  <SelectContent>
                                     {AVAILABILITY_OPTIONS.map((option) => (
-                                      <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                        className="hover:bg-[hsl(var(--primary-50))] focus:bg-[hsl(var(--primary-100))] cursor-pointer px-3 py-2 rounded-md"
-                                      >
-                                        <div className="flex flex-col py-1">
+                                      <SelectItem key={option.value} value={option.value}>
+                                        <div className="flex items-center gap-2 py-1">
                                           <span className="font-medium text-gray-900 text-xs sm:text-sm">
                                             {option.label}
                                           </span>
@@ -1065,13 +807,7 @@ const TimeSlotAvailabilityContent = ({
 
                               <div className="flex items-center gap-1 sm:gap-2 min-w-[60px] sm:min-w-[100px] justify-end">
                                 <div
-                                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
-                                    currentValue === "closed"
-                                      ? "bg-red-400"
-                                      : currentValue === "full"
-                                        ? "bg-[hsl(var(--secondary))]"
-                                        : "bg-[hsl(var(--primary-400))]"
-                                  }`}
+                                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${currentValue === "closed" ? "bg-red-400" : currentValue === "full" ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--primary-400))]"}`}
                                 />
                                 <span className="text-xs sm:text-sm text-gray-600 font-medium">
                                   {currentValue === "closed"
@@ -1097,54 +833,58 @@ const TimeSlotAvailabilityContent = ({
                   <div className="mb-4 sm:mb-6">
                     <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Block Specific Time Slots</h3>
                     <p className="text-sm sm:text-base text-gray-600 mb-4">
-                      Click on dates to select time slots to block across all businesses
+                      Click on dates to select time slots to block
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markUnavailableRange(7, ["morning", "afternoon"])}
-                        className="border-gray-300 hover:bg-[hsl(var(--primary-50))] text-xs p-3 h-auto"
-                      >
-                        <div className="text-center">
-                          <div className="font-medium">Block Next 7 Days</div>
-                          <div className="text-xs text-gray-500">(All day)</div>
+                    <div className="mb-4">
+                      <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                        <div className="flex gap-2 min-w-max sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:w-full">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markUnavailableRange(7, ["morning", "afternoon"])}
+                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
+                          >
+                            <div className="text-center">
+                              <div className="font-medium">Block Next 7 Days</div>
+                              <div className="text-xs text-gray-500">(All day)</div>
+                            </div>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markUnavailableRange(7, ["morning"])}
+                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
+                          >
+                            <div className="text-center">
+                              <div className="font-medium">Block Mornings</div>
+                              <div className="text-xs text-gray-500">(Next 7 days)</div>
+                            </div>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markUnavailableRange(7, ["afternoon"])}
+                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
+                          >
+                            <div className="text-center">
+                              <div className="font-medium">Block Afternoons</div>
+                              <div className="text-xs text-gray-500">(Next 7 days)</div>
+                            </div>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUnavailableDates([])}
+                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
+                          >
+                            <div className="text-center">
+                              <div className="font-medium">Clear All</div>
+                              <div className="text-xs text-gray-500">(Remove blocks)</div>
+                            </div>
+                          </Button>
                         </div>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markUnavailableRange(7, ["morning"])}
-                        className="border-gray-300 hover:bg-[hsl(var(--primary-50))] text-xs p-3 h-auto"
-                      >
-                        <div className="text-center">
-                          <div className="font-medium">Block Mornings</div>
-                          <div className="text-xs text-gray-500">(Next 7 days)</div>
-                        </div>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => markUnavailableRange(7, ["afternoon"])}
-                        className="border-gray-300 hover:bg-[hsl(var(--primary-50))] text-xs p-3 h-auto"
-                      >
-                        <div className="text-center">
-                          <div className="font-medium">Block Afternoons</div>
-                          <div className="text-xs text-gray-500">(Next 7 days)</div>
-                        </div>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearAllDates}
-                        className="border-gray-300 hover:bg-[hsl(var(--primary-50))] text-xs p-3 h-auto bg-transparent"
-                      >
-                        <div className="text-center">
-                          <div className="font-medium">Clear All</div>
-                          <div className="text-xs text-gray-500">(Remove blocks)</div>
-                        </div>
-                      </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -1160,7 +900,7 @@ const TimeSlotAvailabilityContent = ({
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold text-gray-900">Blocked Time Slots</h4>
                     <Badge variant="secondary" className="bg-red-100 text-red-700">
-                      {unavailableDates.reduce((acc, item) => acc + item.timeSlots.length, 0)} slots blocked
+                      {unavailableDates.reduce((acc, item) => acc + item.timeSlots.length, 0)} slots
                     </Badge>
                   </div>
 
@@ -1168,74 +908,58 @@ const TimeSlotAvailabilityContent = ({
                     <div className="text-center py-8 text-gray-500">
                       <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                       <p className="text-sm">No blocked time slots</p>
-                      <p className="text-xs text-gray-400 mt-1">Click calendar dates to block specific time slots</p>
                     </div>
                   ) : (
                     <ScrollArea className="h-64 sm:h-96">
                       <div className="space-y-3">
                         {unavailableDates
                           .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .map((item, index) => {
-                            console.log(`Rendering blocked date ${item.date} with slots:`, item.timeSlots)
-                            return (
-                              <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-red-900 mb-2">
-                                      {new Date(item.date).toLocaleDateString("en-US", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })}
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {item.timeSlots.map((slot) => {
-                                        const slotConfig = TIME_SLOTS[slot]
-                                        const SlotIcon = slotConfig?.icon || Clock
-
-                                        console.log(`Rendering slot badge for ${slot}:`, slotConfig)
-
-                                        return (
-                                          <div key={slot} className="flex items-center gap-1">
-                                            <Badge
-                                              variant="secondary"
-                                              className="bg-red-100 text-red-800 text-xs flex items-center gap-1"
-                                            >
-                                              <SlotIcon className="w-3 h-3" />
-                                              {slotConfig?.label || slot}
-                                              <button
-                                                onClick={() => {
-                                                  console.log(`Removing ${slot} from date at index ${index}`)
-                                                  removeTimeSlotFromDate(index, slot)
-                                                }}
-                                                className="ml-1 hover:bg-red-200 rounded-full p-0.5"
-                                                title={`Remove ${slotConfig?.label || slot} block`}
-                                              >
-                                                <Trash2 className="w-2.5 h-2.5" />
-                                              </button>
-                                            </Badge>
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
+                          .map((item, index) => (
+                            <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-red-900 mb-2">
+                                    {new Date(item.date).toLocaleDateString("en-US", {
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      console.log(`Removing entire date at index ${index}`)
-                                      setUnavailableDates((prev) => prev.filter((_, i) => i !== index))
-                                    }}
-                                    className="hover:bg-red-100 hover:text-red-600 p-2 h-8 w-8 ml-2"
-                                    title="Remove entire date"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex flex-wrap gap-2">
+                                    {item.timeSlots.map((slot) => {
+                                      const slotConfig = TIME_SLOTS[slot]
+                                      const SlotIcon = slotConfig?.icon || Clock
+                                      return (
+                                        <Badge
+                                          key={slot}
+                                          variant="secondary"
+                                          className="bg-red-100 text-red-800 text-xs flex items-center gap-1"
+                                        >
+                                          <SlotIcon className="w-3 h-3" />
+                                          {slotConfig?.label || slot}
+                                          <button
+                                            onClick={() => removeTimeSlotFromDate(index, slot)}
+                                            className="ml-1 hover:bg-red-200 rounded-full p-0.5"
+                                          >
+                                            <Trash2 className="w-2.5 h-2.5" />
+                                          </button>
+                                        </Badge>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setUnavailableDates((prev) => prev.filter((_, i) => i !== index))}
+                                  className="hover:bg-red-100 p-2 h-8 w-8 ml-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                            )
-                          })}
+                            </div>
+                          ))}
                       </div>
                     </ScrollArea>
                   )}
@@ -1243,19 +967,12 @@ const TimeSlotAvailabilityContent = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="settings" className="p-3 sm:p-6 mb-15">
+            <TabsContent value="settings" className="p-3 sm:p-6">
               <div className="max-w-2xl bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                {/* <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Time Slot Booking Rules</h3> */}
-                {/* <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-      Configure how customers can book your morning and afternoon time slots
-    </p> */}
-
                 <div className="space-y-4 sm:space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <Label htmlFor="advance-booking" className="text-sm font-medium text-gray-900">
-                        Minimum advance booking (days)
-                      </Label>
+                      <Label htmlFor="advance-booking">Minimum advance booking (days)</Label>
                       <Input
                         id="advance-booking"
                         type="number"
@@ -1263,15 +980,12 @@ const TimeSlotAvailabilityContent = ({
                         max="30"
                         value={advanceBookingDays}
                         onChange={(e) => setAdvanceBookingDays(Number.parseInt(e.target.value) || 0)}
-                        className="mt-1 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))] h-10 sm:h-12"
+                        className="mt-1 h-10 sm:h-12"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Applies to both morning and afternoon slots</p>
                     </div>
 
                     <div>
-                      <Label htmlFor="max-booking" className="text-sm font-medium text-gray-900">
-                        Maximum advance booking (days)
-                      </Label>
+                      <Label htmlFor="max-booking">Maximum advance booking (days)</Label>
                       <Input
                         id="max-booking"
                         type="number"
@@ -1279,13 +993,11 @@ const TimeSlotAvailabilityContent = ({
                         max="730"
                         value={maxBookingDays}
                         onChange={(e) => setMaxBookingDays(Number.parseInt(e.target.value) || 365)}
-                        className="mt-1 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))] h-10 sm:h-12"
+                        className="mt-1 h-10 sm:h-12"
                       />
-                      <p className="text-xs text-gray-500 mt-1">How far ahead customers can book</p>
                     </div>
                   </div>
 
-                  {/* NEW: Weekend Premium Settings */}
                   <div className="border-t pt-6">
                     <div className="mb-4">
                       <h4 className="text-base font-semibold text-gray-900 mb-2">Weekend Premium Pricing</h4>
@@ -1293,42 +1005,30 @@ const TimeSlotAvailabilityContent = ({
                     </div>
 
                     <div className="space-y-4">
-                      {/* Weekend Premium Toggle */}
                       <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                         <Checkbox
-                          id="weekend-premium-enabled"
+                          id="weekend-premium"
                           checked={weekendPremium.enabled}
                           onCheckedChange={(checked) => setWeekendPremium((prev) => ({ ...prev, enabled: checked }))}
                           className="w-5 h-5"
                         />
-                        <div className="flex-1">
-                          <Label
-                            htmlFor="weekend-premium-enabled"
-                            className="text-sm font-medium cursor-pointer text-amber-900"
-                          >
-                            Enable weekend premium pricing
-                          </Label>
-                          <p className="text-xs text-amber-700 mt-1">
-                            Automatically charge more for Saturday and Sunday time slots
-                          </p>
-                        </div>
+                        <Label htmlFor="weekend-premium" className="text-sm font-medium cursor-pointer text-amber-900">
+                          Enable weekend premium pricing
+                        </Label>
                       </div>
 
-                      {/* Premium Settings - Only show when enabled */}
                       {weekendPremium.enabled && (
                         <div className="ml-8 space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          {/* Premium Type Selection */}
                           <div>
-                            <Label className="text-sm font-medium text-gray-900 mb-2 block">Premium Type</Label>
+                            <Label className="text-sm font-medium mb-2 block">Premium Type</Label>
                             <div className="flex gap-4">
                               <div className="flex items-center space-x-2">
                                 <input
                                   type="radio"
                                   id="premium-percentage"
-                                  name="premium-type"
                                   checked={weekendPremium.type === "percentage"}
                                   onChange={() => setWeekendPremium((prev) => ({ ...prev, type: "percentage" }))}
-                                  className="w-4 h-4 text-primary-600"
+                                  className="w-4 h-4"
                                 />
                                 <Label htmlFor="premium-percentage" className="text-sm cursor-pointer">
                                   Percentage increase
@@ -1338,10 +1038,9 @@ const TimeSlotAvailabilityContent = ({
                                 <input
                                   type="radio"
                                   id="premium-fixed"
-                                  name="premium-type"
                                   checked={weekendPremium.type === "fixed"}
                                   onChange={() => setWeekendPremium((prev) => ({ ...prev, type: "fixed" }))}
-                                  className="w-4 h-4 text-primary-600"
+                                  className="w-4 h-4"
                                 />
                                 <Label htmlFor="premium-fixed" className="text-sm cursor-pointer">
                                   Fixed amount
@@ -1350,104 +1049,35 @@ const TimeSlotAvailabilityContent = ({
                             </div>
                           </div>
 
-                          {/* Premium Amount */}
                           <div>
-                            <Label htmlFor="premium-amount" className="text-sm font-medium text-gray-900">
+                            <Label htmlFor="premium-amount">
                               {weekendPremium.type === "percentage"
                                 ? "Percentage increase (%)"
                                 : "Additional amount (£)"}
                             </Label>
-                            <div className="relative mt-1">
-                              <Input
-                                id="premium-amount"
-                                type="number"
-                                min="0"
-                                max={weekendPremium.type === "percentage" ? 100 : 1000}
-                                value={weekendPremium.amount}
-                                onChange={(e) =>
-                                  setWeekendPremium((prev) => ({
-                                    ...prev,
-                                    amount: Number.parseInt(e.target.value) || 0,
-                                  }))
-                                }
-                                className="h-10 border-gray-300 focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))]"
-                                placeholder={weekendPremium.type === "percentage" ? "25" : "50"}
-                              />
-                              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <span className="text-gray-500 text-sm">
-                                  {weekendPremium.type === "percentage" ? "%" : "£"}
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {weekendPremium.type === "percentage"
-                                ? `If your base price is £100, weekend price will be £${100 + (100 * weekendPremium.amount) / 100}`
-                                : `If your base price is £100, weekend price will be £${100 + weekendPremium.amount}`}
-                            </p>
-                          </div>
-
-                          {/* Preview */}
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <h5 className="text-sm font-medium text-blue-900 mb-1">Preview</h5>
-                            <div className="text-xs text-blue-800">
-                              <div>Weekday price: Your base rate</div>
-                              <div>
-                                Weekend price: Base rate{" "}
-                                {weekendPremium.type === "percentage"
-                                  ? `+ ${weekendPremium.amount}%`
-                                  : `+ £${weekendPremium.amount}`}
-                              </div>
-                            </div>
+                            <Input
+                              id="premium-amount"
+                              type="number"
+                              min="0"
+                              max={weekendPremium.type === "percentage" ? 100 : 1000}
+                              value={weekendPremium.amount}
+                              onChange={(e) =>
+                                setWeekendPremium((prev) => ({ ...prev, amount: Number.parseInt(e.target.value) || 0 }))
+                              }
+                              className="h-10 mt-1"
+                            />
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
-
-                  {/* Existing availability notes */}
-                  {/* <div className="border-t pt-6">
-        <Label htmlFor="availability-notes" className="text-sm font-medium text-gray-900">
-          Time slot availability notes
-        </Label>
-        <textarea
-          id="availability-notes"
-          value={availabilityNotes}
-          onChange={(e) => setAvailabilityNotes(e.target.value)}
-          placeholder="e.g., 'Morning slots are perfect for younger children. Afternoon slots work better for school-age kids.' Add any special information about your time slots..."
-          className="w-full mt-1 p-3 border border-gray-300 rounded-md text-sm h-28 sm:h-32 resize-none focus:ring-[hsl(var(--primary-200))] focus:border-[hsl(var(--primary-500))]"
-        />
-        <p className="text-xs text-gray-500 mt-1">Help customers choose the best time slot for their party</p>
-      </div> */}
-
-                  {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-blue-900 mb-1">Pricing Guidelines</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Weekend premium applies to Saturday and Sunday only</li>
-              <li>• Most suppliers charge 20-50% extra for weekends</li>
-              <li>• Your base pricing is set in your packages or service details</li>
-              <li>• Premium pricing will be shown clearly to customers</li>
-            </ul>
-          </div>
-        </div>
-      </div> */}
                 </div>
               </div>
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Add the StickyBottomSaveBar at the very end, before the closing div */}
-        <StickyBottomSaveBar
-          onSave={handleSave}
-          onDiscard={handleDiscard}
-          isLoading={saving}
-          hasChanges={hasChanges}
-          changesSummary="You have unsaved time slot availability changes"
-          saveLabel="Save Availability Settings"
-        />
+        <AutoSaveIndicator status={saveStatus} lastSaved={lastSaved} />
       </div>
     </div>
   )

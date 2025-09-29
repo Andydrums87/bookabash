@@ -170,12 +170,10 @@ const MessageTemplatesManager = ({ supplierCategory, supplierId }) => {
   ]
 
   return (
-    <div className="space-y-6">
-
-
+    <div className="space-y-10">
       {/* Template Cards */}
       {templateTypes.map(({ key, label, icon: Icon, color }) => (
-        <Card key={key} className={`border-l-4 border-l-${color}-400`}>
+        <Card key={key} className="p-4">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">

@@ -18,13 +18,14 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
     const displayNames = {
       venue: 'Venue',
       entertainment: 'Entertainment', 
-      catering: 'Catering',
+
       cakes: 'Cakes',  // 🎂 NEW: Add cakes display name
       facePainting: 'Face Painting',
       activities: 'Activities',
       partyBags: 'Party Bags',
       decorations: 'Decorations',
       balloons: 'Balloons',
+      catering: 'Catering',
       // einvites: 'E-Invites'
     }
     return displayNames[type] || type

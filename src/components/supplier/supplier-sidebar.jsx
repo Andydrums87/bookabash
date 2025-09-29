@@ -288,10 +288,11 @@ export default function SupplierSidebar({
   const verificationDocs =
     credentials?.map((cred) => ({ name: cred.title, verified: cred.verified })) ||
     [
-      { name: "DBS Certificate", verified: supplier?.serviceDetails?.certifications?.dbsCertificate },
+      { name: "DBS Certificate", verified: supplier?.serviceDetails?.certifications?.dbsCertificate},
       { name: "Public Liability Insurance", verified: supplier?.serviceDetails?.certifications?.publicLiability },
       { name: "First Aid Certified", verified: supplier?.serviceDetails?.certifications?.firstAid },
       { name: "ID Verified", verified: supplier?.verified },
+  
     ].filter((doc) => doc.verified !== undefined)
 
   // Enhanced pricing display components

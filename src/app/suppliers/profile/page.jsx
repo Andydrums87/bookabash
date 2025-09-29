@@ -176,11 +176,7 @@ const handleSaveGallery = async (galleryData) => {
       image: galleryData.coverPhoto // Also update the image field
     };
 
-    console.log('🔍 Cover photo save debug:', {
-      businessId: supplier.id,
-      businessName: supplierData?.name,
-      newCoverPhoto: galleryData.coverPhoto
-    });
+
 
     // ✅ FIXED: Pass packages explicitly - use empty array if not available
     // const currentPackages = packages || supplierData?.packages || [];
@@ -270,7 +266,7 @@ const handleRemoveCoverPhoto = async () => {
                 <img
                   src={coverPhoto || "/placeholder.png"}
                   alt="Cover photo"
-                  className="md:w-[1000px] h-[400px] object-cover"
+                  className="md:w-[800px] h-[400px] object-cover"
                 />
                 <div className="absolute top-2 right-2">
                 <div className="absolute top-2 right-2">
@@ -704,9 +700,9 @@ if (loading) {
               {/* Action buttons - Mobile Optimized */}
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto lg:items-start">
                 {/* Global Save Button */}
-                <div className="absolute top-1 right-10">
+                {/* <div className="absolute top-1 right-10">
                   <GlobalSaveButton position="responsive" onSave={handleSaveChanges} isLoading={saving} />
-                </div>
+                </div> */}
 
                 {/* Preview Profile Button */}
                 {/* <div className="order-2 sm:order-1">
@@ -775,7 +771,7 @@ if (loading) {
                 </div>
 
                 {/* Business Description */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label className="text-base font-semibold text-gray-700" htmlFor="businessDescription">
                     Business Description
                   </Label>
@@ -790,7 +786,7 @@ if (loading) {
                     onChange={handleInputChange}
                     placeholder="Describe your business, services, and what makes you unique..."
                   />
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

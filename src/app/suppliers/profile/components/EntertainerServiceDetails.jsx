@@ -510,7 +510,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   return (
     <div className="space-y-4 sm:space-y-8">
       {/* About Us Section */}
-      <Card className="">
+      <Card className="" id="about">
         <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
           <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
@@ -703,7 +703,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2" id="pricing">
                 <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">
                   Extra Hour Rate (£) *
                 </Label>

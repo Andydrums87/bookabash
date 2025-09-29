@@ -505,11 +505,11 @@ class PartyBuilderBackend {
     let budgetAllocation, includedCategories;
     
     if (budget <= 500) {
-      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
-      budgetAllocation = { venue: 0.45, entertainment: 0.35, cakes: 0.15, partyBags: 0.05 };
+      includedCategories = ['venue', 'entertainment', 'cakes', ];
+      budgetAllocation = { venue: 0.45, entertainment: 0.35, cakes: 0.15 };
     } else if (budget <= 700) {
-      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
-      budgetAllocation = { venue: 0.35, entertainment: 0.35, cakes: 0.25, partyBags: 0.05 };
+      includedCategories = ['venue', 'entertainment', 'cakes'];
+      budgetAllocation = { venue: 0.35, entertainment: 0.35, cakes: 0.25 };
     } else {
       includedCategories = ['venue', 'entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
       if (isLargeParty) {

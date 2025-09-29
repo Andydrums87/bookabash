@@ -18,6 +18,8 @@ export const BusinessProvider = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
+
+
   // Memoize helper functions to prevent re-renders
   const getStoredBusinessId = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -54,22 +56,22 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
     if (!userId) throw new Error("No logged-in user");
 
     const { data: businessRows, error: businessErr } = await supabase
-      .from("suppliers")
-      .select(`
-        id,
-        business_name,
-        business_type,
-        is_primary,
-        parent_business_id,
-        created_from_theme,
-        business_slug,
-        data,
-        created_at,
-        updated_at
-      `)
-      .eq("auth_user_id", userId)
-      .order('is_primary', { ascending: false })
-      .order('created_at', { ascending: true });
+    .from("suppliers")
+    .select(`
+      id,
+      business_name,
+      business_type,
+      is_primary,
+      parent_business_id,
+      created_from_theme,
+      business_slug,
+      data,
+      created_at,
+      updated_at
+    `)
+    .eq("auth_user_id", userId)
+    .order('is_primary', { ascending: false })
+    .order('created_at', { ascending: true });
 
     if (businessErr) throw businessErr;
 
@@ -144,6 +146,8 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
     }
   }
 }, [getStoredBusinessId, storeBusinessId, currentBusiness]);
+
+
 
 const switchBusiness = useCallback(async (businessId) => {
   try {

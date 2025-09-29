@@ -1,6 +1,6 @@
 // utils/mockBackend.js
 // Clean version with proper async handling
-
+import { useRef } from 'react';
 import { supabase } from '@/lib/supabase'
 import { create } from 'canvas-confetti';
 import { useState, useEffect } from 'react';
@@ -95,6 +95,10 @@ const createThemedBusiness = async (primaryBusinessId, themedBusinessData) => {
       name: themedBusinessData.name,
       description: '',  // Empty - needs completion
       serviceType: themedBusinessData.serviceType,
+      category: themedBusinessData.serviceType === 'venue' ? 'Venues' : 
+           themedBusinessData.serviceType === 'catering' ? 'Catering' :
+           themedBusinessData.serviceType === 'entertainer' ? 'Entertainment' :
+           'Entertainment', // Default fallback
       themes: [themedBusinessData.theme],
       
       // EMPTY arrays/objects that need completion
@@ -1017,7 +1021,7 @@ export const suppliersAPI = {
   isVerified: false,
         subcategory: serviceType,
         serviceType: serviceType,
-        image: "/placeholder.svg?height=300&width=400&text=" + encodeURIComponent(formData.businessName || formData.name),
+        image: "/placeholder.png",
         rating: 0,
         reviewCount: 0,
         bookingCount: 0,
@@ -1502,6 +1506,10 @@ export function useSupplierDashboard() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
+    // ADD THIS: Prevent multiple simultaneous loads
+    const isLoadingRef = useRef(false)
+    const loadedBusinessIdRef = useRef(null)
+
   useEffect(() => {
     const loadCurrentSupplier = async () => {
       try {
@@ -1603,11 +1611,7 @@ export function useSupplierDashboard() {
           parentBusinessId: businessToLoad.parent_business_id
         }
   
-        console.log('🔄 Profile completion banner should update now:', {
-          'profile_status': supplierForDashboard.profile_status,
-          'can_go_live': supplierForDashboard.can_go_live,
-          'completion_%': supplierForDashboard.profile_completion_percentage
-        })
+      
   
         setCurrentSupplier(supplierForDashboard)
   

@@ -331,7 +331,7 @@ if (userTypeLoading) {
               portfolioImages={supplier?.portfolioImages || []} 
               portfolioVideos={supplier?.portfolioVideos || []}
             />
-            <SupplierCredentials credentials={credentials} />
+            {/* <SupplierCredentials credentials={credentials} /> */}
             <SupplierReviews reviews={reviews} />
             <SupplierBadges supplier={supplier} />
             <SupplierQuickStats supplier={supplier} />

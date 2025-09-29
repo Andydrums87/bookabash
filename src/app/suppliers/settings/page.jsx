@@ -447,21 +447,6 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Bio */}
-              <div className="space-y-2">
-                <Label htmlFor="bio" className="text-sm font-medium">
-                  Bio
-                </Label>
-                <Textarea
-                  id="bio"
-                  value={personalInfo.bio}
-                  onChange={(e) => setPersonalInfo((prev) => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us a bit about yourself..."
-                  rows={3}
-                  className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                />
-              </div>
-
               <div className="space-y-4">
   {businessInfo.businessType?.toLowerCase() === 'venues' ? (
     // Venue Address Section
@@ -856,11 +841,13 @@ const Settings = () => {
             </CardContent>
           </Card>
         </div>
-
-        <MessageTemplatesManager 
+<div className="p-4 sm:p-6 pt-0">
+<MessageTemplatesManager 
   supplierCategory={businessInfo.businessType}
   supplierId={supplierData?.id || supplier?.id}
 />
+
+</div>
 
         {/* Notification Preferences - Mobile Optimized */}
         <div className="p-4 sm:p-6 pt-0">
@@ -949,7 +936,8 @@ const Settings = () => {
 </div>
 
         {/* Security Settings - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
+
+        {/* <div className="p-4 sm:p-6 pt-0">
           <Card className="shadow-sm">
             <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-purple-50 to-purple-100">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -1033,7 +1021,7 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         {/* Danger Zone - Mobile Optimized */}
         <div className="p-4 sm:p-6 pt-0">

@@ -185,23 +185,34 @@ export const ModalSetupTour = ({
   const steps = TOUR_STEPS[isVenue ? 'venues' : 'entertainment']
   const currentStepData = steps[currentStep]
   
-  // Load tour progress from localStorage
-  useEffect(() => {
-    if (isOpen) {
-      const savedProgress = localStorage.getItem('tourProgress')
-      if (savedProgress) {
-        const progress = JSON.parse(savedProgress)
-        setCurrentStep(progress.currentStep || 0)
-        setTourData(progress.tourData || {})
-        setCompletedSteps(new Set(progress.completedSteps || []))
-      } else {
-        // Fresh start for new users
-        setCurrentStep(0)
-        setTourData({})
-        setCompletedSteps(new Set())
-      }
+// Update the useEffect in ModalSetupTour - remove supplierData from dependencies
+useEffect(() => {
+  if (isOpen) {
+    const savedProgress = localStorage.getItem('tourProgress')
+    
+    // Start with existing supplier data as defaults
+    const defaultData = {
+      aboutUs: supplierData?.serviceDetails?.aboutUs || '',
+      extraHourRate: supplierData?.serviceDetails?.extraHourRate || '',
+      venueType: supplierData?.serviceDetails?.venueType || '',
+      capacity: supplierData?.serviceDetails?.capacity?.max || '',
+      hourlyRate: supplierData?.serviceDetails?.pricing?.hourlyRate || ''
     }
-  }, [isOpen])
+    
+    if (savedProgress) {
+      const progress = JSON.parse(savedProgress)
+      // Merge saved progress with existing data (saved progress takes precedence)
+      setTourData({ ...defaultData, ...progress.tourData })
+      setCurrentStep(progress.currentStep || 0)
+      setCompletedSteps(new Set(progress.completedSteps || []))
+    } else {
+      // Fresh start - use existing data
+      setTourData(defaultData)
+      setCurrentStep(0)
+      setCompletedSteps(new Set())
+    }
+  }
+}, [isOpen]) // REMOVE supplierData from here
 
   // Save tour progress to localStorage
   const saveTourProgress = () => {
@@ -219,11 +230,11 @@ export const ModalSetupTour = ({
     
     switch (stepId) {
       case 'about':
-        return supplierData.serviceDetails?.aboutUs.trim().length >= 20
+        return supplierData.serviceDetails?.aboutUs?.trim().length >= 20
       case 'photos':
         return supplierData.portfolioImages && supplierData.portfolioImages.length >= 1
       case 'pricing':
-        return supplierData.serviceDetails?.extraHourRate && supplierData.serviceDetails?.extraHourRate > 0
+        return supplierData.serviceDetails?.extraHourRate > 0
       case 'venue-details':
         return supplierData.serviceDetails?.venueType && 
                supplierData.serviceDetails?.capacity?.max > 0
@@ -563,40 +574,47 @@ export const ModalSetupTour = ({
             </div>
           </div>
         )
-
-      case 'about':
-        return (
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className={`w-12 h-12 ${step.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
-              <p className="text-gray-600 text-sm">{step.description}</p>
-            </div>
-            
-            <div>
-              <Label htmlFor="aboutUs" className="text-sm font-medium text-gray-700 mb-2 block">
-                Your Business Story
-              </Label>
-              <Textarea
-                id="aboutUs"
-                value={tourData.aboutUs || supplierData?.aboutUs || ''}
-                onChange={(e) => setTourData(prev => ({ ...prev, aboutUs: e.target.value }))}
-                placeholder={step.placeholder}
-                rows={4}
-                className="w-full text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">{step.helpText}</p>
-              
-              {tourData.aboutUs && (
-                <div className="mt-1 text-xs text-gray-500">
-                  {tourData.aboutUs.trim().split(/\s+/).length} words
+        case 'about':
+          return (
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className={`w-12 h-12 ${step.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                  <FileText className="w-6 h-6 text-white" />
                 </div>
-              )}
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{step.title}</h3>
+                <p className="text-gray-600 text-sm">{step.description}</p>
+              </div>
+              
+              <div>
+                <Label htmlFor="aboutUs" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Your Business Story
+                </Label>
+                <Textarea
+                  id="aboutUs"
+                  value={tourData.aboutUs || ''}
+                  onChange={(e) => setTourData(prev => ({ ...prev, aboutUs: e.target.value }))}
+                  placeholder={step.placeholder}
+                  rows={4}
+                  className="w-full text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">{step.helpText}</p>
+                
+                {tourData.aboutUs && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    {tourData.aboutUs.trim().split(/\s+/).length} words
+                  </div>
+                )}
+                
+                {/* Show if data already exists */}
+                {supplierData?.serviceDetails?.aboutUs && tourData.aboutUs === supplierData.serviceDetails.aboutUs && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Already saved in your profile</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )
+          )
 
       case 'photos':
         return (
@@ -768,6 +786,14 @@ export const ModalSetupTour = ({
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">{step.helpText}</p>
+               {/* Show if data already exists */}
+        {supplierData?.serviceDetails?.extraHourRate && 
+         tourData.extraHourRate == supplierData.serviceDetails.extraHourRate && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
+            <CheckCircle className="w-3 h-3" />
+            <span>Already saved in your profile</span>
+          </div>
+        )}
             </div>
           </div>
         )

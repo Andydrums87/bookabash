@@ -25,9 +25,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import { useSupplierDashboard } from '@/utils/mockBackend' 
+import { useBusiness } from "@/contexts/BusinessContext"
 
 export default function VerificationPage() {
   const { currentSupplier, saving, updateProfile, refresh } = useSupplierDashboard()
+  const { getPrimaryBusiness } = useBusiness() // Add this
   const [documents, setDocuments] = useState({
     dbs: { 
       status: 'not_submitted', 
@@ -56,13 +58,16 @@ export default function VerificationPage() {
     address: useRef(null)
   }
 
-
-// Load existing verification data from currentSupplier
+// Load verification data from PRIMARY business only
 useEffect(() => {
-  if (currentSupplier?.verification?.documents) {
-    console.log('Loading existing verification data:', currentSupplier.verification.documents)
+  const primaryBusiness = getPrimaryBusiness()
+  const verificationData = primaryBusiness?.data?.verification?.documents || 
+                          primaryBusiness?.supplierData?.data?.verification?.documents
+  
+  if (verificationData) {
+    console.log('Loading verification from primary business:', verificationData)
     
-    const { dbs, id, address } = currentSupplier.verification.documents
+    const { dbs, id, address } = verificationData
 
     setDocuments({
       dbs: {
@@ -85,7 +90,7 @@ useEffect(() => {
       }
     })
   }
-}, [currentSupplier]) // Watch currentSupplier instead of supplierData
+}, [getPrimaryBusiness])
 
   const getOverallStatus = () => {
     const requiredDocs = ['dbs', 'id', 'address']

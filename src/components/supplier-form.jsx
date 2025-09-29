@@ -575,7 +575,7 @@ export function SupplierForm() {
 
   // Styling constants
   const labelClasses = "text-gray-700 dark:text-gray-300 font-medium"
-  const inputClasses = "p-6 mt-1 bg-white dark:bg-slate-700 border-slate-400 dark:border-slate-600 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] rounded-md shadow-sm"
+  const inputClasses = "p-6  mt-1 bg-white dark:bg-slate-700 border-slate-400 dark:border-slate-600 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-[hsl(var(--primary-500))] focus:border-[hsl(var(--primary-500))] rounded-md shadow-sm"
   const requiredStar = <span className="text-primary-500">*</span>
 
   return (
@@ -687,7 +687,7 @@ export function SupplierForm() {
                 Business Postcode {requiredStar}
               </Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5  text-gray-400" />
                 <Input
                   id="postcode"
                   value={businessData.postcode}

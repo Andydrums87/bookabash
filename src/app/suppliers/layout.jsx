@@ -83,25 +83,25 @@ function SupplierLayoutContent({ children }) {
 
   return (
     <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] md:p-2 bg-primary-50 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <div className="hidden bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center px-4 lg:h-[60px] lg:px-6">
-            <Image
-              src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-              alt="PartySnap"
-              width={150}
-              height={32}
-              className="md:h-10 h-8 w-auto"
-            />
-          </div>
-          <div className="flex-1 max-w-screen overflow-x-hidden overflow-y-scroll">
-            <nav className="grid pt-5 items-start px-2 text-xs md:text-sm min-h-screen font-medium lg:px-4 overflow-scroll">
-              <NavItems />
-            </nav>
-          </div>
-        </div>
-      </div>
+    {/* Desktop Sidebar */}
+<div className="hidden bg-muted/40 md:block">
+  <div className="flex h-full max-h-screen flex-col gap-2">
+    <div className="flex h-14 items-center px-4 lg:h-[60px] lg:px-6 flex-shrink-0">
+      <Image
+        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+        alt="PartySnap"
+        width={150}
+        height={32}
+        className="md:h-10 h-8 w-auto"
+      />
+    </div>
+    <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4">
+      <nav className="grid items-start px-2 text-xs md:text-sm font-medium lg:px-4 pt-5">
+        <NavItems />
+      </nav>
+    </div>
+  </div>
+</div>
 
       <div className="flex flex-col min-w-0 flex-1">
         <header className="flex h-14 items-center bg-muted/40 lg:h-[60px] py-10 px-4 lg:px-6 gap-4">

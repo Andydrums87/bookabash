@@ -929,13 +929,14 @@ const handleNameSubmit = (nameData) => {
   const suppliers = {
     venue: partyPlan.venue || null,
     entertainment: partyPlan.entertainment || null,
-    catering: partyPlan.catering || null,
+    cakes: partyPlan.cakes || null, 
     facePainting: partyPlan.facePainting || null,
     activities: partyPlan.activities || null,
     partyBags: partyPlan.partyBags || null,
     decorations: partyPlan.decorations || null,
     balloons: partyPlan.balloons || null,
-    cakes: partyPlan.cakes || null,        // 🎂 Just add this line
+     
+    catering: partyPlan.catering || null,  // 🎂 Just add this line
 
   }
 

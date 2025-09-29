@@ -39,7 +39,6 @@ export function UserMenu() {
                    'User'
 
   
-
                    const handleLogout = async () => {
                     setIsLoggingOut(true)
                     
@@ -71,7 +70,14 @@ export function UserMenu() {
                         localStorage.removeItem('user-data')
                         localStorage.removeItem('auth-token')
                         
-                        console.log("🧹 Local storage cleared")
+                        // Clear tour-related data
+                        localStorage.removeItem('tourProgress')
+                        localStorage.removeItem('hasSeenProfileTour')
+                        localStorage.removeItem('tourCompleted')
+                        localStorage.removeItem('tourSkipped')
+                        localStorage.removeItem('justCompletedOnboarding')
+                        
+                        console.log("🧹 Local storage cleared (including tour data)")
                       }
                   
                       // 3. Clear session storage too
@@ -122,7 +128,7 @@ export function UserMenu() {
         >
           <div className="flex items-center gap-0">
             {/* User Avatar */}
-            <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full bg-primary-500 mr-1 flex items-center justify-center">
               <UserCircle className="h-5 w-5 text-white" />
             </div>
             

@@ -74,7 +74,7 @@ export default function SupplierReviews({ reviews }) {
                         {review.images.map((img, i) => (
                           <div key={i} className="w-12 h-12 md:w-16 md:h-16 bg-gray-200 rounded-lg overflow-hidden">
                             <Image
-                              src={img || "/placeholder.svg?height=64&width=64&query=review+image"}
+                              src={"https://res.cloudinary.com/dghzq6xtd/image/upload/v1755554333/nj0fgrabxuya2szxeh2l.jpg"}
                               alt={`Review photo ${i + 1}`}
                               width={64}
                               height={64}
