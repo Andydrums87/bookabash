@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, RefreshCw, CheckCircle, X } from "lucide-react"
 
-// Calendar Provider Icons (keep existing ones and add these)
+// Calendar Provider Icons
 const GoogleCalendarIcon = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" fill="#4285F4" />
@@ -45,17 +45,32 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
   const [expandedProvider, setExpandedProvider] = useState(null)
   const [syncing, setSyncing] = useState(null)
 
-  // Load existing connections
+  // ✅ FIXED: Check for BOTH direct and inherited connections
   useEffect(() => {
     const connected = []
-    if (currentSupplier?.googleCalendarSync?.connected) {
+    
+    // Check Google Calendar (direct OR inherited)
+    if (currentSupplier?.googleCalendarSync?.connected || 
+        currentSupplier?.googleCalendarSync?.inherited) {
       connected.push('google')
     }
-    if (currentSupplier?.outlookCalendarSync?.connected) {
+    
+    // Check Outlook Calendar (direct OR inherited)
+    if (currentSupplier?.outlookCalendarSync?.connected ||
+        currentSupplier?.outlookCalendarSync?.inherited) {
       connected.push('outlook')
     }
+    
     setConnectedProviders(connected)
   }, [currentSupplier])
+
+  // ✅ NEW: Check if connection is inherited
+  const isInherited = (providerId) => {
+    const syncData = providerId === 'google' 
+      ? currentSupplier?.googleCalendarSync
+      : currentSupplier?.outlookCalendarSync
+    return syncData?.inherited === true
+  }
 
   const handleProviderConnect = async (providerId) => {
     console.log(`Connecting to ${providerId}...`)
@@ -116,11 +131,16 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
   const handleSync = async (providerId) => {
     setSyncing(providerId)
     try {
+      // ✅ FIXED: Use primary supplier ID for inherited connections
+      const supplierIdToSync = isInherited(providerId)
+        ? currentSupplier?.googleCalendarSync?.primarySupplierId || currentSupplier?.outlookCalendarSync?.primarySupplierId
+        : currentSupplier?.id
+
       const response = await fetch("/api/calendar/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          supplierId: currentSupplier?.id,
+          supplierId: supplierIdToSync,
           provider: providerId 
         })
       })
@@ -136,7 +156,6 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
             provider: providerId
           })
         }
-        // Refresh to show updated data
         window.location.reload()
       }
     } catch (error) {
@@ -172,6 +191,7 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
           const isConnected = connectedProviders.includes(provider.id)
           const isExpanded = expandedProvider === provider.id
           const isSyncing = syncing === provider.id
+          const inherited = isInherited(provider.id)
 
           return (
             <div key={provider.id} className="relative">
@@ -205,7 +225,7 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                   </div>
                   {isConnected && (
                     <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
-                      Connected
+                      {inherited ? 'Connected via Primary' : 'Connected'}
                     </Badge>
                   )}
                 </div>
@@ -215,6 +235,11 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
               {isExpanded && isConnected && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
                   <div className="space-y-2">
+                    {inherited && (
+                      <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 rounded">
+                        Synced via primary business
+                      </div>
+                    )}
                     <div className="text-xs text-gray-600 mb-2">
                       Last synced: {getLastSync(provider.id)}
                     </div>
@@ -231,18 +256,20 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                       <RefreshCw className={`w-3 h-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
                       {isSyncing ? 'Syncing...' : 'Sync Now'}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="w-full text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleProviderDisconnect(provider.id)
-                      }}
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Disconnect
-                    </Button>
+                    {!inherited && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleProviderDisconnect(provider.id)
+                        }}
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Disconnect
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
