@@ -156,17 +156,80 @@ export async function GET(request) {
       primaryGoogleCalendarSync.webhookErrorAt = new Date().toISOString()
     }
 
-    // Update all suppliers
+    // NEW: Sync calendar immediately after connecting to get initial blocked dates
+    let initialBlockedDates = []
+    try {
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+      const timeMin = new Date().toISOString()
+      const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      
+      console.log('Fetching initial calendar events...')
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin,
+        timeMax,
+        singleEvents: true,
+        orderBy: 'startTime'
+      })
+      
+      const events = response.data.items || []
+      console.log(`Found ${events.length} initial calendar events`)
+      
+      // Convert events to blocked dates
+      events.forEach((event) => {
+        if (!event.start) return
+        
+        if (event.start.date) {
+          initialBlockedDates.push({
+            date: event.start.date,
+            timeSlots: ['morning', 'afternoon'],
+            source: 'google-calendar',
+            eventTitle: event.summary || 'Calendar Event'
+          })
+        } else if (event.start.dateTime) {
+          const startTime = new Date(event.start.dateTime)
+          const date = startTime.toISOString().split('T')[0]
+          const hour = startTime.getHours()
+          
+          let timeSlots = []
+          if (hour < 13) timeSlots.push('morning')
+          if (hour >= 13) timeSlots.push('afternoon')
+          
+          if (timeSlots.length > 0) {
+            initialBlockedDates.push({
+              date,
+              timeSlots,
+              source: 'google-calendar',
+              eventTitle: event.summary || 'Calendar Event'
+            })
+          }
+        }
+      })
+      
+      console.log(`Converted to ${initialBlockedDates.length} blocked dates`)
+    } catch (syncError) {
+      console.error('Initial calendar sync failed:', syncError)
+    }
+
+    // Update all suppliers with connection AND initial calendar data
     let updateCount = 0
     
     for (const supplier of allSuppliers) {
       try {
         const isPrimary = supplier.id === primarySupplier.id
         
+        // Merge existing manual blocks with new calendar blocks
+        const existingUnavailable = supplier.data.unavailableDates || []
+        const manualBlocks = existingUnavailable.filter(item => item.source !== 'google-calendar')
+        const allBlocked = [...manualBlocks, ...initialBlockedDates]
+        
         let googleCalendarSync
         if (isPrimary) {
           // Primary supplier gets full connection data
-          googleCalendarSync = primaryGoogleCalendarSync
+          googleCalendarSync = {
+            ...primaryGoogleCalendarSync,
+            lastSync: initialBlockedDates.length > 0 ? new Date().toISOString() : null
+          }
         } else {
           // Themed suppliers get inherited connection reference
           googleCalendarSync = {
@@ -177,7 +240,7 @@ export async function GET(request) {
             webhooksEnabled: primaryGoogleCalendarSync.webhooksEnabled,
             userEmail: userEmail,
             isWorkspaceAccount,
-            lastSync: new Date().toISOString(),
+            lastSync: initialBlockedDates.length > 0 ? new Date().toISOString() : null,
             updatedAt: new Date().toISOString()
           }
         }
@@ -185,10 +248,13 @@ export async function GET(request) {
         const updatedData = {
           ...supplier.data,
           googleCalendarSync,
+          unavailableDates: allBlocked,
+          busyDates: initialBlockedDates,
           updatedAt: new Date().toISOString()
         }
 
         console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data?.name}`)
+        console.log(`  - Setting ${allBlocked.length} unavailable dates (${initialBlockedDates.length} from calendar)`)
         
         const { error: updateError } = await supabase
           .from('suppliers')
@@ -211,13 +277,15 @@ export async function GET(request) {
       totalSuppliers: allSuppliers.length,
       suppliersUpdated: updateCount,
       webhookCreated,
+      initialEventsSynced: initialBlockedDates.length,
       webhookError: webhookError || 'none'
     })
     
     const params = new URLSearchParams({
       calendar_connected: 'true',
       webhooks_enabled: webhookCreated ? '1' : '0',
-      total_updated: updateCount.toString()
+      total_updated: updateCount.toString(),
+      events_synced: initialBlockedDates.length.toString()
     })
 
     const redirectUrl = `/suppliers/availability?${params.toString()}`
