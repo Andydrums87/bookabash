@@ -63,129 +63,161 @@ export async function GET(request) {
       console.error('Failed to get user info:', userInfoError.message)
     }
 
-    console.log('Finding supplier for user ID:', state)
+    console.log('Finding all suppliers for user ID:', state)
     
-    const { data: suppliers, error: queryError } = await supabase
+    // Get ALL suppliers for this user (primary and themed)
+    const { data: allSuppliers, error: queryError } = await supabase
       .from('suppliers')
       .select('*')
       .eq('auth_user_id', state)
-      .eq('is_primary', true)
 
     if (queryError) {
       console.error('Database query error:', queryError)
       return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=db_error', request.url))
     }
 
-    if (!suppliers?.length) {
-      console.log('No primary suppliers found for user:', state)
+    if (!allSuppliers?.length) {
+      console.log('No suppliers found for user:', state)
       return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=no_suppliers', request.url))
     }
 
-    console.log(`Found ${suppliers.length} suppliers to update`)
+    // Find the primary supplier to create webhook on
+    const primarySupplier = allSuppliers.find(s => s.is_primary || s.data?.isPrimary)
+    
+    if (!primarySupplier) {
+      console.error('No primary supplier found')
+      return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=no_primary', request.url))
+    }
 
-    let webhooksCreated = 0
-    let webhookErrors = 0
-    let totalUpdated = 0
+    console.log(`Found primary supplier: ${primarySupplier.data?.name}`)
+    console.log(`Total suppliers to update: ${allSuppliers.length}`)
 
-    for (const supplier of suppliers) {
+    // Prepare base calendar sync data for primary
+    let primaryGoogleCalendarSync = {
+      enabled: true,
+      connected: true,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenExpiry: tokens.expiry_date,
+      calendarId: 'primary',
+      syncFrequency: 'realtime',
+      lastSync: null,
+      syncedEvents: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isWorkspaceAccount,
+      workspaceDomain,
+      userEmail,
+      automaticSync: true,
+      webhooksEnabled: false
+    }
+
+    let webhookCreated = false
+    let webhookError = null
+
+    // Try to set up webhook on primary supplier
+    try {
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+      
+      console.log('Testing calendar access...')
+      const calendarTest = await calendar.calendars.get({ calendarId: 'primary' })
+      console.log('Calendar access confirmed:', calendarTest.data.summary)
+      
+      const channelId = `supplier-${primarySupplier.id}-${Date.now()}`
+      const webhookUrl = `${process.env.NEXTAUTH_URL}/api/calendar/webhook`
+      
+      console.log('Creating webhook:', { channelId, webhookUrl })
+      
+      const watchResponse = await calendar.events.watch({
+        calendarId: 'primary',
+        requestBody: {
+          id: channelId,
+          type: 'web_hook',
+          address: webhookUrl,
+          expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
+        }
+      })
+      
+      console.log('Webhook created successfully')
+      
+      primaryGoogleCalendarSync.webhooksEnabled = true
+      primaryGoogleCalendarSync.webhookChannelId = channelId
+      primaryGoogleCalendarSync.webhookResourceId = watchResponse.data.resourceId
+      primaryGoogleCalendarSync.webhookExpiration = watchResponse.data.expiration
+      primaryGoogleCalendarSync.webhookCreatedAt = new Date().toISOString()
+      primaryGoogleCalendarSync.webhookExpiresAt = new Date(parseInt(watchResponse.data.expiration)).toISOString()
+      
+      webhookCreated = true
+      
+    } catch (error) {
+      console.error('Webhook setup failed:', error.message)
+      webhookError = error.message
+      primaryGoogleCalendarSync.webhookError = error.message
+      primaryGoogleCalendarSync.webhookErrorAt = new Date().toISOString()
+    }
+
+    // Update all suppliers
+    let updateCount = 0
+    
+    for (const supplier of allSuppliers) {
       try {
-        console.log(`Processing supplier: ${supplier.data?.name || supplier.id}`)
-
-        let googleCalendarSync = {
-          enabled: true,
-          connected: true,
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          tokenExpiry: tokens.expiry_date,
-          calendarId: 'primary',
-          syncFrequency: 'realtime',
-          lastSync: null,
-          syncedEvents: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          isWorkspaceAccount,
-          workspaceDomain,
-          userEmail,
-          automaticSync: true,
-          webhooksEnabled: false
+        const isPrimary = supplier.id === primarySupplier.id
+        
+        let googleCalendarSync
+        if (isPrimary) {
+          // Primary supplier gets full connection data
+          googleCalendarSync = primaryGoogleCalendarSync
+        } else {
+          // Themed suppliers get inherited connection reference
+          googleCalendarSync = {
+            inherited: true,
+            connectedViaPrimary: true,
+            primarySupplierId: primarySupplier.id,
+            connected: true,
+            webhooksEnabled: primaryGoogleCalendarSync.webhooksEnabled,
+            userEmail: userEmail,
+            isWorkspaceAccount,
+            lastSync: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
         }
-
-        // Try to set up webhooks for ALL accounts (personal and Workspace)
-        try {
-          const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
-          
-          console.log('Testing calendar access...')
-          const calendarTest = await calendar.calendars.get({ calendarId: 'primary' })
-          console.log('Calendar access confirmed:', calendarTest.data.summary)
-          
-          const channelId = `supplier-${supplier.id}-${Date.now()}`
-          const webhookUrl = `${process.env.NEXTAUTH_URL}/api/calendar/webhook`
-          
-          console.log('Creating webhook for all account types:', { channelId, webhookUrl })
-          
-          const watchResponse = await calendar.events.watch({
-            calendarId: 'primary',
-            requestBody: {
-              id: channelId,
-              type: 'web_hook',
-              address: webhookUrl,
-              expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
-            }
-          })
-          
-          console.log('Webhook created successfully')
-          
-          googleCalendarSync.webhooksEnabled = true
-          googleCalendarSync.webhookChannelId = channelId
-          googleCalendarSync.webhookResourceId = watchResponse.data.resourceId
-          googleCalendarSync.webhookExpiration = watchResponse.data.expiration
-          googleCalendarSync.webhookCreatedAt = new Date().toISOString()
-          googleCalendarSync.webhookExpiresAt = new Date(parseInt(watchResponse.data.expiration)).toISOString()
-          
-          webhooksCreated++
-          
-        } catch (webhookError) {
-          console.error('Webhook setup failed:', webhookError.message)
-          webhookErrors++
-          googleCalendarSync.webhookError = webhookError.message
-          googleCalendarSync.webhookErrorAt = new Date().toISOString()
-        }
-
+        
         const updatedData = {
           ...supplier.data,
           googleCalendarSync,
           updatedAt: new Date().toISOString()
         }
 
-        console.log('Updating supplier database record...')
+        console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data?.name}`)
+        
         const { error: updateError } = await supabase
           .from('suppliers')
           .update({ data: updatedData })
           .eq('id', supplier.id)
 
         if (updateError) {
-          console.error('Failed to update supplier:', updateError)
+          console.error(`Failed to update supplier ${supplier.data?.name}:`, updateError)
         } else {
-          console.log(`Successfully updated supplier: ${supplier.data?.name}`)
-          totalUpdated++
+          updateCount++
+          console.log(`Successfully updated: ${supplier.data?.name}`)
         }
 
       } catch (supplierError) {
-        console.error('Error processing supplier:', supplierError)
+        console.error(`Error processing supplier ${supplier.data?.name}:`, supplierError)
       }
     }
 
     console.log('OAuth callback completed:', {
-      totalSuppliers: suppliers.length,
-      totalUpdated,
-      webhooksCreated,
-      webhookErrors
+      totalSuppliers: allSuppliers.length,
+      suppliersUpdated: updateCount,
+      webhookCreated,
+      webhookError: webhookError || 'none'
     })
     
     const params = new URLSearchParams({
       calendar_connected: 'true',
-      webhooks_enabled: webhooksCreated.toString(),
-      total_accounts: totalUpdated.toString()
+      webhooks_enabled: webhookCreated ? '1' : '0',
+      total_updated: updateCount.toString()
     })
 
     const redirectUrl = `/suppliers/availability?${params.toString()}`
