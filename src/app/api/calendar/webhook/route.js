@@ -25,30 +25,37 @@ export async function POST(request) {
     
     console.log('Looking for supplier with channel ID:', channelId)
     
-    const { data: suppliers, error: fetchError } = await supabase
+    // Get ALL suppliers, then find the one with this webhook
+    const { data: allSuppliers, error: fetchError } = await supabase
       .from('suppliers')
       .select('*')
-      .eq('is_primary', true)
     
     if (fetchError) {
       console.error('Error fetching suppliers:', fetchError)
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
     
-    // Find supplier with matching webhook channel
-    const supplier = suppliers?.find(s => 
+    // Find the primary supplier with this webhook channel
+    const primarySupplier = allSuppliers?.find(s => 
       s.data?.googleCalendarSync?.webhookChannelId === channelId
     )
     
-    if (!supplier) {
-      console.log('No supplier found for webhook channel:', channelId)
+    if (!primarySupplier) {
+      console.log('No primary supplier found for webhook channel:', channelId)
       return NextResponse.json({ success: true })
     }
     
-    console.log('Triggering automatic sync for:', supplier.data.name)
+    console.log('Found primary supplier:', primarySupplier.data.name)
     
-    // Trigger automatic sync
-    await triggerAutomaticSync(supplier)
+    // Get all suppliers for this user (primary + themed)
+    const userSuppliers = allSuppliers.filter(s => 
+      s.auth_user_id === primarySupplier.auth_user_id
+    )
+    
+    console.log(`Found ${userSuppliers.length} total suppliers (primary + themed) for this user`)
+    
+    // Trigger automatic sync for all suppliers
+    await triggerAutomaticSync(primarySupplier, userSuppliers)
     
     return NextResponse.json({ success: true })
     
@@ -58,9 +65,9 @@ export async function POST(request) {
   }
 }
 
-async function triggerAutomaticSync(supplier) {
+async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
   try {
-    const googleSync = supplier.data.googleCalendarSync
+    const googleSync = primarySupplier.data.googleCalendarSync
     
     if (!googleSync?.accessToken) {
       console.error('No access token for automatic sync')
@@ -96,7 +103,7 @@ async function triggerAutomaticSync(supplier) {
     const events = response.data.items || []
     console.log(`Found ${events.length} calendar events`)
     
-    // Convert events to blocked dates (same logic as manual sync)
+    // Convert events to blocked dates
     const blockedDates = []
     
     events.forEach((event) => {
@@ -131,33 +138,48 @@ async function triggerAutomaticSync(supplier) {
       }
     })
     
-    // Update supplier with new blocked dates
-    const currentUnavailable = supplier.data.unavailableDates || []
-    const manualBlocks = currentUnavailable.filter(item => item.source !== 'google-calendar')
-    const allBlocked = [...manualBlocks, ...blockedDates]
+    console.log(`Converted to ${blockedDates.length} blocked date entries`)
     
-    const updatedData = {
-      ...supplier.data,
-      unavailableDates: allBlocked,
-      googleCalendarSync: {
-        ...googleSync,
-        lastSync: new Date().toISOString(),
-        syncedEvents: events.map(e => ({ id: e.id, title: e.summary })),
-        lastAutomaticSync: new Date().toISOString()
-      },
-      updatedAt: new Date().toISOString()
+    // Update ALL suppliers (primary and themed) with the same calendar data
+    for (const supplier of allUserSuppliers) {
+      try {
+        const isPrimary = supplier.id === primarySupplier.id
+        
+        // Merge manual blocks with calendar blocks
+        const currentUnavailable = supplier.data.unavailableDates || []
+        const manualBlocks = currentUnavailable.filter(item => item.source !== 'google-calendar')
+        const allBlocked = [...manualBlocks, ...blockedDates]
+        
+        const updatedData = {
+          ...supplier.data,
+          unavailableDates: allBlocked,
+          busyDates: blockedDates,
+          googleCalendarSync: {
+            ...supplier.data.googleCalendarSync,
+            lastSync: new Date().toISOString(),
+            syncedEvents: events.map(e => ({ id: e.id, title: e.summary })),
+            lastAutomaticSync: new Date().toISOString()
+          },
+          updatedAt: new Date().toISOString()
+        }
+        
+        const { error: updateError } = await supabase
+          .from('suppliers')
+          .update({ data: updatedData })
+          .eq('id', supplier.id)
+        
+        if (updateError) {
+          console.error(`Failed to update ${isPrimary ? 'primary' : 'themed'} supplier:`, updateError)
+        } else {
+          console.log(`✅ Updated ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data.name} with ${allBlocked.length} unavailable dates`)
+        }
+        
+      } catch (supplierError) {
+        console.error(`Error updating supplier ${supplier.data?.name}:`, supplierError)
+      }
     }
     
-    const { error: updateError } = await supabase
-      .from('suppliers')
-      .update({ data: updatedData })
-      .eq('id', supplier.id)
-    
-    if (updateError) {
-      console.error('Automatic sync database update failed:', updateError)
-    } else {
-      console.log(`Automatic sync completed: ${blockedDates.length} dates blocked for ${supplier.data.name}`)
-    }
+    console.log(`Automatic sync completed for ${allUserSuppliers.length} suppliers`)
     
   } catch (error) {
     console.error('Automatic sync failed:', error)
