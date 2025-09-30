@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import GoogleCalendarSync from "./CompactGoogleCalendarSync"
 import { startOfDay } from "date-fns"
 import { supabase } from "@/lib/supabase"
 
@@ -473,6 +474,7 @@ const TimeSlotAvailabilityContent = ({
   const isSavingRef = useRef(false)
   const lastSavedDataRef = useRef(null)
 
+
   // Direct save to Supabase
   const saveToDatabase = useCallback(
     async (data) => {
@@ -584,6 +586,9 @@ const TimeSlotAvailabilityContent = ({
     }
   }, [currentSupplier])
 
+  console.log('primaryBusiness:', primaryBusiness)
+console.log('primaryBusiness?.auth_user_id:', primaryBusiness?.auth_user_id)
+
   const handleDayAvailabilityChange = (day, value) => {
     setWorkingHours((prev) => ({ ...prev, [day]: convertToWorkingHours(value) }))
   }
@@ -681,24 +686,27 @@ const TimeSlotAvailabilityContent = ({
             </div>
           </div>
         </div>
-
+     
         <div className="px-4 sm:px-6 pb-6">
-          <Tabs defaultValue="hours" className="w-full">
+     
+          <Tabs defaultValue="calendar" className="w-full">
+
+
             <div className="overflow-x-auto">
               <TabsList className="w-full min-w-max grid grid-cols-3 p-1 rounded-lg h-auto bg-white border border-gray-200">
-                <TabsTrigger
-                  value="hours"
-                  className="flex flex-col items-center justify-center h-14 sm:h-20 p-2 gap-1 sm:gap-2 data-[state=active]:bg-[hsl(var(--primary-400))] data-[state=active]:text-white rounded-md text-xs sm:text-sm font-medium whitespace-nowrap min-w-[120px]"
-                >
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-xs sm:text-sm">Slots</span>
-                </TabsTrigger>
                 <TabsTrigger
                   value="calendar"
                   className="flex flex-col items-center justify-center h-14 sm:h-20 p-2 gap-1 sm:gap-2 data-[state=active]:bg-[hsl(var(--primary-400))] data-[state=active]:text-white rounded-md text-xs sm:text-sm font-medium whitespace-nowrap min-w-[120px]"
                 >
                   <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="text-xs sm:text-sm">Dates</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="hours"
+                  className="flex flex-col items-center justify-center h-14 sm:h-20 p-2 gap-1 sm:gap-2 data-[state=active]:bg-[hsl(var(--primary-400))] data-[state=active]:text-white rounded-md text-xs sm:text-sm font-medium whitespace-nowrap min-w-[120px]"
+                >
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="text-xs sm:text-sm">Slots</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="settings"
@@ -709,6 +717,112 @@ const TimeSlotAvailabilityContent = ({
                 </TabsTrigger>
               </TabsList>
             </div>
+
+            <TabsContent value="calendar" className="p-3 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
+                <div className="mb-4 sm:mb-6">
+  <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Block Specific Time Slots</h3>
+  <p className="text-sm sm:text-base text-gray-600 mb-4">
+    Click on dates to select time slots to block
+  </p>
+
+  {/* Calendar integrations - full width */}
+  <div className="mb-6">
+    <GoogleCalendarSync 
+      onSyncToggle={(enabled) => {
+        setSupplierData(prev => ({
+          ...prev,
+          googleCalendarSync: { ...prev.googleCalendarSync, enabled }
+        }))
+      }}
+      currentSupplier={currentSupplier}
+      authUserId={primaryBusiness?.auth_user_id}
+    />
+  </div>
+
+  {/* Add a divider */}
+  <div className="border-t border-gray-200 my-6"></div>
+</div>
+
+<TimeSlotCalendar
+  currentMonth={currentMonth}
+  setCurrentMonth={setCurrentMonth}
+  unavailableDates={unavailableDates}
+  setUnavailableDates={setUnavailableDates}
+/>
+                </div>
+
+                <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-semibold text-gray-900">Blocked Time Slots</h4>
+                    <Badge variant="secondary" className="bg-red-100 text-red-700">
+                      {unavailableDates.reduce((acc, item) => acc + item.timeSlots.length, 0)} slots
+                    </Badge>
+                  </div>
+
+                  {unavailableDates.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No blocked time slots</p>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-64 sm:h-96">
+                      <div className="space-y-3">
+                        {unavailableDates
+                          .sort((a, b) => new Date(a.date) - new Date(b.date))
+                          .map((item, index) => (
+                            <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-red-900 mb-2">
+                                    {new Date(item.date).toLocaleDateString("en-US", {
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {item.timeSlots.map((slot) => {
+                                      const slotConfig = TIME_SLOTS[slot]
+                                      const SlotIcon = slotConfig?.icon || Clock
+                                      return (
+                                        <Badge
+                                          key={slot}
+                                          variant="secondary"
+                                          className="bg-red-100 text-red-800 text-xs flex items-center gap-1"
+                                        >
+                                          <SlotIcon className="w-3 h-3" />
+                                          {slotConfig?.label || slot}
+                                          <button
+                                            onClick={() => removeTimeSlotFromDate(index, slot)}
+                                            className="ml-1 hover:bg-red-200 rounded-full p-0.5"
+                                          >
+                                            <Trash2 className="w-2.5 h-2.5" />
+                                          </button>
+                                        </Badge>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setUnavailableDates((prev) => prev.filter((_, i) => i !== index))}
+                                  className="hover:bg-red-100 p-2 h-8 w-8 ml-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
 
             <TabsContent value="hours" className="p-3 sm:p-6 space-y-4 sm:space-y-6">
               <div className="space-y-4 sm:space-y-6">
@@ -823,146 +937,6 @@ const TimeSlotAvailabilityContent = ({
                       )
                     })}
                   </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="calendar" className="p-3 sm:p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
-                  <div className="mb-4 sm:mb-6">
-                    <h3 className="text-base sm:text-xl font-semibold mb-2 text-gray-900">Block Specific Time Slots</h3>
-                    <p className="text-sm sm:text-base text-gray-600 mb-4">
-                      Click on dates to select time slots to block
-                    </p>
-
-                    <div className="mb-4">
-                      <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                        <div className="flex gap-2 min-w-max sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:w-full">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markUnavailableRange(7, ["morning", "afternoon"])}
-                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
-                          >
-                            <div className="text-center">
-                              <div className="font-medium">Block Next 7 Days</div>
-                              <div className="text-xs text-gray-500">(All day)</div>
-                            </div>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markUnavailableRange(7, ["morning"])}
-                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
-                          >
-                            <div className="text-center">
-                              <div className="font-medium">Block Mornings</div>
-                              <div className="text-xs text-gray-500">(Next 7 days)</div>
-                            </div>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markUnavailableRange(7, ["afternoon"])}
-                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
-                          >
-                            <div className="text-center">
-                              <div className="font-medium">Block Afternoons</div>
-                              <div className="text-xs text-gray-500">(Next 7 days)</div>
-                            </div>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setUnavailableDates([])}
-                            className="border-gray-300 text-xs p-3 h-auto min-w-[120px] sm:min-w-0 flex-shrink-0"
-                          >
-                            <div className="text-center">
-                              <div className="font-medium">Clear All</div>
-                              <div className="text-xs text-gray-500">(Remove blocks)</div>
-                            </div>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <TimeSlotCalendar
-                    currentMonth={currentMonth}
-                    setCurrentMonth={setCurrentMonth}
-                    unavailableDates={unavailableDates}
-                    setUnavailableDates={setUnavailableDates}
-                  />
-                </div>
-
-                <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-semibold text-gray-900">Blocked Time Slots</h4>
-                    <Badge variant="secondary" className="bg-red-100 text-red-700">
-                      {unavailableDates.reduce((acc, item) => acc + item.timeSlots.length, 0)} slots
-                    </Badge>
-                  </div>
-
-                  {unavailableDates.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No blocked time slots</p>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-64 sm:h-96">
-                      <div className="space-y-3">
-                        {unavailableDates
-                          .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .map((item, index) => (
-                            <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="font-medium text-red-900 mb-2">
-                                    {new Date(item.date).toLocaleDateString("en-US", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {item.timeSlots.map((slot) => {
-                                      const slotConfig = TIME_SLOTS[slot]
-                                      const SlotIcon = slotConfig?.icon || Clock
-                                      return (
-                                        <Badge
-                                          key={slot}
-                                          variant="secondary"
-                                          className="bg-red-100 text-red-800 text-xs flex items-center gap-1"
-                                        >
-                                          <SlotIcon className="w-3 h-3" />
-                                          {slotConfig?.label || slot}
-                                          <button
-                                            onClick={() => removeTimeSlotFromDate(index, slot)}
-                                            className="ml-1 hover:bg-red-200 rounded-full p-0.5"
-                                          >
-                                            <Trash2 className="w-2.5 h-2.5" />
-                                          </button>
-                                        </Badge>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setUnavailableDates((prev) => prev.filter((_, i) => i !== index))}
-                                  className="hover:bg-red-100 p-2 h-8 w-8 ml-2"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </ScrollArea>
-                  )}
                 </div>
               </div>
             </TabsContent>

@@ -1,32 +1,18 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
-import Image from "next/image"
+import { useState, useEffect } from "react"
+import Lottie from "lottie-react"
 
 export default function PartyBuilderLoader({ isVisible, theme, childName, progress }) {
   const [stage, setStage] = useState(0)
+  const [animationData, setAnimationData] = useState(null)
 
-  const videoRef = useRef(null)
-
+  // Fetch Lottie animation data
   useEffect(() => {
-    const video = videoRef.current
-    if (video) {
-      // Ensure metadata is loaded before seeking
-      const handleLoaded = () => {
-        video.currentTime = 1
-        video.play()
-      }
-
-      video.addEventListener("loadedmetadata", handleLoaded)
-      return () => video.removeEventListener("loadedmetadata", handleLoaded)
-    }
+    fetch('https://res.cloudinary.com/dghzq6xtd/raw/upload/v1759218865/animation_2_qv5kcd.json')
+      .then(response => response.json())
+      .then(data => setAnimationData(data))
+      .catch(error => console.error('Error loading animation:', error))
   }, [])
-
-  const snappyFrames = [
-    "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853460/4_2_rifigx.png", // arms crossed
-    "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853548/2_t6hlea.png", // thinking
-    "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853551/1_1_lxuiqa.png", // balloon
-    "https://res.cloudinary.com/dghzq6xtd/image/upload/v1752853457/3_1_i0xvku.png", // pointing
-  ]
 
   const messages = [
     `Snappy's planning the perfect ${theme} party...`,
@@ -39,11 +25,11 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
     if (!isVisible) return
 
     const interval = setInterval(() => {
-      setStage((prev) => (prev + 1) % snappyFrames.length)
+      setStage((prev) => (prev + 1) % messages.length)
     }, 2000)
 
     return () => clearInterval(interval)
-  }, [isVisible])
+  }, [isVisible, messages.length])
 
   if (!isVisible) return null
 
@@ -52,27 +38,18 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       
       {/* Snappy Animation */}
       <div className="relative w-70 h-50 mb-6 animate-fade-in-up">
-        {/* <Image
-          src={snappyFrames[stage]}
-          alt="Snappy building the party"
-          fill
-          className="object-contain"
-        /> */}
-     <video
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="rounded-xl shadow-lg w-full"
-        poster="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753083738/ChatGPT_Image_Jul_21_2025_08_42_11_AM_tznmag.png"
-      >
-        <source
-          src="https://res.cloudinary.com/dghzq6xtd/video/upload/v1753083603/wQEAljVs5VrDNI1dyE8t8_output_nowo6h.mp4"
-          type="video/mp4"
-        />
-        Your browser does not support the video tag.
-      </video>
+        {animationData ? (
+          <Lottie
+            animationData={animationData}
+            loop={true}
+            autoplay={true}
+            className="w-full h-full"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        )}
       </div>
 
       {/* Text */}

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X, ArrowRight, PartyPopper } from "lucide-react"
 import { useSearchParams, useRouter } from "next/navigation"
+import Lottie from "lottie-react"
 
 export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [], paymentDetails = null }) {
   const searchParams = useSearchParams()
@@ -12,6 +13,8 @@ export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [],
   const [isVisible, setIsVisible] = useState(false)
   const [supplierCount, setSupplierCount] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [animationData, setAnimationData] = useState(null);
+
 
   // Get confirmed suppliers
   const confirmedSuppliers = Object.entries(suppliers)
@@ -27,33 +30,39 @@ export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [],
     })
     .filter((supplier) => supplier.status === "accepted")
 
-  useEffect(() => {
-    // Check for payment success parameters
-    const paymentSuccess = searchParams.get("payment_success") === "true"
-    const bookingConfirmed = searchParams.get("booking_confirmed") === "true"
-    const count = searchParams.get("supplier_count")
-
-    if (paymentSuccess || bookingConfirmed) {
-      setIsVisible(true)
-      setSupplierCount(Number.parseInt(count) || confirmedSuppliers.length)
-
-      // Trigger confetti animation
-      setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 3000)
-
-      // Clean up URL parameters after showing
-      setTimeout(() => {
-        const newSearchParams = new URLSearchParams(searchParams.toString())
-        newSearchParams.delete("payment_success")
-        newSearchParams.delete("booking_confirmed")
-        newSearchParams.delete("supplier_count")
-        newSearchParams.delete("timestamp")
-
-        const newUrl = window.location.pathname + (newSearchParams.toString() ? `?${newSearchParams}` : "")
-        router.replace(newUrl, { scroll: false })
-      }, 8000)
-    }
-  }, [searchParams, router, confirmedSuppliers.length])
+    useEffect(() => {
+      // Fetch Lottie animation data
+      fetch('https://res.cloudinary.com/dghzq6xtd/raw/upload/v1759218476/animation_1_ciulvf.json')
+        .then(response => response.json())
+        .then(data => setAnimationData(data))
+        .catch(error => console.error('Error loading animation:', error));
+    
+      // Check for payment success parameters
+      const paymentSuccess = searchParams.get("payment_success") === "true"
+      const bookingConfirmed = searchParams.get("booking_confirmed") === "true"
+      const count = searchParams.get("supplier_count")
+    
+      if (paymentSuccess || bookingConfirmed) {
+        setIsVisible(true)
+        setSupplierCount(Number.parseInt(count) || confirmedSuppliers.length)
+    
+        // Trigger confetti animation
+        setShowConfetti(true)
+        setTimeout(() => setShowConfetti(false), 3000)
+    
+        // Clean up URL parameters after showing
+        setTimeout(() => {
+          const newSearchParams = new URLSearchParams(searchParams.toString())
+          newSearchParams.delete("payment_success")
+          newSearchParams.delete("booking_confirmed")
+          newSearchParams.delete("supplier_count")
+          newSearchParams.delete("timestamp")
+    
+          const newUrl = window.location.pathname + (newSearchParams.toString() ? `?${newSearchParams}` : "")
+          router.replace(newUrl, { scroll: false })
+        }, 8000)
+      }
+    }, [searchParams, router, confirmedSuppliers.length])
 
   const handleDismiss = () => {
     setIsVisible(false)
@@ -104,11 +113,12 @@ export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [],
               {/* Mascot */}
               <div className="relative">
                 <div className="w-50 h-50 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-teal-400 shadow-lg transform ">
-                  <img
-                    src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1756456032/animation_n8ymlh.webp"
-                    alt="Party mascot"
-                    className="w-full h-full object-cover"
-                  />
+                <Lottie
+      animationData={animationData}
+      loop={true}
+      autoplay={true}
+      className="w-full h-full"
+    />
                 </div>
 
                 {/* Celebration effects around mascot */}

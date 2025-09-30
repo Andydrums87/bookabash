@@ -748,7 +748,7 @@ if (loading) {
                   <Input
                     id="businessName"
                     name="businessName"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-sm"
                     value={supplierData?.name || ""}
                     onChange={handleInputChange}
                     placeholder="Enter your business name"
@@ -763,7 +763,7 @@ if (loading) {
                   <Input
                     id="contactName"
                     name="contactName"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-sm"
                     value={supplierData?.owner?.name || ""}
                     onChange={handleInputChange}
                     placeholder="Enter contact person name"

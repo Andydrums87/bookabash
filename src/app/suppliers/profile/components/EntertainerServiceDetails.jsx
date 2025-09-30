@@ -528,26 +528,25 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               Your Business Story *
             </Label>
             <div className="relative">
-              <Textarea
-                id="aboutUs"
-                value={details.aboutUs || ""}
-                onChange={(e) => {
-                  const text = e.target.value
-                  const words =
-                    text.trim() === ""
-                      ? []
-                      : text
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0)
-                  if (words.length <= 120) {
-                    handleFieldChange("aboutUs", e.target.value)
-                  }
-                }}
-                placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
-                rows={4}
-                className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-              />
+            <Textarea
+  id="aboutUs"
+  value={details.aboutUs || ""}
+  onChange={(e) => {
+    const text = e.target.value
+    const words =
+      text.trim() === ""
+        ? []
+        : text
+            .trim()
+            .split(/\s+/)
+            .filter((word) => word.length > 0)
+    if (words.length <= 120) {
+      handleFieldChange("aboutUs", e.target.value)
+    }
+  }}
+  placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
+  className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-4 resize-none h-70 sm:h-40 md:h-48 lg:h-56"
+/>
               <div className="absolute bottom-2 right-2 text-xs text-gray-500">
                 {(() => {
                   const text = details.aboutUs || ""
@@ -562,7 +561,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
                 })()}/120 words
               </div>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-xs sm:text-sm mt-8 text-gray-600">
               💡 <strong>Tip:</strong> Share your story, highlight what makes you different, and mention any awards or
               recognition. Keep it friendly and engaging - no more than 2-3 paragraphs.
             </p>

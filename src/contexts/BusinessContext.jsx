@@ -59,6 +59,7 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
     .from("suppliers")
     .select(`
       id,
+      auth_user_id,
       business_name,
       business_type,
       is_primary,
@@ -93,6 +94,7 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
       
       return {
         id: business.id,
+        auth_user_id: business.auth_user_id,  // ← Add this line
         name: business.business_name || businessData.name || 'Unnamed Business',
         supplierData: business,
         serviceType: businessData.serviceType || 'entertainer',

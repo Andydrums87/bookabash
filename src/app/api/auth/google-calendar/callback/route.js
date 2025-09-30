@@ -4,21 +4,27 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
 export async function GET(request) {
-  console.log('🚀 Google Calendar OAuth callback started')
+  console.log('Google Calendar OAuth callback started')
   
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
+  const state = searchParams.get('state') // User ID passed from initial auth request
   const error = searchParams.get('error')
 
   // Handle OAuth errors
   if (error) {
-    console.log('❌ OAuth error:', error)
-    return NextResponse.redirect(new URL('/suppliers/dashboard?calendar_error=' + error, request.url))
+    console.log('OAuth error:', error)
+    return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=' + error, request.url))
   }
 
   if (!code) {
-    console.log('❌ No authorization code received')
-    return NextResponse.redirect(new URL('/suppliers/dashboard?calendar_error=no_code', request.url))
+    console.log('No authorization code received')
+    return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=no_code', request.url))
+  }
+
+  if (!state) {
+    console.log('No user ID in state parameter')
+    return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=invalid_state', request.url))
   }
 
   try {
@@ -29,11 +35,11 @@ export async function GET(request) {
       `${process.env.NEXTAUTH_URL}/api/auth/google-calendar/callback`
     )
 
-    console.log('🔄 Exchanging authorization code for tokens...')
+    console.log('Exchanging authorization code for tokens...')
     const { tokens } = await oauth2Client.getToken(code)
     oauth2Client.setCredentials(tokens)
     
-    console.log('✅ Tokens received successfully')
+    console.log('Tokens received successfully')
     console.log('Token expiry:', new Date(tokens.expiry_date))
 
     // Get user info to determine account type
@@ -43,7 +49,7 @@ export async function GET(request) {
     let userEmail = 'unknown'
 
     try {
-      console.log('🔄 Fetching user information...')
+      console.log('Fetching user information...')
       const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
       const userInfoResponse = await oauth2.userinfo.get()
       userInfo = userInfoResponse.data
@@ -52,54 +58,45 @@ export async function GET(request) {
       workspaceDomain = userInfo.hd || null
       userEmail = userInfo.email || 'unknown'
       
-      console.log('✅ User info retrieved:', {
+      console.log('User info retrieved:', {
         email: userEmail,
         isWorkspace: isWorkspaceAccount,
         domain: workspaceDomain
       })
       
     } catch (userInfoError) {
-      console.error('⚠️ Failed to get user info, using fallback detection:', userInfoError.message)
-      
-      // Fallback: try to detect from token info
-      try {
-        const tokenInfo = await oauth2Client.getTokenInfo(tokens.access_token)
-        userEmail = tokenInfo.email || 'unknown'
-        isWorkspaceAccount = userEmail.includes('@') && !userEmail.endsWith('@gmail.com')
-        workspaceDomain = isWorkspaceAccount ? userEmail.split('@')[1] : null
-        
-        console.log('✅ Fallback detection:', { userEmail, isWorkspaceAccount, workspaceDomain })
-      } catch (fallbackError) {
-        console.error('⚠️ Fallback detection also failed:', fallbackError.message)
-        // Continue with defaults
-      }
+      console.error('Failed to get user info:', userInfoError.message)
     }
 
-    console.log('🔄 Finding specific supplier for testing...')
-    const { data: allPrimarySuppliers, error: queryError } = await supabase
+    console.log('Finding supplier for user ID:', state)
+    
+    // Get the supplier using the user ID from state parameter
+    const { data: suppliers, error: queryError } = await supabase
       .from('suppliers')
       .select('*')
-      .eq('id', 'fd2a4e94-fb2b-4530-ae03-c73319305877')
+      .eq('auth_user_id', state)
+      .eq('is_primary', true)
+
     if (queryError) {
-      console.error('❌ Database query error:', queryError)
-      return NextResponse.redirect(new URL('/suppliers/dashboard?calendar_error=db_error', request.url))
+      console.error('Database query error:', queryError)
+      return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=db_error', request.url))
     }
 
-    if (!allPrimarySuppliers?.length) {
-      console.log('❌ No primary suppliers found')
-      return NextResponse.redirect(new URL('/suppliers/dashboard?calendar_error=no_suppliers', request.url))
+    if (!suppliers?.length) {
+      console.log('No primary suppliers found for user:', state)
+      return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=no_suppliers', request.url))
     }
 
-    console.log(`📋 Found ${allPrimarySuppliers.length} suppliers to update`)
+    console.log(`Found ${suppliers.length} suppliers to update`)
 
     let workspaceCount = 0
     let webhookErrors = 0
     let totalUpdated = 0
 
-    // Update all primary suppliers
-    for (const supplier of allPrimarySuppliers) {
+    // Update all primary suppliers for this user
+    for (const supplier of suppliers) {
       try {
-        console.log(`🔄 Processing supplier: ${supplier.data?.name || supplier.id}`)
+        console.log(`Processing supplier: ${supplier.data?.name || supplier.id}`)
 
         // Prepare base sync configuration
         let googleCalendarSync = {
@@ -115,7 +112,6 @@ export async function GET(request) {
           syncedEvents: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          // Account type detection
           isWorkspaceAccount,
           workspaceDomain,
           userEmail,
@@ -125,25 +121,20 @@ export async function GET(request) {
 
         // Try to set up webhooks for Workspace accounts
         if (isWorkspaceAccount) {
-          console.log(`🔔 Setting up webhooks for Workspace account: ${supplier.data?.name}`)
+          console.log(`Setting up webhooks for Workspace account: ${supplier.data?.name}`)
           
           try {
-            // Test calendar access first
             const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
-            console.log('🔄 Testing calendar access...')
+            console.log('Testing calendar access...')
             
             const calendarTest = await calendar.calendars.get({ calendarId: 'primary' })
-            console.log('✅ Calendar access confirmed:', calendarTest.data.summary)
+            console.log('Calendar access confirmed:', calendarTest.data.summary)
             
             // Set up webhook
             const channelId = `supplier-${supplier.id}-${Date.now()}`
             const webhookUrl = `${process.env.NEXTAUTH_URL}/api/calendar/webhook`
             
-            console.log('🔄 Creating webhook:', {
-              channelId,
-              webhookUrl,
-              calendarId: 'primary'
-            })
+            console.log('Creating webhook:', { channelId, webhookUrl })
             
             const watchResponse = await calendar.events.watch({
               calendarId: 'primary',
@@ -151,17 +142,12 @@ export async function GET(request) {
                 id: channelId,
                 type: 'web_hook',
                 address: webhookUrl,
-                expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days
+                expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
               }
             })
             
-            console.log('✅ Webhook created successfully:', {
-              channelId: watchResponse.data.id,
-              resourceId: watchResponse.data.resourceId,
-              expiration: new Date(parseInt(watchResponse.data.expiration)).toISOString()
-            })
+            console.log('Webhook created successfully')
             
-            // Add webhook info to sync data
             googleCalendarSync.webhooksEnabled = true
             googleCalendarSync.webhookChannelId = channelId
             googleCalendarSync.webhookResourceId = watchResponse.data.resourceId
@@ -172,19 +158,13 @@ export async function GET(request) {
             workspaceCount++
             
           } catch (webhookError) {
-            console.error(`❌ Webhook setup failed for ${supplier.data?.name}:`, {
-              message: webhookError.message,
-              code: webhookError.code,
-              status: webhookError.status
-            })
-            
+            console.error(`Webhook setup failed:`, webhookError.message)
             webhookErrors++
-            // Continue with manual sync setup
             googleCalendarSync.webhookError = webhookError.message
             googleCalendarSync.webhookErrorAt = new Date().toISOString()
           }
         } else {
-          console.log(`📧 Personal Gmail account - manual sync only: ${supplier.data?.name}`)
+          console.log(`Personal Gmail account - manual sync only: ${supplier.data?.name}`)
         }
 
         // Update supplier in database
@@ -194,34 +174,34 @@ export async function GET(request) {
           updatedAt: new Date().toISOString()
         }
 
-        console.log(`💾 Updating supplier database record...`)
+        console.log('Updating supplier database record...')
         const { error: updateError } = await supabase
           .from('suppliers')
           .update({ data: updatedData })
           .eq('id', supplier.id)
 
         if (updateError) {
-          console.error(`❌ Failed to update supplier ${supplier.data?.name}:`, updateError)
+          console.error(`Failed to update supplier:`, updateError)
         } else {
-          console.log(`✅ Successfully updated supplier: ${supplier.data?.name}`)
+          console.log(`Successfully updated supplier: ${supplier.data?.name}`)
           totalUpdated++
         }
 
       } catch (supplierError) {
-        console.error(`❌ Error processing supplier ${supplier.data?.name}:`, supplierError)
+        console.error(`Error processing supplier:`, supplierError)
       }
     }
 
     // Log final results
-    console.log('🎉 OAuth callback completed:', {
-      totalSuppliers: allPrimarySuppliers.length,
+    console.log('OAuth callback completed:', {
+      totalSuppliers: suppliers.length,
       totalUpdated,
       workspaceAccounts: workspaceCount,
       manualAccounts: totalUpdated - workspaceCount,
       webhookErrors
     })
     
-    // Build success redirect with parameters
+    // Build success redirect
     const params = new URLSearchParams({
       calendar_connected: 'true',
       workspace_accounts: workspaceCount.toString(),
@@ -229,20 +209,16 @@ export async function GET(request) {
       webhook_errors: webhookErrors.toString()
     })
 
-    const redirectUrl = `/suppliers/dashboard?${params.toString()}`
-    console.log('🔄 Redirecting to:', redirectUrl)
+    const redirectUrl = `/suppliers/availability?${params.toString()}`
+    console.log('Redirecting to:', redirectUrl)
     
     return NextResponse.redirect(new URL(redirectUrl, request.url))
 
   } catch (error) {
-    console.error('❌ OAuth callback failed:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code
-    })
+    console.error('OAuth callback failed:', error.message)
     
     return NextResponse.redirect(
-      new URL('/suppliers/dashboard?calendar_error=callback_failed&details=' + encodeURIComponent(error.message), request.url)
+      new URL('/suppliers/availability?calendar_error=callback_failed&details=' + encodeURIComponent(error.message), request.url)
     )
   }
 }

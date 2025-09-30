@@ -22,12 +22,14 @@ export default function AvailabilityPage() {
   // 🔧 FIX: Extract the actual supplier data from the primary business
   const primaryBusiness = rawPrimaryBusiness ? {
     id: rawPrimaryBusiness.id,
+    auth_user_id: rawPrimaryBusiness.auth_user_id,  // ← Add this
     isPrimary: true,
     data: rawPrimaryBusiness.data || rawPrimaryBusiness.supplierData?.data || {}
   } : null
 
   console.log('🔍 Primary business data for availability:', {
     id: primaryBusiness?.id,
+    auth_user_id: primaryBusiness?.auth_user_id,  // ← Log this
     name: primaryBusiness?.data?.name,
     hasWorkingHours: !!primaryBusiness?.data?.workingHours,
     workingHours: primaryBusiness?.data?.workingHours,

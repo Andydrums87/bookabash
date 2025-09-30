@@ -219,7 +219,7 @@ export default function MobileSearchForm({
           }}
           placeholder="Enter your postcode"
           className={`
-            bg-white placeholder:text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-sm
+            bg-white placeholder:text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-base
             ${formData.postcode && !postcodeValid ? 'border-red-300 focus:border-red-500' : ''}
           `}
           required
