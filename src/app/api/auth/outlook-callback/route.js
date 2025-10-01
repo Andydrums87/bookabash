@@ -95,7 +95,7 @@ export async function GET(request) {
     
     try {
       const webhookUrl = `${process.env.NEXTAUTH_URL}/api/webhooks/outlook-calendar`
-      const expirationDateTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      const expirationDateTime = new Date(Date.now() + 4320 * 60 * 1000).toISOString()
       
       console.log("Creating Outlook webhook subscription...")
       console.log("Webhook URL:", webhookUrl)

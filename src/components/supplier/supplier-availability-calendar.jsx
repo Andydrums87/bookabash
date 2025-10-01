@@ -12,10 +12,8 @@ import {
   parseSupplierDate,
   migrateDateArray,
   formatDate,
-} from "@/utils/dateHelpers" // Import the centralized helpers
+} from "@/utils/dateHelpers"
 
-
-// Add this helper function near the top of SupplierAvailabilityCalendar component
 const isGoogleCalendarConnected = (supplierData) => {
   return supplierData?.googleCalendarSync?.connected === true || supplierData?.googleCalendarSync?.inherited === true
 }
@@ -38,8 +36,6 @@ export function getDefaultDaySchedule(isAvailable) {
   }
 }
 
-
-// Time slot definitions - matching the supplier settings
 const TIME_SLOTS = {
   morning: {
     id: "morning",
@@ -80,7 +76,6 @@ export default function SupplierAvailabilityCalendar({
   const [selectedDateForSlots, setSelectedDateForSlots] = useState(null)
   const hasSetInitialMonth = useRef(false)
 
-  // Set initial month to party date if coming from dashboard
   useEffect(() => {
     if (isFromDashboard && partyDate && !hasSetInitialMonth.current) {
       const partyYear = partyDate.getFullYear()
@@ -102,30 +97,23 @@ export default function SupplierAvailabilityCalendar({
       const partyMonth = partyDate.getMonth()
       const currentMonthIndex = currentMonth.getMonth()
 
-      // If viewing the party month, auto-select the party day
       if (partyMonth === currentMonthIndex) {
-        console.log("🔄 CALENDAR: Auto-selecting party date:", partyDay)
         setSelectedDate(partyDay)
 
-        // Also auto-select the party time slot if available
         if (partyTimeSlot && setSelectedTimeSlot) {
-          console.log("🔄 CALENDAR: Auto-selecting party time slot:", partyTimeSlot)
           setSelectedTimeSlot(partyTimeSlot)
         }
       }
     }
   }, [isFromDashboard, partyDate, partyTimeSlot, selectedDate, currentMonth, setSelectedDate, setSelectedTimeSlot])
 
-  // Migration helper for legacy supplier data
   const getSupplierWithTimeSlots = (supplierData) => {
     if (!supplierData) return null
 
-    // If already has time slots, return as-is
     if (supplierData.workingHours?.Monday?.timeSlots) {
       return supplierData
     }
 
-    // Migrate legacy data on-the-fly for display
     const migrated = { ...supplierData }
 
     if (supplierData.workingHours) {
@@ -149,18 +137,17 @@ export default function SupplierAvailabilityCalendar({
       })
     }
 
-    // FIXED: Migrate unavailable dates using centralized helper
     if (supplierData.unavailableDates && Array.isArray(supplierData.unavailableDates)) {
       migrated.unavailableDates = migrateDateArray(supplierData.unavailableDates)
     }
 
-    // FIXED: Migrate busy dates using centralized helper
     if (supplierData.busyDates && Array.isArray(supplierData.busyDates)) {
       migrated.busyDates = migrateDateArray(supplierData.busyDates)
     }
 
     return migrated
   }
+
   const getLeadTimeAvailability = (date, supplierData) => {
     if (!supplierData) return "unknown"
 
@@ -172,7 +159,6 @@ export default function SupplierAvailabilityCalendar({
 
     if (checkDate < today) return "past"
 
-    // Check lead time requirements
     const leadTimeSettings = supplierData.leadTimeSettings || {}
     const minLeadTime = leadTimeSettings.minLeadTimeDays || 3
     const advanceBooking = supplierData.advanceBookingDays || 0
@@ -190,7 +176,6 @@ export default function SupplierAvailabilityCalendar({
 
     if (checkDate > maxBookingDate) return "outside-window"
 
-    // Check stock if applicable
     if (leadTimeSettings.stockBased && !leadTimeSettings.unlimitedStock) {
       if (leadTimeSettings.stockQuantity <= 0) return "unavailable"
     }
@@ -210,33 +195,28 @@ export default function SupplierAvailabilityCalendar({
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString("en-US", { weekday: "long" })
 
-      // CRITICAL FIX: Check if working hours exist at all
       if (!migratedSupplier.workingHours || Object.keys(migratedSupplier.workingHours).length === 0) {
-        return true // DEFAULT TO AVAILABLE when no working hours
+        return true
       }
 
-      // Check working hours
       const workingDay = migratedSupplier.workingHours?.[dayName]
 
-      // CRITICAL FIX: Default to available if day not configured
       if (!workingDay) {
-        return true // DEFAULT TO AVAILABLE when day not configured
+        return true
       }
 
       if (!workingDay.active) {
         return false
       }
 
-      // CRITICAL FIX: Default to available if time slot not configured
       if (!workingDay.timeSlots || !workingDay.timeSlots[timeSlot]) {
-        return true // DEFAULT TO AVAILABLE when time slot not configured
+        return true
       }
 
       if (!workingDay.timeSlots[timeSlot].available) {
         return false
       }
 
-      // Check unavailable dates (your existing logic is fine here)
       const unavailableDate = migratedSupplier.unavailableDates?.find((ud) => {
         const udDate = getDateStringForComparison(ud.date || ud)
         const matches = udDate === dateString
@@ -245,14 +225,13 @@ export default function SupplierAvailabilityCalendar({
 
       if (unavailableDate) {
         if (typeof unavailableDate === "string") {
-          return false // Legacy: entire day
+          return false
         }
         if (unavailableDate.timeSlots?.includes(timeSlot)) {
           return false
         }
       }
 
-      // Check busy dates (your existing logic is fine here)
       const busyDate = migratedSupplier.busyDates?.find((bd) => {
         const bdDate = getDateStringForComparison(bd.date || bd)
         const matches = bdDate === dateString
@@ -261,7 +240,7 @@ export default function SupplierAvailabilityCalendar({
 
       if (busyDate) {
         if (typeof busyDate === "string") {
-          return false // Legacy: entire day
+          return false
         }
         if (busyDate.timeSlots?.includes(timeSlot)) {
           return false
@@ -270,59 +249,11 @@ export default function SupplierAvailabilityCalendar({
 
       return true
     } catch (error) {
-      console.error("❌ CALENDAR: Error checking time slot availability:", error)
-      return true // CRITICAL FIX: Default to available on error
+      console.error("Error checking time slot availability:", error)
+      return true
     }
   }
 
-  // ALSO FIX: Your migration function
-  const migrateWorkingHours = (legacyHours) => {
-    // CRITICAL FIX: Return default available hours if no hours provided
-    if (!legacyHours || Object.keys(legacyHours).length === 0) {
-      console.log("⚠️ MIGRATION: No working hours - defaulting to available Monday-Saturday")
-      return {
-        Monday: getDefaultDaySchedule(true),
-        Tuesday: getDefaultDaySchedule(true),
-        Wednesday: getDefaultDaySchedule(true),
-        Thursday: getDefaultDaySchedule(true),
-        Friday: getDefaultDaySchedule(true),
-        Saturday: getDefaultDaySchedule(true),
-        Sunday: getDefaultDaySchedule(false), // Only Sunday closed by default
-      }
-    }
-
-    // Your existing migration logic for when hours do exist...
-    if (legacyHours.Monday?.timeSlots) {
-      return legacyHours
-    }
-
-    const migrated = {}
-    Object.entries(legacyHours).forEach(([day, hours]) => {
-      if (hours && typeof hours === "object" && "active" in hours) {
-        migrated[day] = {
-          active: hours.active,
-          timeSlots: {
-            morning: {
-              available: hours.active,
-              startTime: hours.start || "09:00",
-              endTime: "13:00",
-            },
-            afternoon: {
-              available: hours.active,
-              startTime: "13:00",
-              endTime: hours.end || "17:00",
-            },
-          },
-        }
-      } else {
-        migrated[day] = getDefaultDaySchedule(true) // Default to available
-      }
-    })
-
-    return migrated
-  }
-
-  // Get available time slots for a date
   const getAvailableTimeSlots = (date) => {
     return Object.keys(TIME_SLOTS).filter((slot) => slot !== "allday" && isTimeSlotAvailable(date, slot))
   }
@@ -334,7 +265,6 @@ export default function SupplierAvailabilityCalendar({
       return getLeadTimeAvailability(date, migratedSupplier)
     }
 
-    // Existing time slot logic
     try {
       const checkDate = new Date(date)
       checkDate.setHours(0, 0, 0, 0)
@@ -344,7 +274,6 @@ export default function SupplierAvailabilityCalendar({
 
       if (checkDate < today) return "past"
 
-      // Check advance booking
       const advanceDays = migratedSupplier.advanceBookingDays || 0
       if (advanceDays > 0) {
         const minBookingDate = new Date(today)
@@ -354,7 +283,6 @@ export default function SupplierAvailabilityCalendar({
         if (checkDate < minBookingDate) return "outside-window"
       }
 
-      // Check maximum booking window
       const maxDays = migratedSupplier.maxBookingDays || 365
       const maxBookingDate = new Date(today)
       maxBookingDate.setDate(today.getDate() + maxDays)
@@ -387,18 +315,18 @@ export default function SupplierAvailabilityCalendar({
   }
 
   const getDayStyle = (date, status, isSelected, isCurrentMonth, availableSlots) => {
-    if (!isCurrentMonth) return "text-gray-300 cursor-not-allowed bg-transparent"
+    if (!isCurrentMonth) return "text-gray-200 cursor-not-allowed bg-transparent"
 
     if (isPartyDate(date)) {
-      const baseStyle = "font-semibold relative"
+      const baseStyle = "font-bold relative"
 
       switch (status) {
         case "available":
         case "partially-available":
-          return `${baseStyle} bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors`
+          return `${baseStyle} bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-all`
         case "unavailable":
         case "outside-window":
-          return `${baseStyle} text-gray-300 line-through bg-transparent`
+          return `${baseStyle} text-gray-300 bg-transparent`
         case "busy":
           return `${baseStyle} text-gray-400 bg-transparent`
         case "closed":
@@ -408,25 +336,25 @@ export default function SupplierAvailabilityCalendar({
       }
     }
 
-    if (isSelected) return "bg-primary-600 text-white rounded-full font-semibold hover:bg-primary-700 transition-colors"
+    if (isSelected) return "bg-[hsl(var(--primary-700))] text-white rounded-full font-bold hover:bg-[hsl(var(--primary-800))] transition-all shadow-sm"
 
     switch (status) {
       case "available":
         return readOnly
-          ? "text-primary-900 bg-primary-100 rounded-full cursor-default"
-          : "text-primary-900 bg-primary-100 hover:bg-primary-200 cursor-pointer transition-colors font-medium rounded-full"
+          ? "text-[hsl(var(--primary-950))] bg-[hsl(var(--primary-300))] rounded-full cursor-default font-bold"
+          : "text-[hsl(var(--primary-950))] bg-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-400))] cursor-pointer transition-all font-bold rounded-full"
       case "partially-available":
         return readOnly
-          ? "text-primary-900 bg-primary-200 rounded-full cursor-default"
-          : "text-primary-900 bg-primary-200 hover:bg-primary-300 cursor-pointer transition-colors font-medium rounded-full"
+          ? "text-[hsl(var(--primary-800))] bg-[hsl(var(--primary-100))] rounded-full cursor-default font-semibold"
+          : "text-[hsl(var(--primary-800))] bg-[hsl(var(--primary-100))] hover:bg-[hsl(var(--primary-200))] cursor-pointer transition-all font-semibold rounded-full"
       case "unavailable":
-        return "text-gray-300 cursor-not-allowed line-through bg-transparent"
+        return "text-gray-300 cursor-not-allowed bg-transparent font-normal"
       case "past":
-        return "text-gray-200 cursor-not-allowed line-through bg-transparent"
+        return "text-gray-200 cursor-not-allowed bg-transparent font-normal"
       case "outside-window":
-        return "text-gray-300 cursor-not-allowed opacity-50 line-through bg-transparent"
+        return "text-gray-300 cursor-not-allowed opacity-50 bg-transparent font-normal"
       default:
-        return "text-gray-300 cursor-not-allowed bg-transparent"
+        return "text-gray-300 cursor-not-allowed bg-transparent font-normal"
     }
   }
 
@@ -435,13 +363,10 @@ export default function SupplierAvailabilityCalendar({
       return
     }
 
-    // For dashboard users, only allow clicking the party date
     if (isFromDashboard && !isPartyDate(date)) {
-      console.log("Cannot select non-party date for dashboard users")
       return
     }
 
-    // For dashboard users clicking party date, just ensure it's selected
     if (isFromDashboard && isPartyDate(date)) {
       setSelectedDate(day)
       if (partyTimeSlot && setSelectedTimeSlot && !isLeadTimeBased) {
@@ -456,24 +381,21 @@ export default function SupplierAvailabilityCalendar({
       return
     }
 
-    // Set the selected date
     setSelectedDate(day)
 
-    // For lead-time suppliers, no time slot selection needed
     if (isLeadTimeBased) {
       if (onTimeSlotSelect) {
-        // Call with null timeSlot to indicate lead-time based selection
         onTimeSlotSelect(date, null)
       }
       return
     }
+
     const availableSlots = getAvailableTimeSlots(date)
 
     if (availableSlots.length === 0) {
       return
     }
 
-    // If only one slot available, auto-select it
     if (availableSlots.length === 1) {
       if (setSelectedTimeSlot) {
         setSelectedTimeSlot(availableSlots[0])
@@ -483,6 +405,7 @@ export default function SupplierAvailabilityCalendar({
       }
       return
     }
+
     if (showTimeSlotSelection && availableSlots.length > 1) {
       setSelectedDateForSlots(date)
       setShowingTimeSlots(true)
@@ -513,12 +436,10 @@ export default function SupplierAvailabilityCalendar({
     const daysInMonthCount = getDaysInMonth(currentMonth)
     const days = []
 
-    // Empty cells for days before the month starts
     for (let i = 0; i < firstDayIndex; i++) {
-      days.push(<div key={`empty-${i}`} className="h-14 w-full"></div>)
+      days.push(<div key={`empty-${i}`} className="h-12 w-12"></div>)
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonthCount; day++) {
       const date = new Date(year, month, day)
       const isSelected = selectedDate === day || (isFromDashboard && isPartyDate(date))
@@ -534,7 +455,7 @@ export default function SupplierAvailabilityCalendar({
         <button
           key={day}
           onClick={() => (canClick ? handleDateClick(date, day) : null)}
-          className={`h-14 w-full text-base transition-all duration-200 ${styling} relative flex items-center justify-center`}
+          className={`h-12 w-12 mx-auto text-sm transition-all duration-200 ${styling} relative flex items-center justify-center`}
           title={
             isPartyDay
               ? `Your Party Date - ${status.replace("-", " ")}`
@@ -552,11 +473,10 @@ export default function SupplierAvailabilityCalendar({
         >
           {day}
 
-          {/* Party date indicator */}
-          {isPartyDay && <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full"></div>}
+          {isPartyDay && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-400 rounded-full"></div>}
 
           {shouldShowWeekendIndicator(date, migratedSupplier) && status === "available" && !isPartyDay && (
-            <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
           )}
         </button>,
       )
@@ -571,7 +491,6 @@ export default function SupplierAvailabilityCalendar({
       return getLeadTimeAvailability(partyDate, migratedSupplier)
     }
 
-    // Existing time slot checking logic
     let partyTimeSlotToCheck = partyTimeSlot
 
     if (!partyTimeSlotToCheck) {
@@ -609,21 +528,19 @@ export default function SupplierAvailabilityCalendar({
       }
     }
 
-    // Check if the specific time slot is available
     if (partyTimeSlotToCheck) {
       const isSlotAvailable = isTimeSlotAvailable(partyDate, partyTimeSlotToCheck)
       return isSlotAvailable ? "available" : "unavailable"
     }
 
-    // Fallback to general date status
     return getDateStatus(partyDate)
   }, [partyDate, partyTimeSlot, migratedSupplier, isLeadTimeBased])
 
   return (
     <Card className="border-gray-200 shadow-sm">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">
+      <CardContent className="p-8">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">
             {isFromDashboard
               ? "Party Date Availability"
               : isLeadTimeBased
@@ -631,52 +548,46 @@ export default function SupplierAvailabilityCalendar({
                 : "Time Slot Availability"}
           </h2>
           {migratedSupplier?.advanceBookingDays > 0 && (
-            <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
+            <div className="text-sm text-gray-600 bg-[hsl(var(--primary-50))] px-4 py-2 rounded-full font-medium">
               {isLeadTimeBased
                 ? `${migratedSupplier.advanceBookingDays}+ days lead time`
                 : `Book ${migratedSupplier.advanceBookingDays}+ days ahead`}
-              {isLeadTimeBased && migratedSupplier?.leadTimeSettings?.minLeadTimeDays && (
-                <div className="text-sm text-gray-600 bg-purple-50 px-3 py-1 rounded-full">
-                  Min {migratedSupplier.leadTimeSettings.minLeadTimeDays} days lead time
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        {/* Party date status banner with lead-time info */}
         {isFromDashboard && partyDate && partyDateStatus && (
           <div
-            className={`mb-6 p-4 rounded-lg border-2 ${
+            className={`mb-8 p-5 rounded-xl border ${
               partyDateStatus === "available" || partyDateStatus === "partially-available"
                 ? "bg-green-50 border-green-200"
                 : partyDateStatus === "unavailable"
                   ? "bg-red-50 border-red-200"
                   : partyDateStatus === "busy"
-                    ? "bg-yellow-50 border-yellow-200"
+                    ? "bg-amber-50 border-amber-200"
                     : "bg-gray-50 border-gray-200"
             }`}
           >
             <div className="flex items-start gap-3">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                   partyDateStatus === "available" || partyDateStatus === "partially-available"
-                    ? "bg-green-200"
+                    ? "bg-green-100"
                     : partyDateStatus === "unavailable"
-                      ? "bg-red-200"
+                      ? "bg-red-100"
                       : partyDateStatus === "busy"
-                        ? "bg-yellow-200"
-                        : "bg-gray-200"
+                        ? "bg-amber-100"
+                        : "bg-gray-100"
                 }`}
               >
                 {partyDateStatus === "available" || partyDateStatus === "partially-available" ? (
                   isLeadTimeBased ? (
-                    <Package className="w-4 h-4 text-green-700" />
+                    <Package className="w-5 h-5 text-green-700" />
                   ) : (
-                    <Calendar className="w-4 h-4 text-green-700" />
+                    <Calendar className="w-5 h-5 text-green-700" />
                   )
                 ) : (
-                  <Info className="w-4 h-4 text-gray-700" />
+                  <Info className="w-5 h-5 text-gray-700" />
                 )}
               </div>
               <div className="flex-1">
@@ -687,7 +598,7 @@ export default function SupplierAvailabilityCalendar({
                       : partyDateStatus === "unavailable"
                         ? "text-red-800"
                         : partyDateStatus === "busy"
-                          ? "text-yellow-800"
+                          ? "text-amber-800"
                           : "text-gray-800"
                   }`}
                 >
@@ -700,28 +611,27 @@ export default function SupplierAvailabilityCalendar({
                       : partyDateStatus === "unavailable"
                         ? "text-red-700"
                         : partyDateStatus === "busy"
-                          ? "text-yellow-700"
+                          ? "text-amber-700"
                           : "text-gray-700"
                   }`}
                 >
                   {isLeadTimeBased
                     ? partyDateStatus === "available"
-                      ? "✅ Can deliver/be ready by this date!"
+                      ? "Can deliver/be ready by this date"
                       : partyDateStatus === "unavailable"
-                        ? "❌ Cannot fulfill by this date"
+                        ? "Cannot fulfill by this date"
                         : partyDateStatus === "outside-window"
-                          ? "⏰ Insufficient lead time"
-                          : "⚠️ Check availability"
-                    : (partyDateStatus === "available" && "✅ Available for booking!") ||
-                      (partyDateStatus === "partially-available" && "⚠️ Partially available - some time slots open") ||
-                      (partyDateStatus === "unavailable" && "❌ Not available for your party time") ||
-                      (partyDateStatus === "busy" && "⚠️ Already booked on this date") ||
-                      (partyDateStatus === "closed" && "🚫 Supplier is closed on this date") ||
-                      (partyDateStatus === "past" && "📅 This date has passed") ||
-                      (partyDateStatus === "outside-window" && "📋 Outside booking window")}
+                          ? "Insufficient lead time"
+                          : "Check availability"
+                    : (partyDateStatus === "available" && "Available for booking") ||
+                      (partyDateStatus === "partially-available" && "Partially available - some time slots open") ||
+                      (partyDateStatus === "unavailable" && "Not available for your party time") ||
+                      (partyDateStatus === "busy" && "Already booked on this date") ||
+                      (partyDateStatus === "closed" && "Supplier is closed on this date") ||
+                      (partyDateStatus === "past" && "This date has passed") ||
+                      (partyDateStatus === "outside-window" && "Outside booking window")}
                 </p>
 
-                {/* Show available time slots for party date (time-slot suppliers only) */}
                 {!isLeadTimeBased && (partyDateStatus === "available" || partyDateStatus === "partially-available") && (
                   <div className="flex gap-2 mt-2">
                     {getAvailableTimeSlots(partyDate).map((slot) => {
@@ -738,7 +648,6 @@ export default function SupplierAvailabilityCalendar({
                         >
                           <SlotIcon className="w-3 h-3" />
                           {TIME_SLOTS[slot].label}
-                          {partyTimeSlot === slot && ""}
                         </Badge>
                       )
                     })}
@@ -757,110 +666,106 @@ export default function SupplierAvailabilityCalendar({
         )}
 
         <div className="space-y-6">
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          <div className="flex items-center justify-between mb-8">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+              className="h-10 px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            
+            <h3 className="text-xl font-bold text-gray-700 tracking-wide uppercase">
+              {currentMonth.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
             </h3>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                className="h-9 w-9 p-0"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                className="h-9 w-9 p-0"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+              className="h-10 px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
           </div>
 
-          {/* Calendar Header */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-3 mb-4">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="text-center font-medium text-gray-400 py-2 text-sm">
+              <div key={day} className="text-center font-semibold text-gray-500 py-3 text-sm tracking-wider">
                 {day}
               </div>
             ))}
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">{calendarDays}</div>
+          <div className="grid grid-cols-7 gap-3 mb-8">{calendarDays}</div>
 
-          {/* Legend - Updated for colored backgrounds */}
-          <div className="space-y-3">
-            <h4 className="font-semibold text-gray-900 text-sm">Legend:</h4>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+          <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+            <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wider">Legend</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
               {isFromDashboard && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                     15
                   </div>
-                  <span className="text-gray-600">Your Party Date</span>
+                  <span className="text-gray-700 font-medium">Your Party Date</span>
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-700))] flex items-center justify-center text-white text-sm font-bold shadow-sm">
                   15
                 </div>
-                <span className="text-gray-600">Selected Date</span>
+                <span className="text-gray-700 font-medium">Selected</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-900 text-sm font-medium">
+                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-300))] flex items-center justify-center text-[hsl(var(--primary-950))] text-sm font-bold">
                   15
                 </div>
-                <span className="text-gray-600">{isLeadTimeBased ? "Can Deliver" : "Fully Available"}</span>
+                <span className="text-gray-700 font-medium">{isLeadTimeBased ? "Can Deliver" : "Available"}</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary-200 flex items-center justify-center text-primary-900 text-sm font-medium">
+                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center text-[hsl(var(--primary-800))] text-sm font-semibold">
                   15
                 </div>
-                <span className="text-gray-600">Partially Available</span>
+                <span className="text-gray-700 font-medium">Partial</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 flex items-center justify-center">
-                  <span className="text-gray-300 text-sm line-through">15</span>
+                  <span className="text-gray-300 text-sm font-medium">15</span>
                 </div>
-                <span className="text-gray-600">{isLeadTimeBased ? "Too Soon" : "Unavailable"}</span>
+                <span className="text-gray-700 font-medium">{isLeadTimeBased ? "Too Soon" : "Unavailable"}</span>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 mt-3 leading-relaxed">
               {isLeadTimeBased
                 ? "Click available dates to select your delivery date"
                 : "Click available dates to select your preferred time"}
             </p>
           </div>
 
-          {/* Selected Date Display - Updated for lead-time */}
           {!isFromDashboard && selectedDate && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <div className="bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-xl p-5 mt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-[hsl(var(--primary-700))] rounded-full flex items-center justify-center shadow-sm">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
                 <div className="flex-1">
-                  <span className="font-semibold text-blue-900">
+                  <span className="font-bold text-[hsl(var(--primary-900))] text-sm uppercase tracking-wide block mb-1">
                     {isLeadTimeBased ? "Selected Delivery Date" : "Selected Date"}
                   </span>
-                  <p className="text-blue-700 text-sm">
+                  <p className="text-[hsl(var(--primary-700))] font-medium">
                     {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDate).toLocaleDateString(
                       "en-US",
                       { weekday: "long", year: "numeric", month: "long", day: "numeric" },
                     )}
                   </p>
                   {!isLeadTimeBased && selectedTimeSlot && (
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-2">
                       {(() => {
                         const SlotIcon = TIME_SLOTS[selectedTimeSlot].icon
-                        // Changed SlotIcon to w-4 h-4 text-blue-600
-                        return <SlotIcon className="w-4 h-4 text-blue-600" />
+                        return <SlotIcon className="w-4 h-4 text-[hsl(var(--primary-600))]" />
                       })()}
-                      <span className="text-blue-600 text-sm font-medium">
+                      <span className="text-[hsl(var(--primary-600))] text-sm font-semibold">
                         {TIME_SLOTS[selectedTimeSlot].label} ({TIME_SLOTS[selectedTimeSlot].displayTime})
                       </span>
                     </div>
@@ -871,7 +776,6 @@ export default function SupplierAvailabilityCalendar({
           )}
         </div>
 
-        {/* Time Slot Selection Modal */}
         {showingTimeSlots && selectedDateForSlots && showTimeSlotSelection && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
@@ -889,12 +793,12 @@ export default function SupplierAvailabilityCalendar({
                   <button
                     key={slot}
                     onClick={() => handleTimeSlotSelection(slot)}
-                    className="w-full p-3 text-left border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                    className="w-full p-3 text-left border border-gray-200 rounded-lg hover:border-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-50))] transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {(() => {
                         const SlotIcon = TIME_SLOTS[slot].icon
-                        return <SlotIcon className="w-5 h-5 text-amber-500" />
+                        return <SlotIcon className="w-5 h-5 text-[hsl(var(--primary-500))]" />
                       })()}
                       <div>
                         <div className="font-medium">{TIME_SLOTS[slot].label}</div>
