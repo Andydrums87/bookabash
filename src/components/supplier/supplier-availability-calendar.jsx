@@ -18,6 +18,12 @@ import {
   formatDate
 } from '@/utils/dateHelpers' // Import the centralized helpers
 
+// Add this helper function near the top of SupplierAvailabilityCalendar component
+const isGoogleCalendarConnected = (supplierData) => {
+  return supplierData?.googleCalendarSync?.connected === true || 
+         supplierData?.googleCalendarSync?.inherited === true
+}
+
 // Time slot definitions - matching the supplier settings
 const TIME_SLOTS = {
   morning: {
