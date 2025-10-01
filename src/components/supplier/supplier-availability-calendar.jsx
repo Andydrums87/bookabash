@@ -336,17 +336,18 @@ export default function SupplierAvailabilityCalendar({
       }
     }
 
-    if (isSelected) return "bg-[hsl(var(--primary-700))] text-white rounded-full font-bold hover:bg-[hsl(var(--primary-800))] transition-all shadow-sm"
+    if (isSelected)
+      return "bg-teal-500 text-white rounded-full font-bold hover:bg-teal-600 transition-all shadow-lg ring-2 ring-teal-200"
 
     switch (status) {
       case "available":
         return readOnly
-          ? "text-[hsl(var(--primary-950))] bg-[hsl(var(--primary-300))] rounded-full cursor-default font-bold"
-          : "text-[hsl(var(--primary-950))] bg-[hsl(var(--primary-300))] hover:bg-[hsl(var(--primary-400))] cursor-pointer transition-all font-bold rounded-full"
+          ? "text-white bg-primary-500 rounded-full cursor-default font-bold"
+          : "text-white bg-primary-500 hover:bg-primary-600 cursor-pointer transition-all font-bold rounded-full"
       case "partially-available":
         return readOnly
-          ? "text-[hsl(var(--primary-800))] bg-[hsl(var(--primary-100))] rounded-full cursor-default font-semibold"
-          : "text-[hsl(var(--primary-800))] bg-[hsl(var(--primary-100))] hover:bg-[hsl(var(--primary-200))] cursor-pointer transition-all font-semibold rounded-full"
+          ? "text-primary-800 bg-primary-200 rounded-full cursor-default font-semibold"
+          : "text-primary-800 bg-primary-200 hover:bg-primary-300 cursor-pointer transition-all font-semibold rounded-full"
       case "unavailable":
         return "text-gray-300 cursor-not-allowed bg-transparent font-normal"
       case "past":
@@ -437,7 +438,7 @@ export default function SupplierAvailabilityCalendar({
     const days = []
 
     for (let i = 0; i < firstDayIndex; i++) {
-      days.push(<div key={`empty-${i}`} className="h-12 w-12"></div>)
+      days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>)
     }
 
     for (let day = 1; day <= daysInMonthCount; day++) {
@@ -455,7 +456,7 @@ export default function SupplierAvailabilityCalendar({
         <button
           key={day}
           onClick={() => (canClick ? handleDateClick(date, day) : null)}
-          className={`h-12 w-12 mx-auto text-sm transition-all duration-200 ${styling} relative flex items-center justify-center`}
+          className={`h-8 w-8 mx-auto text-xs transition-all duration-200 ${styling} relative flex items-center justify-center`}
           title={
             isPartyDay
               ? `Your Party Date - ${status.replace("-", " ")}`
@@ -548,7 +549,7 @@ export default function SupplierAvailabilityCalendar({
                 : "Time Slot Availability"}
           </h2>
           {migratedSupplier?.advanceBookingDays > 0 && (
-            <div className="text-sm text-gray-600 bg-[hsl(var(--primary-50))] px-4 py-2 rounded-full font-medium">
+            <div className="text-xs text-white bg-[hsl(var(--primary-500))] font-semibold px-8 py-2 rounded-full">
               {isLeadTimeBased
                 ? `${migratedSupplier.advanceBookingDays}+ days lead time`
                 : `Book ${migratedSupplier.advanceBookingDays}+ days ahead`}
@@ -675,11 +676,11 @@ export default function SupplierAvailabilityCalendar({
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            
+
             <h3 className="text-xl font-bold text-gray-700 tracking-wide uppercase">
               {currentMonth.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
             </h3>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -698,40 +699,40 @@ export default function SupplierAvailabilityCalendar({
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-3 mb-8">{calendarDays}</div>
+          <div className="grid grid-cols-7 gap-6 mb-8">{calendarDays}</div>
 
           <div className="bg-gray-50 rounded-xl p-6 space-y-4">
             <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wider">Legend</h4>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
               {isFromDashboard && (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                  <div className="w-6 h-6 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                     15
                   </div>
                   <span className="text-gray-700 font-medium">Your Party Date</span>
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-700))] flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                <div className="w-6 h-6 flex-shrink-0 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs font-bold shadow-lg ring-2 ring-teal-200">
                   15
                 </div>
                 <span className="text-gray-700 font-medium">Selected</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-300))] flex items-center justify-center text-[hsl(var(--primary-950))] text-sm font-bold">
+                <div className="w-6 h-6 flex-shrink-0 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
                   15
                 </div>
                 <span className="text-gray-700 font-medium">{isLeadTimeBased ? "Can Deliver" : "Available"}</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[hsl(var(--primary-100))] flex items-center justify-center text-[hsl(var(--primary-800))] text-sm font-semibold">
+                <div className="w-6 h-6 flex-shrink-0 rounded-full bg-primary-200 flex items-center justify-center text-primary-800 text-xs font-semibold">
                   15
                 </div>
                 <span className="text-gray-700 font-medium">Partial</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <span className="text-gray-300 text-sm font-medium">15</span>
+                <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                  <span className="text-gray-300 text-xs font-medium">15</span>
                 </div>
                 <span className="text-gray-700 font-medium">{isLeadTimeBased ? "Too Soon" : "Unavailable"}</span>
               </div>
@@ -746,7 +747,7 @@ export default function SupplierAvailabilityCalendar({
           {!isFromDashboard && selectedDate && (
             <div className="bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-xl p-5 mt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[hsl(var(--primary-700))] rounded-full flex items-center justify-center shadow-sm">
+                <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center shadow-lg ring-2 ring-teal-200">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
@@ -763,9 +764,9 @@ export default function SupplierAvailabilityCalendar({
                     <div className="flex items-center gap-2 mt-2">
                       {(() => {
                         const SlotIcon = TIME_SLOTS[selectedTimeSlot].icon
-                        return <SlotIcon className="w-4 h-4 text-[hsl(var(--primary-600))]" />
+                        return <SlotIcon className="w-4 h-4 text-[hsl(var(--primary-500))]" />
                       })()}
-                      <span className="text-[hsl(var(--primary-600))] text-sm font-semibold">
+                      <span className="text-[hsl(var(--primary-600))]" text-sm font-semibold>
                         {TIME_SLOTS[selectedTimeSlot].label} ({TIME_SLOTS[selectedTimeSlot].displayTime})
                       </span>
                     </div>

@@ -1,4 +1,4 @@
-name: Calendar Sync
+name: Calendar Sync and Webhook Renewal
 
 on:
   schedule:
@@ -6,11 +6,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-calendars:
+  sync-and-renew:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Call calendar sync endpoint
+      - name: Sync calendars
         run: |
-          echo "Calling endpoint..."
+          echo "Calling calendar sync endpoint..."
           curl -v https://www.partysnap.co.uk/api/calendar/scheduled-sync
+      
+      - name: Renew webhooks
+        run: |
+          echo "Renewing webhook subscriptions..."
+          curl -v https://www.partysnap.co.uk/api/calendar/renew-webhooks

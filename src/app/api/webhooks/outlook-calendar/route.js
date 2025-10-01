@@ -1,55 +1,3 @@
-// app/api/webhooks/outlook-calendar/route.js
-import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
-
-const WEBHOOK_SECRET = process.env.OUTLOOK_WEBHOOK_SECRET || "your-random-secret-string"
-
-async function refreshOutlookToken(refreshToken, supplierId) {
-  const tokenResponse = await fetch(
-    "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        client_id: process.env.MICROSOFT_CLIENT_ID,
-        client_secret: process.env.MICROSOFT_CLIENT_SECRET,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-      }),
-    }
-  )
-
-  if (!tokenResponse.ok) {
-    throw new Error("Token refresh failed")
-  }
-
-  const tokens = await tokenResponse.json()
-
-  const { data: supplier } = await supabase
-    .from("suppliers")
-    .select("data")
-    .eq("id", supplierId)
-    .single()
-
-  const updatedData = {
-    ...supplier.data,
-    outlookTokens: {
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
-    },
-  }
-
-  await supabase
-    .from("suppliers")
-    .update({ data: updatedData })
-    .eq("id", supplierId)
-
-  return tokens.access_token
-}
-
 async function syncOutlookCalendar(primarySupplier, allUserSuppliers) {
   try {
     const { outlookTokens, outlookCalendarSync } = primarySupplier.data
@@ -74,7 +22,7 @@ async function syncOutlookCalendar(primarySupplier, allUserSuppliers) {
     eventsUrl.searchParams.append("$select", "subject,start,end,showAs,isAllDay")
     eventsUrl.searchParams.append("$top", "250")
 
-    console.log('Fetching Outlook calendar events...')
+    console.log('Fetching current Outlook calendar events...')
     
     const response = await fetch(eventsUrl.toString(), {
       headers: {
@@ -98,6 +46,7 @@ async function syncOutlookCalendar(primarySupplier, allUserSuppliers) {
 
     console.log(`${busyEvents.length} busy events to block`)
 
+    // Convert ONLY current events to blocked dates
     const blockedDates = []
     busyEvents.forEach((event) => {
       if (event.isAllDay) {
@@ -135,8 +84,11 @@ async function syncOutlookCalendar(primarySupplier, allUserSuppliers) {
       try {
         const isPrimary = supplier.id === primarySupplier.id
         
+        // KEY CHANGE: Keep manual blocks, REPLACE all outlook-calendar blocks
         const currentUnavailable = supplier.data.unavailableDates || []
-        const manualBlocks = currentUnavailable.filter(item => item.source !== 'outlook-calendar')
+        const manualBlocks = currentUnavailable.filter(item => 
+          item.source !== 'outlook-calendar'
+        )
         const allBlocked = [...manualBlocks, ...blockedDates]
         
         const updatedData = {
@@ -171,71 +123,4 @@ async function syncOutlookCalendar(primarySupplier, allUserSuppliers) {
   } catch (error) {
     console.error('Outlook sync failed:', error)
   }
-}
-
-export async function POST(request) {
-  try {
-    const body = await request.text()
-    const query = new URL(request.url).searchParams
-    
-    const validationToken = query.get('validationToken')
-    if (validationToken) {
-      console.log('Outlook webhook validation request')
-      return new NextResponse(validationToken, {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain' }
-      })
-    }
-
-    const notification = JSON.parse(body)
-    console.log('Outlook webhook notification received:', notification)
-
-    if (notification.value?.[0]?.clientState !== WEBHOOK_SECRET) {
-      console.error('Invalid clientState')
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Get ALL suppliers
-    const { data: allSuppliers } = await supabase
-      .from('suppliers')
-      .select('*')
-
-    if (!allSuppliers) {
-      return NextResponse.json({ success: true })
-    }
-
-    for (const change of notification.value || []) {
-      const { subscriptionId } = change
-      
-      console.log(`Processing change for subscription: ${subscriptionId}`)
-
-      const primarySupplier = allSuppliers.find(s => 
-        s.data?.outlookCalendarSync?.subscriptionId === subscriptionId
-      )
-
-      if (!primarySupplier) {
-        console.log('No supplier found for subscription:', subscriptionId)
-        continue
-      }
-
-      console.log('Found primary supplier:', primarySupplier.data.name)
-
-      const userSuppliers = allSuppliers.filter(s => 
-        s.auth_user_id === primarySupplier.auth_user_id
-      )
-
-      console.log(`Found ${userSuppliers.length} total suppliers for this user`)
-
-      await syncOutlookCalendar(primarySupplier, userSuppliers)
-    }
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Outlook webhook error:', error)
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
-  }
-}
-
-export async function GET(request) {
-  return NextResponse.json({ status: 'ok', service: 'outlook-webhook' })
 }
