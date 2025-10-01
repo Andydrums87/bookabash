@@ -1,3 +1,70 @@
+// app/api/calendar/webhook/route.js
+import { supabase } from '@/lib/supabase'
+import { NextResponse } from 'next/server'
+import { google } from 'googleapis'
+
+export async function POST(request) {
+  try {
+    const headers = Object.fromEntries(request.headers.entries())
+    const resourceState = headers['x-goog-resource-state']
+    const channelId = headers['x-goog-channel-id']
+    
+    console.log('Google Calendar webhook received:', { resourceState, channelId, timestamp: new Date().toISOString() })
+    
+    // Initial sync confirmation - just acknowledge
+    if (resourceState === 'sync') {
+      console.log('Webhook sync confirmation received')
+      return NextResponse.json({ success: true })
+    }
+    
+    // Find supplier with this webhook channel
+    if (!channelId) {
+      console.log('No channel ID in webhook')
+      return NextResponse.json({ success: true })
+    }
+    
+    console.log('Looking for supplier with channel ID:', channelId)
+    
+    // Get ALL suppliers, then find the one with this webhook
+    const { data: allSuppliers, error: fetchError } = await supabase
+      .from('suppliers')
+      .select('*')
+    
+    if (fetchError) {
+      console.error('Error fetching suppliers:', fetchError)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    }
+    
+    // Find the primary supplier with this webhook channel
+    const primarySupplier = allSuppliers?.find(s => 
+      s.data?.googleCalendarSync?.webhookChannelId === channelId
+    )
+    
+    if (!primarySupplier) {
+      console.log('No primary supplier found for webhook channel:', channelId)
+      return NextResponse.json({ success: true })
+    }
+    
+    console.log('Found primary supplier:', primarySupplier.data.name)
+    
+    // Get all suppliers for this user (primary + themed)
+    const userSuppliers = allSuppliers.filter(s => 
+      s.auth_user_id === primarySupplier.auth_user_id
+    )
+    
+    console.log(`Found ${userSuppliers.length} total suppliers (primary + themed) for this user`)
+    
+    // Trigger automatic sync for all suppliers
+    await triggerAutomaticSync(primarySupplier, userSuppliers)
+    
+    return NextResponse.json({ success: true })
+    
+  } catch (error) {
+    console.error('Google webhook error:', error)
+    return NextResponse.json({ error: 'Webhook failed' }, { status: 500 })
+  }
+}
+
 async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
   try {
     const googleSync = primarySupplier.data.googleCalendarSync
@@ -117,4 +184,13 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
   } catch (error) {
     console.error('Automatic sync failed:', error)
   }
+}
+
+// Handle GET requests (for webhook verification)
+export async function GET(request) {
+  return NextResponse.json({ 
+    message: 'Google Calendar webhook endpoint is running',
+    timestamp: new Date().toISOString(),
+    url: request.url
+  })
 }
