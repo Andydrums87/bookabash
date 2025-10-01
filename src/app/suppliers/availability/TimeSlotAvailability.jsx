@@ -13,6 +13,7 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  CheckCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -197,6 +198,7 @@ const migrateDateArray = (dateArray) => {
 const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, setUnavailableDates }) => {
   const [selectedDate, setSelectedDate] = useState(null)
   const [showTimeSlotPicker, setShowTimeSlotPicker] = useState(false)
+  const [showCalendarSyncMessage, setShowCalendarSyncMessage] = useState(false)
 
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
@@ -208,10 +210,33 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
     return unavailableDates.find((item) => item.date === dateStr)?.timeSlots || []
   }
 
+  const isCalendarSyncedDate = (date) => {
+    const dateStr = dateToLocalString(date)
+    const dateEntry = unavailableDates.find((item) => item.date === dateStr)
+    return dateEntry?.source === 'google-calendar' || dateEntry?.source === 'outlook-calendar'
+  }
+
+  const getCalendarSource = (date) => {
+    const dateStr = dateToLocalString(date)
+    const dateEntry = unavailableDates.find((item) => item.date === dateStr)
+    if (dateEntry?.source === 'google-calendar') return 'Google Calendar'
+    if (dateEntry?.source === 'outlook-calendar') return 'Outlook Calendar'
+    return null
+  }
+
   const handleDateClick = (date) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     if (date < today) return
+    
+    // Show message if calendar-synced
+    if (isCalendarSyncedDate(date)) {
+      const source = getCalendarSource(date)
+      setShowCalendarSyncMessage(source)
+      setTimeout(() => setShowCalendarSyncMessage(false), 4000)
+      return
+    }
+    
     setSelectedDate(date)
     setShowTimeSlotPicker(true)
   }
@@ -228,24 +253,44 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
           if (existing.timeSlots.includes("morning") && existing.timeSlots.includes("afternoon")) {
             return prev.filter((item) => item.date !== dateStr)
           } else {
-            return prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: ["morning", "afternoon"] } : item))
+            return prev.map((item) => 
+              item.date === dateStr 
+                ? { ...item, timeSlots: ["morning", "afternoon"], source: "manual" }
+                : item
+            )
           }
         } else {
           if (existing.timeSlots.includes(timeSlot)) {
             const updatedSlots = existing.timeSlots.filter((slot) => slot !== timeSlot)
             return updatedSlots.length === 0
               ? prev.filter((item) => item.date !== dateStr)
-              : prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: updatedSlots } : item))
+              : prev.map((item) => 
+                  item.date === dateStr 
+                    ? { ...item, timeSlots: updatedSlots, source: "manual" }
+                    : item
+                )
           } else {
             const newSlots = [...new Set([...existing.timeSlots, timeSlot])]
-            return prev.map((item) => (item.date === dateStr ? { ...item, timeSlots: newSlots } : item))
+            return prev.map((item) => 
+              item.date === dateStr 
+                ? { ...item, timeSlots: newSlots, source: "manual" }
+                : item
+            )
           }
         }
       } else {
         if (timeSlot === "allday") {
-          return [...prev, { date: dateStr, timeSlots: ["morning", "afternoon"] }]
+          return [...prev, { 
+            date: dateStr, 
+            timeSlots: ["morning", "afternoon"],
+            source: "manual" 
+          }]
         } else {
-          return [...prev, { date: dateStr, timeSlots: [timeSlot] }]
+          return [...prev, { 
+            date: dateStr, 
+            timeSlots: [timeSlot],
+            source: "manual"
+          }]
         }
       }
     })
@@ -269,6 +314,7 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
       const blockedSlots = getBlockedSlots(date)
       const isPast = date < today
       const isToday = date.toDateString() === today.toDateString()
+      const isFromCalendar = isCalendarSyncedDate(date)
 
       let dayStyle =
         "h-12 w-full rounded-lg text-sm font-medium transition-all duration-200 border relative flex items-center justify-center "
@@ -276,9 +322,17 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
       if (isPast) {
         dayStyle += "text-gray-300 cursor-not-allowed bg-gray-50 border-gray-200"
       } else if (blockedSlots.length === 2) {
-        dayStyle += "bg-red-100 text-red-800 border-red-300 line-through cursor-pointer hover:bg-red-200"
+        if (isFromCalendar) {
+          dayStyle += "bg-gray-200 text-gray-600 border-gray-400 line-through cursor-not-allowed opacity-75"
+        } else {
+          dayStyle += "bg-red-100 text-red-800 border-red-300 line-through cursor-pointer hover:bg-red-200"
+        }
       } else if (blockedSlots.length === 1) {
-        dayStyle += "bg-yellow-100 text-yellow-800 border-yellow-300 cursor-pointer hover:bg-yellow-200"
+        if (isFromCalendar) {
+          dayStyle += "bg-gray-200 text-gray-600 border-gray-300 cursor-not-allowed opacity-75"
+        } else {
+          dayStyle += "bg-yellow-100 text-yellow-800 border-yellow-300 cursor-pointer hover:bg-yellow-200"
+        }
       } else {
         dayStyle += "bg-white text-gray-700 border-gray-200 cursor-pointer hover:bg-gray-50"
       }
@@ -286,8 +340,19 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
       if (isToday) dayStyle += " ring-2 ring-primary-500"
 
       days.push(
-        <button key={day} onClick={() => !isPast && handleDateClick(date)} className={dayStyle} disabled={isPast}>
+        <button 
+          key={day} 
+          onClick={() => !isPast && handleDateClick(date)} 
+          className={dayStyle} 
+          disabled={isPast}
+        >
           {day}
+          {/* Calendar sync indicator badge */}
+          {isFromCalendar && !isPast && (
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center">
+              <CalendarIcon className="w-2.5 h-2.5 text-white" />
+            </div>
+          )}
           {!isPast && blockedSlots.length > 0 && (
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
               {blockedSlots.map((slot) => {
@@ -309,6 +374,24 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
 
   return (
     <div className="space-y-6">
+      {/* Toast notification for calendar-synced dates */}
+      {showCalendarSyncMessage && (
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
+          <div className="bg-gray-800 text-white px-6 py-4 rounded-lg shadow-xl border border-gray-600 max-w-md">
+            <div className="flex items-start gap-3">
+              <CalendarIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold mb-1">Synced from {showCalendarSyncMessage}</p>
+                <p className="text-sm text-gray-300">
+                  To modify this date, please update or delete the event in your {showCalendarSyncMessage} and it will sync automatically.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rest of calendar UI... */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">
           {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
@@ -336,8 +419,8 @@ const TimeSlotCalendar = ({ currentMonth, setCurrentMonth, unavailableDates, set
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
         {[
           { label: "Available", color: "bg-white border-gray-200" },
-          { label: "Partially Blocked", color: "bg-yellow-100 border-yellow-300" },
-          { label: "All Day Blocked", color: "bg-red-100 border-red-300" },
+          { label: "Manually Blocked", color: "bg-red-100 border-red-300" },
+          { label: "Calendar Synced", color: "bg-gray-200 border-gray-400" },
           { label: "Past Date", color: "bg-gray-50 border-gray-200 text-gray-300" },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
@@ -728,7 +811,7 @@ console.log('primaryBusiness?.auth_user_id:', primaryBusiness?.auth_user_id)
   </p>
 
   {/* Calendar integrations - full width */}
-  <div className="mb-6">
+  {/* <div className="mb-6">
     <GoogleCalendarSync 
       onSyncToggle={(enabled) => {
         setSupplierData(prev => ({
@@ -739,7 +822,7 @@ console.log('primaryBusiness?.auth_user_id:', primaryBusiness?.auth_user_id)
       currentSupplier={currentSupplier}
       authUserId={primaryBusiness?.auth_user_id}
     />
-  </div>
+  </div> */}
 
   {/* Add a divider */}
   <div className="border-t border-gray-200 my-6"></div>
@@ -754,73 +837,181 @@ console.log('primaryBusiness?.auth_user_id:', primaryBusiness?.auth_user_id)
                 </div>
 
                 <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-semibold text-gray-900">Blocked Time Slots</h4>
-                    <Badge variant="secondary" className="bg-red-100 text-red-700">
-                      {unavailableDates.reduce((acc, item) => acc + item.timeSlots.length, 0)} slots
-                    </Badge>
-                  </div>
+  {/* Calendar Integration Cards */}
+  <div className="mb-4 sm:mb-6">
+ 
+    
+    <GoogleCalendarSync 
+      onSyncToggle={(enabled) => {
+        setSupplierData(prev => ({
+          ...prev,
+          googleCalendarSync: { ...prev.googleCalendarSync, enabled }
+        }))
+      }}
+      currentSupplier={currentSupplier}
+      authUserId={primaryBusiness?.auth_user_id}
+    />
+  </div>
 
-                  {unavailableDates.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <CalendarIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No blocked time slots</p>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-64 sm:h-96">
-                      <div className="space-y-3">
-                        {unavailableDates
-                          .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .map((item, index) => (
-                            <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="font-medium text-red-900 mb-2">
-                                    {new Date(item.date).toLocaleDateString("en-US", {
-                                      weekday: "long",
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {item.timeSlots.map((slot) => {
-                                      const slotConfig = TIME_SLOTS[slot]
-                                      const SlotIcon = slotConfig?.icon || Clock
-                                      return (
-                                        <Badge
-                                          key={slot}
-                                          variant="secondary"
-                                          className="bg-red-100 text-red-800 text-xs flex items-center gap-1"
-                                        >
-                                          <SlotIcon className="w-3 h-3" />
-                                          {slotConfig?.label || slot}
-                                          <button
-                                            onClick={() => removeTimeSlotFromDate(index, slot)}
-                                            className="ml-1 hover:bg-red-200 rounded-full p-0.5"
-                                          >
-                                            <Trash2 className="w-2.5 h-2.5" />
-                                          </button>
-                                        </Badge>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setUnavailableDates((prev) => prev.filter((_, i) => i !== index))}
-                                  className="hover:bg-red-100 p-2 h-8 w-8 ml-2"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </ScrollArea>
-                  )}
+  {/* Divider */}
+  <div className="border-t border-gray-200 my-4 sm:my-6"></div>
+
+  {/* Stats Dashboard */}
+  <div className="space-y-4 sm:space-y-6">
+    {/* Total Blocked Slots */}
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-semibold text-sm sm:text-base text-gray-900">Availability Overview</h4>
+      </div>
+
+      <div className="space-y-3">
+        {/* Total Count Card */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm text-gray-600">Total Blocked Slots</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
+                {unavailableDates.reduce((acc, item) => acc + item.timeSlots.length, 0)}
+              </p>
+            </div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Breakdown */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          {/* Manual Blocks */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-2 sm:p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <p className="text-xs text-gray-600">Manual</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-red-900">
+              {unavailableDates
+                .filter(d => d.source === 'manual' || (!d.source && d))
+                .reduce((acc, item) => acc + item.timeSlots.length, 0)}
+            </p>
+          </div>
+
+          {/* Calendar Synced */}
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-2 sm:p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarIcon className="w-3 h-3 text-gray-500" />
+              <p className="text-xs text-gray-600">Synced</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-gray-700">
+              {unavailableDates
+                .filter(d => d.source === 'google-calendar' || d.source === 'outlook-calendar')
+                .reduce((acc, item) => acc + item.timeSlots.length, 0)}
+            </p>
+          </div>
+        </div>
+
+        {/* Next Available Date */}
+        {(() => {
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          
+          let nextAvailable = null
+          let daysChecked = 0
+          const maxDays = 90
+          
+          while (!nextAvailable && daysChecked < maxDays) {
+            const checkDate = new Date(today)
+            checkDate.setDate(today.getDate() + daysChecked)
+            const dateStr = dateToLocalString(checkDate)
+            
+            const blockedEntry = unavailableDates.find(d => d.date === dateStr)
+            const hasAvailability = !blockedEntry || blockedEntry.timeSlots.length < 2
+            
+            if (hasAvailability) {
+              const availableSlots = []
+              if (!blockedEntry?.timeSlots.includes('morning')) availableSlots.push('Morning')
+              if (!blockedEntry?.timeSlots.includes('afternoon')) availableSlots.push('Afternoon')
+              
+              nextAvailable = {
+                date: checkDate,
+                slots: availableSlots
+              }
+            }
+            
+            daysChecked++
+          }
+          
+          return nextAvailable ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-green-700 font-medium mb-1">Next Available</p>
+                  <p className="text-sm font-semibold text-green-900 truncate">
+                    {nextAvailable.date.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: nextAvailable.date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+                    })}
+                  </p>
+                  <p className="text-xs text-green-700 mt-1">
+                    {nextAvailable.slots.join(' & ')}
+                  </p>
                 </div>
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              </div>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <p className="text-xs text-amber-800">
+                  No availability in next 90 days
+                </p>
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+    </div>
+
+    {/* Divider */}
+    <div className="border-t border-gray-200"></div>
+
+    {/* Calendar Sync Status */}
+    <div>
+      <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-3">Sync Status</h4>
+      
+      {currentSupplier?.googleCalendarSync?.connected ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="text-gray-600">Last synced</span>
+            <span className="font-medium text-gray-900">
+              {currentSupplier.googleCalendarSync.lastSync 
+                ? formatTimeAgo(currentSupplier.googleCalendarSync.lastSync)
+                : 'Never'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="text-gray-600">Sync mode</span>
+            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+              Automatic
+            </Badge>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs sm:text-sm text-gray-500">
+          Connect a calendar to enable automatic sync
+        </p>
+      )}
+    </div>
+
+    {/* Help Text */}
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+      <p className="text-xs text-blue-800 leading-relaxed">
+        <span className="font-medium">Tip:</span> Calendar-synced dates (shown in gray with a calendar icon) can only be modified in your Google or Outlook Calendar.
+      </p>
+    </div>
+  </div>
+</div>
               </div>
             </TabsContent>
 
