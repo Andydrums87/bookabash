@@ -115,8 +115,28 @@ export default function SupplierSelectionModal({
   const [selectedSupplierForCustomization, setSelectedSupplierForCustomization] = useState(null)
 
   // Get suppliers from backend
-  const { suppliers, loading, error } = useSuppliers()
+  const { suppliers, loading, error, refetch } = useSuppliers()
   const { addSupplier, removeSupplier, addAddon } = usePartyPlan()
+
+  // Add this effect with proper dependency handling
+useEffect(() => {
+  if (!isOpen) return
+  
+  // Refresh once when modal opens
+  refetch()
+}, [isOpen]) // Remove refetch from dependencies
+
+// For polling (optional - only if you want periodic updates)
+useEffect(() => {
+  if (!isOpen) return
+  
+  const pollInterval = setInterval(() => {
+    console.log('Polling for supplier updates...')
+    refetch()
+  }, 30000) // Every 30 seconds
+  
+  return () => clearInterval(pollInterval)
+}, [isOpen]) // Only isOpen in dependencies, not refetch
 
   // ✅ NEW: Get current month for date calculations
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -359,7 +379,6 @@ export default function SupplierSelectionModal({
     }
   }
 
-  // ENHANCED: Time slot availability check (existing logic but cleaner)
   const isTimeSlotAvailable = (supplier, date, timeSlot) => {
     if (!supplier || !date) {
       return true
@@ -380,16 +399,14 @@ export default function SupplierSelectionModal({
       const dateString = dateToLocalString(checkDate)
       const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' })
       
-      // LENIENT: Only check if we have working hours data
+      // Check working hours
       if (migratedSupplier.workingHours?.[dayName]) {
         const workingDay = migratedSupplier.workingHours[dayName]
         
-        // If day is explicitly marked as inactive, respect that
         if (workingDay.active === false) {
           return false
         }
         
-        // If we have time slot data, check it
         if (workingDay.timeSlots?.[timeSlot]) {
           const slotAvailable = workingDay.timeSlots[timeSlot].available
           if (slotAvailable === false) {
@@ -398,13 +415,36 @@ export default function SupplierSelectionModal({
         }
       }
       
-      // Check unavailable dates and busy dates (existing logic)
-      // ... (keep your existing unavailable/busy date checking logic)
+      // ✅ THIS WAS MISSING: Check unavailable dates (including calendar-synced ones)
+      const unavailableDates = migratedSupplier.unavailableDates || []
+      const blockedDate = unavailableDates.find(item => item.date === dateString)
+      
+      if (blockedDate) {
+        // Check if this specific time slot is blocked
+        if (blockedDate.timeSlots?.includes(timeSlot)) {
+          console.log(`❌ Time slot blocked: ${supplier.name} on ${dateString} ${timeSlot}`, {
+            source: blockedDate.source,
+            blockedSlots: blockedDate.timeSlots
+          })
+          return false
+        }
+      }
+      
+      // ✅ THIS WAS MISSING: Check busy dates
+      const busyDates = migratedSupplier.busyDates || []
+      const busyDate = busyDates.find(item => item.date === dateString)
+      
+      if (busyDate) {
+        if (busyDate.timeSlots?.includes(timeSlot)) {
+          console.log(`❌ Busy date blocked: ${supplier.name} on ${dateString} ${timeSlot}`)
+          return false
+        }
+      }
       
       return true
       
     } catch (error) {
-      console.error(`❌ LENIENT: Error checking ${supplier.name}, assuming available:`, error)
+      console.error(`❌ Error checking ${supplier.name}, assuming available:`, error)
       return true
     }
   }

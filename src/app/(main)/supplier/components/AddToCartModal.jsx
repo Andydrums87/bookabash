@@ -18,9 +18,9 @@ export default function AlaCarteModal({
   onBuildFullParty, 
   onJustBookSupplier,
   preSelectedDate = null,
-  isBooking = false, // NEW: Loading state prop
-  bookingProgress = 0, // NEW: Progress prop
-  bookingStep = 0 // NEW: Step prop
+  isBooking = false,
+  bookingProgress = 0,
+  bookingStep = 0
 }) {
   const [step, setStep] = useState(1)
   const [firstName, setFirstName] = useState("")
@@ -137,7 +137,7 @@ export default function AlaCarteModal({
   }, [handleFinalBooking])
 
   const handleClose = useCallback(() => {
-    if (!isOpen || isBooking) return // Prevent close during booking
+    if (!isOpen || isBooking) return
     setStep(1)
     setFirstName("")
     setLastName("")
@@ -160,7 +160,6 @@ export default function AlaCarteModal({
     return null
   }
 
-  // Get loading messages based on booking step
   const getLoadingMessage = () => {
     switch (bookingStep) {
       case 0:
@@ -178,7 +177,6 @@ export default function AlaCarteModal({
     }
   }
 
-  // Get modal configuration based on step
   const getModalConfig = () => {
     if (isBooking) {
       return {
@@ -227,8 +225,6 @@ export default function AlaCarteModal({
   }
 
   const config = getModalConfig()
-
-  // Check if form is valid for step 2
   const isFormValid = firstName.trim() && childAge && partyDate && postcode && guestCount
 
   return (
@@ -248,9 +244,8 @@ export default function AlaCarteModal({
       <ModalContent>
         {isBooking ? (
           /* Loading State */
-          <div className="text-center py-8 space-y-6 ">
+          <div className="text-center py-8 space-y-6">
             <div className="relative">
-              {/* Animated Party Icons */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-6xl animate-pulse">🎉</div>
               </div>
@@ -260,11 +255,10 @@ export default function AlaCarteModal({
               <div className="absolute bottom-2 right-8 text-2xl animate-bounce delay-400">🎁</div>
             </div>
 
-            {/* Progress Bar */}
             <div className="mt-16 space-y-4">
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div 
-                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))]  h-3 rounded-full transition-all duration-500 ease-out"
+                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] h-3 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${bookingProgress}%` }}
                 ></div>
               </div>
@@ -279,7 +273,6 @@ export default function AlaCarteModal({
               </p>
             </div>
 
-            {/* Step Indicators */}
             <div className="flex justify-center gap-2 mt-6">
               {[0, 1, 2, 3, 4].map((stepNum) => (
                 <div
@@ -294,77 +287,67 @@ export default function AlaCarteModal({
             </div>
           </div>
         ) : step === 1 ? (
-          /* Step 1: Choice Interface with Better Buttons */
-          <div className="space-y-4">
+          /* Step 1: Simplified Choice Interface */
+          <div className="space-y-3">
             {/* Full Party Option */}
             <div 
               onClick={() => handleChoiceSelection('full')}
-              className="group cursor-pointer p-6 rounded-xl border-2 border-primary-200 hover:to-purple-100 hover:border-primary-300 transition-all duration-200 shadow-sm hover:shadow-lg transform hover:scale-[1.02]"
+              className="group cursor-pointer p-5 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="bg-white rounded-full p-3 shadow-sm group-hover:shadow-md transition-all duration-200">
-                    <Sparkles className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-bold text-gray-900">Build Complete Party Plan</h3>
-                      <div className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs font-semibold">
-                        RECOMMENDED
-                      </div>
-                    </div>
-                    <p className="text-gray-700 text-sm mb-3">
-                      Get venue, catering, entertainment, decorations & more all sorted for you!
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-amber-500" />
-                      <span className="text-sm font-medium text-amber-700">Most popular choice</span>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="bg-white rounded-full p-3 shadow-sm group-hover:shadow-md transition-all duration-200">
+                  <Sparkles className="w-6 h-6 text-primary-600" />
                 </div>
-                <div className="text-3xl group-hover:scale-110 transition-transform duration-200">🎊</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-bold text-gray-900">Build Full Party</h3>
+                    <div className="bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                      RECOMMENDED
+                    </div>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    Get all suppliers sorted at once
+                  </p>
+                </div>
+                <div className="text-2xl">🎊</div>
               </div>
             </div>
 
             {/* Single Supplier Option */}
             <div 
               onClick={() => handleChoiceSelection('single')}
-              className="group cursor-pointer p-6 rounded-xl border-2 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
+              className="group cursor-pointer p-5 rounded-xl border-2 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="bg-gray-100 rounded-full p-3 group-hover:bg-gray-200 transition-all duration-200">
-                    <User className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">Just Book This Supplier</h3>
-                    <p className="text-gray-700 text-sm mb-3">
-                      Add {supplier?.name} to your party and manage everything else yourself
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm font-medium text-blue-700">Quick & simple</span>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="bg-gray-100 rounded-full p-3 group-hover:bg-gray-200 transition-all duration-200">
+                  <User className="w-6 h-6 text-gray-600" />
                 </div>
-                <div className="text-3xl group-hover:scale-110 transition-transform duration-200">📝</div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Just This Supplier</h3>
+                  <p className="text-gray-600 text-sm">
+                    Book this one and manage the rest yourself
+                  </p>
+                </div>
+                <div className="text-2xl">✓</div>
               </div>
-            </div>
-
-            <div className="text-center mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700 font-medium">
-                💡 Don't worry - you can always add more suppliers to your party later!
-              </p>
             </div>
           </div>
         ) : step === 2 ? (
-          /* Step 2: Details Form */
+          /* Step 2: Party Details Form */
           <div className="space-y-4">
+            {/* Birthday Child Header */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+              <p className="text-sm text-blue-800 font-medium flex items-center gap-2">
+                <Cake className="w-4 h-4" />
+                Birthday child details
+              </p>
+            </div>
+
             {/* Child Details */}
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
-                  First name
+                  Child's first name
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -403,7 +386,7 @@ export default function AlaCarteModal({
 
               <div className="space-y-2">
                 <Label htmlFor="childAge" className="text-sm font-medium text-gray-700">
-                  Turning
+                  Age they're turning
                 </Label>
                 <div className="relative">
                   <Cake className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 z-10" />
@@ -574,7 +557,6 @@ export default function AlaCarteModal({
 
       <ModalFooter theme={config.theme}>
         {isBooking ? (
-          /* Loading Footer */
           <div className="text-center w-full">
             <div className="flex items-center justify-center gap-2 text-gray-600">
               <Clock className="w-4 h-4" />
@@ -604,7 +586,7 @@ export default function AlaCarteModal({
                 disabled={!isFormValid || isBooking}
                 className={`flex-2 h-12 font-bold text-lg transition-all duration-200 ${
                   isFormValid 
-                    ? 'bg-gradient-to-r from-[hsl(var(--primary-500))]  to-[hsl(var(--primary-600))]  hover:from-[hsl(var(--primary-600))]  hover:to-[hsl(var(--primary-700))]  text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
+                    ? 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -613,25 +595,23 @@ export default function AlaCarteModal({
                     {hasAddons && isEntertainer ? (
                       <>
                         <Star className="w-5 h-5 mr-2" />
-                        Continue to Extras
+                        Continue
                       </>
                     ) : (
                       <>
                         <PartyPopper className="w-5 h-5 mr-2" />
-                        Add {supplier?.name}!
+                        Add to Party
                       </>
                     )}
                   </>
                 ) : (
-                  <>
-                    <span className="opacity-75">Please fill all fields</span>
-                  </>
+                  <span className="opacity-75">Fill all fields</span>
                 )}
               </Button>
             ) : (
               <Button 
                 onClick={handleAddonsConfirm}
-                className="flex-2 h-12 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]  hover:from-[hsl(var(--primary-600))]  hover:to-[hsl(var(--primary-700))]  text-white font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                className="flex-2 h-12 bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                 disabled={isBooking}
               >
                 <Gift className="w-5 h-5 mr-2" />

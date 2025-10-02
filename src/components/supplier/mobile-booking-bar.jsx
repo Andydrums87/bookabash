@@ -1451,12 +1451,7 @@ const MobileBookingBar = ({
                   ) : (
                     <>{isLeadTimeBased ? "Add to Cart" : "Add to Plan"}</>
                   )}
-                  {/* {selectedDate && (
-                    <>
-                      {' '}({getSelectedDateDisplay()}
-                      {!isLeadTimeBased && getSelectedTimeSlotDisplay()})
-                    </>
-                  )} */}
+             
                   {isFromDashboard && partyDate && (
                     <>
                       {" "}

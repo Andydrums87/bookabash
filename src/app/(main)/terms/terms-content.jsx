@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { FileText, Shield, Users, CreditCard } from "lucide-react"
+import { FileText, Shield, Users, CreditCard, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -49,7 +49,7 @@ function CustomerTermsBody() {
         <h3 className="text-xl font-semibold text-gray-900 mb-3">Booking Confirmation</h3>
         <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6">
           <li>Your booking is <strong>instantly confirmed</strong> once your deposit is processed.</li>
-          <li>You’ll receive an email confirmation with supplier details.</li>
+          <li>You'll receive an email confirmation with supplier details.</li>
           <li>In the rare event a supplier cannot fulfil, PartySnap will find a replacement or provide a refund.</li>
         </ul>
 
@@ -86,7 +86,7 @@ function CustomerTermsBody() {
         <h3 className="text-xl font-semibold text-gray-900 mb-3">Liability</h3>
         <ul className="list-disc list-inside space-y-2 text-gray-700">
           <li>Suppliers are independent businesses responsible for their services.</li>
-          <li>PartySnap’s liability is limited to amounts paid through the platform.</li>
+          <li>PartySnap's liability is limited to amounts paid through the platform.</li>
           <li>We are not responsible for supplier performance or child supervision.</li>
         </ul>
       </div>
@@ -136,8 +136,8 @@ function SupplierTermsBody() {
             <span className="font-medium">Listing & Quality</span>
           </a>
           <a href="#availability" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-            <Shield className="w-5 h-5 text-primary-600" />
-            <span className="font-medium">Availability & Instant Confirm</span>
+            <Calendar className="w-5 h-5 text-primary-600" />
+            <span className="font-medium">Availability & Calendar Sync</span>
           </a>
           <a href="#payments" className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
             <CreditCard className="w-5 h-5 text-primary-600" />
@@ -157,10 +157,44 @@ function SupplierTermsBody() {
       </div>
 
       <div id="availability" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">Availability & Instant Confirmation</h2>
-        <div className="prose prose-gray max-w-none text-gray-700">
-          <p><strong>Venues:</strong> If a date/time is shown as available on PartySnap, a booking becomes <strong>instantly confirmed and binding</strong> when the parent pays the deposit. You must keep unavailability blocked. Repeated failures to honour bookings may result in suspension or removal.</p>
-          <p><strong>All suppliers:</strong> Keep availability accurate (or connect Google Calendar to auto-block busy times). PartySnap may show an “Availability Unverified” badge or pause instant booking if your calendar isn’t confirmed or synced within 14 days.</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">Availability & Calendar Synchronization</h2>
+        <div className="space-y-6 text-gray-700">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Instant Confirmation for Venues</h3>
+            <p className="mb-3">If a date and time is shown as available on PartySnap, a booking becomes <strong>instantly confirmed and binding</strong> when the parent pays the deposit. You must keep unavailability blocked. Repeated failures to honour bookings may result in suspension or removal.</p>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Calendar Integration</h3>
+            <p className="mb-3">To maintain accurate availability, you can connect your Google Calendar or Outlook Calendar to PartySnap. When connected:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>PartySnap will automatically sync your calendar availability in real-time using secure webhook notifications</li>
+              <li>Events in your connected calendar will automatically block corresponding times on PartySnap</li>
+              <li>You grant PartySnap permission to read your calendar events and receive notifications when events are created, updated, or deleted</li>
+              <li>Calendar data is used solely to maintain accurate availability and prevent double bookings</li>
+              <li>You can disconnect your calendar at any time, but must then manually manage your availability</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Availability Requirements</h3>
+            <p className="mb-3">All suppliers must keep availability accurate through either:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>Manual updates to your PartySnap calendar, or</li>
+              <li>Calendar synchronization with Google Calendar or Outlook Calendar</li>
+            </ul>
+            <p className="mt-3">PartySnap may display an "Availability Unverified" badge or pause instant booking if your calendar is not confirmed as accurate or synced within 14 days of account creation or last verification.</p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Calendar Integration Privacy
+            </h4>
+            <p className="text-sm text-blue-800">
+              When you connect your calendar, PartySnap only accesses event times and availability status. We do not read event titles, descriptions, attendees, or other private details unless necessary to determine availability. See our <a href="/privacy-policy" className="underline">Privacy Policy</a> for more information.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -186,7 +220,7 @@ function SupplierTermsBody() {
       <div className="bg-primary-50 border border-primary-200 rounded-3xl p-8 mb-8">
         <p className="text-primary-800">
           This page is for reference. Suppliers accept the binding <strong>Supplier Terms</strong> in-app when pressing
-          <em> “Agree & Go Live”</em>. Customers accept the <strong>Customer Terms</strong> during checkout.
+          <em> "Agree & Go Live"</em>. Customers accept the <strong>Customer Terms</strong> during checkout.
         </p>
       </div>
     </>
@@ -203,7 +237,7 @@ export default function TermsOfService() {
   const [role, setRole] = useState(initialRole)
 
   useEffect(() => {
-    // keep URL in sync so it’s sharable
+    // keep URL in sync so it's sharable
     const current = (searchParams.get("role") || "").toLowerCase()
     if (current !== role) {
       const url = new URL(window.location.href)
@@ -236,7 +270,7 @@ export default function TermsOfService() {
               View the terms that apply to you as a Customer/Parent or as a Supplier on PartySnap.
             </p>
             <div className="mt-5 text-sm text-white/90">
-              <p>Last updated: 15 September 2025</p>
+              <p>Last updated: 1 October 2025</p>
             </div>
 
             {/* Role switcher */}

@@ -180,9 +180,9 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
       <div className="flex items-center gap-2 mb-4">
         <Calendar className="w-5 h-5 text-gray-600" />
         <h3 className="text-sm font-semibold text-gray-900">Calendar Integrations</h3>
-        <Badge variant="outline" className="text-xs">
+        {/* <Badge variant="outline" className="text-xs">
           {connectedProviders.length} connected
-        </Badge>
+        </Badge> */}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -231,18 +231,27 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                 </div>
               </button>
 
-              {/* Expanded settings dropdown */}
               {isExpanded && isConnected && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
-                  <div className="space-y-2">
-                    {inherited && (
-                      <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 rounded">
-                        Synced via primary business
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-600 mb-2">
-                      Last synced: {getLastSync(provider.id)}
-                    </div>
+  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
+    <div className="space-y-2">
+      {/* ADD THIS EMAIL DISPLAY */}
+      <div className="text-xs text-gray-700 mb-2 pb-2 border-b">
+        <div className="font-medium">Connected account:</div>
+        <div className="text-gray-600 mt-1">
+          {provider.id === 'google' 
+            ? currentSupplier?.googleCalendarSync?.userEmail 
+            : currentSupplier?.outlookCalendarSync?.email}
+        </div>
+      </div>
+      
+      {inherited && (
+        <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 rounded">
+          Synced via primary business
+        </div>
+      )}
+      <div className="text-xs text-gray-600 mb-2">
+        Last synced: {getLastSync(provider.id)}
+      </div>
                     <Button
                       size="sm"
                       variant="outline"

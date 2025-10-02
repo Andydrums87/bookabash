@@ -387,7 +387,7 @@ export default function SupplierSidebar({
             {verificationDocs.map((doc) => (
               <li key={doc.name} className="flex items-center">
                 <CheckCircle
-                  className={`w-5 h-5 mr-3 ${doc.verified ? "text-green-500" : "text-gray-300"}`}
+                  className={`w-5 h-5 mr-3 ${doc.verified ? "text-teal-500" : "text-gray-300"}`}
                   fill={doc.verified ? "currentColor" : "none"}
                 />
                 <span className={`${doc.verified ? "text-gray-700" : "text-gray-400"}`}>{doc.name}</span>

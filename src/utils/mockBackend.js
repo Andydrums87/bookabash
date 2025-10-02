@@ -1426,19 +1426,18 @@ const { data: updated, error: updateError } = await supabase
 
 }
 
-// Hooks that your components use
 export function useSuppliers() {
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const loadSuppliersRef = useRef(null)
 
-  const loadSuppliers = async () => {
+  loadSuppliersRef.current = async () => {
     try {
       setLoading(true)
       setError(null)
       const data = await suppliersAPI.getAllSuppliers()
       setSuppliers(data)
-
     } catch (err) {
       setError(err.message)
       console.error('useSuppliers error:', err)
@@ -1448,14 +1447,29 @@ export function useSuppliers() {
   }
 
   useEffect(() => {
-    loadSuppliers()
+    loadSuppliersRef.current()
+    
+    const subscription = supabase
+      .channel('suppliers-updates')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'suppliers' },
+        (payload) => {
+          console.log('Supplier data updated, refreshing...')
+          loadSuppliersRef.current()
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   return {
     suppliers,
     loading,
     error,
-    refetch: loadSuppliers
+    refetch: () => loadSuppliersRef.current()
   }
 }
 

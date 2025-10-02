@@ -703,30 +703,30 @@ export default function SupplierAvailabilityCalendar({
 
           <div className="bg-gray-50 rounded-xl p-6 space-y-4">
             <h4 className="font-bold text-gray-700 text-sm uppercase tracking-wider">Legend</h4>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               {isFromDashboard && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
                   <div className="w-6 h-6 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                    15
+                    
                   </div>
                   <span className="text-gray-700 font-medium">Your Party Date</span>
                 </div>
               )}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
                 <div className="w-6 h-6 flex-shrink-0 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs font-bold shadow-lg ring-2 ring-teal-200">
-                  15
+                  
                 </div>
                 <span className="text-gray-700 font-medium">Selected</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
                 <div className="w-6 h-6 flex-shrink-0 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
-                  15
+                  
                 </div>
                 <span className="text-gray-700 font-medium">{isLeadTimeBased ? "Can Deliver" : "Available"}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 flex-shrink-0 rounded-full bg-primary-200 flex items-center justify-center text-primary-800 text-xs font-semibold">
-                  15
+                  
                 </div>
                 <span className="text-gray-700 font-medium">Partial</span>
               </div>
