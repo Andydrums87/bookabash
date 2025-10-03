@@ -114,7 +114,7 @@ export default function SnappyChatReviewPage() {
 
   const { navigateWithContext } = useContextualNavigation();
 
-  // Chat steps - simplified to 3 steps
+  // Chat steps - simplified to 2 steps
   const chatSteps = [
     {
       id: 'main-form',
@@ -128,10 +128,8 @@ export default function SnappyChatReviewPage() {
       description: "Here are some popular extras you might want to add (Optional)",
       showMissingSuppliers: true,
       optional: true
-    },
-
+    }
   ];
-
   // Load data on mount
   useEffect(() => {
     loadPartyDataFromLocalStorage();
@@ -665,14 +663,13 @@ export default function SnappyChatReviewPage() {
 
   const currentStepData = chatSteps[currentStep];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < chatSteps.length - 1) {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // If we're on the last step, show the final CTA
-      setShowFinalCTA(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // If we're on the last step, go directly to payment
+      await handleSubmitEnquiry();
     }
   };
 
@@ -989,13 +986,22 @@ export default function SnappyChatReviewPage() {
                     )}
 
                     <div className={currentStep === 0 ? "w-full" : "ml-auto"}>
-                      <Button
+                    <Button
                         onClick={handleNext}
-                        disabled={!canProceed()}
+                        disabled={!canProceed() || isSubmitting}
                         className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-5 py-2 text-sm font-semibold rounded-md shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
-                        {getButtonText(currentStepData)}
-                        {getButtonIcon(currentStepData)}
+                        {isSubmitting ? (
+                          <div className="flex items-center justify-center">
+                            <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            <span>Processing...</span>
+                          </div>
+                        ) : (
+                          <>
+                            {currentStep === chatSteps.length - 1 ? 'Proceed to Payment' : getButtonText(currentStepData)}
+                            {currentStep === chatSteps.length - 1 ? null : getButtonIcon(currentStepData)}
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -1004,7 +1010,7 @@ export default function SnappyChatReviewPage() {
             </div>
           )}
 
-          {showFinalCTA && (
+          {/* {showFinalCTA && (
             <div className="animate-in slide-in-from-bottom duration-500">
               <Card className="bg-white rounded-xl shadow-lg border border-gray-200">
                 <div className="bg-primary-500 p-5 text-white">
@@ -1193,7 +1199,7 @@ export default function SnappyChatReviewPage() {
                 </CardContent>
               </Card>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 

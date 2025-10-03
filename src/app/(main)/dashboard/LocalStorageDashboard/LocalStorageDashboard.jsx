@@ -1185,12 +1185,12 @@ const handleNameSubmit = (nameData) => {
 /> */}
 
               {/* Action Section */}
-              <div className="flex flex-col sm:flex-row gap-4"  data-tour="review-book">
+              <div className="flex flex-col justify-center items-center sm:flex-row gap-4"  data-tour="review-book">
                 <Button
-                  className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 py-4 text-xl font-bold"
+                  className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 md:py-8 py-4 text-xl font-bold"
                   asChild
                 >
-            <Link href="/review-book?check_readiness=true">Review and Book!</Link>
+          <Link href="/review-book">Complete Your Booking!</Link>
                 </Button>
                 <p className="text-sm text-gray-500 text-center mt-2">
   You'll review your full party plan before any payment
