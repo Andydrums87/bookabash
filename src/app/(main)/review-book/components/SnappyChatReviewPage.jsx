@@ -795,7 +795,7 @@ export default function SnappyChatReviewPage() {
                                 placeholder="Your full name"
                                 value={formData.parentName}
                                 onChange={(e) => updateFormData('parentName', e.target.value)}
-                                className="h-9 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                               />
                             </div>
                             
@@ -805,7 +805,7 @@ export default function SnappyChatReviewPage() {
                                 placeholder="07123 456789"
                                 value={formData.phoneNumber}
                                 onChange={(e) => handlePhoneChange(e.target.value)}
-                                className={`h-9 text-sm rounded-md ${
+                                className={`h-12 text-sm rounded-md ${
                                   phoneError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[hsl(var(--primary-500))]'
                                 }`}
                               />
@@ -819,7 +819,7 @@ export default function SnappyChatReviewPage() {
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => updateFormData('email', e.target.value)}
-                                className="h-9 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                className="h-12 text-gray-900 border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                                 disabled={!!user}
                               />
                               {user && <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>}
@@ -844,7 +844,7 @@ export default function SnappyChatReviewPage() {
                                 placeholder="House number and street"
                                 value={formData.addressLine1}
                                 onChange={(e) => updateFormData('addressLine1', e.target.value)}
-                                className="h-9 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                               />
                             </div>
                             
@@ -854,7 +854,7 @@ export default function SnappyChatReviewPage() {
                                 placeholder="Apartment, suite, floor"
                                 value={formData.addressLine2}
                                 onChange={(e) => updateFormData('addressLine2', e.target.value)}
-                                className="h-9 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                               />
                             </div>
                             
@@ -865,7 +865,7 @@ export default function SnappyChatReviewPage() {
                                   placeholder="City"
                                   value={formData.city}
                                   onChange={(e) => updateFormData('city', e.target.value)}
-                                  className="h-9 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                                 />
                               </div>
                               
@@ -875,7 +875,7 @@ export default function SnappyChatReviewPage() {
                                   placeholder="SW1A 1AA"
                                   value={formData.postcode}
                                   onChange={(e) => updateFormData('postcode', e.target.value.toUpperCase())}
-                                  className="h-9 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
+                                  className="h-12 text-sm border-gray-300 focus:border-[hsl(var(--primary-500))] rounded-md"
                                 />
                               </div>
                             </div>
@@ -955,7 +955,7 @@ export default function SnappyChatReviewPage() {
                             placeholder="e.g., 'Please set up by 1pm', 'Superhero theme', 'Child sensitive to loud noises'..."
                             value={formData.additionalMessage}
                             onChange={(e) => updateFormData('additionalMessage', e.target.value)}
-                            className="min-h-[70px] placeholder:text-gray-400 placeholder:text-xs text-base border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-md"
+                            className="min-h-[100px] placeholder:text-gray-400 placeholder:text-xs text-base border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-md"
                           />
                         </div>
                       </div>
