@@ -779,8 +779,8 @@ export default function SnappyChatReviewPage() {
                     {currentStepData.showMainForm && (
                       <div className="space-y-5">
                         {/* Contact Information */}
-                        <div className=" rounded-lg p-4 border border-gray-200">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <div className=" rounded-lg ">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Contact Information
                           </h3>
@@ -825,8 +825,8 @@ export default function SnappyChatReviewPage() {
                         </div>
 
                         {/* Delivery Address */}
-                        <div className="rounded-lg p-4 border border-gray-200">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <div className="rounded-lg ">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
                             Delivery Address
                           </h3>
@@ -880,8 +880,8 @@ export default function SnappyChatReviewPage() {
                         </div>
 
                         {/* Dietary & Accessibility */}
-                        <div className=" rounded-lg p-4 border border-gray-200">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-3">Dietary & Accessibility</h3>
+                        <div className=" rounded-lg ">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Dietary & Accessibility</h3>
                           
                           <div className="space-y-4">
                             <div>
@@ -939,8 +939,8 @@ export default function SnappyChatReviewPage() {
                         </div>
 
                         {/* Special Requests */}
-                        <div className="rounded-lg p-4 border border-gray-200">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <div className="rounded-lg ">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                             <MessageSquare className="w-4 h-4" />
                             Special Requests (Optional)
                           </h3>
