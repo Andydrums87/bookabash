@@ -371,7 +371,7 @@ export async function POST(req) {
 
     // Send email (no PDF attachment needed)
     await client.sendEmail({
-      From: "hello@partysnap.uk",
+      From: "hello@partysnap.co.uk",
       To: requestData.customerEmail,
       Subject: `Receipt #${receiptNumber} - Payment Confirmed`,
       HtmlBody: emailHtml,

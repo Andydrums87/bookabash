@@ -363,7 +363,7 @@ The PartySnap Team`;
 
     // Send email via Postmark
     await client.sendEmail({
-      From: "bookings@partysnap.uk", // Different from address for supplier emails
+      From: "bookings@partysnap.co.uk", // Different from address for supplier emails
       To: supplierEmail,
       Subject: subject,
       HtmlBody: populatedTemplate,

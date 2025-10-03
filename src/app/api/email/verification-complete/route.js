@@ -385,7 +385,7 @@ Let's create magical moments together!`;
 
     // Send email via Postmark
     await client.sendEmail({
-      From: "hello@partysnap.uk", 
+      From: "hello@partysnap.co.uk", 
       To: supplierEmail,
       Subject: subject,
       HtmlBody: populatedTemplate,

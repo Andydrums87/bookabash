@@ -340,7 +340,7 @@ Let's make parties unforgettable!`;
 
     // Send email via Postmark
     await client.sendEmail({
-      From: "hello@partysnap.uk", 
+      From: "hello@partysnap.co.uk", 
       To: supplierEmail,
       Subject: subject,
       HtmlBody: populatedTemplate,

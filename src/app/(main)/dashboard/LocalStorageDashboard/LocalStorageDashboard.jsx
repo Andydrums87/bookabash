@@ -1298,7 +1298,7 @@ const handleNameSubmit = (nameData) => {
     />
   }
 />
-      <SnappyDashboardTour
+      {/* <SnappyDashboardTour
         isOpen={isTourActive}
         onMobileNavigationStepActive={handleMobileNavigationStepActive} 
         onClose={closeTour}
@@ -1306,7 +1306,7 @@ const handleNameSubmit = (nameData) => {
         suppliers={suppliers} // Add this
         partyDetails={partyDetails} // Add this  
         totalCost={totalCost} // Add this
-      />
+      /> */}
     </div>
   )
 }

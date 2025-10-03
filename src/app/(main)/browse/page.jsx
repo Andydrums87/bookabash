@@ -1,4 +1,4 @@
-// // app/browse/page.js
+// app/browse/page.js
 // export const revalidate = 3600
 
 // export default function BrowsePage() {

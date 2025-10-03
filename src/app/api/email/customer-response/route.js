@@ -433,7 +433,7 @@ export async function POST(req) {
           ? 'Your payment has been processed. No further payment required.'
           : `We'll send you payment details once everything is confirmed.`
       )
-      .replace(/{{DASHBOARD_LINK}}/g, dashboardLink || 'https://bookabash.com/dashboard');
+      .replace(/{{DASHBOARD_LINK}}/g, dashboardLink || 'https://partysnap.co.uk/dashboard');
 
     // Create plain text version
     const textBody = responseType === 'accepted' 
@@ -442,7 +442,7 @@ export async function POST(req) {
 
     // Send email via Postmark
     await client.sendEmail({
-      From: "hello@partysnap.uk",
+      From: "hello@partysnap.co.uk",
       To: customerEmail,
       Subject: subject,
       HtmlBody: populatedTemplate,
