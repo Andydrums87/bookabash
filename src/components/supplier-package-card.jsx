@@ -10,8 +10,10 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
     return null
   }
 
-  const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
 
+
+  const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
+  console.log(image.src)
   return (
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow overflow-hidden">
       {image ? (
@@ -32,7 +34,7 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
                         >
                           <Image
                             src={
-                              image || "/placeholder.png"
+                              image.src || "/placeholder.png"
                             }
                             alt={name || "Package image"}
                             fill
