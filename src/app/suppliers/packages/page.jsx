@@ -539,7 +539,7 @@ const Packages = () => {
           <Card className="shadow-sm">
         
             
-            <CardContent className="p-4 sm:p-6 pt-0">
+            <CardContent className="md:p-4 p-6">
               {packages.length === 0 ? (
                 <div className="text-center py-8 sm:py-12 border-2 border-dashed rounded-lg">
                   <PackageIcon className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
@@ -562,7 +562,7 @@ const Packages = () => {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 md:gap-4 gap-6">
                  {Array.isArray(packages) && packages.map((pkg) => (
                     <div key={pkg.id} className="relative">
                       <SupplierPackageCard

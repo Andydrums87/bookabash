@@ -10,10 +10,8 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
     return null
   }
 
-
-
   const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
-  console.log(image.src)
+
   return (
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow overflow-hidden">
       {image ? (

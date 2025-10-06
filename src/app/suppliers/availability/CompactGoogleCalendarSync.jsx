@@ -231,16 +231,24 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                 </div>
               </button>
 
-              {isExpanded && isConnected && (
+             {isExpanded && isConnected && (
   <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
     <div className="space-y-2">
       {/* ADD THIS EMAIL DISPLAY */}
       <div className="text-xs text-gray-700 mb-2 pb-2 border-b">
         <div className="font-medium">Connected account:</div>
         <div className="text-gray-600 mt-1">
+          <div>
           {provider.id === 'google' 
+      ? currentSupplier?.googleCalendarSync?.userName 
+      : currentSupplier?.outlookCalendarSync?.name}
+          </div>
+<div>
+{provider.id === 'google' 
             ? currentSupplier?.googleCalendarSync?.userEmail 
             : currentSupplier?.outlookCalendarSync?.email}
+</div>
+
         </div>
       </div>
       
