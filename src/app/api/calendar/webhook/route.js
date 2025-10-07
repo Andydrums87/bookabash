@@ -4,16 +4,22 @@ import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
 export async function POST(request) {
+  console.log('🔔 === WEBHOOK REQUEST START ===')
+  console.log('🔔 Request URL:', request.url)
+  console.log('🔔 Request method:', request.method)
   try {
     const headers = Object.fromEntries(request.headers.entries())
     const resourceState = headers['x-goog-resource-state']
     const channelId = headers['x-goog-channel-id']
     
     console.log('Google Calendar webhook received:', { resourceState, channelId, timestamp: new Date().toISOString() })
-    
+       
+    console.log('📋 All webhook headers:', JSON.stringify(headers, null, 2))
+    console.log('📋 Resource state:', resourceState)
+    console.log('📋 Channel ID:', channelId)
     // Initial sync confirmation - MUST return 200 with no body
     if (resourceState === 'sync') {
-      console.log('Webhook sync confirmation received')
+      console.log('✅ SYNC verification detected - returning 200 immediately')
       return new NextResponse(null, { 
         status: 200,
         headers: {
@@ -24,22 +30,51 @@ export async function POST(request) {
     
     // Find supplier with this webhook channel
     if (!channelId) {
-      console.log('No channel ID in webhook')
+      console.log('⚠️ No channel ID - returning 200')
       return new NextResponse(null, { status: 200 })
     }
     
-    console.log('Looking for supplier with channel ID:', channelId)
+    console.log('🔍 === STARTING DATABASE QUERY ===')
+    console.log('🔑 supabaseAdmin type:', typeof supabaseAdmin)
+    console.log('🔑 supabaseAdmin defined:', !!supabaseAdmin)
+    console.log('🔑 Environment check:')
+    console.log('  - NEXT_PUBLIC_SUPABASE_URL:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('  - SUPABASE_SERVICE_ROLE_KEY:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
+    console.log('  - Service key length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0)
     
     // Get ALL suppliers, then find the one with this webhook
     const { data: allSuppliers, error: fetchError } = await supabaseAdmin  // ✅ FIXED
+    console.log('📊 Executing query: SELECT * FROM suppliers')
       .from('suppliers')
       .select('*')
     
+
+      console.log('📊 === DATABASE RESPONSE ===')
+      console.log('📊 Suppliers found:', allSuppliers?.length || 0)
+      console.log('📊 Has error:', !!fetchError)
+
     if (fetchError) {
-      console.error('Error fetching suppliers:', fetchError)
+      console.error('❌ DATABASE ERROR DETAILS:')
+      console.error('  - Message:', fetchError.message)
+      console.error('  - Code:', fetchError.code)
+      console.error('  - Details:', fetchError.details)
+      console.error('  - Hint:', fetchError.hint)
+      console.error('  - Full error:', JSON.stringify(fetchError, null, 2))
       // Still return 200 to prevent Google from retrying
       return new NextResponse(null, { status: 200 })
     }
+
+    if (!allSuppliers || allSuppliers.length === 0) {
+      console.log('⚠️ Query succeeded but returned no suppliers')
+      return new NextResponse(null, { status: 200 })
+    }
+    
+    console.log('✅ Successfully fetched suppliers')
+    console.log('🔍 Searching for channelId:', channelId)
+    console.log('📋 Available suppliers and their channelIds:')
+    allSuppliers.forEach((s, index) => {
+      console.log(`  ${index + 1}. ${s.data?.name || 'Unknown'} - channelId: ${s.data?.googleCalendarSync?.webhookChannelId || 'none'}`)
+    })
     
     // Find the primary supplier with this webhook channel
     const primarySupplier = allSuppliers?.find(s => 
@@ -50,7 +85,7 @@ export async function POST(request) {
       console.log('No primary supplier found for webhook channel:', channelId)
       return new NextResponse(null, { status: 200 })
     }
-    
+    console.log('✅ Processing webhook for supplier:', primarySupplier.data.name)
     console.log('Found primary supplier:', primarySupplier.data.name)
     
     // Get all suppliers for this user (primary + themed)
@@ -66,7 +101,10 @@ export async function POST(request) {
     return new NextResponse(null, { status: 200 })
     
   } catch (error) {
-    console.error('Google webhook error:', error)
+    console.error('💥 === WEBHOOK EXCEPTION ===')
+    console.error('💥 Error type:', error.constructor.name)
+    console.error('💥 Error message:', error.message)
+    console.error('💥 Error stack:', error.stack)
     // Always return 200 to prevent Google from retrying
     return new NextResponse(null, { status: 200 })
   }
