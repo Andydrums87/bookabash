@@ -11,16 +11,21 @@ export async function POST(request) {
     
     console.log('Google Calendar webhook received:', { resourceState, channelId, timestamp: new Date().toISOString() })
     
-    // Initial sync confirmation - just acknowledge
+    // Initial sync confirmation - MUST return 200 with no body
     if (resourceState === 'sync') {
       console.log('Webhook sync confirmation received')
-      return NextResponse.json({ success: true })
+      return new NextResponse(null, { 
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      })
     }
     
     // Find supplier with this webhook channel
     if (!channelId) {
       console.log('No channel ID in webhook')
-      return NextResponse.json({ success: true })
+      return new NextResponse(null, { status: 200 })
     }
     
     console.log('Looking for supplier with channel ID:', channelId)
@@ -32,7 +37,8 @@ export async function POST(request) {
     
     if (fetchError) {
       console.error('Error fetching suppliers:', fetchError)
-      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+      // Still return 200 to prevent Google from retrying
+      return new NextResponse(null, { status: 200 })
     }
     
     // Find the primary supplier with this webhook channel
@@ -42,7 +48,7 @@ export async function POST(request) {
     
     if (!primarySupplier) {
       console.log('No primary supplier found for webhook channel:', channelId)
-      return NextResponse.json({ success: true })
+      return new NextResponse(null, { status: 200 })
     }
     
     console.log('Found primary supplier:', primarySupplier.data.name)
@@ -57,11 +63,12 @@ export async function POST(request) {
     // Trigger automatic sync for all suppliers
     await triggerAutomaticSync(primarySupplier, userSuppliers)
     
-    return NextResponse.json({ success: true })
+    return new NextResponse(null, { status: 200 })
     
   } catch (error) {
     console.error('Google webhook error:', error)
-    return NextResponse.json({ error: 'Webhook failed' }, { status: 500 })
+    // Always return 200 to prevent Google from retrying
+    return new NextResponse(null, { status: 200 })
   }
 }
 
@@ -103,7 +110,6 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
     console.log(`Found ${events.length} current calendar events`)
     
     // Convert ONLY current events to blocked dates
-    // This means deleted events will naturally disappear
     const blockedDates = []
     
     events.forEach((event) => {
@@ -143,7 +149,7 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
       try {
         const isPrimary = supplier.id === primarySupplier.id
         
-        // KEY CHANGE: Keep manual blocks, REPLACE all google-calendar blocks
+        // Keep manual blocks, REPLACE all google-calendar blocks
         const currentUnavailable = supplier.data.unavailableDates || []
         const manualBlocks = currentUnavailable.filter(item => 
           item.source !== 'google-calendar'
