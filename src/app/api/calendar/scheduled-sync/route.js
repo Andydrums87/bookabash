@@ -1,5 +1,5 @@
 // app/api/calendar/scheduled-sync/route.js
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'  // ✅ CHANGE THIS
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
@@ -8,7 +8,7 @@ export async function GET(request) {
   
   try {
     // Find all suppliers with Google Calendar connected
-    const { data: suppliers, error: fetchError } = await supabase
+    const { data: suppliers, error: fetchError } = await supabaseAdmin 
       .from('suppliers')
       .select('*')
       .eq('is_primary', true)
@@ -156,7 +156,7 @@ async function syncSupplierCalendar(supplier) {
     updatedAt: new Date().toISOString()
   }
   
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseAdmin  
     .from('suppliers')
     .update({ data: updatedData })
     .eq('id', supplier.id)

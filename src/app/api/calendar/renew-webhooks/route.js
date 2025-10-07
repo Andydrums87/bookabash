@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'  // ✅ CHANGE THIS
 import { google } from 'googleapis'
 
 export async function GET(request) {
@@ -7,7 +7,7 @@ export async function GET(request) {
     console.log('🔄 Starting webhook renewal process...')
     
     // Get all suppliers with active calendar connections
-    const { data: suppliers } = await supabase
+    const { data: suppliers } = await supabaseAdmin 
       .from('suppliers')
       .select('*')
     
@@ -128,7 +128,7 @@ async function renewGoogleWebhook(supplier) {
     }
   }
 
-  await supabase
+  await supabaseAdmin 
     .from('suppliers')
     .update({ data: updatedData })
     .eq('id', supplier.id)
@@ -194,7 +194,8 @@ async function renewOutlookWebhook(supplier) {
     }
   }
 
-  await supabase
+
+  await supabaseAdmin 
     .from('suppliers')
     .update({ data: updatedData })
     .eq('id', supplier.id)
@@ -239,7 +240,7 @@ async function refreshOutlookToken(supplier) {
     }
   }
 
-  await supabase
+  await supabaseAdmin 
     .from('suppliers')
     .update({ data: updatedData })
     .eq('id', supplier.id)

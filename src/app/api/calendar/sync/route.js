@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
 import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin' // For token refresh only
 
 async function refreshOutlookToken(refreshToken, supplierId) {
   const tokenResponse = await fetch(
@@ -26,7 +27,7 @@ async function refreshOutlookToken(refreshToken, supplierId) {
   const tokens = await tokenResponse.json()
 
   // Update tokens in database
-  const { data: supplier } = await supabase
+  const { data: supplier } = await supabaseAdmin  // ✅ CHANGE
     .from("suppliers")
     .select("data")
     .eq("id", supplierId)
@@ -41,7 +42,7 @@ async function refreshOutlookToken(refreshToken, supplierId) {
     },
   }
 
-  await supabase
+  await supabaseAdmin  // ✅ CHANGE
     .from("suppliers")
     .update({ data: updatedData })
     .eq("id", supplierId)
@@ -244,6 +245,7 @@ export async function POST(request) {
         .from('suppliers')
         .select('*')
         .eq('id', requestedSupplierId)
+        .eq('auth_user_id', user.id) 
         .single()
 
       if (!fetchError && specificSupplier) {
@@ -258,7 +260,9 @@ export async function POST(request) {
       const { data: connectedSuppliers, error: fetchError } = await supabase
         .from('suppliers')
         .select('*')
+        .eq('auth_user_id', user.id) 
         .eq('is_primary', true)
+        
         .order('updated_at', { ascending: false })
 
       if (fetchError || !connectedSuppliers) {

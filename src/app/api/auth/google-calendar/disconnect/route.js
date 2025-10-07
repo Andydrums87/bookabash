@@ -16,7 +16,7 @@ export async function POST(request) {
     const { data: suppliers, error: fetchError } = await supabase
       .from('suppliers')
       .select('*')
-      .eq('auth_user_id', userId)
+      .eq('auth_user_id', user.id) 
       .eq('is_primary', true)
 
     if (fetchError || !suppliers?.length) {

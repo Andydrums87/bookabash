@@ -134,7 +134,7 @@ export async function GET(request) {
           id: channelId,
           type: 'web_hook',
           address: webhookUrl,
-          expiration: Date.now() + (30 * 24 * 60 * 60 * 1000)  // Remove String()
+          expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
         }
       })
       
