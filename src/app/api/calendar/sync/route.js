@@ -1,7 +1,10 @@
 import { google } from 'googleapis'
 import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin' // For token refresh only
+import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+
 
 async function refreshOutlookToken(refreshToken, supplierId) {
   const tokenResponse = await fetch(
@@ -227,25 +230,38 @@ async function syncGoogleCalendar(supplier) {
   }
 }
 
+
+
+
 export async function POST(request) {
   console.log('Starting calendar sync')
   
   try {
+    // Get authenticated user
+    const supabaseClient = createRouteHandlerClient({ cookies })
+    const { data: { session } } = await supabaseClient.auth.getSession()
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
     const body = await request.json().catch(() => ({}))
     const requestedSupplierId = body.supplierId
-    const provider = body.provider || 'google' // Default to Google for backwards compatibility
+    const provider = body.provider || 'google'
 
     console.log('Requested supplier ID:', requestedSupplierId)
     console.log('Provider:', provider)
+    console.log('User ID:', session.user.id)
 
     let supplier = null
 
     if (requestedSupplierId) {
+      // Use regular supabase with RLS for user-specific query
       const { data: specificSupplier, error: fetchError } = await supabase
         .from('suppliers')
         .select('*')
         .eq('id', requestedSupplierId)
-        .eq('auth_user_id', user.id) 
+        .eq('auth_user_id', session.user.id)
         .single()
 
       if (!fetchError && specificSupplier) {
@@ -257,12 +273,12 @@ export async function POST(request) {
     if (!supplier) {
       console.log('Finding most recently updated supplier with calendar')
       
+      // Use regular supabase with RLS for user-specific query
       const { data: connectedSuppliers, error: fetchError } = await supabase
         .from('suppliers')
         .select('*')
-        .eq('auth_user_id', user.id) 
+        .eq('auth_user_id', session.user.id)
         .eq('is_primary', true)
-        
         .order('updated_at', { ascending: false })
 
       if (fetchError || !connectedSuppliers) {
@@ -317,7 +333,8 @@ export async function POST(request) {
       }
     }
 
-    const { error: updateError } = await supabase
+    // ✅ Use supabaseAdmin for the update to bypass RLS
+    const { error: updateError } = await supabaseAdmin
       .from('suppliers')
       .update({ data: updatedData })
       .eq('id', supplier.id)

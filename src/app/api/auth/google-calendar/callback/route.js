@@ -1,7 +1,7 @@
 // app/api/auth/google-calendar/callback/route.js
 import { google } from 'googleapis'
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin' // ✅ CHANGE THIS
 
 export async function GET(request) {
   console.log('Google Calendar OAuth callback started')
@@ -41,6 +41,7 @@ export async function GET(request) {
 
     // Get user info
     let userEmail = 'unknown'
+    let userName = 'Unknown User'
     let isWorkspaceAccount = false
     let workspaceDomain = null
 
@@ -52,9 +53,11 @@ export async function GET(request) {
       isWorkspaceAccount = !!userInfo.hd
       workspaceDomain = userInfo.hd || null
       userEmail = userInfo.email || 'unknown'
+      userName = userInfo.name || 'Unknown User'
       
       console.log('User info:', {
         email: userEmail,
+        name: userName,
         isWorkspace: isWorkspaceAccount,
         domain: workspaceDomain
       })
@@ -65,8 +68,8 @@ export async function GET(request) {
 
     console.log('Finding all suppliers for user ID:', state)
     
-    // Get ALL suppliers for this user (primary and themed)
-    const { data: allSuppliers, error: queryError } = await supabase
+    // ✅ CHANGE: Use supabaseAdmin instead of supabase
+    const { data: allSuppliers, error: queryError } = await supabaseAdmin
       .from('suppliers')
       .select('*')
       .eq('auth_user_id', state)
@@ -108,6 +111,7 @@ export async function GET(request) {
       isWorkspaceAccount,
       workspaceDomain,
       userEmail,
+      userName, // ✅ ADD THIS
       automaticSync: true,
       webhooksEnabled: false
     }
@@ -156,7 +160,7 @@ export async function GET(request) {
       primaryGoogleCalendarSync.webhookErrorAt = new Date().toISOString()
     }
 
-    // NEW: Sync calendar immediately after connecting to get initial blocked dates
+    // Sync calendar immediately after connecting to get initial blocked dates
     let initialBlockedDates = []
     try {
       const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
@@ -239,6 +243,7 @@ export async function GET(request) {
             connected: true,
             webhooksEnabled: primaryGoogleCalendarSync.webhooksEnabled,
             userEmail: userEmail,
+            userName: userName, // ✅ ADD THIS
             isWorkspaceAccount,
             lastSync: initialBlockedDates.length > 0 ? new Date().toISOString() : null,
             updatedAt: new Date().toISOString()
@@ -256,7 +261,8 @@ export async function GET(request) {
         console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data?.name}`)
         console.log(`  - Setting ${allBlocked.length} unavailable dates (${initialBlockedDates.length} from calendar)`)
         
-        const { error: updateError } = await supabase
+        // ✅ CHANGE: Use supabaseAdmin instead of supabase
+        const { error: updateError } = await supabaseAdmin
           .from('suppliers')
           .update({ data: updatedData })
           .eq('id', supplier.id)
