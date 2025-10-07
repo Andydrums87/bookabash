@@ -24,95 +24,73 @@ export async function POST(request) {
   const requestId = Math.random().toString(36).substring(7)
   console.log(`\n🔔 === WEBHOOK ${requestId} START ===`)
   console.log('🔔 Timestamp:', new Date().toISOString())
-  console.log('🔔 Request URL:', request.url)
-  console.log('🔔 Request method:', request.method)
   
   try {
     const headers = Object.fromEntries(request.headers.entries())
     const resourceState = headers['x-goog-resource-state']
     const channelId = headers['x-goog-channel-id']
-    const resourceId = headers['x-goog-resource-id']
-    const resourceUri = headers['x-goog-resource-uri']
     
     console.log('📋 Webhook Details:')
     console.log('  - Resource State:', resourceState)
     console.log('  - Channel ID:', channelId)
-    console.log('  - Resource ID:', resourceId)
-    console.log('  - Resource URI:', resourceUri)
     
-    // Initial sync confirmation - MUST return 200 with no body
+    // Initial sync confirmation
     if (resourceState === 'sync') {
       console.log('✅ SYNC verification - returning 200')
-      console.log(`🔔 === WEBHOOK ${requestId} END (sync) ===\n`)
       return new NextResponse(null, { 
         status: 200,
         headers: { 'Content-Type': 'text/plain' }
       })
     }
     
-    // Check for 'exists' state (calendar change notification)
     if (resourceState === 'exists') {
       console.log('🔄 CALENDAR CHANGE DETECTED!')
     }
     
-    // Find supplier with this webhook channel
     if (!channelId) {
       console.log('⚠️ No channel ID - returning 200')
-      console.log(`🔔 === WEBHOOK ${requestId} END (no channel) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
     
     console.log('🔍 Searching database for channel:', channelId)
     
-    // Create admin client
     const supabaseAdmin = getSupabaseAdmin()
     console.log('✅ Supabase admin client created')
     
-    // Get ALL suppliers, then find the one with this webhook
     const { data: allSuppliers, error: fetchError } = await supabaseAdmin
       .from('suppliers')
       .select('*')
 
     if (fetchError) {
       console.error('❌ DATABASE ERROR:', fetchError.message)
-      console.log(`🔔 === WEBHOOK ${requestId} END (db error) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
 
     if (!allSuppliers || allSuppliers.length === 0) {
       console.log('⚠️ No suppliers found in database')
-      console.log(`🔔 === WEBHOOK ${requestId} END (no suppliers) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
     
     console.log(`📊 Found ${allSuppliers.length} total suppliers`)
     
-    // Find the primary supplier with this webhook channel
     const primarySupplier = allSuppliers?.find(s => 
       s.data?.googleCalendarSync?.webhookChannelId === channelId
     )
     
     if (!primarySupplier) {
       console.log('❌ No supplier found with channel:', channelId)
-      console.log('Available channels:')
-      allSuppliers.forEach((s, i) => {
-        console.log(`  ${i + 1}. ${s.data?.name}: ${s.data?.googleCalendarSync?.webhookChannelId || 'none'}`)
-      })
-      console.log(`🔔 === WEBHOOK ${requestId} END (no match) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
     
     console.log('✅ Found primary supplier:', primarySupplier.data.name)
     
-    // Get all suppliers for this user (primary + themed)
     const userSuppliers = allSuppliers.filter(s => 
       s.auth_user_id === primarySupplier.auth_user_id
     )
     
     console.log(`📋 Found ${userSuppliers.length} suppliers for user`)
-    
-    // Trigger automatic sync for all suppliers
     console.log('🔄 Starting automatic sync...')
+    
     await triggerAutomaticSync(primarySupplier, userSuppliers, supabaseAdmin)
     
     console.log('✅ Webhook processing complete')
@@ -127,13 +105,69 @@ export async function POST(request) {
   }
 }
 
+async function refreshGoogleToken(supplier, supabaseAdmin) {
+  console.log('🔄 Attempting to refresh Google token...')
+  
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  )
+
+  oauth2Client.setCredentials({
+    refresh_token: supplier.data.googleCalendarSync.refreshToken
+  })
+
+  try {
+    const { credentials } = await oauth2Client.refreshAccessToken()
+    console.log('✅ Token refreshed successfully')
+    
+    // Update supplier with new tokens
+    const updatedData = {
+      ...supplier.data,
+      googleCalendarSync: {
+        ...supplier.data.googleCalendarSync,
+        accessToken: credentials.access_token,
+        tokenExpiry: credentials.expiry_date,
+        tokenRefreshedAt: new Date().toISOString()
+      }
+    }
+
+    await supabaseAdmin
+      .from('suppliers')
+      .update({ data: updatedData })
+      .eq('id', supplier.id)
+
+    return credentials.access_token
+  } catch (error) {
+    console.error('❌ Token refresh failed:', error.message)
+    
+    // Mark the connection as broken
+    const updatedData = {
+      ...supplier.data,
+      googleCalendarSync: {
+        ...supplier.data.googleCalendarSync,
+        connectionError: 'Token refresh failed - user needs to reconnect',
+        connectionErrorAt: new Date().toISOString(),
+        needsReconnection: true
+      }
+    }
+
+    await supabaseAdmin
+      .from('suppliers')
+      .update({ data: updatedData })
+      .eq('id', supplier.id)
+
+    throw error
+  }
+}
+
 async function triggerAutomaticSync(primarySupplier, allUserSuppliers, supabaseAdmin) {
   try {
     console.log('🔄 === AUTOMATIC SYNC START ===')
     const googleSync = primarySupplier.data.googleCalendarSync
     
-    if (!googleSync?.accessToken) {
-      console.error('❌ No access token for automatic sync')
+    if (!googleSync?.accessToken && !googleSync?.refreshToken) {
+      console.error('❌ No tokens available for automatic sync')
       return
     }
     
@@ -143,8 +177,11 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers, supabaseA
       process.env.GOOGLE_CLIENT_SECRET
     )
     
+    // Try with existing access token first
+    let accessToken = googleSync.accessToken
+    
     oauth2Client.setCredentials({
-      access_token: googleSync.accessToken,
+      access_token: accessToken,
       refresh_token: googleSync.refreshToken
     })
     
@@ -157,13 +194,38 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers, supabaseA
     console.log('📅 Fetching calendar events...')
     console.log('  - Time range:', timeMin, 'to', timeMax)
     
-    const response = await calendar.events.list({
-      calendarId: 'primary',
-      timeMin,
-      timeMax,
-      singleEvents: true,
-      orderBy: 'startTime'
-    })
+    let response
+    try {
+      response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin,
+        timeMax,
+        singleEvents: true,
+        orderBy: 'startTime'
+      })
+    } catch (apiError) {
+      // If we get an auth error, try refreshing the token
+      if (apiError.message.includes('invalid_grant') || apiError.message.includes('401')) {
+        console.log('🔄 Access token expired, refreshing...')
+        accessToken = await refreshGoogleToken(primarySupplier, supabaseAdmin)
+        
+        // Retry with new token
+        oauth2Client.setCredentials({
+          access_token: accessToken,
+          refresh_token: googleSync.refreshToken
+        })
+        
+        response = await calendar.events.list({
+          calendarId: 'primary',
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime'
+        })
+      } else {
+        throw apiError
+      }
+    }
     
     const events = response.data.items || []
     console.log(`📅 Found ${events.length} calendar events`)
@@ -174,7 +236,9 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers, supabaseA
     events.forEach((event, index) => {
       if (!event.start) return
       
-      console.log(`  Event ${index + 1}: ${event.summary || 'Untitled'} - ${event.start.date || event.start.dateTime}`)
+      if (index < 5) { // Log first 5 events only
+        console.log(`  Event ${index + 1}: ${event.summary || 'Untitled'} - ${event.start.date || event.start.dateTime}`)
+      }
       
       if (event.start.date) {
         blockedDates.push({
@@ -236,7 +300,11 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers, supabaseA
             ...supplier.data.googleCalendarSync,
             lastSync: new Date().toISOString(),
             syncedEvents: events.map(e => ({ id: e.id, title: e.summary })),
-            lastAutomaticSync: new Date().toISOString()
+            lastAutomaticSync: new Date().toISOString(),
+            // Clear any error flags on successful sync
+            connectionError: null,
+            connectionErrorAt: null,
+            needsReconnection: false
           },
           updatedAt: new Date().toISOString()
         }

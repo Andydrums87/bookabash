@@ -65,7 +65,7 @@ const SupplierChatTabs = ({ customerId, partyId, suppliers = {} }) => {
 
         // Fetch suppliers and enquiries
         const [suppliersResult, enquiriesResult] = await Promise.all([
-          supabase.from('suppliers').select('id, business_name, data').in('id', supplierIds),
+          supabase.from('suppliers_secure').select('id, business_name, data').in('id', supplierIds),
           supabase.from('enquiries').select('id, quoted_price, status, supplier_category').in('id', enquiryIds)
         ])
 

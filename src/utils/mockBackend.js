@@ -737,9 +737,9 @@ export const suppliersAPI = {
     try {
       let query
       if (isValidUUID(id)) {
-        query = supabase.from('suppliers').select('*').eq('id', id).limit(1)
+        query = supabase.from('suppliers_secure').select('*').eq('id', id).limit(1)
       } else {
-        query = supabase.from('suppliers').select('*').eq('legacy_id', id).limit(1)
+        query = supabase.from('suppliers_secure').select('*').eq('legacy_id', id).limit(1)
       }
 
       const { data, error } = await query

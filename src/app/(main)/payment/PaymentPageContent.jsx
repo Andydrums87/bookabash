@@ -870,7 +870,7 @@ loadPaymentData()
   const getSupplierContactDetails = async (supplierId) => {
     try {
       const { data, error } = await supabase
-        .from('suppliers') // or whatever your suppliers table is called
+        .from('suppliers_secure') // or whatever your suppliers table is called
         .select('id, email, name, contact_name')
         .eq('id', supplierId)
         .single();

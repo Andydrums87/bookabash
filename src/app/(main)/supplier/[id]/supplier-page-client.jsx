@@ -145,6 +145,17 @@ const { supplier, packages: basePackages, portfolioImages, credentials, reviews,
 }, [])
 
 useEffect(() => {
+  const checkData = async () => {
+    const { data } = await supabase.from('suppliers_secure').select('*').limit(1).single()
+    console.log('📊 Supplier data object:', data.data)
+    console.log('🔍 Has googleCalendarSync?', !!data.data?.googleCalendarSync)
+    console.log('🔍 Has accessToken?', !!data.data?.accessToken)
+    console.log('🔍 Has owner.email?', !!data.data?.owner?.email)
+  }
+  checkData()
+}, [])
+
+useEffect(() => {
   if (!userTypeLoading && backendSupplier) {
     // Small delay to ensure smooth transition
     setTimeout(() => setIsLoaded(true), 100)
