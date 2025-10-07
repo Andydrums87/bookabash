@@ -31,7 +31,7 @@ export async function POST(request) {
     console.log('Looking for supplier with channel ID:', channelId)
     
     // Get ALL suppliers, then find the one with this webhook
-    const { data: allSuppliers, error: fetchError } = await supabase
+    const { data: allSuppliers, error: fetchError } = await supabaseAdmin  // ✅ FIXED
       .from('suppliers')
       .select('*')
     
