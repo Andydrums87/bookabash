@@ -1,80 +1,91 @@
 // app/api/calendar/webhook/route.js
-import { supabaseAdmin } from '@/lib/supabase-admin'
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import { createClient } from '@supabase/supabase-js'
+
+// Create admin client directly in this file
+const getSupabaseAdmin = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase credentials missing')
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 export async function POST(request) {
-  console.log('🔔 === WEBHOOK REQUEST START ===')
+  const requestId = Math.random().toString(36).substring(7)
+  console.log(`\n🔔 === WEBHOOK ${requestId} START ===`)
+  console.log('🔔 Timestamp:', new Date().toISOString())
   console.log('🔔 Request URL:', request.url)
   console.log('🔔 Request method:', request.method)
+  
   try {
     const headers = Object.fromEntries(request.headers.entries())
     const resourceState = headers['x-goog-resource-state']
     const channelId = headers['x-goog-channel-id']
+    const resourceId = headers['x-goog-resource-id']
+    const resourceUri = headers['x-goog-resource-uri']
     
-    console.log('Google Calendar webhook received:', { resourceState, channelId, timestamp: new Date().toISOString() })
-       
-    console.log('📋 All webhook headers:', JSON.stringify(headers, null, 2))
-    console.log('📋 Resource state:', resourceState)
-    console.log('📋 Channel ID:', channelId)
+    console.log('📋 Webhook Details:')
+    console.log('  - Resource State:', resourceState)
+    console.log('  - Channel ID:', channelId)
+    console.log('  - Resource ID:', resourceId)
+    console.log('  - Resource URI:', resourceUri)
+    
     // Initial sync confirmation - MUST return 200 with no body
     if (resourceState === 'sync') {
-      console.log('✅ SYNC verification detected - returning 200 immediately')
+      console.log('✅ SYNC verification - returning 200')
+      console.log(`🔔 === WEBHOOK ${requestId} END (sync) ===\n`)
       return new NextResponse(null, { 
         status: 200,
-        headers: {
-          'Content-Type': 'text/plain'
-        }
+        headers: { 'Content-Type': 'text/plain' }
       })
+    }
+    
+    // Check for 'exists' state (calendar change notification)
+    if (resourceState === 'exists') {
+      console.log('🔄 CALENDAR CHANGE DETECTED!')
     }
     
     // Find supplier with this webhook channel
     if (!channelId) {
       console.log('⚠️ No channel ID - returning 200')
+      console.log(`🔔 === WEBHOOK ${requestId} END (no channel) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
     
-    console.log('🔍 === STARTING DATABASE QUERY ===')
-    console.log('🔑 supabaseAdmin type:', typeof supabaseAdmin)
-    console.log('🔑 supabaseAdmin defined:', !!supabaseAdmin)
-    console.log('🔑 Environment check:')
-    console.log('  - NEXT_PUBLIC_SUPABASE_URL:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('  - SUPABASE_SERVICE_ROLE_KEY:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
-    console.log('  - Service key length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0)
+    console.log('🔍 Searching database for channel:', channelId)
+    
+    // Create admin client
+    const supabaseAdmin = getSupabaseAdmin()
+    console.log('✅ Supabase admin client created')
     
     // Get ALL suppliers, then find the one with this webhook
-    const { data: allSuppliers, error: fetchError } = await supabaseAdmin  // ✅ FIXED
-    console.log('📊 Executing query: SELECT * FROM suppliers')
+    const { data: allSuppliers, error: fetchError } = await supabaseAdmin
       .from('suppliers')
       .select('*')
-    
-
-      console.log('📊 === DATABASE RESPONSE ===')
-      console.log('📊 Suppliers found:', allSuppliers?.length || 0)
-      console.log('📊 Has error:', !!fetchError)
 
     if (fetchError) {
-      console.error('❌ DATABASE ERROR DETAILS:')
-      console.error('  - Message:', fetchError.message)
-      console.error('  - Code:', fetchError.code)
-      console.error('  - Details:', fetchError.details)
-      console.error('  - Hint:', fetchError.hint)
-      console.error('  - Full error:', JSON.stringify(fetchError, null, 2))
-      // Still return 200 to prevent Google from retrying
+      console.error('❌ DATABASE ERROR:', fetchError.message)
+      console.log(`🔔 === WEBHOOK ${requestId} END (db error) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
 
     if (!allSuppliers || allSuppliers.length === 0) {
-      console.log('⚠️ Query succeeded but returned no suppliers')
+      console.log('⚠️ No suppliers found in database')
+      console.log(`🔔 === WEBHOOK ${requestId} END (no suppliers) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
     
-    console.log('✅ Successfully fetched suppliers')
-    console.log('🔍 Searching for channelId:', channelId)
-    console.log('📋 Available suppliers and their channelIds:')
-    allSuppliers.forEach((s, index) => {
-      console.log(`  ${index + 1}. ${s.data?.name || 'Unknown'} - channelId: ${s.data?.googleCalendarSync?.webhookChannelId || 'none'}`)
-    })
+    console.log(`📊 Found ${allSuppliers.length} total suppliers`)
     
     // Find the primary supplier with this webhook channel
     const primarySupplier = allSuppliers?.find(s => 
@@ -82,43 +93,51 @@ export async function POST(request) {
     )
     
     if (!primarySupplier) {
-      console.log('No primary supplier found for webhook channel:', channelId)
+      console.log('❌ No supplier found with channel:', channelId)
+      console.log('Available channels:')
+      allSuppliers.forEach((s, i) => {
+        console.log(`  ${i + 1}. ${s.data?.name}: ${s.data?.googleCalendarSync?.webhookChannelId || 'none'}`)
+      })
+      console.log(`🔔 === WEBHOOK ${requestId} END (no match) ===\n`)
       return new NextResponse(null, { status: 200 })
     }
-    console.log('✅ Processing webhook for supplier:', primarySupplier.data.name)
-    console.log('Found primary supplier:', primarySupplier.data.name)
+    
+    console.log('✅ Found primary supplier:', primarySupplier.data.name)
     
     // Get all suppliers for this user (primary + themed)
     const userSuppliers = allSuppliers.filter(s => 
       s.auth_user_id === primarySupplier.auth_user_id
     )
     
-    console.log(`Found ${userSuppliers.length} total suppliers (primary + themed) for this user`)
+    console.log(`📋 Found ${userSuppliers.length} suppliers for user`)
     
     // Trigger automatic sync for all suppliers
-    await triggerAutomaticSync(primarySupplier, userSuppliers)
+    console.log('🔄 Starting automatic sync...')
+    await triggerAutomaticSync(primarySupplier, userSuppliers, supabaseAdmin)
     
+    console.log('✅ Webhook processing complete')
+    console.log(`🔔 === WEBHOOK ${requestId} END (success) ===\n`)
     return new NextResponse(null, { status: 200 })
     
   } catch (error) {
-    console.error('💥 === WEBHOOK EXCEPTION ===')
-    console.error('💥 Error type:', error.constructor.name)
-    console.error('💥 Error message:', error.message)
-    console.error('💥 Error stack:', error.stack)
-    // Always return 200 to prevent Google from retrying
+    console.error('💥 WEBHOOK EXCEPTION:', error.message)
+    console.error('💥 Stack:', error.stack)
+    console.log(`🔔 === WEBHOOK ${requestId} END (error) ===\n`)
     return new NextResponse(null, { status: 200 })
   }
 }
 
-async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
+async function triggerAutomaticSync(primarySupplier, allUserSuppliers, supabaseAdmin) {
   try {
+    console.log('🔄 === AUTOMATIC SYNC START ===')
     const googleSync = primarySupplier.data.googleCalendarSync
     
     if (!googleSync?.accessToken) {
-      console.error('No access token for automatic sync')
+      console.error('❌ No access token for automatic sync')
       return
     }
     
+    console.log('🔑 Setting up OAuth client...')
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
@@ -135,7 +154,9 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
     const timeMin = new Date().toISOString()
     const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
     
-    console.log('Fetching current calendar state for sync...')
+    console.log('📅 Fetching calendar events...')
+    console.log('  - Time range:', timeMin, 'to', timeMax)
+    
     const response = await calendar.events.list({
       calendarId: 'primary',
       timeMin,
@@ -145,13 +166,15 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
     })
     
     const events = response.data.items || []
-    console.log(`Found ${events.length} current calendar events`)
+    console.log(`📅 Found ${events.length} calendar events`)
     
     // Convert ONLY current events to blocked dates
     const blockedDates = []
     
-    events.forEach((event) => {
+    events.forEach((event, index) => {
       if (!event.start) return
+      
+      console.log(`  Event ${index + 1}: ${event.summary || 'Untitled'} - ${event.start.date || event.start.dateTime}`)
       
       if (event.start.date) {
         blockedDates.push({
@@ -180,18 +203,29 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
       }
     })
     
-    console.log(`Converted to ${blockedDates.length} blocked date entries`)
+    console.log(`📊 Converted to ${blockedDates.length} blocked date entries`)
     
     // Update ALL suppliers (primary and themed)
+    console.log(`💾 Updating ${allUserSuppliers.length} suppliers...`)
+    
+    let successCount = 0
+    let errorCount = 0
+    
     for (const supplier of allUserSuppliers) {
       try {
         const isPrimary = supplier.id === primarySupplier.id
+        
+        console.log(`  Updating ${isPrimary ? 'PRIMARY' : 'THEMED'}: ${supplier.data.name}`)
         
         // Keep manual blocks, REPLACE all google-calendar blocks
         const currentUnavailable = supplier.data.unavailableDates || []
         const manualBlocks = currentUnavailable.filter(item => 
           item.source !== 'google-calendar'
         )
+        
+        console.log(`    - Manual blocks: ${manualBlocks.length}`)
+        console.log(`    - Calendar blocks: ${blockedDates.length}`)
+        
         const allBlocked = [...manualBlocks, ...blockedDates]
         
         const updatedData = {
@@ -207,26 +241,33 @@ async function triggerAutomaticSync(primarySupplier, allUserSuppliers) {
           updatedAt: new Date().toISOString()
         }
         
+        console.log(`    - Total blocked: ${allBlocked.length}`)
+        
         const { error: updateError } = await supabaseAdmin
           .from('suppliers')
           .update({ data: updatedData })
           .eq('id', supplier.id)
         
         if (updateError) {
-          console.error(`Failed to update ${isPrimary ? 'primary' : 'themed'} supplier:`, updateError)
+          console.error(`    ❌ Update failed:`, updateError.message)
+          errorCount++
         } else {
-          console.log(`✅ Updated ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data.name} with ${allBlocked.length} unavailable dates`)
+          console.log(`    ✅ Update successful`)
+          successCount++
         }
         
       } catch (supplierError) {
-        console.error(`Error updating supplier ${supplier.data?.name}:`, supplierError)
+        console.error(`    💥 Exception:`, supplierError.message)
+        errorCount++
       }
     }
     
-    console.log(`Automatic sync completed for ${allUserSuppliers.length} suppliers`)
+    console.log(`✅ Sync complete: ${successCount} success, ${errorCount} errors`)
+    console.log('🔄 === AUTOMATIC SYNC END ===')
     
   } catch (error) {
-    console.error('Automatic sync failed:', error)
+    console.error('❌ Automatic sync failed:', error.message)
+    console.error('Stack:', error.stack)
   }
 }
 
