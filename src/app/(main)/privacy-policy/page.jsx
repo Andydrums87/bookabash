@@ -236,6 +236,7 @@ export default function PrivacyPolicy() {
                   </h4>
                   <ul className="space-y-2 text-blue-800 text-sm">
                     <li>• <strong>Encrypted connections:</strong> All calendar data is transmitted using secure HTTPS encryption</li>
+                    <li>• <strong>Minimum Permission Scope</strong> We request only the minimum necessary permissions (https://www.googleapis.com/auth/calendar.readonly).</li>
                     <li>• <strong>Minimum access principle:</strong> We only request the minimum permissions needed</li>
                     <li>• <strong>No data sharing:</strong> Calendar information is never shared with customers or third parties</li>
                     <li>• <strong>Used solely for availability:</strong> Data is used only to manage your PartySnap calendar</li>
