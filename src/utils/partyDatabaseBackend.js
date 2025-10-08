@@ -10,9 +10,7 @@ class PartyDatabaseBackend {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     return uuidRegex.test(str)
   }
-  
-  // ================== USER MANAGEMENT ==================
-  
+
   /**
    * Create or get user profile
    */
@@ -3300,7 +3298,6 @@ async saveEInvites(partyId, einviteData) {
     return { success: false, error: error.message };
   }
 }
-
 /**
  * Get e-invites data for a party
  */
@@ -3328,8 +3325,6 @@ async getEInvites(partyId) {
     return { success: false, error: error.message };
   }
 }
-
-
 async createPublicInvite(inviteData) {
   try {
 
@@ -3367,8 +3362,6 @@ async createPublicInvite(inviteData) {
     return { success: false, error: error.message };
   }
 }
-
-
 async getPublicInvite(inviteId) {
   try {
   
@@ -3495,7 +3488,6 @@ async findGiftRegistryForParty(partyId) {
     }
   }
 }
-
 /**
  * Get the correct gift registry URL for a party
  */
@@ -3570,7 +3562,6 @@ async submitRSVP(inviteId, rsvpData) {
     return { success: false, error: error.message };
   }
 }
-
 /**
  * Get RSVPs for a party
  * Updated to work with existing public_invites schema
@@ -3619,7 +3610,6 @@ async getPartyRSVPs(partyId) {
     return { success: false, error: error.message };
   }
 }
-
 /**
  * Update guest list with send status
  */
@@ -3700,7 +3690,6 @@ async updateGuestStatus(partyId, guestId, newStatus) {
     return { success: false, error: error.message };
   }
 }
-
 /**
  * Get guest list with RSVP statuses for a party
  * This combines manually added guests with any actual RSVP submissions

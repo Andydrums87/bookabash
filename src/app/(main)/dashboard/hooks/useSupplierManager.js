@@ -45,16 +45,22 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
   // REMOVED: handleSupplierSelection - moved to DatabaseDashboard
   // This hook should only handle UI state, not business logic
 
-  // Start delete process
-  const handleDeleteSupplier = (supplierType) => {
-    setShowDeleteConfirm(supplierType)
-  }
+// Start delete process
+const handleDeleteSupplier = (supplierType) => {
+  // ✅ Clear URL params immediately when delete is initiated
+  const currentUrl = new URL(window.location.href)
+  currentUrl.searchParams.delete('scrollTo')
+  currentUrl.searchParams.delete('action')
+  window.history.replaceState({}, '', currentUrl)
+  
+  setShowDeleteConfirm(supplierType)
+}
 
   // Confirm supplier deletion
   const confirmDeleteSupplier = async (supplierType) => {
     setSuppliersToDelete(prev => [...prev, supplierType])
     setShowDeleteConfirm(null)
-    
+
     // Simulate removal animation
     setTimeout(async () => {
       // Special handling for e-invites - reset to default instead of removing

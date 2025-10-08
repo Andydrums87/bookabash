@@ -1,4 +1,4 @@
-// SupplierCard.jsx - FIXED to always use fresh pricing calculation
+// SupplierCard.jsx - FIXED to pass recommended supplier props
 "use client"
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
@@ -33,9 +33,14 @@ export default function SupplierCard({
   onPaymentReady,
   handleCancelEnquiry,
   enhancedPricing,
-  pricingRefreshKey
+  pricingRefreshKey,
+  // ✅ NEW PROPS for recommended suppliers
+  recommendedSupplier,
+  onAddSupplier
 }) {
   const router = useRouter()
+
+
 
   // Skip e-invites entirely - they're handled separately
   if (type === "einvites") {
@@ -73,7 +78,10 @@ export default function SupplierCard({
 
   // FIXED getSupplierState function for SupplierCard.jsx
   const getSupplierState = () => {
-    if (!supplier) return "empty"
+    if (!supplier) {
+      console.log(`🔴 SupplierCard [${type}]: No supplier, returning "empty"`)
+      return "empty"
+    }
     
     // Find the SPECIFIC enquiry for THIS supplier type
     const enquiry = enquiries.find(e => e.supplier_category === type)
@@ -124,6 +132,7 @@ export default function SupplierCard({
   }
 
   const supplierState = getSupplierState()
+  console.log(`🔵 SupplierCard [${type}]: State determined as "${supplierState}"`)
 
   // Enhanced addon collection that includes enquiry addons
   const supplierAddons = (() => {
@@ -144,12 +153,10 @@ export default function SupplierCard({
         if (enquiry.addon_ids) {
           try {
             const addonIds = JSON.parse(enquiry.addon_ids)
-            // You might need to fetch addon details by IDs here
-            // For now, we'll create basic addon objects
             enquiryAddons = addonIds.map(id => ({
               id,
               name: `Addon ${id}`,
-              price: 0 // You'll need to fetch actual price
+              price: 0
             }))
           } catch (idError) {
             console.error(`Error parsing addon_ids for ${type}:`, idError)
@@ -160,7 +167,6 @@ export default function SupplierCard({
     
     // Method 2: Get add-ons from global addons array (for standalone add-ons)
     const globalAddons = addons.filter((addon) => {
-      // Match by supplier ID or supplier type
       return addon.supplierId === supplier?.id || 
              addon.supplierType === type ||
              addon.attachedToSupplier === type
@@ -183,17 +189,6 @@ export default function SupplierCard({
     if (!supplier) {
       return { finalPrice: 0, breakdown: {}, details: {} }
     }
-
-    console.log('📊 SupplierCard: ALWAYS calculating fresh pricing:', {
-      supplierName: supplier.name,
-      supplierType: type,
-      hasPartyDetails: !!partyDetails,
-      partyDate: partyDetails?.date,
-      partyDuration: partyDetails?.duration,
-      addonsCount: supplierAddons.length,
-      // Remove these logs about pre-enhanced pricing since we're not using them
-      basePrice: supplier.originalPrice || supplier.price || supplier.priceFrom
-    })
 
     // ALWAYS calculate fresh pricing - ignore any pre-enhanced values
     return calculateFinalPrice(supplier, partyDetails, supplierAddons)
@@ -221,8 +216,23 @@ export default function SupplierCard({
     handleCancelEnquiry,
     enhancedPricing,
     onClick: handleCardClick,
-    totalPrice: pricing.finalPrice // Use the fresh final price
+    totalPrice: pricing.finalPrice
   }
+
+  // ✅ Props specific to EmptySupplierCard - NOW INCLUDING RECOMMENDED SUPPLIER
+  const emptyCardProps = {
+    type,
+    openSupplierModal,
+    getSupplierDisplayName,
+    currentPhase,
+    isSignedIn,
+    partyDetails,
+    // ✅ CRITICAL: Pass these props!
+    recommendedSupplier: recommendedSupplier,
+    onAddSupplier: onAddSupplier
+  }
+
+
 
   // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
@@ -230,7 +240,8 @@ export default function SupplierCard({
   // Render the appropriate card component based on state
   switch (supplierState) {
     case "empty":
-      return <EmptySupplierCard {...commonProps} />
+      console.log(`🎨 SupplierCard [${type}]: Rendering EmptySupplierCard with props:`, emptyCardProps)
+      return <EmptySupplierCard {...emptyCardProps} />
       
     case "selected":
       return <SelectedSupplierCard {...commonProps} />
@@ -239,7 +250,7 @@ export default function SupplierCard({
       return <AwaitingResponseSupplierCard {...commonProps} />
 
     case "confirmed":
-      return <ConfirmedSupplierCard  {...commonProps}  />
+      return <ConfirmedSupplierCard {...commonProps} />
 
     case "deposit_paid_confirmed":
       return <DepositPaidSupplierCard {...commonProps} />

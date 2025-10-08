@@ -1,4 +1,4 @@
-// Updated Sign-In page with customer account creation
+// Updated Sign-In page with customer account creation AND business account blocker
 "use client"
 
 import React from "react"
@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react"
+import { Eye, EyeOff, LogIn, Loader2, Building } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
-import { getBaseUrl } from '@/utils/env' // Make sure this import is there
+import { getBaseUrl } from '@/utils/env'
 
 export default function SignInPageContent() {
   const router = useRouter()
@@ -24,72 +24,85 @@ export default function SignInPageContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(null)
+  const [businessAccountWarning, setBusinessAccountWarning] = useState(false)
+  const [supplierBlockedWarning, setSupplierBlockedWarning] = useState(false)
 
   // Get URL parameters
   const returnTo = searchParams.get('return_to')
-
   const prefilledEmail = searchParams.get('email')
+  const fromBusinessBlock = searchParams.get('business_account')
+  const supplierBlocked = searchParams.get('supplier_blocked')
 
   useEffect(() => {
     if (prefilledEmail) {
       setEmail(prefilledEmail)
     }
-  }, [prefilledEmail])
-
- // Handle email/password sign in
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  setError("")
-  setIsLoading(true)
-
-  try {
-    // Sign in user
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (authError) throw authError
-    
-    const user = authData.user
-    if (!user) throw new Error("No user returned")
-
-    console.log("🔐 Customer signed in:", user.id)
-
-    // Create or get customer profile
-    const userResult = await partyDatabaseBackend.createOrGetUser({
-      firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
-      lastName: user.user_metadata?.full_name?.split(' ')[1] || '',
-      email: user.email,
-      phone: user.user_metadata?.phone || '',
-      postcode: ''
-    })
-
-    if (!userResult.success) {
-      console.error('❌ Failed to create customer profile:', userResult.error)
-      throw new Error('Failed to create customer account')
+    if (fromBusinessBlock === 'true') {
+      setBusinessAccountWarning(true)
     }
-
-    console.log("✅ Customer profile ready:", userResult.user.id)
-
-    // Redirect back to where they came from or dashboard
-    if (returnTo) {
-      window.location.href = decodeURIComponent(returnTo)
-    } else {
-      router.push("/dashboard")
+    if (supplierBlocked === 'true') {
+      setSupplierBlockedWarning(true)
     }
+  }, [prefilledEmail, fromBusinessBlock, supplierBlocked])
 
-  } catch (err) {
-    console.error("❌ Sign-in error:", err)
-    setError(err.message || "Sign-in failed.")
-  } finally {
-    setIsLoading(false)
-  }
-}
-  const handleCustomerFlow = async (user) => {
+  // Check if user has a business account
+  const checkIfBusinessAccount = async (userId) => {
     try {
-      console.log("👤 Handling customer sign-in flow")
+      const { data: supplierData, error } = await supabase
+        .from("suppliers")
+        .select("id, business_name")
+        .eq("auth_user_id", userId)
+        .eq("is_primary", true)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error checking for business account:", error)
+        return false
+      }
+
+      return !!supplierData
+    } catch (err) {
+      console.error("Error in checkIfBusinessAccount:", err)
+      return false
+    }
+  }
+
+  // Handle email/password sign in
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
+
+    try {
+      // Sign in user
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (authError) throw authError
       
+      const user = authData.user
+      if (!user) throw new Error("No user returned")
+
+      console.log("🔐 User signed in:", user.id)
+
+      // CHECK: Is this a business account?
+      const isBusinessAccount = await checkIfBusinessAccount(user.id)
+
+      if (isBusinessAccount) {
+        console.log("🚫 Business account detected, blocking user sign-in")
+        
+        // Sign out the user
+        await supabase.auth.signOut()
+        
+        // Redirect to business sign-in with their email
+        router.push(`/suppliers/onboarding/auth/signin?email=${encodeURIComponent(email)}&blocked=true`)
+        return
+      }
+
+      console.log("✅ User account verified, creating customer profile...")
+
       // Create or get customer profile
       const userResult = await partyDatabaseBackend.createOrGetUser({
         firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
@@ -110,63 +123,16 @@ const handleSubmit = async (e) => {
       if (returnTo) {
         window.location.href = decodeURIComponent(returnTo)
       } else {
-        router.push("/review-book")
+        router.push("/dashboard")
       }
 
-    } catch (error) {
-      console.error('❌ Customer flow error:', error)
-      throw error
+    } catch (err) {
+      console.error("❌ Sign-in error:", err)
+      setError(err.message || "Sign-in failed.")
+    } finally {
+      setIsLoading(false)
     }
   }
-
-  const handleSupplierFlow = async (user) => {
-    try {
-      console.log("🏢 Handling supplier sign-in flow")
-      
-      // Check for primary supplier record
-      const { data: supplierData, error: supplierError } = await supabase
-        .from("suppliers")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .eq("is_primary", true)
-        .maybeSingle()
-
-      if (supplierError && supplierError.code !== 'PGRST116') {
-        console.error("❌ Error checking supplier:", supplierError)
-        throw new Error("Database error occurred")
-      }
-
-      if (supplierData) {
-        console.log("✅ Supplier profile exists:", supplierData.business_name)
-        router.push("/suppliers/dashboard")
-        return
-      }
-
-      // Check for onboarding draft
-      const { data: draft, error: draftError } = await supabase
-        .from("onboarding_drafts")
-        .select("*")
-        .eq("email", user.email)
-        .maybeSingle()
-
-      if (draft) {
-        console.log("📥 Found onboarding draft, creating supplier profile...")
-        await createSupplierFromDraft(user, draft)
-        router.push("/suppliers/dashboard")
-        return
-      }
-
-      // No supplier record or draft - redirect to onboarding
-      console.log("⚠️ No supplier record found, redirecting to onboarding")
-      router.push("/suppliers/onboarding")
-
-    } catch (error) {
-      console.error('❌ Supplier flow error:', error)
-      throw error
-    }
-  }
-
-
 
   const handleOAuthSignIn = async (provider) => {
     setError("")
@@ -175,7 +141,7 @@ const handleSubmit = async (e) => {
     try {
       console.log(`🔐 Starting ${provider} OAuth customer sign-in...`)
       
-      // CLEAN: Direct to customer callback
+      // Direct to customer callback
       let redirectUrl = `${getBaseUrl()}/auth/callback/customer`
       
       if (returnTo) {
@@ -207,86 +173,6 @@ const handleSubmit = async (e) => {
     }
   }
 
-  // // Helper function to create supplier from draft
-  // const createSupplierFromDraft = async (user, draft) => {
-  //   const supplierData = {
-  //     name: draft.business_name,
-  //     businessName: draft.business_name,
-  //     serviceType: draft.supplier_type,
-  //     category: draft.supplier_type,
-  //     location: draft.postcode,
-  //     owner: {
-  //       name: draft.your_name || user.user_metadata?.full_name,
-  //       email: user.email,
-  //       phone: draft.phone || user.user_metadata?.phone || ""
-  //     },
-  //     contactInfo: {
-  //       email: user.email,
-  //       phone: draft.phone || user.user_metadata?.phone || "",
-  //       postcode: draft.postcode
-  //     },
-  //     description: "New supplier - profile setup in progress",
-  //     businessDescription: "New supplier - profile setup in progress",
-  //     packages: [],
-  //     portfolioImages: [],
-  //     portfolioVideos: [],
-  //     workingHours: {
-  //       Monday: { start: "09:00", end: "17:00", active: true },
-  //       Tuesday: { start: "09:00", end: "17:00", active: true },
-  //       Wednesday: { start: "09:00", end: "17:00", active: true },
-  //       Thursday: { start: "09:00", end: "17:00", active: true },
-  //       Friday: { start: "09:00", end: "17:00", active: true },
-  //       Saturday: { start: "10:00", end: "16:00", active: true },
-  //       Sunday: { start: "10:00", end: "16:00", active: false }
-  //     },
-  //     unavailableDates: [],
-  //     busyDates: [],
-  //     rating: 0,
-  //     reviewCount: 0,
-  //     bookingCount: 0,
-  //     priceFrom: 0,
-  //     priceUnit: "per event",
-  //     badges: ["New Provider"],
-  //     themes: ["general"],
-  //     availability: "Contact for availability",
-  //     isComplete: "New supplier - profile setup in progress",
-  //     coverPhoto: "",
-  //     image: "",
-  //     advanceBookingDays: 7,
-  //     maxBookingDays: 365,
-  //     availabilityNotes: "",
-  //     serviceDetails: {},
-  //     createdAt: new Date().toISOString(),
-  //     updatedAt: new Date().toISOString(),
-  //     onboardingCompleted: true,
-  //     createdFrom: "draft_promotion"
-  //   }
-
-  //   const supplierRecord = {
-  //     auth_user_id: user.id,
-  //     data: supplierData,
-  //     created_at: new Date().toISOString(),
-  //     updated_at: new Date().toISOString()
-  //   }
-
-  //   const { error: insertError } = await supabase
-  //     .from("suppliers")
-  //     .insert(supplierRecord)
-
-  //   if (insertError) {
-  //     console.error("❌ Failed to create supplier:", insertError)
-  //     throw new Error("Failed to create supplier profile. Please contact support.")
-  //   }
-
-  //   // Clean up draft
-  //   await supabase
-  //     .from("onboarding_drafts")
-  //     .delete()
-  //     .eq("email", user.email)
-
-  //   console.log("✅ Supplier profile created from draft")
-  // }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-rose-50 to-amber-50">
       <div className="flex flex-col items-center justify-start pt-12 sm:pt-16 pb-12 px-4">
@@ -296,10 +182,34 @@ const handleSubmit = async (e) => {
               Welcome Back
             </CardTitle>
             <CardDescription className="text-gray-600">
-            Sign in to continue planning your perfect party
+              Sign in to continue planning your perfect party
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Business Account Warning */}
+            {businessAccountWarning && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start">
+                  <Building className="h-5 w-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-amber-800 mb-1">
+                      Business Account Detected
+                    </h3>
+                    <p className="text-sm text-amber-700">
+                      This email is registered as a business account. Please use the 
+                      business sign-in page to access your supplier dashboard.
+                    </p>
+                    <Link 
+                      href={`/suppliers/signin?email=${encodeURIComponent(email)}`}
+                      className="inline-flex items-center mt-3 text-sm font-medium text-amber-800 hover:text-amber-900 underline"
+                    >
+                      Go to Business Sign-In →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700">

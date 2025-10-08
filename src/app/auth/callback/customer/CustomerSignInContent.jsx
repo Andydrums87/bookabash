@@ -14,8 +14,6 @@ export default function CustomerAuthCallback() {
   const [progress, setProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState("")
 
-
-
   useEffect(() => {
     const video = videoRef.current
     if (video) {
@@ -89,18 +87,31 @@ export default function CustomerAuthCallback() {
           var user = session.user
         }
 
-        // Check if this is actually a supplier trying to use customer auth
-        const { data: supplierRecord } = await supabase
+        // CRITICAL: Check if this is a business account
+        console.log("🔍 Checking if this is a business account...")
+        const { data: supplierRecord, error: supplierError } = await supabase
           .from("suppliers")
-          .select("id")
+          .select("id, business_name, data")
           .eq("auth_user_id", user.id)
+          .eq("is_primary", true)
           .maybeSingle()
 
+        if (supplierError && supplierError.code !== 'PGRST116') {
+          console.error("Error checking supplier:", supplierError)
+        }
+
         if (supplierRecord) {
-          console.log("🏢 Detected supplier account, redirecting to supplier dashboard")
-          window.location.href = `${window.location.origin}/suppliers/dashboard`
+          console.log("🚫 Business account detected via OAuth, blocking customer access")
+          
+          // Sign out from customer side
+          await supabase.auth.signOut()
+          
+          // Redirect to supplier sign-in with their email and blocked flag
+          window.location.href = `${window.location.origin}/suppliers/onboarding/auth/signin?email=${encodeURIComponent(user.email)}&blocked=true`
           return
         }
+
+        console.log("✅ User account verified, creating customer profile...")
 
         // Create or get customer profile
         const userResult = await partyDatabaseBackend.createOrGetUser({

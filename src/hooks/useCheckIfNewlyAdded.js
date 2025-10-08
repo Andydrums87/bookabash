@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-export const useCheckIfNewlyAdded = (supplierType) => {
+export const useCheckIfNewlyAdded = (supplierType, hasSupplier) => {
   const [isNewlyAdded, setIsNewlyAdded] = useState(false)
   const searchParams = useSearchParams()
 
@@ -9,14 +9,14 @@ export const useCheckIfNewlyAdded = (supplierType) => {
     const scrollToSupplier = searchParams.get('scrollTo')
     const lastAction = searchParams.get('action')
     
-    // Check if this supplier was just added
+    // ✅ Only show animation if supplier exists AND URL params match
     const wasJustAdded = (
       scrollToSupplier === supplierType && 
-      lastAction === 'supplier-added'
+      lastAction === 'supplier-added' &&
+      hasSupplier // ✅ NEW: Only trigger if supplier is present
     )
     
     if (wasJustAdded) {
- 
       setIsNewlyAdded(true)
       
       // Reset after animation duration + buffer
@@ -26,7 +26,7 @@ export const useCheckIfNewlyAdded = (supplierType) => {
       
       return () => clearTimeout(resetTimer)
     }
-  }, [searchParams, supplierType])
+  }, [searchParams, supplierType, hasSupplier])
 
   return isNewlyAdded
 }

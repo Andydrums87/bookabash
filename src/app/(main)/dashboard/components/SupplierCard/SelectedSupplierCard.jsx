@@ -1,11 +1,12 @@
 "use client"
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Gift, X, ChevronDown, ChevronUp, Info, Users } from "lucide-react"
+import { Gift, X, ChevronDown, ChevronUp, Info, Users, Eye } from "lucide-react"
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
 import { useCheckIfNewlyAdded } from "@/hooks/useCheckIfNewlyAdded"
 import {
@@ -21,7 +22,7 @@ import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEnter
 export default function SelectedSupplierCard({
   type,
   supplier,
-  addons = [], // Default to empty array
+  addons = [],
   partyDetails,
   isLoading,
   isDeleting,
@@ -31,10 +32,11 @@ export default function SelectedSupplierCard({
   getSupplierDisplayName,
   onClick
 }) {
+  const router = useRouter()
   const [showAddons, setShowAddons] = useState(false)
 
-  const isNewlyAdded = useCheckIfNewlyAdded(type)
-  
+  const isNewlyAdded = useCheckIfNewlyAdded(type, !!supplier)
+
   const handleAnimationComplete = () => {
     console.log(`Animation completed for ${supplier?.name || type}`)
   }
@@ -57,13 +59,11 @@ export default function SelectedSupplierCard({
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
 
-  // FIXED: Always calculate fresh pricing - no more enhanced price checks
+  // Calculate fresh pricing
   const pricing = useMemo(() => {
     if (!supplier) {
       return { finalPrice: 0, breakdown: {}, details: {} }
     }
-
-    // ALWAYS use fresh calculation - never use pre-enhanced prices
     return calculateFinalPrice(supplier, partyDetails, addons)
   }, [supplier, partyDetails, addons, type])
   
@@ -137,8 +137,6 @@ export default function SelectedSupplierCard({
                     <Badge className="bg-blue-500 text-white border-blue-400 shadow-lg backdrop-blur-sm">
                       Selected
                     </Badge>
-                    
-                 
                   </div>
                   <button
                     onClick={(e) => {
@@ -165,14 +163,12 @@ export default function SelectedSupplierCard({
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                       {supplier.name}
                     </h3>
-                    {/* <p className="text-sm text-white/90 mb-4 line-clamp-2 drop-shadow">{supplier.description}</p> */}
                     
                     <div className="flex items-center justify-between">
                       <div className="text-white">
                         <div className="flex items-center gap-2">
                           <span className="text-3xl font-black drop-shadow-lg">£{displayPrice}</span>
                           
-                          {/* Tooltip for Additional Entertainers */}
                           {needsAdditionalEntertainers && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -223,7 +219,6 @@ export default function SelectedSupplierCard({
                           )}
                         </div>
                         
-                        {/* Show compact price breakdown for other premiums */}
                         {(showDurationInfo || showWeekendInfo) && !needsAdditionalEntertainers && (
                           <div className="text-xs text-white/90 mt-1 drop-shadow">
                              £{pricing.breakdown.base}
@@ -294,13 +289,20 @@ export default function SelectedSupplierCard({
               className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white shadow-lg"
               onClick={(e) => {
                 e.stopPropagation()
-                openSupplierModal(type)
+                if (supplier?.id) {
+                  router.push(`/supplier/${supplier.id}?from=dashboard`)
+                }
               }}
               disabled={isDeleting}
               size="lg"
-              data-tour={`change-supplier-${type}`}
+              data-tour={`view-supplier-${type}`}
             >
-              {isDeleting ? "Removing..." : `Change ${getDisplayName(type)}`}
+              {isDeleting ? "Removing..." : (
+                <div className="flex items-center justify-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  <span>View Details</span>
+                </div>
+              )}
             </Button>
           </div>
         </Card>

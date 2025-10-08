@@ -599,7 +599,14 @@ const packagesWithSmartPricing = useMemo(() => {
               bookingTimeSlot: bookingTimeSlot,
               weekendPremium: supplier.weekendPremium,
               weekendPremiumApplied: pricingResult.breakdown.weekend > 0,
-              weekendPremiumAmount: pricingResult.breakdown.weekend
+              weekendPremiumAmount: pricingResult.breakdown.weekend,
+              supplierId: supplier.id,
+              supplierName: supplier.name,
+              supplierType: supplier.category?.toLowerCase() === 'venues' || supplier.category?.toLowerCase() === 'venue' ? 'venue' : supplier.category?.toLowerCase(),
+              attachedToSupplier: supplier.category?.toLowerCase() === 'venues' || supplier.category?.toLowerCase() === 'venue' ? 'venue' : supplier.category?.toLowerCase(),
+              category: supplier.category,
+              parentSupplierId: supplier.id, // Backup reference
+              parentSupplierName: supplier.name // Backup reference
             }
             return await addAddon(addonDataToAdd)
           }

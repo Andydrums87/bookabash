@@ -25,7 +25,7 @@ const MicroConfettiWrapper = ({
   }, [isNewlyAdded, duration, onAnimationComplete])
 
   return (
-    <div className="relative">
+    <div className={`relative ${showEffect ? 'animate-card-shake' : ''}`}>
       {children}
       
       {/* Snappy success badge */}
@@ -64,8 +64,60 @@ const MicroConfettiWrapper = ({
           }
         }
         
+        /* Option 1: Gentle bounce/pop */
+        @keyframes card-bounce {
+          0% { 
+            transform: scale(1); 
+          }
+          25% { 
+            transform: scale(1.05); 
+          }
+          50% { 
+            transform: scale(0.98); 
+          }
+          75% { 
+            transform: scale(1.02); 
+          }
+          100% { 
+            transform: scale(1); 
+          }
+        }
+        
+        /* Option 2: Subtle pulse with glow */
+        @keyframes card-pulse {
+          0%, 100% { 
+            transform: scale(1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          }
+          50% { 
+            transform: scale(1.02);
+            box-shadow: 0 15px 50px rgba(6, 214, 160, 0.3);
+          }
+        }
+        
+        /* Option 3: Slide up with fade in */
+        @keyframes card-slide-up {
+          0% { 
+            transform: translateY(10px);
+            opacity: 0.7;
+          }
+          100% { 
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
         .animate-snappy-slide-in {
           animation: snappy-slide-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* Change this to try different effects:
+           - animate-card-bounce
+           - animate-card-pulse  
+           - animate-card-slide-up
+        */
+        .animate-card-shake {
+          animation: card-bounce 0.5s ease-out;
         }
       `}</style>
     </div>

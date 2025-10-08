@@ -125,12 +125,8 @@ export class LocationService {
       const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
       return postcodeRegex.test(cleaned) || areaOnlyRegex.test(cleaned);
     }
-    
-    // Main distance checking function
     static arePostcodesNearby(supplierLocation, targetLocation, maxDistance = 'district') {
       if (!supplierLocation || !targetLocation) return true;
-      
-    
       
       // Extract postcodes from venue strings if needed
       let supplierPostcode = supplierLocation;
@@ -141,7 +137,6 @@ export class LocationService {
         const extractedPostcode = this.extractPostcodeFromVenueString(targetLocation);
         if (extractedPostcode) {
           targetPostcode = extractedPostcode;
- 
         }
       }
       
@@ -150,7 +145,6 @@ export class LocationService {
         const extractedPostcode = this.extractPostcodeFromVenueString(supplierLocation);
         if (extractedPostcode) {
           supplierPostcode = extractedPostcode;
-      
         }
       }
       
@@ -158,56 +152,61 @@ export class LocationService {
       const supplierIsValidPostcode = this.isValidPostcode(supplierPostcode);
       const targetIsValidPostcode = this.isValidPostcode(targetPostcode);
       
-    
-      
       // Handle descriptive locations (mock suppliers)
       if (supplierIsDescriptive) {
         if (maxDistance === 'all' || maxDistance === 'wide') {
-  
           return true;
         } else {
-
           return false;
         }
       }
       
       // If target location is not a valid postcode, be more lenient
       if (!targetIsValidPostcode) {
-
         return true;
       }
       
       // If supplier doesn't have a valid postcode but target does, only allow for wide coverage
       if (!supplierIsValidPostcode && targetIsValidPostcode) {
- 
         return maxDistance === 'all' || maxDistance === 'wide';
       }
       
       // Both have valid postcodes - do proper distance checking
       const supplierArea = this.getPostcodeArea(supplierPostcode);
       const targetArea = this.getPostcodeArea(targetPostcode);
+      const supplierDistrict = this.getPostcodeDistrict(supplierPostcode);
+      const targetDistrict = this.getPostcodeDistrict(targetPostcode);
       
-
+      // ✅ EXACT POSTCODE MATCH (highest priority) - Always return true with high confidence
+      const normalizedSupplier = supplierPostcode.toUpperCase().replace(/\s/g, '');
+      const normalizedTarget = targetPostcode.toUpperCase().replace(/\s/g, '');
       
-      // Exact postcode match (highest priority)
-      if (supplierPostcode.toUpperCase().replace(/\s/g, '') === targetPostcode.toUpperCase().replace(/\s/g, '')) {
-    
-        return true;
+      if (normalizedSupplier === normalizedTarget) {
+        console.log(`🎯 EXACT postcode match: ${supplierPostcode} === ${targetPostcode}`);
+        return true; // Always allow exact matches regardless of maxDistance
       }
       
-      // Same area match
+      // ✅ SAME DISTRICT MATCH (e.g., W4 4BZ and W4 5XX) - Very close
+      if (supplierDistrict === targetDistrict) {
+        console.log(`📍 Same district match: ${supplierDistrict}`);
+        return true; // Same district is close enough for venues
+      }
+      
+      // ✅ SAME AREA MATCH (e.g., W4 and W3) - Nearby in same area
       if (supplierArea === targetArea) {
-
+        console.log(`📍 Same area match: ${supplierArea}`);
+        // For venues (maxDistance === 'exact'), same area is acceptable
+        // W3 and W4 are both West London, very close
         return true;
       }
       
-      // Adjacent areas based on distance setting
+      // For exact distance requirement (venues), stop here if not same area
       if (maxDistance === 'exact') {
-
+        console.log(`❌ Different areas: ${supplierArea} vs ${targetArea}, maxDistance=exact`);
         return false;
       }
       
-      // Adjacent areas (London adjacency map)
+      // Adjacent areas (London adjacency map) - for wider search
       const londonAdjacency = {
         'SW': ['SE', 'W', 'TW', 'CR', 'SM'],
         'SE': ['SW', 'E', 'BR', 'DA', 'TN'],
@@ -220,12 +219,12 @@ export class LocationService {
       const isAdjacent = londonAdjacency[supplierArea]?.includes(targetArea) || 
                         londonAdjacency[targetArea]?.includes(supplierArea);
       
-      if (isAdjacent) {
-     
+      if (isAdjacent && (maxDistance === 'district' || maxDistance === 'wide' || maxDistance === 'all')) {
+        console.log(`📍 Adjacent areas: ${supplierArea} <-> ${targetArea}`);
         return true;
       }
       
- 
+      console.log(`❌ Too far: ${supplierArea} vs ${targetArea}`);
       return false;
     }
     

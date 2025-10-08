@@ -296,6 +296,124 @@ class PartyBuilderBackend {
     };
   }
 
+// In partyBuilderBackend.js
+// Replace the selectMultipleVenuesForCarousel method with this updated version:
+
+selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 5) {
+  console.log(`🎪 Selecting top ${count} venues for carousel...`);
+  console.log(`📍 Party location: ${location}`);
+  
+  const venueSuppliers = suppliers.filter(s => s.category === 'Venues');
+  
+  if (venueSuppliers.length === 0) {
+    return { venues: [], mainVenue: null };
+  }
+  
+  // Score and sort all venues - LOCATION AND AVAILABILITY ONLY
+  const scoredVenues = venueSuppliers.map(venue => {
+    const availabilityCheck = this.checkSupplierAvailability(venue, new Date(date), timeSlot);
+    const locationCheck = this.checkSupplierLocation(venue, location);
+    
+    // Set up basic package
+    const basicPackage = this.getBasicPackageForSupplier(venue, theme);
+    
+    const enhancedVenue = {
+      ...venue,
+      packageData: basicPackage,
+      originalPrice: venue.priceFrom || venue.price || 0
+    };
+    
+    // Calculate pricing
+    const pricingResult = calculateFinalPrice(enhancedVenue, partyDetails, []);
+    enhancedVenue.enhancedPrice = pricingResult.finalPrice;
+    enhancedVenue.enhancedPricing = pricingResult;
+    
+    // ✅ NEW SCORING: Location is PRIMARY, then availability
+    let compositeScore = 0;
+    
+    // LOCATION SCORING (0-100 points)
+    if (locationCheck.canServe) {
+      if (locationCheck.confidence === 'exact') {
+        compositeScore += 150; // Exact postcode match - highest priority
+        console.log(`  📍 ${venue.name}: EXACT MATCH location (+150)`);
+      } else if (locationCheck.confidence === 'high') {
+        compositeScore += 100; // Same district or same area
+        console.log(`  📍 ${venue.name}: HIGH confidence location match (+100)`);
+      } else {
+        compositeScore += 50; // Nearby
+        console.log(`  📍 ${venue.name}: MEDIUM confidence location match (+50)`);
+      }
+    } else {
+      compositeScore -= 100; // Cannot serve this location - major penalty
+      console.log(`  📍 ${venue.name}: CANNOT serve location (-100)`);
+    }
+    
+    // AVAILABILITY SCORING (0-50 points)
+    if (availabilityCheck.available) {
+      if (availabilityCheck.confidence === 'high') {
+        compositeScore += 50; // Definitely available
+        console.log(`  ✅ ${venue.name}: HIGH confidence availability (+50)`);
+      } else {
+        compositeScore += 25; // Might be available
+        console.log(`  ✅ ${venue.name}: MEDIUM confidence availability (+25)`);
+      }
+    } else {
+      compositeScore -= 50; // Not available - penalty
+      console.log(`  ❌ ${venue.name}: NOT available (-50)`);
+    }
+    
+    // RATING BONUS (0-10 points) - minor factor
+    if (venue.rating) {
+      const ratingBonus = venue.rating * 2;
+      compositeScore += ratingBonus;
+      console.log(`  ⭐ ${venue.name}: Rating bonus +${ratingBonus}`);
+    }
+    
+    console.log(`  🎯 ${venue.name}: TOTAL SCORE = ${compositeScore}`);
+    
+    return {
+      ...enhancedVenue,
+      compositeScore,
+      locationScore: locationCheck.canServe ? 
+      (locationCheck.confidence === 'exact' ? 150 : 
+       locationCheck.confidence === 'high' ? 100 : 50) : -100,
+      availabilityScore: availabilityCheck.available ? (availabilityCheck.confidence === 'high' ? 50 : 25) : -50,
+      availabilityCheck,
+      locationCheck,
+      isAvailable: availabilityCheck.available,
+      canServeLocation: locationCheck.canServe
+    };
+  });
+  
+  // Sort by composite score (location-first, then availability)
+  const sortedVenues = scoredVenues.sort((a, b) => {
+    // First sort by composite score
+    if (b.compositeScore !== a.compositeScore) {
+      return b.compositeScore - a.compositeScore;
+    }
+    
+    // If scores are equal, prefer higher rating
+    return (b.rating || 0) - (a.rating || 0);
+  });
+  
+  // Take top N venues
+  const topVenues = sortedVenues.slice(0, Math.min(count, sortedVenues.length));
+  
+  console.log(`\n✅ Selected ${topVenues.length} venues for carousel:`);
+  topVenues.forEach((v, i) => {
+    console.log(`  ${i + 1}. ${v.name}`);
+    console.log(`     Location: ${v.locationScore > 0 ? '✓' : '✗'} (${v.locationScore})`);
+    console.log(`     Available: ${v.availabilityScore > 0 ? '✓' : '✗'} (${v.availabilityScore})`);
+    console.log(`     Total Score: ${v.compositeScore}`);
+    console.log(`     Price: £${v.enhancedPrice}`);
+  });
+  
+  return {
+    venues: topVenues,
+    mainVenue: topVenues[0]
+  };
+}
+
   // Comprehensive availability checking
   checkSupplierAvailability(supplier, date, timeSlot) {
     if (!supplier || !date) {
@@ -452,28 +570,75 @@ class PartyBuilderBackend {
     }
   }
 
-  // Location checking with fallback
-  checkSupplierLocation(supplier, partyLocation) {
-    if (!supplier.location || !partyLocation) {
-      return { canServe: true, reason: 'no-location-data', confidence: 'medium' };
+ // In partyBuilderBackend.js - Replace checkSupplierLocation method
+
+checkSupplierLocation(supplier, partyLocation) {
+  if (!supplier.location || !partyLocation) {
+    return { canServe: true, reason: 'no-location-data', confidence: 'medium' };
+  }
+  
+  try {
+    // Normalize postcodes for comparison
+    const normalizePostcode = (pc) => pc.replace(/\s+/g, '').toUpperCase();
+    const supplierPostcode = normalizePostcode(supplier.location);
+    const partyPostcode = normalizePostcode(partyLocation);
+    
+    // ✅ CHECK FOR EXACT POSTCODE MATCH FIRST
+    if (supplierPostcode === partyPostcode) {
+      console.log(`🎯 EXACT MATCH: ${supplier.name} at ${supplier.location} matches party at ${partyLocation}`);
+      return {
+        canServe: true,
+        reason: 'exact-postcode-match',
+        confidence: 'exact' // ← Changed from 'high' to 'exact'
+      };
     }
     
-    try {
-      const serviceRadius = LocationService.getServiceRadiusForSupplier(supplier);
-      const canServe = LocationService.arePostcodesNearby(supplier.location, partyLocation, serviceRadius);
-      
+    // ✅ CHECK FOR SAME DISTRICT (e.g., W4 4BZ and W4 5XX)
+    const supplierDistrict = LocationService.getPostcodeDistrict(supplier.location);
+    const partyDistrict = LocationService.getPostcodeDistrict(partyLocation);
+    
+    if (supplierDistrict && partyDistrict && supplierDistrict === partyDistrict) {
+      console.log(`📍 SAME DISTRICT: ${supplier.name} at ${supplierDistrict} matches party district`);
       return {
-        canServe,
-        reason: canServe ? 'location-within-range' : 'location-too-far',
+        canServe: true,
+        reason: 'same-district',
         confidence: 'high'
       };
-    } catch (error) {
-      console.warn(`Location check failed for ${supplier.name}:`, error);
-      return { canServe: true, reason: 'location-check-error', confidence: 'low' };
     }
+    
+    // ✅ CHECK FOR SAME AREA (e.g., W4 and W3 - both West London)
+    const supplierArea = LocationService.getPostcodeArea(supplier.location);
+    const partyArea = LocationService.getPostcodeArea(partyLocation);
+    
+    if (supplierArea && partyArea && supplierArea === partyArea) {
+      console.log(`📍 SAME AREA: ${supplier.name} at ${supplierArea} matches party area (${partyArea})`);
+      return {
+        canServe: true,
+        reason: 'same-area',
+        confidence: 'high' // Changed from medium to high for same area
+      };
+    }
+    
+    // Use LocationService for other checks (adjacent areas, etc.)
+    const serviceRadius = LocationService.getServiceRadiusForSupplier(supplier);
+    const canServe = LocationService.arePostcodesNearby(supplier.location, partyLocation, serviceRadius);
+    
+    if (canServe) {
+      console.log(`📍 NEARBY: ${supplier.name} can serve ${partyLocation}`);
+    } else {
+      console.log(`❌ TOO FAR: ${supplier.name} at ${supplier.location} too far from ${partyLocation}`);
+    }
+    
+    return {
+      canServe,
+      reason: canServe ? 'location-within-range' : 'location-too-far',
+      confidence: canServe ? 'medium' : 'low'
+    };
+  } catch (error) {
+    console.warn(`Location check failed for ${supplier.name}:`, error);
+    return { canServe: true, reason: 'location-check-error', confidence: 'low' };
   }
-
-  // ✅ UPDATED: Improved supplier selection with package setup and unified pricing
+}
   selectSuppliersForParty({
     suppliers, 
     themedEntertainment, 
@@ -491,7 +656,7 @@ class PartyBuilderBackend {
     const guests = parseInt(guestCount);
     const isLargeParty = guests >= 30;
     
-    // ✅ NEW: Create party details object for pricing calculations
+    // Create party details object for pricing calculations
     const partyDetails = {
       date: new Date(date),
       duration,
@@ -505,18 +670,32 @@ class PartyBuilderBackend {
     let budgetAllocation, includedCategories;
     
     if (budget <= 500) {
-      includedCategories = ['venue', 'entertainment', 'cakes', ];
-      budgetAllocation = { venue: 0.45, entertainment: 0.35, cakes: 0.15 };
+      // NOTE: Venue is handled separately in buildParty now
+      includedCategories = ['entertainment', 'cakes'];
+      budgetAllocation = { entertainment: 0.55, cakes: 0.25 }; // Adjusted since venue is separate
     } else if (budget <= 700) {
-      includedCategories = ['venue', 'entertainment', 'cakes'];
-      budgetAllocation = { venue: 0.35, entertainment: 0.35, cakes: 0.25 };
+      includedCategories = ['entertainment', 'cakes'];
+      budgetAllocation = { entertainment: 0.50, cakes: 0.30 };
     } else {
-      includedCategories = ['venue', 'entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
+      includedCategories = ['entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
       if (isLargeParty) {
-        budgetAllocation = { venue: 0.25, entertainment: 0.25, cakes: 0.15, decorations: 0.08, activities: 0.15, partyBags: 0.04, softPlay: 0.08 };
+        budgetAllocation = { 
+          entertainment: 0.30, 
+          cakes: 0.20, 
+          decorations: 0.10, 
+          activities: 0.20, 
+          partyBags: 0.05, 
+          softPlay: 0.10 
+        };
         includedCategories.push('softPlay');
       } else {
-        budgetAllocation = { venue: 0.25, entertainment: 0.30, cakes: 0.20, decorations: 0.15, activities: 0.06, partyBags: 0.04 };
+        budgetAllocation = { 
+          entertainment: 0.35, 
+          cakes: 0.25, 
+          decorations: 0.20, 
+          activities: 0.10, 
+          partyBags: 0.05 
+        };
       }
     }
     
@@ -583,98 +762,142 @@ class PartyBuilderBackend {
       }
     }
     
-    // Summary
+    // Summary (excluding venue since it's handled separately)
     const totalCost = Object.values(selected).reduce((sum, supplier) => sum + (supplier.enhancedPrice || supplier.priceFrom || 0), 0);
     const budgetUsed = Math.round((totalCost / budget) * 100);
     
-    console.log(`Party selection complete. Total cost: £${totalCost} (${budgetUsed}% of £${budget} budget)`);
+    console.log(`Supplier selection complete. Total cost (excluding venue): £${totalCost} (${budgetUsed}% of £${budget} budget)`);
     
     return selected;
   }
 
-  convertSuppliersToPartyPlan(selectedSuppliers) {
-    const partyPlan = {
-      venue: null,
-      entertainment: null,
-      cakes: null,
-      catering: null,
-      facePainting: null,
-      activities: null,
-      partyBags: null,
-      decorations: null,
-      balloons: null,
-      softPlay: null,
-      einvites: {
-        id: "digital-invites",
-        name: "Digital Themed Invites",
-        description: "Themed e-invitations with RSVP tracking",
-        price: 25,
-        status: "confirmed",
-        image: "/placeholder.jpg",
-        category: "Digital Services",
-        priceUnit: "per set",
-        addedAt: new Date().toISOString()
-      },
-      addons: []
-    };
-  
-    Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
-      if (supplier && partyPlan.hasOwnProperty(category)) {
-        
-        console.log(`🔍 Converting ${supplier.name} to party plan:`, {
-          originalPrice: supplier.originalPrice,
-          enhancedPrice: supplier.enhancedPrice,
-          hasWeekendPremium: !!supplier.weekendPremium,
-          weekendPremiumConfig: supplier.weekendPremium
-        });
-        
-        partyPlan[category] = {
-          id: supplier.id,
-          name: supplier.name,
-          description: supplier.description || '',
-          
-          // ✅ FIXED: Store base price for dynamic calculation, not enhanced price
-          // To this (add debugging to see what's happening):
-price: (() => {
-  const finalPrice = supplier.enhancedPrice || supplier.priceFrom || 0;
-  console.log(`💾 STORING ${supplier.name}: enhancedPrice=${supplier.enhancedPrice}, priceFrom=${supplier.priceFrom}, storing=${finalPrice}`);
-  return finalPrice;
-})(),
-          originalPrice: supplier.originalPrice || supplier.priceFrom || 0,
-          
-          status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
-          image: supplier.image || '',
-          category: supplier.category || category,
-          priceUnit: supplier.priceUnit || "per event",
-          addedAt: new Date().toISOString(),
-          
-          // ✅ FIXED: Preserve ALL pricing configuration for dynamic calculation
-          packageData: supplier.packageData,
-          
-          // ✅ CRITICAL: Preserve weekend premium configuration
-          weekendPremium: supplier.weekendPremium,
-          extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate || 0,
-          serviceDetails: supplier.serviceDetails,
-          
-          originalSupplier: {
-            ...supplier,
-            // ✅ CRITICAL: Ensure weekend premium is preserved in original supplier
-            weekendPremium: supplier.weekendPremium,
-            extraHourRate: supplier.extraHourRate,
-            serviceDetails: supplier.serviceDetails
-          },
-          isFallbackSelection: supplier.isFallbackSelection || false
-        };
-        
-        console.log(`✅ Stored ${supplier.name} with weekend premium:`, {
-          storedWeekendPremium: partyPlan[category].weekendPremium,
-          originalSupplierWeekendPremium: partyPlan[category].originalSupplier.weekendPremium
-        });
-      }
-    });
+// partyBuilderBackend.js - COMPLETE convertSuppliersToPartyPlan method replacement
+
+convertSuppliersToPartyPlan(selectedSuppliers) {
+  const partyPlan = {
+    venue: null,
+    venueCarouselOptions: [], // NEW: Store all venue options for carousel
+    entertainment: null,
+    cakes: null,
+    catering: null,
+    facePainting: null,
+    activities: null,
+    partyBags: null,
+    decorations: null,
+    balloons: null,
+    softPlay: null,
+    einvites: {
+      id: "digital-invites",
+      name: "Digital Themed Invites",
+      description: "Themed e-invitations with RSVP tracking",
+      price: 25,
+      status: "confirmed",
+      image: "/placeholder.jpg",
+      category: "Digital Services",
+      priceUnit: "per set",
+      addedAt: new Date().toISOString()
+    },
+    addons: []
+  };
+
+  // ========================================
+  // NEW: Store venue carousel options
+  // ========================================
+  if (selectedSuppliers.venueCarouselOptions && selectedSuppliers.venueCarouselOptions.length > 0) {
+    console.log(`💾 Storing ${selectedSuppliers.venueCarouselOptions.length} venue options for carousel`);
     
-    return partyPlan;
+    partyPlan.venueCarouselOptions = selectedSuppliers.venueCarouselOptions.map(venue => ({
+      id: venue.id,
+      name: venue.name,
+      description: venue.description || '',
+      price: venue.enhancedPrice || venue.priceFrom || 0,
+      originalPrice: venue.originalPrice || venue.priceFrom || 0,
+      status: "carousel_option",
+      image: venue.image || '',
+      category: venue.category || 'Venues',
+      priceUnit: venue.priceUnit || "per event",
+      location: venue.location,
+      capacity: venue.capacity,
+      rating: venue.rating,
+      addedAt: new Date().toISOString(),
+      
+      // Preserve all pricing configuration for dynamic calculation
+      packageData: venue.packageData,
+      weekendPremium: venue.weekendPremium,
+      extraHourRate: venue.extraHourRate || venue.serviceDetails?.extraHourRate || 0,
+      serviceDetails: venue.serviceDetails,
+      
+      // Store the complete original supplier for full functionality
+      originalSupplier: {
+        ...venue,
+        weekendPremium: venue.weekendPremium,
+        extraHourRate: venue.extraHourRate,
+        serviceDetails: venue.serviceDetails
+      },
+      
+      // Store composite score for reference
+      compositeScore: venue.compositeScore,
+      isAvailable: venue.isAvailable,
+      canServeLocation: venue.canServeLocation
+    }));
+    
+    console.log('✅ Venue carousel options stored:', partyPlan.venueCarouselOptions.map(v => v.name).join(', '));
   }
+
+  // Process all other suppliers (including main venue)
+  Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
+    // Skip the carousel options array itself
+    if (category === 'venueCarouselOptions') return;
+    
+    if (supplier && partyPlan.hasOwnProperty(category)) {
+      console.log(`🔍 Converting ${supplier.name} to party plan:`, {
+        originalPrice: supplier.originalPrice,
+        enhancedPrice: supplier.enhancedPrice,
+        hasWeekendPremium: !!supplier.weekendPremium,
+        weekendPremiumConfig: supplier.weekendPremium
+      });
+      
+      partyPlan[category] = {
+        id: supplier.id,
+        name: supplier.name,
+        description: supplier.description || '',
+        
+        // Store enhanced price for display
+        price: supplier.enhancedPrice || supplier.priceFrom || 0,
+        originalPrice: supplier.originalPrice || supplier.priceFrom || 0,
+        
+        status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
+        image: supplier.image || '',
+        category: supplier.category || category,
+        priceUnit: supplier.priceUnit || "per event",
+        addedAt: new Date().toISOString(),
+        
+        // Preserve ALL pricing configuration for dynamic calculation
+        packageData: supplier.packageData,
+        
+        // CRITICAL: Preserve weekend premium configuration
+        weekendPremium: supplier.weekendPremium,
+        extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate || 0,
+        serviceDetails: supplier.serviceDetails,
+        
+        originalSupplier: {
+          ...supplier,
+          weekendPremium: supplier.weekendPremium,
+          extraHourRate: supplier.extraHourRate,
+          serviceDetails: supplier.serviceDetails
+        },
+        isFallbackSelection: supplier.isFallbackSelection || false
+      };
+      
+      console.log(`✅ Stored ${supplier.name} with weekend premium:`, {
+        storedWeekendPremium: partyPlan[category].weekendPremium,
+        originalSupplierWeekendPremium: partyPlan[category].originalSupplier.weekendPremium
+      });
+    }
+  });
+  
+  return partyPlan;
+}
 
   // Map dashboard categories to supplier categories
   mapCategoryToSupplierCategory(dashboardCategory) {
@@ -690,104 +913,135 @@ price: (() => {
     return mapping[dashboardCategory] || dashboardCategory;
   }
 
-  // ✅ UPDATED: Main party building method with enhanced pricing
-  async buildParty(partyDetails) {
-    try {
-      const {
-        date, theme, guestCount, location, budget,
-        childAge = 6, childName = "Snappy The Crocodile",
-        firstName = "Snappy", lastName = "The Crocodile",
-        timeSlot, duration = 2, time
-      } = partyDetails;
+// partyBuilderBackend.js - COMPLETE buildParty method replacement
 
-      // Smart budget handling
-      let finalBudget = budget && budget > 0 ? budget : this.getDefaultBudgetForGuests(guestCount);
-      
-      // Handle time slot conversion
-      let processedTimeSlot = timeSlot;
-      if (!timeSlot && time) {
-        const hour = parseInt(time.split(':')[0]);
-        processedTimeSlot = hour < 13 ? 'morning' : 'afternoon';
-      }
-      if (!processedTimeSlot) {
-        processedTimeSlot = 'afternoon';
-      }
+async buildParty(partyDetails) {
+  try {
+    const {
+      date, theme, guestCount, location, budget,
+      childAge = 6, childName = "Snappy The Crocodile",
+      firstName = "Snappy", lastName = "The Crocodile",
+      timeSlot, duration = 2, time
+    } = partyDetails;
 
-      // Handle name processing
-      let processedFirstName = firstName;
-      let processedLastName = lastName;
-      if (!firstName && !lastName && childName) {
-        const nameParts = childName.split(' ');
-        processedFirstName = nameParts[0] || "Snappy";
-        processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
-      }
-
-      console.log(`Building party for ${processedFirstName} ${processedLastName} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
-
-      // Get suppliers
-      const allSuppliers = await suppliersAPI.getAllSuppliers();
-      const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
-      
-      // Select suppliers with enhanced pricing
-      const selectedSuppliers = this.selectSuppliersForParty({
-        suppliers: allSuppliers,
-        themedEntertainment,
-        theme,
-        guestCount,
-        location,
-        budget: finalBudget,
-        childAge,
-        timeSlot: processedTimeSlot,
-        duration,
-        date
-      });
-
-      // ✅ UPDATED: Create party plan with enhanced pricing
-      const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
-      
-      // Save to localStorage
-      const enhancedPartyDetails = {
-        ...partyDetails,
-        budget: finalBudget,
-        timeSlot: processedTimeSlot,
-        duration,
-        firstName: processedFirstName,
-        lastName: processedLastName,
-        childName: `${processedFirstName} ${processedLastName}`.trim(),
-        time: time || this.convertTimeSlotToTime(processedTimeSlot),
-        displayTimeSlot: this.formatTimeSlotForDisplay(processedTimeSlot),
-        displayDuration: this.formatDurationForDisplay(duration)
-      };
-
-      this.savePartyDetailsToLocalStorage(enhancedPartyDetails);
-      this.savePartyPlanToLocalStorage(partyPlan);
-
-      const totalCost = this.calculateTotalCost(partyPlan);
-
-      console.log(`Party built successfully! Total cost: £${totalCost} (Budget: £${finalBudget})`);
-
-      return {
-        success: true,
-        partyPlan,
-        selectedSuppliers,
-        totalCost,
-        theme: THEMES[theme] || { name: theme },
-        budget: finalBudget,
-        timeSlot: processedTimeSlot,
-        duration,
-        timeWindow: this.getTimeWindowForSlot(processedTimeSlot),
-        fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length,
-        enhancedPricingUsed: true // ✅ NEW: Flag to indicate enhanced pricing was used
-      };
-
-    } catch (error) {
-      console.error('Error building party:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+    // Smart budget handling
+    let finalBudget = budget && budget > 0 ? budget : this.getDefaultBudgetForGuests(guestCount);
+    
+    // Handle time slot conversion
+    let processedTimeSlot = timeSlot;
+    if (!timeSlot && time) {
+      const hour = parseInt(time.split(':')[0]);
+      processedTimeSlot = hour < 13 ? 'morning' : 'afternoon';
     }
+    if (!processedTimeSlot) {
+      processedTimeSlot = 'afternoon';
+    }
+
+    // Handle name processing
+    let processedFirstName = firstName;
+    let processedLastName = lastName;
+    if (!firstName && !lastName && childName) {
+      const nameParts = childName.split(' ');
+      processedFirstName = nameParts[0] || "Snappy";
+      processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
+    }
+
+    console.log(`Building party for ${processedFirstName} ${processedLastName} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
+
+    // Create enhanced party details for pricing
+    const enhancedPartyDetails = {
+      ...partyDetails,
+      budget: finalBudget,
+      timeSlot: processedTimeSlot,
+      duration,
+      firstName: processedFirstName,
+      lastName: processedLastName,
+      childName: `${processedFirstName} ${processedLastName}`.trim(),
+      time: time || this.convertTimeSlotToTime(processedTimeSlot),
+      displayTimeSlot: this.formatTimeSlotForDisplay(processedTimeSlot),
+      displayDuration: this.formatDurationForDisplay(duration)
+    };
+
+    // Get suppliers
+    const allSuppliers = await suppliersAPI.getAllSuppliers();
+    const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
+    
+    // ========================================
+    // NEW: Get multiple venues for carousel
+    // ========================================
+    console.log('🎪 Selecting venues for carousel...');
+    const venueCarouselResult = this.selectMultipleVenuesForCarousel(
+      allSuppliers,
+      theme,
+      processedTimeSlot,
+      duration,
+      date,
+      location,
+      finalBudget * 0.35, // Venue budget allocation
+      enhancedPartyDetails,
+      5 // Get 5 venues for carousel
+    );
+
+    // Select other suppliers (entertainment, cakes, etc.)
+    const selectedSuppliers = this.selectSuppliersForParty({
+      suppliers: allSuppliers,
+      themedEntertainment,
+      theme,
+      guestCount,
+      location,
+      budget: finalBudget,
+      childAge,
+      timeSlot: processedTimeSlot,
+      duration,
+      date
+    });
+
+    // ========================================
+    // NEW: Override venue with carousel result
+    // ========================================
+    if (venueCarouselResult.mainVenue) {
+      selectedSuppliers.venue = venueCarouselResult.mainVenue;
+      console.log(`✅ Main venue: ${venueCarouselResult.mainVenue.name}`);
+    }
+    
+    // Store all venue options for carousel
+    selectedSuppliers.venueCarouselOptions = venueCarouselResult.venues;
+    console.log(`✅ Total venue options: ${venueCarouselResult.venues.length}`);
+
+    // Create party plan with venue carousel options
+    const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
+    
+    // Save to localStorage
+    this.savePartyDetailsToLocalStorage(enhancedPartyDetails);
+    this.savePartyPlanToLocalStorage(partyPlan);
+
+    const totalCost = this.calculateTotalCost(partyPlan);
+
+    console.log(`Party built successfully! Total cost: £${totalCost} (Budget: £${finalBudget})`);
+
+    return {
+      success: true,
+      partyPlan,
+      selectedSuppliers,
+      totalCost,
+      theme: THEMES[theme] || { name: theme },
+      budget: finalBudget,
+      timeSlot: processedTimeSlot,
+      duration,
+      timeWindow: this.getTimeWindowForSlot(processedTimeSlot),
+      fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length,
+      enhancedPricingUsed: true,
+      venueCarouselOptions: venueCarouselResult.venues // NEW: Include in response
+    };
+
+  } catch (error) {
+    console.error('Error building party:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
+}
 
   // ✅ UPDATED: Calculate total cost using enhanced pricing
   calculateTotalCost(partyPlan) {

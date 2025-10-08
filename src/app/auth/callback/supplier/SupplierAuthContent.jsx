@@ -116,6 +116,7 @@ export default function SupplierAuthCallback() {
         setCurrentStep(2)
         await new Promise((resolve) => setTimeout(resolve, 1000))
         console.log("🔍 DEBUG: Checking for existing supplier profile...")
+        
         // Check if supplier profile exists
         const { data: supplierData, error: supplierError } = await supabase
           .from("suppliers")
@@ -143,15 +144,18 @@ export default function SupplierAuthCallback() {
           }))
           
           const step = searchParams.get("step")
-            const redirectUrl = step === "onboarding" 
-                ? buildUrl('/suppliers/onboarding/success')  // From onboarding
-                : buildUrl('/suppliers/dashboard')           // From regular sign-in
+          const redirectUrl = step === "onboarding" 
+            ? buildUrl('/suppliers/onboarding/success')
+            : buildUrl('/suppliers/dashboard')
     
-                    window.location.href = redirectUrl
-                    return
+          window.location.href = redirectUrl
+          return
         }
 
-        // Check for onboarding draft
+        // No existing supplier - check if they have a customer account
+        console.log("🔍 No supplier found, checking if this is a customer account...")
+        
+        // Check for onboarding draft first
         const { data: draft, error: draftError } = await supabase
           .from("onboarding_drafts")
           .select("*")
@@ -159,7 +163,7 @@ export default function SupplierAuthCallback() {
           .maybeSingle()
 
         if (draft) {
-          // Create supplier from draft
+          // Has draft - create supplier from it
           console.log("📋 Found onboarding draft, creating supplier profile...")
           await createSupplierFromDraft(user, draft)
           
@@ -178,78 +182,75 @@ export default function SupplierAuthCallback() {
           return
         }
 
+        // Check localStorage for pending business data
+        console.log("📋 No draft found, checking localStorage for business data...")
+        const businessDataStr = localStorage.getItem("pendingBusinessData")
 
-// ADD THIS NEW SECTION HERE:
-// If no existing draft, create one from business data + OAuth email
-console.log("📋 No draft found, checking localStorage for business data...")
-const businessDataStr = localStorage.getItem("pendingBusinessData")
+        if (businessDataStr) {
+          console.log("💾 Found business data in localStorage, creating draft...")
+          const businessData = JSON.parse(businessDataStr)
+          
+          // Create draft with OAuth email
+          const { data: newDraft, error: newDraftError } = await supabase
+            .from("onboarding_drafts")
+            .insert({
+              email: user.email,
+              your_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+              business_name: businessData.businessName,
+              phone: businessData.phone,
+              postcode: businessData.postcode,
+              supplier_type: businessData.supplierType,
+            })
+            .select()
+            .single()
+         
+          if (!newDraftError && newDraft) {
+            console.log("✅ Created draft from OAuth + business data:", newDraft.business_name)
+            
+            // Now create supplier from this new draft
+            await createSupplierFromDraft(user, newDraft)  
+            
+            setProgress(100)
+            await new Promise((resolve) => setTimeout(resolve, 300))
+            
+            // Store success message for toast
+            sessionStorage.setItem('auth_success', JSON.stringify({
+              type: 'supplier_created',
+              message: `Welcome ${newDraft.business_name}! Your business account is ready.`,
+              timestamp: Date.now()
+            }))
+            
+            // Clean up localStorage
+            localStorage.removeItem("pendingBusinessData")
+            
+            // Redirect to success page
+            window.location.href = buildUrl('/suppliers/onboarding/success')
+            return
+          } else {
+            console.error("❌ Failed to create draft from business data:", newDraftError)
+          }
+        }
 
-if (businessDataStr) {
-    console.log("💾 Found business data in localStorage, creating draft...")
-    const businessData = JSON.parse(businessDataStr)
-    
-    // Create draft with OAuth email
-    const { data: newDraft, error: newDraftError } = await supabase
-      .from("onboarding_drafts")
-      .insert({
-        email: user.email, // From OAuth
-        your_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-        business_name: businessData.businessName,
-        phone: businessData.phone,
-        postcode: businessData.postcode,
-        supplier_type: businessData.supplierType,
-      })
-      .select()
-      .single()
-   
-      if (!newDraftError && newDraft) {
-        console.log("✅ Created draft from OAuth + business data:", newDraft.business_name)
-        
-        // Now create supplier from this new draft
-        await createSupplierFromDraft(user, newDraft)  
+        // No supplier, no draft, no business data
+        // This might be a customer trying to access supplier portal
+        console.log("⚠️ No supplier record or business data found for this email")
+        console.log("🚫 This appears to be a customer account trying to access supplier portal")
 
-        
-        
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 300))
-        
-    setProgress(100)
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    
-    // Store success message for toast
-    sessionStorage.setItem('auth_success', JSON.stringify({
-      type: 'supplier_created',
-      message: `Welcome ${newDraft.business_name}! Your business account is ready.`,
-      timestamp: Date.now()
-    }))
-    
-    // Clean up localStorage
-    localStorage.removeItem("pendingBusinessData")
-    
-    // Redirect to success page
-    window.location.href = buildUrl('/suppliers/onboarding/success')
-    return
-  } else {
-    console.error("❌ Failed to create draft from business data:", newDraftError)
-  }
-}
-console.log("⚠️ No supplier record or business data found for this email")
 
-setProgress(100)
-await new Promise((resolve) => setTimeout(resolve, 300))
+        // Sign them out
+        await supabase.auth.signOut()
 
-// Sign them out and redirect to error page
-await supabase.auth.signOut()
+        // Store error message for the sign-in page
+        sessionStorage.setItem('supplier_auth_error', JSON.stringify({
+          message: "This email is registered as a customer account. Please use the customer sign-in or create a business account.",
+          email: user.email,
+          timestamp: Date.now()
+        }))
 
-// Store error message for the sign-in page
-sessionStorage.setItem('supplier_auth_error', JSON.stringify({
-  message: "No business account found with this email. Please create a new business account or use customer sign-in instead.",
-  email: user.email,
-  timestamp: Date.now()
-}))
-
-// Redirect back to supplier sign-in with error
- window.location.href = buildUrl('/suppliers/onboarding/auth/no-account')
+        // Redirect to customer sign-in with message
+        window.location.href = buildUrl(`/signin?email=${encodeURIComponent(user.email)}&supplier_blocked=true`)
 
       } catch (error) {
         console.error("❌ Supplier callback error:", error)
@@ -380,8 +381,6 @@ sessionStorage.setItem('supplier_auth_error', JSON.stringify({
             />
           </div>
           <div className="text-xl font-bold text-primary-600 mb-6">{Math.round(progress)}%</div>
-
-         
 
           <p className="text-xs text-gray-500 italic">
             Setting up your business tools... 🎪

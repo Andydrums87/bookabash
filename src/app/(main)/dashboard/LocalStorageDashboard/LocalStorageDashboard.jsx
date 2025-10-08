@@ -42,6 +42,7 @@ import ReferFriend from "@/components/ReferFriend"
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
 import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
 import PartySummarySection from "../components/PartySummarySection"
+import VenueCarouselCard from "../components/VenueCarouselCard"
 
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
@@ -108,6 +109,9 @@ export default function LocalStorageDashboard() {
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
   const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('venue')
+  const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
+  const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
+  const [isSelectingVenue, setIsSelectingVenue] = useState(false)
   // Add these state variables near your other useState declarations
 
 
@@ -156,6 +160,7 @@ export default function LocalStorageDashboard() {
     error: planError, 
     totalCost, 
     addons,
+    venueCarouselOptions, // NEW: Get carousel options
     removeSupplier,
     addAddon,
     removeAddon,
@@ -197,6 +202,21 @@ export default function LocalStorageDashboard() {
     confirmDeleteSupplier,
     cancelDeleteSupplier
   } = useSupplierManager(removeSupplier)
+
+      // Create suppliers object
+      const suppliers = {
+        venue: partyPlan.venue || null,
+        entertainment: partyPlan.entertainment || null,
+        cakes: partyPlan.cakes || null, 
+        facePainting: partyPlan.facePainting || null,
+        activities: partyPlan.activities || null,
+        partyBags: partyPlan.partyBags || null,
+        decorations: partyPlan.decorations || null,
+        balloons: partyPlan.balloons || null,
+         
+        catering: partyPlan.catering || null,  // 🎂 Just add this line
+    
+      }
 
   // ✅ PRODUCTION SAFE: Welcome popup detection with one-time-only logic
   useEffect(() => {
@@ -558,6 +578,123 @@ useEffect(() => {
   }
 }, [showSupplierModal, showWelcomePopup, isAddonModalOpen])
 
+// Remove the first useEffect completely and replace both with this single one:
+
+useEffect(() => {
+  console.log('🔥 useEffect TRIGGERED - Checking conditions...')
+  console.log('  - isMounted:', isMounted)
+  console.log('  - partyDetails:', partyDetails)
+  
+  if (!isMounted) {
+    console.log('❌ NOT MOUNTED YET - waiting...')
+    return
+  }
+  
+  if (!partyDetails) {
+    console.log('❌ NO PARTY DETAILS - waiting...')
+    return
+  }
+  
+  // ✅ FIX: Only run this ONCE on mount, not when suppliers change
+  if (Object.keys(recommendedSuppliers).length > 0) {
+    console.log('⏭️ Recommendations already loaded, skipping...')
+    return
+  }
+  
+  console.log('✅ All conditions met! Loading recommendations...')
+  
+  const loadTestRecommendations = async () => {
+    try {
+      console.log('📡 Attempting to import suppliersAPI...')
+      
+      // Import suppliers API
+      const { suppliersAPI } = await import('@/utils/mockBackend')
+      console.log('✅ suppliersAPI imported successfully')
+      
+      const allSuppliers = await suppliersAPI.getAllSuppliers()
+      console.log('📦 Total suppliers loaded:', allSuppliers.length)
+      
+      // For testing, let's just grab the first suitable supplier for each category
+      const testRecommendations = {}
+      
+      // Check ALL supplier categories at the time of loading
+      const categoryChecks = {
+        venue: partyPlan?.venue,
+        entertainment: partyPlan?.entertainment,
+        cakes: partyPlan?.cakes,
+        catering: partyPlan?.catering,
+        facePainting: partyPlan?.facePainting,
+        activities: partyPlan?.activities,
+        partyBags: partyPlan?.partyBags,
+        decorations: partyPlan?.decorations,
+        balloons: partyPlan?.balloons
+      }
+      
+      console.log('🔍 Current supplier status:', categoryChecks)
+      
+      // Only recommend for empty slots
+      const emptyCategories = Object.entries(categoryChecks)
+        .filter(([_, supplier]) => !supplier)
+        .map(([category]) => category)
+      
+      console.log('📋 Empty categories that need recommendations:', emptyCategories)
+      
+      // Simple category mapping
+      const categoryMap = {
+        venue: 'Venues',
+        entertainment: 'Entertainment',
+        cakes: 'Cakes',
+        catering: 'Catering',
+        facePainting: 'Face Painting',
+        activities: 'Activities',
+        partyBags: 'Party Bags',
+        decorations: 'Decorations',
+        balloons: 'Balloons',
+        bouncyCastle: 'bouncyCastle'
+      }
+      
+      // Find one supplier for each empty category
+      for (const category of emptyCategories) {
+        const supplierCategory = categoryMap[category]
+        console.log(`🔍 Looking for "${supplierCategory}" suppliers...`)
+        
+        const categorySuppliers = allSuppliers.filter(s => {
+          const match = s.category === supplierCategory
+          if (match) {
+            console.log(`  ✅ Found match: ${s.name} (${s.category})`)
+          }
+          return match
+        })
+        
+        console.log(`📊 Found ${categorySuppliers.length} ${supplierCategory} suppliers`)
+        
+        if (categorySuppliers.length > 0) {
+          // Just take the first one for testing
+          const testSupplier = categorySuppliers[0]
+          testRecommendations[category] = testSupplier
+          console.log(`✅ Recommendation for ${category}: ${testSupplier.name}`)
+        } else {
+          console.log(`❌ No suppliers found for category: ${supplierCategory}`)
+        }
+      }
+      
+      console.log('🎯 FINAL RECOMMENDATIONS:', testRecommendations)
+      console.log('🎯 Recommendation count:', Object.keys(testRecommendations).length)
+      
+      setRecommendedSuppliers(testRecommendations)
+      console.log('💾 Recommendations saved to state!')
+      setRecommendationsLoaded(true) // ✅ Mark as loaded
+      
+    } catch (error) {
+      console.error('❌ ERROR loading recommendations:', error)
+      console.error('Error details:', error.message, error.stack)
+    }
+  }
+  
+  loadTestRecommendations()
+}, [isMounted, partyDetails]) // ✅ Only these two dependencies - NOT suppliers!
+
+
 const handleNameSubmit = (nameData) => {
   console.log('🎉 Welcome form completed:', nameData)
   
@@ -771,7 +908,7 @@ const handleNameSubmit = (nameData) => {
       console.error('Error in handleSupplierSelection:', error)
     }
   }
-  
+
 
   // Modal restoration effects
   useEffect(() => {
@@ -859,19 +996,57 @@ const handleNameSubmit = (nameData) => {
     }
     
     try {
+      // ✅ ENHANCED: Better supplier association
       const finalSupplierId = addon.supplierId || supplierId
-      const finalSupplierName = addon.supplierName || (finalSupplierId ? suppliers[finalSupplierId]?.name : 'General')
+      
+      // Find the supplier object to get more details
+      let supplierObj = null
+      if (finalSupplierId) {
+        // Try to find supplier in suppliers object
+        supplierObj = Object.values(suppliers).find(s => s && s.id === finalSupplierId)
+      }
+      
+      const finalSupplierName = addon.supplierName || supplierObj?.name || 'General'
+      const supplierCategory = supplierObj?.category || addon.category
+      
+      // Determine supplier type (for filtering)
+      let supplierType = null
+      if (supplierCategory) {
+        const categoryLower = supplierCategory.toLowerCase()
+        if (categoryLower === 'venues' || categoryLower === 'venue') {
+          supplierType = 'venue'
+        } else if (categoryLower === 'entertainment') {
+          supplierType = 'entertainment'
+        } else if (categoryLower === 'catering') {
+          supplierType = 'catering'
+        } else if (categoryLower === 'cakes') {
+          supplierType = 'cakes'
+        } else if (categoryLower === 'face painting') {
+          supplierType = 'facePainting'
+        } else if (categoryLower === 'activities') {
+          supplierType = 'activities'
+        } else if (categoryLower === 'party bags') {
+          supplierType = 'partyBags'
+        } else if (categoryLower === 'decorations') {
+          supplierType = 'decorations'
+        }
+      }
       
       const addonWithSupplier = {
         ...addon,
         supplierId: finalSupplierId,
         supplierName: finalSupplierName,
-        attachedToSupplier: !!finalSupplierId,
+        supplierType: supplierType,
+        attachedToSupplier: supplierType, // Use same value for consistency
+        category: supplierCategory,
         isSupplierAddon: !!finalSupplierId,
-        addedAt: new Date().toISOString()
+        addedAt: new Date().toISOString(),
+        // Backup references
+        parentSupplierId: finalSupplierId,
+        parentSupplierName: finalSupplierName
       }
       
-      console.log('🔧 Adding addon:', addonWithSupplier)
+      console.log('🔧 Adding addon with full association:', addonWithSupplier)
       
       const result = await addAddon(addonWithSupplier)
       
@@ -925,20 +1100,7 @@ const handleNameSubmit = (nameData) => {
   const getEnquiryStatus = (type) => null
   const getEnquiryTimestamp = (type) => null
 
-  // Create suppliers object
-  const suppliers = {
-    venue: partyPlan.venue || null,
-    entertainment: partyPlan.entertainment || null,
-    cakes: partyPlan.cakes || null, 
-    facePainting: partyPlan.facePainting || null,
-    activities: partyPlan.activities || null,
-    partyBags: partyPlan.partyBags || null,
-    decorations: partyPlan.decorations || null,
-    balloons: partyPlan.balloons || null,
-     
-    catering: partyPlan.catering || null,  // 🎂 Just add this line
 
-  }
 
   const enhancedTotalCost = useMemo(() => {
     let total = 0;
@@ -947,21 +1109,30 @@ const handleNameSubmit = (nameData) => {
     Object.entries(suppliers).forEach(([type, supplier]) => {
       if (!supplier) return;
   
-      // Get addons for this specific supplier
-      const supplierAddons = addons.filter(addon => 
-        addon.supplierId === supplier.id || 
-        addon.supplierType === type ||
-        addon.attachedToSupplier === type
-      );
+      // ✅ FIXED: Get addons for this supplier - special handling for venue
+      let supplierAddons = [];
+      
+      if (type === 'venue') {
+        // For venue, get addons from selectedAddons property
+        supplierAddons = supplier.selectedAddons || [];
+        console.log('📊 Venue addons from selectedAddons:', supplierAddons);
+      } else {
+        // For other suppliers, get from global addons array
+        supplierAddons = addons.filter(addon => 
+          addon.supplierId === supplier.id || 
+          addon.supplierType === type ||
+          addon.attachedToSupplier === type
+        );
+      }
   
       // FIXED: ALWAYS calculate fresh pricing - never use pre-enhanced values
-      console.log('📊 Dashboard Total: ALWAYS calculating fresh pricing for', supplier.name);
+      console.log('📊 Dashboard Total: Calculating pricing for', supplier.name, 'with', supplierAddons.length, 'addons');
       const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
       const supplierCost = pricing.finalPrice;
   
       total += supplierCost;
       
-      console.log('📊 Dashboard Total: Added supplier', supplier.name, 'cost:', supplierCost);
+      console.log('📊 Dashboard Total: Added supplier', supplier.name, 'cost:', supplierCost, 'breakdown:', pricing.breakdown);
     });
   
     // Add standalone addons (not attached to any supplier)
@@ -1040,6 +1211,78 @@ const handleNameSubmit = (nameData) => {
     }
   }
 
+  const getRecommendedSupplierForType = (categoryType) => {
+    console.log('🔍 Getting recommended supplier for:', categoryType)
+    console.log('📦 Available recommendations:', recommendedSuppliers)
+    return recommendedSuppliers[categoryType] || null
+  }
+
+ // In your dashboard's handleAddRecommendedSupplier:
+
+const handleAddRecommendedSupplier = async (categoryType, supplier) => {
+  console.log('🎯 Adding recommended supplier...', supplier.name)
+  
+  try {
+    setLoadingCards(prev => [...prev, categoryType])
+    
+    const result = await addSupplier(supplier, supplier.packageData || null)
+    
+    if (result.success) {
+      console.log('✅ Supplier added successfully!')
+      
+      // ✅ Create a unique timestamp for this addition
+      const addTimestamp = Date.now()
+      
+      // Update URL with timestamp
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('scrollTo', categoryType)
+      currentUrl.searchParams.set('action', 'supplier-added')
+      currentUrl.searchParams.set('ts', addTimestamp.toString()) // ✅ Add timestamp
+      window.history.replaceState({}, '', currentUrl)
+      
+      // Clean up URL after animation
+      setTimeout(() => {
+        const cleanUrl = new URL(window.location.href)
+        // Only clean if the timestamp matches (prevents cleaning during new additions)
+        if (cleanUrl.searchParams.get('ts') === addTimestamp.toString()) {
+          cleanUrl.searchParams.delete('scrollTo')
+          cleanUrl.searchParams.delete('action')
+          cleanUrl.searchParams.delete('ts')
+          window.history.replaceState({}, '', cleanUrl)
+        }
+      }, 2500)
+    }
+  } catch (error) {
+    console.error('💥 Error:', error)
+  } finally {
+    setLoadingCards(prev => prev.filter(c => c !== categoryType))
+  }
+}
+
+// Add handler for venue selection:
+const handleVenueSelection = async (newVenue) => {
+  console.log('🏛️ Selecting new venue:', newVenue.name)
+  setIsSelectingVenue(true)
+  
+  try {
+    // Remove old venue
+    if (suppliers.venue) {
+      await removeSupplier('venue')
+    }
+    
+    // Add new venue
+    const result = await addSupplier(newVenue, newVenue.packageData)
+    
+    if (result.success) {
+      console.log('✅ Venue changed successfully!')
+    }
+  } catch (error) {
+    console.error('❌ Error changing venue:', error)
+  } finally {
+    setIsSelectingVenue(false)
+  }
+}
+
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
@@ -1097,41 +1340,114 @@ const handleNameSubmit = (nameData) => {
 
               {/* Supplier Grid */}
               <div className="w-full">
-                {/* Desktop Grid */}
-                <div className="hidden md:grid md:grid-cols-3 gap-6" >
-   
-{Object.entries(suppliers).map(([type, supplier]) => {
-  // Get addons for this specific supplier
-  const supplierAddons = addons.filter(addon => 
-    addon.supplierId === supplier?.id || 
-    addon.supplierType === type ||
-    addon.attachedToSupplier === type
-  );
-  
-  return (
-    <SupplierCard 
-      key={type}
-      type={type} 
-      supplier={supplier}
-      loadingCards={loadingCards}
-      suppliersToDelete={suppliersToDelete}
-      openSupplierModal={openSupplierModal}
-      handleDeleteSupplier={handleDeleteSupplier}
-      getSupplierDisplayName={getSupplierDisplayName}
-      addons={supplierAddons} // ✅ Pass specific addons
-      handleRemoveAddon={handleRemoveAddon}
-      enquiryStatus={getEnquiryStatus(type)}
-      enquirySentAt={getEnquiryTimestamp(type)}
-      isSignedIn={false}
-      isPaymentConfirmed={false}
-      enquiries={[]}
-      partyDetails={partyDetails} // ✅ Ensure this is passed
-      currentPhase="planning"
-      enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
-    />
-  )
-})}
-                </div>
+{/* Desktop Grid */}
+<div className="hidden md:grid md:grid-cols-3 gap-6">
+  {!recommendationsLoaded ? (
+    // Show skeleton cards while recommendations load
+    <>
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+        <Card key={i} className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80">
+          <div className="relative h-64 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+          <div className="p-6 bg-white">
+            <div className="h-12 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </Card>
+      ))}
+    </>
+  ) : (
+    <>
+      {/* VENUE CARD - Special Carousel Treatment */}
+      {venueCarouselOptions && venueCarouselOptions.length > 0 ? (
+        <VenueCarouselCard
+          venues={venueCarouselOptions}
+          selectedVenue={suppliers.venue}
+          onSelectVenue={handleVenueSelection}
+          partyDetails={partyDetails}
+          isLoading={isSelectingVenue}
+          addons={
+            // ✅ FIX: Get addons from venue's selectedAddons array
+            suppliers.venue?.selectedAddons || 
+            // Fallback to global addons filtered by venue
+            addons.filter(addon => 
+              addon.supplierId === suppliers.venue?.id || 
+              addon.supplierType === 'venue' ||
+              addon.attachedToSupplier === 'venue'
+            )
+          }
+        
+          handleRemoveAddon={handleRemoveAddon}
+          handleDeleteSupplier={handleDeleteSupplier}
+          openSupplierModal={openSupplierModal}
+        />
+      ) : (
+        // Fallback: Regular venue card if no carousel options
+        <SupplierCard 
+          key="venue"
+          type="venue" 
+          supplier={suppliers.venue}
+          loadingCards={loadingCards}
+          suppliersToDelete={suppliersToDelete}
+          openSupplierModal={openSupplierModal}
+          handleDeleteSupplier={handleDeleteSupplier}
+          getSupplierDisplayName={getSupplierDisplayName}
+          addons={addons.filter(addon => 
+            addon.supplierId === suppliers.venue?.id || 
+            addon.supplierType === 'venue' ||
+            addon.attachedToSupplier === 'venue'
+          )}
+          handleRemoveAddon={handleRemoveAddon}
+          enquiryStatus={getEnquiryStatus('venue')}
+          enquirySentAt={getEnquiryTimestamp('venue')}
+          isSignedIn={false}
+          isPaymentConfirmed={false}
+          enquiries={[]}
+          partyDetails={partyDetails}
+          currentPhase="planning"
+          recommendedSupplier={getRecommendedSupplierForType('venue')}
+          onAddSupplier={handleAddRecommendedSupplier}
+          enhancedPricing={suppliers.venue ? getSupplierDisplayPricing(suppliers.venue, partyDetails, []) : null}
+        />
+      )}
+
+      {/* ALL OTHER SUPPLIERS - Regular Cards */}
+      {Object.entries(suppliers)
+        .filter(([type]) => type !== 'venue') // Skip venue since we handled it above
+        .map(([type, supplier]) => {
+          // Get addons for this specific supplier
+          const supplierAddons = addons.filter(addon => 
+            addon.supplierId === supplier?.id || 
+            addon.supplierType === type ||
+            addon.attachedToSupplier === type
+          );
+          
+          return (
+            <SupplierCard 
+              key={type}
+              type={type} 
+              supplier={supplier}
+              loadingCards={loadingCards}
+              suppliersToDelete={suppliersToDelete}
+              openSupplierModal={openSupplierModal}
+              handleDeleteSupplier={handleDeleteSupplier}
+              getSupplierDisplayName={getSupplierDisplayName}
+              addons={supplierAddons}
+              handleRemoveAddon={handleRemoveAddon}
+              enquiryStatus={getEnquiryStatus(type)}
+              enquirySentAt={getEnquiryTimestamp(type)}
+              isSignedIn={false}
+              isPaymentConfirmed={false}
+              enquiries={[]}
+              partyDetails={partyDetails}
+              currentPhase="planning"
+              recommendedSupplier={getRecommendedSupplierForType(type)}
+              onAddSupplier={handleAddRecommendedSupplier}
+              enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
+            />
+          )
+        })}
+    </>
+  )}
+</div>
 
                 {/* Mobile Navigation */}
                 <div className="md:hidden" >
@@ -1146,7 +1462,7 @@ const handleNameSubmit = (nameData) => {
     openSupplierModal={openSupplierModal}
     handleDeleteSupplier={handleDeleteSupplier}
     getSupplierDisplayName={getSupplierDisplayName}
-    addons={addons}
+    addons={suppliers.venue?.selectedAddons || addons.filter(addon => addon.supplierId === suppliers.venue?.id || addon.supplierType === 'venue' || addon.attachedToSupplier === 'venue')}
     handleRemoveAddon={handleRemoveAddon}
     getEnquiryStatus={getEnquiryStatus}
     getEnquiryTimestamp={getEnquiryTimestamp}
@@ -1160,6 +1476,13 @@ const handleNameSubmit = (nameData) => {
     activeSupplierType={activeMobileSupplierType}
     onSupplierTabChange={handleMobileSupplierTabChange}
     isTourActiveOnNavigation={isTourActiveOnNavigation}
+      // ✅ ADD THESE TWO LINES:
+  getRecommendedSupplierForType={getRecommendedSupplierForType}
+  onAddSupplier={handleAddRecommendedSupplier}
+  venueCarouselOptions={venueCarouselOptions}
+  onSelectVenue={handleVenueSelection}
+  isSelectingVenue={isSelectingVenue}
+    
   
   />
                 </div>

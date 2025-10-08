@@ -49,6 +49,7 @@ const saveInviteToPartyPlan = async () => {
 // Default empty party plan
 const DEFAULT_PARTY_PLAN = {
   venue: null,
+  venueCarouselOptions: [], // ✅ ADD THIS LINE
   entertainment: null,
   catering: null,
   facePainting: null,
@@ -630,22 +631,20 @@ export function usePartyPlan() {
   const [partyPlan, setPartyPlan] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  
+  const [venueCarouselOptions, setVenueCarouselOptions] = useState([]); // ✅ ADD THIS LINE
 
   useEffect(() => {
     if (isClient) {
       loadPartyPlan();
       
       const unsubscribe = partyPlanBackend.onUpdate((updatedPlan) => {
-
         setPartyPlan(updatedPlan);
+        // ✅ ADD THIS LINE
+        setVenueCarouselOptions(updatedPlan.venueCarouselOptions || []);
       });
 
-       // NEW: Add storage event listener for cross-component sync
-       const handleStorageChange = (e) => {
+      const handleStorageChange = (e) => {
         if (e.key === 'party_plan' || e.key === 'user_party_plan') {
-   
           loadPartyPlan();
         }
       };
@@ -661,66 +660,58 @@ export function usePartyPlan() {
     }
   }, []);
 
-// UPDATE: Enhanced loadPartyPlan function
-const loadPartyPlan = () => {
-  try {
-    setLoading(true);
-    
-    // Check if localStorage actually has data
-    const storedData = localStorage.getItem(STORAGE_KEY);
-    
-    if (!storedData || storedData === 'null') {
-      // ✅ No localStorage data - return default but don't save it
-
-      setPartyPlan(DEFAULT_PARTY_PLAN);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    
-    // Get the main plan (only if it exists)
-    let data = partyPlanBackend.getPartyPlan();
-    
-    // Check if there are addons in the alternative 'party_plan' key
-    const alternativeData = localStorage.getItem('party_plan');
-    if (alternativeData) {
-      try {
-        const altPlan = JSON.parse(alternativeData);
-        if (altPlan.addons && altPlan.addons.length > 0) {
-   
-          
-          // Merge addons (avoid duplicates)
-          const currentAddons = data.addons || [];
-          const newAddons = altPlan.addons || [];
-          
-          const merged = [...currentAddons];
-          newAddons.forEach(newAddon => {
-            if (!merged.some(existing => existing.id === newAddon.id)) {
-              merged.push(newAddon);
-            }
-          });
-          
-          data = { ...data, addons: merged };
-          
-          // Save merged data to main storage and clear alternative
-          partyPlanBackend.savePartyPlan(data);
-          localStorage.removeItem('party_plan');
-          
-
-        }
-      } catch (e) {
-        console.error('Error merging storage:', e);
+  // UPDATE: Enhanced loadPartyPlan function
+  const loadPartyPlan = () => {
+    try {
+      setLoading(true);
+      
+      const storedData = localStorage.getItem(STORAGE_KEY);
+      
+      if (!storedData || storedData === 'null') {
+        setPartyPlan(DEFAULT_PARTY_PLAN);
+        setVenueCarouselOptions([]); // ✅ ADD THIS LINE
+        setError(null);
+        setLoading(false);
+        return;
       }
+      
+      let data = partyPlanBackend.getPartyPlan();
+      
+      // Check for alternative storage (existing code)
+      const alternativeData = localStorage.getItem('party_plan');
+      if (alternativeData) {
+        try {
+          const altPlan = JSON.parse(alternativeData);
+          if (altPlan.addons && altPlan.addons.length > 0) {
+            const currentAddons = data.addons || [];
+            const newAddons = altPlan.addons || [];
+            
+            const merged = [...currentAddons];
+            newAddons.forEach(newAddon => {
+              if (!merged.some(existing => existing.id === newAddon.id)) {
+                merged.push(newAddon);
+              }
+            });
+            
+            data = { ...data, addons: merged };
+            partyPlanBackend.savePartyPlan(data);
+            localStorage.removeItem('party_plan');
+          }
+        } catch (e) {
+          console.error('Error merging storage:', e);
+        }
+      }
+      
+      setPartyPlan(data);
+      setVenueCarouselOptions(data.venueCarouselOptions || []); // ✅ ADD THIS LINE
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    setPartyPlan(data);
-    setError(null);
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
 
 
 const addSupplier = async (supplier, selectedPackage = null) => {
@@ -879,6 +870,7 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
     loading,
     error,
     totalCost,
+    venueCarouselOptions, // ✅ ADD THIS LINE
     addSupplier,
     addAddon,
     removeAddon,

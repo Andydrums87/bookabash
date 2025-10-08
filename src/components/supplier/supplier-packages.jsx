@@ -25,7 +25,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, showWeekendIndicator }) => 
         {/* Modal Header */}
         <div className="relative h-64">
           <Image
-            src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+            src={pkg.image.src || pkg.imageUrl || "/placeholder.png"}
             alt={pkg.name}
             fill
             className="object-cover"
@@ -247,7 +247,7 @@ const PackageCard = ({
               }}
             >
               <Image
-                src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+                src={pkg.image.src || pkg.imageUrl || "/placeholder.png"}
                 alt={pkg.name || "Package image"}
                 fill
                 className="object-cover group-hover:brightness-110 transition-all duration-300 "

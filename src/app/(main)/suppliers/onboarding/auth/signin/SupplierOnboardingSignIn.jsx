@@ -22,6 +22,8 @@ export default function SupplierSignInPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(null)
+  const [blockedFromCustomer, setBlockedFromCustomer] = useState(false)
+  const [isCustomerAccount, setIsCustomerAccount] = useState(false)
 
   const prefilledEmail = searchParams.get('email')
 
@@ -58,76 +60,99 @@ export default function SupplierSignInPage() {
     return themeMapping[serviceType] || ['general']
   }
 
-  useEffect(() => {
-    if (prefilledEmail) {
-      setEmail(prefilledEmail)
-    }
-  }, [prefilledEmail])
 
-  // Handle email/password sign in
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
-    try {
-      // Sign in user
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (authError) throw authError
-      
-      const user = authData.user
-      if (!user) throw new Error("No user returned")
-
-      console.log("🏢 Supplier signed in:", user.id)
-
-      // Check for primary supplier record
-      const { data: supplierData, error: supplierError } = await supabase
-        .from("suppliers")
-        .select("*")
-        .eq("auth_user_id", user.id)
-        .eq("is_primary", true)
-        .maybeSingle()
-
-      if (supplierError && supplierError.code !== 'PGRST116') {
-        console.error("❌ Error checking supplier:", supplierError)
-        throw new Error("Database error occurred")
-      }
-
-      if (supplierData) {
-        console.log("✅ Supplier profile exists, redirecting to dashboard")
-        router.push("/suppliers/dashboard")
-        return
-      }
-
-      // Check for onboarding draft
-      const { data: draft, error: draftError } = await supabase
-        .from("onboarding_drafts")
-        .select("*")
-        .eq("email", user.email)
-        .maybeSingle()
-
-      if (draft) {
-        console.log("📥 Found onboarding draft, creating supplier profile...")
-        await createSupplierFromDraft(user, draft)
-        router.push("/suppliers/dashboard")
-        return
-      }
-
-      // No supplier record or draft - redirect to onboarding
-      console.log("⚠️ No supplier record found, redirecting to onboarding")
-      router.push("/suppliers/onboarding")
-
-    } catch (err) {
-      console.error("❌ Supplier sign-in error:", err)
-      setError(err.message || "Sign-in failed.")
-    } finally {
-      setIsLoading(false)
-    }
+useEffect(() => {
+  if (prefilledEmail) {
+    setEmail(prefilledEmail)
   }
+  
+  // Check for blocked parameter
+  const blocked = searchParams.get('blocked')
+  if (blocked === 'true') {
+    setBlockedFromCustomer(true)
+  }
+}, [prefilledEmail, searchParams])
+
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  setError("")
+  setIsLoading(true)
+
+  try {
+    // Sign in user
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (authError) throw authError
+    
+    const user = authData.user
+    if (!user) throw new Error("No user returned")
+
+    console.log("🏢 Supplier sign-in attempt:", user.id)
+
+    // Check for primary supplier record
+    const { data: supplierData, error: supplierError } = await supabase
+      .from("suppliers")
+      .select("*")
+      .eq("auth_user_id", user.id)
+      .eq("is_primary", true)
+      .maybeSingle()
+
+    if (supplierError && supplierError.code !== 'PGRST116') {
+      console.error("❌ Error checking supplier:", supplierError)
+      throw new Error("Database error occurred")
+    }
+
+    if (supplierData) {
+      console.log("✅ Supplier profile exists, redirecting to dashboard")
+      router.push("/suppliers/dashboard")
+      return
+    }
+
+    // No supplier found - check for onboarding draft
+    console.log("🔍 No supplier found, checking for onboarding draft...")
+    const { data: draft, error: draftError } = await supabase
+      .from("onboarding_drafts")
+      .select("*")
+      .eq("email", user.email)
+      .maybeSingle()
+
+    if (draft) {
+      console.log("📥 Found onboarding draft, creating supplier profile...")
+      await createSupplierFromDraft(user, draft)
+      router.push("/suppliers/dashboard")
+      return
+    }
+
+    // CRITICAL: No supplier record AND no draft found
+    // This means they either:
+    // 1. Are a customer trying to use supplier sign-in
+    // 2. Need to complete onboarding first
+    
+    console.log("🚫 No supplier or draft found - blocking access")
+    
+    // Sign them out immediately
+    await supabase.auth.signOut()
+    
+    // Show clear error message with helpful guidance
+    setError("This email is not registered as a business account. Please use customer sign-in or create a business account through onboarding.")
+    setIsLoading(false)
+    
+    // Optional: Add a link to customer sign-in in the error state
+    // You could also redirect them:
+    // setTimeout(() => {
+    //   router.push(`/signin?email=${encodeURIComponent(email)}&supplier_blocked=true`)
+    // }, 2000)
+
+  } catch (err) {
+    console.error("❌ Supplier sign-in error:", err)
+    setError(err.message || "Sign-in failed.")
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   const handleOAuthSignIn = async (provider) => {
     setError("")
@@ -864,6 +889,34 @@ export default function SupplierSignInPage() {
     }
   }
 
+{error && (
+  <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+    <p className="text-sm text-red-600 font-semibold mb-2">{error}</p>
+    {isCustomerAccount && (
+      <div className="mt-3 pt-3 border-t border-red-200">
+        <p className="text-sm text-gray-700 mb-2">
+          Are you a customer looking to plan a party?
+        </p>
+        <Link
+          href={`/signin?email=${encodeURIComponent(email)}`}
+          className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+        >
+          Go to Customer Sign-In →
+        </Link>
+        <p className="text-xs text-gray-600 mt-3">
+          Or{" "}
+          <Link
+            href="/suppliers/onboarding"
+            className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
+          >
+            create a business account
+          </Link>
+        </p>
+      </div>
+    )}
+  </div>
+)}
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))]">
       <div className="flex flex-col items-center justify-start pt-12 sm:pt-16 pb-12 px-4">
@@ -882,6 +935,22 @@ export default function SupplierSignInPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+          {blockedFromCustomer && (
+    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div className="flex items-start">
+        <Building className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+        <div>
+          <h3 className="text-sm font-semibold text-blue-800 mb-1">
+            Business Account Required
+          </h3>
+          <p className="text-sm text-blue-700">
+            This email is registered as a business account. Please sign in here to access 
+            your supplier dashboard and manage your business profile.
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700">
@@ -933,7 +1002,33 @@ export default function SupplierSignInPage() {
                   </Button>
                 </div>
               </div>
-              {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>}
+              {error && (
+  <div className="bg-red-50 border border-red-200 p-4 rounded-md">
+    <p className="text-sm text-red-600 font-semibold mb-2">{error}</p>
+    {isCustomerAccount && (
+      <div className="mt-3 pt-3 border-t border-red-200">
+        <p className="text-sm text-gray-700 mb-2">
+          Are you a customer looking to plan a party?
+        </p>
+        <Link
+          href={`/signin?email=${encodeURIComponent(email)}`}
+          className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+        >
+          Go to Customer Sign-In →
+        </Link>
+        <p className="text-xs text-gray-600 mt-3">
+          Or{" "}
+          <Link
+            href="/suppliers/onboarding"
+            className="font-medium text-primary-600 hover:text-primary-700 hover:underline"
+          >
+            create a business account
+          </Link>
+        </p>
+      </div>
+    )}
+  </div>
+)}
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-br from-[hsl(var(--primary-500))] via-[hsl(var(--primary-600))] to-[hsl(var(--primary-700))] text-white py-3 text-base font-semibold"

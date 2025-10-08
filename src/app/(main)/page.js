@@ -165,17 +165,6 @@ export default function HomePage() {
     return themeMapping[lowerTheme] || lowerTheme || "superhero"
   }
 
-  const mapPostcodeToLocation = (postcode) => {
-    const postcodeMap = {
-      "w3-7qd": "West London",
-      "sw1-1aa": "Central London",
-      "e1-6an": "East London",
-      "n1-9gu": "North London",
-      "se1-9sg": "South London",
-    }
-    return postcodeMap[postcode] || "London"
-  }
-
   const isFormValid = () => {
     return (
       formData.date && 
@@ -261,7 +250,7 @@ export default function HomePage() {
         date: data.date,
         theme: mapThemeValue(data.theme),
         guestCount: Number.parseInt(data.guestCount),
-        location: mapPostcodeToLocation(data.postcode),
+        location: data.postcode, // ← Use postcode directly!
         postcode: data.postcode,
         childName: data.childName || "Your Child",
         childAge: data.childAge,
