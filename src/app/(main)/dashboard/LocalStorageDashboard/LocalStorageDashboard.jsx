@@ -580,119 +580,78 @@ useEffect(() => {
 
 // Remove the first useEffect completely and replace both with this single one:
 
+// In LocalStorageDashboard.jsx - REPLACE the recommendations useEffect
+
+// In LocalStorageDashboard.jsx - REPLACE both recommendation useEffects with this single one
+// In LocalStorageDashboard.jsx - REPLACE the recommendations useEffect
+
 useEffect(() => {
-  console.log('🔥 useEffect TRIGGERED - Checking conditions...')
-  console.log('  - isMounted:', isMounted)
-  console.log('  - partyDetails:', partyDetails)
+  console.log('🔥 Recommendations effect triggered')
   
-  if (!isMounted) {
-    console.log('❌ NOT MOUNTED YET - waiting...')
+  if (!isMounted || !partyDetails) {
+    console.log('❌ Not ready - isMounted:', isMounted, 'partyDetails:', !!partyDetails)
     return
   }
   
-  if (!partyDetails) {
-    console.log('❌ NO PARTY DETAILS - waiting...')
-    return
-  }
-  
-  // ✅ FIX: Only run this ONCE on mount, not when suppliers change
-  if (Object.keys(recommendedSuppliers).length > 0) {
-    console.log('⏭️ Recommendations already loaded, skipping...')
-    return
-  }
-  
-  console.log('✅ All conditions met! Loading recommendations...')
-  
-  const loadTestRecommendations = async () => {
-    try {
-      console.log('📡 Attempting to import suppliersAPI...')
-      
-      // Import suppliers API
-      const { suppliersAPI } = await import('@/utils/mockBackend')
-      console.log('✅ suppliersAPI imported successfully')
-      
-      const allSuppliers = await suppliersAPI.getAllSuppliers()
-      console.log('📦 Total suppliers loaded:', allSuppliers.length)
-      
-      // For testing, let's just grab the first suitable supplier for each category
-      const testRecommendations = {}
-      
-      // Check ALL supplier categories at the time of loading
-      const categoryChecks = {
-        venue: partyPlan?.venue,
-        entertainment: partyPlan?.entertainment,
-        cakes: partyPlan?.cakes,
-        catering: partyPlan?.catering,
-        facePainting: partyPlan?.facePainting,
-        activities: partyPlan?.activities,
-        partyBags: partyPlan?.partyBags,
-        decorations: partyPlan?.decorations,
-        balloons: partyPlan?.balloons
-      }
-      
-      console.log('🔍 Current supplier status:', categoryChecks)
-      
-      // Only recommend for empty slots
-      const emptyCategories = Object.entries(categoryChecks)
-        .filter(([_, supplier]) => !supplier)
-        .map(([category]) => category)
-      
-      console.log('📋 Empty categories that need recommendations:', emptyCategories)
-      
-      // Simple category mapping
-      const categoryMap = {
-        venue: 'Venues',
-        entertainment: 'Entertainment',
-        cakes: 'Cakes',
-        catering: 'Catering',
-        facePainting: 'Face Painting',
-        activities: 'Activities',
-        partyBags: 'Party Bags',
-        decorations: 'Decorations',
-        balloons: 'Balloons',
-        bouncyCastle: 'bouncyCastle'
-      }
-      
-      // Find one supplier for each empty category
-      for (const category of emptyCategories) {
-        const supplierCategory = categoryMap[category]
-        console.log(`🔍 Looking for "${supplierCategory}" suppliers...`)
+  // ✅ Debounce the loading to prevent multiple triggers
+  const timeoutId = setTimeout(() => {
+    const loadRecommendations = async () => {
+      try {
+        console.log('📡 Loading recommendations...')
         
-        const categorySuppliers = allSuppliers.filter(s => {
-          const match = s.category === supplierCategory
-          if (match) {
-            console.log(`  ✅ Found match: ${s.name} (${s.category})`)
+        const { suppliersAPI } = await import('@/utils/mockBackend')
+        const allSuppliers = await suppliersAPI.getAllSuppliers()
+        
+        console.log('📦 Total suppliers available:', allSuppliers.length)
+        console.log('🔍 Current suppliers state:', suppliers)
+        
+        const categoryMap = {
+          venue: 'Venues',
+          entertainment: 'Entertainment',
+          cakes: 'Cakes',
+          catering: 'Catering',
+          facePainting: 'Face Painting',
+          activities: 'Activities',
+          partyBags: 'Party Bags',
+          decorations: 'Decorations',
+          balloons: 'Balloons'
+        }
+        
+        const newRecommendations = {}
+        
+        // For each category, if no supplier exists, recommend one
+        Object.entries(categoryMap).forEach(([categoryKey, categoryName]) => {
+          const hasSupplier = suppliers[categoryKey]
+          
+          if (!hasSupplier) {
+            // Find first supplier in this category
+            const categorySupplier = allSuppliers.find(s => s.category === categoryName)
+            
+            if (categorySupplier) {
+              newRecommendations[categoryKey] = categorySupplier
+              console.log(`✅ Recommending ${categorySupplier.name} for ${categoryKey}`)
+            }
+          } else {
+            console.log(`⏭️ Skipping ${categoryKey} - already has supplier`)
           }
-          return match
         })
         
-        console.log(`📊 Found ${categorySuppliers.length} ${supplierCategory} suppliers`)
+        console.log('🎯 Final recommendations:', Object.keys(newRecommendations))
+        setRecommendedSuppliers(newRecommendations)
+        setRecommendationsLoaded(true)
         
-        if (categorySuppliers.length > 0) {
-          // Just take the first one for testing
-          const testSupplier = categorySuppliers[0]
-          testRecommendations[category] = testSupplier
-          console.log(`✅ Recommendation for ${category}: ${testSupplier.name}`)
-        } else {
-          console.log(`❌ No suppliers found for category: ${supplierCategory}`)
-        }
+      } catch (error) {
+        console.error('❌ Error loading recommendations:', error)
+        setRecommendationsLoaded(true)
       }
-      
-      console.log('🎯 FINAL RECOMMENDATIONS:', testRecommendations)
-      console.log('🎯 Recommendation count:', Object.keys(testRecommendations).length)
-      
-      setRecommendedSuppliers(testRecommendations)
-      console.log('💾 Recommendations saved to state!')
-      setRecommendationsLoaded(true) // ✅ Mark as loaded
-      
-    } catch (error) {
-      console.error('❌ ERROR loading recommendations:', error)
-      console.error('Error details:', error.message, error.stack)
     }
-  }
+    
+    loadRecommendations()
+  }, 300) // ✅ 300ms debounce
   
-  loadTestRecommendations()
-}, [isMounted, partyDetails]) // ✅ Only these two dependencies - NOT suppliers!
+  return () => clearTimeout(timeoutId)
+  
+}, [isMounted, partyDetails, partyPlan]) // ✅ Use partyPlan instead of suppliers
 
 
 const handleNameSubmit = (nameData) => {
@@ -1259,29 +1218,40 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
   }
 }
 
-// Add handler for venue selection:
-const handleVenueSelection = async (newVenue) => {
-  console.log('🏛️ Selecting new venue:', newVenue.name)
+
+
+ const handleSelectVenue = async (venue) => {
   setIsSelectingVenue(true)
   
   try {
-    // Remove old venue
-    if (suppliers.venue) {
-      await removeSupplier('venue')
-    }
+    console.log('🏛️ Selecting venue:', venue.name)
     
-    // Add new venue
-    const result = await addSupplier(newVenue, newVenue.packageData)
+    // Use the addSupplier function from usePartyPlan hook
+    const result = await addSupplier(venue, venue.packageData || null)
     
     if (result.success) {
-      console.log('✅ Venue changed successfully!')
+      // Update party details to clear hasOwnVenue flag
+      const updatedPartyDetails = {
+        ...partyDetails,
+        hasOwnVenue: false
+      }
+      
+      localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails))
+      
+      // Trigger party details update
+      handlePartyDetailsUpdate(updatedPartyDetails)
+      
+      console.log('✅ Venue selected successfully:', venue.name)
     }
+    
   } catch (error) {
-    console.error('❌ Error changing venue:', error)
+    console.error('❌ Error selecting venue:', error)
+    alert('Failed to select venue. Please try again.')
   } finally {
     setIsSelectingVenue(false)
   }
 }
+
 
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
@@ -1338,153 +1308,170 @@ const handleVenueSelection = async (newVenue) => {
                 </Button>
               </div>
 
-              {/* Supplier Grid */}
-              <div className="w-full">
-{/* Desktop Grid */}
-<div className="hidden md:grid md:grid-cols-3 gap-6">
-  {!recommendationsLoaded ? (
-    // Show skeleton cards while recommendations load
-    <>
-      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-        <Card key={i} className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80">
-          <div className="relative h-64 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
-          <div className="p-6 bg-white">
-            <div className="h-12 bg-gray-200 rounded animate-pulse" />
-          </div>
-        </Card>
-      ))}
-    </>
-  ) : (
-    <>
-      {/* VENUE CARD - Special Carousel Treatment */}
-      {venueCarouselOptions && venueCarouselOptions.length > 0 ? (
-        <VenueCarouselCard
-          venues={venueCarouselOptions}
-          selectedVenue={suppliers.venue}
-          onSelectVenue={handleVenueSelection}
-          partyDetails={partyDetails}
-          isLoading={isSelectingVenue}
-          addons={
-            // ✅ FIX: Get addons from venue's selectedAddons array
-            suppliers.venue?.selectedAddons || 
-            // Fallback to global addons filtered by venue
-            addons.filter(addon => 
-              addon.supplierId === suppliers.venue?.id || 
-              addon.supplierType === 'venue' ||
-              addon.attachedToSupplier === 'venue'
-            )
-          }
-        
-          handleRemoveAddon={handleRemoveAddon}
-          handleDeleteSupplier={handleDeleteSupplier}
-          openSupplierModal={openSupplierModal}
-        />
-      ) : (
-        // Fallback: Regular venue card if no carousel options
-        <SupplierCard 
-          key="venue"
-          type="venue" 
-          supplier={suppliers.venue}
-          loadingCards={loadingCards}
-          suppliersToDelete={suppliersToDelete}
-          openSupplierModal={openSupplierModal}
-          handleDeleteSupplier={handleDeleteSupplier}
-          getSupplierDisplayName={getSupplierDisplayName}
-          addons={addons.filter(addon => 
-            addon.supplierId === suppliers.venue?.id || 
-            addon.supplierType === 'venue' ||
-            addon.attachedToSupplier === 'venue'
-          )}
-          handleRemoveAddon={handleRemoveAddon}
-          enquiryStatus={getEnquiryStatus('venue')}
-          enquirySentAt={getEnquiryTimestamp('venue')}
-          isSignedIn={false}
-          isPaymentConfirmed={false}
-          enquiries={[]}
-          partyDetails={partyDetails}
-          currentPhase="planning"
-          recommendedSupplier={getRecommendedSupplierForType('venue')}
-          onAddSupplier={handleAddRecommendedSupplier}
-          enhancedPricing={suppliers.venue ? getSupplierDisplayPricing(suppliers.venue, partyDetails, []) : null}
-        />
-      )}
+{/* Supplier Grid */}
+<div className="w-full">
+                {/* Desktop Grid */}
+                <div className="hidden md:grid md:grid-cols-3 gap-6">
+                  {(!recommendationsLoaded) ? (
+                    // Show skeleton cards while recommendations load
+                    <>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                        <Card key={i} className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80">
+                          <div className="relative h-64 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+                          <div className="p-6 bg-white">
+                            <div className="h-12 bg-gray-200 rounded animate-pulse" />
+                          </div>
+                        </Card>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      {/* VENUE CARD - Show carousel ONLY if user has venue OR clicked to browse */}
+                      {(() => {
+                        const hasVenue = !!suppliers.venue;
+                        const hasCarouselOptions = venueCarouselOptions && venueCarouselOptions.length > 0;
+                        const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
+                        
+                        // Show carousel if:
+                        // 1. User has selected a venue, OR
+                        // 2. User doesn't have own venue and carousel exists
+                        const shouldShowCarousel = hasCarouselOptions && (hasVenue || !userHasOwnVenue);
+                        
+                        if (shouldShowCarousel) {
+                          return (
+                            <VenueCarouselCard
+                            type="venue"
+                              venues={venueCarouselOptions}
+                              selectedVenue={suppliers.venue}
+                              onSelectVenue={handleSelectVenue}
+                              partyDetails={partyDetails}
+                              isLoading={isSelectingVenue}
+                              addons={
+                                suppliers.venue?.selectedAddons || 
+                                addons.filter(addon => 
+                                  addon.supplierId === suppliers.venue?.id || 
+                                  addon.supplierType === 'venue' ||
+                                  addon.attachedToSupplier === 'venue'
+                                )
+                              }
+                              handleRemoveAddon={handleRemoveAddon}
+                              handleDeleteSupplier={handleDeleteSupplier}
+                              openSupplierModal={openSupplierModal}
+                            />
+                          );
+                        } else {
+                          // Show empty supplier card when user has own venue
+                          return (
+                            <SupplierCard 
+                              key="venue"
+                              type="venue" 
+                              supplier={suppliers.venue}
+                              loadingCards={loadingCards}
+                              suppliersToDelete={suppliersToDelete}
+                              openSupplierModal={(category) => {
+                                console.log('🎯 User clicked to browse venues');
+                                // Clear hasOwnVenue flag to show carousel
+                                const updatedPartyDetails = {
+                                  ...partyDetails,
+                                  hasOwnVenue: false
+                                };
+                                localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
+                                handlePartyDetailsUpdate(updatedPartyDetails);
+                              }}
+                              handleDeleteSupplier={handleDeleteSupplier}
+                              getSupplierDisplayName={getSupplierDisplayName}
+                              addons={addons.filter(addon => 
+                                addon.supplierId === suppliers.venue?.id || 
+                                addon.supplierType === 'venue' ||
+                                addon.attachedToSupplier === 'venue'
+                              )}
+                              handleRemoveAddon={handleRemoveAddon}
+                              enquiryStatus={getEnquiryStatus('venue')}
+                              enquirySentAt={getEnquiryTimestamp('venue')}
+                              isSignedIn={false}
+                              isPaymentConfirmed={false}
+                              enquiries={[]}
+                              partyDetails={partyDetails}
+                              currentPhase="planning"
+                              recommendedSupplier={getRecommendedSupplierForType('venue')}
+                              onAddSupplier={handleAddRecommendedSupplier}
+                              enhancedPricing={suppliers.venue ? getSupplierDisplayPricing(suppliers.venue, partyDetails, []) : null}
+                            />
+                          );
+                        }
+                      })()}
 
-      {/* ALL OTHER SUPPLIERS - Regular Cards */}
-      {Object.entries(suppliers)
-        .filter(([type]) => type !== 'venue') // Skip venue since we handled it above
-        .map(([type, supplier]) => {
-          // Get addons for this specific supplier
-          const supplierAddons = addons.filter(addon => 
-            addon.supplierId === supplier?.id || 
-            addon.supplierType === type ||
-            addon.attachedToSupplier === type
-          );
-          
-          return (
-            <SupplierCard 
-              key={type}
-              type={type} 
-              supplier={supplier}
-              loadingCards={loadingCards}
-              suppliersToDelete={suppliersToDelete}
-              openSupplierModal={openSupplierModal}
-              handleDeleteSupplier={handleDeleteSupplier}
-              getSupplierDisplayName={getSupplierDisplayName}
-              addons={supplierAddons}
-              handleRemoveAddon={handleRemoveAddon}
-              enquiryStatus={getEnquiryStatus(type)}
-              enquirySentAt={getEnquiryTimestamp(type)}
-              isSignedIn={false}
-              isPaymentConfirmed={false}
-              enquiries={[]}
-              partyDetails={partyDetails}
-              currentPhase="planning"
-              recommendedSupplier={getRecommendedSupplierForType(type)}
-              onAddSupplier={handleAddRecommendedSupplier}
-              enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
-            />
-          )
-        })}
-    </>
-  )}
-</div>
+                      {/* ALL OTHER SUPPLIERS - Regular Cards */}
+                      {Object.entries(suppliers)
+                        .filter(([type]) => type !== 'venue') // Skip venue since we handled it above
+                        .map(([type, supplier]) => {
+                          // Get addons for this specific supplier
+                          const supplierAddons = addons.filter(addon => 
+                            addon.supplierId === supplier?.id || 
+                            addon.supplierType === type ||
+                            addon.attachedToSupplier === type
+                          );
+                          
+                          return (
+                            <SupplierCard 
+                              key={type}
+                              type={type} 
+                              supplier={supplier}
+                              loadingCards={loadingCards}
+                              suppliersToDelete={suppliersToDelete}
+                              openSupplierModal={openSupplierModal}
+                              handleDeleteSupplier={handleDeleteSupplier}
+                              getSupplierDisplayName={getSupplierDisplayName}
+                              addons={supplierAddons}
+                              handleRemoveAddon={handleRemoveAddon}
+                              enquiryStatus={getEnquiryStatus(type)}
+                              enquirySentAt={getEnquiryTimestamp(type)}
+                              isSignedIn={false}
+                              isPaymentConfirmed={false}
+                              enquiries={[]}
+                              partyDetails={partyDetails}
+                              currentPhase="planning"
+                              recommendedSupplier={getRecommendedSupplierForType(type)}
+                              onAddSupplier={handleAddRecommendedSupplier}
+                              enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
+                            />
+                          )
+                        })}
+                    </>
+                  )}
+                </div>
 
                 {/* Mobile Navigation */}
-                <div className="md:hidden" >
-   
-                <MobileSupplierNavigation
-    suppliers={suppliers}
-    loadingCards={loadingCards}
-    partyDetails={partyDetails}
-    // NEW: Add this function to calculate pricing
-    getSupplierDisplayPricing={getSupplierDisplayPricing}
-    suppliersToDelete={suppliersToDelete}
-    openSupplierModal={openSupplierModal}
-    handleDeleteSupplier={handleDeleteSupplier}
-    getSupplierDisplayName={getSupplierDisplayName}
-    addons={suppliers.venue?.selectedAddons || addons.filter(addon => addon.supplierId === suppliers.venue?.id || addon.supplierType === 'venue' || addon.attachedToSupplier === 'venue')}
-    handleRemoveAddon={handleRemoveAddon}
-    getEnquiryStatus={getEnquiryStatus}
-    getEnquiryTimestamp={getEnquiryTimestamp}
-    isPaymentConfirmed={false}
-    enquiries={[]}
-    showPartyTasks={false}
-    currentPhase="planning"
-    partyTasksStatus={{}}
-    totalCost={totalCost}
-    // NEW PROPS:
-    activeSupplierType={activeMobileSupplierType}
-    onSupplierTabChange={handleMobileSupplierTabChange}
-    isTourActiveOnNavigation={isTourActiveOnNavigation}
-      // ✅ ADD THESE TWO LINES:
-  getRecommendedSupplierForType={getRecommendedSupplierForType}
-  onAddSupplier={handleAddRecommendedSupplier}
-  venueCarouselOptions={venueCarouselOptions}
-  onSelectVenue={handleVenueSelection}
-  isSelectingVenue={isSelectingVenue}
-    
-  
-  />
+                <div className="md:hidden">
+                  <MobileSupplierNavigation
+                    suppliers={suppliers}
+                    loadingCards={loadingCards}
+                    partyDetails={partyDetails}
+                    getSupplierDisplayPricing={getSupplierDisplayPricing}
+                    suppliersToDelete={suppliersToDelete}
+                    openSupplierModal={openSupplierModal}
+                    handleDeleteSupplier={handleDeleteSupplier}
+                    getSupplierDisplayName={getSupplierDisplayName}
+                    addons={suppliers.venue?.selectedAddons || addons.filter(addon => addon.supplierId === suppliers.venue?.id || addon.supplierType === 'venue' || addon.attachedToSupplier === 'venue')}
+                    handleRemoveAddon={handleRemoveAddon}
+                    getEnquiryStatus={getEnquiryStatus}
+                    getEnquiryTimestamp={getEnquiryTimestamp}
+                    isPaymentConfirmed={false}
+                    enquiries={[]}
+                    showPartyTasks={false}
+                    currentPhase="planning"
+                    partyTasksStatus={{}}
+                    totalCost={totalCost}
+                    activeSupplierType={activeMobileSupplierType}
+                    onSupplierTabChange={handleMobileSupplierTabChange}
+                    isTourActiveOnNavigation={isTourActiveOnNavigation}
+                    getRecommendedSupplierForType={getRecommendedSupplierForType}
+                    onAddSupplier={handleAddRecommendedSupplier}
+                    venueCarouselOptions={venueCarouselOptions}
+                    onSelectVenue={handleSelectVenue}
+                    isSelectingVenue={isSelectingVenue}
+                    type="venue"
+                  />
                 </div>
               </div>
  

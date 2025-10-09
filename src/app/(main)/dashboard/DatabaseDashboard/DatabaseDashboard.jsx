@@ -91,6 +91,9 @@ export default function DatabaseDashboard() {
   })
   const [isCancelling, setIsCancelling] = useState(false)
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
+const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
+const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
+const [loadingCards, setLoadingCards] = useState([])
   const welcomePopupShownRef = useRef(false)
 
   // MAIN PARTY DATA HOOK - This now handles ALL loading
@@ -371,6 +374,97 @@ export default function DatabaseDashboard() {
     const scrollTimeout = setTimeout(handleScrollAndNavigation, 200)
     return () => clearTimeout(scrollTimeout)
   }, [searchParams, router, showWelcomePopup, showSupplierAddedModal, activeMobileSupplierType, isClient])
+
+  // Add this effect to load recommendations for empty supplier slots
+// In DatabaseDashboard.jsx - Update the recommendations effect with more logging
+
+useEffect(() => {
+  console.log('🔥 Recommendations effect triggered', {
+    isClient,
+    hasPartyDetails: !!partyDetails,
+    visibleSuppliers: Object.keys(visibleSuppliers),
+    recommendationsLoaded
+  })
+  
+  if (!isClient || !partyDetails) {
+    console.log('❌ Not ready - isClient:', isClient, 'partyDetails:', !!partyDetails)
+    return
+  }
+  
+  // ✅ Debounce the loading to prevent multiple triggers
+  const timeoutId = setTimeout(() => {
+    const loadRecommendations = async () => {
+      try {
+        console.log('📡 Starting to load recommendations...')
+        
+        const { suppliersAPI } = await import('@/utils/mockBackend')
+        const allSuppliers = await suppliersAPI.getAllSuppliers()
+        
+        console.log('📦 Total suppliers available:', allSuppliers.length)
+        console.log('📦 Sample supplier:', allSuppliers[0])
+        console.log('🔍 Current visible suppliers:', visibleSuppliers)
+        
+        const categoryMap = {
+          venue: 'Venues',
+          entertainment: 'Entertainment',
+          cakes: 'Cakes',
+          catering: 'Catering',
+          facePainting: 'Face Painting',
+          activities: 'Activities',
+          partyBags: 'Party Bags',
+          decorations: 'Decorations',
+          balloons: 'Balloons'
+        }
+        
+        const newRecommendations = {}
+        
+        // For each category, if no supplier exists, recommend one
+        Object.entries(categoryMap).forEach(([categoryKey, categoryName]) => {
+          const hasSupplier = visibleSuppliers[categoryKey]
+          
+          console.log(`🔍 Checking ${categoryKey} (${categoryName}):`, {
+            hasSupplier: !!hasSupplier,
+            supplierName: hasSupplier?.name
+          })
+          
+          if (!hasSupplier) {
+            // Find first supplier in this category
+            const categorySupplier = allSuppliers.find(s => s.category === categoryName)
+            
+            if (categorySupplier) {
+              newRecommendations[categoryKey] = categorySupplier
+              console.log(`✅ Recommending ${categorySupplier.name} for ${categoryKey}`)
+            } else {
+              console.log(`⚠️ No supplier found for category: ${categoryName}`)
+            }
+          } else {
+            console.log(`⏭️ Skipping ${categoryKey} - already has supplier: ${hasSupplier.name}`)
+          }
+        })
+        
+        console.log('🎯 Final recommendations:', Object.keys(newRecommendations))
+        console.log('📊 Recommendation details:', newRecommendations)
+        
+        setRecommendedSuppliers(newRecommendations)
+        setRecommendationsLoaded(true)
+        
+        console.log('✅ Recommendations loaded successfully!')
+        
+      } catch (error) {
+        console.error('❌ Error loading recommendations:', error)
+        setRecommendationsLoaded(true) // Still set to true to show UI
+      }
+    }
+    
+    loadRecommendations()
+  }, 300) // ✅ 300ms debounce
+  
+  return () => {
+    console.log('🧹 Cleaning up recommendations effect')
+    clearTimeout(timeoutId)
+  }
+  
+}, [isClient, partyDetails, visibleSuppliers])
 
   // Use disable scroll hook
   useDisableScroll([showSupplierModal, showWelcomePopup])
@@ -659,6 +753,48 @@ export default function DatabaseDashboard() {
     router.push('/party-summary#supplier-messages') // Navigate to chat
   }
 
+  // Add these helper functions before your event handlers section
+
+const getRecommendedSupplierForType = (categoryType) => {
+  console.log('🔍 Getting recommended supplier for:', categoryType)
+  console.log('📦 Available recommendations:', recommendedSuppliers)
+  return recommendedSuppliers[categoryType] || null
+}
+
+// In DatabaseDashboard.jsx - REPLACE the handleAddRecommendedSupplier function
+
+const handleAddRecommendedSupplier = async (categoryType, supplier) => {
+  console.log('🎯 Adding recommended supplier...', supplier.name)
+  
+  try {
+    // ✅ DON'T add to database yet - just show the confirmation modal
+    // This matches the flow when selecting from the supplier modal
+    
+    // Close any open modals first
+    setShowSupplierModal(false)
+    
+    // Prepare the supplier data for the confirmation modal
+    const supplierData = {
+      supplier: supplier,
+      package: supplier.packageData || null
+    }
+    
+    // Show the confirmation modal (same as regular supplier selection)
+    setTimeout(() => {
+      setAddedSupplierData(supplierData)
+      setShowSupplierAddedModal(true)
+      setEnquiryFeedback(null)
+    }, 200)
+    
+    // Update the active mobile tab
+    setActiveMobileSupplierType(categoryType)
+    
+  } catch (error) {
+    console.error('💥 Error:', error)
+    setEnquiryFeedback(`Failed to add ${supplier.name}: ${error.message}`)
+  }
+}
+
   // SINGLE LOADING CHECK - This is the key fix!
   if (loading) {
     return (
@@ -790,6 +926,10 @@ export default function DatabaseDashboard() {
               onSupplierTabChange={handleMobileSupplierTabChange}
               partyDetails={partyDetails} // ADD: Pass partyDetails for unified pricing
               getSupplierDisplayPricing={getSupplierDisplayPricing} // ADD: Pass pricing function
+              getRecommendedSupplierForType={getRecommendedSupplierForType}
+              onAddRecommendedSupplier={handleAddRecommendedSupplier}
+              recommendationsLoaded={recommendationsLoaded}
+              loadingCards={loadingCards}
             />
         
             <PartyPhaseContent

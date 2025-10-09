@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
@@ -53,12 +54,12 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
             </div>
           </div>
 
-          {/* Desktop Search Form - Updated with party builder */}
+          {/* Desktop Search Form - Updated with venue checkbox */}
           <form onSubmit={handleSearch} className="relative bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-gray-100 transition-all duration-300"
             style={{
               boxShadow: '0 10px 40px rgba(255, 107, 107, 0.1), 0 4px 20px rgba(0, 0, 0, 0.05)'
             }}>
-            <div className="h-40 w-40 absolute bottom-[-70px] left-[-100px] z-50">
+            <div className="h-40 w-40 absolute bottom-[-70px] left-[-100px] z-10">
               <Image
                 src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828180/ChatGPT_Image_Jul_18_2025_09_42_44_AM_k0a9wh.png"
                 alt="Snappy the crocodile"
@@ -70,65 +71,64 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
               
-   {/* Event Date */}
-   <div className="col-span-2 md:col-span-1 space-y-2">
-  <label className="block text-sm font-medium text-gray-700">
-    Event date <span className="text-red-500">*</span>
-  </label>
-  <div className="relative">
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={`
-            w-full justify-start text-left font-normal h-12 pl-10 pr-4
-            bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl
-            hover:bg-gray-50 hover:border-[hsl(var(--primary-300))] transition-colors
-            ${!formData.date && "text-gray-500"}
-            ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
-          `}
-        >
-          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5  text-primary-400" />
-          {formData.date && !isNaN(new Date(formData.date)) ? (
-            <p className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</p>
-          ) : (
-            <span className="ml-5">Select event date</span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
-        align="start"
-        side="top"
-        sideOffset={8}
-      >
-        <Calendar
-          mode="single"
-          selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
-          onSelect={(date) => {
-            if (date) {
-              const formattedDate = format(date, "yyyy-MM-dd")
-              handleFieldChange('date', formattedDate)
-            }
-          }}
-          initialFocus
-          disabled={(date) => date < new Date()}
-          className="rounded-lg"
-        />
-      </PopoverContent>
-    </Popover>
-    
-    {/* FIXED: Only show validation message after submit attempt */}
-    {hasAttemptedSubmit && !formData.date && (
-      <div className="absolute top-full left-0 right-0 mt-1 z-10">
-        <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
-          <AlertCircle className="w-3 h-3" />
-          Event date is required
-        </p>
-      </div>
-    )}
-  </div>
-</div>
+              {/* Event Date */}
+              <div className="col-span-2 md:col-span-1 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Event date <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`
+                          w-full justify-start text-left font-normal h-12 pl-10 pr-4
+                          bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl
+                          hover:bg-gray-50 hover:border-[hsl(var(--primary-300))] transition-colors
+                          ${!formData.date && "text-gray-500"}
+                          ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
+                        `}
+                      >
+                        <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5  text-primary-400" />
+                        {formData.date && !isNaN(new Date(formData.date)) ? (
+                          <p className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</p>
+                        ) : (
+                          <span className="ml-5">Select event date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
+                      align="start"
+                      side="top"
+                      sideOffset={8}
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
+                        onSelect={(date) => {
+                          if (date) {
+                            const formattedDate = format(date, "yyyy-MM-dd")
+                            handleFieldChange('date', formattedDate)
+                          }
+                        }}
+                        initialFocus
+                        disabled={(date) => date < new Date()}
+                        className="rounded-lg"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {hasAttemptedSubmit && !formData.date && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-10">
+                      <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
+                        <AlertCircle className="w-3 h-3" />
+                        Event date is required
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Event Type */}
               <div className="col-span-2 md:col-span-1 space-y-2">
@@ -162,7 +162,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 </div>
               </div>
 
-              {/* Postcode - Desktop with validation (fixed layout) */}
+              {/* Postcode */}
               <div className="col-span-1 md:col-span-1 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Event postcode  <span className="text-red-500">*</span>
@@ -193,7 +193,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                     required
                   />
                   
-                  {/* Validation icon */}
                   {formData.postcode && (
                     postcodeValid ? (
                       <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -202,7 +201,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                     )
                   )}
                   
-                  {/* Validation message - positioned absolutely to not affect layout */}
                   {!postcodeValid && formData.postcode && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-10">
                       <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
@@ -221,9 +219,25 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                     </div>
                   )}
                 </div>
+
+                {/* NEW: Own Venue Toggle - Subtle link under postcode */}
+                <button
+                  type="button"
+                  onClick={() => handleFieldChange('hasOwnVenue', !formData.hasOwnVenue)}
+                  className="text-xs text-primary-600 hover:text-primary-700 underline decoration-dotted underline-offset-2 transition-colors flex items-center gap-1 mt-1"
+                >
+                  {formData.hasOwnVenue ? (
+                    <>
+                      <Check className="w-3 h-3" />
+                      Using my own venue
+                    </>
+                  ) : (
+                    <>Using your own venue?</>
+                  )}
+                </button>
               </div>
 
-              {/* Search Button - Updated */}
+              {/* Search Button */}
               <div className="col-span-2 md:col-span-1 mt-4 md:mt-0 md:flex md:items-end">
                 <Button 
                   type="submit" 
@@ -247,10 +261,9 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
         </div>
 
         <div className="lg:hidden">
-          {/* Mobile Hero section with vibrant energy */}
+          {/* Mobile Hero section */}
           <div className="bg-gradient-to-br from-primary-50 via-white to-primary-100 pb-8 overflow-hidden relative">
             
-            {/* Text content section */}
             <div className="px-6 pt-8 pb-4 relative z-10">
               <div className="max-w-screen mx-auto text-center">
                 <h1 className="text-6xl font-black text-gray-900 mb-4 leading-tight animate-fade-in">
@@ -264,7 +277,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
               </div>
             </div>
 
-            {/* Image section with dynamic elements */}
             <div className="px-6 mb-8 relative">
               <div className="relative w-full h-50 bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] rounded-3xl overflow-hidden mx-auto max-w-sm shadow-xl transform hover:scale-105 transition-transform duration-300">
                 <Image
@@ -275,11 +287,8 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 />
               </div>
             </div>
-
-      
           </div>
  
-          {/* Custom animations */}
           <style jsx>{`
             @keyframes fade-in {
               from { opacity: 0; transform: translateY(20px); }

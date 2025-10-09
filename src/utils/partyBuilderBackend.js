@@ -913,7 +913,7 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
     return mapping[dashboardCategory] || dashboardCategory;
   }
 
-// partyBuilderBackend.js - COMPLETE buildParty method replacement
+
 
 async buildParty(partyDetails) {
   try {
@@ -921,7 +921,8 @@ async buildParty(partyDetails) {
       date, theme, guestCount, location, budget,
       childAge = 6, childName = "Snappy The Crocodile",
       firstName = "Snappy", lastName = "The Crocodile",
-      timeSlot, duration = 2, time
+      timeSlot, duration = 2, time,
+      hasOwnVenue = false // NEW: Extract this flag
     } = partyDetails;
 
     // Smart budget handling
@@ -947,6 +948,11 @@ async buildParty(partyDetails) {
     }
 
     console.log(`Building party for ${processedFirstName} ${processedLastName} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
+    
+    // NEW: Log venue preference
+    if (hasOwnVenue) {
+      console.log('🏠 User has their own venue - skipping venue selection');
+    }
 
     // Create enhanced party details for pricing
     const enhancedPartyDetails = {
@@ -959,7 +965,8 @@ async buildParty(partyDetails) {
       childName: `${processedFirstName} ${processedLastName}`.trim(),
       time: time || this.convertTimeSlotToTime(processedTimeSlot),
       displayTimeSlot: this.formatTimeSlotForDisplay(processedTimeSlot),
-      displayDuration: this.formatDurationForDisplay(duration)
+      displayDuration: this.formatDurationForDisplay(duration),
+      hasOwnVenue // NEW: Pass this through
     };
 
     // Get suppliers
@@ -967,9 +974,9 @@ async buildParty(partyDetails) {
     const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
     
     // ========================================
-    // NEW: Get multiple venues for carousel
+    // MODIFIED: Always get venue options, but only set main venue if needed
     // ========================================
-    console.log('🎪 Selecting venues for carousel...');
+    console.log('🎪 Getting venue carousel options...');
     const venueCarouselResult = this.selectMultipleVenuesForCarousel(
       allSuppliers,
       theme,
@@ -981,6 +988,10 @@ async buildParty(partyDetails) {
       enhancedPartyDetails,
       5 // Get 5 venues for carousel
     );
+    
+    if (hasOwnVenue) {
+      console.log('⏭️  User has own venue - venues available but not selected');
+    }
 
     // Select other suppliers (entertainment, cakes, etc.)
     const selectedSuppliers = this.selectSuppliersForParty({
@@ -993,20 +1004,30 @@ async buildParty(partyDetails) {
       childAge,
       timeSlot: processedTimeSlot,
       duration,
-      date
+      date,
+      hasOwnVenue // NEW: Pass this flag
     });
 
     // ========================================
-    // NEW: Override venue with carousel result
+    // ALWAYS set venue carousel options - CRITICAL FIX
+    // Even if user has own venue, they can browse later
     // ========================================
-    if (venueCarouselResult.mainVenue) {
+    if (!hasOwnVenue && venueCarouselResult.mainVenue) {
       selectedSuppliers.venue = venueCarouselResult.mainVenue;
-      console.log(`✅ Main venue: ${venueCarouselResult.mainVenue.name}`);
+      console.log(`✅ Main venue selected: ${venueCarouselResult.mainVenue.name}`);
+    } else if (hasOwnVenue) {
+      selectedSuppliers.venue = null; // Explicitly set to null
+      console.log('✅ No venue selected - user has own venue (venues available in carousel)');
     }
     
-    // Store all venue options for carousel
-    selectedSuppliers.venueCarouselOptions = venueCarouselResult.venues;
-    console.log(`✅ Total venue options: ${venueCarouselResult.venues.length}`);
+    // ✅ CRITICAL: ALWAYS store venue options - this is the key line
+    selectedSuppliers.venueCarouselOptions = venueCarouselResult.venues || [];
+    console.log(`✅ Saved ${(venueCarouselResult.venues || []).length} venue options to carousel`);
+    
+    if (hasOwnVenue && venueCarouselResult.venues && venueCarouselResult.venues.length > 0) {
+      console.log('💡 User can browse and select venues from carousel on dashboard');
+      console.log('💡 Venue options available:', venueCarouselResult.venues.map(v => v.name).join(', '));
+    }
 
     // Create party plan with venue carousel options
     const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
@@ -1018,6 +1039,11 @@ async buildParty(partyDetails) {
     const totalCost = this.calculateTotalCost(partyPlan);
 
     console.log(`Party built successfully! Total cost: £${totalCost} (Budget: £${finalBudget})`);
+    
+    // NEW: Include venue info in response
+    const venueInfo = hasOwnVenue 
+      ? 'User has own venue' 
+      : (venueCarouselResult.mainVenue ? venueCarouselResult.mainVenue.name : 'No venue selected');
 
     return {
       success: true,
@@ -1031,7 +1057,9 @@ async buildParty(partyDetails) {
       timeWindow: this.getTimeWindowForSlot(processedTimeSlot),
       fallbackSelections: Object.values(partyPlan).filter(s => s && s.isFallbackSelection).length,
       enhancedPricingUsed: true,
-      venueCarouselOptions: venueCarouselResult.venues // NEW: Include in response
+      venueCarouselOptions: venueCarouselResult.venues,
+      hasOwnVenue, // NEW: Include in response
+      venueInfo // NEW: Include venue info
     };
 
   } catch (error) {

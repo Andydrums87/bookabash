@@ -41,7 +41,8 @@ export default function MobileSupplierNavigation({
   // ✅ NEW PROPS FOR VENUE CAROUSEL
   venueCarouselOptions = [],
   onSelectVenue,
-  isSelectingVenue = false
+  isSelectingVenue = false,
+
 }) {
 
     // ... (keep all existing supplier types array - no changes needed)
@@ -477,7 +478,8 @@ export default function MobileSupplierNavigation({
         ) : (
           <div className="transition-all duration-300 ease-in-out" data-tour={activeSupplierTypeData.type === 'venue' ? 'venue-card-mobile' : undefined}>
             {/* ✅ NEW: Check if this is venue tab and we have carousel options */}
-            {activeSupplierTypeData.type === 'venue' && venueCarouselOptions && venueCarouselOptions.length > 0 ? (
+             {/* ✅ Check if this is venue tab and we have a selected venue with carousel options */}
+             {activeSupplierTypeData.type === 'venue' && suppliers.venue && venueCarouselOptions && venueCarouselOptions.length > 0 ? (
               <VenueCarouselCard
                 venues={venueCarouselOptions}
                 selectedVenue={suppliers.venue}
@@ -492,6 +494,7 @@ export default function MobileSupplierNavigation({
                 handleRemoveAddon={handleRemoveAddon}
                 handleDeleteSupplier={handleDeleteSupplier}
                 openSupplierModal={openSupplierModal}
+                type="venue"
               />
             ) : (
               <SupplierCard

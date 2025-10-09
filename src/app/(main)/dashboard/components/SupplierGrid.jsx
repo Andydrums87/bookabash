@@ -4,6 +4,7 @@ import SupplierCard from "./SupplierCard/SupplierCard"
 import MobileSupplierNavigation from "./MobileSupplierNavigation"
 import { useSupplierManager } from '../hooks/useSupplierManager'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
+import { Card } from '@/components/ui/card'
 
 export default function SupplierGrid({
   suppliers,
@@ -24,7 +25,11 @@ export default function SupplierGrid({
   onSupplierTabChange,
   // NEW: Unified pricing props
   partyDetails,
-  getSupplierDisplayPricing
+  getSupplierDisplayPricing,
+  getRecommendedSupplierForType,
+  onAddRecommendedSupplier,
+  recommendationsLoaded,
+  loadingCards: externalLoadingCards = []
 }) {
   
   // Supplier management
@@ -111,44 +116,63 @@ export default function SupplierGrid({
 
   return (
     <div className="w-full">
-      {/* Desktop Grid - Show ALL supplier types with enhanced pricing */}
-      <div 
-        key={`desktop-grid-${renderKey}`}  
-        className={`hidden md:${getGridClasses()}`}
-      >
-        {allSupplierTypes.map((type) => {
-          const supplierData = completeSuppliers[type]
-          const supplier = supplierData || null
-          const supplierAddons = supplierData?.supplierAddons || []
-          const enhancedPricing = supplierData?.enhancedPricing || null
+   {/* Desktop Grid - Show ALL supplier types with enhanced pricing */}
+<div 
+  key={`desktop-grid-${renderKey}`}  
+  className={`hidden md:${getGridClasses()}`}
+>
+  {!recommendationsLoaded ? (
+    // Show skeleton cards while recommendations load
+    <>
+      {allSupplierTypes.map((type, i) => (
+        <Card key={type} className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80">
+          <div className="relative h-64 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+          <div className="p-6 bg-white">
+            <div className="h-12 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </Card>
+      ))}
+    </>
+  ) : (
+    // Show actual supplier cards once loaded
+    <>
+      {allSupplierTypes.map((type) => {
+        const supplierData = completeSuppliers[type]
+        const supplier = supplierData || null
+        const supplierAddons = supplierData?.supplierAddons || []
+        const enhancedPricing = supplierData?.enhancedPricing || null
 
-          return (
-            <SupplierCard
-              key={type}
-              type={type}
-              supplier={supplier}
-              loadingCards={loadingCards}
-              suppliersToDelete={suppliersToDelete}
-              openSupplierModal={openSupplierModal}
-              handleDeleteSupplier={handleDeleteSupplier}
-              getSupplierDisplayName={getSupplierDisplayName}
-              addons={supplierAddons} // ✅ Pass filtered addons for this supplier
-              handleRemoveAddon={onRemoveAddon}
-              enquiryStatus={getEnquiryStatus(type)}
-              enquirySentAt={getEnquiryTimestamp(type)}
-              isPaymentConfirmed={isPaymentConfirmed}
-              enquiries={enquiries}
-              partyId={partyId}
-              isSignedIn={isSignedIn}
-              currentPhase={currentPhase}
-              onPaymentReady={onPaymentReady}
-              handleCancelEnquiry={handleCancelEnquiry}
-              partyDetails={partyDetails} // ✅ Pass partyDetails for pricing calculations
-              enhancedPricing={enhancedPricing} // ✅ Pass pre-calculated enhanced pricing
-            />
-          )
-        })}
-      </div>
+        return (
+          <SupplierCard
+            key={type}
+            type={type}
+            supplier={supplier}
+            loadingCards={[...loadingCards, ...externalLoadingCards]}
+            suppliersToDelete={suppliersToDelete}
+            openSupplierModal={openSupplierModal}
+            handleDeleteSupplier={handleDeleteSupplier}
+            getSupplierDisplayName={getSupplierDisplayName}
+            addons={supplierAddons}
+            handleRemoveAddon={onRemoveAddon}
+            enquiryStatus={getEnquiryStatus(type)}
+            enquirySentAt={getEnquiryTimestamp(type)}
+            isPaymentConfirmed={isPaymentConfirmed}
+            enquiries={enquiries}
+            partyId={partyId}
+            isSignedIn={isSignedIn}
+            currentPhase={currentPhase}
+            onPaymentReady={onPaymentReady}
+            handleCancelEnquiry={handleCancelEnquiry}
+            partyDetails={partyDetails}
+            enhancedPricing={enhancedPricing}
+            recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType(type) : null}
+            onAddSupplier={onAddRecommendedSupplier}
+          />
+        )
+      })}
+    </>
+  )}
+</div>
 
       {/* Mobile Navigation + Cards - Show ALL supplier types with enhanced pricing */}
       <div className="md:hidden">

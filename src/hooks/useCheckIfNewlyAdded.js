@@ -1,32 +1,64 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 export const useCheckIfNewlyAdded = (supplierType, hasSupplier) => {
   const [isNewlyAdded, setIsNewlyAdded] = useState(false)
   const searchParams = useSearchParams()
+  const hasTriggered = useRef(false)
+  const resetTimerRef = useRef(null) // ✅ Persist timeout across renders
 
   useEffect(() => {
     const scrollToSupplier = searchParams.get('scrollTo')
     const lastAction = searchParams.get('action')
     
-    // ✅ Only show animation if supplier exists AND URL params match
+
+    
     const wasJustAdded = (
       scrollToSupplier === supplierType && 
       lastAction === 'supplier-added' &&
-      hasSupplier // ✅ NEW: Only trigger if supplier is present
+      hasSupplier &&
+      !hasTriggered.current
     )
     
     if (wasJustAdded) {
+
+      hasTriggered.current = true
       setIsNewlyAdded(true)
       
-      // Reset after animation duration + buffer
-      const resetTimer = setTimeout(() => {
-        setIsNewlyAdded(false)
-      }, 2000)
+      // ✅ Clear any existing timer first
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current)
+      }
       
-      return () => clearTimeout(resetTimer)
+      // ✅ Store timer in ref so it persists
+      resetTimerRef.current = setTimeout(() => {
+
+        setIsNewlyAdded(false)
+        resetTimerRef.current = null
+      }, 2500)
+    }
+    
+    // Reset when supplier is removed
+    if (!hasSupplier && hasTriggered.current) {
+  
+      hasTriggered.current = false
+      setIsNewlyAdded(false)
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current)
+        resetTimerRef.current = null
+      }
     }
   }, [searchParams, supplierType, hasSupplier])
+
+  // ✅ Cleanup on unmount only
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) {
+
+        clearTimeout(resetTimerRef.current)
+      }
+    }
+  }, [supplierType])
 
   return isNewlyAdded
 }

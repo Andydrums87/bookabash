@@ -37,6 +37,7 @@ export default function HomePage() {
     childAge: 6,
     timeSlot: "afternoon",
     duration: "2",
+    hasOwnVenue: false, // IMPORTANT: This is here
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -44,6 +45,26 @@ export default function HomePage() {
   const [buildingProgress, setBuildingProgress] = useState(0)
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  // IMPORTANT: This function handles all field changes
+  const handleFieldChange = (field, value) => {
+    console.log('🔧 Field change:', field, '=', value); // Debug log
+    
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      if (field === 'timeSlot') {
+        const timeSlotDefaults = {
+          morning: '11:00',
+          afternoon: '14:00'
+        };
+        updated.time = timeSlotDefaults[value] || '14:00';
+      }
+      
+      console.log('📝 Updated formData:', updated); // Debug log
+      return updated;
+    });
+  }
 
   // Enhanced function to check for existing party plan (database + localStorage)
   const checkForExistingPartyPlan = async () => {
@@ -108,22 +129,6 @@ export default function HomePage() {
       console.error('Error checking for existing party plan:', error)
       return null
     }
-  }
-
-  const handleFieldChange = (field, value) => {
-    setFormData(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      if (field === 'timeSlot') {
-        const timeSlotDefaults = {
-          morning: '11:00',
-          afternoon: '14:00'
-        };
-        updated.time = timeSlotDefaults[value] || '14:00';
-      }
-      
-      return updated;
-    });
   }
 
   const mapThemeValue = (formTheme) => {
@@ -237,7 +242,7 @@ export default function HomePage() {
     setIsSubmitting(false)
   }
 
-  // Actual party creation logic (extracted from original handleSearch)
+  // Actual party creation logic
   const proceedWithPartyCreation = async (data) => {
     try {
       setIsSubmitting(true)
@@ -250,13 +255,14 @@ export default function HomePage() {
         date: data.date,
         theme: mapThemeValue(data.theme),
         guestCount: Number.parseInt(data.guestCount),
-        location: data.postcode, // ← Use postcode directly!
+        location: data.postcode,
         postcode: data.postcode,
         childName: data.childName || "Your Child",
         childAge: data.childAge,
         timeSlot: data.timeSlot || "afternoon",
         duration: parseFloat(data.duration) || 2,
         time: convertTimeSlotToLegacyTime(data.timeSlot || "afternoon"),
+        hasOwnVenue: data.hasOwnVenue || false, // IMPORTANT: Pass this through
         
         source: 'homepage_form',
         createdAt: new Date().toISOString(),
@@ -270,6 +276,8 @@ export default function HomePage() {
           specificTime: null
         }
       }
+  
+      console.log('🎉 Building party with hasOwnVenue:', partyDetails.hasOwnVenue); // Debug
   
       setBuildingProgress(15)
       await new Promise((resolve) => setTimeout(resolve, 800))

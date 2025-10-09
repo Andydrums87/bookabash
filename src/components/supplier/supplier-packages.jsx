@@ -17,15 +17,18 @@ const useIsMobile = (breakpoint = 640) => {
   return isMobile
 }
 
+
+
 const PackageDetailsModal = ({ pkg, isOpen, onClose, showWeekendIndicator }) => {
   if (!isOpen) return null
+
   return (
     <div className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden">
         {/* Modal Header */}
         <div className="relative h-64">
           <Image
-            src={pkg.image.src || pkg.imageUrl || "/placeholder.png"}
+            src={pkg.image || pkg.imageUrl || "/placeholder.png"}
             alt={pkg.name}
             fill
             className="object-cover"
@@ -247,7 +250,7 @@ const PackageCard = ({
               }}
             >
               <Image
-                src={pkg.image.src || pkg.imageUrl || "/placeholder.png"}
+                src={pkg.image || pkg.imageUrl || "/placeholder.png"}
                 alt={pkg.name || "Package image"}
                 fill
                 className="object-cover group-hover:brightness-110 transition-all duration-300 "

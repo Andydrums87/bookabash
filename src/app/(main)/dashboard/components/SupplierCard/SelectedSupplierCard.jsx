@@ -134,7 +134,7 @@ export default function SelectedSupplierCard({
                     <Badge className={`${typeConfig.color} text-white shadow-lg backdrop-blur-sm`}>
                       {typeConfig.icon} {type.charAt(0).toUpperCase() + type.slice(1)}
                     </Badge>
-                    <Badge className="bg-blue-500 text-white border-blue-400 shadow-lg backdrop-blur-sm">
+                    <Badge className="bg-primary-500 text-white  shadow-lg backdrop-blur-sm">
                       Selected
                     </Badge>
                   </div>

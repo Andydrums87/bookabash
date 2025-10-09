@@ -1,34 +1,69 @@
+// MicroConfettiWrapper.jsx - with detailed logging
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const MicroConfettiWrapper = ({ 
   children, 
   isNewlyAdded, 
   onAnimationComplete,
-  duration = 2500 // 2.5 seconds as indicator
+  duration = 2500
 }) => {
   const [showEffect, setShowEffect] = useState(false)
+  const hasAnimated = useRef(false)
+  const animationTimeout = useRef(null)
+
+
 
   useEffect(() => {
-    if (isNewlyAdded) {
-      console.log('🐊 Triggering Snappy success badge animation')
+   
+    
+    if (isNewlyAdded && !hasAnimated.current) {
+
+      hasAnimated.current = true
       setShowEffect(true)
       
-      const timer = setTimeout(() => {
+      if (animationTimeout.current) {
+        clearTimeout(animationTimeout.current)
+      }
+      
+      animationTimeout.current = setTimeout(() => {
+
         setShowEffect(false)
         onAnimationComplete?.()
-        console.log('✅ Snappy badge animation completed')
+
       }, duration)
       
-      return () => clearTimeout(timer)
+      return () => {
+
+        if (animationTimeout.current) {
+          clearTimeout(animationTimeout.current)
+        }
+      }
+    }
+    
+    // ✅ CRITICAL: Reset when isNewlyAdded becomes false
+    if (!isNewlyAdded && hasAnimated.current) {
+     
+      hasAnimated.current = false
+      setShowEffect(false) // ✅ Force hide the badge
     }
   }, [isNewlyAdded, duration, onAnimationComplete])
+
+  useEffect(() => {
+    return () => {
+      console.log('🧹 MicroConfetti unmounting')
+      if (animationTimeout.current) {
+        clearTimeout(animationTimeout.current)
+      }
+    }
+  }, [])
+
+
 
   return (
     <div className={`relative ${showEffect ? 'animate-card-shake' : ''}`}>
       {children}
       
-      {/* Snappy success badge */}
       {showEffect && (
         <div className="absolute -top-3 -right-3 z-20 animate-snappy-slide-in">
           <div className="bg-teal-500 text-white px-3 py-2 rounded-full shadow-lg flex items-center gap-2 border-2 border-white">
@@ -64,7 +99,6 @@ const MicroConfettiWrapper = ({
           }
         }
         
-        /* Option 1: Gentle bounce/pop */
         @keyframes card-bounce {
           0% { 
             transform: scale(1); 
@@ -83,39 +117,10 @@ const MicroConfettiWrapper = ({
           }
         }
         
-        /* Option 2: Subtle pulse with glow */
-        @keyframes card-pulse {
-          0%, 100% { 
-            transform: scale(1);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-          }
-          50% { 
-            transform: scale(1.02);
-            box-shadow: 0 15px 50px rgba(6, 214, 160, 0.3);
-          }
-        }
-        
-        /* Option 3: Slide up with fade in */
-        @keyframes card-slide-up {
-          0% { 
-            transform: translateY(10px);
-            opacity: 0.7;
-          }
-          100% { 
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        
         .animate-snappy-slide-in {
           animation: snappy-slide-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        /* Change this to try different effects:
-           - animate-card-bounce
-           - animate-card-pulse  
-           - animate-card-slide-up
-        */
         .animate-card-shake {
           animation: card-bounce 0.5s ease-out;
         }

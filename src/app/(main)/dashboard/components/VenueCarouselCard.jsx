@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Check, MapPin, Users, Star, X, Gift, ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check, MapPin, Users, Star, X, Gift, ChevronDown, ChevronUp,  Eye } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import AddonSelectionModal from "@/components/supplier/addon-selection-modal"
 
@@ -19,7 +19,8 @@ export default function VenueCarouselCard({
   addons = [],
   handleRemoveAddon,
   handleDeleteSupplier,
-  openSupplierModal
+  openSupplierModal,
+  type
 }) {
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -196,6 +197,8 @@ export default function VenueCarouselCard({
     )
   }
 
+  console.log(currentVenue.image)
+
   return (
     <Card 
       ref={cardRef}
@@ -206,45 +209,12 @@ export default function VenueCarouselCard({
       onClick={handleViewProfile}
       id="supplier-venue"
     >
-      {/* Navigation Arrows - Positioned below the image */}
-      <div className="absolute left-0 right-0 top-[250px] z-20 flex justify-between px-4 pointer-events-none">
-        {currentIndex > 0 ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              goToPrevious()
-            }}
-            className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 pointer-events-auto"
-            aria-label="Previous venue"
-          >
-            <ChevronLeft className="w-5 h-5 text-gray-800" />
-          </button>
-        ) : (
-          <div className="w-10 h-10" />
-        )}
-        
-        {currentIndex < venues.length - 1 ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              goToNext()
-            }}
-            className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 pointer-events-auto"
-            aria-label="Next venue"
-          >
-            <ChevronRight className="w-5 h-5 text-gray-800" />
-          </button>
-        ) : (
-          <div className="w-10 h-10" />
-        )}
-      </div>
-
       {/* Main Card Content */}
       <div className="relative h-64 w-full">
         {/* Image */}
         <div className="absolute inset-0">
           <Image
-            src={currentVenue.image || currentVenue.imageUrl || '/placeholder.svg'}
+            src={currentVenue.image || currentVenue.imageUrl || '/placeholder.jpg'}
             alt={currentVenue.name}
             fill
             className="object-cover"
@@ -257,7 +227,7 @@ export default function VenueCarouselCard({
 
         {/* Selected venue border highlight */}
         {isCurrentSelected && (
-          <div className="absolute inset-0 border-4 border-[hsl(var(--primary-500))] pointer-events-none" />
+          <div className="absolute inset-0  pointer-events-none" />
         )}
 
         {/* Top badges */}
@@ -267,7 +237,7 @@ export default function VenueCarouselCard({
               🏛️ Venue
             </Badge>
             {isCurrentSelected && (
-              <Badge className="bg-blue-500 text-white shadow-lg backdrop-blur-sm flex items-center gap-1">
+              <Badge className="bg-primary-500 text-white shadow-lg backdrop-blur-sm flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Selected
               </Badge>
@@ -279,10 +249,16 @@ export default function VenueCarouselCard({
             )}
           </div>
 
-          {/* Carousel indicator */}
-          <Badge className="bg-white/20 text-white backdrop-blur-sm">
-            {currentIndex + 1} / {venues.length}
-          </Badge>
+          {/* Delete button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeleteSupplier(type)
+            }}
+            className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Venue info overlay */}
@@ -291,7 +267,7 @@ export default function VenueCarouselCard({
             <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
               {currentVenue.name}
             </h3>
-            
+           
             {/* Quick stats */}
             <div className="flex items-center gap-4 mb-3 text-sm flex-wrap">
               {currentVenue.location && (
@@ -339,7 +315,7 @@ export default function VenueCarouselCard({
       </div>
 
       {/* Bottom section */}
-      <div className="p-6 bg-white space-y-4">
+      <div className="pb-6 px-6 pt-2 bg-white space-y-6">
       
         {/* Addons section - only show for selected venue */}
         {isCurrentSelected && hasAddons && (
@@ -391,50 +367,99 @@ export default function VenueCarouselCard({
           </div>
         )}
 
-        {/* Dot indicators */}
-        <div className="flex items-center justify-center gap-2">
-          {venues.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.stopPropagation()
-                setCurrentIndex(index)
-              }}
-              className={`transition-all duration-200 rounded-full ${
-                index === currentIndex 
-                  ? 'w-8 h-2 bg-[hsl(var(--primary-500))]' 
-                  : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
-              }`}
-              aria-label={`Go to venue ${index + 1}`}
-            />
-          ))}
+        {/* Navigation: Dots and Arrows in one line */}
+        <div className="flex items-center justify-center gap-3">
+          {/* Left Arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              goToPrevious()
+            }}
+            disabled={currentIndex === 0}
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${
+              currentIndex === 0 
+                ? 'bg-gray-200 cursor-not-allowed opacity-50' 
+                : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))]'
+            }`}
+            aria-label="Previous venue"
+          >
+            <ChevronLeft className={`w-4 h-4 ${currentIndex === 0 ? 'text-gray-400' : 'text-white'}`} />
+          </button>
+
+          {/* Dot indicators */}
+          <div className="flex items-center justify-center gap-2">
+            {venues.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setCurrentIndex(index)
+                }}
+                className={`transition-all duration-200 rounded-full ${
+                  index === currentIndex 
+                    ? 'w-8 h-2 bg-[hsl(var(--primary-500))]' 
+                    : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`Go to venue ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Right Arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              goToNext()
+            }}
+            disabled={currentIndex === venues.length - 1}
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${
+              currentIndex === venues.length - 1 
+                ? 'bg-gray-200 cursor-not-allowed opacity-50' 
+                : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))]'
+            }`}
+            aria-label="Next venue"
+          >
+            <ChevronRight className={`w-4 h-4 ${currentIndex === venues.length - 1 ? 'text-gray-400' : 'text-white'}`} />
+          </button>
         </div>
 
-        {/* Action button */}
-        <Button
-          onClick={(e) => {
-            e.stopPropagation()
-            handleSelectVenue()
-          }}
-          className={`w-full shadow-lg transition-all ${
-            isCurrentSelected 
-              ? 'bg-primary-500 hover:bg-green-600 text-white cursor-default'
-              : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white'
-          }`}
-          disabled={isLoading || isCurrentSelected}
-          size="lg"
-        >
-          {isCurrentSelected ? (
-            <div className="flex items-center gap-2">
-              <Check className="w-5 h-5" />
-              <span>Currently Selected</span>
-            </div>
-          ) : (
-            isLoading ? 'Selecting...' : 'Select This Venue'
-          )}
-        </Button>
-
-      
+        {/* View Details button */}
+        <div className="flex gap-2">
+          {/* Select button */}
+          <Button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleSelectVenue()
+            }}
+            className={`flex-1 shadow-lg transition-all ${
+              isCurrentSelected 
+                ? 'bg-primary-400 hover:bg-teal-600 text-white cursor-default'
+                : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white'
+            }`}
+            disabled={isLoading || isCurrentSelected}
+            size="lg"
+          >
+            {isCurrentSelected ? (
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5" />
+                <span>Selected</span>
+              </div>
+            ) : (
+              isLoading ? 'Selecting...' : 'Select Venue'
+            )}
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleViewProfile(e)
+            }}
+            variant="outline"
+            className="w-10 flex items-center justify-center shadow-lg border-2 border-gray-200 hover:border-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-50))]"
+            size="lg"
+          >
+            <Eye className="w-5 h-5 text-primary-500" />
+          </Button>
+        </div>
       </div>
 
       {/* ✅ Addon Selection Modal */}

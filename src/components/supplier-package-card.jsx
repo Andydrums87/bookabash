@@ -10,6 +10,8 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
     return null
   }
 
+  
+
   const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
 
   return (

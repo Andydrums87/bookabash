@@ -1,10 +1,12 @@
-// EmptySupplierCard.jsx - Now shows recommended supplier instead of empty state
+// EmptySupplierCard.jsx - UPDATE the component
+
 "use client"
 import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton" // ✅ Add this import
 import { Plus, Sparkles, TrendingUp } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 
@@ -35,30 +37,16 @@ export default function EmptySupplierCard({
     setIsAdding(true)
     
     try {
-      // Call the add function
       console.log('📞 [EmptySupplierCard] Calling onAddSupplier...')
       await onAddSupplier(type, recommendedSupplier)
       
       console.log('✅ [EmptySupplierCard] onAddSupplier completed!')
       
-      // Show the "Added!" badge via MicroConfettiWrapper
-      console.log('🎊 [EmptySupplierCard] Setting showAddedBadge to TRUE')
-
-      
-      console.log('🔍 [EmptySupplierCard] Current state:', {
-        isAdding: true,
-        showAddedBadge: true
-      })
-      
     } catch (error) {
       console.error('❌ [EmptySupplierCard] Error adding supplier:', error)
       setIsAdding(false)
-
     }
   }
-
-
-
 
   const getDisplayName = (supplierType) => {
     if (getSupplierDisplayName) {
@@ -126,61 +114,13 @@ export default function EmptySupplierCard({
 
   const phaseContent = getPhaseContent()
 
-  // Prevent hydration mismatch
-  if (!isMounted) {
+  // ✅ Show skeleton if not mounted OR no recommended supplier yet
+  if (!isMounted || !recommendedSupplier) {
     return (
-      <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80 animate-pulse">
-        <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300" />
-        <div className="p-6">
-          <div className="h-12 bg-gray-200 rounded animate-pulse" />
-        </div>
-      </Card>
-    )
-  }
-
-  // If no recommended supplier, show the old empty card
-  if (!recommendedSupplier) {
-    return (
-      <Card 
-        className="overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative cursor-pointer group hover:shadow-2xl"
-        onClick={() => openSupplierModal(type)}
-      >
-        <div className="relative h-48 sm:h-56 md:h-64 w-full bg-gradient-to-br from-[hsl(var(--primary-200))] via-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] overflow-hidden">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-8 left-8 w-16 h-16 bg-white rounded-full animate-pulse"></div>
-            <div className="absolute top-16 right-12 w-8 h-8 bg-white rounded-full animate-pulse" style={{ animationDelay: "1s" }}></div>
-            <div className="absolute bottom-12 left-16 w-12 h-12 bg-white rounded-full animate-pulse" style={{ animationDelay: "2s" }}></div>
-          </div>
-
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 via-gray-800/50 to-gray-900/70" />
-
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative w-32 sm:w-36 md:w-40 h-32 sm:h-36 md:h-40 group-hover:scale-110 transition-transform duration-300">
-              <div className="absolute inset-8 sm:inset-10 h-16 sm:h-20 md:h-30 w-16 sm:w-18 md:w-20 mx-auto bg-white rounded-full z-0" />
-              <Image
-                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753875890/ChatGPT_Image_Jul_30_2025_12_44_41_PM_n9xltj.png"
-                alt="Pick me!"
-                fill
-                className="object-contain drop-shadow-lg z-10"
-              />
-            </div>
-          </div>
-
-          <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
-            <Badge className="bg-[hsl(var(--primary-600))] text-white shadow-lg backdrop-blur-sm">
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </Badge>
-          </div>
-        </div>
-
+      <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl h-80">
+        <div className="relative h-64 w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
         <div className="p-6 bg-white">
-          <Button
-            className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white shadow-lg"
-            size="lg"
-            onClick={() => openSupplierModal(type)}
-          >
-            Browse {getDisplayName(type)} Options
-          </Button>
+          <div className="h-12 bg-gray-200 rounded animate-pulse" />
         </div>
       </Card>
     )
@@ -188,9 +128,8 @@ export default function EmptySupplierCard({
 
   // Show the recommended supplier (greyed out)
   return (
-
       <Card 
-        className="overflow-hidden rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-[hsl(var(--primary-400))] opacity-75 hover:opacity-90"
+        className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-[hsl(var(--primary-400))] opacity-75 hover:opacity-90"
       >
         <div className="relative h-64 w-full">
         {/* Supplier Image with grey overlay */}
@@ -205,7 +144,7 @@ export default function EmptySupplierCard({
         </div>
 
         {/* Much darker overlay for strong greyed effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/50 via-gray-800/40 to-gray-900/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 via-gray-800/50 to-gray-900/70" />
 
         {/* Minimal badge - just category */}
         <div className="absolute top-4 left-4 z-10">
@@ -262,10 +201,7 @@ export default function EmptySupplierCard({
             </>
           )}
         </Button>
-        
-   
       </div>
     </Card>
-
   )
 }
