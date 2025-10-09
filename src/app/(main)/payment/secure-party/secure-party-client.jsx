@@ -758,6 +758,99 @@ function PaymentForm({
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState(null)
   const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false)
+  const [paymentRequest, setPaymentRequest] = useState(null)
+  const [canMakePayment, setCanMakePayment] = useState(false)
+
+  // Set up Apple Pay / Google Pay
+  useEffect(() => {
+    if (stripe && !timerExpired) {
+      const pr = stripe.paymentRequest({
+        country: 'GB',
+        currency: 'gbp',
+        total: {
+          label: `${partyDetails.childName}'s Party Payment`,
+          amount: paymentBreakdown.totalPaymentToday * 100,
+        },
+        requestPayerName: true,
+        requestPayerEmail: true,
+      })
+
+      pr.canMakePayment().then(result => {
+        if (result) {
+          setPaymentRequest(pr)
+          setCanMakePayment(true)
+        }
+      })
+
+      pr.on('paymentmethod', async (ev) => {
+        setIsProcessing(true)
+        setPaymentError(null)
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+
+          if (user) {
+            await supabase
+              .from('terms_acceptances')
+              .insert({
+                user_id: user.id,
+                user_email: user.email,
+                booking_id: partyDetails.id,
+                terms_version: "1.0",
+                privacy_version: "1.0",
+                ip_address: await getUserIP(),
+                user_agent: navigator.userAgent,
+                accepted_at: new Date().toISOString(),
+                acceptance_context: 'booking'
+              })
+          }
+
+          if (!elements) {
+            ev.complete('fail')
+            throw new Error('Payment elements not ready')
+          }
+
+          const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+              payment_method: ev.paymentMethod.id,
+              return_url: `${window.location.origin}/payment/processing?party_id=${partyDetails.id}`,
+              payment_method_data: {
+                billing_details: {
+                  name: partyDetails.parentName,
+                  email: partyDetails.email,
+                  address: {
+                    postal_code: partyDetails.location,
+                    country: 'GB'
+                  }
+                }
+              }
+            },
+            redirect: 'if_required'
+          })
+
+          if (error) {
+            ev.complete('fail')
+            throw new Error(error.message)
+          }
+
+          ev.complete('success')
+          
+          if (paymentIntent && paymentIntent.status === 'succeeded') {
+            setIsProcessing(false)
+            setIsRedirecting(true)
+            onPaymentSuccess(paymentIntent)
+          }
+
+        } catch (error) {
+          ev.complete('fail')
+          setPaymentError(error.message)
+          onPaymentError(error)
+          setIsProcessing(false)
+        }
+      })
+    }
+  }, [stripe, elements, clientSecret, timerExpired, paymentBreakdown, partyDetails, onPaymentSuccess, onPaymentError])
 
   const handlePayment = async (event) => {
     event.preventDefault()
@@ -842,11 +935,46 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
+      
+      {/* Apple Pay / Google Pay - Front and Center */}
+      {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && !timerExpired && (
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Express Checkout
+            </label>
+            <div className="bg-white border border-gray-200 rounded-lg p-3">
+              <PaymentRequestButtonElement 
+                options={{
+                  paymentRequest,
+                  style: {
+                    paymentRequestButton: {
+                      type: 'default',
+                      theme: 'dark',
+                      height: '48px',
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-3 text-gray-500">Or choose payment method</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         {!timerExpired && clientSecret && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Choose Payment Method
+              Payment Method
             </label>
             <PaymentElement 
               options={{
@@ -934,16 +1062,6 @@ function PaymentForm({
         <p className="text-xs text-gray-500 text-center">
           Secure payment powered by Stripe. Your payment details are encrypted and never stored.
         </p>
-        <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-          <span>We accept:</span>
-          <span className="font-medium">Card</span>
-          <span>•</span>
-          <span className="font-medium">Klarna</span>
-          <span>•</span>
-          <span className="font-medium">Apple Pay</span>
-          <span>•</span>
-          <span className="font-medium">Google Pay</span>
-        </div>
       </div>
     </div>
   )
