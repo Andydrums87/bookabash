@@ -6,8 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
-  CardElement,
-  PaymentRequestButtonElement,
+  PaymentElement,
   useStripe,
   useElements
 } from '@stripe/react-stripe-js'
@@ -169,6 +168,7 @@ export default function PaymentPageContent() {
   const [partyId, setPartyId] = useState(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [timerExpired, setTimerExpired] = useState(false)
+  const [clientSecret, setClientSecret] = useState(null)
   const [paymentBreakdown, setPaymentBreakdown] = useState({
     depositAmount: 0,
     fullPaymentAmount: 0,
@@ -288,6 +288,31 @@ export default function PaymentPageContent() {
           email: userResult.user.email,
           parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
         })
+
+        // Create payment intent with Klarna support
+        const response = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: breakdown.totalPaymentToday * 100,
+            currency: 'gbp',
+            partyDetails: partyResult.party,
+            suppliers: supplierList,
+            addons: partyResult.party.party_plan?.addons || [],
+            paymentType: 'unified',
+            enableKlarna: true
+          }),
+        })
+
+        const { clientSecret: secret, error: backendError } = await response.json()
+        
+        if (backendError) {
+          console.error('Error creating payment intent:', backendError)
+        } else {
+          setClientSecret(secret)
+        }
   
       } catch (error) {
         console.error('Error loading payment data:', error)
@@ -541,7 +566,24 @@ export default function PaymentPageContent() {
                 </div>
               </div>
 
-              <Elements stripe={stripePromise}>
+              <Elements 
+                stripe={stripePromise}
+                options={{
+                  clientSecret: clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#374151',
+                      colorBackground: '#ffffff',
+                      colorText: '#374151',
+                      colorDanger: '#ef4444',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      spacingUnit: '4px',
+                      borderRadius: '6px',
+                    },
+                  },
+                }}
+              >
                 <PaymentForm
                   partyDetails={partyDetails}
                   confirmedSuppliers={confirmedSuppliers}
@@ -552,6 +594,7 @@ export default function PaymentPageContent() {
                   isRedirecting={isRedirecting}
                   setIsRedirecting={setIsRedirecting}
                   timerExpired={timerExpired}
+                  clientSecret={clientSecret}
                 />
               </Elements>
             </div>
@@ -707,138 +750,16 @@ function PaymentForm({
   onPaymentError,
   isRedirecting,
   setIsRedirecting,
-  timerExpired
+  timerExpired,
+  clientSecret
 }) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState(null)
-  const [paymentRequest, setPaymentRequest] = useState(null)
-  const [canMakePayment, setCanMakePayment] = useState(false)
   const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false)
-  const [billingDetails, setBillingDetails] = useState({
-    name: partyDetails.parentName || '',
-    postalCode: partyDetails.location || ''
-  })
 
-  useEffect(() => {
-    if (stripe && !timerExpired) {
-      const pr = stripe.paymentRequest({
-        country: 'GB',
-        currency: 'gbp',
-        total: {
-          label: `${partyDetails.childName}'s Party Payment`,
-          amount: paymentBreakdown.totalPaymentToday * 100,
-        },
-        displayItems: [
-          ...(paymentBreakdown.hasDeposits ? [{
-            label: 'Service Deposits',
-            amount: paymentBreakdown.depositAmount * 100,
-          }] : []),
-          ...(paymentBreakdown.hasFullPayments ? [{
-            label: 'Full Payments (Products)',
-            amount: paymentBreakdown.fullPaymentAmount * 100,
-          }] : []),
-          ...paymentBreakdown.paymentDetails.map(supplier => ({
-            label: `${supplier.category} - ${supplier.paymentType === 'full_payment' ? 'Full Payment' : 'Deposit'}`,
-            amount: supplier.amountToday * 100,
-          })),
-          ...(addons || []).map(addon => ({
-            label: addon.name,
-            amount: Math.round((addon.price || 0) * 100),
-          }))
-        ],
-        requestPayerName: true,
-        requestPayerEmail: true,
-      })
-
-      pr.canMakePayment().then(result => {
-        if (result) {
-          setPaymentRequest(pr)
-          setCanMakePayment(true)
-        }
-      }).catch(err => {
-        setCanMakePayment(false)
-      })
-
-      pr.on('paymentmethod', async (ev) => {
-        setIsProcessing(true)
-        setPaymentError(null)
-      
-        try {
-          const { data: { user } } = await supabase.auth.getUser()
-  
-          if (user) {
-            await supabase
-              .from('terms_acceptances')
-              .insert({
-                user_id: user.id,
-                user_email: user.email,
-                booking_id: partyDetails.id,
-                terms_version: "1.0",
-                privacy_version: "1.0",
-                ip_address: await getUserIP(),
-                user_agent: navigator.userAgent,
-                accepted_at: new Date().toISOString(),
-                acceptance_context: 'booking'
-              })
-          }
-
-          const response = await fetch('/api/create-payment-intent', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              amount: paymentBreakdown.totalPaymentToday * 100,
-              currency: 'gbp',
-              partyDetails: {
-                ...partyDetails,
-                parentName: ev.payerName || partyDetails.parentName,
-                email: ev.payerEmail || partyDetails.email
-              },
-              suppliers: confirmedSuppliers,
-              addons,
-              paymentType: 'payment_request'
-            }),
-          })
-      
-          const { clientSecret, error: backendError } = await response.json()
-      
-          if (backendError) {
-            throw new Error(backendError)
-          }
-      
-          const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: ev.paymentMethod.id,
-          })
-      
-          if (error) {
-            ev.complete('fail')
-            throw new Error(error.message)
-          }
-      
-          if (paymentIntent.status === 'succeeded') {
-            ev.complete('success')
-            setIsProcessing(false)
-            setIsRedirecting(true)
-            onPaymentSuccess(paymentIntent)
-          } else {
-            ev.complete('fail')
-            throw new Error('Payment not completed')
-          }
-      
-        } catch (error) {
-          ev.complete('fail')
-          setPaymentError(error.message)
-          onPaymentError(error)
-          setIsProcessing(false)
-        }
-      })
-    }
-  }, [stripe, paymentBreakdown, partyDetails, confirmedSuppliers, addons, onPaymentSuccess, onPaymentError, timerExpired])
-
-  const handleCardPayment = async (event) => {
+  const handlePayment = async (event) => {
     event.preventDefault()
     
     if (!stripe || !elements || timerExpired) {
@@ -852,8 +773,6 @@ function PaymentForm({
 
     setIsProcessing(true)
     setPaymentError(null)
-
-    const cardElement = elements.getElement(CardElement)
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -874,46 +793,28 @@ function PaymentForm({
           })
       }
 
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: paymentBreakdown.totalPaymentToday * 100,
-          currency: 'gbp',
-          partyDetails,
-          suppliers: confirmedSuppliers,
-          addons,
-          billingDetails,
-          paymentType: 'card'
-        }),
-      })
-
-      const { clientSecret, error: backendError } = await response.json()
-
-      if (backendError) {
-        throw new Error(backendError)
-      }
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: billingDetails.name || partyDetails.parentName || 'Parent',
-            email: partyDetails.email,
-            address: {
-              postal_code: billingDetails.postalCode || partyDetails.location || ''
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/payment/processing?party_id=${partyDetails.id}`,
+          payment_method_data: {
+            billing_details: {
+              name: partyDetails.parentName,
+              email: partyDetails.email,
+              address: {
+                postal_code: partyDetails.location
+              }
             }
-          },
+          }
         },
+        redirect: 'if_required'
       })
 
       if (error) {
         throw new Error(error.message)
       }
 
-      if (paymentIntent.status === 'succeeded') {
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
         setIsProcessing(false)
         setIsRedirecting(true)
         onPaymentSuccess(paymentIntent)
@@ -936,110 +837,43 @@ function PaymentForm({
     }
   }
 
-  const handleInputChange = (field, value) => {
-    setBillingDetails(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
-
   const isFormDisabled = isProcessing || isRedirecting || timerExpired
 
   return (
     <div className="space-y-6">
-      
-      {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && !timerExpired && (
-        <div className="space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-gray-600 mb-3">Quick & Secure Payment</p>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <PaymentRequestButtonElement 
-                options={{
-                  paymentRequest,
-                  style: {
-                    paymentRequestButton: {
-                      type: 'default',
-                      theme: 'dark',
-                      height: '48px',
-                    },
-                  },
-                }}
-              />
-            </div>
-          </div>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-3 text-gray-500">Or pay with card</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        {!timerExpired && clientSecret && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Choose Payment Method
             </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="Your full name"
-              value={billingDetails.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              required
-              disabled={isFormDisabled}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Postcode
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm uppercase disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="SW1A 1AA"
-              value={billingDetails.postalCode}
-              onChange={(e) => handleInputChange('postalCode', e.target.value.toUpperCase())}
-              maxLength="8"
-              required
-              disabled={isFormDisabled}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Card Details
-          </label>
-          <div className="p-3 border border-gray-300 rounded-md bg-white">
-            <CardElement 
+            <PaymentElement 
               options={{
-                style: {
-                  base: {
-                    fontSize: '16px',
-                    color: '#374151',
-                    '::placeholder': {
-                      color: '#9ca3af',
-                    },
-                    iconColor: '#6b7280',
-                  },
-                  invalid: {
-                    color: '#ef4444',
-                    iconColor: '#ef4444',
-                  },
+                layout: {
+                  type: 'tabs',
+                  defaultCollapsed: false,
+                  radios: false,
+                  spacedAccordionItems: true
                 },
-                hidePostalCode: true,
-                iconStyle: 'solid',
-                disabled: isFormDisabled,
+                paymentMethodOrder: ['klarna', 'card'],
+                fields: {
+                  billingDetails: {
+                    name: 'auto',
+                    email: 'auto',
+                    address: {
+                      country: 'never',
+                      postalCode: 'auto'
+                    }
+                  }
+                },
+                terms: {
+                  card: 'never',
+                  klarna: 'auto'
+                }
               }}
             />
           </div>
-        </div>
+        )}
 
         {paymentError && !isRedirecting && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -1053,6 +887,15 @@ function PaymentForm({
           </div>
         )}
 
+        {!clientSecret && !timerExpired && (
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-600 text-sm">Loading payment options...</p>
+            </div>
+          </div>
+        )}
+
         <BookingTermsAcceptance
           termsAccepted={bookingTermsAccepted}
           setTermsAccepted={setBookingTermsAccepted}
@@ -1061,8 +904,8 @@ function PaymentForm({
         />
 
         <button 
-          onClick={handleCardPayment}
-          disabled={!stripe || isFormDisabled || !bookingTermsAccepted}
+          onClick={handlePayment}
+          disabled={!stripe || isFormDisabled || !bookingTermsAccepted || !clientSecret}
           className="cursor-pointer w-full bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRedirecting ? (
@@ -1088,18 +931,22 @@ function PaymentForm({
 
       <div className="space-y-2">
         <p className="text-xs text-gray-500 text-center">
-          Secure payment powered by Stripe. Your card details are encrypted and never stored.
+          Secure payment powered by Stripe. Your payment details are encrypted and never stored.
         </p>
-        {canMakePayment && (
-          <p className="text-xs text-gray-500 text-center">
-            Apple Pay and Google Pay use your device's secure authentication.
-          </p>
-        )}
+        <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+          <span>We accept:</span>
+          <span className="font-medium">Card</span>
+          <span>•</span>
+          <span className="font-medium">Klarna</span>
+          <span>•</span>
+          <span className="font-medium">Apple Pay</span>
+          <span>•</span>
+          <span className="font-medium">Google Pay</span>
+        </div>
       </div>
     </div>
   )
 }
-
 
 
 // "use client"

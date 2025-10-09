@@ -14,7 +14,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 // Helper function to detect lead-time suppliers
 const isLeadTimeSupplier = (supplier) => {
-  const leadTimeCategories = ['cakes', 'party bags', 'decorations'];
+  const leadTimeCategories = ['cakes', 'party bags', 'decorations', 'partybags'];
   return leadTimeCategories.includes(supplier.category?.toLowerCase()) ||
          supplier.packageData?.paymentType === 'full_payment' ||
          supplier.packageData?.supplierType?.includes('lead_time');
@@ -63,7 +63,15 @@ const calculatePaymentBreakdown = (suppliers) => {
 
 export async function POST(request) {
   try {
-    const { amount, currency, partyDetails, suppliers, addons, paymentType } = await request.json()
+    const { 
+      amount, 
+      currency, 
+      partyDetails, 
+      suppliers, 
+      addons, 
+      paymentType,
+      enableKlarna = false 
+    } = await request.json()
 
     // Calculate payment breakdown for metadata
     const paymentBreakdown = calculatePaymentBreakdown(suppliers);
@@ -74,33 +82,68 @@ export async function POST(request) {
       console.warn(`Payment amount mismatch: received ${amount}, expected ${expectedAmount}`);
     }
 
-  // MINIMAL metadata - only essential tracking info
-  const metadata = {
-    party_id: partyDetails.id?.toString() || 'unknown',
-    payment_type: paymentType || 'mixed',
-    supplier_count: suppliers.length.toString(),
-    total_suppliers: suppliers.length.toString(),
-    // Keep categories short and truncated if needed
-    categories: suppliers.map(s => s.category.substring(0, 3)).join(',').substring(0, 100)
-  };
+    // MINIMAL metadata - only essential tracking info
+    const metadata = {
+      party_id: partyDetails.id?.toString() || 'unknown',
+      payment_type: paymentType || 'mixed',
+      supplier_count: suppliers.length.toString(),
+      total_suppliers: suppliers.length.toString(),
+      // Keep categories short and truncated if needed
+      categories: suppliers.map(s => s.category.substring(0, 3)).join(',').substring(0, 100)
+    };
 
-    // Create PaymentIntent with enhanced metadata
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Determine which payment methods to enable
+    const paymentMethodTypes = ['card'];
+    
+    // Klarna requirements:
+    // - Amount between £1 and £10,000 (100 pence to 1,000,000 pence)
+    // - Currency must be GBP
+    // - Customer billing details required
+    if (enableKlarna && amount >= 100 && amount <= 1000000 && currency === 'gbp') {
+      paymentMethodTypes.push('klarna');
+      console.log('✅ Klarna enabled for payment intent');
+    } else if (enableKlarna) {
+      console.log('⚠️ Klarna not enabled - amount out of range or currency not GBP');
+    }
+
+    // Payment intent configuration
+    const paymentIntentConfig = {
       amount,
       currency,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-      description: `${partyDetails.childName}'s ${partyDetails.theme} party - ${paymentBreakdown.hasFullPayments ? 'Mixed' : 'Deposit'} payment`,
+      description: `${partyDetails.childName || 'Party'}'s ${partyDetails.theme || 'party'} - ${paymentBreakdown.hasFullPayments ? 'Mixed' : 'Deposit'} payment`,
       metadata,
       // Add receipt email if available
-      ...(partyDetails.email && { receipt_email: partyDetails.email })
-    });
+      ...(partyDetails.email && { receipt_email: partyDetails.email }),
+    };
+
+    // Use automatic_payment_methods for modern approach (includes Apple/Google Pay)
+    if (enableKlarna) {
+      paymentIntentConfig.automatic_payment_methods = {
+        enabled: true,
+        allow_redirects: 'always' // Required for Klarna
+      };
+      
+      // Klarna-specific options
+      paymentIntentConfig.payment_method_options = {
+        klarna: {
+          preferred_locale: 'en-GB',
+        }
+      };
+    } else {
+      // Fallback to standard automatic payment methods
+      paymentIntentConfig.automatic_payment_methods = {
+        enabled: true,
+      };
+    }
+
+    // Create PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
 
     // Log payment breakdown for debugging
-    console.log('Payment Intent created:', {
+    console.log('💳 Payment Intent created:', {
       id: paymentIntent.id,
       amount: paymentIntent.amount,
+      payment_methods: enableKlarna ? ['card', 'klarna', 'wallet'] : ['card', 'wallet'],
       breakdown: paymentBreakdown,
       leadTimeSuppliers: suppliers.filter(isLeadTimeSupplier).length,
       depositSuppliers: suppliers.filter(s => !isLeadTimeSupplier(s)).length
@@ -108,15 +151,17 @@ export async function POST(request) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
       paymentBreakdown // Optional: return breakdown to frontend
     });
 
   } catch (error) {
-    console.error('Stripe PaymentIntent creation error:', error);
+    console.error('❌ Stripe PaymentIntent creation error:', error);
     return NextResponse.json(
       { 
         error: error.message,
-        type: 'stripe_error'
+        type: 'stripe_error',
+        details: error.type || 'unknown_error'
       },
       { status: 500 }
     );
