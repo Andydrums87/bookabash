@@ -523,36 +523,36 @@ function PaymentForm({
               Payment Method
             </label>
             <PaymentElement 
-              options={{
-                layout: {
-                  type: 'tabs',
-                  defaultCollapsed: false,
-                  radios: false,
-                  spacedAccordionItems: true
-                },
-                // IMPORTANT: Card first, then Klarna (card will be default)
-                paymentMethodOrder: ['card', 'klarna'],
-                // Disable wallets in PaymentElement
-                wallets: {
-                  applePay: 'never',
-                  googlePay: 'never'
-                },
-                fields: {
-                  billingDetails: {
-                    name: 'auto',
-                    email: 'auto',
-                    address: {
-                      country: 'never',
-                      postalCode: 'auto'
-                    }
-                  }
-                },
-                terms: {
-                  card: 'never',
-                  klarna: 'auto'
-                }
-              }}
-            />
+  options={{
+    layout: {
+      type: 'accordion',
+      defaultCollapsed: true,  // All payment methods start collapsed
+      radios: true,
+      spacedAccordionItems: true
+    },
+    // Card first, then Klarna
+    paymentMethodOrder: ['card', 'klarna'],
+    // Disable wallets in PaymentElement
+    wallets: {
+      applePay: 'never',
+      googlePay: 'never'
+    },
+    fields: {
+      billingDetails: {
+        name: 'auto',
+        email: 'auto',
+        address: {
+          country: 'never',
+          postalCode: 'auto'
+        }
+      }
+    },
+    terms: {
+      card: 'never',
+      klarna: 'auto'
+    }
+  }}
+/>
           </div>
         )}
 
