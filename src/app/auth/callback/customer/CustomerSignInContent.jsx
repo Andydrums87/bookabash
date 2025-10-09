@@ -43,19 +43,35 @@ export default function CustomerAuthCallback() {
       try {
         console.log("👤 Processing customer OAuth callback...")
         
-        // Get URL parameters first
-        const returnTo = searchParams.get("return_to")
-        const preserveParty = searchParams.get("preserve_party")
-        const context = searchParams.get("context")
+        // Get URL parameters
+        const returnToParam = searchParams.get("return_to")
+        const preservePartyParam = searchParams.get("preserve_party")
+        const contextParam = searchParams.get("context")
         const userType = searchParams.get("user_type")
+        
+        // CRITICAL: Check localStorage first (survives OAuth redirect)
+        const storedReturnTo = localStorage.getItem('oauth_return_to')
+        const storedPreserveParty = localStorage.getItem('oauth_preserve_party')
+        const storedContext = localStorage.getItem('oauth_context')
+        
+        // Use stored values with fallback to URL params
+        const returnTo = storedReturnTo || returnToParam
+        const preserveParty = storedPreserveParty || preservePartyParam
+        const context = storedContext || contextParam
         
         console.log("📋 Callback parameters:", {
           returnTo,
           preserveParty,
           context,
-          userType
+          userType,
+          source: storedReturnTo ? 'localStorage' : 'url'
         })
-
+        
+        // Clean up localStorage after reading
+        localStorage.removeItem('oauth_return_to')
+        localStorage.removeItem('oauth_preserve_party')
+        localStorage.removeItem('oauth_context')
+  
         // Let Supabase handle the OAuth session
         console.log("🔍 Checking for Supabase session...")
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -64,9 +80,8 @@ export default function CustomerAuthCallback() {
           console.error("❌ Session error:", sessionError)
           throw new Error(`Authentication failed: ${sessionError.message}`)
         }
-
+  
         if (!session || !session.user) {
-          // No session yet - might need to wait or handle URL-based auth
           console.log("⏳ No session found, trying getSessionFromUrl...")
           
           const { data, error: urlError } = await supabase.auth.getSessionFromUrl()
@@ -86,7 +101,7 @@ export default function CustomerAuthCallback() {
           console.log("✅ Found existing session:", session.user.email)
           var user = session.user
         }
-
+  
         // CRITICAL: Check if this is a business account
         console.log("🔍 Checking if this is a business account...")
         const { data: supplierRecord, error: supplierError } = await supabase
@@ -95,24 +110,20 @@ export default function CustomerAuthCallback() {
           .eq("auth_user_id", user.id)
           .eq("is_primary", true)
           .maybeSingle()
-
+  
         if (supplierError && supplierError.code !== 'PGRST116') {
           console.error("Error checking supplier:", supplierError)
         }
-
+  
         if (supplierRecord) {
           console.log("🚫 Business account detected via OAuth, blocking customer access")
-          
-          // Sign out from customer side
           await supabase.auth.signOut()
-          
-          // Redirect to supplier sign-in with their email and blocked flag
           window.location.href = `${window.location.origin}/suppliers/onboarding/auth/signin?email=${encodeURIComponent(user.email)}&blocked=true`
           return
         }
-
+  
         console.log("✅ User account verified, creating customer profile...")
-
+  
         // Create or get customer profile
         const userResult = await partyDatabaseBackend.createOrGetUser({
           firstName: user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || '',
@@ -121,44 +132,31 @@ export default function CustomerAuthCallback() {
           phone: user.user_metadata?.phone || '',
           postcode: ''
         })
-
+  
         if (!userResult.success) {
           throw new Error('Failed to create customer profile')
         }
-
+  
         console.log("✅ Customer profile ready:", userResult.user.id)
-
+  
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 300))
-
-        // Determine where to redirect based on context
+  
+        // Determine where to redirect
         const currentOrigin = window.location.origin
-        let redirectUrl = `${currentOrigin}/dashboard` // Default fallback
+        let redirectUrl = `${currentOrigin}/`
         let successMessage = 'Welcome to PartySnap!'
-
-        if (preserveParty === 'true' && context === 'review_book') {
-          // User was in the middle of party planning - redirect back to review book
-          console.log("🎉 Preserving party context, redirecting to review book")
+  
+        if (preserveParty === 'true' || context === 'review_book' || (returnTo && returnTo.includes('/review-book'))) {
+          console.log("🎉 Redirecting to review book")
           redirectUrl = `${currentOrigin}/review-book`
-          successMessage = `Welcome ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || 'back'}! Let's continue with your party booking.`
-          
-        } else if (returnTo && returnTo.includes('/review-book')) {
-          // Alternative: use returnTo URL if it's the review book page
-          console.log("🔗 Using returnTo URL for review book")
-          redirectUrl = returnTo.startsWith('http') ? decodeURIComponent(returnTo) : `${currentOrigin}${decodeURIComponent(returnTo)}`
-          successMessage = `Welcome ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || 'back'}! Let's finish your party booking.`
-          
+          successMessage = `Welcome ${user.user_metadata?.given_name || 'back'}! Let's continue with your party booking.`
         } else if (returnTo) {
-          // Use the returnTo URL
-          redirectUrl = returnTo.startsWith('http') ? decodeURIComponent(returnTo) : `${currentOrigin}${decodeURIComponent(returnTo)}`
-          successMessage = `Welcome back ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || ''}!`
-          
-        } else {
-          // Default dashboard redirect
-          successMessage = `Welcome to PartySnap ${user.user_metadata?.given_name || user.user_metadata?.full_name?.split(' ')[0] || ''}!`
+          redirectUrl = returnTo.startsWith('http') ? returnTo : `${currentOrigin}${returnTo}`
+          successMessage = `Welcome back ${user.user_metadata?.given_name || ''}!`
         }
-
-        // Store success message for toast
+  
+        // Store success message
         sessionStorage.setItem('auth_success', JSON.stringify({
           type: preserveParty === 'true' ? 'oauth_signin_party' : 'oauth_signin',
           message: successMessage,
@@ -167,19 +165,18 @@ export default function CustomerAuthCallback() {
         
         console.log("🚀 Redirecting to:", redirectUrl)
         window.location.href = redirectUrl
-
+  
       } catch (error) {
         console.error("❌ Customer callback error:", error)
         setStatus("error")
         setErrorMessage(error.message || "Authentication failed")
       }
     }
-
-    // Add a small delay to ensure the page is fully loaded
+  
     const timer = setTimeout(() => {
       handleAuthCallback()
     }, 100)
-
+  
     return () => clearTimeout(timer)
   }, [searchParams, router])
 

@@ -251,27 +251,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
     try {
       console.log(`🔐 Starting ${provider} OAuth ${isSignUp ? "sign-up" : "sign-in"}...`)
   
-      // Use current origin to ensure we stay on localhost during development
       const currentOrigin = window.location.origin
-      let redirectUrl = `${currentOrigin}/auth/callback/customer?user_type=customer`
+      const currentPath = window.location.pathname
       
-      // Check if we're coming from party planning context
-      const isFromReviewBook = returnTo && returnTo.includes('/review-book')
-      const isPartyPlanningContext = window.location.pathname === '/review-book' || isFromReviewBook
+      // Determine the return path
+      const actualReturnTo = returnTo || (currentPath === '/review-book' ? '/review-book' : '/')
+      
+      // Store return path in localStorage before OAuth redirect
+      // This survives the OAuth redirect cycle
+      localStorage.setItem('oauth_return_to', actualReturnTo)
+      
+      // Check if we're in party planning context
+      const isPartyPlanningContext = actualReturnTo.includes('/review-book')
       
       if (isPartyPlanningContext) {
-        // Always preserve party context when coming from review-book
-        redirectUrl += `&preserve_party=true`
-        redirectUrl += `&context=review_book`
+        localStorage.setItem('oauth_preserve_party', 'true')
+        localStorage.setItem('oauth_context', 'review_book')
       }
       
-      if (returnTo) {
-        redirectUrl += `&return_to=${encodeURIComponent(returnTo)}`
-      }
+      let redirectUrl = `${currentOrigin}/auth/callback/customer?user_type=customer`
   
       console.log("🔗 OAuth redirect URL:", redirectUrl)
-      console.log("🏠 Current origin:", currentOrigin)
-      console.log("🎉 Party context:", isPartyPlanningContext)
+      console.log("📍 Stored return path in localStorage:", actualReturnTo)
   
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -283,12 +284,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
         },
       })
   
-      if (error) {
-        console.error(`❌ ${provider} OAuth error:`, error)
-        throw error
-      }
-  
-      // OAuth redirect will happen automatically, no need to handle success here
+      if (error) throw error
   
     } catch (err) {
       console.error(`❌ ${provider} OAuth error:`, err)
