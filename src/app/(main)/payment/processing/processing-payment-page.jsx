@@ -3,41 +3,167 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
 export default function PaymentProcessing() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState('processing') // processing, success, error
+  const [status, setStatus] = useState('processing')
   const [message, setMessage] = useState('Processing your payment...')
 
   useEffect(() => {
-    const checkPaymentStatus = async () => {
+    const completePayment = async () => {
       const paymentIntent = searchParams.get('payment_intent')
       const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret')
       const partyId = searchParams.get('party_id')
       const redirectStatus = searchParams.get('redirect_status')
 
-      console.log('Payment processing page loaded:', {
+      console.log('🔍 Payment processing page loaded:', {
         paymentIntent,
         redirectStatus,
         partyId
       })
 
+      if (!partyId) {
+        console.error('❌ No party ID found')
+        setStatus('error')
+        setMessage('Missing party information')
+        setTimeout(() => router.push('/dashboard'), 2000)
+        return
+      }
+
       // Klarna redirects with redirect_status
-      if (redirectStatus === 'succeeded') {
-        setStatus('success')
-        setMessage('Payment successful! Redirecting to confirmation...')
+      if (redirectStatus === 'succeeded' && paymentIntent) {
+        setStatus('processing')
+        setMessage('Finalizing your booking...')
         
-        // Wait a moment then redirect
-        setTimeout(() => {
-          router.push(`/payment/success?payment_intent=${paymentIntent}`)
-        }, 2000)
+        try {
+          console.log('✅ Klarna payment succeeded, completing booking...')
+          console.log('🔍 Party ID:', partyId)
+          console.log('🔍 Payment Intent:', paymentIntent)
+          
+          // Get party details
+          const partyResult = await partyDatabaseBackend.getPartyById(partyId)
+          console.log('🔍 Party result:', partyResult)
+          
+          if (!partyResult.success || !partyResult.party) {
+            throw new Error('Party not found')
+          }
+
+          const party = partyResult.party
+          console.log('🔍 Party data:', party)
+          
+          // Calculate payment breakdown
+          const partyPlan = party.party_plan || {}
+          const suppliers = Object.entries(partyPlan)
+            .filter(([key, supplier]) => 
+              supplier && 
+              typeof supplier === 'object' && 
+              supplier.name &&
+              key !== 'addons'
+            )
+            .map(([key, supplier]) => ({
+              id: supplier.id,
+              category: key,
+              name: supplier.name,
+              price: supplier.price || 0
+            }))
+
+          console.log('📦 Suppliers for payment:', suppliers)
+          
+          // Calculate totals
+          const totalAmount = suppliers.reduce((sum, s) => sum + s.price, 0)
+          const depositAmount = Math.round(totalAmount * 0.3)
+          
+          console.log('💰 Payment amounts:', { totalAmount, depositAmount })
+          
+          // Clear timer
+          localStorage.removeItem(`booking_timer_${partyId}`)
+          console.log('⏰ Timer cleared')
+          
+          // Update party status to planned - DIRECT SUPABASE UPDATE
+          console.log('📝 Attempting to update party in database...')
+          console.log('📝 Update payload:', {
+            status: 'planned',
+            payment_status: 'partial_paid',
+            payment_intent_id: paymentIntent,
+            payment_date: new Date().toISOString(),
+            deposit_amount: depositAmount,
+            total_paid: depositAmount
+          })
+          
+          const { data: updateData, error: statusError } = await supabase
+            .from('parties')
+            .update({ 
+              status: 'planned',
+              payment_status: 'partial_paid',
+              payment_intent_id: paymentIntent,
+              payment_date: new Date().toISOString(),
+              deposit_amount: depositAmount,
+              total_paid: depositAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', partyId)
+            .select()
+          
+          console.log('📝 Update response:', { data: updateData, error: statusError })
+          
+          if (statusError) {
+            console.error('❌ Error updating party status:', statusError)
+            throw new Error(`Database update failed: ${statusError.message}`)
+          } else {
+            console.log('✅ Party status updated successfully:', updateData)
+          }
+          
+          // Check if enquiries exist
+          const supplierCategories = suppliers.map(s => s.category)
+          const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId)
+          const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : []
+          
+          const existingCategories = existingEnquiries.map(e => e.supplier_category)
+          const enquiriesExist = supplierCategories.every(cat => existingCategories.includes(cat))
+
+          if (enquiriesExist) {
+            console.log('📧 Updating existing enquiries...')
+            await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategories)
+            await partyDatabaseBackend.updateEnquiriesPaymentStatus(partyId, supplierCategories, {})
+          } else {
+            console.log('📧 Creating new enquiries...')
+            const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
+              partyId,
+              "BOOKING CONFIRMED - Customer has completed payment"
+            )
+            
+            if (enquiryResult.success) {
+              await partyDatabaseBackend.autoAcceptEnquiries(partyId)
+              await partyDatabaseBackend.updateEnquiriesPaymentStatus(partyId, supplierCategories, {})
+            }
+          }
+          
+          console.log('✅ Enquiries processed')
+          
+          setStatus('success')
+          setMessage('Payment successful! Redirecting...')
+          
+          setTimeout(() => {
+            router.push(`/payment/success?payment_intent=${paymentIntent}`)
+          }, 1500)
+          
+        } catch (error) {
+          console.error('❌ Error completing payment:', error)
+          setStatus('error')
+          setMessage('Payment was successful, but there was an issue. Please contact support.')
+          
+          setTimeout(() => {
+            router.push(`/payment/success?payment_intent=${paymentIntent}`)
+          }, 3000)
+        }
         
       } else if (redirectStatus === 'failed') {
         setStatus('error')
         setMessage('Payment failed. Please try again.')
         
-        // Redirect back to payment page
         setTimeout(() => {
           router.push(`/payment?party_id=${partyId}`)
         }, 3000)
@@ -65,8 +191,7 @@ export default function PaymentProcessing() {
             setStatus('processing')
             setMessage('Your payment is being processed. This may take a moment...')
             
-            // Poll for status update
-            setTimeout(() => checkPaymentStatus(), 3000)
+            setTimeout(() => completePayment(), 3000)
             
           } else if (intent.status === 'requires_payment_method') {
             setStatus('error')
@@ -83,7 +208,6 @@ export default function PaymentProcessing() {
           setMessage('Error verifying payment. Please contact support if payment was taken.')
         }
       } else {
-        // No payment info found
         setStatus('error')
         setMessage('No payment information found.')
         
@@ -93,7 +217,7 @@ export default function PaymentProcessing() {
       }
     }
 
-    checkPaymentStatus()
+    completePayment()
   }, [searchParams, router])
 
   return (

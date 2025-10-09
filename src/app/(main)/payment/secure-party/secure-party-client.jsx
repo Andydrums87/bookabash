@@ -11,6 +11,14 @@ import {
   useElements
 } from '@stripe/react-stripe-js'
 
+// Dynamically import PaymentRequestButtonElement to avoid SSR issues
+let PaymentRequestButtonElement
+if (typeof window !== 'undefined') {
+  import('@stripe/react-stripe-js').then(module => {
+    PaymentRequestButtonElement = module.PaymentRequestButtonElement
+  })
+}
+
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -901,17 +909,23 @@ function PaymentForm({
             }
           }
         },
-        redirect: 'if_required'
+        // Don't use redirect: 'if_required' - let Stripe handle redirects automatically
       })
 
       if (error) {
         throw new Error(error.message)
       }
 
+      // Only reach here if payment succeeded without redirect
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         setIsProcessing(false)
         setIsRedirecting(true)
         onPaymentSuccess(paymentIntent)
+      } else if (paymentIntent && paymentIntent.status === 'requires_action') {
+        // This shouldn't happen as Stripe should auto-redirect
+        // But just in case, redirect manually
+        console.log('Payment requires action, redirecting...')
+        window.location.href = `${window.location.origin}/payment/processing?party_id=${partyDetails.id}&payment_intent=${paymentIntent.id}`
       }
 
     } catch (error) {
@@ -937,7 +951,7 @@ function PaymentForm({
     <div className="space-y-6">
       
       {/* Apple Pay / Google Pay - Front and Center */}
-      {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && !timerExpired && (
+      {canMakePayment && paymentRequest && PaymentRequestButtonElement && !isProcessing && !isRedirecting && !timerExpired && (
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
