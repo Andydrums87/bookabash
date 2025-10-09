@@ -304,7 +304,7 @@ function PaymentForm({
   const [paymentRequest, setPaymentRequest] = useState(null)
   const [canMakePayment, setCanMakePayment] = useState(false)
 
-  // Set up Apple Pay / Google Pay
+  // Set up Apple Pay / Google Pay - COMPLETELY INDEPENDENT
   useEffect(() => {
     if (stripe && !timerExpired && clientSecret) {
       console.log('🍎 Setting up Payment Request API...')
@@ -324,14 +324,14 @@ function PaymentForm({
         if (result) {
           setPaymentRequest(pr)
           setCanMakePayment(true)
-          console.log('✅ Apple/Google Pay available')
+          console.log('✅ Apple/Google Pay available:', result)
         } else {
           console.log('❌ Apple/Google Pay not available')
         }
       })
 
       pr.on('paymentmethod', async (ev) => {
-        console.log('🍎 Apple Pay payment started')
+        console.log('🍎 Apple Pay payment method received:', ev.paymentMethod)
         setIsProcessing(true)
         setPaymentError(null)
 
@@ -354,43 +354,32 @@ function PaymentForm({
               })
           }
 
-          if (!elements) {
-            ev.complete('fail')
-            throw new Error('Payment elements not ready')
-          }
-
-          const { error, paymentIntent } = await stripe.confirmPayment({
-            elements,
-            confirmParams: {
+          // CRITICAL: Use the payment method ID directly from Apple Pay
+          // Do NOT use confirmPayment with elements - that would try to use whatever is selected in PaymentElement
+          const { error, paymentIntent } = await stripe.confirmCardPayment(
+            clientSecret,
+            {
               payment_method: ev.paymentMethod.id,
-              return_url: `${window.location.origin}/payment/processing?party_id=${partyDetails.id}`,
-              payment_method_data: {
-                billing_details: {
-                  name: partyDetails.parentName,
-                  email: partyDetails.email,
-                  address: {
-                    postal_code: partyDetails.location,
-                    country: 'GB'
-                  }
-                }
-              }
-            },
-            redirect: 'if_required'
-          })
+            }
+          )
 
           if (error) {
-            console.error('❌ Apple Pay error:', error)
+            console.error('❌ Apple Pay confirmation error:', error)
             ev.complete('fail')
             throw new Error(error.message)
           }
 
+          console.log('✅ Apple Pay payment intent:', paymentIntent)
           ev.complete('success')
-          console.log('✅ Apple Pay completed')
           
           if (paymentIntent && paymentIntent.status === 'succeeded') {
             setIsProcessing(false)
             setIsRedirecting(true)
             onPaymentSuccess(paymentIntent)
+          } else if (paymentIntent && paymentIntent.status === 'requires_action') {
+            // Shouldn't happen with Apple Pay, but handle it
+            ev.complete('fail')
+            throw new Error('Additional authentication required')
           }
 
         } catch (error) {
@@ -402,7 +391,7 @@ function PaymentForm({
         }
       })
     }
-  }, [stripe, elements, clientSecret, timerExpired, paymentBreakdown, partyDetails, onPaymentSuccess, onPaymentError])
+  }, [stripe, clientSecret, timerExpired, paymentBreakdown, partyDetails, onPaymentSuccess, onPaymentError])
 
   const handlePayment = async (event) => {
     event.preventDefault()
@@ -438,6 +427,7 @@ function PaymentForm({
           })
       }
 
+      // This will use whatever payment method is selected in PaymentElement (Card or Klarna)
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -453,6 +443,7 @@ function PaymentForm({
             }
           }
         },
+        redirect: 'if_required'
       })
 
       if (error) {
@@ -490,7 +481,7 @@ function PaymentForm({
   return (
     <div className="space-y-6">
       
-      {/* Apple Pay / Google Pay */}
+      {/* Apple Pay / Google Pay - Express Checkout ONLY */}
       {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && !timerExpired && (
         <div className="space-y-3">
           <div>
@@ -524,7 +515,7 @@ function PaymentForm({
         </div>
       )}
 
-      {/* Klarna & Card */}
+      {/* Klarna & Card - Default to Card */}
       <div className="space-y-4">
         {!timerExpired && clientSecret && (
           <div>
@@ -539,7 +530,13 @@ function PaymentForm({
                   radios: false,
                   spacedAccordionItems: true
                 },
-                paymentMethodOrder: ['klarna', 'card'],
+                // IMPORTANT: Card first, then Klarna (card will be default)
+                paymentMethodOrder: ['card', 'klarna'],
+                // Disable wallets in PaymentElement
+                wallets: {
+                  applePay: 'never',
+                  googlePay: 'never'
+                },
                 fields: {
                   billingDetails: {
                     name: 'auto',
