@@ -802,7 +802,8 @@ function PaymentForm({
               name: partyDetails.parentName,
               email: partyDetails.email,
               address: {
-                postal_code: partyDetails.location
+                postal_code: partyDetails.location,
+                country: 'GB'
               }
             }
           }
@@ -947,8 +948,6 @@ function PaymentForm({
     </div>
   )
 }
-
-
 // "use client"
 
 
