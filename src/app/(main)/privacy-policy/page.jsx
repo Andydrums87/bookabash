@@ -214,8 +214,11 @@ export default function PrivacyPolicy() {
                     <li>Any other private event details from your existing events</li>
                   </ul>
                   <p className="text-green-700 text-sm mt-4 italic">
-                    We only know WHEN you're busy from existing events, not WHAT you're doing or WHERE you'll be. We write booking information to new events we create, but never read details from your personal events.
-                  </p>
+  We only know WHEN you're busy from existing events, not WHAT you're doing or WHERE you'll be.
+  We write booking information to new events we create, but never read details from your personal events.
+  <strong>We do not read titles, descriptions, attendees, or locations from your existing calendar events —
+  only from new events we create for PartySnap bookings.</strong>
+</p>
                 </div>
 
                 <div>
@@ -249,24 +252,25 @@ export default function PrivacyPolicy() {
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                    <Lock className="w-5 h-5" />
-                    How We Protect Your Calendar Data
-                  </h4>
-                  <ul className="space-y-2 text-blue-800 text-sm">
-                    <li>• <strong>Encrypted connections:</strong> All calendar data is transmitted using secure HTTPS encryption</li>
-                    <li>• <strong>Minimum Permission Scope:</strong> We request only the necessary permissions:
-                      <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
-                        <li>Google: https://www.googleapis.com/auth/calendar and https://www.googleapis.com/auth/calendar.events</li>
-                        <li>Microsoft: Calendars.ReadWrite</li>
-                      </ul>
-                    </li>
-                    <li>• <strong>Minimum access principle:</strong> We only read availability status, not private event details</li>
-                    <li>• <strong>No data sharing:</strong> Calendar information is never shared with customers or third parties</li>
-                    <li>• <strong>Used solely for availability:</strong> Data is used only to manage your PartySnap calendar and bookings</li>
-                    <li>• <strong>You're in control:</strong> Disconnect your calendar anytime with one click</li>
-                  </ul>
-                </div>
+  <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+    <Lock className="w-5 h-5" />
+    How We Protect Your Calendar Data
+  </h4>
+  <ul className="space-y-2 text-blue-800 text-sm">
+    <li>• <strong>Encrypted connections:</strong> All calendar data is transmitted using secure HTTPS encryption</li>
+    <li>• <strong>Minimum Permission Scope:</strong> We request only the necessary permissions:
+      <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+        <li>Google: <code>https://www.googleapis.com/auth/calendar.events</code> (read/write events only)</li>
+        <li>Microsoft: <code>Calendars.ReadWrite</code></li>
+      </ul>
+    </li>
+    <li>• <strong>Minimum access principle:</strong> We only read availability status, not private event details</li>
+    <li>• <strong>No data sharing:</strong> Calendar information is never shared with customers or third parties</li>
+    <li>• <strong>Used solely for availability:</strong> Data is used only to manage your PartySnap calendar and bookings</li>
+    <li>• <strong>You're in control:</strong> Disconnect your calendar anytime with one click, or revoke access via <a href="https://myaccount.google.com/permissions" target="_blank" className="underline">myaccount.google.com/permissions</a></li>
+  </ul>
+</div>
+
 
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Disconnecting Your Calendar</h3>

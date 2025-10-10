@@ -198,14 +198,24 @@ function SupplierTermsBody() {
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Calendar Integration Privacy
-            </h4>
-            <p className="text-sm text-blue-800 mb-2">
-              When you connect your calendar, PartySnap reads your calendar's free/busy information and creates events for your PartySnap bookings. We do not read event titles, descriptions, attendees, or other private details from your existing calendar events. See our <a href="/privacy-policy" className="underline">Privacy Policy</a> for more information.
-            </p>
-          </div>
+  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+    <Calendar className="w-5 h-5" />
+    Calendar Integration Privacy
+  </h4>
+  <p className="text-sm text-blue-800 mb-2">
+    When you connect your calendar, PartySnap reads only your calendar’s free/busy information and creates
+    new events for your confirmed PartySnap bookings. We do not read event titles, descriptions, attendees,
+    or other private details from your existing calendar events.
+  </p>
+  <p className="text-sm text-blue-800 mb-2">
+    You can disconnect your calendar anytime in your PartySnap settings, or revoke access directly from your
+    Google Account at <a href="https://myaccount.google.com/permissions" target="_blank" className="underline">myaccount.google.com/permissions</a>.
+  </p>
+  <p className="text-xs text-blue-700 italic">
+    Google permission used: <code>https://www.googleapis.com/auth/calendar.events</code> (read/write events only).
+  </p>
+</div>
+
         </div>
       </div>
 
