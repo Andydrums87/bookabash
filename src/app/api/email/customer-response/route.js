@@ -440,14 +440,14 @@ export async function POST(req) {
       ? `Hi ${customerName || 'there'}!\n\nGreat news! ${supplierName || 'Your supplier'} has confirmed they can provide ${serviceType || 'party services'} for ${childName || 'your child'}'s ${theme || 'themed'} party on ${formatDate(partyDate)}.\n\nFinal Price: £${finalPrice || originalPrice || '0'}\n\nMessage from ${supplierName}: "${supplierMessage}"\n\nWe'll be in touch with final details closer to your party date.\n\nBest regards,\nThe BookABash Team`
       : `Hi ${customerName || 'there'},\n\nWe have an update about your ${serviceType || 'party services'} booking for ${childName || 'your child'}'s ${theme || 'themed'} party on ${formatDate(partyDate)}.\n\nUnfortunately, ${supplierName || 'the supplier'} is not available for your requested date. Don't worry - we're finding you an excellent alternative!\n\nMessage from ${supplierName}: "${supplierMessage}"\n\nWe'll email you within 24 hours with your new supplier details.\n\nBest regards,\nThe BookABash Team`;
 
-    // Send email via Postmark
-    await client.sendEmail({
-      From: "hello@partysnap.co.uk",
-      To: customerEmail,
-      Subject: subject,
-      HtmlBody: populatedTemplate,
-      TextBody: textBody,
-    });
+    // // Send email via Postmark
+    // await client.sendEmail({
+    //   From: "hello@partysnap.co.uk",
+    //   To: customerEmail,
+    //   Subject: subject,
+    //   HtmlBody: populatedTemplate,
+    //   TextBody: textBody,
+    // });
 
     return new Response(JSON.stringify({ 
       message: `Customer notification email sent successfully`,

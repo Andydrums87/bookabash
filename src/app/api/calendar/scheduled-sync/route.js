@@ -1,4 +1,6 @@
 // app/api/calendar/scheduled-sync/route.js
+
+
 import { supabaseAdmin } from '@/lib/supabase-admin'  // ✅ CHANGE THIS
 import { NextResponse } from 'next/server'
 import { google } from 'googleapis'

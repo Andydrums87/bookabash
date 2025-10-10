@@ -101,7 +101,7 @@ export async function GET(request) {
       connected: true,
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
-      tokenExpiry: tokens.expiry_date,
+      tokenExpiry: Date.now() + (tokens.expires_in * 1000),
       calendarId: 'primary',
       syncFrequency: 'realtime',
       lastSync: null,

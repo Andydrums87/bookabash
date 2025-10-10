@@ -5,7 +5,8 @@ const MICROSOFT_REDIRECT_URI = process.env.MICROSOFT_REDIRECT_URI
 const SCOPES = [
   "Calendars.Read",
   "offline_access",
-  "User.Read"
+  "User.Read",
+  "Calendars.ReadWrite"
 ].join(" ")
 
 export async function POST(request) {

@@ -30,6 +30,104 @@ import {
 import Link from "next/link"
 import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
 
+// Helper function to calculate party times
+function calculatePartyTimes(party) {
+  const partyDate = new Date(party.party_date)
+  
+  // If specific time is provided
+  if (party.party_time) {
+    const [hours, minutes] = party.party_time.split(':').map(Number)
+    partyDate.setHours(hours, minutes, 0, 0)
+  } 
+  // If time slot is provided (morning/afternoon)
+  else if (party.time_slot) {
+    if (party.time_slot === 'morning') {
+      partyDate.setHours(10, 0, 0, 0) // 10am start
+    } else if (party.time_slot === 'afternoon') {
+      partyDate.setHours(13, 0, 0, 0) // 1pm start
+    }
+  } 
+  // Default fallback
+  else {
+    partyDate.setHours(14, 0, 0, 0) // 2pm default
+  }
+
+  const startDateTime = partyDate.toISOString()
+  
+  // Calculate end time based on duration
+  const duration = party.duration || 2 // Default 2 hours
+  const endDate = new Date(partyDate.getTime() + duration * 60 * 60 * 1000)
+  const endDateTime = endDate.toISOString()
+
+  return { startDateTime, endDateTime }
+}
+
+// Create calendar events for accepted booking
+async function createCalendarEventsForBooking(enquiry, party, customer) {
+  console.log("🗓️ Creating calendar events for accepted booking...")
+
+  // Calculate start and end times
+  const { startDateTime, endDateTime } = calculatePartyTimes(party)
+
+  // Prepare event data
+  const eventData = {
+    title: `${party.theme} Party - ${party.child_name}`,
+    description: `
+🎉 Party Booking Confirmed
+
+Customer: ${customer.first_name} ${customer.last_name}
+Email: ${customer.email}
+Phone: ${customer.phone || 'Not provided'}
+
+Child: ${party.child_name}, Age ${party.child_age}
+Theme: ${party.theme}
+Guest Count: ${party.guest_count} children
+Location: ${party.location}${party.postcode ? ` (${party.postcode})` : ''}
+
+Service: ${enquiry.supplier_category}
+Package: ${enquiry.package_id || 'Custom'}
+Price: £${enquiry.final_price || enquiry.quoted_price}
+
+Special Requirements: ${enquiry.special_requests || 'None'}
+Customer Message: ${enquiry.message || 'None'}
+
+Booking ID: ${enquiry.id}
+    `.trim(),
+    location: `${party.location}${party.postcode ? `, ${party.postcode}` : ''}`,
+    startTime: startDateTime,
+    endTime: endDateTime,
+    timeZone: 'Europe/London',
+    attendees: [customer.email],
+  }
+
+  console.log('📤 About to make POST request to /api/calendar/booking-sync')
+  console.log('📦 Payload:', { supplierId: enquiry.supplier_id, enquiryId: enquiry.id })
+
+  // Call calendar sync API
+  const response = await fetch('/api/calendar/booking-sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      supplierId: enquiry.supplier_id,
+      enquiryId: enquiry.id,
+      eventData: eventData,
+    }),
+  })
+
+  console.log('📥 Response status:', response.status)
+  console.log('📥 Response ok:', response.ok)
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(`Calendar sync failed: ${error.message}`)
+  }
+
+  const result = await response.json()
+  console.log("✅ Calendar events created:", result)
+  
+  return result
+}
+
 // Add this helper function at the top of your component (after the imports)
 const parseAddonDetails = (addonDetailsString) => {
   if (!addonDetailsString) return []
@@ -407,6 +505,14 @@ export default function EnquiryDetailsPage() {
         console.warn("Failed to save response history:", historyResult.error)
       } else {
         console.log("Response history saved successfully:", historyResult.response_id)
+      }
+      if (response === "accepted") {
+        try {
+          await createCalendarEventsForBooking(enquiry, party, customer)
+        } catch (calendarError) {
+          console.error("Calendar sync failed:", calendarError)
+          // Don't fail the entire response if calendar sync fails
+        }
       }
 
       // Step 3: Send customer notification email

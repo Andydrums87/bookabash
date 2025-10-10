@@ -226,13 +226,17 @@ const calculatePaymentBreakdown = (suppliers, partyDetails) => {
 
   const pricingPartyDetails = {
     date: partyDetails.party_date,
-    duration: partyDetails.duration || 2,
+    duration: partyDetails.party_duration || partyDetails.duration || 2,
     guestCount: partyDetails.guest_count || 15,
     startTime: partyDetails.start_time
   }
 
+  console.log('🔍 Pricing party details:', pricingPartyDetails)
+
   suppliers.forEach(supplier => {
+    console.log('💰 Calculating price for:', supplier.name, supplier)
     const pricing = calculateFinalPriceEnhanced(supplier, pricingPartyDetails, [])
+    console.log('💰 Pricing result:', pricing)
     const isLeadBased = isLeadBasedSupplierEnhanced(supplier)
     const totalPrice = pricing.finalPrice
     
@@ -523,36 +527,34 @@ function PaymentForm({
               Payment Method
             </label>
             <PaymentElement 
-  options={{
-    layout: {
-      type: 'accordion',
-      defaultCollapsed: true,  // All payment methods start collapsed
-      radios: true,
-      spacedAccordionItems: true
-    },
-    // Card first, then Klarna
-    paymentMethodOrder: ['card', 'klarna'],
-    // Disable wallets in PaymentElement
-    wallets: {
-      applePay: 'never',
-      googlePay: 'never'
-    },
-    fields: {
-      billingDetails: {
-        name: 'auto',
-        email: 'auto',
-        address: {
-          country: 'never',
-          postalCode: 'auto'
-        }
-      }
-    },
-    terms: {
-      card: 'never',
-      klarna: 'auto'
-    }
-  }}
-/>
+              options={{
+                layout: {
+                  type: 'accordion',
+                  defaultCollapsed: true,
+                  radios: true,
+                  spacedAccordionItems: true
+                },
+                paymentMethodOrder: ['card', 'klarna'],
+                wallets: {
+                  applePay: 'never',
+                  googlePay: 'never'
+                },
+                fields: {
+                  billingDetails: {
+                    name: 'auto',
+                    email: 'auto',
+                    address: {
+                      country: 'never',
+                      postalCode: 'auto'
+                    }
+                  }
+                },
+                terms: {
+                  card: 'never',
+                  klarna: 'auto'
+                }
+              }}
+            />
           </div>
         )}
 
@@ -734,6 +736,9 @@ export default function PaymentPageContent() {
         
         const breakdown = calculatePaymentBreakdown(supplierList, partyResult.party)
         
+        console.log('📊 Payment breakdown:', breakdown)
+        console.log('💷 Total payment today:', breakdown.totalPaymentToday)
+        
         setConfirmedSuppliers(supplierList)
         setPaymentBreakdown(breakdown)
         setPartyId(partyResult.party.id)
@@ -750,24 +755,34 @@ export default function PaymentPageContent() {
         })
 
         // Create payment intent
-        const response = await fetch('/api/create-payment-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: breakdown.totalPaymentToday * 100,
-            currency: 'gbp',
-            partyDetails: partyResult.party,
-            suppliers: supplierList,
-            addons: partyResult.party.party_plan?.addons || [],
-            paymentType: 'unified',
-            enableKlarna: true
-          }),
-        })
-
-        const { clientSecret: secret, error: backendError } = await response.json()
+        const paymentAmount = Math.round(breakdown.totalPaymentToday * 100)
+        console.log('💳 Creating payment intent for amount:', paymentAmount, '(£' + breakdown.totalPaymentToday + ')')
         
-        if (!backendError) {
-          setClientSecret(secret)
+        if (paymentAmount > 0) {
+          const response = await fetch('/api/create-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: paymentAmount,
+              currency: 'gbp',
+              partyDetails: partyResult.party,
+              suppliers: supplierList,
+              addons: partyResult.party.party_plan?.addons || [],
+              paymentType: 'unified',
+              enableKlarna: true
+            }),
+          })
+
+          const { clientSecret: secret, error: backendError } = await response.json()
+          
+          if (backendError) {
+            console.error('❌ Payment intent creation failed:', backendError)
+          } else if (secret) {
+            console.log('✅ Payment intent created successfully')
+            setClientSecret(secret)
+          }
+        } else {
+          console.error('❌ Payment amount is 0 or negative:', paymentAmount)
         }
   
       } catch (error) {
@@ -1019,37 +1034,46 @@ export default function PaymentPageContent() {
                 </div>
               </div>
 
-              <Elements 
-                stripe={stripePromise}
-                options={{
-                  clientSecret: clientSecret,
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      colorPrimary: '#374151',
-                      colorBackground: '#ffffff',
-                      colorText: '#374151',
-                      colorDanger: '#ef4444',
-                      fontFamily: 'Inter, system-ui, sans-serif',
-                      spacingUnit: '4px',
-                      borderRadius: '6px',
+              {clientSecret ? (
+                <Elements 
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: clientSecret,
+                    appearance: {
+                      theme: 'stripe',
+                      variables: {
+                        colorPrimary: '#374151',
+                        colorBackground: '#ffffff',
+                        colorText: '#374151',
+                        colorDanger: '#ef4444',
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                        spacingUnit: '4px',
+                        borderRadius: '6px',
+                      },
                     },
-                  },
-                }}
-              >
-                <PaymentForm
-                  partyDetails={partyDetails}
-                  confirmedSuppliers={confirmedSuppliers}
-                  addons={addons || []}
-                  paymentBreakdown={paymentBreakdown}
-                  onPaymentSuccess={handlePaymentSuccess}
-                  onPaymentError={handlePaymentError}
-                  isRedirecting={isRedirecting}
-                  setIsRedirecting={setIsRedirecting}
-                  timerExpired={timerExpired}
-                  clientSecret={clientSecret}
-                />
-              </Elements>
+                  }}
+                >
+                  <PaymentForm
+                    partyDetails={partyDetails}
+                    confirmedSuppliers={confirmedSuppliers}
+                    addons={addons || []}
+                    paymentBreakdown={paymentBreakdown}
+                    onPaymentSuccess={handlePaymentSuccess}
+                    onPaymentError={handlePaymentError}
+                    isRedirecting={isRedirecting}
+                    setIsRedirecting={setIsRedirecting}
+                    timerExpired={timerExpired}
+                    clientSecret={clientSecret}
+                  />
+                </Elements>
+              ) : (
+                <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-600">Setting up secure payment...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
