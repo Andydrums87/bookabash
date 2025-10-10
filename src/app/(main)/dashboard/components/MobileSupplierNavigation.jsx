@@ -477,26 +477,83 @@ export default function MobileSupplierNavigation({
           </div>
         ) : (
           <div className="transition-all duration-300 ease-in-out" data-tour={activeSupplierTypeData.type === 'venue' ? 'venue-card-mobile' : undefined}>
-            {/* ✅ NEW: Check if this is venue tab and we have carousel options */}
-             {/* ✅ Check if this is venue tab and we have a selected venue with carousel options */}
-             {activeSupplierTypeData.type === 'venue' && suppliers.venue && venueCarouselOptions && venueCarouselOptions.length > 0 ? (
-              <VenueCarouselCard
-                venues={venueCarouselOptions}
-                selectedVenue={suppliers.venue}
-                onSelectVenue={onSelectVenue}
-                partyDetails={partyDetails}
-                isLoading={isSelectingVenue}
-                addons={addons.filter(addon => 
-                  addon.supplierId === suppliers.venue?.id || 
-                  addon.supplierType === 'venue' ||
-                  addon.attachedToSupplier === 'venue'
-                )}
-                handleRemoveAddon={handleRemoveAddon}
-                handleDeleteSupplier={handleDeleteSupplier}
-                openSupplierModal={openSupplierModal}
-                type="venue"
-              />
-            ) : (
+          {(() => {
+            // Special handling for venue type
+            if (activeSupplierTypeData.type === 'venue') {
+              const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
+              const hasSelectedVenue = !!suppliers.venue;
+              const hasCarouselOptions = venueCarouselOptions && venueCarouselOptions.length > 0;
+              
+              console.log('🏛️ Mobile Venue Decision:', {
+                userHasOwnVenue,
+                hasSelectedVenue,
+                hasCarouselOptions
+              });
+              
+              // If user has own venue AND hasn't selected one, show empty card
+              if (userHasOwnVenue && !hasSelectedVenue) {
+                console.log('✅ Showing empty venue card (user has own venue)');
+                return (
+                  <SupplierCard
+                    type="venue"
+                    supplier={null} // ✅ Pass null to show EmptySupplierCard
+                    loadingCards={loadingCards}
+                    suppliersToDelete={suppliersToDelete}
+                    openSupplierModal={(category) => {
+                      console.log('🎯 User wants to browse venues - clearing hasOwnVenue');
+                      const updatedPartyDetails = {
+                        ...partyDetails,
+                        hasOwnVenue: false
+                      };
+                      localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
+                      window.location.reload();
+                    }}
+                    handleDeleteSupplier={handleDeleteSupplier}
+                    getSupplierDisplayName={getSupplierDisplayName}
+                    addons={[]}
+                    handleRemoveAddon={handleRemoveAddon}
+                    enquiryStatus={null}
+                    enquirySentAt={null}
+                    isSignedIn={true}
+                    isPaymentConfirmed={false}
+                    enquiries={[]}
+                    currentPhase={currentPhase}
+                    handleCancelEnquiry={handleCancelEnquiry}
+                    onPaymentReady={onPaymentReady}
+                    enhancedPricing={null}
+                    partyDetails={partyDetails}
+                    recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType('venue') : null}
+                    onAddSupplier={onAddSupplier}
+                  />
+                );
+              }
+              
+              // If user selected a venue OR doesn't have own venue, show carousel
+              if (hasSelectedVenue && hasCarouselOptions) {
+                console.log('✅ Showing venue carousel');
+                return (
+                  <VenueCarouselCard
+                    venues={venueCarouselOptions}
+                    selectedVenue={suppliers.venue}
+                    onSelectVenue={onSelectVenue}
+                    partyDetails={partyDetails}
+                    isLoading={isSelectingVenue}
+                    addons={addons.filter(addon => 
+                      addon.supplierId === suppliers.venue?.id || 
+                      addon.supplierType === 'venue' ||
+                      addon.attachedToSupplier === 'venue'
+                    )}
+                    handleRemoveAddon={handleRemoveAddon}
+                    handleDeleteSupplier={handleDeleteSupplier}
+                    openSupplierModal={openSupplierModal}
+                    type="venue"
+                  />
+                );
+              }
+            }
+            
+            // Default: Show regular supplier card for all other types
+            return (
               <SupplierCard
                 type={activeSupplierTypeData.type}
                 supplier={currentSupplier}
@@ -520,8 +577,9 @@ export default function MobileSupplierNavigation({
                 recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType(activeSupplierTypeData.type) : null}
                 onAddSupplier={onAddSupplier}
               />
-            )}
-          </div>
+            );
+          })()}
+        </div>
         )}
       </div>
 

@@ -1326,80 +1326,108 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
                     </>
                   ) : (
                     <>
-                      {/* VENUE CARD - Show carousel ONLY if user has venue OR clicked to browse */}
-                      {(() => {
-                        const hasVenue = !!suppliers.venue;
-                        const hasCarouselOptions = venueCarouselOptions && venueCarouselOptions.length > 0;
-                        const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
-                        
-                        // Show carousel if:
-                        // 1. User has selected a venue, OR
-                        // 2. User doesn't have own venue and carousel exists
-                        const shouldShowCarousel = hasCarouselOptions && (hasVenue || !userHasOwnVenue);
-                        
-                        if (shouldShowCarousel) {
-                          return (
-                            <VenueCarouselCard
-                            type="venue"
-                              venues={venueCarouselOptions}
-                              selectedVenue={suppliers.venue}
-                              onSelectVenue={handleSelectVenue}
-                              partyDetails={partyDetails}
-                              isLoading={isSelectingVenue}
-                              addons={
-                                suppliers.venue?.selectedAddons || 
-                                addons.filter(addon => 
-                                  addon.supplierId === suppliers.venue?.id || 
-                                  addon.supplierType === 'venue' ||
-                                  addon.attachedToSupplier === 'venue'
-                                )
-                              }
-                              handleRemoveAddon={handleRemoveAddon}
-                              handleDeleteSupplier={handleDeleteSupplier}
-                              openSupplierModal={openSupplierModal}
-                            />
-                          );
-                        } else {
-                          // Show empty supplier card when user has own venue
-                          return (
-                            <SupplierCard 
-                              key="venue"
-                              type="venue" 
-                              supplier={suppliers.venue}
-                              loadingCards={loadingCards}
-                              suppliersToDelete={suppliersToDelete}
-                              openSupplierModal={(category) => {
-                                console.log('🎯 User clicked to browse venues');
-                                // Clear hasOwnVenue flag to show carousel
-                                const updatedPartyDetails = {
-                                  ...partyDetails,
-                                  hasOwnVenue: false
-                                };
-                                localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
-                                handlePartyDetailsUpdate(updatedPartyDetails);
-                              }}
-                              handleDeleteSupplier={handleDeleteSupplier}
-                              getSupplierDisplayName={getSupplierDisplayName}
-                              addons={addons.filter(addon => 
-                                addon.supplierId === suppliers.venue?.id || 
-                                addon.supplierType === 'venue' ||
-                                addon.attachedToSupplier === 'venue'
-                              )}
-                              handleRemoveAddon={handleRemoveAddon}
-                              enquiryStatus={getEnquiryStatus('venue')}
-                              enquirySentAt={getEnquiryTimestamp('venue')}
-                              isSignedIn={false}
-                              isPaymentConfirmed={false}
-                              enquiries={[]}
-                              partyDetails={partyDetails}
-                              currentPhase="planning"
-                              recommendedSupplier={getRecommendedSupplierForType('venue')}
-                              onAddSupplier={handleAddRecommendedSupplier}
-                              enhancedPricing={suppliers.venue ? getSupplierDisplayPricing(suppliers.venue, partyDetails, []) : null}
-                            />
-                          );
-                        }
-                      })()}
+                    {/* VENUE CARD */}
+{(() => {
+  const hasSelectedVenue = !!suppliers.venue;
+  const hasCarouselOptions = venueCarouselOptions && venueCarouselOptions.length > 0;
+  const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
+  
+  console.log('🏛️ Venue rendering decision:', {
+    hasSelectedVenue,
+    hasCarouselOptions,
+    userHasOwnVenue
+  });
+  
+  // ✅ PRIORITY CHECK: If user has own venue AND hasn't selected one yet, show empty card
+  if (userHasOwnVenue && !hasSelectedVenue) {
+    console.log('✅ User has own venue - showing EmptySupplierCard');
+    return (
+      <SupplierCard 
+        key="venue"
+        type="venue" 
+        supplier={null}
+        loadingCards={loadingCards}
+        suppliersToDelete={suppliersToDelete}
+        openSupplierModal={(category) => {
+          console.log('🎯 User clicked to browse venues - clearing hasOwnVenue flag');
+          const updatedPartyDetails = {
+            ...partyDetails,
+            hasOwnVenue: false
+          };
+          localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
+          handlePartyDetailsUpdate(updatedPartyDetails);
+        }}
+        handleDeleteSupplier={handleDeleteSupplier}
+        getSupplierDisplayName={getSupplierDisplayName}
+        addons={[]}
+        handleRemoveAddon={handleRemoveAddon}
+        enquiryStatus={null}
+        enquirySentAt={null}
+        isSignedIn={false}
+        isPaymentConfirmed={false}
+        enquiries={[]}
+        partyDetails={partyDetails}
+        currentPhase="planning"
+        recommendedSupplier={getRecommendedSupplierForType('venue')}
+        onAddSupplier={handleAddRecommendedSupplier}
+        enhancedPricing={null}
+      />
+    );
+  }
+  
+  // ✅ If user doesn't have own venue OR has selected a venue, show carousel
+  if (hasCarouselOptions) {
+    console.log('✅ Showing venue carousel');
+    return (
+      <VenueCarouselCard
+        type="venue"
+        venues={venueCarouselOptions}
+        selectedVenue={suppliers.venue}
+        onSelectVenue={handleSelectVenue}
+        partyDetails={partyDetails}
+        isLoading={isSelectingVenue}
+        addons={
+          suppliers.venue?.selectedAddons || 
+          addons.filter(addon => 
+            addon.supplierId === suppliers.venue?.id || 
+            addon.supplierType === 'venue' ||
+            addon.attachedToSupplier === 'venue'
+          )
+        }
+        handleRemoveAddon={handleRemoveAddon}
+        handleDeleteSupplier={handleDeleteSupplier}
+        openSupplierModal={openSupplierModal}
+      />
+    );
+  }
+  
+  // ✅ Fallback: Show empty card if no carousel options
+  console.log('✅ No carousel options - showing EmptySupplierCard');
+  return (
+    <SupplierCard 
+      key="venue"
+      type="venue" 
+      supplier={null}
+      loadingCards={loadingCards}
+      suppliersToDelete={suppliersToDelete}
+      openSupplierModal={openSupplierModal}
+      handleDeleteSupplier={handleDeleteSupplier}
+      getSupplierDisplayName={getSupplierDisplayName}
+      addons={[]}
+      handleRemoveAddon={handleRemoveAddon}
+      enquiryStatus={null}
+      enquirySentAt={null}
+      isSignedIn={false}
+      isPaymentConfirmed={false}
+      enquiries={[]}
+      partyDetails={partyDetails}
+      currentPhase="planning"
+      recommendedSupplier={getRecommendedSupplierForType('venue')}
+      onAddSupplier={handleAddRecommendedSupplier}
+      enhancedPricing={null}
+    />
+  );
+})()}
 
                       {/* ALL OTHER SUPPLIERS - Regular Cards */}
                       {Object.entries(suppliers)

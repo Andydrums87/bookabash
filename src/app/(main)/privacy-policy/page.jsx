@@ -159,7 +159,7 @@ export default function PrivacyPolicy() {
               </div>
             </div>
 
-            {/* Calendar Integration - NEW SECTION */}
+            {/* Calendar Integration - UPDATED SECTION */}
             <div id="calendar" className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-200">
                 Calendar Integration (Suppliers Only)
@@ -179,7 +179,26 @@ export default function PrivacyPolicy() {
                     <li><strong>Busy/Free Status:</strong> Whether you're available or busy at specific times</li>
                     <li><strong>Calendar Metadata:</strong> Time zones and calendar identifiers for synchronization</li>
                     <li><strong>Real-Time Updates:</strong> Webhook notifications when events are created, updated, or deleted</li>
+                    <li><strong>Write Permissions:</strong> Ability to create new calendar events for confirmed PartySnap bookings</li>
                   </ul>
+                </div>
+
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
+                  <h3 className="text-xl font-semibold text-yellow-900 mb-4">What We Write to Your Calendar</h3>
+                  <p className="text-yellow-800 mb-3 font-medium">
+                    When you receive a confirmed booking on PartySnap, we automatically create a calendar event that includes:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-yellow-800">
+                    <li>Event date, time, and duration</li>
+                    <li>Party type and service details</li>
+                    <li>Customer name and contact information</li>
+                    <li>Event location/address</li>
+                    <li>Booking reference number</li>
+                    <li>Link back to the booking in PartySnap</li>
+                  </ul>
+                  <p className="text-yellow-700 text-sm mt-4 italic">
+                    This ensures your calendar always reflects your complete schedule and prevents you from accepting conflicting bookings elsewhere.
+                  </p>
                 </div>
 
                 <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-lg">
@@ -188,14 +207,14 @@ export default function PrivacyPolicy() {
                     Your privacy is paramount. We never access:
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-green-700">
-                    <li>Event titles or descriptions</li>
-                    <li>Event locations</li>
-                    <li>Attendee lists or email addresses</li>
-                    <li>Meeting notes or attachments</li>
-                    <li>Any other private event details</li>
+                    <li>Event titles or descriptions from your existing events</li>
+                    <li>Event locations from your existing events</li>
+                    <li>Attendee lists or email addresses from your existing events</li>
+                    <li>Meeting notes or attachments from your existing events</li>
+                    <li>Any other private event details from your existing events</li>
                   </ul>
                   <p className="text-green-700 text-sm mt-4 italic">
-                    We only know WHEN you're busy, not WHAT you're doing or WHERE you'll be.
+                    We only know WHEN you're busy from existing events, not WHAT you're doing or WHERE you'll be. We write booking information to new events we create, but never read details from your personal events.
                   </p>
                 </div>
 
@@ -215,9 +234,9 @@ export default function PrivacyPolicy() {
                       </p>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-800 mb-2">Save Time</h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">Complete Schedule Integration</h4>
                       <p className="text-gray-700 text-sm">
-                        No need to manually update availability in multiple places—your calendar does it automatically.
+                        Your PartySnap bookings automatically appear in your calendar alongside your other commitments, giving you a single source of truth for your schedule.
                       </p>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
@@ -236,10 +255,15 @@ export default function PrivacyPolicy() {
                   </h4>
                   <ul className="space-y-2 text-blue-800 text-sm">
                     <li>• <strong>Encrypted connections:</strong> All calendar data is transmitted using secure HTTPS encryption</li>
-                    <li>• <strong>Minimum Permission Scope</strong> We request only the minimum necessary permissions (https://www.googleapis.com/auth/calendar.readonly).</li>
-                    <li>• <strong>Minimum access principle:</strong> We only request the minimum permissions needed</li>
+                    <li>• <strong>Minimum Permission Scope:</strong> We request only the necessary permissions:
+                      <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+                        <li>Google: https://www.googleapis.com/auth/calendar and https://www.googleapis.com/auth/calendar.events</li>
+                        <li>Microsoft: Calendars.ReadWrite</li>
+                      </ul>
+                    </li>
+                    <li>• <strong>Minimum access principle:</strong> We only read availability status, not private event details</li>
                     <li>• <strong>No data sharing:</strong> Calendar information is never shared with customers or third parties</li>
-                    <li>• <strong>Used solely for availability:</strong> Data is used only to manage your PartySnap calendar</li>
+                    <li>• <strong>Used solely for availability:</strong> Data is used only to manage your PartySnap calendar and bookings</li>
                     <li>• <strong>You're in control:</strong> Disconnect your calendar anytime with one click</li>
                   </ul>
                 </div>
@@ -255,7 +279,7 @@ export default function PrivacyPolicy() {
                     <li>Click "Disconnect Calendar"</li>
                   </ol>
                   <p className="text-gray-700 mt-3">
-                    When you disconnect, we immediately stop receiving webhook notifications and accessing your calendar. Any previously synced availability data is deleted within 30 days.
+                    When you disconnect, we immediately stop receiving webhook notifications and accessing your calendar. Any previously synced availability data is deleted within 30 days. Events we created in your calendar for PartySnap bookings will remain but will no longer be updated automatically.
                   </p>
                 </div>
               </div>
@@ -289,11 +313,13 @@ export default function PrivacyPolicy() {
                       <li><strong>Automatic Availability Sync:</strong> We read your calendar's busy/free status to automatically block unavailable times on PartySnap</li>
                       <li><strong>Real-Time Updates:</strong> We receive webhook notifications when events change to keep your availability accurate</li>
                       <li><strong>Prevent Double Bookings:</strong> Busy times in your calendar automatically prevent new PartySnap bookings</li>
-                      <li><strong>Privacy Protection:</strong> We only access event times and availability status—never event titles, descriptions, attendees, or locations</li>
+                      <li><strong>Create Booking Events:</strong> Confirmed PartySnap bookings are automatically added to your connected calendar with all relevant details</li>
+                      <li><strong>Maintain Schedule Integrity:</strong> Your calendar reflects both external commitments and PartySnap bookings in real-time</li>
+                      <li><strong>Privacy Protection:</strong> We only access event times and availability status for reading—never event titles, descriptions, attendees, or locations from your personal events</li>
                     </ul>
                   </div>
                   <p className="text-sm text-gray-600 italic">
-                    Calendar data is processed solely for availability management and is never shared with customers or used for any other purpose. You maintain full control and can disconnect at any time.
+                    Calendar data is processed solely for availability management and booking synchronization. It is never shared with customers or used for any other purpose. You maintain full control and can disconnect at any time.
                   </p>
                 </div>
 
@@ -391,10 +417,11 @@ export default function PrivacyPolicy() {
                       <ul className="list-disc list-inside space-y-1 text-gray-600 text-sm ml-4">
                         <li>Read your calendar's free/busy information</li>
                         <li>Receive real-time webhook notifications about calendar changes</li>
+                        <li>Create calendar events for your confirmed PartySnap bookings</li>
                         <li>Synchronize your availability on PartySnap</li>
                       </ul>
                       <p className="text-gray-700 text-sm mt-2">
-                        We access only the minimum data required for availability management. Google and Microsoft process this data according to their own privacy policies.
+                        We access only the minimum data required for availability management and booking synchronization. Google and Microsoft process this data according to their own privacy policies.
                       </p>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
@@ -522,7 +549,7 @@ export default function PrivacyPolicy() {
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-800 mb-2">Calendar Integration Data</h4>
-                      <p className="text-gray-700 text-sm">Calendar availability data is retained only while your calendar is connected and for 30 days after disconnection. We immediately stop receiving webhook notifications when you disconnect your calendar or revoke access.</p>
+                      <p className="text-gray-700 text-sm">Calendar availability data is retained only while your calendar is connected and for 30 days after disconnection. We immediately stop receiving webhook notifications when you disconnect your calendar or revoke access. Calendar events we created for your bookings will remain in your calendar but will no longer be updated.</p>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-800 mb-2">Booking & Transaction History</h4>

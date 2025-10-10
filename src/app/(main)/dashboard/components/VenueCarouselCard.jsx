@@ -449,16 +449,18 @@ export default function VenueCarouselCard({
             )}
           </Button>
           <Button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleViewProfile(e)
-            }}
-            variant="outline"
-            className="w-10 flex items-center justify-center shadow-lg border-2 border-gray-200 hover:border-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-50))]"
-            size="lg"
-          >
-            <Eye className="w-5 h-5 text-primary-500" />
-          </Button>
+  onClick={(e) => {
+    e.stopPropagation()
+    if (currentVenue?.id) {
+      router.push(`/supplier/${currentVenue.id}?from=dashboard`)
+    }
+  }}
+  variant="outline"
+  className="w-10 flex items-center justify-center shadow-lg border-2 border-gray-200 hover:border-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-50))]"
+  size="lg"
+>
+  <Eye className="w-5 h-5 text-primary-500" />
+</Button>
         </div>
       </div>
 

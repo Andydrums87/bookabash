@@ -170,9 +170,20 @@ function SupplierTermsBody() {
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>PartySnap will automatically sync your calendar availability in real-time using secure webhook notifications</li>
               <li>Events in your connected calendar will automatically block corresponding times on PartySnap</li>
-              <li>You grant PartySnap permission to read your calendar events and receive notifications when events are created, updated, or deleted</li>
-              <li>Calendar data is used solely to maintain accurate availability and prevent double bookings</li>
+              <li><strong>PartySnap bookings will be automatically added to your connected calendar</strong> to prevent external double bookings</li>
+              <li>You grant PartySnap permission to read your calendar events, receive notifications when events are created, updated, or deleted, <strong>and create calendar events for confirmed PartySnap bookings</strong></li>
+              <li>Calendar data is used solely to maintain accurate availability, prevent double bookings, and keep your schedule synchronized</li>
               <li>You can disconnect your calendar at any time, but must then manually manage your availability</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Two-Way Calendar Synchronization</h3>
+            <p className="mb-3">When calendar integration is enabled:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li><strong>From your calendar to PartySnap:</strong> Busy times in your Google or Outlook calendar automatically block availability on PartySnap</li>
+              <li><strong>From PartySnap to your calendar:</strong> Confirmed bookings are automatically added as events in your connected calendar with party details, customer information, and relevant notes</li>
+              <li>This two-way sync ensures your calendar always reflects your complete schedule across all platforms</li>
             </ul>
           </div>
 
@@ -191,8 +202,8 @@ function SupplierTermsBody() {
               <Calendar className="w-5 h-5" />
               Calendar Integration Privacy
             </h4>
-            <p className="text-sm text-blue-800">
-              When you connect your calendar, PartySnap only accesses event times and availability status. We do not read event titles, descriptions, attendees, or other private details unless necessary to determine availability. See our <a href="/privacy-policy" className="underline">Privacy Policy</a> for more information.
+            <p className="text-sm text-blue-800 mb-2">
+              When you connect your calendar, PartySnap reads your calendar's free/busy information and creates events for your PartySnap bookings. We do not read event titles, descriptions, attendees, or other private details from your existing calendar events. See our <a href="/privacy-policy" className="underline">Privacy Policy</a> for more information.
             </p>
           </div>
         </div>
