@@ -1525,7 +1525,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
               {/* Action Section */}
               <div className="flex flex-col justify-center items-center sm:flex-row gap-4"  data-tour="review-book">
                 <Button
-                  className="flex-3 bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 md:py-8 py-4 text-xl font-bold"
+                  className="flex-3 w-full bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 md:py-8 py-4 text-xl font-bold"
                   asChild
                 >
           <Link href="/review-book">Complete Your Booking!</Link>
@@ -1630,10 +1630,12 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
   tempBudget={tempBudget}
   budgetPercentage={budgetPercentage}
   getBudgetCategory={getBudgetCategory}
+  onSupplierTabChange={handleMobileSupplierTabChange} // ✅ Already exists!
   CountdownWidget={
     <CountdownWidget
       partyDate={partyDetails?.date}
     />
+    
   }
 />
       {/* <SnappyDashboardTour
