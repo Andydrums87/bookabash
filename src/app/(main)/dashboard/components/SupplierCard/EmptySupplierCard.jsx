@@ -144,7 +144,7 @@ export default function EmptySupplierCard({
         </div>
 
         {/* Much darker overlay for strong greyed effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 via-gray-800/50 to-gray-900/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80" />
 
         {/* Minimal badge - just category */}
         <div className="absolute top-4 left-4 z-10">

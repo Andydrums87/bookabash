@@ -335,14 +335,14 @@ export default function MobileSupplierNavigation({
   return (
     <div className="w-full relative">
       {/* Sticky Tab Navigation - KEEP AS IS */}
-      <div className="sticky top-0 z-30 bg-white shadow-sm border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
-        <div className="relative overflow-hidden bg-gray-50">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="sticky top-0 z-30 bg-white  border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
+        <div className="relative overflow-hidden ">
+          {/* <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-2 left-8 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
             <div className="absolute top-4 right-12 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
             <div className="absolute bottom-2 left-16 w-1 h-1 bg-[hsl(var(--primary-300))] rounded-full opacity-70"></div>
             <Sparkles className="absolute top-3 right-20 w-3 h-3 text-[hsl(var(--primary-300))] opacity-40" />
-          </div>
+          </div> */}
 
           <div className="px-4 py-4 relative z-10">
             <div className="overflow-x-auto scrollbar-hide" ref={tabsRef}>
@@ -358,10 +358,10 @@ export default function MobileSupplierNavigation({
                       key={supplierType.id}
                       onClick={() => handleTabSelect(index, supplierType)}
                       className="flex-shrink-0 relative transition-all duration-200 hover:transform hover:scale-105"
-                      style={{ minWidth: '90px' }}
+                      style={{ minWidth: '80px' }}
                     >
                       <div className="flex flex-col items-center">
-                        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 transition-all duration-200 overflow-visible relative shadow-md hover:shadow-lg bg-gray-100">
+                      <div className="w-18 h-18 rounded-full flex items-center justify-center mb-2 transition-all duration-200 overflow-visible relative shadow-md hover:shadow-lg bg-gray-100">
                           <Image
                             src={supplierType.image}
                             alt={supplierType.name}
@@ -385,7 +385,7 @@ export default function MobileSupplierNavigation({
                         </div>
                         
                         <div className="text-center">
-                          <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-primary-700 font-bold' : 'text-gray-700'}`}>
+                          <p className={`text-xs font-semibold leading-tight ${isActive ? 'text-primary-700 font-bold' : 'text-gray-700'}`}>
                             {supplierType.name}
                           </p>
                         </div>

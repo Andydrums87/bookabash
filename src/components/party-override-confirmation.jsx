@@ -34,7 +34,7 @@ export default function PartyOverrideConfirmation({
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="text-base text-gray-600 space-y-3 pt-2">
-            <p>
+            {/* <p>
               You currently have a{" "}
               {existingPartyDetails?.source === 'database' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded">
@@ -59,7 +59,7 @@ export default function PartyOverrideConfirmation({
                 </span>
               )}
               .
-            </p>
+            </p> */}
             <div className="text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
               <p className="font-semibold mb-1">⚠️ Warning</p>
               <p>
@@ -71,9 +71,9 @@ export default function PartyOverrideConfirmation({
                 )}
               </p>
             </div>
-            <p className="font-medium text-gray-900">
+            {/* <p className="font-medium text-gray-900">
               Would you like to continue and create a new party?
-            </p>
+            </p> */}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row">
