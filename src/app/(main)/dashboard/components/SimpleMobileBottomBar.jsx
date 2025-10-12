@@ -398,13 +398,13 @@ const SimpleMobileBottomTabBar = ({
                   {isMyPlan ? (
                     <div className={`w-full rounded-xl transition-all duration-300 ${
                       isActive
-                        ? "bg-gradient-to-br from-teal-500 to-teal-600 shadow-md transform scale-105"
-                        : "bg-gradient-to-br from-teal-400 to-teal-500"
+                        ? "bg-primary-500 shadow-md transform scale-105"
+                        : "bg-primary-500"
                     }`}>
                       <div className="px-3 py-2 relative">
                         {/* Badge */}
-                        <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full px-1.5 py-0.5 shadow-sm border border-teal-500">
-                          <span className="text-[10px] font-black text-teal-600">
+                        <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full px-1.5 py-0.5 shadow-sm border border-[hsl(var(--primary-600))]">
+                          <span className="text-[10px] font-black text-primary-500">
                             {tab.badge}/{tab.total}
                           </span>
                         </div>
