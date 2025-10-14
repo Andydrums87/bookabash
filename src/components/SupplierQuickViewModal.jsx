@@ -83,7 +83,7 @@ export default function SupplierQuickViewModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl sm:rounded-3xl max-w-5xl w-full h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+        className="bg-white rounded-2xl sm:rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ✅ COMPACT HEADER WITH CAROUSEL */}

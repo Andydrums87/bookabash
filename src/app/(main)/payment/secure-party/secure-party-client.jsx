@@ -856,7 +856,7 @@ export default function PaymentPageContent() {
       }
       sendSupplierNotifications()
       
-      router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
+      router.push(`/payment/success?payment_intent=${paymentIntent.id}&child_name=${encodeURIComponent(partyDetails.childName)}&theme=${encodeURIComponent(partyDetails.theme)}&date=${partyDetails.date}&time=${partyDetails.startTime || partyDetails.time || '14:00'}&location=${encodeURIComponent(partyDetails.location)}&guests=${partyDetails.guestCount}&email=${encodeURIComponent(partyDetails.email)}&age=${partyDetails.childAge}`)
       
     } catch (error) {
       console.error('Error handling payment success:', error)
