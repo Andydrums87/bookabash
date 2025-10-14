@@ -109,12 +109,7 @@ const getSupplierState = () => {
                                   enquiry.supplier_response &&
                                   !enquiry.supplier_response.includes('Auto-')
   
-  console.log(`🔍 SupplierCard [${type}]: Payment analysis:`, {
-    thisSupplierPaymentStatus,
-    enquiryStatus,
-    isAutoAccepted,
-    supplierManuallyAccepted
-  })
+
   
   // Handle declined enquiries first
   if (enquiryStatus === "declined") {
@@ -240,7 +235,14 @@ const getSupplierState = () => {
     handleCancelEnquiry,
     enhancedPricing,
     onClick: handleCardClick,
-    totalPrice: pricing.finalPrice
+    totalPrice: pricing.finalPrice,
+    onCustomize: (type, supplier) => {
+      // ✅ NEW: Handle customize click
+      console.log('Customize clicked for:', type, supplier.name)
+      // You can add your customize logic here
+      // For example, open a modal or navigate to customization page
+    },
+    onAddSupplier: onAddSupplier // ✅ ADD THIS - pass through from parent
   }
 
   // ✅ Props specific to EmptySupplierCard - NOW INCLUDING RECOMMENDED SUPPLIER

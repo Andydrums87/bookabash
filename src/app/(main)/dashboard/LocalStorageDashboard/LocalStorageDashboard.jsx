@@ -1253,6 +1253,18 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
 }
 
 
+// In LocalStorageDashboard.jsx - add this handler
+const handleCustomizeSupplier = (type, supplier) => {
+  console.log('🎨 Customizing supplier:', type, supplier.name)
+  
+  // Example: Navigate to supplier page with customize mode
+  router.push(`/supplier/${supplier.id}?mode=customize&from=dashboard`)
+  
+  // OR: Open a customization modal
+  // setShowCustomizeModal(true)
+  // setCustomizeSupplierData({ type, supplier })
+}
+
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
@@ -1371,6 +1383,8 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
         recommendedSupplier={getRecommendedSupplierForType('venue')}
         onAddSupplier={handleAddRecommendedSupplier}
         enhancedPricing={null}
+        onCustomize={handleCustomizeSupplier} // ✅ Add this
+
       />
     );
   }
@@ -1638,7 +1652,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
     
   }
 />
-      {/* <SnappyDashboardTour
+      <SnappyDashboardTour
         isOpen={isTourActive}
         onMobileNavigationStepActive={handleMobileNavigationStepActive} 
         onClose={closeTour}
@@ -1646,7 +1660,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
         suppliers={suppliers} // Add this
         partyDetails={partyDetails} // Add this  
         totalCost={totalCost} // Add this
-      /> */}
+      />
     </div>
   )
 }

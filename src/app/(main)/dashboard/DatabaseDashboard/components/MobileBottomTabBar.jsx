@@ -1,31 +1,38 @@
+// components/DatabaseDashboard/components/MobileBottomTabBar.jsx - WITH PAYMENT LOGIC
+
 "use client"
 
-import { useState, useEffect } from "react"
-import { Home, BarChart3, FileText, Clock, X, CreditCard } from "lucide-react"
+import React, { useState } from "react"
+import { ClipboardList, Plus, PartyPopper, Clock, X, CreditCard, Mail, Users, Gift } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { calculatePaymentAmounts } from '@/utils/supplierPricingHelpers'
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 const MobileBottomTabBar = ({
   suppliers = {},
   enquiries = [],
-  totalCost = 0,
-  timeRemaining = 24,
   partyDetails = {},
+  guestList = [],
+  giftRegistry = null,
+  registryItemCount = 0,
+  einvites = null,
+  // ✅ Payment props
   onPaymentReady,
   isPaymentConfirmed = false,
-  // Payment-specific props
   outstandingSuppliers = [],
   totalDepositAmount = 0,
   hasOutstandingPayments = false,
   // Widget props
+  AddSuppliersSection,
   ProgressWidget,
   CountdownWidget,
-  isVisible = true 
+  getSupplierDisplayName,
+  getSupplierDisplayPricing,
+  totalCost = 0, // ✅ ADD THIS
+  addons = [], // ✅ ADD THIS
 }) => {
-  const [activeTab, setActiveTab] = useState("party")
+  const [activeTab, setActiveTab] = useState(null)
   const [showModal, setShowModal] = useState(false)
-  const [paymentBreakdown, setPaymentBreakdown] = useState(null)
   const router = useRouter()
 
   // Calculate progress
@@ -33,65 +40,123 @@ const MobileBottomTabBar = ({
     ([key, supplier]) => supplier !== null && key !== "einvites",
   ).length
 
-  const totalSlots = 7
+  const totalSlots = 9
   const progressPercentage = Math.round((confirmedSuppliers / totalSlots) * 100)
+  
+  const allSupplierTypes = ['venue', 'entertainment', 'cakes', 'decorations', 'facePainting', 'activities', 'partyBags', 'balloons', 'catering']
+  const emptySlots = allSupplierTypes.filter(type => !suppliers[type]).length
 
-  useEffect(() => {
-    if (confirmedSuppliers.length > 0) {
-      const breakdown = calculatePaymentAmounts(confirmedSuppliers, partyDetails)
-      setPaymentBreakdown(breakdown)
-      
-      console.log('Mobile tab bar payment breakdown:', {
-        totalPaymentToday: breakdown.totalPaymentToday,
-        depositAmount: breakdown.depositAmount,
-        fullPaymentAmount: breakdown.fullPaymentAmount,
-        hasDeposits: breakdown.hasDeposits,
-        hasFullPayments: breakdown.hasFullPayments
-      })
-    } else {
-      setPaymentBreakdown(null)
+  const calculateTimeRemaining = () => {
+    if (!partyDetails?.date) return 0
+    const partyDate = new Date(partyDetails.date)
+    const now = new Date()
+    const diffInDays = Math.ceil((partyDate - now) / (1000 * 60 * 60 * 24))
+    return Math.max(0, diffInDays)
+  }
+
+  const timeRemaining = calculateTimeRemaining()
+
+  // Party Tools data
+  const partyTools = [
+    {
+      id: 'einvites',
+      label: 'E-Invites',
+      icon: Mail,
+      href: einvites?.inviteId 
+        ? `/e-invites/${einvites.inviteId}/manage`
+        : '/e-invites/create',
+      hasContent: !!einvites,
+      status: einvites ? '✓ Created' : 'Not created',
+      description: einvites 
+        ? 'Manage your digital invitations'
+        : 'Create invitations'
+    },
+    {
+      id: 'guests',
+      label: 'Guest List',
+      icon: Users,
+      href: `/rsvps/${partyDetails?.id || ''}`,
+      hasContent: (guestList?.length || 0) > 0,
+      count: guestList?.length || 0,
+      status: (guestList?.length || 0) > 0 ? `${guestList.length} guests` : 'No guests yet',
+      description: (guestList?.length || 0) > 0
+        ? 'Manage your guest list'
+        : 'Add guests'
+    },
+    {
+      id: 'registry',
+      label: 'Gift Registry',
+      icon: Gift,
+      href: '/gift-registry',
+      hasContent: !!giftRegistry,
+      count: registryItemCount,
+      status: giftRegistry 
+        ? registryItemCount > 0 ? `${registryItemCount} items` : 'Empty registry'
+        : 'Not created',
+      description: giftRegistry
+        ? 'Manage your gift registry'
+        : 'Set up registry'
     }
-  }, [confirmedSuppliers, partyDetails])
+  ]
 
-  // Enhanced tab configuration with payment integration
+  const completedTools = partyTools.filter(tool => tool.hasContent).length
+
+  // ✅ Dynamic tabs - payment replaces timer if there are outstanding payments
   const getTabConfig = () => {
     const baseTabs = [
-      { id: "party", label: "Party", icon: Home },
       {
         id: "progress",
-        label: "Progress",
-        icon: BarChart3,
-        badge: `${confirmedSuppliers}/${totalSlots}`,
+        label: "My Plan",
+        icon: ClipboardList,
+        badge: confirmedSuppliers,
+        total: totalSlots,
+        color: "text-primary-500",
+        activeColor: "text-primary-600",
+        subtext: `${confirmedSuppliers}/${totalSlots}`
       },
-      { id: "summary", label: "Summary", icon: FileText },
       {
+        id: "add",
+        label: "Add Suppliers",
+        icon: Plus,
+        color: "text-primary-500",
+        activeColor: "text-primary-600",
+        count: emptySlots,
+        isHighlight: true
+      },
+      {
+        id: "tools",
+        label: "Party Tools",
+        icon: PartyPopper,
+        color: "text-purple-500",
+        activeColor: "text-purple-600",
+        completedCount: completedTools,
+        totalCount: partyTools.length
+      }
+    ]
+
+    // ✅ If there are outstanding payments, replace timer with payment
+    if (hasOutstandingPayments) {
+      baseTabs.push({
+        id: "payment",
+        label: outstandingSuppliers.length > 1 ? "Pay All" : "Pay Now",
+        icon: CreditCard,
+        color: "text-white",
+        activeColor: "text-white",
+        isPayment: true,
+        amount: `£${totalDepositAmount}`,
+        count: outstandingSuppliers.length
+      })
+    } else {
+      // Otherwise show timer
+      baseTabs.push({
         id: "timer",
         label: "Timer",
         icon: Clock,
-        urgent: timeRemaining < 6,
-      },
-    ]
-
-    // If there are outstanding payments, replace the timer tab with payment
-    if (hasOutstandingPayments) {
-      return [
-        { id: "party", label: "Party", icon: Home },
-        {
-          id: "progress",
-          label: "Progress",
-          icon: BarChart3,
-          badge: `${confirmedSuppliers}/${totalSlots}`,
-        },
-        { id: "summary", label: "Summary", icon: FileText },
-        {
-          id: "payment",
-          label: outstandingSuppliers.length > 1 ? "Pay All" : "Pay Now",
-          icon: CreditCard,
-          isPayment: true,
-          amount: `£${totalDepositAmount}`,
-          count: outstandingSuppliers.length,
-        },
-      ]
+        color: "text-orange-500",
+        activeColor: "text-orange-600",
+        urgent: timeRemaining < 7,
+        subtext: timeRemaining > 0 ? `${timeRemaining}d` : "Today!"
+      })
     }
 
     return baseTabs
@@ -100,25 +165,22 @@ const MobileBottomTabBar = ({
   const tabs = getTabConfig()
 
   const handleTabPress = (tab) => {
-    if (tab.id === "party") {
-      setActiveTab(tab.id)
-      setShowModal(false)
-    } else if (tab.id === "summary") {
-      router.push("/party-summary")
-    } else if (tab.id === "payment") {
-      // Direct payment action
+    // ✅ Handle payment directly without modal
+    if (tab.id === "payment") {
       onPaymentReady()
-    } else {
-      setActiveTab(tab.id)
-      setShowModal(true)
+      return
     }
+
+    setActiveTab(tab.id)
+    setShowModal(true)
   }
 
   const closeModal = () => {
     setShowModal(false)
-    setActiveTab("party")
+    setActiveTab(null)
   }
 
+  // ✅ Payment modal content
   const getPaymentModalContent = () => {
     const isMultiple = outstandingSuppliers.length > 1
 
@@ -183,17 +245,81 @@ const MobileBottomTabBar = ({
 
   const getModalContent = () => {
     switch (activeTab) {
-      case "payment":
-        return getPaymentModalContent()
+      case "add":
+        return AddSuppliersSection ? (
+          React.cloneElement(AddSuppliersSection, {
+            onSupplierAdded: closeModal // Pass the close function
+          })
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No suppliers available to add</p>
+          </div>
+        )
 
-      case "progress":
+      case "tools":
         return (
-          <div className="space-y-6">
-            {ProgressWidget ? (
-              <div>{ProgressWidget}</div>
-            ) : (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PartyPopper className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Party Tools</h3>
+              <p className="text-sm text-gray-600">
+                Manage invitations, guests, and gifts
+              </p>
+              <div className="mt-2 text-xs text-gray-500">
+                {completedTools} of {partyTools.length} completed
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {partyTools.map((tool) => {
+                const Icon = tool.icon
+                return (
+                  <Link
+                    key={tool.id}
+                    href={tool.href}
+                    onClick={closeModal}
+                    className="block p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all active:scale-[0.98]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          tool.hasContent ? 'bg-green-100' : 'bg-gray-100'
+                        }`}>
+                          <Icon className={`w-6 h-6 ${
+                            tool.hasContent ? 'text-green-600' : 'text-gray-400'
+                          }`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">{tool.label}</h4>
+                            {tool.hasContent && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600">{tool.status}</p>
+                        </div>
+                      </div>
+                      {tool.count > 0 && (
+                        <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                          {tool.count}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )
+        case "progress":
+          return (
+            <div className="space-y-6">
+              {/* Progress Summary */}
               <div className="text-center">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Party Progress</h3>
                 <div className="relative w-24 h-24 mx-auto mb-4">
                   <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
                     <path
@@ -217,14 +343,176 @@ const MobileBottomTabBar = ({
                     <span className="text-lg font-bold text-gray-900">{progressPercentage}%</span>
                   </div>
                 </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Your Party Plan</h3>
                 <p className="text-gray-600">
                   {confirmedSuppliers} of {totalSlots} suppliers confirmed
                 </p>
               </div>
-            )}
-          </div>
-        )
-
+        
+              {/* Total Cost Summary */}
+              <div className="bg-primary-500 rounded-xl p-6 text-white text-center">
+                <div className="text-sm font-medium text-white/80 mb-2">Total Party Cost</div>
+                <div className="text-4xl font-bold">
+                  £{typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}
+                </div>
+              </div>
+        
+              {/* Party Team Section */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary-500" />
+                    Your Party Team
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {confirmedSuppliers}/{totalSlots}
+                  </span>
+                </h4>
+                
+                {confirmedSuppliers > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(suppliers).map(([type, supplier]) => {
+                      if (!supplier || type === "einvites") return null
+                      
+                      // Get enquiry status for this supplier
+                      const enquiry = enquiries.find((e) => e.supplier_category === type)
+                      const isAccepted = enquiry?.status === "accepted"
+                      const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                      const isPending = enquiry?.status === "pending"
+                      
+                      // Get supplier addons
+                      const supplierAddons = Array.isArray(addons) ? addons.filter(addon => 
+                        addon.supplierId === supplier.id || 
+                        addon.supplierType === type ||
+                        addon.attachedToSupplier === type
+                      ) : []
+                      
+                      // Calculate total price (base price + addons)
+                      const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+                      const totalPrice = (supplier.price || 0) + addonsCost
+                      
+                      // Get supplier name
+                      const supplierName = supplier.name || 'Unknown Supplier'
+                      
+                      // Get category display name
+                      const categoryNames = {
+                        venue: 'Venue',
+                        entertainment: 'Entertainment',
+                        catering: 'Catering',
+                        cakes: 'Cakes',
+                        facePainting: 'Face Painting',
+                        activities: 'Activities',
+                        partyBags: 'Party Bags',
+                        decorations: 'Decorations',
+                        balloons: 'Balloons'
+                      }
+                      const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
+                      
+                      // Determine status badge
+                      let statusBadge = null
+                      if (isPaid) {
+                        statusBadge = (
+                          <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                            ✓ Paid
+                          </span>
+                        )
+                      } else if (isAccepted) {
+                        // If accepted but NOT paid, show payment pending
+                        statusBadge = (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                            💳 Payment Pending
+                          </span>
+                        )
+                      } else if (isPending) {
+                        statusBadge = (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                            ⏳ Pending
+                          </span>
+                        )
+                      } else {
+                        statusBadge = (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                            ⚡ Just Added
+                          </span>
+                        )
+                      }
+                      
+                      return (
+                        <div
+                          key={type}
+                          className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+                        >
+                          <div className="flex gap-3 p-3">
+                            {/* Supplier Image */}
+                            {supplier.image && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={supplier.image}
+                                  alt={supplierName}
+                                  className="w-16 h-16 rounded-lg object-cover"
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Supplier Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
+                                    {categoryName}
+                                  </p>
+                                  <h5 className="font-semibold text-gray-900 text-sm truncate">
+                                    {supplierName}
+                                  </h5>
+                                </div>
+                                {statusBadge}
+                              </div>
+                              
+                              {/* Price */}
+                              <div className="mt-1">
+                                <p className="text-sm font-bold text-primary-600">
+                                  £{totalPrice.toFixed(2)}
+                                </p>
+                                {supplierAddons.length > 0 && (
+                                  <p className="text-xs text-gray-500">
+                                    Base: £{(supplier.price || 0).toFixed(2)} + {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
+                                  </p>
+                                )}
+                                
+                                {/* Payment status */}
+                                {!isPaid && (isAccepted || isPending) && (
+                                  <p className="text-xs text-orange-600 mt-1 font-medium">
+                                    Payment pending
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No suppliers added yet
+                  </p>
+                )}
+              </div>
+        
+              {/* Optional: Add link to add more suppliers */}
+              {confirmedSuppliers < totalSlots && (
+                <Button
+                  onClick={() => {
+                    setActiveTab("add")
+                  }}
+                  className="w-full bg-primary-500 hover:bg-primary-600 text-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add More Suppliers ({totalSlots - confirmedSuppliers} available)
+                </Button>
+              )}
+            </div>
+          )
       case "timer":
         return (
           <div className="space-y-6">
@@ -233,13 +521,13 @@ const MobileBottomTabBar = ({
             ) : (
               <div className="text-center">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Party Countdown</h3>
-                <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-6 text-center">
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6 text-center">
                   <div className="text-4xl font-bold mb-2">
-                    <span className="text-primary-600">
-                      {Math.floor(timeRemaining)}h {Math.round((timeRemaining - Math.floor(timeRemaining)) * 60)}m
+                    <span className="text-orange-600">
+                      {timeRemaining} days
                     </span>
                   </div>
-                  <p className="text-sm text-primary-700">Time remaining to secure your party</p>
+                  <p className="text-sm text-orange-700">Until your party!</p>
                 </div>
               </div>
             )}
@@ -253,60 +541,87 @@ const MobileBottomTabBar = ({
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[200] shadow-lg">
-        <div className="px-4 py-2 safe-area-pb">
-          <div className="flex justify-between items-center max-w-sm mx-auto">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-lg">
+        <div className="px-2 py-2 safe-area-pb">
+          <div className="flex justify-around items-center max-w-md mx-auto gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
-              const isPaymentTab = tab.isPayment
+              const isHighlight = tab.isHighlight
+              const isPayment = tab.isPayment
 
               return (
                 <button
                   key={tab.id}
                   onClick={() => handleTabPress(tab)}
-                  className={`relative flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all duration-300 min-w-[60px] ${
-                    isPaymentTab
-                      ? "bg-teal-600 shadow-lg scale-105 animate-pulse"
-                      : isActive
-                        ? "bg-primary-50 shadow-md scale-105"
-                        : "bg-transparent hover:bg-gray-50"
+                  className={`relative flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-all duration-200 ${
+                    isPayment 
+                      ? "bg-teal-600 shadow-lg animate-pulse" 
+                      : "hover:bg-gray-50 active:scale-95"
                   }`}
                 >
-                  <div className="relative mb-0.5">
+                  {/* Icon with badge */}
+                  <div className="relative mb-1">
                     <Icon
-                      className={`w-4 h-4 transition-colors duration-200 ${
-                        isPaymentTab ? "text-white" : isActive ? "text-primary-600" : "text-gray-500"
+                      className={`w-6 h-6 transition-colors duration-200 ${
+                        isPayment ? "text-white" :
+                        isActive ? tab.activeColor : tab.color
                       }`}
                     />
 
-                    {tab.badge && !isPaymentTab && (
-                      <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold shadow-sm border-2 border-white">
-                        {tab.badge.split("/")[0]}
-                      </span>
+                    {/* Badge for My Plan */}
+                    {tab.id === "progress" && (
+                      <div className="absolute -top-1 -right-1 bg-primary-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold border border-white">
+                        {tab.badge}
+                      </div>
                     )}
 
-                    {isPaymentTab && tab.count > 1 && (
-                      <span className="absolute -top-1 -right-1 bg-white text-teal-600 text-xs rounded-full w-3 h-3 flex items-center justify-center font-bold border-2 border-teal-100 shadow-sm">
+                    {/* Badge for Add Suppliers */}
+                    {isHighlight && tab.count > 0 && (
+                      <div className="absolute -top-1 -right-1 bg-primary-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold border border-white">
                         {tab.count}
-                      </span>
+                      </div>
                     )}
 
-                    {tab.urgent && !isPaymentTab && timeRemaining < 2 && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse border-2 border-white shadow-sm"></div>
+                    {/* Badge for Party Tools */}
+                    {tab.id === "tools" && (
+                      <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] rounded-full px-1 py-0.5 flex items-center justify-center font-bold border border-white whitespace-nowrap">
+                        {tab.completedCount}/{tab.totalCount}
+                      </div>
+                    )}
+
+                    {/* Badge for Payment */}
+                    {isPayment && tab.count > 1 && (
+                      <div className="absolute -top-1 -right-1 bg-white text-teal-600 text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold border border-teal-100">
+                        {tab.count}
+                      </div>
+                    )}
+
+                    {/* Urgent indicator for Timer */}
+                    {tab.urgent && timeRemaining > 0 && timeRemaining < 3 && (
+                      <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white"></div>
                     )}
                   </div>
 
+                  {/* Label */}
                   <span
-                    className={`text-xs font-medium transition-colors duration-200 text-center leading-tight ${
-                      isPaymentTab ? "text-white" : isActive ? "text-primary-600" : "text-gray-600"
+                    className={`text-[10px] font-semibold transition-colors duration-200 text-center leading-tight ${
+                      isPayment ? "text-white" :
+                      isActive ? "text-gray-900" : "text-gray-600"
                     }`}
                   >
                     {tab.label}
                   </span>
-
-                  {isPaymentTab && (
-                    <span className="text-xs font-bold text-white mt-0.5 leading-tight opacity-90">{tab.amount}</span>
+                  
+                  {/* Subtext or Amount */}
+                  {isPayment ? (
+                    <span className="text-[9px] text-white font-bold mt-0.5 opacity-90">
+                      {tab.amount}
+                    </span>
+                  ) : tab.subtext && (
+                    <span className="text-[9px] text-gray-400 font-medium mt-0.5">
+                      {tab.subtext}
+                    </span>
                   )}
                 </button>
               )
@@ -316,17 +631,20 @@ const MobileBottomTabBar = ({
       </div>
 
       {showModal && (
-        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[250] flex items-end">
-          <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl">
-              <h2 className="text-lg font-semibold text-gray-900 capitalize">
-                {activeTab === "payment" ? "Secure Your Suppliers" : activeTab}
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-end animate-in fade-in duration-200">
+          <div className="bg-white rounded-t-3xl w-full max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl z-10">
+              <h2 className="text-xl font-bold text-gray-900 capitalize">
+                {activeTab === "add" ? "Add Suppliers" :
+                 activeTab === "tools" ? "Party Tools" :
+                 activeTab === "progress" ? "Your Party Plan" : 
+                 activeTab === "timer" ? "Party Countdown" : activeTab}
               </h2>
               <button
                 onClick={closeModal}
-                className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200"
+                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
             <div className="px-6 py-6 pb-24">{getModalContent()}</div>
@@ -337,7 +655,7 @@ const MobileBottomTabBar = ({
       <style jsx global>{`
         @media (max-width: 768px) {
           body {
-            padding-bottom: 75px;
+            padding-bottom: 65px;
           }
         }
         

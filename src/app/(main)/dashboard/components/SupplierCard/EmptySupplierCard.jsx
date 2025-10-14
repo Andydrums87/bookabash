@@ -2,13 +2,15 @@
 
 "use client"
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton" // ✅ Add this import
-import { Plus, Sparkles, TrendingUp } from "lucide-react"
+import { Plus, Sparkles, TrendingUp, Eye } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
+import SupplierQuickViewModal from "@/components/SupplierQuickViewModal" // ✅ Import modal
 
 
 export default function EmptySupplierCard({
@@ -23,6 +25,8 @@ export default function EmptySupplierCard({
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
+  const [showQuickView, setShowQuickView] = useState(false) // ✅ Modal state
+  const router = useRouter() // ✅ Add this
 
 
   useEffect(() => {
@@ -128,10 +132,11 @@ export default function EmptySupplierCard({
 
   // Show the recommended supplier (greyed out)
   return (
-      <Card 
-        className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-[hsl(var(--primary-400))] opacity-75 hover:opacity-90"
-      >
-        <div className="relative h-64 w-full">
+    <>
+    <Card 
+      className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-[hsl(var(--primary-400))] opacity-75 hover:opacity-90"
+    >
+      <div className="relative h-64 w-full">
         {/* Supplier Image with grey overlay */}
         <div className="absolute inset-0">
           <Image
@@ -145,6 +150,18 @@ export default function EmptySupplierCard({
 
         {/* Much darker overlay for strong greyed effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80" />
+
+        {/* ✅ Eye icon in top-right to view details */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowQuickView(true) // ✅ Open modal instead of navigate
+          }}
+          className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+          title="View supplier details"
+        >
+          <Eye className="w-5 h-5 text-gray-700" />
+        </button>
 
         {/* Minimal badge - just category */}
         <div className="absolute top-4 left-4 z-10">
@@ -179,7 +196,7 @@ export default function EmptySupplierCard({
       </div>
 
       {/* Bottom section with single CTA */}
-      <div className="p-6 ">
+      <div className="p-6">
         <Button
           className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
           size="lg"
@@ -203,5 +220,16 @@ export default function EmptySupplierCard({
         </Button>
       </div>
     </Card>
+
+    {/* ✅ Quick View Modal */}
+    <SupplierQuickViewModal
+      supplier={recommendedSupplier}
+      isOpen={showQuickView}
+      onClose={() => setShowQuickView(false)}
+      onAddSupplier={onAddSupplier}
+      partyDetails={partyDetails}
+      type={type}
+    />
+  </>
   )
 }

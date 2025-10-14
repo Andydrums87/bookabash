@@ -40,6 +40,10 @@ import SnappysPresentParty from "./components/SnappysPresentParty"
 import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmationModal"
 import SnappyLoader from "@/components/ui/SnappyLoader"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
+import { AddSuppliersSection } from "./components/PartyJourney/AddSuppliersSection"
+
+
+
 
 // ADD: Unified pricing helper function (same as LocalStorageDashboard)
 const getSupplierDisplayPricing = (supplier, partyDetails, supplierAddons = []) => {
@@ -94,6 +98,7 @@ export default function DatabaseDashboard() {
 const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
 const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
 const [loadingCards, setLoadingCards] = useState([])
+const [activeBottomTabModal, setActiveBottomTabModal] = useState(null)
   const welcomePopupShownRef = useRef(false)
 
   // MAIN PARTY DATA HOOK - This now handles ALL loading
@@ -815,6 +820,30 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
     )
   }
 
+  // Inside the component, before the return:
+const addSuppliersSection = (
+  <AddSuppliersSection
+    suppliers={visibleSuppliers}
+    enquiries={enquiries}
+    onAddSupplier={openSupplierModal}
+    onRemoveSupplier={handleDeleteSupplier}
+    getSupplierDisplayName={getSupplierDisplayName}
+    loadingCards={loadingCards}
+    partyDetails={partyDetails}
+    addons={addons}
+    handleRemoveAddon={handleRemoveAddon}
+    isPaymentConfirmed={isPaymentConfirmed}
+    currentPhase={currentPhase}
+    onPaymentReady={handlePaymentReady}
+    handleCancelEnquiry={handleCancelEnquiry}
+    getSupplierDisplayPricing={getSupplierDisplayPricing}
+    getRecommendedSupplierForType={getRecommendedSupplierForType}
+    onAddRecommendedSupplier={handleAddRecommendedSupplier}
+    recommendationsLoaded={recommendationsLoaded}
+  />
+)
+
+
   // MAIN COMPONENT JSX
   return (
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
@@ -906,7 +935,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
           <main className="lg:col-span-2 space-y-8">
-            <SupplierGrid
+            {/* <SupplierGrid
               suppliers={suppliers}
               enquiries={enquiries}
               addons={addons}
@@ -930,27 +959,40 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
               onAddRecommendedSupplier={handleAddRecommendedSupplier}
               recommendationsLoaded={recommendationsLoaded}
               loadingCards={loadingCards}
-            />
+            /> */}
         
-            <PartyPhaseContent
-              phase={partyPhase}
-              suppliers={visibleSuppliers}
-              enquiries={enquiries}
-              partyData={partyData}
-              paymentDetails={paymentDetails}
-              onPaymentReady={handlePaymentReady}
-              onCreateInvites={handleCreateInvites}
-              partyDetails={partyDetails}
-              hasCreatedInvites={partyData?.einvites?.status === 'completed'}
-              totalOutstandingCost={outstandingData.totalDeposit}
-              outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-            />
+           {/* NEW: Journey takes center stage */}
+  <PartyPhaseContent
+    phase={partyPhase}
+    suppliers={visibleSuppliers}
+    enquiries={enquiries}
+    partyData={partyData}
+    paymentDetails={paymentDetails}
+    partyDetails={partyDetails}
+    hasCreatedInvites={partyData?.einvites?.status === 'completed'}
+    onPaymentReady={handlePaymentReady}
+    onCreateInvites={handleCreateInvites}
+    onAddSupplier={openSupplierModal}
+    onRemoveSupplier={handleDeleteSupplier}
+    loadingCards={loadingCards}
+    getSupplierDisplayName={getSupplierDisplayName}
+     // ✅ ADD THESE
+  addons={addons}
+  handleRemoveAddon={handleRemoveAddon}
+  isPaymentConfirmed={isPaymentConfirmed}
+  currentPhase={currentPhase}
+  handleCancelEnquiry={handleCancelEnquiry}
+  getSupplierDisplayPricing={getSupplierDisplayPricing}
+  getRecommendedSupplierForType={getRecommendedSupplierForType}
+  onAddRecommendedSupplier={handleAddRecommendedSupplier}
+  recommendationsLoaded={recommendationsLoaded}
+  />
           </main>
 
           <Sidebar
             partyData={partyData}
             partyDate={partyDetails?.date}
-            totalCost={enhancedTotalCost} // Use enhancedTotalCost instead of totalCost
+            totalCost={enhancedTotalCost}
             isPaymentConfirmed={isPaymentConfirmed}
             suppliers={visibleSuppliers}
             enquiries={enquiries}
@@ -959,6 +1001,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
             showPaymentCTA={true}
             totalOutstandingCost={outstandingData.totalDeposit}
             outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
+            AddSuppliersSection={addSuppliersSection} // ✅ ADD THIS
           />
         </div>
       </div>
@@ -968,37 +1011,38 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
         onClose={() => setShowWelcomePopup(false)}
       />
       
-      {!showSupplierModal && (
-        <MobileBottomTabBar
-          suppliers={visibleSuppliers}
-          enquiries={enquiries}
-          totalCost={enhancedTotalCost} // Use enhancedTotalCost instead of totalCost
-          timeRemaining={24}
-          partyDetails={partyDetails}
-          onPaymentReady={handlePaymentReady}
-          isPaymentConfirmed={isPaymentConfirmed}
-          hasOutstandingPayments={outstandingData.suppliers.length > 0}
-          outstandingSuppliers={outstandingData.suppliers}
-          totalDepositAmount={outstandingData.totalDeposit}
-          ProgressWidget={
-            <SnappysPresentParty
-              suppliers={visibleSuppliers}
-              enquiries={enquiries}
-              timeRemaining={24}
-              onPaymentReady={handlePaymentReady}
-              showPaymentCTA={true}
-              isPaymentComplete={isPaymentConfirmed}
-              totalOutstandingCost={outstandingData.totalDeposit}
-              outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-            />
-          }
-          CountdownWidget={
-            <CountdownWidget
-              partyDate={partyDetails?.date}
-            />
-          }
-        />
-      )}
+
+{!showSupplierModal && (
+  <MobileBottomTabBar
+    suppliers={visibleSuppliers}
+    enquiries={enquiries}
+    totalCost={enhancedTotalCost}
+    timeRemaining={24}
+    partyDetails={partyDetails}
+    partyData={partyData} // ✅ ADD THIS
+    // ✅ SIMPLE: Just pass the component
+    getSupplierDisplayName={getSupplierDisplayName}
+    getSupplierDisplayPricing={getSupplierDisplayPricing}
+    AddSuppliersSection={addSuppliersSection}
+    ProgressWidget={
+      <SnappysPresentParty
+        suppliers={visibleSuppliers}
+        enquiries={enquiries}
+        timeRemaining={24}
+        onPaymentReady={handlePaymentReady}
+        showPaymentCTA={true}
+        isPaymentComplete={isPaymentConfirmed}
+        totalOutstandingCost={outstandingData.totalDeposit}
+        outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
+      />
+    }
+    CountdownWidget={
+      <CountdownWidget
+        partyDate={partyDetails?.date}
+      />
+    }
+  />
+)}
     </div>
   )
 }

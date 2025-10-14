@@ -236,11 +236,11 @@ const SimpleMobileBottomTabBar = ({
 
         return (
           <div className="space-y-6">
-          {/* Header */}
-          <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-4 border-2 border-teal-200">
+          {/* Header Card - Primary theme */}
+          <div className="bg-primary-50 rounded-xl p-4 border-2 border-[hsl(var(--primary-300))]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center shadow-md">
+                <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full flex items-center justify-center shadow-md">
                   <ClipboardList className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -251,7 +251,7 @@ const SimpleMobileBottomTabBar = ({
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-black text-teal-600">{progressPercentage}%</div>
+                <div className="text-3xl font-black text-[hsl(var(--primary-600))]">{progressPercentage}%</div>
                 <div className="text-xs text-gray-500">Complete</div>
               </div>
             </div>
@@ -260,90 +260,87 @@ const SimpleMobileBottomTabBar = ({
             <div className="relative mt-3">
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-teal-500 to-teal-600 h-full rounded-full transition-all duration-700 ease-out"
+                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] h-full rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
             </div>
             
             {confirmedSuppliers < totalSlots && (
-              <p className="text-sm text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg inline-block mt-3">
+              <p className="text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg inline-block mt-3 border border-amber-200">
                 🎯 {totalSlots - confirmedSuppliers} more to go!
               </p>
             )}
           </div>
     
-          
-        {/* Supplier List - Interactive */}
-      <div className="space-y-2">
-       
-        {supplierEntries.map(({ type, name, isBooked, supplierName, price }) => (
-          <button
-            key={type}
-            onClick={() => {
-              if (!isBooked) {
-                // Close the modal
-                closeModal()
-                
-                // Switch to that supplier's tab
-                if (onSupplierTabChange) {
-                  setTimeout(() => {
-                    onSupplierTabChange(type)
-                  }, 300) // Small delay for smooth transition
-                }
-              }
-            }}
-            disabled={isBooked}
-            className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left ${
-              isBooked 
-                ? 'bg-teal-50 border-teal-200 cursor-default' 
-                : 'bg-gray-50 border-gray-200 border-dashed cursor-pointer hover:bg-gray-100 hover:border-primary-300 active:scale-[0.98]'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                isBooked ? 'bg-teal-500' : 'bg-gray-300'
-              }`}>
-                {isBooked ? (
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <Plus className="w-4 h-4 text-white" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <span className={`font-semibold block text-sm ${isBooked ? 'text-gray-900' : 'text-gray-500'}`}>
-                  {name}
-                </span>
-                {isBooked && supplierName && (
-                  <div className="text-xs text-teal-700 truncate">{supplierName}</div>
-                )}
-                {!isBooked && (
-                  <div className="text-xs text-gray-400">Tap to add</div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isBooked && price ? (
-                <span className="font-bold text-teal-700 text-base flex-shrink-0">£{price}</span>
-              ) : (
-                <>
-                  <span className="text-xs text-primary-500 font-medium flex-shrink-0">Add</span>
-                  <ChevronRight className="w-4 h-4 text-primary-500" />
-                </>
-              )}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Total Cost */}
-      <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-xl p-4 text-center shadow-lg">
-        <div className="text-xs text-teal-100 mb-1 font-medium">Total Party Cost</div>
-        <div className="text-3xl font-black text-white">£{unifiedTotalCost.toLocaleString()}</div>
-      </div>
-    </div>
+          {/* Supplier List */}
+          <div className="space-y-2">
+            <h4 className="font-bold text-gray-900 text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[hsl(var(--primary-500))]" />
+              Your Party Team
+            </h4>
+            {supplierEntries.map(({ type, name, isBooked, supplierName, price }) => (
+              <button
+                key={type}
+                onClick={() => {
+                  if (!isBooked) {
+                    closeModal()
+                    setTimeout(() => {
+                      onSupplierTabChange?.(type)
+                    }, 300)
+                  }
+                }}
+                disabled={isBooked}
+                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left ${
+                  isBooked 
+                    ? 'bg-primary-50 border-[hsl(var(--primary-200))]' 
+                    : 'bg-gray-50 border-gray-200 border-dashed cursor-pointer hover:bg-gray-100 hover:border-[hsl(var(--primary-300))] active:scale-[0.98]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    isBooked ? 'bg-[hsl(var(--primary-500))]' : 'bg-gray-300'
+                  }`}>
+                    {isBooked ? (
+                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <Plus className="w-4 h-4 text-white" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <span className={`font-semibold block text-sm ${isBooked ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {name}
+                    </span>
+                    {isBooked && supplierName && (
+                      <div className="text-xs text-[hsl(var(--primary-700))] truncate">{supplierName}</div>
+                    )}
+                    {!isBooked && (
+                      <div className="text-xs text-gray-400">Tap to add</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isBooked && price ? (
+                    <span className="font-bold text-[hsl(var(--primary-700))] text-base flex-shrink-0">£{price}</span>
+                  ) : (
+                    <>
+                      <span className="text-xs text-[hsl(var(--primary-500))] font-medium flex-shrink-0">Add</span>
+                      <ChevronRight className="w-4 h-4 text-[hsl(var(--primary-500))]" />
+                    </>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+    
+          {/* Total Cost */}
+          <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl p-4 text-center shadow-lg">
+            <div className="text-xs text-white/80 mb-1 font-medium">Total Party Cost</div>
+            <div className="text-3xl font-black text-white">£{unifiedTotalCost.toLocaleString()}</div>
+          </div>
+        </div>
         )
 
       case "timer":
@@ -462,7 +459,7 @@ const SimpleMobileBottomTabBar = ({
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-end animate-in fade-in duration-200">
           <div className="bg-white rounded-t-3xl w-full max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl z-10">
-              <h2 className="text-xl font-bold text-gray-900 capitalize">
+              <h2 className="text-xl font-bold text-gray-900  capitalize">
                 {activeTab === "progress" ? "Your Party Plan" : 
                  activeTab === "timer" ? "Party Countdown" : activeTab}
               </h2>

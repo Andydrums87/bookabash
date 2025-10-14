@@ -1,13 +1,15 @@
+// SelectedSupplierCard.jsx - FIXED with carousel
 "use client"
-import { useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useRef, useMemo } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Gift, X, ChevronDown, ChevronUp, Info, Users, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, Plus, X, Clock, Users, Star, ChevronDown, ChevronUp, Info, Eye, MoreVertical, Trash2, Wand2 } from "lucide-react"
+import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
 import MicroConfettiWrapper from "@/components/animations/MicroConfettiWrapper"
+import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { useCheckIfNewlyAdded } from "@/hooks/useCheckIfNewlyAdded"
 import {
   Tooltip,
@@ -15,9 +17,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-// Import unified pricing system
-import { calculateFinalPrice, requiresAdditionalEntertainers, getAdditionalEntertainerInfo } from '@/utils/unifiedPricing'
+// ✅ Import carousel
+import SwipeableSupplierCarousel from '@/components/supplier/SwipableSupplierCarousel'
+
+// ✅ Import the modal
+import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
 
 export default function SelectedSupplierCard({
   type,
@@ -30,10 +41,42 @@ export default function SelectedSupplierCard({
   handleDeleteSupplier,
   handleRemoveAddon,
   getSupplierDisplayName,
-  onClick
+  onClick,
+  onCustomize,
+  onAddSupplier
 }) {
-  const router = useRouter()
   const [showAddons, setShowAddons] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [showQuickViewModal, setShowQuickViewModal] = useState(false)
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false)
+  const [fullSupplierData, setFullSupplierData] = useState(null)
+
+  // ✅ Function to fetch full supplier data with packages
+  const fetchFullSupplierData = async () => {
+    if (!supplier?.id) return
+
+    try {
+      console.log('🔍 Fetching full supplier data for:', supplier.name)
+      
+      const { suppliersAPI } = await import('@/utils/mockBackend')
+      const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
+      
+      console.log('📦 Full supplier data:', {
+        name: fullSupplier.name,
+        hasPackages: !!fullSupplier.packages,
+        packageCount: fullSupplier.packages?.length || 0,
+        packages: fullSupplier.packages
+      })
+      
+      setFullSupplierData(fullSupplier)
+      setShowCustomizationModal(true)
+      
+    } catch (error) {
+      console.error('❌ Error fetching supplier data:', error)
+      setFullSupplierData(supplier)
+      setShowCustomizationModal(true)
+    }
+  }
 
   const isNewlyAdded = useCheckIfNewlyAdded(type, !!supplier)
 
@@ -69,7 +112,6 @@ export default function SelectedSupplierCard({
   
   const displayPrice = pricing.finalPrice
   
-  // Check if additional entertainers are required
   const guestCount = partyDetails?.guestCount || 10
   const needsAdditionalEntertainers = supplier && requiresAdditionalEntertainers(supplier, guestCount)
   const entertainerInfo = needsAdditionalEntertainers ? getAdditionalEntertainerInfo(supplier, guestCount) : null
@@ -78,7 +120,6 @@ export default function SelectedSupplierCard({
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization || type === 'cakes'
 
-  // Show duration info if supplier has extra hour rates and duration > 2 hours
   const showDurationInfo = !!(
     (supplier?.extraHourRate || supplier?.serviceDetails?.extraHourRate) &&
     partyDetails?.duration && 
@@ -86,7 +127,6 @@ export default function SelectedSupplierCard({
     pricing.breakdown.extraHours > 0
   )
 
-  // Show weekend info if weekend premium was applied
   const showWeekendInfo = pricing.details?.isWeekend && pricing.breakdown?.weekend > 0
 
   const getTypeConfig = (supplierType) => {
@@ -112,14 +152,17 @@ export default function SelectedSupplierCard({
         isNewlyAdded={isNewlyAdded}
         onAnimationComplete={handleAnimationComplete}>
         <Card onClick={onClick} className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
+          
+          {/* Image Section - Static Image Only */}
           <div className="relative h-64 w-full">
             {isLoading ? (
               <Skeleton className="w-full h-full" />
             ) : (
               <>
+                {/* Static Image */}
                 <div className="absolute inset-0">
                   <Image
-                    src={supplier.image || supplier.imageUrl || `/placeholder.svg`}
+                    src={supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png'}
                     alt={supplier.name}
                     fill
                     className="object-cover"
@@ -127,30 +170,80 @@ export default function SelectedSupplierCard({
                   />
                 </div>
 
+                {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
-                <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+                {/* Badges */}
+                <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className={`${typeConfig.color} text-white shadow-lg backdrop-blur-sm`}>
                       {typeConfig.icon} {type.charAt(0).toUpperCase() + type.slice(1)}
                     </Badge>
-                    <Badge className="bg-primary-500 text-white  shadow-lg backdrop-blur-sm">
+                    <Badge className="bg-primary-500 text-white shadow-lg backdrop-blur-sm">
                       Selected
                     </Badge>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteSupplier(type)
-                    }}
-                    className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                  
+                  {/* Three-dots menu */}
+                  <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowMenu(!showMenu)
+                        }}
+                        className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg z-30"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent 
+                      align="end" 
+                      className="w-48 bg-white shadow-xl border border-gray-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowQuickViewModal(true)
+                          setShowMenu(false)
+                        }}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>View Details</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          fetchFullSupplierData()
+                          setShowMenu(false)
+                        }}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        <span>Customize</span>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteSupplier(type)
+                          setShowMenu(false)
+                        }}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Remove</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
+                {/* Cake badge */}
                 {(isCakeSupplier || type === 'cakes') && (
-                  <div className="absolute bottom-4 right-4 z-10">
+                  <div className="absolute bottom-4 right-4 z-20">
                     <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg backdrop-blur-sm">
                       🎂 {supplier.packageData?.name || 'Custom Cake'} 
                       {cakeCustomization?.flavorName && ` • ${cakeCustomization.flavorName}`}
@@ -158,7 +251,8 @@ export default function SelectedSupplierCard({
                   </div>
                 )}
 
-                <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                {/* Supplier info */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
                   <div className="text-white">
                     <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
                       {supplier.name}
@@ -174,7 +268,7 @@ export default function SelectedSupplierCard({
                               <TooltipTrigger asChild>
                                 <button
                                   type="button"
-                                  className="cursor-help hover:scale-110 transition-transform"
+                                  className="cursor-help hover:scale-110 transition-transform z-30"
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <Info className="w-5 h-5 text-white/80 hover:text-white transition-colors" />
@@ -246,7 +340,7 @@ export default function SelectedSupplierCard({
                   className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white rounded-xl border border-[hsl(var(--primary-100))] hover:from-[hsl(var(--primary-100))] transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-[hsl(var(--primary-600))]" />
+                    <Plus className="w-4 h-4 text-[hsl(var(--primary-600))]" />
                     <span className="font-bold text-gray-500 text-xs">
                       Selected Add-ons ({addons.length})
                     </span>
@@ -285,13 +379,12 @@ export default function SelectedSupplierCard({
               </div>
             )}
 
+            {/* View Details button */}
             <Button
               className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white shadow-lg"
               onClick={(e) => {
                 e.stopPropagation()
-                if (supplier?.id) {
-                  router.push(`/supplier/${supplier.id}?from=dashboard`)
-                }
+                setShowQuickViewModal(true)
               }}
               disabled={isDeleting}
               size="lg"
@@ -306,6 +399,32 @@ export default function SelectedSupplierCard({
             </Button>
           </div>
         </Card>
+
+        {/* Quick View Modal */}
+        <SupplierQuickViewModal
+          supplier={supplier}
+          isOpen={showQuickViewModal}
+          onClose={() => setShowQuickViewModal(false)}
+          onAddSupplier={onAddSupplier}
+          partyDetails={partyDetails}
+          type={type}
+        />
+        
+        {/* Customization Modal */}
+        <SupplierCustomizationModal
+          isOpen={showCustomizationModal}
+          onClose={() => setShowCustomizationModal(false)}
+          supplier={supplier}
+          onAddToPlan={(data) => {
+            console.log('🎨 Customization completed:', data)
+            setShowCustomizationModal(false)
+          }}
+          isAdding={false}
+          currentPhase="planning"
+          partyDetails={partyDetails}
+          selectedDate={partyDetails?.date}
+          partyDate={partyDetails?.date}
+        />
       </MicroConfettiWrapper>
     </TooltipProvider>
   )

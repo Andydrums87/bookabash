@@ -267,8 +267,6 @@ export default function EInvitesManagementPage() {
           
           {/* Quick Share Buttons */}
           <div className="grid grid-cols-4 gap-2">
-
-
    
             <Button 
               onClick={shareViaWhatsApp}

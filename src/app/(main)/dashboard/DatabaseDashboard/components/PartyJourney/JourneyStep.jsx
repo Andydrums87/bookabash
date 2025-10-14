@@ -1,0 +1,446 @@
+// components/PartyJourney/JourneyStep.jsx - SIMPLIFIED COLORS
+"use client"
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { CheckCircle, Lock, Circle, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
+import Link from 'next/link'
+import { SupplierJourneyStep } from './SupplierJourneyStep'
+import { VenueConfirmationStep } from './VenueConfirmationStep'
+import { PartyTeamBrowseStep } from './PartyTeamBrowseStep'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
+export function JourneyStep({ 
+  step, 
+  isLast,
+  partyId,
+  partyDetails,
+  hasCreatedInvites,
+  onCreateInvites,
+  suppliers,
+  enquiries,
+  onAddSupplier,
+  onRemoveSupplier,
+  loadingCards,
+  getSupplierDisplayName,
+  onViewSupplierDetails,
+  addons,
+  handleRemoveAddon,
+  isPaymentConfirmed,
+  currentPhase,
+  onPaymentReady,
+  handleCancelEnquiry,
+  getSupplierDisplayPricing,
+}) {
+  // Auto-collapse completed steps, expand current/available step
+  const [isExpanded, setIsExpanded] = useState(
+    step.status === 'current' || step.status === 'available'
+  )
+
+  useEffect(() => {
+    if (step.status === 'current') {
+      setIsExpanded(true)
+    }
+  }, [step.status])
+
+  // ✅ SIMPLIFIED: Only 3 states - completed (green), locked (disabled), or active (white)
+  const getStatusStyles = () => {
+    if (step.status === 'completed') {
+      return {
+        border: 'border-teal-200',
+        bg: 'bg-teal-50',
+        icon: <CheckCircle className="w-5 h-5 text-teal-600" />,
+        titleColor: 'text-teal-900',
+        descColor: 'text-teal-700',
+        iconBg: 'bg-teal-100',
+        disabled: false
+      }
+    }
+    
+    if (step.status === 'locked') {
+      return {
+        border: 'border-gray-200',
+        bg: 'bg-gray-50',
+        icon: <Lock className="w-5 h-5 text-gray-400" />,
+        titleColor: 'text-gray-400',
+        descColor: 'text-gray-400',
+        iconBg: 'bg-gray-100',
+        disabled: true
+      }
+    }
+
+    // Default: current or available (white background)
+    return {
+      border: 'border-gray-200',
+      bg: 'bg-white',
+      icon: <Circle className="w-5 h-5 text-gray-400" />,
+      titleColor: 'text-gray-900',
+      descColor: 'text-gray-600',
+      iconBg: 'bg-gray-50',
+      disabled: false
+    }
+  }
+
+  const styles = getStatusStyles()
+
+  const renderStepContent = () => {
+    switch (step.id) {
+      case 'payment_complete':
+        return (
+          <div className="p-4 bg-white rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-600 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Your deposit has been secured and your party is confirmed!
+            </p>
+          </div>
+        )
+         // ✅ NEW: Venue Confirmation Step
+    case 'venue_confirmation':
+        return (
+          <VenueConfirmationStep
+            venueSupplier={step.venueSupplier}
+            venueEnquiry={step.venueEnquiry}
+            onAddSupplier={onAddSupplier}
+            onRemoveSupplier={onRemoveSupplier}
+            getSupplierDisplayName={getSupplierDisplayName}
+            loadingCards={loadingCards}
+            partyDetails={partyDetails}
+            addons={addons}
+            handleRemoveAddon={handleRemoveAddon}
+            isPaymentConfirmed={isPaymentConfirmed}
+            enquiries={enquiries}
+            currentPhase={currentPhase}
+            onPaymentReady={onPaymentReady}
+            handleCancelEnquiry={handleCancelEnquiry}
+            getSupplierDisplayPricing={getSupplierDisplayPricing}
+          />
+        )
+
+case 'party_team_browse':
+    return (
+      <PartyTeamBrowseStep
+        suppliers={step.suppliers}
+        enquiries={enquiries}
+        onAddSupplier={onAddSupplier}
+        onRemoveSupplier={onRemoveSupplier}
+        getSupplierDisplayName={getSupplierDisplayName}
+        loadingCards={loadingCards}
+        partyDetails={partyDetails}
+        addons={addons}
+        handleRemoveAddon={handleRemoveAddon}
+        isPaymentConfirmed={isPaymentConfirmed}
+        currentPhase={currentPhase}
+        onPaymentReady={onPaymentReady}
+        handleCancelEnquiry={handleCancelEnquiry}
+        getSupplierDisplayPricing={getSupplierDisplayPricing}
+        totalPossibleSuppliers={step.metrics.total}
+        addedCount={step.metrics.added}
+      />
+    )
+
+        // ✅ UPDATED: Party Team (now excludes venue)
+    case 'party_team':
+        return (
+          <SupplierJourneyStep
+            suppliers={suppliers}
+            enquiries={enquiries}
+            onAddSupplier={onAddSupplier}
+            onRemoveSupplier={onRemoveSupplier}
+            getSupplierDisplayName={getSupplierDisplayName}
+            loadingCards={loadingCards}
+            allConfirmed={step.allConfirmed}
+            partyDetails={partyDetails}
+            addons={addons}
+            handleRemoveAddon={handleRemoveAddon}
+            isPaymentConfirmed={isPaymentConfirmed}
+            currentPhase={currentPhase}
+            onPaymentReady={onPaymentReady}
+            handleCancelEnquiry={handleCancelEnquiry}
+            getSupplierDisplayPricing={getSupplierDisplayPricing}
+            excludeVenue={true} // ✅ NEW: Tell it to exclude venue
+          />
+        )
+      
+      case 'suppliers_confirm':
+        return (
+          <SupplierJourneyStep
+            suppliers={suppliers}
+            enquiries={enquiries}
+            onAddSupplier={onAddSupplier}
+            onRemoveSupplier={onRemoveSupplier}
+            getSupplierDisplayName={getSupplierDisplayName}
+            loadingCards={loadingCards}
+            allConfirmed={step.allConfirmed}
+            partyDetails={partyDetails}
+            addons={addons}
+            handleRemoveAddon={handleRemoveAddon}
+            isPaymentConfirmed={isPaymentConfirmed}
+            currentPhase={currentPhase}
+            onPaymentReady={onPaymentReady}
+            handleCancelEnquiry={handleCancelEnquiry}
+            getSupplierDisplayPricing={getSupplierDisplayPricing}
+          />
+        )
+      
+      case 'guest_list':
+        return (
+          <div className="p-6 bg-white rounded-lg border border-gray-200">
+            <p className="text-gray-600 mb-4">
+              Create your guest list to manage invitations and track RSVPs. This helps you plan party numbers and dietary requirements.
+            </p>
+            {step.action && (
+              <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
+                <Link href={step.action.href}>
+                  {step.action.label}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            )}
+          </div>
+        )
+      
+      case 'gift_registry':
+        return (
+          <div className="p-6 bg-white rounded-lg border border-gray-200">
+            <p className="text-gray-600 mb-4">
+              Create a gift registry to help guests know what to bring. Share your wish list and track who's bringing what.
+            </p>
+            {step.action && (
+              <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
+                <Link href={step.action.href}>
+                  {step.action.label}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            )}
+          </div>
+        )
+      
+      case 'create_einvites':
+        return (
+          <div className="p-6 bg-white rounded-lg border border-gray-200">
+            {hasCreatedInvites ? (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <p className="font-medium text-gray-900">Your invites are ready!</p>
+                </div>
+                <p className="text-gray-600 mb-4">
+                  Share your beautiful digital invitations with guests and track who has viewed them.
+                </p>
+                {step.action && (
+                  <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
+                    <Link href={step.action.href}>
+                      Manage & Share Invites
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600 mb-4">
+                  Design beautiful digital invitations that match your party theme. Share instantly via link or download to print.
+                </p>
+                {step.action && (
+                  <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
+                    <Link href={step.action.href}>
+                      {step.action.label}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        )
+      
+      case 'send_invites':
+        return (
+          <div className="p-6 bg-white rounded-lg border border-gray-200">
+            {step.metrics && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">Invitations sent</span>
+                  <span className="font-bold text-gray-900">
+                    {step.metrics.sent} / {step.metrics.total}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-500"
+                    style={{ width: `${(step.metrics.sent / Math.max(step.metrics.total, 1)) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <p className="text-gray-600 mb-4">
+              Send your invitations to guests and track delivery status. Get notified when guests view their invites.
+            </p>
+            {step.action && (
+              <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
+                <Link href={step.action.href}>
+                  {step.action.label}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            )}
+          </div>
+        )
+      
+      case 'track_rsvps':
+        return (
+          <div className="p-6 bg-white rounded-lg border border-gray-200">
+            {step.metrics && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">RSVPs received</span>
+                  <span className="font-bold text-gray-900">
+                    {step.metrics.confirmed} / {step.metrics.total}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-500"
+                    style={{ width: `${(step.metrics.confirmed / Math.max(step.metrics.total, 1)) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <p className="text-gray-600 mb-4">
+              Track who's attending, collect dietary requirements, and manage your final guest count.
+            </p>
+            {step.action && (
+              <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
+                <Link href={step.action.href}>
+                  {step.action.label}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            )}
+          </div>
+        )
+      
+      case 'final_details':
+        return (
+          <div className="p-6 bg-white rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-600">
+              Final party details and supplier confirmations will be available 7 days before your party date. 
+              We'll send you a complete checklist with all the important information.
+            </p>
+          </div>
+        )
+      
+      default:
+        return null
+    }
+  }
+
+  // ✅ Wrapper for locked steps with tooltip
+  const CardWrapper = ({ children }) => {
+    if (styles.disabled && step.unlockMessage) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {children}
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-sm">{step.unlockMessage}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    }
+    return children
+  }
+
+  return (
+    <div className="relative">
+      <CardWrapper>
+        <Card 
+          className={`
+            ${styles.border} 
+            ${styles.bg} 
+            transition-all 
+            ${styles.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}
+          `}
+        >
+          {/* ✅ CLEAN HEADER */}
+          <div 
+            className={`p-4 ${styles.disabled ? 'pointer-events-none' : ''}`}
+            onClick={() => !styles.disabled && setIsExpanded(!isExpanded)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {/* Icon Badge */}
+                <div className={`w-12 h-12 rounded-full ${styles.iconBg} flex items-center justify-center border-2 ${styles.border} relative`}>
+                  <span className="text-2xl">{step.icon}</span>
+                  {/* Lock overlay for locked steps */}
+                  {styles.disabled && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full">
+                      <Lock className="w-5 h-5 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Title & Description */}
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-medium ${styles.disabled ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Step {step.number}
+                    </span>
+                    {step.status === 'completed' && styles.icon}
+                  </div>
+                  <h3 className={`text-lg font-bold ${styles.titleColor}`}>
+                    {step.title}
+                  </h3>
+                  {!isExpanded && (
+                    <p className={`text-xs ${styles.descColor} mt-1`}>
+                      {step.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Collapse Toggle - only show if not disabled */}
+              {!styles.disabled && (
+                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  {isExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ✅ COLLAPSIBLE CONTENT */}
+          {isExpanded && !styles.disabled && (
+            <CardContent className="px-4 pb-4 pt-0">
+              {/* Description when expanded */}
+              <p className={`text-sm ${styles.descColor} mb-4`}>
+                {step.description}
+              </p>
+
+              {/* Step Content */}
+              {renderStepContent()}
+            </CardContent>
+          )}
+        </Card>
+      </CardWrapper>
+
+      {/* Connector Line */}
+      {!isLast && (
+        <div className="absolute left-9 top-full w-0.5 h-6 bg-gray-200 -mt-2 z-0" />
+      )}
+    </div>
+  )
+}

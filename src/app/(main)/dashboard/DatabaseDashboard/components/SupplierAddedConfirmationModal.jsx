@@ -46,6 +46,7 @@ export default function SupplierAddedConfirmationModal({
       theme="fun"
       preventOutsideClick={isSending}
       showCloseButton={!isSending}
+
     >
       <ModalHeader 
         title="Secure Your Booking?"
