@@ -1,3 +1,248 @@
+// "use client"
+
+// import { useState, useEffect } from "react"
+// import { useRouter } from "next/navigation"
+// import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
+// import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard'
+// import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
+// import DashboardWelcome from "./components/DashboardWelcome"
+// import SnappyLoader from "@/components/ui/SnappyLoader"
+// import DashboardSkeleton from "./DatabaseDashboard/components/DashboardSkeleton"
+
+
+// const getCachedUserType = () => {
+//   if (typeof window === 'undefined') return null
+  
+//   try {
+//     // Check for database cache
+//     const dbCache = sessionStorage.getItem('party_data_cache')
+//     if (dbCache) {
+//       const { timestamp } = JSON.parse(dbCache)
+//       if (Date.now() - timestamp < 5 * 60 * 1000) {
+//         console.log('⚡ DashboardPage: Database cache found')
+//         return 'database'
+//       }
+//     }
+    
+//     // Check for localStorage cache
+//     const lsCache = sessionStorage.getItem('party_plan_cache')
+//     if (lsCache) {
+//       const { timestamp } = JSON.parse(lsCache)
+//       if (Date.now() - timestamp < 5 * 60 * 1000) {
+//         console.log('⚡ DashboardPage: LocalStorage cache found')
+//         return 'localStorage'
+//       }
+//     }
+    
+//     return null
+//   } catch {
+//     return null
+//   }
+// }
+
+// // ✅ NEW: Better localStorage validation
+// const hasValidLocalStorageParty = () => {
+//   if (typeof window === 'undefined') return false
+  
+//   try {
+//     const localPlan = localStorage.getItem('user_party_plan') // ✅ Check both keys
+//     const oldLocalPlan = localStorage.getItem('party_plan')
+//     const localDetails = localStorage.getItem('party_details')
+    
+//     console.log('🔍 Checking localStorage:', {
+//       hasUserPartyPlan: !!localPlan,
+//       hasPartyPlan: !!oldLocalPlan,
+//       hasPartyDetails: !!localDetails
+//     })
+    
+//     // ✅ Check user_party_plan first (newer format)
+//     if (localPlan) {
+//       try {
+//         const parsed = JSON.parse(localPlan)
+//         // Any party plan object is valid
+//         if (parsed && typeof parsed === 'object') {
+//           console.log('✅ Found valid user_party_plan')
+//           return true
+//         }
+//       } catch (e) {
+//         console.error('Failed to parse user_party_plan:', e)
+//       }
+//     }
+    
+//     // ✅ Check old party_plan format
+//     if (oldLocalPlan) {
+//       try {
+//         const parsed = JSON.parse(oldLocalPlan)
+//         const hasSuppliers = Object.keys(parsed).some(key => 
+//           parsed[key] && 
+//           typeof parsed[key] === 'object' && 
+//           parsed[key].name
+//         )
+//         if (hasSuppliers) {
+//           console.log('✅ Found valid party_plan')
+//           return true
+//         }
+//       } catch (e) {
+//         console.error('Failed to parse party_plan:', e)
+//       }
+//     }
+    
+//     // ✅ Check party_details (looser validation)
+//     if (localDetails) {
+//       try {
+//         const parsed = JSON.parse(localDetails)
+//         const hasAnyData = parsed && (
+//           parsed.theme || 
+//           parsed.date || 
+//           parsed.childName ||
+//           parsed.guestCount ||
+//           parsed.postcode ||
+//           parsed.location
+//         )
+//         if (hasAnyData) {
+//           console.log('✅ Found valid party_details')
+//           return true
+//         }
+//       } catch (e) {
+//         console.error('Failed to parse party_details:', e)
+//       }
+//     }
+    
+//     console.log('❌ No valid localStorage data found')
+//     return false
+    
+//   } catch (error) {
+//     console.error('Error checking localStorage:', error)
+//     return false
+//   }
+// }
+
+// export default function DashboardPage() {
+
+//   console.log('🎯 DashboardPage component rendering!')
+//   const router = useRouter()
+  
+//   const cachedUserType = getCachedUserType()
+//   const hasCache = cachedUserType !== null
+  
+//   const [userType, setUserType] = useState(cachedUserType)
+//   const [isLoading, setIsLoading] = useState(!hasCache)
+//   const [refreshKey, setRefreshKey] = useState(0)
+
+//   useEffect(() => {
+//     const determineUserType = async () => {
+//       // ✅ If we have cache, skip loading immediately
+//       if (hasCache) {
+//         console.log('⚡ DashboardPage: Using cached user type:', cachedUserType)
+//         setUserType(cachedUserType)
+//         setIsLoading(false)
+//         return
+//       }
+      
+//       try {
+//         console.log('🔍 Determining user type...')
+        
+//         // ✅ FIXED: Check authentication FIRST before localStorage
+//         console.log('🔐 Step 1: Checking authentication...')
+//         const userResult = await partyDatabaseBackend.getCurrentUser()
+        
+//         if (userResult.success) {
+//           console.log('✅ User authenticated, checking for database party...')
+//           const partyResult = await partyDatabaseBackend.getCurrentParty()
+          
+//           if (partyResult.success && partyResult.party) {
+//             console.log('✅ Found database party - using Database mode')
+//             setUserType('database')
+            
+//             // Cache it
+//             sessionStorage.setItem('party_data_cache', JSON.stringify({
+//               timestamp: Date.now()
+//             }))
+            
+//             // ✅ OPTIONAL: Clean up any old localStorage data to prevent confusion
+//             // Uncomment if you want to auto-cleanup localStorage on sign-in
+//             // localStorage.removeItem('user_party_plan')
+//             // localStorage.removeItem('party_plan')
+//             // localStorage.removeItem('party_details')
+//             // console.log('🧹 Cleaned up old localStorage data')
+            
+//             setIsLoading(false)
+//             return // ✅ Exit early - authenticated user with party
+//           } else {
+//             console.log('⚠️ Authenticated but no database party - showing welcome')
+//             setUserType('welcome')
+//             setIsLoading(false)
+//             return // ✅ Exit early - authenticated user without party
+//           }
+//         }
+        
+//         // ✅ ONLY check localStorage if user is NOT authenticated
+//         console.log('🔍 Step 2: User not authenticated, checking localStorage...')
+//         const hasLocalData = hasValidLocalStorageParty()
+        
+//         if (hasLocalData) {
+//           console.log('✅ Found localStorage data - using LocalStorage mode')
+//           setUserType('localStorage')
+          
+//           // Cache it
+//           sessionStorage.setItem('party_plan_cache', JSON.stringify({
+//             timestamp: Date.now()
+//           }))
+//         } else {
+//           console.log('❌ No data found anywhere - showing welcome')
+//           setUserType('welcome')
+//         }
+        
+//       } catch (error) {
+//         console.error('❌ Error determining user type:', error)
+        
+//         // ✅ ERROR FALLBACK: Only check localStorage if auth check failed
+//         if (hasValidLocalStorageParty()) {
+//           console.log('✅ Error occurred but found localStorage data')
+//           setUserType('localStorage')
+//         } else {
+//           setUserType('welcome')
+//         }
+//       } finally {
+//         setIsLoading(false)
+//       }
+//     }
+   
+//     determineUserType()
+//   }, [refreshKey, hasCache, cachedUserType])
+
+//   const handleRefresh = () => {
+//     setIsLoading(true)
+//     // Clear cache on refresh
+//     sessionStorage.removeItem('party_data_cache')
+//     sessionStorage.removeItem('party_plan_cache')
+//     setRefreshKey(prev => prev + 1)
+//   }
+
+//   // ✅ Only show loader if loading AND no cache
+//   if (isLoading && !hasCache) {
+//     return (
+//       <div className="min-h-screen bg-white flex items-center justify-center">
+//         <SnappyLoader text="Loading your party..." />
+//       </div>
+//     )
+//   }
+
+//   console.log('🎯 Rendering dashboard with userType:', userType)
+
+
+//   switch (userType) {
+//     case 'database':
+//       return <DatabaseDashboard />
+//     case 'localStorage':
+//       return <LocalStorageDashboard onRefresh={handleRefresh} />
+//     case 'welcome':
+//       return <DashboardWelcome onRefresh={handleRefresh} />
+//     default:
+//       return <DashboardWelcome onRefresh={handleRefresh} />
+//   }
+// }
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,219 +252,183 @@ import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard
 import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
 import DashboardWelcome from "./components/DashboardWelcome"
 import SnappyLoader from "@/components/ui/SnappyLoader"
-import DashboardSkeleton from "./DatabaseDashboard/components/DashboardSkeleton"
 
-
-const getCachedUserType = () => {
-  if (typeof window === 'undefined') return null
-  
-  try {
-    // Check for database cache
-    const dbCache = sessionStorage.getItem('party_data_cache')
-    if (dbCache) {
-      const { timestamp } = JSON.parse(dbCache)
-      if (Date.now() - timestamp < 5 * 60 * 1000) {
-        console.log('⚡ DashboardPage: Database cache found')
-        return 'database'
-      }
-    }
-    
-    // Check for localStorage cache
-    const lsCache = sessionStorage.getItem('party_plan_cache')
-    if (lsCache) {
-      const { timestamp } = JSON.parse(lsCache)
-      if (Date.now() - timestamp < 5 * 60 * 1000) {
-        console.log('⚡ DashboardPage: LocalStorage cache found')
-        return 'localStorage'
-      }
-    }
-    
-    return null
-  } catch {
-    return null
-  }
-}
-
-// ✅ NEW: Better localStorage validation
-const hasValidLocalStorageParty = () => {
-  if (typeof window === 'undefined') return false
-  
-  try {
-    const localPlan = localStorage.getItem('user_party_plan') // ✅ Check both keys
-    const oldLocalPlan = localStorage.getItem('party_plan')
-    const localDetails = localStorage.getItem('party_details')
-    
-    console.log('🔍 Checking localStorage:', {
-      hasUserPartyPlan: !!localPlan,
-      hasPartyPlan: !!oldLocalPlan,
-      hasPartyDetails: !!localDetails
-    })
-    
-    // ✅ Check user_party_plan first (newer format)
-    if (localPlan) {
-      try {
-        const parsed = JSON.parse(localPlan)
-        // Any party plan object is valid
-        if (parsed && typeof parsed === 'object') {
-          console.log('✅ Found valid user_party_plan')
-          return true
-        }
-      } catch (e) {
-        console.error('Failed to parse user_party_plan:', e)
-      }
-    }
-    
-    // ✅ Check old party_plan format
-    if (oldLocalPlan) {
-      try {
-        const parsed = JSON.parse(oldLocalPlan)
-        const hasSuppliers = Object.keys(parsed).some(key => 
-          parsed[key] && 
-          typeof parsed[key] === 'object' && 
-          parsed[key].name
-        )
-        if (hasSuppliers) {
-          console.log('✅ Found valid party_plan')
-          return true
-        }
-      } catch (e) {
-        console.error('Failed to parse party_plan:', e)
-      }
-    }
-    
-    // ✅ Check party_details (looser validation)
-    if (localDetails) {
-      try {
-        const parsed = JSON.parse(localDetails)
-        const hasAnyData = parsed && (
-          parsed.theme || 
-          parsed.date || 
-          parsed.childName ||
-          parsed.guestCount ||
-          parsed.postcode ||
-          parsed.location
-        )
-        if (hasAnyData) {
-          console.log('✅ Found valid party_details')
-          return true
-        }
-      } catch (e) {
-        console.error('Failed to parse party_details:', e)
-      }
-    }
-    
-    console.log('❌ No valid localStorage data found')
-    return false
-    
-  } catch (error) {
-    console.error('Error checking localStorage:', error)
-    return false
-  }
-}
-
+// ✅ SIMPLIFIED: Remove complex caching logic that's causing confusion
 export default function DashboardPage() {
-
   console.log('🎯 DashboardPage component rendering!')
   const router = useRouter()
   
-  const cachedUserType = getCachedUserType()
-  const hasCache = cachedUserType !== null
-  
-  const [userType, setUserType] = useState(cachedUserType)
-  const [isLoading, setIsLoading] = useState(!hasCache)
+  const [userType, setUserType] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [debugInfo, setDebugInfo] = useState({})
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     const determineUserType = async () => {
-      // ✅ If we have cache, skip loading immediately
-      if (hasCache) {
-        console.log('⚡ DashboardPage: Using cached user type:', cachedUserType)
-        setUserType(cachedUserType)
-        setIsLoading(false)
-        return
+      setIsLoading(true)
+      
+      const debug = {
+        timestamp: new Date().toISOString(),
+        steps: []
       }
       
       try {
-        console.log('🔍 Determining user type...')
+        // ============================================
+        // STEP 1: Check Authentication Status
+        // ============================================
+        debug.steps.push('🔐 STEP 1: Checking authentication...')
+        console.log('🔐 STEP 1: Checking authentication...')
         
-        // ✅ SIMPLIFIED: Check localStorage FIRST before any auth checks
-        const hasLocalData = hasValidLocalStorageParty()
+        const userResult = await partyDatabaseBackend.getCurrentUser()
         
-        if (hasLocalData) {
-          console.log('✅ Found localStorage data - using LocalStorage mode')
-          setUserType('localStorage')
+        debug.authCheck = {
+          success: userResult.success,
+          hasUser: !!userResult.user,
+          userId: userResult.user?.id,
+          error: userResult.error
+        }
+        
+        console.log('📊 Auth Result:', debug.authCheck)
+        
+        // ============================================
+        // AUTHENTICATED USER PATH
+        // ============================================
+        if (userResult.success && userResult.user) {
+          debug.steps.push('✅ User is authenticated')
+          console.log('✅ User is authenticated:', userResult.user.email)
           
-          // Cache it
-          sessionStorage.setItem('party_plan_cache', JSON.stringify({
-            timestamp: Date.now()
-          }))
+          // Check for database party
+          debug.steps.push('🔍 STEP 2: Checking for database party...')
+          console.log('🔍 STEP 2: Checking for database party...')
+          
+          const partyResult = await partyDatabaseBackend.getCurrentParty()
+          
+          debug.partyCheck = {
+            success: partyResult.success,
+            hasParty: !!partyResult.party,
+            partyId: partyResult.party?.id,
+            error: partyResult.error
+          }
+          
+          console.log('📊 Party Result:', debug.partyCheck)
+          
+          if (partyResult.success && partyResult.party) {
+            // ✅ Authenticated + Has Party = DATABASE DASHBOARD
+            debug.steps.push('✅ Database party found → DATABASE DASHBOARD')
+            debug.finalDecision = 'database'
+            console.log('✅✅✅ DECISION: DATABASE DASHBOARD')
+            
+            setDebugInfo(debug)
+            setUserType('database')
+            setIsLoading(false)
+            return
+          } else {
+            // ✅ Authenticated but no party = WELCOME
+            debug.steps.push('⚠️ No database party → WELCOME SCREEN')
+            debug.finalDecision = 'welcome'
+            console.log('⚠️⚠️⚠️ DECISION: WELCOME (auth but no party)')
+            
+            setDebugInfo(debug)
+            setUserType('welcome')
+            setIsLoading(false)
+            return
+          }
+        }
+        
+        // ============================================
+        // UNAUTHENTICATED USER PATH
+        // ============================================
+        debug.steps.push('❌ User NOT authenticated')
+        console.log('❌ User NOT authenticated')
+        
+        // STEP 3: Check localStorage ONLY for unauthenticated users
+        debug.steps.push('🔍 STEP 3: Checking localStorage...')
+        console.log('🔍 STEP 3: Checking localStorage...')
+        
+        const localStorageCheck = checkLocalStorage()
+        debug.localStorageCheck = localStorageCheck
+        console.log('📊 LocalStorage Check:', localStorageCheck)
+        
+        if (localStorageCheck.hasValidData) {
+          // ✅ Unauthenticated + Has localStorage = LOCALSTORAGE DASHBOARD
+          debug.steps.push('✅ Valid localStorage found → LOCALSTORAGE DASHBOARD')
+          debug.finalDecision = 'localStorage'
+          console.log('✅✅✅ DECISION: LOCALSTORAGE DASHBOARD')
+          
+          setDebugInfo(debug)
+          setUserType('localStorage')
+          setIsLoading(false)
+          return
+        } else {
+          // ❌ No data anywhere = WELCOME
+          debug.steps.push('❌ No valid data found → WELCOME SCREEN')
+          debug.finalDecision = 'welcome'
+          console.log('⚠️⚠️⚠️ DECISION: WELCOME (no data)')
+          
+          setDebugInfo(debug)
+          setUserType('welcome')
           setIsLoading(false)
           return
         }
         
-        // ✅ Only check database if no localStorage data
-        console.log('🔍 No localStorage data, checking database...')
-        const userResult = await partyDatabaseBackend.getCurrentUser()
-        
-        if (userResult.success) {
-          console.log('✅ User authenticated, checking for database party...')
-          const partyResult = await partyDatabaseBackend.getCurrentParty()
-          
-          if (partyResult.success && partyResult.party) {
-            console.log('✅ Found database party')
-            setUserType('database')
-            
-            // Cache it
-            sessionStorage.setItem('party_data_cache', JSON.stringify({
-              timestamp: Date.now()
-            }))
-          } else {
-            console.log('❌ No database party found, showing welcome')
-            setUserType('welcome')
-          }
-        } else {
-          console.log('❌ User not authenticated, no localStorage data - showing welcome')
-          setUserType('welcome')
-        }
-        
       } catch (error) {
-        console.error('❌ Error determining user type:', error)
+        console.error('💥 CRITICAL ERROR in determineUserType:', error)
+        debug.steps.push(`💥 ERROR: ${error.message}`)
+        debug.error = error.message
+        debug.finalDecision = 'error-fallback-welcome'
         
-        // ✅ ERROR FALLBACK: Check localStorage one more time
-        if (hasValidLocalStorageParty()) {
-          console.log('✅ Error occurred but found localStorage data')
-          setUserType('localStorage')
-        } else {
-          setUserType('welcome')
-        }
-      } finally {
+        setDebugInfo(debug)
+        setUserType('welcome')
         setIsLoading(false)
       }
     }
    
     determineUserType()
-  }, [refreshKey, hasCache, cachedUserType])
+  }, [refreshKey])
 
   const handleRefresh = () => {
+    console.log('🔄 Manual refresh triggered')
     setIsLoading(true)
-    // Clear cache on refresh
-    sessionStorage.removeItem('party_data_cache')
-    sessionStorage.removeItem('party_plan_cache')
     setRefreshKey(prev => prev + 1)
   }
 
-  // ✅ Only show loader if loading AND no cache
-  if (isLoading && !hasCache) {
+  // ============================================
+  // SHOW DEBUG INFO IN DEV
+  // ============================================
+  useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('🐛 DEBUG INFO:', debugInfo)
+      // Store in window for easy access in console
+      window.__dashboardDebug = debugInfo
+    }
+  }, [debugInfo])
+
+  // ============================================
+  // LOADING STATE
+  // ============================================
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <SnappyLoader text="Loading your party..." />
+        
+        {/* Debug info visible during loading in dev mode */}
+        {process.env.NODE_ENV === 'development' && debugInfo.steps?.length > 0 && (
+          <div className="mt-8 p-4 bg-gray-100 rounded-lg max-w-md text-xs">
+            <h3 className="font-bold mb-2">Debug Steps:</h3>
+            {debugInfo.steps.map((step, i) => (
+              <div key={i} className="mb-1">{step}</div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
 
   console.log('🎯 Rendering dashboard with userType:', userType)
 
-
+  // ============================================
+  // RENDER APPROPRIATE DASHBOARD
+  // ============================================
   switch (userType) {
     case 'database':
       return <DatabaseDashboard />
@@ -229,5 +438,103 @@ export default function DashboardPage() {
       return <DashboardWelcome onRefresh={handleRefresh} />
     default:
       return <DashboardWelcome onRefresh={handleRefresh} />
+  }
+}
+
+// ============================================
+// HELPER: Check localStorage
+// ============================================
+function checkLocalStorage() {
+  if (typeof window === 'undefined') {
+    return { hasValidData: false, reason: 'SSR' }
+  }
+  
+  try {
+    const checks = {
+      user_party_plan: localStorage.getItem('user_party_plan'),
+      party_plan: localStorage.getItem('party_plan'),
+      party_details: localStorage.getItem('party_details')
+    }
+    
+    console.log('🔍 LocalStorage Keys Found:', Object.keys(checks).filter(k => checks[k]))
+    
+    // Check user_party_plan (newest format)
+    if (checks.user_party_plan) {
+      try {
+        const parsed = JSON.parse(checks.user_party_plan)
+        if (parsed && typeof parsed === 'object') {
+          console.log('✅ Valid user_party_plan found')
+          return { 
+            hasValidData: true, 
+            source: 'user_party_plan',
+            data: parsed
+          }
+        }
+      } catch (e) {
+        console.error('❌ Failed to parse user_party_plan:', e)
+      }
+    }
+    
+    // Check party_plan (old format)
+    if (checks.party_plan) {
+      try {
+        const parsed = JSON.parse(checks.party_plan)
+        const hasSuppliers = Object.keys(parsed).some(key => 
+          parsed[key] && 
+          typeof parsed[key] === 'object' && 
+          parsed[key].name
+        )
+        if (hasSuppliers) {
+          console.log('✅ Valid party_plan found')
+          return { 
+            hasValidData: true, 
+            source: 'party_plan',
+            data: parsed
+          }
+        }
+      } catch (e) {
+        console.error('❌ Failed to parse party_plan:', e)
+      }
+    }
+    
+    // Check party_details
+    if (checks.party_details) {
+      try {
+        const parsed = JSON.parse(checks.party_details)
+        const hasAnyData = parsed && (
+          parsed.theme || 
+          parsed.date || 
+          parsed.childName ||
+          parsed.guestCount ||
+          parsed.postcode ||
+          parsed.location
+        )
+        if (hasAnyData) {
+          console.log('✅ Valid party_details found')
+          return { 
+            hasValidData: true, 
+            source: 'party_details',
+            data: parsed
+          }
+        }
+      } catch (e) {
+        console.error('❌ Failed to parse party_details:', e)
+      }
+    }
+    
+    console.log('❌ No valid localStorage data found')
+    return { 
+      hasValidData: false, 
+      reason: 'no_valid_data',
+      checkedKeys: Object.keys(checks).filter(k => checks[k])
+    }
+    
+  } catch (error) {
+    console.error('💥 Error checking localStorage:', error)
+    return { 
+      hasValidData: false, 
+      reason: 'error',
+      error: error.message
+    }
   }
 }

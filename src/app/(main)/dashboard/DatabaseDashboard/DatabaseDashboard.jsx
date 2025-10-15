@@ -835,7 +835,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
   // Redirect check
   if (dataSource === 'localStorage') {
     console.log('Redirecting to localStorage dashboard')
-    router.push('/dashboard-local')
+    router.push('/dashboard')
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <SnappyLoader text="Redirecting to your local party..." />
