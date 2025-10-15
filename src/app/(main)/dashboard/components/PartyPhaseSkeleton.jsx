@@ -32,9 +32,9 @@ export default function PartyPhaseSkeleton() {
         <div className="md:hidden space-y-4 px-4">
           <div className="relative">
             {/* Percentage badge */}
-            <div className="absolute -top-8 left-0 right-0 flex justify-center">
+            {/* <div className="absolute -top-8 left-0 right-0 flex justify-center">
               <div className="h-6 w-16 bg-gray-300 rounded-full"></div>
-            </div>
+            </div> */}
             
             {/* Progress bar */}
             <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">

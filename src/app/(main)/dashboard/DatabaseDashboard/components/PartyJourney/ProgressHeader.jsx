@@ -13,7 +13,7 @@ export function ProgressHeader({ partyDetails, progress, completedSteps, totalSt
   }))
 
   return (
-    <div className="w-full py-8">
+    <div className="w-full">
       {/* Desktop view - full step circles */}
       <div className="hidden md:flex items-center justify-between relative">
         {/* Background line */}
@@ -77,7 +77,7 @@ export function ProgressHeader({ partyDetails, progress, completedSteps, totalSt
         <div className="px-4">
           <div className="relative">
             {/* Progress bar container */}
-            <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+            <div className="h-4 bg-gray-200 border-[hsl(var(--primary-200))] border-1 rounded-full overflow-hidden shadow-inner">
               <div
                 className="h-full bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] transition-all duration-700 ease-out rounded-full shadow-sm"
                 style={{ width: `${progress}%` }}
@@ -86,9 +86,9 @@ export function ProgressHeader({ partyDetails, progress, completedSteps, totalSt
             
             {/* Progress percentage overlay */}
             <div className="absolute -top-8 left-0 right-0 flex justify-center">
-              <div className="bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
+              {/* <div className="bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
                 {Math.round(progress)}%
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

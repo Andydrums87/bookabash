@@ -128,9 +128,9 @@ export default function DatabasePartyHeader({
               <br />
               <span className="text-4xl md:text-5xl">Big Day!</span>
             </h1>
-            <p className="text-lg md:text-2xl text-white/95 drop-shadow-lg font-medium leading-relaxed text-center md:text-left">
+            {/* <p className="hidden text-lg md:text-2xl text-white/95 drop-shadow-lg font-medium leading-relaxed text-center md:text-left">
               {currentTheme?.description || `An amazing ${currentTheme} celebration`}
-            </p>
+            </p> */}
           </div>
         </div>
       </div>
