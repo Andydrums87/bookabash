@@ -43,20 +43,158 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
 })
 
 // ========================================
+// SKELETON LOADER COMPONENT
+// ========================================
+function PaymentPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 animate-pulse">
+      <ContextualBreadcrumb currentPage="payment" />
+      
+      {/* Header Skeleton */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-gray-200 rounded"></div>
+            <div className="h-4 w-96 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column Skeleton */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Alert Skeleton */}
+            <div className="bg-gray-100 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                  <div className="h-3 w-72 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Party Details Skeleton */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+              <div className="grid grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Services Skeleton */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                        <div className="space-y-2">
+                          <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                          <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-right">
+                        <div className="h-5 w-16 bg-gray-200 rounded ml-auto"></div>
+                        <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column Skeleton */}
+          <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="h-6 w-40 bg-gray-200 rounded mb-4"></div>
+              
+              {/* Summary Items */}
+              <div className="space-y-2 mb-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex justify-between">
+                    <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 mb-6">
+                <div className="flex justify-between mb-3">
+                  <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                  <div className="h-5 w-20 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+
+              {/* Protection Box */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Form Skeleton */}
+              <div className="space-y-4">
+                <div className="h-32 w-full bg-gray-100 rounded-lg border border-gray-200"></div>
+                <div className="h-12 w-full bg-gray-200 rounded-md"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ========================================
 // BOOKING TIMER COMPONENT
 // ========================================
-function BookingTimer({ partyId, onExpire }) {
+function BookingTimer({ partyId, onExpire, supplierCount = 0 }) {
   const [timeLeft, setTimeLeft] = useState(null)
   const [isExpired, setIsExpired] = useState(false)
 
   useEffect(() => {
-    const TIMER_DURATION = 15 * 60 * 1000 // 15 minutes
+    if (!supplierCount || supplierCount === 0) {
+      console.log('⏸️ Waiting for supplier count...')
+      return
+    }
+
+    const TIMER_DURATION = 15 * 60 * 1000
     const TIMER_KEY = `booking_timer_${partyId}`
+    const SUPPLIER_COUNT_KEY = `booking_timer_${partyId}_supplier_count`
+
+    const savedSupplierCount = localStorage.getItem(SUPPLIER_COUNT_KEY)
+    const supplierCountChanged = savedSupplierCount && parseInt(savedSupplierCount) !== supplierCount
+    const isFirstLoad = !savedSupplierCount
+    
+    if (supplierCountChanged || (isFirstLoad && isExpired)) {
+      console.log('🔄 Resetting timer - supplier count changed or first load with expired state')
+      localStorage.removeItem(TIMER_KEY)
+      localStorage.removeItem(SUPPLIER_COUNT_KEY)
+      setIsExpired(false)
+    }
     
     const savedTimer = localStorage.getItem(TIMER_KEY)
     let expiryTime
     
-    if (savedTimer) {
+    if (savedTimer && !supplierCountChanged && !(isFirstLoad && isExpired)) {
       expiryTime = parseInt(savedTimer, 10)
       const now = Date.now()
       
@@ -68,6 +206,8 @@ function BookingTimer({ partyId, onExpire }) {
     } else {
       expiryTime = Date.now() + TIMER_DURATION
       localStorage.setItem(TIMER_KEY, expiryTime.toString())
+      localStorage.setItem(SUPPLIER_COUNT_KEY, supplierCount.toString())
+      console.log('⏰ Starting new timer - expires in 15 minutes')
     }
     
     const interval = setInterval(() => {
@@ -85,7 +225,7 @@ function BookingTimer({ partyId, onExpire }) {
     }, 1000)
     
     return () => clearInterval(interval)
-  }, [partyId, onExpire])
+  }, [partyId, onExpire, supplierCount, isExpired])
 
   const formatTime = (ms) => {
     if (!ms) return '15:00'
@@ -231,12 +371,8 @@ const calculatePaymentBreakdown = (suppliers, partyDetails) => {
     startTime: partyDetails.start_time
   }
 
-  console.log('🔍 Pricing party details:', pricingPartyDetails)
-
   suppliers.forEach(supplier => {
-    console.log('💰 Calculating price for:', supplier.name, supplier)
     const pricing = calculateFinalPriceEnhanced(supplier, pricingPartyDetails, [])
-    console.log('💰 Pricing result:', pricing)
     const isLeadBased = isLeadBasedSupplierEnhanced(supplier)
     const totalPrice = pricing.finalPrice
     
@@ -308,11 +444,8 @@ function PaymentForm({
   const [paymentRequest, setPaymentRequest] = useState(null)
   const [canMakePayment, setCanMakePayment] = useState(false)
 
-  // Set up Apple Pay / Google Pay - COMPLETELY INDEPENDENT
   useEffect(() => {
     if (stripe && !timerExpired && clientSecret) {
-      console.log('🍎 Setting up Payment Request API...')
-      
       const pr = stripe.paymentRequest({
         country: 'GB',
         currency: 'gbp',
@@ -328,14 +461,10 @@ function PaymentForm({
         if (result) {
           setPaymentRequest(pr)
           setCanMakePayment(true)
-          console.log('✅ Apple/Google Pay available:', result)
-        } else {
-          console.log('❌ Apple/Google Pay not available')
         }
       })
 
       pr.on('paymentmethod', async (ev) => {
-        console.log('🍎 Apple Pay payment method received:', ev.paymentMethod)
         setIsProcessing(true)
         setPaymentError(null)
 
@@ -358,8 +487,6 @@ function PaymentForm({
               })
           }
 
-          // CRITICAL: Use the payment method ID directly from Apple Pay
-          // Do NOT use confirmPayment with elements - that would try to use whatever is selected in PaymentElement
           const { error, paymentIntent } = await stripe.confirmCardPayment(
             clientSecret,
             {
@@ -368,12 +495,10 @@ function PaymentForm({
           )
 
           if (error) {
-            console.error('❌ Apple Pay confirmation error:', error)
             ev.complete('fail')
             throw new Error(error.message)
           }
 
-          console.log('✅ Apple Pay payment intent:', paymentIntent)
           ev.complete('success')
           
           if (paymentIntent && paymentIntent.status === 'succeeded') {
@@ -381,13 +506,11 @@ function PaymentForm({
             setIsRedirecting(true)
             onPaymentSuccess(paymentIntent)
           } else if (paymentIntent && paymentIntent.status === 'requires_action') {
-            // Shouldn't happen with Apple Pay, but handle it
             ev.complete('fail')
             throw new Error('Additional authentication required')
           }
 
         } catch (error) {
-          console.error('❌ Apple Pay payment error:', error)
           ev.complete('fail')
           setPaymentError(error.message)
           onPaymentError(error)
@@ -431,7 +554,6 @@ function PaymentForm({
           })
       }
 
-      // This will use whatever payment method is selected in PaymentElement (Card or Klarna)
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -459,7 +581,6 @@ function PaymentForm({
         setIsRedirecting(true)
         onPaymentSuccess(paymentIntent)
       } else if (paymentIntent && paymentIntent.status === 'requires_action') {
-        console.log('Payment requires action, redirecting...')
         window.location.href = `${window.location.origin}/payment/processing?party_id=${partyDetails.id}&payment_intent=${paymentIntent.id}`
       }
 
@@ -485,7 +606,6 @@ function PaymentForm({
   return (
     <div className="space-y-6">
       
-      {/* Apple Pay / Google Pay - Express Checkout ONLY */}
       {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && !timerExpired && (
         <div className="space-y-3">
           <div>
@@ -519,7 +639,6 @@ function PaymentForm({
         </div>
       )}
 
-      {/* Klarna & Card - Default to Card */}
       <div className="space-y-4">
         {!timerExpired && clientSecret && (
           <div>
@@ -634,6 +753,7 @@ export default function PaymentPageContent() {
   const [user, setUser] = useState(null)
   const [partyId, setPartyId] = useState(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [timerResetKey, setTimerResetKey] = useState(() => Date.now().toString())
   const [timerExpired, setTimerExpired] = useState(false)
   const [clientSecret, setClientSecret] = useState(null)
   const [paymentBreakdown, setPaymentBreakdown] = useState({
@@ -668,6 +788,11 @@ export default function PaymentPageContent() {
     }
   }
 
+  const handleTimerReset = () => {
+    console.log('🔄 Timer reset - clearing expired state')
+    setTimerExpired(false)
+  }
+
   useEffect(() => {
     const loadPaymentData = async () => {
       try {
@@ -685,7 +810,7 @@ export default function PaymentPageContent() {
           router.push('/dashboard')
           return
         }
-  
+
         const partyResult = await partyDatabaseBackend.getPartyById(partyIdFromUrl)
         if (!partyResult.success || !partyResult.party) {
           router.push('/dashboard')
@@ -696,7 +821,7 @@ export default function PaymentPageContent() {
           router.push('/dashboard')
           return
         }
-  
+
         const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
         const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : []
         
@@ -735,9 +860,9 @@ export default function PaymentPageContent() {
         }
         
         const breakdown = calculatePaymentBreakdown(supplierList, partyResult.party)
-        
-        console.log('📊 Payment breakdown:', breakdown)
-        console.log('💷 Total payment today:', breakdown.totalPaymentToday)
+
+        const newResetKey = supplierList.map(s => s.id).join('-')
+        setTimerResetKey(newResetKey)
         
         setConfirmedSuppliers(supplierList)
         setPaymentBreakdown(breakdown)
@@ -754,9 +879,7 @@ export default function PaymentPageContent() {
           parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
         })
 
-        // Create payment intent
         const paymentAmount = Math.round(breakdown.totalPaymentToday * 100)
-        console.log('💳 Creating payment intent for amount:', paymentAmount, '(£' + breakdown.totalPaymentToday + ')')
         
         if (paymentAmount > 0) {
           const response = await fetch('/api/create-payment-intent', {
@@ -778,11 +901,8 @@ export default function PaymentPageContent() {
           if (backendError) {
             console.error('❌ Payment intent creation failed:', backendError)
           } else if (secret) {
-            console.log('✅ Payment intent created successfully')
             setClientSecret(secret)
           }
-        } else {
-          console.error('❌ Payment amount is 0 or negative:', paymentAmount)
         }
   
       } catch (error) {
@@ -854,7 +974,6 @@ export default function PaymentPageContent() {
           localStorage.removeItem('user_party_plan')
         }
       }
-      sendSupplierNotifications()
       
       router.push(`/payment/success?payment_intent=${paymentIntent.id}&child_name=${encodeURIComponent(partyDetails.childName)}&theme=${encodeURIComponent(partyDetails.theme)}&date=${partyDetails.date}&time=${partyDetails.startTime || partyDetails.time || '14:00'}&location=${encodeURIComponent(partyDetails.location)}&guests=${partyDetails.guestCount}&email=${encodeURIComponent(partyDetails.email)}&age=${partyDetails.childAge}`)
       
@@ -869,150 +988,9 @@ export default function PaymentPageContent() {
     console.error('Payment failed:', error)
   }
 
-    const sendSupplierNotifications = async () => {
-    try {
-      console.log('Sending supplier notifications via email and SMS...');
-      
-      for (const supplier of confirmedSuppliers) {
-        try {
-          console.log(`Processing notifications for supplier: ${supplier.name} (ID: ${supplier.id})`);
-          
-          // Get supplier details from database
-          const { data: supplierData, error } = await supabase
-            .from('suppliers')
-            .select('data')
-            .eq('id', supplier.id)
-            .single();
-  
-          if (error || !supplierData?.data) {
-            console.warn(`No supplier data found for ${supplier.name}:`, error);
-            continue;
-          }
-  
-          // Parse the JSON data column to get owner info
-          const supplierInfo = typeof supplierData.data === 'string' 
-            ? JSON.parse(supplierData.data) 
-            : supplierData.data;
-  
-          console.log(`Supplier data parsed for ${supplier.name}:`, {
-            ownerName: supplierInfo.owner?.name,
-            ownerEmail: supplierInfo.owner?.email,
-            ownerPhone: supplierInfo.owner?.phone,
-            smsConsent: supplierInfo.notifications?.smsBookings
-          });
-  
-          if (!supplierInfo?.owner?.email) {
-            console.warn(`No email found in owner data for ${supplier.name}`);
-            continue;
-          }
-  
-          // Get supplier payment details
-          const supplierPaymentDetail = paymentBreakdown.paymentDetails.find(p => p.category === supplier.category);
-          
-          const basePayload = {
-            supplierName: supplierInfo.owner.name || supplier.name,
-            customerName: partyDetails.parentName,
-            customerEmail: partyDetails.email,
-            customerPhone: user?.phone || '',
-            childName: partyDetails.childName,
-            theme: partyDetails.theme,
-            partyDate: partyDetails.date,
-            partyTime: partyDetails.time || '14:00',
-            partyLocation: partyDetails.location,
-            guestCount: String(partyDetails.guestCount || 10),
-            serviceType: supplier.category,
-            depositAmount: String(supplierPaymentDetail?.amountToday || supplier.price),
-            supplierEarning: String(supplier.price),
-            paymentType: supplierPaymentDetail?.paymentType || 'deposit'
-          };
-  
-          // 1. Send Email Notification (Always send)
-          try {
-            const emailPayload = {
-              supplierEmail: supplierInfo.owner.email,
-              dashboardLink: 'http://localhost:3000/suppliers/dashboard',
-              ...basePayload
-            };
-  
-            console.log(`Sending email to ${supplierInfo.owner.name} at ${supplierInfo.owner.email}`);
-  
-            const emailResponse = await fetch('/api/email/supplier-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(emailPayload)
-            });
-  
-            if (emailResponse.ok) {
-              console.log(`✅ Email sent successfully to ${supplier.name}`);
-            } else {
-              const emailError = await emailResponse.text();
-              console.warn(`❌ Email failed for ${supplier.name}:`, emailError);
-            }
-          } catch (emailError) {
-            console.error(`Email error for ${supplier.name}:`, emailError);
-          }
-  
-          // 2. Send SMS Notification (Only if consented and phone exists)
-          if (supplierInfo.owner?.phone) {
-            // Check if SMS notifications are enabled (consent given)
-            if (supplierInfo.notifications?.smsBookings === true) {
-              try {
-                console.log(`Sending SMS to ${supplierInfo.owner.name} at ${supplierInfo.owner.phone} (consent: enabled)`);
-                
-                const smsPayload = {
-                  phoneNumber: supplierInfo.owner.phone,
-                  dashboardLink: 'http://localhost:3000/suppliers/dashboard',
-                  ...basePayload
-                };
-  
-                const smsResponse = await fetch('/api/send-sms-notification', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(smsPayload)
-                });
-  
-                if (smsResponse.ok) {
-                  const smsResult = await smsResponse.json();
-                  console.log(`✅ SMS sent successfully to ${supplier.name} - Message ID: ${smsResult.messageId}`);
-                } else {
-                  const smsError = await smsResponse.text();
-                  console.warn(`❌ SMS failed for ${supplier.name}:`, smsError);
-                }
-              } catch (smsError) {
-                console.error(`SMS error for ${supplier.name}:`, smsError);
-              }
-            } else {
-              // Phone exists but SMS is disabled
-              console.log(`📱 SMS disabled for ${supplier.name} - respecting user preference (phone: ${supplierInfo.owner.phone})`);
-            }
-          } else {
-            // No phone number at all
-            console.log(`📱 No phone number for ${supplier.name} - skipping SMS`);
-          }
-  
-          console.log(`✅ Completed notification processing for ${supplier.name}`);
-          
-        } catch (supplierError) {
-          console.error(`Error processing notifications for supplier ${supplier.name}:`, supplierError);
-        }
-      }
-      
-      console.log('✅ All supplier notifications completed');
-      
-    } catch (error) {
-      console.error('Error in supplier notifications:', error);
-    }
-  };
-
+  // SHOW SKELETON WHILE LOADING
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading payment details...</p>
-        </div>
-      </div>
-    )
+    return <PaymentPageSkeleton />
   }
 
   if (!partyDetails) {
@@ -1037,6 +1015,8 @@ export default function PaymentPageContent() {
         <BookingTimer 
           partyId={partyId} 
           onExpire={handleTimerExpire}
+          onReset={handleTimerReset}
+          supplierCount={confirmedSuppliers.length}
         />
       )}
       

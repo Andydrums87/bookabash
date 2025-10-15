@@ -8,6 +8,7 @@ import { ProgressHeader } from "../DatabaseDashboard/components/PartyJourney/Pro
 import { JourneyStep } from "../DatabaseDashboard/components/PartyJourney/JourneyStep"
 import { useGiftRegistry } from "@/hooks/useGiftRegistry"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
+import PartyPhaseSkeleton from "./PartyPhaseSkeleton"
 
 export default function PartyPhaseContent({
   phase,
@@ -98,13 +99,10 @@ export default function PartyPhaseContent({
     einvites,
   })
 
-  if (loading || registryLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
+// With this:
+if (loading || registryLoading) {
+  return <PartyPhaseSkeleton />
+}
 
   const allSuppliers = Object.entries(suppliers).filter(([key, supplier]) => supplier !== null && key !== "einvites")
   const totalPossibleSuppliers = 9

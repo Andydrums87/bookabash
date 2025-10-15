@@ -69,64 +69,25 @@ export default function HomePage() {
   // Enhanced function to check for existing party plan (database + localStorage)
   const checkForExistingPartyPlan = async () => {
     try {
-      let existingDetails = null
+      const dbParty = await partyDatabaseBackend.getActivePlannedParty()
       
-      // 1. Check database first (if user is authenticated)
-      try {
-        const activePlannedParty = await partyDatabaseBackend.getActivePlannedParty()
-        
-        if (activePlannedParty.success && activePlannedParty.party) {
-          console.log('✅ Found active planned party in database:', activePlannedParty.party.id)
-          
-          // Convert database party to details format
-          existingDetails = {
-            childName: activePlannedParty.party.child_name,
-            childAge: activePlannedParty.party.child_age,
-            date: activePlannedParty.party.party_date,
-            theme: activePlannedParty.party.theme,
-            guestCount: activePlannedParty.party.guest_count,
-            postcode: activePlannedParty.party.postcode,
-            source: 'database',
-            partyId: activePlannedParty.party.id
-          }
-          
-          return existingDetails
+      // ✅ FIX: Handle unauthenticated users gracefully
+      if (!dbParty.success) {
+        if (dbParty.reason === 'unauthenticated') {
+          console.log('👤 User not authenticated - using local storage only')
+          return null
         }
-      } catch (dbError) {
-        console.log('No database party found or user not authenticated:', dbError.message)
-        // Continue to check localStorage
+        throw new Error(dbParty.error)
       }
-      
-      // 2. Check localStorage (fallback for unauthenticated users or draft parties)
-      const storedPlan = localStorage.getItem('user_party_plan')
-      const storedDetails = localStorage.getItem('party_details')
-      
-      if (!storedPlan || storedPlan === 'null') {
-        return null
+  
+      if (dbParty.data) {
+        console.log('Found existing party in database:', dbParty.data)
+        return dbParty.data
       }
-      
-      const plan = JSON.parse(storedPlan)
-      const details = storedDetails ? JSON.parse(storedDetails) : {}
-      
-      // Check if there are any suppliers in the plan
-      const hasSuppliers = ['venue', 'entertainment', 'cakes', 'catering', 
-        'facePainting', 'activities', 'partyBags', 'decorations', 'balloons']
-        .some(type => plan[type] !== null && plan[type] !== undefined)
-      
-      const hasAddons = plan.addons && plan.addons.length > 0
-      
-      if (hasSuppliers || hasAddons) {
-        console.log('✅ Found existing party in localStorage')
-        return {
-          ...details,
-          source: 'localStorage'
-        }
-      }
-      
+  
       return null
-      
     } catch (error) {
-      console.error('Error checking for existing party plan:', error)
+      console.error('Error checking for existing party:', error)
       return null
     }
   }

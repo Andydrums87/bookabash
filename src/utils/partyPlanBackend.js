@@ -1,7 +1,11 @@
 // utils/partyPlanBackend.js
 // Backend for managing user's party plan (selected suppliers + add-ons)
 
+
+
+
 const STORAGE_KEY = 'user_party_plan';
+const CACHE_KEY = 'party_plan_cache'; // ✅ ADD THIS
 
 const CATEGORY_TYPE_MAP = {
     'Entertainment': 'entertainment',
@@ -44,6 +48,44 @@ const saveInviteToPartyPlan = async () => {
     return false;
   }
 };
+
+const getCachedPartyPlan = () => {
+  if (!isClient) return null;
+  
+  try {
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    
+    if (Date.now() - timestamp < 5 * 60 * 1000) {
+      console.log('✅ Using cached party plan');
+      return data;
+    }
+    
+    console.log('⏰ Party plan cache expired');
+    sessionStorage.removeItem(CACHE_KEY);
+    return null;
+  } catch (error) {
+    console.error('Error reading party plan cache:', error);
+    return null;
+  }
+};
+
+const setCachedPartyPlan = (data) => {
+  if (!isClient) return;
+  
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+    console.log('💾 Party plan cached');
+  } catch (error) {
+    console.error('Error caching party plan:', error);
+  }
+};
+
 
 
 // Default empty party plan
@@ -628,19 +670,32 @@ export const partyPlanBackend = new PartyPlanBackend();
 import { useState, useEffect } from 'react';
 
 export function usePartyPlan() {
-  const [partyPlan, setPartyPlan] = useState({});
-  const [loading, setLoading] = useState(true);
+
+  const cachedData = getCachedPartyPlan();
+  const hasCache = cachedData !== null;
+
+  const [partyPlan, setPartyPlan] = useState(cachedData || {});
+  const [loading, setLoading] = useState(!hasCache); // ✅ Skip loading if cached
   const [error, setError] = useState(null);
-  const [venueCarouselOptions, setVenueCarouselOptions] = useState([]); // ✅ ADD THIS LINE
+  const [venueCarouselOptions, setVenueCarouselOptions] = useState(cachedData?.venueCarouselOptions || []);
 
   useEffect(() => {
     if (isClient) {
-      loadPartyPlan();
+      // ✅ If we have cache, skip loading immediately
+      if (hasCache) {
+        console.log('⚡ usePartyPlan: Using cached data');
+        setLoading(false);
+        // Still load fresh data in background
+        setTimeout(loadPartyPlan, 100);
+      } else {
+        loadPartyPlan();
+      }
       
       const unsubscribe = partyPlanBackend.onUpdate((updatedPlan) => {
         setPartyPlan(updatedPlan);
-        // ✅ ADD THIS LINE
         setVenueCarouselOptions(updatedPlan.venueCarouselOptions || []);
+        // ✅ Update cache when data changes
+        setCachedPartyPlan(updatedPlan);
       });
 
       const handleStorageChange = (e) => {
@@ -660,18 +715,26 @@ export function usePartyPlan() {
     }
   }, []);
 
-  // UPDATE: Enhanced loadPartyPlan function
   const loadPartyPlan = () => {
     try {
-      setLoading(true);
+      // ✅ Check cache status at load time
+      const currentCache = getCachedPartyPlan();
+      const hasCacheNow = currentCache !== null;
+      
+      if (!hasCacheNow) {
+        setLoading(true); // ✅ Only show loading if no cache
+      }
       
       const storedData = localStorage.getItem(STORAGE_KEY);
       
       if (!storedData || storedData === 'null') {
-        setPartyPlan(DEFAULT_PARTY_PLAN);
-        setVenueCarouselOptions([]); // ✅ ADD THIS LINE
+        const defaultPlan = DEFAULT_PARTY_PLAN;
+        setPartyPlan(defaultPlan);
+        setVenueCarouselOptions([]);
         setError(null);
         setLoading(false);
+        // ✅ Cache the default plan too
+        setCachedPartyPlan(defaultPlan);
         return;
       }
       
@@ -703,14 +766,18 @@ export function usePartyPlan() {
       }
       
       setPartyPlan(data);
-      setVenueCarouselOptions(data.venueCarouselOptions || []); // ✅ ADD THIS LINE
+      setVenueCarouselOptions(data.venueCarouselOptions || []);
       setError(null);
+      
+      // ✅ Cache the loaded data
+      setCachedPartyPlan(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
 
 
 

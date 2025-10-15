@@ -4,11 +4,11 @@ import { useState, useEffect } from "react"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { calculateFinalPrice } from '@/utils/unifiedPricing' // ✅ Import pricing system
 
-export function usePartyDetails(user = null, currentParty = null) {
-  const [partyDetails, setPartyDetails] = useState(null)
-  const [partyTheme, setPartyTheme] = useState("superhero")
-  const [themeLoaded, setThemeLoaded] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+export function usePartyDetails(user = null, currentParty = null, cachedPartyDetails = null, cachedPartyTheme = null) {
+  const [partyDetails, setPartyDetails] = useState(cachedPartyDetails)
+  const [partyTheme, setPartyTheme] = useState(cachedPartyTheme || "superhero")
+  const [themeLoaded, setThemeLoaded] = useState(!!cachedPartyDetails) // ✅ Already loaded if cached
+  const [isLoading, setIsLoading] = useState(!cachedPartyDetails) // ✅ Not loading if cached
 
   // Get party details from localStorage (for guests)
   const getPartyDetailsFromLocalStorage = () => {
@@ -85,6 +85,13 @@ export function usePartyDetails(user = null, currentParty = null) {
 
   // Initialize party details
   useEffect(() => {
+
+    // If we already have cached data, don't reload
+    if (cachedPartyDetails && partyDetails) {
+      console.log('⚡ Using cached party details, skipping load')
+      return
+    }
+
     setIsLoading(true);
     
     if (user === undefined || currentParty === undefined) {
@@ -108,7 +115,7 @@ export function usePartyDetails(user = null, currentParty = null) {
     }
     setThemeLoaded(true);
     setIsLoading(false);
-  }, [user, currentParty]);
+  }, [user, currentParty, cachedPartyDetails]);
 
   // ✅ NEW: Function to recalculate supplier pricing when party details change
   const recalculateSupplierPricing = (updatedPartyDetails) => {
@@ -213,11 +220,7 @@ export function usePartyDetails(user = null, currentParty = null) {
           const nameParts = details.childName.split(' ');
           updatedDetails.firstName = nameParts[0] || '';
           updatedDetails.lastName = nameParts.slice(1).join(' ') || '';
-          console.log("📝 Extracted names from childName:", {
-            childName: details.childName,
-            firstName: updatedDetails.firstName,
-            lastName: updatedDetails.lastName
-          });
+ 
         }
         
         if (details.firstName !== undefined) {

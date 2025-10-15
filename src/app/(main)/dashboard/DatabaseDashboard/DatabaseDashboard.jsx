@@ -31,6 +31,8 @@ import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
 import DatabasePartyHeader from "../components/ui/DatabaseDashboardPartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 
+import DashboardSkeleton from "./components/DashboardSkeleton"
+
 // Feature Components
 import ReplacementManager from './components/ReplacementManager'
 import SupplierGrid from '../components/SupplierGrid'
@@ -246,6 +248,30 @@ const [activeBottomTabModal, setActiveBottomTabModal] = useState(null)
     handleDeleteSupplier,
     getSupplierDisplayName,
   } = useSupplierManager(removeSupplier)
+  // ✅ CHECK CACHE IMMEDIATELY - BEFORE ANY HOOKS
+  const cachedData = (() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const cached = sessionStorage.getItem('party_data_cache')
+      if (!cached) {
+        console.log('❌ No cache in sessionStorage')
+        return null
+      }
+      const { data, timestamp } = JSON.parse(cached)
+      const age = Date.now() - timestamp
+      if (age < 5 * 60 * 1000) {
+        console.log('✅ CACHE VALID - age:', Math.round(age/1000), 'seconds')
+        return data
+      }
+      console.log('⏰ Cache expired')
+      return null
+    } catch (e) {
+      console.error('Cache read error:', e)
+      return null
+    }
+  })()
+
+  
 
   // ALL EFFECTS (keeping existing effects unchanged)
   useEffect(() => {
@@ -384,13 +410,7 @@ const [activeBottomTabModal, setActiveBottomTabModal] = useState(null)
 // In DatabaseDashboard.jsx - Update the recommendations effect with more logging
 
 useEffect(() => {
-  console.log('🔥 Recommendations effect triggered', {
-    isClient,
-    hasPartyDetails: !!partyDetails,
-    visibleSuppliers: Object.keys(visibleSuppliers),
-    recommendationsLoaded
-  })
-  
+
   if (!isClient || !partyDetails) {
     console.log('❌ Not ready - isClient:', isClient, 'partyDetails:', !!partyDetails)
     return
@@ -800,14 +820,17 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
   }
 }
 
-  // SINGLE LOADING CHECK - This is the key fix!
-  if (loading) {
+  // ✅ CRITICAL: Only show loader if loading AND no cache
+  if (loading && !cachedData) {
+    console.log('🔴 SHOWING LOADER - no cache available')
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <SnappyLoader text="Loading your party..." />
       </div>
     )
   }
+
+  const isRefreshing = loading && cachedData
 
   // Redirect check
   if (dataSource === 'localStorage') {
@@ -819,7 +842,6 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
       </div>
     )
   }
-
   // Inside the component, before the return:
 const addSuppliersSection = (
   <AddSuppliersSection
@@ -848,6 +870,16 @@ const addSuppliersSection = (
   return (
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
+
+         {/* ✅ Subtle refresh indicator instead of full-screen loader */}
+         {isRefreshing && (
+        <div className="fixed top-20 right-4 z-50 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 animate-pulse">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
+            <span className="text-sm text-gray-600">Updating...</span>
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
@@ -902,6 +934,7 @@ const addSuppliersSection = (
           unreadCount={unreadCount}
           hasNewMessages={hasNewMessages}
           onNotificationClick={handleNotificationClick}
+          loading={loading} // ✅ ADD THIS LINE
         />
 
         <SupplierSelectionModal

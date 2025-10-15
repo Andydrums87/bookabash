@@ -260,8 +260,8 @@ const MobileBottomTabBar = ({
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <PartyPopper className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PartyPopper className="w-8 h-8 text-primary-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Party Tools</h3>
               <p className="text-sm text-gray-600">
@@ -280,7 +280,7 @@ const MobileBottomTabBar = ({
                     key={tool.id}
                     href={tool.href}
                     onClick={closeModal}
-                    className="block p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all active:scale-[0.98]"
+                    className="block p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-[hsl(var(--primary-50))] hover:bg-[hsl(var(--primary-50))] transition-all active:scale-[0.98]"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -304,7 +304,7 @@ const MobileBottomTabBar = ({
                         </div>
                       </div>
                       {tool.count > 0 && (
-                        <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                        <div className="bg-purple-100 text-primary-700 px-3 py-1 rounded-full text-sm font-bold">
                           {tool.count}
                         </div>
                       )}

@@ -236,7 +236,7 @@ function DashboardDropdown() {
 const handleNavigation = async (item) => {
   setIsOpen(false)
 
-  // Check if user has localStorage party data (for unsigned users)
+  // Helper function to check if user has localStorage party data
   const hasLocalStorageParty = () => {
     try {
       const userPartyPlan = localStorage.getItem('user_party_plan')
@@ -271,21 +271,25 @@ const handleNavigation = async (item) => {
     }
   }
 
-  // Handle dashboard access - ALWAYS allow dashboard access
+  // ✅ ALWAYS allow dashboard access - no auth required
   if (item.href === '/dashboard') {
     router.push(item.href)
     return
   }
 
-  // Handle items that require authentication (like E-Invites, RSVPs)
-  if (!user) {
+  // ✅ Check for localStorage party data
+  const hasLocalParty = hasLocalStorageParty()
+
+  // Handle items that require authentication (like E-Invites, RSVPs, Gift Registry)
+  if (!user && !hasLocalParty) {
+    // No user AND no localStorage party - redirect to sign in
     router.push('/signin')
     return
   }
 
   // Handle items that require a party ID (like RSVPs)
   if (item.requiresPartyId) {
-    if (!activePartyId) {
+    if (!activePartyId && !hasLocalParty) {
       router.push('/dashboard?action=new-party')
       return
     }

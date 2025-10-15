@@ -293,26 +293,33 @@ async getUserPlannedParties() {
 // Add this new function to partyDatabaseBackend.js
 async getActivePlannedParty() {
   try {
+    // ✅ FIX: Add better error handling for auth state
     const userResult = await this.getCurrentUser()
+    
     if (!userResult.success) {
-      throw new Error('User not found')
+      // ✅ Instead of throwing, return gracefully for unauthenticated users
+      console.log('⚠️ No authenticated user - skipping database party lookup')
+      return { success: false, data: null, reason: 'unauthenticated' }
     }
 
     const { data: party, error } = await supabase
       .from('parties')
       .select('*')
-      .eq('user_id', userResult.user.id)
-      .eq('status', 'planned')  // Only confirmed parties
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .eq('user_id', userResult.data.id)
+      .eq('status', 'planned')
+      .single()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No party found
+        return { success: true, data: null }
+      }
+      throw error
+    }
 
-    return { success: true, party }
-
+    return { success: true, data: party }
   } catch (error) {
-    console.error('Error getting active planned party:', error)
+    console.error('Error getting active party:', error)
     return { success: false, error: error.message }
   }
 }

@@ -10,36 +10,14 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
-// Cart Indicator Component for Mobile - FIXED with party ID
-function MobileCartIndicator({ className = "", onCartClick }) {
+// Cart Indicator Component for Mobile - FIXED to use prop
+function MobileCartIndicator({ className = "", onCartClick, currentPartyId }) {
   const [cartData, setCartData] = useState({ suppliers: [], totalDeposit: 0 })
   const [isClient, setIsClient] = useState(false)
-  const [partyId, setPartyId] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
     setIsClient(true)
-  }, [])
-
-  // Get party ID for payment URL
-  useEffect(() => {
-    const loadPartyId = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (user) {
-          const result = await partyDatabaseBackend.getCurrentParty()
-          if (result.success && result.party) {
-            setPartyId(result.party.id)
-          }
-        }
-      } catch (error) {
-        console.error("Error loading party ID for mobile cart:", error)
-      }
-    }
-
-    loadPartyId()
   }, [])
 
   useEffect(() => {
@@ -73,12 +51,18 @@ function MobileCartIndicator({ className = "", onCartClick }) {
   }
 
   const handleCartClick = () => {
-    if (!partyId) {
-      router.push("/dashboard") // Fallback if no party ID
+    console.log('🛒 Mobile cart clicked, partyId:', currentPartyId)
+    
+    if (!currentPartyId) {
+      console.warn('⚠️ No party ID available, redirecting to dashboard')
+      router.push("/dashboard")
+      onCartClick()
       return
     }
-    router.push(`/payment/secure-party?party_id=${partyId}`)
-    onCartClick() // Call the original onCartClick to close menu
+    
+    console.log('✅ Navigating to payment with party ID:', currentPartyId)
+    router.push(`/payment/secure-party?party_id=${currentPartyId}`)
+    onCartClick()
   }
 
   return (
@@ -93,40 +77,40 @@ function MobileCartIndicator({ className = "", onCartClick }) {
           {supplierCount}
         </Badge>
       </div>
-      {/* <span className="text-xs font-medium">£{cartData.totalDeposit.toFixed(2)}</span> */}
     </Button>
   )
 }
 
-export default function MobileNav({ user, onSignOut, loading }) {
+export default function MobileNav({ user, onSignOut, loading, currentPartyId }) {
   const [isOpen, setIsOpen] = useState(false)
   const [dashboardExpanded, setDashboardExpanded] = useState(false)
   const [activePartyId, setActivePartyId] = useState(null)
   const [loadingPartyData, setLoadingPartyData] = useState(false)
   const router = useRouter()
 
-  // Load party data when component mounts or user changes
-  useEffect(() => {
-    const loadPartyData = async () => {
-      if (user) {
-        try {
-          setLoadingPartyData(true)
-          const result = await partyDatabaseBackend.getCurrentParty()
-          if (result.success && result.party) {
-            setActivePartyId(result.party.id)
-          }
-        } catch (error) {
-          console.error("Error loading party data:", error)
-        } finally {
-          setLoadingPartyData(false)
+// Load party data when component mounts or user changes
+useEffect(() => {
+  const loadPartyData = async () => {
+    if (user) {
+      try {
+        setLoadingPartyData(true)
+        const result = await partyDatabaseBackend.getCurrentParty()
+        if (result.success && result.party) {
+          setActivePartyId(result.party.id)
         }
-      } else {
-        setActivePartyId(null)
+      } catch (error) {
+        console.error("Error loading party data:", error)
+      } finally {
+        setLoadingPartyData(false)
       }
+    } else {
+      setActivePartyId(null)
     }
+  }
 
-    loadPartyData()
-  }, [user])
+  loadPartyData()
+}, [user])
+
 
   // Add this function inside MobileNav component
   const hasLocalStorageParty = () => {
@@ -227,11 +211,17 @@ export default function MobileNav({ user, onSignOut, loading }) {
   const handleDashboardNavigation = async (item) => {
     closeMenu()
 
-    if (!user) {
-      router.push("/signin")
-      return
-    }
+      // ✅ ALWAYS allow dashboard access - no auth required
+  if (item.href === '/dashboard') {
+    router.push(item.href)
+    return
+  }
+  const hasLocalParty = hasLocalStorageParty()
 
+  if (!user && !hasLocalParty) {
+    router.push("/signin")
+    return
+  }
     // Special handling for gift registry (simple navigation)
     if (item.simpleNavigation) {
       router.push(item.href)
@@ -264,7 +254,10 @@ export default function MobileNav({ user, onSignOut, loading }) {
       {/* Mobile Header with Menu Button and Cart */}
       <div className="md:hidden flex items-center space-x-2">
         {/* Cart Indicator - now handles its own click with party ID */}
-        <MobileCartIndicator onCartClick={closeMenu} />
+        <MobileCartIndicator 
+          onCartClick={closeMenu} 
+          currentPartyId={currentPartyId || activePartyId} 
+        />
 
         {/* Menu Button */}
         <Button

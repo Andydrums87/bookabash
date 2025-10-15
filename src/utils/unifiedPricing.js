@@ -205,6 +205,25 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
     }
   }
 
+  // ✅ ADD: Check if partyDetails is null/undefined
+  if (!partyDetails) {
+    console.warn('⚠️ calculateFinalPrice: No party details provided for', supplier.name);
+    const basePrice = getTrueBasePrice(supplier, {});
+    return {
+      finalPrice: basePrice,
+      basePrice,
+      breakdown: { base: basePrice, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0 },
+      details: { 
+        isWeekend: false, 
+        extraHours: 0, 
+        hasAddons: false, 
+        isLeadBased: isLeadBasedSupplier(supplier),
+        additionalEntertainers: 0,
+        guestsPerEntertainer: 0
+      }
+    };
+  }
+
   // Check if this is a lead-based supplier
   const isLeadBased = isLeadBasedSupplier(supplier);
   const guestCount = getGuestCount(partyDetails);
@@ -217,7 +236,8 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
 
   // 3. Calculate weekend premium FRESH (don't use existing)
   let weekendPremium = 0;
-  const isWeekend = partyDetails.date ? isWeekendDate(partyDetails.date) : false;
+  // ✅ FIXED: Add safe null check for partyDetails.date
+  const isWeekend = (partyDetails && partyDetails.date) ? isWeekendDate(partyDetails.date) : false;
 
   if (!isLeadBased && isWeekend && supplier.weekendPremium?.enabled) {
     if (supplier.weekendPremium.type === 'fixed') {

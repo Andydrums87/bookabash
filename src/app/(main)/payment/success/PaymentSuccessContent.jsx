@@ -298,10 +298,10 @@ export default function PaymentSuccessPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               onClick={handleReturnToDashboard} 
-              className="flex-1 bg-gray-900 hover:bg-gray-800 text-white py-3"
+              className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3"
             >
               <Home className="w-4 h-4 mr-2" />
-              View Dashboard
+              Return to Dashboard
             </Button>
             <Button 
               variant="outline"
