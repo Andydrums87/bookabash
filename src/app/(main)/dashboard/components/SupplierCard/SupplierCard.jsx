@@ -1,4 +1,4 @@
-// SupplierCard.jsx - FIXED to pass recommended supplier props
+// SupplierCard.jsx - PASS isCompact PROP TO EmptySupplierCard
 "use client"
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
@@ -34,13 +34,12 @@ export default function SupplierCard({
   handleCancelEnquiry,
   enhancedPricing,
   pricingRefreshKey,
-  // ✅ NEW PROPS for recommended suppliers
+  // Props for recommended suppliers
   recommendedSupplier,
-  onAddSupplier
+  onAddSupplier,
+  isCompact = false // ✅ NEW PROP
 }) {
   const router = useRouter()
-
-
 
   // Skip e-invites entirely - they're handled separately
   if (type === "einvites") {
@@ -57,11 +56,9 @@ export default function SupplierCard({
     // Add visual feedback
     const card = e.currentTarget
     if (card) {
-      // Add a quick scale animation
       card.style.transform = 'scale(0.95)'
       card.style.transition = 'transform 0.1s ease'
       
-      // Reset after animation
       setTimeout(() => {
         card.style.transform = ''
         card.style.transition = 'transform 0.2s ease'
@@ -76,79 +73,75 @@ export default function SupplierCard({
     }, 150)
   }
 
-// In SupplierCard.jsx - Update the getSupplierState function
-
-const getSupplierState = () => {
-  if (!supplier) {
-    console.log(`🔴 SupplierCard [${type}]: No supplier, returning "empty"`)
-    return "empty"
-  }
-  
-  // Find the SPECIFIC enquiry for THIS supplier type
-  const enquiry = enquiries.find(e => e.supplier_category === type)
-  
-  console.log(`🔍 SupplierCard [${type}]: Enquiry check:`, {
-    hasEnquiry: !!enquiry,
-    status: enquiry?.status,
-    paymentStatus: enquiry?.payment_status,
-    supplierResponseDate: enquiry?.supplier_response_date,
-    supplierResponse: enquiry?.supplier_response
-  })
-  
-  // If no enquiry exists for this supplier type, it's just selected
-  if (!enquiry) {
-    console.log(`🟡 SupplierCard [${type}]: No enquiry found - returning "selected"`)
-    return isSignedIn ? "selected" : "selected"
-  }
-  
-  // Get the specific payment status for THIS enquiry
-  const thisSupplierPaymentStatus = enquiry.payment_status
-  const enquiryStatus = enquiry.status
-  const isAutoAccepted = enquiry.auto_accepted
-  const supplierManuallyAccepted = enquiry.supplier_response_date && 
-                                  enquiry.supplier_response &&
-                                  !enquiry.supplier_response.includes('Auto-')
-  
-
-  
-  // Handle declined enquiries first
-  if (enquiryStatus === "declined") {
-    console.log(`🔴 SupplierCard [${type}]: Status = declined`)
-    return "declined"
-  }
-  
-  // PAYMENT FLOW: Only check payment if enquiry is accepted
-  if (enquiryStatus === "accepted") {
-    console.log(`🟢 SupplierCard [${type}]: Status = accepted, checking payment...`)
-    
-    // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
-    if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
-      console.log(`✅ SupplierCard [${type}]: PAYMENT_CONFIRMED (paid + manual confirm)`)
-      return "payment_confirmed"
+  const getSupplierState = () => {
+    if (!supplier) {
+      console.log(`🔴 SupplierCard [${type}]: No supplier, returning "empty"`)
+      return "empty"
     }
     
-    // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
-    if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
-      console.log(`💰 SupplierCard [${type}]: DEPOSIT_PAID_CONFIRMED (paid, no manual confirm)`)
-      return "deposit_paid_confirmed"  
+    // Find the SPECIFIC enquiry for THIS supplier type
+    const enquiry = enquiries.find(e => e.supplier_category === type)
+    
+    console.log(`🔍 SupplierCard [${type}]: Enquiry check:`, {
+      hasEnquiry: !!enquiry,
+      status: enquiry?.status,
+      paymentStatus: enquiry?.payment_status,
+      supplierResponseDate: enquiry?.supplier_response_date,
+      supplierResponse: enquiry?.supplier_response
+    })
+    
+    // If no enquiry exists for this supplier type, it's just selected
+    if (!enquiry) {
+      console.log(`🟡 SupplierCard [${type}]: No enquiry found - returning "selected"`)
+      return isSignedIn ? "selected" : "selected"
     }
     
-    // If accepted but not paid = CONFIRMED
-    if (thisSupplierPaymentStatus !== "paid") {
-      console.log(`🟡 SupplierCard [${type}]: CONFIRMED (accepted, not paid)`)
-      return "confirmed"
+    // Get the specific payment status for THIS enquiry
+    const thisSupplierPaymentStatus = enquiry.payment_status
+    const enquiryStatus = enquiry.status
+    const isAutoAccepted = enquiry.auto_accepted
+    const supplierManuallyAccepted = enquiry.supplier_response_date && 
+                                    enquiry.supplier_response &&
+                                    !enquiry.supplier_response.includes('Auto-')
+    
+    // Handle declined enquiries first
+    if (enquiryStatus === "declined") {
+      console.log(`🔴 SupplierCard [${type}]: Status = declined`)
+      return "declined"
     }
+    
+    // PAYMENT FLOW: Only check payment if enquiry is accepted
+    if (enquiryStatus === "accepted") {
+      console.log(`🟢 SupplierCard [${type}]: Status = accepted, checking payment...`)
+      
+      // If paid + supplier manually confirmed = PAYMENT_CONFIRMED  
+      if (thisSupplierPaymentStatus === "paid" && supplierManuallyAccepted) {
+        console.log(`✅ SupplierCard [${type}]: PAYMENT_CONFIRMED (paid + manual confirm)`)
+        return "payment_confirmed"
+      }
+      
+      // If paid but no manual confirmation yet = DEPOSIT_PAID_CONFIRMED
+      if (thisSupplierPaymentStatus === "paid" && !supplierManuallyAccepted) {
+        console.log(`💰 SupplierCard [${type}]: DEPOSIT_PAID_CONFIRMED (paid, no manual confirm)`)
+        return "deposit_paid_confirmed"  
+      }
+      
+      // If accepted but not paid = CONFIRMED
+      if (thisSupplierPaymentStatus !== "paid") {
+        console.log(`🟡 SupplierCard [${type}]: CONFIRMED (accepted, not paid)`)
+        return "confirmed"
+      }
+    }
+    
+    // ENQUIRY FLOW: Handle pending enquiries
+    if (enquiryStatus === "pending") {
+      console.log(`⏳ SupplierCard [${type}]: AWAITING_RESPONSE (pending)`)
+      return "awaiting_response"
+    }
+    
+    console.log(`🔵 SupplierCard [${type}]: Defaulting to "selected"`)
+    return "selected"
   }
-  
-  // ENQUIRY FLOW: Handle pending enquiries
-  if (enquiryStatus === "pending") {
-    console.log(`⏳ SupplierCard [${type}]: AWAITING_RESPONSE (pending)`)
-    return "awaiting_response"
-  }
-  
-  console.log(`🔵 SupplierCard [${type}]: Defaulting to "selected"`)
-  return "selected"
-}
 
   const supplierState = getSupplierState()
   console.log(`🔵 SupplierCard [${type}]: State determined as "${supplierState}"`)
@@ -162,13 +155,11 @@ const getSupplierState = () => {
     let enquiryAddons = []
     if (enquiry?.addon_details) {
       try {
-        // Parse the addon_details JSON string
         const parsedAddons = JSON.parse(enquiry.addon_details)
         enquiryAddons = Array.isArray(parsedAddons) ? parsedAddons : []
       } catch (error) {
         console.error(`Error parsing addon_details for ${type}:`, error)
         
-        // Fallback: try to get addon IDs and reconstruct
         if (enquiry.addon_ids) {
           try {
             const addonIds = JSON.parse(enquiry.addon_ids)
@@ -237,15 +228,12 @@ const getSupplierState = () => {
     onClick: handleCardClick,
     totalPrice: pricing.finalPrice,
     onCustomize: (type, supplier) => {
-      // ✅ NEW: Handle customize click
       console.log('Customize clicked for:', type, supplier.name)
-      // You can add your customize logic here
-      // For example, open a modal or navigate to customization page
     },
-    onAddSupplier: onAddSupplier // ✅ ADD THIS - pass through from parent
+    onAddSupplier: onAddSupplier
   }
 
-  // ✅ Props specific to EmptySupplierCard - NOW INCLUDING RECOMMENDED SUPPLIER
+  // ✅ Props specific to EmptySupplierCard - INCLUDING isCompact
   const emptyCardProps = {
     type,
     openSupplierModal,
@@ -253,14 +241,11 @@ const getSupplierState = () => {
     currentPhase,
     isSignedIn,
     partyDetails,
-    // ✅ CRITICAL: Pass these props!
     recommendedSupplier: recommendedSupplier,
-    onAddSupplier: onAddSupplier
+    onAddSupplier: onAddSupplier,
+    isCompact: isCompact // ✅ PASS IT HERE
   }
 
-
-
-  // Enhanced debug logging
   const enquiry = enquiries.find(e => e.supplier_category === type)
 
   // Render the appropriate card component based on state

@@ -1,7 +1,7 @@
 // components/PartyJourney/JourneyStep.jsx - SIMPLIFIED COLORS
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Lock, Circle, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
@@ -38,16 +38,8 @@ export function JourneyStep({
   handleCancelEnquiry,
   getSupplierDisplayPricing,
 }) {
-  // Auto-collapse completed steps, expand current/available step
-  const [isExpanded, setIsExpanded] = useState(
-    step.status === 'current' || step.status === 'available'
-  )
-
-  useEffect(() => {
-    if (step.status === 'current') {
-      setIsExpanded(true)
-    }
-  }, [step.status])
+  // All steps collapsed by default
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // ✅ SIMPLIFIED: Only 3 states - completed (green), locked (disabled), or active (white)
   const getStatusStyles = () => {
@@ -191,9 +183,6 @@ case 'party_team_browse':
       case 'guest_list':
         return (
           <div className="p-6 bg-white rounded-lg border border-gray-200">
-            <p className="text-gray-600 mb-4">
-              Create your guest list to manage invitations and track RSVPs. This helps you plan party numbers and dietary requirements.
-            </p>
             {step.action && (
               <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
                 <Link href={step.action.href}>
@@ -208,9 +197,6 @@ case 'party_team_browse':
       case 'gift_registry':
         return (
           <div className="p-6 bg-white rounded-lg border border-gray-200">
-            <p className="text-gray-600 mb-4">
-              Create a gift registry to help guests know what to bring. Share your wish list and track who's bringing what.
-            </p>
             {step.action && (
               <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
                 <Link href={step.action.href}>
@@ -231,9 +217,6 @@ case 'party_team_browse':
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <p className="font-medium text-gray-900">Your invites are ready!</p>
                 </div>
-                <p className="text-gray-600 mb-4">
-                  Share your beautiful digital invitations with guests and track who has viewed them.
-                </p>
                 {step.action && (
                   <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
                     <Link href={step.action.href}>
@@ -245,9 +228,6 @@ case 'party_team_browse':
               </>
             ) : (
               <>
-                <p className="text-gray-600 mb-4">
-                  Design beautiful digital invitations that match your party theme. Share instantly via link or download to print.
-                </p>
                 {step.action && (
                   <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
                     <Link href={step.action.href}>
@@ -280,9 +260,6 @@ case 'party_team_browse':
                 </div>
               </div>
             )}
-            <p className="text-gray-600 mb-4">
-              Send your invitations to guests and track delivery status. Get notified when guests view their invites.
-            </p>
             {step.action && (
               <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
                 <Link href={step.action.href}>
@@ -313,9 +290,6 @@ case 'party_team_browse':
                 </div>
               </div>
             )}
-            <p className="text-gray-600 mb-4">
-              Track who's attending, collect dietary requirements, and manage your final guest count.
-            </p>
             {step.action && (
               <Button asChild className="w-full bg-primary-600 hover:bg-primary-700">
                 <Link href={step.action.href}>
@@ -425,11 +399,6 @@ case 'party_team_browse':
           {/* ✅ COLLAPSIBLE CONTENT */}
           {isExpanded && !styles.disabled && (
             <CardContent className="px-4 pb-4 pt-0">
-              {/* Description when expanded */}
-              <p className={`text-sm ${styles.descColor} mb-4`}>
-                {step.description}
-              </p>
-
               {/* Step Content */}
               {renderStepContent()}
             </CardContent>

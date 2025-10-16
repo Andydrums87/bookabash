@@ -1,9 +1,9 @@
-// components/DatabaseDashboard/components/MobileBottomTabBar.jsx - WITH PAYMENT LOGIC
+// components/DatabaseDashboard/components/MobileBottomTabBar.jsx - SMART PARTY TOOLS
 
 "use client"
 
 import React, { useState } from "react"
-import { ClipboardList, Plus, PartyPopper, Clock, X, CreditCard, Mail, Users, Gift } from "lucide-react"
+import { ClipboardList, Plus, PartyPopper, Clock, X, CreditCard, Mail, Users, Gift, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -28,8 +28,8 @@ const MobileBottomTabBar = ({
   CountdownWidget,
   getSupplierDisplayName,
   getSupplierDisplayPricing,
-  totalCost = 0, // ✅ ADD THIS
-  addons = [], // ✅ ADD THIS
+  totalCost = 0,
+  addons = [],
 }) => {
   const [activeTab, setActiveTab] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -56,21 +56,17 @@ const MobileBottomTabBar = ({
 
   const timeRemaining = calculateTimeRemaining()
 
-  // Party Tools data
+  // ✅ SMART: Check if venue is confirmed (paid)
+  const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
+  const isVenueConfirmed = venueEnquiry?.payment_status === 'paid' || venueEnquiry?.is_paid === true
+
+  // ✅ SMART: Check if suppliers are confirmed (at least one paid supplier)
+  const hasPaidSuppliers = enquiries.some(e => 
+    e.payment_status === 'paid' || e.is_paid === true
+  )
+
+  // ✅ SMART: Party Tools with lock logic
   const partyTools = [
-    {
-      id: 'einvites',
-      label: 'E-Invites',
-      icon: Mail,
-      href: einvites?.inviteId 
-        ? `/e-invites/${einvites.inviteId}/manage`
-        : '/e-invites/create',
-      hasContent: !!einvites,
-      status: einvites ? '✓ Created' : 'Not created',
-      description: einvites 
-        ? 'Manage your digital invitations'
-        : 'Create invitations'
-    },
     {
       id: 'guests',
       label: 'Guest List',
@@ -78,7 +74,11 @@ const MobileBottomTabBar = ({
       href: `/rsvps/${partyDetails?.id || ''}`,
       hasContent: (guestList?.length || 0) > 0,
       count: guestList?.length || 0,
-      status: (guestList?.length || 0) > 0 ? `${guestList.length} guests` : 'No guests yet',
+      // ✅ Guest list is always available (comes before venue confirmation)
+      isLocked: false,
+      status: (guestList?.length || 0) > 0 
+        ? `${guestList.length} guests` 
+        : 'No guests yet',
       description: (guestList?.length || 0) > 0
         ? 'Manage your guest list'
         : 'Add guests'
@@ -90,16 +90,46 @@ const MobileBottomTabBar = ({
       href: '/gift-registry',
       hasContent: !!giftRegistry,
       count: registryItemCount,
-      status: giftRegistry 
-        ? registryItemCount > 0 ? `${registryItemCount} items` : 'Empty registry'
-        : 'Not created',
-      description: giftRegistry
-        ? 'Manage your gift registry'
-        : 'Set up registry'
+      // ✅ Lock if no paid suppliers
+      isLocked: !hasPaidSuppliers,
+      lockMessage: 'Secure at least one supplier to create registry',
+      status: !hasPaidSuppliers
+        ? '🔒 Locked'
+        : giftRegistry 
+          ? registryItemCount > 0 ? `${registryItemCount} items` : 'Empty registry'
+          : 'Not created',
+      description: !hasPaidSuppliers
+        ? 'Confirm suppliers first'
+        : giftRegistry
+          ? 'Manage your gift registry'
+          : 'Set up registry'
+    },
+    {
+      id: 'einvites',
+      label: 'E-Invites',
+      icon: Mail,
+      href: einvites?.inviteId 
+        ? `/e-invites/${einvites.inviteId}/manage`
+        : '/e-invites/create',
+      hasContent: !!einvites,
+      // ✅ Lock if venue not confirmed
+      isLocked: !isVenueConfirmed,
+      lockMessage: 'Complete venue booking to unlock invites',
+      status: !isVenueConfirmed 
+        ? '🔒 Locked' 
+        : einvites 
+          ? '✓ Created' 
+          : 'Not created',
+      description: !isVenueConfirmed
+        ? 'Confirm venue first'
+        : einvites 
+          ? 'Manage your digital invitations'
+          : 'Create invitations'
     }
   ]
 
-  const completedTools = partyTools.filter(tool => tool.hasContent).length
+  const completedTools = partyTools.filter(tool => tool.hasContent && !tool.isLocked).length
+  const availableTools = partyTools.filter(tool => !tool.isLocked).length
 
   // ✅ Dynamic tabs - payment replaces timer if there are outstanding payments
   const getTabConfig = () => {
@@ -127,10 +157,10 @@ const MobileBottomTabBar = ({
         id: "tools",
         label: "Party Tools",
         icon: PartyPopper,
-        color: "text-purple-500",
-        activeColor: "text-purple-600",
+        color: "text-primary-500",
+        activeColor: "text-primary-600",
         completedCount: completedTools,
-        totalCount: partyTools.length
+        totalCount: availableTools // Only count available tools
       }
     ]
 
@@ -180,75 +210,12 @@ const MobileBottomTabBar = ({
     setActiveTab(null)
   }
 
-  // ✅ Payment modal content
-  const getPaymentModalContent = () => {
-    const isMultiple = outstandingSuppliers.length > 1
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CreditCard className="w-8 h-8 text-teal-600" />
-          </div>
-
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            {isMultiple ? "Multiple Deposits Due" : "Deposit Required"}
-          </h3>
-
-          <p className="text-gray-600 mb-4">
-            {isMultiple
-              ? `Secure ${outstandingSuppliers.length} suppliers with deposit payments`
-              : "Secure your confirmed supplier with a deposit payment"}
-          </p>
-        </div>
-
-        {/* Outstanding suppliers list */}
-        <div className="bg-gray-50 rounded-xl p-4">
-          <h4 className="font-semibold text-gray-800 mb-3 text-center">
-            {isMultiple ? "Suppliers awaiting payment:" : "Ready to secure:"}
-          </h4>
-          <div className="space-y-2">
-            {outstandingSuppliers.map((supplier, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-200"
-              >
-                <span className="font-medium text-gray-700">{supplier.name}</span>
-                <span className="font-bold text-teal-600">£{supplier.depositAmount}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Payment summary */}
-        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-semibold text-teal-800">Total deposit:</span>
-            <span className="text-2xl font-bold text-teal-600">£{totalDepositAmount}</span>
-          </div>
-          <p className="text-sm text-teal-700 text-center">
-            {isMultiple ? "One payment secures all your suppliers" : "Quick and secure payment process"}
-          </p>
-        </div>
-
-        {/* Action button */}
-        <Button
-          onClick={onPaymentReady}
-          className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-bold text-lg rounded-xl"
-        >
-          <CreditCard className="w-5 h-5 mr-2" />
-          Pay £{totalDepositAmount} Now
-        </Button>
-      </div>
-    )
-  }
-
   const getModalContent = () => {
     switch (activeTab) {
       case "add":
         return AddSuppliersSection ? (
           React.cloneElement(AddSuppliersSection, {
-            onSupplierAdded: closeModal // Pass the close function
+            onSupplierAdded: closeModal
           })
         ) : (
           <div className="text-center py-8">
@@ -268,19 +235,52 @@ const MobileBottomTabBar = ({
                 Manage invitations, guests, and gifts
               </p>
               <div className="mt-2 text-xs text-gray-500">
-                {completedTools} of {partyTools.length} completed
+                {completedTools} of {availableTools} completed
               </div>
             </div>
 
             <div className="space-y-3">
               {partyTools.map((tool) => {
                 const Icon = tool.icon
+                const isLocked = tool.isLocked
+
+                // ✅ Locked tools are not clickable
+                if (isLocked) {
+                  return (
+                    <div
+                      key={tool.id}
+                      className="block p-4 bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 cursor-not-allowed"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Icon className="w-6 h-6 text-gray-400" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full">
+                              <Lock className="w-4 h-4 text-gray-400" />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-gray-400">{tool.label}</h4>
+                              <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+                                🔒 Locked
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-400">{tool.lockMessage}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+
+                // ✅ Available tools are clickable
                 return (
                   <Link
                     key={tool.id}
                     href={tool.href}
                     onClick={closeModal}
-                    className="block p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-[hsl(var(--primary-50))] hover:bg-[hsl(var(--primary-50))] transition-all active:scale-[0.98]"
+                    className="block p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-all active:scale-[0.98]"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ const MobileBottomTabBar = ({
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-600">{tool.status}</p>
+                          <p className="text-xs text-gray-600">{tool.description}</p>
                         </div>
                       </div>
                       {tool.count > 0 && (
@@ -313,206 +313,205 @@ const MobileBottomTabBar = ({
                 )
               })}
             </div>
-          </div>
-        )
-        case "progress":
-          return (
-            <div className="space-y-6">
-              {/* Progress Summary */}
-              <div className="text-center">
-                <div className="relative w-24 h-24 mx-auto mb-4">
-                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      className="text-gray-200"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
-                      className="text-primary-500"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeDasharray={`${progressPercentage}, 100`}
-                      strokeLinecap="round"
-                      fill="none"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold text-gray-900">{progressPercentage}%</span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Your Party Plan</h3>
-                <p className="text-gray-600">
-                  {confirmedSuppliers} of {totalSlots} suppliers confirmed
+
+            {/* ✅ Helper message if tools are locked */}
+            {partyTools.some(t => t.isLocked) && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Tip:</strong> Complete your venue booking to unlock all party tools
                 </p>
               </div>
-        
-              {/* Total Cost Summary */}
-              <div className="bg-primary-500 rounded-xl p-6 text-white text-center">
-                <div className="text-sm font-medium text-white/80 mb-2">Total Party Cost</div>
-                <div className="text-4xl font-bold">
-                  £{typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}
+            )}
+          </div>
+        )
+
+      case "progress":
+        return (
+          <div className="space-y-6">
+            {/* Progress Summary */}
+            <div className="text-center">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-gray-200"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-primary-500"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeDasharray={`${progressPercentage}, 100`}
+                    strokeLinecap="round"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-bold text-gray-900">{progressPercentage}%</span>
                 </div>
               </div>
-        
-              {/* Party Team Section */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary-500" />
-                    Your Party Team
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {confirmedSuppliers}/{totalSlots}
-                  </span>
-                </h4>
-                
-                {confirmedSuppliers > 0 ? (
-                  <div className="space-y-3">
-                    {Object.entries(suppliers).map(([type, supplier]) => {
-                      if (!supplier || type === "einvites") return null
-                      
-                      // Get enquiry status for this supplier
-                      const enquiry = enquiries.find((e) => e.supplier_category === type)
-                      const isAccepted = enquiry?.status === "accepted"
-                      const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
-                      const isPending = enquiry?.status === "pending"
-                      
-                      // Get supplier addons
-                      const supplierAddons = Array.isArray(addons) ? addons.filter(addon => 
-                        addon.supplierId === supplier.id || 
-                        addon.supplierType === type ||
-                        addon.attachedToSupplier === type
-                      ) : []
-                      
-                      // Calculate total price (base price + addons)
-                      const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-                      const totalPrice = (supplier.price || 0) + addonsCost
-                      
-                      // Get supplier name
-                      const supplierName = supplier.name || 'Unknown Supplier'
-                      
-                      // Get category display name
-                      const categoryNames = {
-                        venue: 'Venue',
-                        entertainment: 'Entertainment',
-                        catering: 'Catering',
-                        cakes: 'Cakes',
-                        facePainting: 'Face Painting',
-                        activities: 'Activities',
-                        partyBags: 'Party Bags',
-                        decorations: 'Decorations',
-                        balloons: 'Balloons'
-                      }
-                      const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
-                      
-                      // Determine status badge
-                      let statusBadge = null
-                      if (isPaid) {
-                        statusBadge = (
-                          <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
-                            ✓ Paid
-                          </span>
-                        )
-                      } else if (isAccepted) {
-                        // If accepted but NOT paid, show payment pending
-                        statusBadge = (
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
-                            💳 Payment Pending
-                          </span>
-                        )
-                      } else if (isPending) {
-                        statusBadge = (
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
-                            ⏳ Pending
-                          </span>
-                        )
-                      } else {
-                        statusBadge = (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
-                            ⚡ Just Added
-                          </span>
-                        )
-                      }
-                      
-                      return (
-                        <div
-                          key={type}
-                          className="bg-white rounded-lg border border-gray-200 overflow-hidden"
-                        >
-                          <div className="flex gap-3 p-3">
-                            {/* Supplier Image */}
-                            {supplier.image && (
-                              <div className="flex-shrink-0">
-                                <img
-                                  src={supplier.image}
-                                  alt={supplierName}
-                                  className="w-16 h-16 rounded-lg object-cover"
-                                />
-                              </div>
-                            )}
-                            
-                            {/* Supplier Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
-                                    {categoryName}
-                                  </p>
-                                  <h5 className="font-semibold text-gray-900 text-sm truncate">
-                                    {supplierName}
-                                  </h5>
-                                </div>
-                                {statusBadge}
-                              </div>
-                              
-                              {/* Price */}
-                              <div className="mt-1">
-                                <p className="text-sm font-bold text-primary-600">
-                                  £{totalPrice.toFixed(2)}
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Your Party Plan</h3>
+              <p className="text-gray-600">
+                {confirmedSuppliers} of {totalSlots} suppliers confirmed
+              </p>
+            </div>
+      
+            {/* Total Cost Summary */}
+            <div className="bg-primary-500 rounded-xl p-6 text-white text-center">
+              <div className="text-sm font-medium text-white/80 mb-2">Total Party Cost</div>
+              <div className="text-4xl font-bold">
+                £{typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}
+              </div>
+            </div>
+      
+            {/* Party Team Section */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <h4 className="font-semibold text-gray-800 mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary-500" />
+                  Your Party Team
+                </span>
+                <span className="text-sm text-gray-500">
+                  {confirmedSuppliers}/{totalSlots}
+                </span>
+              </h4>
+              
+              {confirmedSuppliers > 0 ? (
+                <div className="space-y-3">
+                  {Object.entries(suppliers).map(([type, supplier]) => {
+                    if (!supplier || type === "einvites") return null
+                    
+                    const enquiry = enquiries.find((e) => e.supplier_category === type)
+                    const isAccepted = enquiry?.status === "accepted"
+                    const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                    const isPending = enquiry?.status === "pending"
+                    
+                    const supplierAddons = Array.isArray(addons) ? addons.filter(addon => 
+                      addon.supplierId === supplier.id || 
+                      addon.supplierType === type ||
+                      addon.attachedToSupplier === type
+                    ) : []
+                    
+                    const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+                    const totalPrice = (supplier.price || 0) + addonsCost
+                    
+                    const supplierName = supplier.name || 'Unknown Supplier'
+                    
+                    const categoryNames = {
+                      venue: 'Venue',
+                      entertainment: 'Entertainment',
+                      catering: 'Catering',
+                      cakes: 'Cakes',
+                      facePainting: 'Face Painting',
+                      activities: 'Activities',
+                      partyBags: 'Party Bags',
+                      decorations: 'Decorations',
+                      balloons: 'Balloons'
+                    }
+                    const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
+                    
+                    let statusBadge = null
+                    if (isPaid) {
+                      statusBadge = (
+                        <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                          ✓ Paid
+                        </span>
+                      )
+                    } else if (isAccepted) {
+                      statusBadge = (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                          💳 Payment Pending
+                        </span>
+                      )
+                    } else if (isPending) {
+                      statusBadge = (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                          ⏳ Pending
+                        </span>
+                      )
+                    } else {
+                      statusBadge = (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
+                          ⚡ Just Added
+                        </span>
+                      )
+                    }
+                    
+                    return (
+                      <div
+                        key={type}
+                        className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+                      >
+                        <div className="flex gap-3 p-3">
+                          {supplier.image && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={supplier.image}
+                                alt={supplierName}
+                                className="w-16 h-16 rounded-lg object-cover"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">
+                                  {categoryName}
                                 </p>
-                                {supplierAddons.length > 0 && (
-                                  <p className="text-xs text-gray-500">
-                                    Base: £{(supplier.price || 0).toFixed(2)} + {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
-                                  </p>
-                                )}
-                                
-                                {/* Payment status */}
-                                {!isPaid && (isAccepted || isPending) && (
-                                  <p className="text-xs text-orange-600 mt-1 font-medium">
-                                    Payment pending
-                                  </p>
-                                )}
+                                <h5 className="font-semibold text-gray-900 text-sm truncate">
+                                  {supplierName}
+                                </h5>
                               </div>
+                              {statusBadge}
+                            </div>
+                            
+                            <div className="mt-1">
+                              <p className="text-sm font-bold text-primary-600">
+                                £{totalPrice.toFixed(2)}
+                              </p>
+                              {supplierAddons.length > 0 && (
+                                <p className="text-xs text-gray-500">
+                                  Base: £{(supplier.price || 0).toFixed(2)} + {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
+                                </p>
+                              )}
+                              
+                              {!isPaid && (isAccepted || isPending) && (
+                                <p className="text-xs text-orange-600 mt-1 font-medium">
+                                  Payment pending
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No suppliers added yet
-                  </p>
-                )}
-              </div>
-        
-              {/* Optional: Add link to add more suppliers */}
-              {confirmedSuppliers < totalSlots && (
-                <Button
-                  onClick={() => {
-                    setActiveTab("add")
-                  }}
-                  className="w-full bg-primary-500 hover:bg-primary-600 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add More Suppliers ({totalSlots - confirmedSuppliers} available)
-                </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No suppliers added yet
+                </p>
               )}
             </div>
-          )
+      
+            {confirmedSuppliers < totalSlots && (
+              <Button
+                onClick={() => {
+                  setActiveTab("add")
+                }}
+                className="w-full bg-primary-500 hover:bg-primary-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add More Suppliers ({totalSlots - confirmedSuppliers} available)
+              </Button>
+            )}
+          </div>
+        )
+
       case "timer":
         return (
           <div className="space-y-6">
@@ -560,7 +559,6 @@ const MobileBottomTabBar = ({
                       : "hover:bg-gray-50 active:scale-95"
                   }`}
                 >
-                  {/* Icon with badge */}
                   <div className="relative mb-1">
                     <Icon
                       className={`w-6 h-6 transition-colors duration-200 ${
@@ -569,41 +567,35 @@ const MobileBottomTabBar = ({
                       }`}
                     />
 
-                    {/* Badge for My Plan */}
                     {tab.id === "progress" && (
                       <div className="absolute -top-1 -right-1 bg-primary-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold border border-white">
                         {tab.badge}
                       </div>
                     )}
 
-                    {/* Badge for Add Suppliers */}
-                    {isHighlight && tab.count > 0 && (
+                    {/* {isHighlight && tab.count > 0 && (
                       <div className="absolute -top-1 -right-1 bg-primary-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold border border-white">
                         {tab.count}
                       </div>
-                    )}
+                    )} */}
 
-                    {/* Badge for Party Tools */}
-                    {tab.id === "tools" && (
-                      <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-[8px] rounded-full px-1 py-0.5 flex items-center justify-center font-bold border border-white whitespace-nowrap">
+                    {/* {tab.id === "tools" && (
+                      <div className="absolute -top-2 -right-3 bg-primary-500 text-white text-[8px] rounded-full px-1 py-0.5 flex items-center justify-center font-bold border border-white whitespace-nowrap">
                         {tab.completedCount}/{tab.totalCount}
                       </div>
-                    )}
+                    )} */}
 
-                    {/* Badge for Payment */}
                     {isPayment && tab.count > 1 && (
                       <div className="absolute -top-1 -right-1 bg-white text-teal-600 text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold border border-teal-100">
                         {tab.count}
                       </div>
                     )}
 
-                    {/* Urgent indicator for Timer */}
                     {tab.urgent && timeRemaining > 0 && timeRemaining < 3 && (
                       <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border border-white"></div>
                     )}
                   </div>
 
-                  {/* Label */}
                   <span
                     className={`text-[10px] font-semibold transition-colors duration-200 text-center leading-tight ${
                       isPayment ? "text-white" :
@@ -613,7 +605,6 @@ const MobileBottomTabBar = ({
                     {tab.label}
                   </span>
                   
-                  {/* Subtext or Amount */}
                   {isPayment ? (
                     <span className="text-[9px] text-white font-bold mt-0.5 opacity-90">
                       {tab.amount}
