@@ -673,7 +673,7 @@ export default function LocalStoragePartyHeader({
   // Enhanced save function that properly persists to memory
   const savePartyDetails = (details) => {
     try {
-      const existingDetails = JSON.parse(localStorage.getItem("party_details") || "{}")
+      const existingDetails = JSON.parse(window.inMemoryStorage?.party_details || "{}")
 
       const processedDetails = {
         ...existingDetails,
@@ -702,7 +702,8 @@ export default function LocalStoragePartyHeader({
         (details.location?.match(/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i) ? details.location : existingDetails.postcode)
 
       // Save to memory
-      localStorage.setItem("party_details", JSON.stringify(processedDetails))
+      if (!window.inMemoryStorage) window.inMemoryStorage = {}
+      window.inMemoryStorage.party_details = JSON.stringify(processedDetails)
 
       // Trigger storage event for other components
       window.dispatchEvent(
@@ -918,8 +919,8 @@ export default function LocalStoragePartyHeader({
         <div className="relative px-4 py-4 md:p-10 text-white">
           <div className="md:space-y-6">
             <div className="space-y-2 md:space-y-2">
-              <div className="flex items-start justify-between gap-3">
-                {/* NEW: Add Photo Avatar on Left */}
+              <div className="flex items-start gap-3">
+                {/* Photo Avatar and Name */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   {/* Child Photo Avatar */}
                   <div className="relative flex-shrink-0">
@@ -928,7 +929,7 @@ export default function LocalStoragePartyHeader({
                         <img
                           src={childPhoto}
                           alt={getFirstName()}
-                          className="w-25 h-25 md:w-30 md:h-30 rounded-full object-cover border-4 border-white shadow-lg"
+                          className="w-20 h-20 md:w-30 md:h-30 rounded-full object-cover border-4 border-white shadow-lg"
                         />
                         {uploadingPhoto && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
@@ -944,40 +945,36 @@ export default function LocalStoragePartyHeader({
                       </div>
                     ) : (
                       <div className="relative group">
-                      <div className="w-25 h-25 md:w-30 md:h-30 rounded-full bg-white/30 backdrop-blur-sm border-4 border-white/60 border-dashed shadow-lg flex flex-col items-center justify-center text-3xl md:text-4xl cursor-pointer hover:bg-white/40 transition-all">
-                        {uploadingPhoto ? (
-                          <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <>
-                            {/* <div className="text-2xl md:text-3xl mb-0.5">{getThemeEmoji()}</div> */}
+                        <div className="w-20 h-20 md:w-30 md:h-30 rounded-full bg-white/30 backdrop-blur-sm border-4 border-white/60 border-dashed shadow-lg flex flex-col items-center justify-center text-3xl md:text-4xl cursor-pointer hover:bg-white/40 transition-all">
+                          {uploadingPhoto ? (
+                            <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
                             <div className="text-[9px] md:text-[10px] font-bold text-white/90 leading-none text-center px-1">
                               Upload Photo
                             </div>
-                          </>
+                          )}
+                        </div>
+                        {onPhotoUpload && !uploadingPhoto && (
+                          <label className="absolute inset-0 flex items-center justify-center rounded-full cursor-pointer">
+                            <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                          </label>
                         )}
                       </div>
-                      {onPhotoUpload && !uploadingPhoto && (
-                        <label className="absolute inset-0 flex items-center justify-center rounded-full cursor-pointer">
-                          <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-                        </label>
-                      )}
-                    </div>
                     )}
                   </div>
 
                   {/* Name and Info */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-16 md:pr-0">
                     <h1
                       suppressHydrationWarning={true}
-                      className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
+                      className="text-3xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
                       style={{
                         textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {getFirstName()}'s Big Day
+                      {getFirstName()}'s Party
                     </h1>
 
-                    
                     {!isExpanded && (
                       <div className="md:hidden mt-2">
                         <div className="flex items-center gap-1 text-xs text-white/95 font-medium overflow-hidden">
@@ -995,22 +992,26 @@ export default function LocalStoragePartyHeader({
                   </div>
                 </div>
 
-                {/* Edit buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Edit buttons - positioned absolutely on mobile */}
+                <div className="flex md:relative absolute top-4 right-4 items-center gap-3 flex-shrink-0">
                   <button
                     onClick={() => handleCardClick("name")}
-                    className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                    className="hover:scale-110 transition-transform"
                     aria-label="Edit party name"
                   >
-                    <Edit2 className="w-4 h-4 md:w-5 md:h-5" />
+                    <Edit2 className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" />
                   </button>
 
                   <button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="md:hidden p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all"
+                    className="md:hidden hover:scale-110 transition-transform"
                     aria-label={isExpanded ? "Show less" : "Show more"}
                   >
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    {isExpanded ? (
+                      <ChevronUp className="w-6 h-6 text-white drop-shadow-lg" />
+                    ) : (
+                      <ChevronDown className="w-6 h-6 text-white drop-shadow-lg" />
+                    )}
                   </button>
                 </div>
               </div>

@@ -141,7 +141,7 @@ export default function DatabasePartyHeader({
       className="relative rounded-xl shadow-lg overflow-hidden mb-6 bg-primary-400"
     >
       {/* Notification Icon */}
-      {hasNewMessages && (
+      {/* {hasNewMessages && (
         <div className="absolute top-3 right-3 z-10">
           <ChatNotificationIcon
             unreadCount={unreadCount}
@@ -152,7 +152,7 @@ export default function DatabasePartyHeader({
             className="hover:bg-white/20 rounded-full p-2 transition-colors"
           />
         </div>
-      )}
+      )} */}
 
       {/* Compact Content */}
       <div className="relative px-4 py-4 md:px-6 md:py-5 text-white">

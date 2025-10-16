@@ -937,7 +937,21 @@ const addSuppliersSection = (
   return (
     <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
-
+ 
+      <SupplierAddedConfirmationModal
+        isOpen={showSupplierAddedModal}
+        onClose={handleModalClose}
+        onSendEnquiry={handleModalSendEnquiry}
+        supplier={addedSupplierData?.supplier}
+        selectedPackage={addedSupplierData?.selectedPackage}
+        partyDetails={partyDetails}
+        isSending={sendingEnquiry}
+        currentPhase={currentPhase}
+        partyData={partyData}
+        partyId={partyId}
+        enquiries={enquiries}
+        hasEnquiriesPending={hasEnquiriesPending}
+      />
 
       {notification && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
@@ -965,21 +979,6 @@ const addSuppliersSection = (
       />
       <EnquirySuccessBanner 
         partyId={partyId}
-      />
-      
-      <SupplierAddedConfirmationModal
-        isOpen={showSupplierAddedModal}
-        onClose={handleModalClose}
-        onSendEnquiry={handleModalSendEnquiry}
-        supplier={addedSupplierData?.supplier}
-        selectedPackage={addedSupplierData?.selectedPackage}
-        partyDetails={partyDetails}
-        isSending={sendingEnquiry}
-        currentPhase={currentPhase}
-        partyData={partyData}
-        partyId={partyId}
-        enquiries={enquiries}
-        hasEnquiriesPending={hasEnquiriesPending}
       />
       
       <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">

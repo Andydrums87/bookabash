@@ -278,9 +278,9 @@ export default function EmptySupplierCard({
     return (
       <>
         <Card 
-          className="overflow-hidden bg-gray-300 rounded-xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90 h-56"
+          className="overflow-hidden bg-gray-300 rounded-xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90 h-70"
         >
-          <div className="relative h-36 w-full">
+          <div className="relative h-100 w-full">
             {/* Generic Category Image */}
             <div className="absolute inset-0">
               <Image
@@ -369,7 +369,7 @@ export default function EmptySupplierCard({
       <Card 
         className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90"
       >
-        <div className="relative h-70 w-full">
+        <div className="relative h-62 w-full">
           {/* Generic Category Image */}
           <div className="absolute inset-0">
             <Image

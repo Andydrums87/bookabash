@@ -397,18 +397,19 @@ const isProductInRegistry = (productId) => {
               {/* Search Bar */}
               <div className="flex gap-3 max-w-2xl">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
                   <Input
-                    placeholder="Search for perfect gifts..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="pl-12 h-12 border-2 border-white/30 focus:border-white bg-white/20 backdrop-blur-sm text-white placeholder:text-white/70 rounded-xl"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !isSearching && searchTerm.trim()) {
-                        handleSearchSubmit()
-                      }
-                    }}
-                  />
+  placeholder="Search for perfect gifts..."
+  value={searchTerm}
+  onChange={(e) => handleSearchChange(e.target.value)}
+  className="pl-12 h-12 border-2 border-white/30 focus:border-white bg-white backdrop-blur-sm text-gray-500 placeholder:text-red-500 rounded-xl"
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && !isSearching && searchTerm.trim()) {
+      handleSearchSubmit()
+    }
+  }}
+/>
+
                   
                   {/* Search indicator */}
                   {isSearching && (
@@ -674,7 +675,7 @@ const isProductInRegistry = (productId) => {
               <div className="flex items-center space-x-2 sm:space-x-4">
                 {/* Sort - Mobile Optimized */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-32 sm:w-48 text-xs sm:text-sm">
+                  <SelectTrigger className="w-52 px-2  sm:w-48 text-xs">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>

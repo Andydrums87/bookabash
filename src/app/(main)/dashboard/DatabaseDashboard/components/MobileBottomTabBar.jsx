@@ -7,6 +7,7 @@ import { ClipboardList, Plus, PartyPopper, Clock, X, CreditCard, Mail, Users, Gi
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import DeleteConfirmDialog from "../../components/Dialogs/DeleteConfirmDialog"
 
 const MobileBottomTabBar = ({
   suppliers = {},
@@ -207,20 +208,24 @@ const MobileBottomTabBar = ({
     setActiveTab(null)
   }
 
-  // ✅ NEW: Handle remove supplier with confirmation
   const handleRemoveClick = (type) => {
-    if (supplierToDelete && onRemoveSupplier) {
-      onRemoveSupplier(supplierToDelete)
+    setSupplierToDelete(type) // ✅ Store which supplier to delete
+    setShowDeleteDialog(true) // ✅ Show the dialog
+  }
+  
+  const confirmRemoveSupplier = (type) => {
+    if (onRemoveSupplier) {
+      onRemoveSupplier(type) // ✅ Call parent's remove function
     }
     setShowDeleteDialog(false)
     setSupplierToDelete(null)
   }
-
-
+  
   const cancelRemoveSupplier = () => {
     setShowDeleteDialog(false)
     setSupplierToDelete(null)
   }
+  
 
   const getModalContent = () => {
     switch (activeTab) {
@@ -238,6 +243,7 @@ const MobileBottomTabBar = ({
       case "tools":
         return (
           <div className="space-y-4">
+            
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <PartyPopper className="w-8 h-8 text-primary-600" />
@@ -611,7 +617,14 @@ const MobileBottomTabBar = ({
 
   return (
     <>
+        <DeleteConfirmDialog
+      isOpen={showDeleteDialog}
+      supplierType={supplierToDelete}
+      onConfirm={confirmRemoveSupplier}
+      onCancel={cancelRemoveSupplier}
+    />
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-lg">
+    
         <div className="px-2 py-2 safe-area-pb">
           <div className="flex justify-around items-center max-w-md mx-auto gap-1">
             {tabs.map((tab) => {

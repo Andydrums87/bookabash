@@ -1366,11 +1366,11 @@ const handleChildPhotoUpload = async (file) => {
                   </div>
                  
                 </div>
-     
+{/*      
                 <Button onClick={handleAddSupplier} variant="outline" className="flex gap-2 text-primary border-primary hover:bg-primary/10">
                   <Plus className="w-4 h-4" />
                   Add Supplier
-                </Button>
+                </Button> */}
               </div>
 
 {/* Supplier Grid */}
@@ -1401,13 +1401,7 @@ const handleChildPhotoUpload = async (file) => {
   const hasCarouselOptions = venueCarouselOptions && Array.isArray(venueCarouselOptions) && venueCarouselOptions.length > 0;
   const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
   
-  console.log('🏛️ VENUE RENDERING DECISION:', {
-    hasSelectedVenue,
-    hasCarouselOptions,
-    carouselOptionsLength: venueCarouselOptions?.length,
-    userHasOwnVenue,
-    selectedVenueName: suppliers.venue?.name
-  });
+
   
   // ✅ PRIORITY CHECK: If user has own venue AND hasn't selected one yet, show empty card
   if (userHasOwnVenue && !hasSelectedVenue) {

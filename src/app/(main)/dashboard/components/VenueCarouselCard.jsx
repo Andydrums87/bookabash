@@ -6,9 +6,15 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Check, MapPin, Users, Star, X, Gift, ChevronDown, ChevronUp,  Eye } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check, MapPin, Users, Star, X, Gift, ChevronDown, ChevronUp, Eye, MoreVertical, Trash2 } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import AddonSelectionModal from "@/components/supplier/addon-selection-modal"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function VenueCarouselCard({
   venues = [],
@@ -28,6 +34,7 @@ export default function VenueCarouselCard({
   const [touchEnd, setTouchEnd] = useState(0)
   const [showAddons, setShowAddons] = useState(false)
   const [showAddonModal, setShowAddonModal] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const cardRef = useRef(null)
 
   // Initialize with selected venue
@@ -187,6 +194,12 @@ export default function VenueCarouselCard({
     }
   }
 
+  const handleViewDetails = () => {
+    if (currentVenue?.id) {
+      router.push(`/supplier/${currentVenue.id}?from=dashboard`)
+    }
+  }
+
   if (!venues || venues.length === 0) {
     return (
       <Card className="overflow-hidden rounded-2xl border-2 border-white shadow-xl">
@@ -196,8 +209,6 @@ export default function VenueCarouselCard({
       </Card>
     )
   }
-
-  console.log(currentVenue.image)
 
   return (
     <Card 
@@ -249,16 +260,49 @@ export default function VenueCarouselCard({
             )}
           </div>
 
-          {/* Delete button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteSupplier(type)
-            }}
-            className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Three-dots menu */}
+          <DropdownMenu open={showMenu} onOpenChange={setShowMenu}>
+            <DropdownMenuTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowMenu(!showMenu)
+                }}
+                className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full text-white flex items-center justify-center transition-all duration-200 shadow-lg z-30"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-48 bg-white shadow-xl border border-gray-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleViewDetails()
+                  setShowMenu(false)
+                }}
+                className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+              >
+                <Eye className="w-4 h-4" />
+                <span>View Details</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteSupplier(type)
+                  setShowMenu(false)
+                }}
+                className="flex items-center gap-2 cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Remove</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Venue info overlay */}
@@ -423,45 +467,29 @@ export default function VenueCarouselCard({
           </button>
         </div>
 
-        {/* View Details button */}
-        <div className="flex gap-2">
-          {/* Select button */}
-          <Button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleSelectVenue()
-            }}
-            className={`flex-1 shadow-lg transition-all ${
-              isCurrentSelected 
-                ? 'bg-primary-400 hover:bg-teal-600 text-white cursor-default'
-                : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white'
-            }`}
-            disabled={isLoading || isCurrentSelected}
-            size="lg"
-          >
-            {isCurrentSelected ? (
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5" />
-                <span>Selected</span>
-              </div>
-            ) : (
-              isLoading ? 'Selecting...' : 'Select Venue'
-            )}
-          </Button>
-          <Button
-  onClick={(e) => {
-    e.stopPropagation()
-    if (currentVenue?.id) {
-      router.push(`/supplier/${currentVenue.id}?from=dashboard`)
-    }
-  }}
-  variant="outline"
-  className="w-10 flex items-center justify-center shadow-lg border-2 border-gray-200 hover:border-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-50))]"
-  size="lg"
->
-  <Eye className="w-5 h-5 text-primary-500" />
-</Button>
-        </div>
+        {/* Select button - full width */}
+        <Button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleSelectVenue()
+          }}
+          className={`w-full shadow-lg transition-all ${
+            isCurrentSelected 
+              ? 'bg-primary-400 hover:bg-teal-600 text-white cursor-default'
+              : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white'
+          }`}
+          disabled={isLoading || isCurrentSelected}
+          size="lg"
+        >
+          {isCurrentSelected ? (
+            <div className="flex items-center gap-2">
+              <Check className="w-5 h-5" />
+              <span>Selected</span>
+            </div>
+          ) : (
+            isLoading ? 'Selecting...' : 'Select Venue'
+          )}
+        </Button>
       </div>
 
       {/* ✅ Addon Selection Modal */}
