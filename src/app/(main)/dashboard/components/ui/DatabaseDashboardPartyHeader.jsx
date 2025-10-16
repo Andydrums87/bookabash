@@ -1,7 +1,8 @@
-// DatabasePartyHeader.jsx - Updated with notification icon
+// DatabasePartyHeader.jsx - COMPACT VERSION WITH KEY INFO
 "use client"
 
 import { Badge } from "@/components/ui/badge"
+import { Calendar, Clock } from "lucide-react"
 import ChatNotificationIcon from "../../DatabaseDashboard/components/ChatNotificationIcon";
 
 export default function DatabasePartyHeader({ 
@@ -11,10 +12,14 @@ export default function DatabasePartyHeader({
   dataSource = 'database',
   isSignedIn = true,
   enquiries = [],
-  // NEW: Notification props
+  // Notification props
   unreadCount = 0,
   hasNewMessages = false,
-  onNotificationClick
+  onNotificationClick,
+  // ✅ Photo props
+  childPhoto = null, // URL to child's photo
+  onPhotoUpload = null, // Callback when photo is uploaded
+  uploadingPhoto = false, // ✅ NEW: Loading state
 }) {
   
   const currentTheme = theme;
@@ -56,16 +61,74 @@ export default function DatabasePartyHeader({
     return "Emma";
   };
 
+  // Format party date
+  const getFormattedDate = () => {
+    if (!partyDetails?.date) return null;
+    
+    const date = new Date(partyDetails.date);
+    const options = { weekday: 'long', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  // Calculate days until party
+  const getDaysUntil = () => {
+    if (!partyDetails?.date) return null;
+    
+    const partyDate = new Date(partyDetails.date);
+    const today = new Date();
+    const diffTime = partyDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return "Past";
+    if (diffDays === 0) return "Today!";
+    if (diffDays === 1) return "Tomorrow!";
+    return `${diffDays} days away`;
+  };
+
+  // Get theme emoji
+  const getThemeEmoji = () => {
+    if (!currentTheme) return "🎉";
+    
+    const themeEmojis = {
+      'superhero': '🦸',
+      'princess': '👸',
+      'pirate': '🏴‍☠️',
+      'dinosaur': '🦕',
+      'unicorn': '🦄',
+      'space': '🚀',
+      'mermaid': '🧜‍♀️',
+      'football': '⚽',
+      'animal': '🦁',
+      'construction': '🚧',
+      'tea party': '🫖',
+      'science': '🔬',
+    };
+    
+    return themeEmojis[currentTheme.toLowerCase()] || '🎉';
+  };
+
   if (!partyDetails) {
     return (
-      <div className="h-48 bg-primary-50 rounded-2xl animate-pulse flex items-center justify-center">
+      <div className="h-24 bg-primary-50 rounded-xl animate-pulse flex items-center justify-center mb-6">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Loading your party...</p>
+          <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+          <p className="text-sm">Loading...</p>
         </div>
       </div>
     );
   }
+
+  const formattedDate = getFormattedDate();
+  const daysUntil = getDaysUntil();
+  const firstName = getFirstName();
+
+  // ✅ Handle photo upload
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onPhotoUpload) {
+      onPhotoUpload(file);
+    }
+  };
 
   return (
     <div 
@@ -75,31 +138,11 @@ export default function DatabasePartyHeader({
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
       }} 
-      className="relative rounded-2xl shadow-2xl overflow-hidden mb-6 bg-primary-400"
+      className="relative rounded-xl shadow-lg overflow-hidden mb-6 bg-primary-400"
     >
-      {/* Decorative elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-4 left-6 w-12 h-12 md:w-16 md:h-16 bg-white rounded-full animate-pulse"></div>
-        <div
-          className="absolute top-8 right-8 w-6 h-6 md:w-8 md:h-8 bg-white rounded-full animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute bottom-6 left-12 w-8 h-8 md:w-12 md:h-12 bg-white rounded-full animate-pulse"
-          style={{ animationDelay: "2s" }}
-        ></div>
-        <div
-          className="absolute bottom-12 right-6 w-4 h-4 md:w-6 md:h-6 bg-white rounded-full animate-pulse"
-          style={{ animationDelay: "0.5s" }}
-        ></div>
-      </div>
-
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
-
-      {/* NEW: Notification Icon - positioned in top right */}
+      {/* Notification Icon */}
       {hasNewMessages && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-3 right-3 z-10">
           <ChatNotificationIcon
             unreadCount={unreadCount}
             hasNewMessages={hasNewMessages}
@@ -111,27 +154,78 @@ export default function DatabasePartyHeader({
         </div>
       )}
 
-      {/* Clean, simple content */}
-      <div className="relative px-6 py-8 md:p-10 text-white">
-        <div className="space-y-4">
-          {/* Party Title - Clean and prominent */}
-          <div className="space-y-3">
-            <h1
-              suppressHydrationWarning={true}
-              className="text-5xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight text-center md:text-left"
-              style={{
-                textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
-              }}
-            >
-              <span className="md:hidden">{getFirstName()}'s</span>
-              <span className="hidden md:inline">{getFullName()}'s</span>
-              <br />
-              <span className="text-4xl md:text-5xl">Big Day!</span>
-            </h1>
-            {/* <p className="hidden text-lg md:text-2xl text-white/95 drop-shadow-lg font-medium leading-relaxed text-center md:text-left">
-              {currentTheme?.description || `An amazing ${currentTheme} celebration`}
-            </p> */}
+      {/* Compact Content */}
+      <div className="relative px-4 py-4 md:px-6 md:py-5 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          {/* Party Name & Theme with Photo */}
+          <div className="flex items-center gap-3">
+            {/* ✅ Child Photo Avatar */}
+            <div className="relative flex-shrink-0">
+              {childPhoto ? (
+                <div className="relative group">
+                  <img
+                    src={childPhoto}
+                    alt={firstName}
+                    className="w-25 h-25 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                  {onPhotoUpload && (
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <span className="text-white text-xs font-semibold">Change</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <div className="relative group">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/50 shadow-lg flex items-center justify-center text-3xl md:text-4xl">
+                    {getThemeEmoji()}
+                  </div>
+                  {onPhotoUpload && (
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <span className="text-white text-xs font-semibold">Add Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Text Content */}
+            <div>
+              <h1 className="text-3xl md:text-6xl font-bold text-white drop-shadow-lg leading-tight capitalize">
+                <span className="md:hidden">{firstName}'s</span>
+                <span className="hidden md:inline">{getFullName()}'s</span>
+                {' '}
+                {currentTheme} Party
+              </h1>
+              {formattedDate && (
+                <p className="text-sm md:text-base text-white/90 font-medium flex items-center gap-2 mt-1">
+                  <Calendar className="w-4 h-4" />
+                  {formattedDate}
+                </p>
+              )}
+            </div>
           </div>
+
+          {/* Countdown Badge */}
+          {daysUntil && (
+            <div className="hidden md:absolute top-4 right-4">
+              <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-sm md:text-base px-3 py-1.5 font-semibold whitespace-nowrap">
+                <Clock className="w-4 h-4 mr-1.5" />
+                {daysUntil}
+              </Badge>
+            </div>
+          )}
         </div>
       </div>
 

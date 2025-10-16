@@ -124,6 +124,9 @@ export default function LocalStorageDashboard() {
     filters: {
     },
   })
+
+  const [uploadingChildPhoto, setUploadingChildPhoto] = useState(false)
+const childPhotoRef = useRef(null)
   // Debug state (remove in production)
   const [debugInfo, setDebugInfo] = useState({})
 
@@ -1263,7 +1266,53 @@ const handleCustomizeSupplier = (type, supplier) => {
   // OR: Open a customization modal
   // setShowCustomizeModal(true)
   // setCustomizeSupplierData({ type, supplier })
+
+
 }
+
+// Add this handler function with your other event handlers:
+const handleChildPhotoUpload = async (file) => {
+  if (!file) return;
+
+  console.log('📷 Uploading child photo...');
+  setUploadingChildPhoto(true);
+
+  try {
+    // Upload to Cloudinary
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'portfolio_images');
+    
+    const response = await fetch('https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+    
+    const cloudinaryData = await response.json();
+    const photoUrl = cloudinaryData.secure_url;
+    console.log('✅ Child photo uploaded:', photoUrl);
+    
+    // Save to localStorage using handlePartyDetailsUpdate
+    await handlePartyDetailsUpdate({
+      childPhoto: photoUrl
+    });
+    
+    console.log('✅ Photo saved to localStorage');
+    
+  } catch (error) {
+    console.error('❌ Child photo upload failed:', error);
+    alert(`Failed to upload photo: ${error.message}`);
+  } finally {
+    setUploadingChildPhoto(false);
+    if (childPhotoRef.current) {
+      childPhotoRef.current.value = '';
+    }
+  }
+};
 
   return (
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
@@ -1286,6 +1335,10 @@ const handleCustomizeSupplier = (type, supplier) => {
   onPartyDetailsChange={handlePartyDetailsUpdate}
   suppliers={suppliers}
   onPartyRebuilt={handlePartyRebuilt}
+
+  childPhoto={partyDetails?.childPhoto} // ✅ ADD THIS
+  onPhotoUpload={handleChildPhotoUpload} // ✅ ADD THIS
+  uploadingPhoto={uploadingChildPhoto} // ✅ ADD THIS
 />
            
           </div>
@@ -1339,15 +1392,21 @@ const handleCustomizeSupplier = (type, supplier) => {
                   ) : (
                     <>
                     {/* VENUE CARD */}
+  
+
+{/* VENUE CARD */}
 {(() => {
   const hasSelectedVenue = !!suppliers.venue;
-  const hasCarouselOptions = venueCarouselOptions && venueCarouselOptions.length > 0;
+  // ✅ MORE DEFENSIVE: Check if carousel options exist AND have length > 0
+  const hasCarouselOptions = venueCarouselOptions && Array.isArray(venueCarouselOptions) && venueCarouselOptions.length > 0;
   const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
   
-  console.log('🏛️ Venue rendering decision:', {
+  console.log('🏛️ VENUE RENDERING DECISION:', {
     hasSelectedVenue,
     hasCarouselOptions,
-    userHasOwnVenue
+    carouselOptionsLength: venueCarouselOptions?.length,
+    userHasOwnVenue,
+    selectedVenueName: suppliers.venue?.name
   });
   
   // ✅ PRIORITY CHECK: If user has own venue AND hasn't selected one yet, show empty card
@@ -1383,15 +1442,43 @@ const handleCustomizeSupplier = (type, supplier) => {
         recommendedSupplier={getRecommendedSupplierForType('venue')}
         onAddSupplier={handleAddRecommendedSupplier}
         enhancedPricing={null}
-        onCustomize={handleCustomizeSupplier} // ✅ Add this
-
+        onCustomize={handleCustomizeSupplier}
       />
     );
   }
   
-  // ✅ If user doesn't have own venue OR has selected a venue, show carousel
-  if (hasCarouselOptions) {
-    console.log('✅ Showing venue carousel');
+  // ✅ KEY FIX: If NO selected venue, show empty card (ignore carousel options)
+  if (!hasSelectedVenue) {
+    console.log('✅ No selected venue - showing EmptySupplierCard with generic image');
+    return (
+      <SupplierCard 
+        key="venue"
+        type="venue" 
+        supplier={null}
+        loadingCards={loadingCards}
+        suppliersToDelete={suppliersToDelete}
+        openSupplierModal={openSupplierModal}
+        handleDeleteSupplier={handleDeleteSupplier}
+        getSupplierDisplayName={getSupplierDisplayName}
+        addons={[]}
+        handleRemoveAddon={handleRemoveAddon}
+        enquiryStatus={null}
+        enquirySentAt={null}
+        isSignedIn={false}
+        isPaymentConfirmed={false}
+        enquiries={[]}
+        partyDetails={partyDetails}
+        currentPhase="planning"
+        recommendedSupplier={getRecommendedSupplierForType('venue')}
+        onAddSupplier={handleAddRecommendedSupplier}
+        enhancedPricing={null}
+      />
+    );
+  }
+  
+  // ✅ If venue IS selected AND there are carousel options, show carousel
+  if (hasSelectedVenue && hasCarouselOptions) {
+    console.log('✅ Has selected venue + carousel options - showing VenueCarouselCard');
     return (
       <VenueCarouselCard
         type="venue"
@@ -1415,8 +1502,8 @@ const handleCustomizeSupplier = (type, supplier) => {
     );
   }
   
-  // ✅ Fallback: Show empty card if no carousel options
-  console.log('✅ No carousel options - showing EmptySupplierCard');
+  // ✅ Fallback: Selected venue but no carousel - show empty card
+  console.log('✅ Fallback - showing EmptySupplierCard');
   return (
     <SupplierCard 
       key="venue"

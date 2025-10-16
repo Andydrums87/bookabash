@@ -41,7 +41,6 @@ const ThemeEditModal = ({ isOpen, onClose, currentTheme, onSave }) => {
             />
           </div>
 
-          {/* Preview of selected theme */}
           <div className="bg-primary-50 rounded-lg p-4 border border-primary-200">
             <div className="text-sm text-gray-600 mb-1">Selected Theme:</div>
             <div className="font-bold text-lg text-primary-700 capitalize">{theme.replace(/-/g, " ")}</div>
@@ -190,7 +189,6 @@ const formatTimeRangeFromDatabase = (startTime, endTime, fallbackDuration = 2) =
 
 // Name Edit Modal
 const NameEditModal = ({ isOpen, onClose, currentName, onSave }) => {
-  // Initialize names from current name
   const initializeNames = () => {
     if (!currentName) return { firstName: "", lastName: "" }
     const nameParts = currentName.trim().split(" ")
@@ -604,14 +602,47 @@ export default function LocalStoragePartyHeader({
   suppliers = {},
   partyId = null,
   onPartyRebuilt = null,
+  childPhoto = null,
+  onPhotoUpload = null,
+  uploadingPhoto = false,
 }) {
   const [editingModal, setEditingModal] = useState(null)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [pendingChanges, setPendingChanges] = useState(null)
-  const [isExpanded, setIsExpanded] = useState(false) // ✅ NEW: Collapse state
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const currentTheme = theme
   const { toast } = useToast()
+
+  // Get theme emoji helper
+  const getThemeEmoji = () => {
+    if (!theme) return "🎉"
+
+    const themeEmojis = {
+      superhero: "🦸",
+      princess: "👸",
+      pirate: "🏴‍☠️",
+      dinosaur: "🦕",
+      unicorn: "🦄",
+      space: "🚀",
+      mermaid: "🧜‍♀️",
+      football: "⚽",
+      animal: "🦁",
+      construction: "🚧",
+      "tea party": "🫖",
+      science: "🔬",
+    }
+
+    return themeEmojis[theme.toLowerCase()] || "🎉"
+  }
+
+  // Photo upload handler
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (file && onPhotoUpload) {
+      await onPhotoUpload(file)
+    }
+  }
 
   // Helper functions
   const getFullName = () => {
@@ -639,7 +670,7 @@ export default function LocalStoragePartyHeader({
     return "Emma"
   }
 
-  // Enhanced save function that properly persists to localStorage
+  // Enhanced save function that properly persists to memory
   const savePartyDetails = (details) => {
     try {
       const existingDetails = JSON.parse(localStorage.getItem("party_details") || "{}")
@@ -651,7 +682,6 @@ export default function LocalStoragePartyHeader({
 
       // Handle date formatting and persistence
       if (details.date) {
-        // Store both the Date object and formatted display
         processedDetails.date = details.date
         processedDetails.displayDate = formatDateForDisplay(details.date)
       }
@@ -671,7 +701,7 @@ export default function LocalStoragePartyHeader({
         details.postcode ||
         (details.location?.match(/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i) ? details.location : existingDetails.postcode)
 
-      // Save to localStorage
+      // Save to memory
       localStorage.setItem("party_details", JSON.stringify(processedDetails))
 
       // Trigger storage event for other components
@@ -723,7 +753,6 @@ export default function LocalStoragePartyHeader({
 
   // Enhanced save handler with availability check
   const handleSavePartyDetails = (updatedDetails) => {
-    // Check if availability check is needed
     if (requiresAvailabilityCheck(updatedDetails)) {
       console.log("Changes require availability check, showing modal...")
 
@@ -796,7 +825,7 @@ export default function LocalStoragePartyHeader({
 
   // Handle card click
   const handleCardClick = (cardType) => {
-    console.log("Card clicked:", cardType) // Debug log
+    console.log("Card clicked:", cardType)
     setEditingModal(cardType)
   }
 
@@ -810,11 +839,10 @@ export default function LocalStoragePartyHeader({
     const fullDate = partyDetails?.displayDate || formatDateForDisplay(partyDetails?.date) || "14th June, 2025"
 
     if (short) {
-      // Convert "22nd November, 2025" to "22 Nov"
       const parts = fullDate.split(" ")
       if (parts.length >= 2) {
-        const day = parts[0] // "22nd"
-        const month = parts[1].replace(",", "").substring(0, 3) // "Nov"
+        const day = parts[0]
+        const month = parts[1].replace(",", "").substring(0, 3)
         return `${day} ${month}`
       }
     }
@@ -826,14 +854,6 @@ export default function LocalStoragePartyHeader({
     const storedTimeRange = partyDetails?.displayTimeRange
     const calculatedTimeRange = formatTimeRangeFromDatabase(partyDetails?.startTime, null, partyDetails?.duration)
     const fallback = "2pm - 4pm"
-
-    console.log("getDisplayTimeRange debug:", {
-      partyDetailsStartTime: partyDetails?.startTime,
-      partyDetailsDuration: partyDetails?.duration,
-      storedDisplayTimeRange: storedTimeRange,
-      calculatedTimeRange,
-      willReturn: storedTimeRange || calculatedTimeRange || fallback,
-    })
 
     return storedTimeRange || calculatedTimeRange || fallback
   }
@@ -852,7 +872,6 @@ export default function LocalStoragePartyHeader({
 
   const displayDate = getDisplayDate()
   const displayTimeRange = getDisplayTimeRange()
-
   const capitalizedTheme = currentTheme?.charAt(0).toUpperCase() + currentTheme?.slice(1)
 
   if (!partyDetails) {
@@ -897,37 +916,86 @@ export default function LocalStoragePartyHeader({
         <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
 
         <div className="relative px-4 py-4 md:p-10 text-white">
-          <div className="space-y-3 md:space-y-6">
+          <div className="md:space-y-6">
             <div className="space-y-2 md:space-y-2">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <h1
-                    suppressHydrationWarning={true}
-                    className="text-2xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
-                    style={{
-                      textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    {getFirstName()}'s Big Day
-                  </h1>
-
-                  {!isExpanded && (
-                    <div className="md:hidden mt-2 space-y-1.5">
-                      <div className="flex items-center gap-2 text-sm text-white/95 font-medium">
-                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                        <span>{getDisplayDate(true)}</span>
-                        <span className="text-white/60">•</span>
-                        <Clock className="w-4 h-4 flex-shrink-0" />
-                        <span>{displayTimeRange.split(" - ")[0]}</span>
+                {/* NEW: Add Photo Avatar on Left */}
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  {/* Child Photo Avatar */}
+                  <div className="relative flex-shrink-0">
+                    {childPhoto ? (
+                      <div className="relative group">
+                        <img
+                          src={childPhoto}
+                          alt={getFirstName()}
+                          className="w-25 h-25 md:w-30 md:h-30 rounded-full object-cover border-4 border-white shadow-lg"
+                        />
+                        {uploadingPhoto && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+                            <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                        {onPhotoUpload && !uploadingPhoto && (
+                          <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                            <span className="text-white text-xs font-semibold">Change</span>
+                            <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                          </label>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-white/90">
-                        <Sparkles className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{capitalizedTheme} Party</span>
+                    ) : (
+                      <div className="relative group">
+                      <div className="w-25 h-25 md:w-30 md:h-30 rounded-full bg-white/30 backdrop-blur-sm border-4 border-white/60 border-dashed shadow-lg flex flex-col items-center justify-center text-3xl md:text-4xl cursor-pointer hover:bg-white/40 transition-all">
+                        {uploadingPhoto ? (
+                          <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <>
+                            {/* <div className="text-2xl md:text-3xl mb-0.5">{getThemeEmoji()}</div> */}
+                            <div className="text-[9px] md:text-[10px] font-bold text-white/90 leading-none text-center px-1">
+                              Upload Photo
+                            </div>
+                          </>
+                        )}
                       </div>
+                      {onPhotoUpload && !uploadingPhoto && (
+                        <label className="absolute inset-0 flex items-center justify-center rounded-full cursor-pointer">
+                          <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                        </label>
+                      )}
                     </div>
-                  )}
+                    )}
+                  </div>
+
+                  {/* Name and Info */}
+                  <div className="flex-1 min-w-0">
+                    <h1
+                      suppressHydrationWarning={true}
+                      className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
+                      style={{
+                        textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      {getFirstName()}'s Big Day
+                    </h1>
+
+                    
+                    {!isExpanded && (
+                      <div className="md:hidden mt-2">
+                        <div className="flex items-center gap-1 text-xs text-white/95 font-medium overflow-hidden">
+                          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="whitespace-nowrap">{getDisplayDate(true)}</span>
+                          <span className="text-white/60 flex-shrink-0">•</span>
+                          <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="whitespace-nowrap">{displayTimeRange.split(" - ")[0]}</span>
+                          <span className="text-white/60 flex-shrink-0">•</span>
+                          <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="truncate min-w-0">{capitalizedTheme}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {/* Edit buttons */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleCardClick("name")}
@@ -948,13 +1016,13 @@ export default function LocalStoragePartyHeader({
               </div>
             </div>
 
+            {/* Mobile: Expandable Grid */}
             <div
               className={`md:hidden transition-all duration-300 ease-in-out ${
                 isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
               }`}
             >
               <div className="grid grid-cols-2 gap-2.5 pt-1">
-                {/* Theme Card */}
                 <button
                   onClick={() => handleCardClick("theme")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -968,7 +1036,6 @@ export default function LocalStoragePartyHeader({
                   </p>
                 </button>
 
-                {/* Date Card */}
                 <button
                   onClick={() => handleCardClick("date")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -982,7 +1049,6 @@ export default function LocalStoragePartyHeader({
                   </p>
                 </button>
 
-                {/* Time Card */}
                 <button
                   onClick={() => handleCardClick("time")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -996,7 +1062,6 @@ export default function LocalStoragePartyHeader({
                   </p>
                 </button>
 
-                {/* Age Card */}
                 <button
                   onClick={() => handleCardClick("age")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -1010,7 +1075,6 @@ export default function LocalStoragePartyHeader({
                   </p>
                 </button>
 
-                {/* Guests Card */}
                 <button
                   onClick={() => handleCardClick("guests")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -1024,7 +1088,6 @@ export default function LocalStoragePartyHeader({
                   </p>
                 </button>
 
-                {/* Location Card */}
                 <button
                   onClick={() => handleCardClick("location")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -1042,7 +1105,6 @@ export default function LocalStoragePartyHeader({
 
             {/* Desktop: Grid Layout - Always Visible */}
             <div className="hidden md:grid md:grid-cols-6 gap-4">
-              {/* Theme Card */}
               <button
                 onClick={() => handleCardClick("theme")}
                 className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
@@ -1200,7 +1262,7 @@ export default function LocalStoragePartyHeader({
         currentLocation={partyDetails?.location}
         onSave={handleModalEditSave}
       />
-      {/* Add Theme Edit Modal */}
+
       <ThemeEditModal
         isOpen={editingModal === "theme"}
         onClose={() => setEditingModal(null)}

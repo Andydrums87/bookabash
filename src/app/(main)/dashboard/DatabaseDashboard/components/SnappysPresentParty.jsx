@@ -92,7 +92,7 @@ export default function SnappysPresentParty({
     const circumference = radius * 2 * Math.PI
     const strokeDasharray = circumference
     const strokeDashoffset = circumference - (percentage / 100) * circumference
-
+  
     return (
       <div className="relative" style={{ width: size, height: size }}>
         <svg className="transform -rotate-90" width={size} height={size}>
@@ -108,7 +108,7 @@ export default function SnappysPresentParty({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={isPaymentComplete ? "#10b981" : "white"}
+            stroke="#14b8a6" // teal color
             strokeWidth={strokeWidth}
             fill="transparent"
             strokeDasharray={strokeDasharray}
@@ -121,11 +121,14 @@ export default function SnappysPresentParty({
           <div className="text-white text-lg font-bold">
             {confirmedCount}/{totalSuppliers}
           </div>
-          <div className="text-white/80 text-xs">{Math.round(progressPercentage)}%</div>
+          <div className="text-white text-xs">
+            {Math.round(progressPercentage)}%
+          </div>
         </div>
       </div>
     )
   }
+  
 
   return (
     <div className="relative w-full bg-primary-400 rounded-xl shadow-sm overflow-hidden p-6">
@@ -183,7 +186,7 @@ export default function SnappysPresentParty({
         {allConfirmed && (
           <div className="mt-6">
             {isPaymentComplete ? (
-              <div className="w-full bg-emerald-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2">
+              <div className="w-full bg-teal-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2">
                 <CheckCircle className="w-4 h-4" />
                 Party Secured & Paid
                 <Sparkles className="w-4 h-4" />
@@ -209,7 +212,7 @@ export default function SnappysPresentParty({
                 {/* Main payment button - enhanced for multiple suppliers */}
                 <Button
                   onClick={onPaymentReady}
-                  className={`w-full h-14 bg-white text-primary-600 hover:bg-white/90 font-bold text-lg rounded-xl shadow-xl transform hover:scale-105 transition-all duration-200 ${
+                  className={`w-full h-14 animate-pulse bg-teal-400 text-white hover:bg-teal-500 font-bold text-lg rounded-xl shadow-xl transform hover:scale-105 transition-all duration-200 ${
                     pulsePayment ? 'animate-pulse' : ''
                   }`}
                 >

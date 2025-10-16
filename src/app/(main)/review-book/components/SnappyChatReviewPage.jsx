@@ -110,6 +110,7 @@ export default function SnappyChatReviewPage() {
       sensoryFriendly: false,
     },
     additionalMessage: "",
+    childPhot: "",
   });
 
   const { navigateWithContext } = useContextualNavigation();
@@ -191,6 +192,7 @@ export default function SnappyChatReviewPage() {
   const loadPartyDataFromLocalStorage = () => {
     try {
       const details = JSON.parse(localStorage.getItem("party_details") || "{}");
+      console.log('party_details from localStorage:', details);
       
       const formatDateForDisplay = (dateInput) => {
         if (!dateInput) return "TBD";
@@ -253,7 +255,9 @@ export default function SnappyChatReviewPage() {
         rawStartTime: details.startTime,
         startTime: details.startTime,
         duration: details.duration,
-        postcode: details.postcode
+        postcode: details.postcode,
+        childPhoto: details.childPhoto || null
+
       });
 
       const partyPlan = JSON.parse(localStorage.getItem("user_party_plan") || "{}");
@@ -366,6 +370,7 @@ export default function SnappyChatReviewPage() {
             addressLine2: result.user.address_line_2 || prev.addressLine2,
             city: result.user.city || prev.city,
             postcode: result.user.postcode || prev.postcode,
+           
           }));
         } else {
           setFormData((prev) => ({
@@ -439,6 +444,7 @@ export default function SnappyChatReviewPage() {
         addressLine2: formData.addressLine2 || "",
         city: formData.city,
         postcode: formData.postcode,
+        child_photo: partyDetailsLS.childPhoto || null
       });
 
       if (!userResult.success) {
@@ -504,6 +510,7 @@ export default function SnappyChatReviewPage() {
         childName: partyDetailsLS.childName || "Your Child",
         childAge: parseInt(partyDetailsLS.childAge) || 6,
         date: partyDetailsLS.date || new Date().toISOString().split("T")[0],
+        childPhoto: partyDetailsLS.childPhoto || null,
         time: timeData.time,
         startTime: timeData.startTime,
         start_time: timeData.startTime,

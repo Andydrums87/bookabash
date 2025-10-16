@@ -46,6 +46,7 @@ class PartyDatabaseBackend {
         address_line_1: userData.addressLine1 || existingUser.address_line_1,
         address_line_2: userData.addressLine2 || existingUser.address_line_2,
         city: userData.city || existingUser.city,
+        child_photo: userData.child_photo || existingUser.child_photo, // Changed from childPhoto to child_photo
           updated_at: new Date().toISOString()
         }
         
@@ -74,7 +75,8 @@ class PartyDatabaseBackend {
       // NEW: Address fields for new users
       address_line_1: userData.addressLine1 || '',
       address_line_2: userData.addressLine2 || '',
-      city: userData.city || ''
+      city: userData.city || '',
+      child_photo: userData.child_photo || null, // Changed from childPhoto to child_photo
       }
       
 
@@ -186,6 +188,7 @@ class PartyDatabaseBackend {
         guest_count: partyDetails.guestCount,
         location: partyDetails.location,
         postcode: partyDetails.postcode,
+        child_photo: partyDetails.childPhoto, 
         
         // NEW: Delivery address fields
         delivery_address_line_1: partyDetails.deliveryAddressLine1,

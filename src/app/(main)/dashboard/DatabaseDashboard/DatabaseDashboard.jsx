@@ -47,6 +47,7 @@ import { AddSuppliersSection } from "./components/PartyJourney/AddSuppliersSecti
 
 
 
+
 // ADD: Unified pricing helper function (same as LocalStorageDashboard)
 const getSupplierDisplayPricing = (supplier, partyDetails, supplierAddons = []) => {
   if (!supplier) return null;
@@ -101,6 +102,8 @@ const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
 const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
 const [loadingCards, setLoadingCards] = useState([])
 const [activeBottomTabModal, setActiveBottomTabModal] = useState(null)
+const [uploadingChildPhoto, setUploadingChildPhoto] = useState(false)
+const childPhotoRef = useRef(null)
   const welcomePopupShownRef = useRef(false)
 
   // MAIN PARTY DATA HOOK - This now handles ALL loading
@@ -820,6 +823,70 @@ const handleAddRecommendedSupplier = async (categoryType, supplier) => {
   }
 }
 
+const handleChildPhotoUpload = async (file) => {
+  if (!file) return;
+
+  console.log('📷 Uploading child photo...');
+  setUploadingChildPhoto(true);
+
+  try {
+    // Upload to Cloudinary (same as your profile photo)
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'portfolio_images');
+    
+    const response = await fetch('https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+    
+    const cloudinaryData = await response.json();
+    const photoUrl = cloudinaryData.secure_url;
+    console.log('✅ Child photo uploaded:', photoUrl);
+    
+    // ✅ For database users: Save to Supabase
+    if (partyId && user) {
+      const { data, error } = await supabase
+        .from('parties')
+        .update({ child_photo: photoUrl })
+        .eq('id', partyId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Database update failed: ${error.message}`);
+      }
+      
+      console.log('✅ Photo saved to database');
+      
+      // Refresh party data to show the new photo
+      await refreshPartyData();
+    } 
+    // ✅ For localStorage users: Use handlePartyDetailsUpdate
+    else {
+      await handlePartyDetailsUpdate({
+        childPhoto: photoUrl
+      });
+      
+      console.log('✅ Photo saved to localStorage');
+    }
+    
+  } catch (error) {
+    console.error('❌ Child photo upload failed:', error);
+    alert(`Failed to upload photo: ${error.message}`);
+  } finally {
+    setUploadingChildPhoto(false);
+    if (childPhotoRef.current) {
+      childPhotoRef.current.value = '';
+    }
+  }
+};
+
+
   // ✅ CRITICAL: Only show loader if loading AND no cache
   if (loading && !cachedData) {
     console.log('🔴 SHOWING LOADER - no cache available')
@@ -926,6 +993,9 @@ const addSuppliersSection = (
           hasNewMessages={hasNewMessages}
           onNotificationClick={handleNotificationClick}
           loading={loading} // ✅ ADD THIS LINE
+          childPhoto={currentParty?.child_photo || partyDetails?.childPhoto} // ✅ ADD THIS
+          onPhotoUpload={handleChildPhotoUpload} // ✅ ADD THIS
+          uploadingPhoto={uploadingChildPhoto} // ✅ PASS THE LOADING STATE
         />
 
         <SupplierSelectionModal
@@ -1063,8 +1133,10 @@ const addSuppliersSection = (
     CountdownWidget={
       <CountdownWidget
         partyDate={partyDetails?.date}
+
       />
     }
+    onRemoveSupplier={handleCancelEnquiry}
   />
 )}
     </div>

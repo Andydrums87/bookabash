@@ -27,6 +27,7 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
         guestCount: partyDetails?.guestCount || '',
         budget: partyDetails?.budget || '',
         specialNotes: partyDetails?.specialNotes || '',
+        childPhoto: partyDetails?.childPhoto || null,
         postcode: partyDetails?.postcode || 'W1A 1AA'
       };
     } catch {
@@ -200,6 +201,26 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
       console.error('❌ Error in recalculateSupplierPricing:', error);
     }
   };
+
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'party_details') {
+        console.log('🔄 localStorage changed, updating party details');
+        const updatedDetails = JSON.parse(e.newValue || '{}');
+        setPartyDetails(updatedDetails);
+        
+        if (updatedDetails.theme) {
+          setPartyTheme(updatedDetails.theme);
+        }
+      }
+    };
+  
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const savePartyDetails = async (details) => {
     try {

@@ -17,7 +17,7 @@ export function useSupplierManager(removeSupplier, partyId, currentPhase) {
   const getSupplierDisplayName = (type) => {
     const displayNames = {
       venue: 'Venue',
-      entertainment: 'Entertainment', 
+      entertainment: 'Entertainer', 
 
       cakes: 'Cakes',  // 🎂 NEW: Add cakes display name
       facePainting: 'Face Painting',
