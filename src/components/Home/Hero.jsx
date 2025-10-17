@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin } from "lucide-react"
+import { Star, ArrowRight, Check, AlertCircle, ArrowDown, Search, User, Calendar as CalendarIcon, UsersIcon, MapPin, Navigation } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
@@ -13,13 +13,27 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
+import { useGeolocation } from "@/hooks/useGeolocation"
 
 
 export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postcodeValid, isSubmitting, handleFieldChange, setPostcodeValid, validateAndFormatPostcode }){
   const router = useRouter()
+  const { getPostcodeFromLocation, isLoading: isGettingLocation, error: locationError } = useGeolocation()
+
+  const handleUseMyLocation = async () => {
+    const result = await getPostcodeFromLocation()
+
+    if (result.success && result.postcode) {
+      handleFieldChange('postcode', result.postcode)
+      const { isValid } = validateAndFormatPostcode(result.postcode)
+      setPostcodeValid(isValid)
+    } else if (result.error) {
+      alert(result.error)
+    }
+  }
 
   return (
-    <section className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] h-screen">
+    <section className="md:pt-15 pb-8 md:pb-12 bg-[#fef7f7] lg:h-screen">
       <div className="container mx-auto">
         
         {/* Desktop Layout - Original */}
@@ -167,7 +181,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 <label className="block text-sm font-medium text-gray-700">
                   Event postcode  <span className="text-red-500">*</span>
                 </label>
-                
+
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-400" />
                   <Input
@@ -185,14 +199,14 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                         handleFieldChange('postcode', formatted);
                       }
                     }}
-                    placeholder="Enter your postcode"
+                    placeholder="e.g. W3 7QD or SW1A 1AA"
                     className={`
                       bg-white py-6 px-12 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10 pr-10
                       ${!postcodeValid && formData.postcode ? 'border-red-300 focus:border-red-500' : ''}
                     `}
                     required
                   />
-                  
+
                   {formData.postcode && (
                     postcodeValid ? (
                       <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -200,7 +214,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-500" />
                     )
                   )}
-                  
+
                   {!postcodeValid && formData.postcode && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-10">
                       <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
@@ -209,7 +223,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       </p>
                     </div>
                   )}
-                  
+
                   {postcodeValid && formData.postcode && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-10">
                       <p className="text-xs text-green-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-green-200">
@@ -220,29 +234,49 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                   )}
                 </div>
 
-                {/* NEW: Own Venue Toggle - Subtle link under postcode */}
-                <button
-                  type="button"
-                  onClick={() => handleFieldChange('hasOwnVenue', !formData.hasOwnVenue)}
-                  className="text-xs text-primary-600 hover:text-primary-700 underline decoration-dotted underline-offset-2 transition-colors flex items-center gap-1 mt-1"
-                >
-                  {formData.hasOwnVenue ? (
-                    <>
-                      <Check className="w-3 h-3" />
-                      Using my own venue
-                    </>
-                  ) : (
-                    <>Using your own venue?</>
-                  )}
-                </button>
+                {/* Action buttons row */}
+                <div className="flex items-center justify-between gap-3 mt-1.5">
+                  {/* Use My Location Button */}
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    disabled={isGettingLocation}
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Navigation className={`w-3.5 h-3.5 ${isGettingLocation ? 'animate-pulse' : ''}`} />
+                    {isGettingLocation ? 'Finding...' : 'Use my location'}
+                  </button>
+
+                  {/* Divider */}
+                  <span className="text-gray-300">|</span>
+
+                  {/* Own Venue Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => handleFieldChange('hasOwnVenue', !formData.hasOwnVenue)}
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1.5 transition-colors"
+                  >
+                    {formData.hasOwnVenue ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        Own venue
+                      </>
+                    ) : (
+                      <>Have own venue?</>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Search Button */}
-              <div className="col-span-2 md:col-span-1 mt-4 md:mt-0 md:flex md:items-end">
-                <Button 
-                  type="submit" 
+              <div className="col-span-2 md:col-span-1 space-y-2">
+                <label className="block text-sm font-medium text-gray-700 opacity-0">
+                  Action
+                </label>
+                <Button
+                  type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-6 px-8 rounded-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-6 px-8 rounded-full h-12 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center justify-center">
@@ -261,32 +295,24 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
         </div>
 
         <div className="lg:hidden">
-          {/* Mobile Hero section */}
-          <div className="bg-gradient-to-br from-primary-50 via-white to-primary-100 pb-8 overflow-hidden relative">
-            
-            <div className="px-6 pt-8 pb-4 relative z-10">
+          {/* Mobile Hero section - Compact but Impactful */}
+          <div className="bg-gradient-to-br from-primary-50 via-white to-primary-100 pb-2 overflow-hidden relative">
+
+            <div className="px-4 pt-6 pb-1 relative z-10">
               <div className="max-w-screen mx-auto text-center">
-                <h1 className="text-6xl font-black text-gray-900 mb-4 leading-tight animate-fade-in">
+                <h1 className="text-5xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
                   Book Your Party in a <span className="text-primary-500 relative">
                     Snap!
+                    <div className="absolute -bottom-1 left-0 w-full h-1.5 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] -skew-x-12 opacity-30"></div>
                   </span>
                 </h1>
-                <p className="text-lg text-gray-600 max-w-4xl leading-relaxed">
-                  Let Snappy handle the theme, the crew, and snacks too — just one click and a snap, and it's done for you!
+                <p className="text-base text-gray-700 max-w-4xl leading-relaxed font-medium">
+                  Let Snappy handle everything — one click and it's done!
                 </p>
               </div>
             </div>
 
-            <div className="px-6 mb-8 relative">
-              <div className="relative w-full h-50 bg-gradient-to-br from-[hsl(var(--primary-300))] to-[hsl(var(--primary-400))] rounded-3xl overflow-hidden mx-auto max-w-sm shadow-xl transform hover:scale-105 transition-transform duration-300">
-                <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828017/iStock-1149320278_srn8ti-removebg-preview_njfbhn.png"
-                  alt="People celebrating at a party"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
+            {/* Removed image section to save space */}
           </div>
  
           <style jsx>{`

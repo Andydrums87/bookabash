@@ -57,15 +57,15 @@ export function AddSuppliersSection({
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        {/* <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Plus className="w-8 h-8 text-primary-600" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">
+        </div> */}
+        {/* <h3 className="text-xl font-bold text-gray-900 mb-2">
           Add More Suppliers
         </h3>
         <p className="text-sm text-gray-600">
           {emptySlots.length} supplier{emptySlots.length !== 1 ? 's' : ''} available to complete your party
-        </p>
+        </p> */}
       </div>
 
       {/* Single Column Grid on Mobile, 2 Columns on Larger Screens */}

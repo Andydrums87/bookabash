@@ -271,7 +271,11 @@ case 'party_team_browse':
           </div>
         )
       
-      case 'track_rsvps':
+        case 'track_rsvps':
+        // Step 7 - locked if shown while locked
+        if (step.status === 'locked') {
+          return null
+        }
         return (
           <div className="p-6 bg-white rounded-lg border border-gray-200">
             {step.metrics && (
@@ -302,6 +306,10 @@ case 'party_team_browse':
         )
       
       case 'final_details':
+        // Step 8 - locked if shown while locked
+        if (step.status === 'locked') {
+          return null
+        }
         return (
           <div className="p-6 bg-white rounded-lg border border-gray-200">
             <p className="text-sm text-gray-600">

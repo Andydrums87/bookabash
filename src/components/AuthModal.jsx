@@ -35,6 +35,22 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
     setSuccess("")
   }
 
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long"
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least one uppercase letter"
+    }
+    if (!/[a-z]/.test(pwd)) {
+      return "Password must contain at least one lowercase letter"
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least one number"
+    }
+    return null
+  }
+
   const validateSignUp = () => {
     if (!formData.firstName.trim()) {
       setError("First name is required")
@@ -48,10 +64,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
       setError("Password is required")
       return false
     }
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
+
+    // Check password strength
+    const passwordError = validatePassword(formData.password)
+    if (passwordError) {
+      setError(passwordError)
       return false
     }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match")
       return false
@@ -402,10 +422,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
       {/* Content */}
       <ModalContent>
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Name fields for sign up */}
           {isSignUp && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label htmlFor="firstName" className="text-sm font-semibold text-gray-700">
                   First Name
@@ -417,7 +437,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   value={formData.firstName}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                   disabled={loading || oauthLoading}
-                  className="h-11"
+                  className="h-9"
                   required={isSignUp}
                 />
               </div>
@@ -432,7 +452,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                   disabled={loading || oauthLoading}
-                  className="h-11"
+                  className="h-9"
                 />
               </div>
             </div>
@@ -450,13 +470,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
               disabled={loading || oauthLoading}
-              className="h-11"
+              className="h-9"
               required
             />
           </div>
 
           {/* Password fields */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="space-y-1">
               <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
                 Password
@@ -469,7 +489,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   disabled={loading || oauthLoading}
-                  className="h-11 pr-10"
+                  className="h-9 pr-10"
                   required
                 />
                 <Button
@@ -483,6 +503,29 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+
+              {/* Password Requirements - Only show for sign up - Ultra Compact */}
+              {isSignUp && formData.password && (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md mt-1">
+                  <p className="text-xs font-semibold text-gray-700 mb-1">
+                    Must have: 8+ chars, A-Z, a-z, 0-9
+                  </p>
+                  <div className="flex flex-wrap gap-x-3 text-xs text-gray-600">
+                    <span className={formData.password.length >= 8 ? "text-green-600" : "text-gray-400"}>
+                      {formData.password.length >= 8 ? "✓" : "○"} 8+ chars
+                    </span>
+                    <span className={/[A-Z]/.test(formData.password) ? "text-green-600" : "text-gray-400"}>
+                      {/[A-Z]/.test(formData.password) ? "✓" : "○"} A-Z
+                    </span>
+                    <span className={/[a-z]/.test(formData.password) ? "text-green-600" : "text-gray-400"}>
+                      {/[a-z]/.test(formData.password) ? "✓" : "○"} a-z
+                    </span>
+                    <span className={/[0-9]/.test(formData.password) ? "text-green-600" : "text-gray-400"}>
+                      {/[0-9]/.test(formData.password) ? "✓" : "○"} 0-9
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {isSignUp && (
@@ -498,7 +541,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                     disabled={loading || oauthLoading}
-                    className="h-11 pr-10"
+                    className="h-9 pr-10"
                     required={isSignUp}
                   />
                   <Button
@@ -518,12 +561,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
           {/* Error Messages */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-600">{error}</p>
               {error.includes("Account not found") && (
                 <button
                   onClick={switchMode}
-                  className="text-sm text-red-700 hover:text-red-900 underline mt-1 font-medium"
+                  className="text-xs text-red-700 hover:text-red-900 underline mt-1 font-medium"
                   disabled={loading || oauthLoading}
                 >
                   Click here to create a new account
@@ -534,11 +577,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
 
           {/* Success Messages */}
           {success && !showSuccessAnimation && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-green-600 font-medium">{success}</p>
+                  <p className="text-xs text-green-600 font-medium">{success}</p>
                   {isEmailVerificationRequired && (
                     <p className="text-xs text-green-600 mt-1">
                       Switching to sign-in mode in a moment...
@@ -552,7 +595,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
           {/* Submit Button */}
           <Button
             onClick={handleEmailAuth}
-            className="w-full h-12 bg-primary-500 hover:bg-primary-600 text-white font-semibold"
+            className="w-full h-10 bg-primary-500 hover:bg-primary-600 text-white font-semibold"
             disabled={loading || oauthLoading}
           >
             {loading ? (
@@ -584,12 +627,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
           </div>
 
           {/* OAuth Buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
               onClick={() => handleOAuthAuth("google")}
               disabled={loading || oauthLoading}
-              className="h-11 border-gray-300"
+              className="h-10 border-gray-300"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -608,7 +651,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               variant="outline"
               onClick={() => handleOAuthAuth("facebook")}
               disabled={loading || oauthLoading}
-              className="h-11 border-gray-300"
+              className="h-10 border-gray-300"
             >
               {oauthLoading === "facebook" ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -624,8 +667,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
       </ModalContent>
 
       {/* Footer */}
-    
-        <div className="text-center text-sm text-gray-600 pb-2">
+
+        <div className="text-center text-xs text-gray-600 pb-2 pt-1">
           {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
           <button
             onClick={switchMode}

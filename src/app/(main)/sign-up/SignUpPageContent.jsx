@@ -47,6 +47,22 @@ export default function SignUpPageContent() {
     setError("") // Clear errors when user types
   }
 
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long"
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least one uppercase letter"
+    }
+    if (!/[a-z]/.test(pwd)) {
+      return "Password must contain at least one lowercase letter"
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least one number"
+    }
+    return null
+  }
+
   const validateForm = () => {
     if (!formData.firstName.trim()) {
       setError("First name is required")
@@ -60,10 +76,14 @@ export default function SignUpPageContent() {
       setError("Password is required")
       return false
     }
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
+
+    // Check password strength
+    const passwordError = validatePassword(formData.password)
+    if (passwordError) {
+      setError(passwordError)
       return false
     }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match")
       return false
@@ -185,21 +205,21 @@ export default function SignUpPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
-      <div className="flex flex-col items-center justify-start pt-12 sm:pt-16 pb-12 px-4">
+      <div className="flex flex-col items-center justify-start pt-6 sm:pt-12 pb-12 px-4">
         <Card className="w-full max-w-md shadow-xl border-gray-200">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary-500 pt-6">
+          <CardHeader className="text-center pb-3">
+            <CardTitle className="text-2xl sm:text-3xl font-bold text-primary-500 pt-2">
               Create Account
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-sm text-gray-600 mt-1">
               Sign up to start planning your perfect party
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-gray-700">
+          <CardContent className="pb-3">
+            <form onSubmit={handleSubmit} className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="firstName" className="text-gray-700 text-sm">
                     First Name
                   </Label>
                   <Input
@@ -213,8 +233,8 @@ export default function SignUpPageContent() {
                     className="focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-gray-700">
+                <div className="space-y-1.5">
+                  <Label htmlFor="lastName" className="text-gray-700 text-sm">
                     Last Name
                   </Label>
                   <Input
@@ -228,8 +248,8 @@ export default function SignUpPageContent() {
                   />
                 </div>
               </div>
-              
-              <div className="space-y-2">
+
+              <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-gray-700">
                   Email Address
                 </Label>
@@ -244,8 +264,8 @@ export default function SignUpPageContent() {
                   className="focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
-              
-              <div className="space-y-2">
+
+              <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-gray-700">
                   Password
                 </Label>
@@ -271,9 +291,31 @@ export default function SignUpPageContent() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                {/* Password Requirements - Ultra Compact */}
+                {formData.password && (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md mt-1">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">
+                      Must have: 8+ chars, A-Z, a-z, 0-9
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 text-xs text-gray-600">
+                      <span className={formData.password.length >= 8 ? "text-green-600" : "text-gray-400"}>
+                        {formData.password.length >= 8 ? "✓" : "○"} 8+ chars
+                      </span>
+                      <span className={/[A-Z]/.test(formData.password) ? "text-green-600" : "text-gray-400"}>
+                        {/[A-Z]/.test(formData.password) ? "✓" : "○"} A-Z
+                      </span>
+                      <span className={/[a-z]/.test(formData.password) ? "text-green-600" : "text-gray-400"}>
+                        {/[a-z]/.test(formData.password) ? "✓" : "○"} a-z
+                      </span>
+                      <span className={/[0-9]/.test(formData.password) ? "text-green-600" : "text-gray-400"}>
+                        {/[0-9]/.test(formData.password) ? "✓" : "○"} 0-9
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <div className="space-y-2">
+
+              <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword" className="text-gray-700">
                   Confirm Password
                 </Label>
@@ -302,36 +344,36 @@ export default function SignUpPageContent() {
               </div>
               
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="p-2 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-xs text-red-600">{error}</p>
                 </div>
               )}
-              
+
               {success && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                  <p className="text-sm text-green-600">{success}</p>
+                <div className="p-2 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-xs text-green-600">{success}</p>
                 </div>
               )}
              <Button
   type="submit"
-  className="w-full bg-primary-500 hover:bg-[#FF5028] text-white py-3 text-base font-semibold"
-  disabled={isLoading}
+  className="w-full bg-primary-500 hover:bg-[#FF5028] text-white py-2.5 text-base font-semibold"
+  disabled={isLoading || oauthLoading}
 >
   {isLoading ? (
     <>
       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-      Signing In...
+      Creating Account...
     </>
   ) : (
     <>
-      <LogIn className="mr-2 h-5 w-5" />
-      Sign In
+      <UserPlus className="mr-2 h-5 w-5" />
+      Create Account
     </>
   )}
 </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col items-center space-y-4 pt-4">
+          <CardFooter className="flex flex-col items-center space-y-2.5 pt-1 pb-4">
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-300" />
@@ -340,8 +382,8 @@ export default function SignUpPageContent() {
                 <span className="bg-white px-2 text-gray-500">Or continue with</span>
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4 w-full">
+
+            <div className="grid grid-cols-2 gap-3 w-full">
               <Button 
                 variant="outline" 
                 className="w-full border-gray-300 hover:bg-gray-50" 
@@ -376,8 +418,8 @@ export default function SignUpPageContent() {
                 Facebook
               </Button>
             </div>
-            
-            <p className="mt-4 text-center text-sm text-gray-600 pb-6">
+
+            <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}
               <Link
                 href={`/signin`}

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect } from "react"
-import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle } from "lucide-react"
+import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle, Navigation } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import SearchableEventTypeSelect from "@/components/searchable-event-type-select"
 import Image from "next/image"
 import { format } from "date-fns"
+import { useGeolocation } from "@/hooks/useGeolocation"
 
 export default function MobileSearchForm({
   handleSearch,
@@ -22,16 +23,29 @@ export default function MobileSearchForm({
   hasAttemptedSubmit,
   setShowFloatingCTA,
   showFloatingCTA
-}) {  
-  
+}) {
+  const { getPostcodeFromLocation, isLoading: isGettingLocation, error: locationError } = useGeolocation()
+
   const isFormValid = () => {
     return (
-      formData.date && 
-      formData.theme && 
-      formData.guestCount && 
-      formData.postcode && 
+      formData.date &&
+      formData.theme &&
+      formData.guestCount &&
+      formData.postcode &&
       postcodeValid
     );
+  };
+
+  const handleUseMyLocation = async () => {
+    const result = await getPostcodeFromLocation()
+
+    if (result.success && result.postcode) {
+      handleFieldChange('postcode', result.postcode)
+      const { isValid } = validateAndFormatPostcode(result.postcode)
+      setPostcodeValid(isValid)
+    } else if (result.error) {
+      alert(result.error)
+    }
   };
 
   const handleMobileSearch = async (e) => {
@@ -46,26 +60,13 @@ export default function MobileSearchForm({
   };
 
   return (
-    <div className="md:hidden px-4 -mt-37 py-10 relative z-30 bg-primary-50 " id="search-form">
-      <div className="text-center mb-16">
-        <h2 className="text-5xl font-black text-gray-900 mb-3">
-          Plan Your{" "}
-          <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
-            Dream Party
-            <div className="absolute -bottom-1 left-0 w-full h-2 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] -skew-x-12 opacity-30"></div>
-          </span>
-        </h2>
-        <p className="text-xl text-gray-700 mt-10 font-medium">
-          In just 30 seconds! 
-        </p>
-      </div>
-
-      <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-6 shadow-2xl border-[hsl(var(--primary-500))] border-2">
-        <div className="space-y-6">
+    <div className="md:hidden px-4 pt-2 pb-4 relative z-30 bg-primary-50 " id="search-form">
+      <form onSubmit={handleMobileSearch} className="bg-white rounded-3xl p-4 shadow-2xl border-[hsl(var(--primary-500))] border-2">
+        <div className="space-y-4">
     
           {/* Event Date */}
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-gray-700">
               Event date <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -74,18 +75,18 @@ export default function MobileSearchForm({
                   <Button
                     variant="outline"
                     className={`
-                      w-full font-normal h-12 
+                      w-full font-normal h-10
                       bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
-                      hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors 
+                      hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
                       ${!formData.date && "text-gray-500"}
                       ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
                     `}
                   >
                     <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
                     {formData.date && !isNaN(new Date(formData.date)) ? (
-                      <span className="ml-5">{format(new Date(formData.date), "EEEE, MMMM d, yyyy")}</span>
+                      <span className="ml-5 text-sm">{format(new Date(formData.date), "EEE, MMM d, yyyy")}</span>
                     ) : (
-                      <span className="ml-5 text-gray-800">Select event date</span>
+                      <span className="ml-5 text-gray-800 text-sm">Select event date</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -123,8 +124,8 @@ export default function MobileSearchForm({
           </div>
 
           {/* Event Type */}
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-gray-700">
               Event type <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -147,19 +148,19 @@ export default function MobileSearchForm({
           </div>
     
           {/* Guests */}
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-gray-700">
               Guests <span className="text-red-500">*</span>
             </label>
             <div className="relative ">
               <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
-              <Select 
-                value={formData.guestCount} 
+              <Select
+                value={formData.guestCount}
                 onValueChange={(value) => handleFieldChange("guestCount", value)}
                 required
               >
                 <SelectTrigger className={`
-                  bg-white text-gray-600 w-full py-6 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 text-sm
+                  bg-white text-gray-600 w-full py-5 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-10 pl-10 text-sm
                   ${!formData.guestCount ? 'border-red-300' : ''}
                 `}>
                   <SelectValue placeholder="Select guest count" />
@@ -185,8 +186,8 @@ export default function MobileSearchForm({
           </div>
     
           {/* Postcode */}
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-gray-700">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-gray-700">
               Postcode <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -206,9 +207,9 @@ export default function MobileSearchForm({
                     handleFieldChange("postcode", formatted)
                   }
                 }}
-                placeholder="Enter your postcode"
+                placeholder="e.g. W3 7QD or SW1A 1AA"
                 className={`
-                  bg-white placeholder:text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-base
+                  bg-white placeholder:text-gray-500 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-10 pl-10 pr-10 text-sm
                   ${formData.postcode && !postcodeValid ? 'border-red-300 focus:border-red-500' : ''}
                 `}
                 required
@@ -220,15 +221,29 @@ export default function MobileSearchForm({
                   <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
                 ))}
             </div>
-      
+
+            {/* Action buttons row */}
+            <div className="flex items-center justify-between gap-3 mt-1">
+              {/* Use My Location Button */}
+              <button
+                type="button"
+                onClick={handleUseMyLocation}
+                disabled={isGettingLocation}
+                className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Navigation className={`w-3.5 h-3.5 ${isGettingLocation ? 'animate-pulse' : ''}`} />
+                {isGettingLocation ? 'Finding...' : 'Use my location'}
+              </button>
+            </div>
+
             {formData.postcode && !postcodeValid && (
-              <p className="text-xs text-red-600 flex items-center gap-1">
+              <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
                 <AlertCircle className="w-3 h-3" />
                 Please enter a valid UK postcode
               </p>
             )}
             {formData.postcode && postcodeValid && (
-              <p className="text-xs text-green-600 flex items-center gap-1">
+              <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                 <Check className="w-3 h-3" />
                 Valid postcode
               </p>
@@ -236,7 +251,7 @@ export default function MobileSearchForm({
           </div>
 
           {/* NEW: Own Venue Checkbox */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-2 pt-1">
             <div className="flex items-start space-x-3">
               <Checkbox
                 id="hasOwnVenue-mobile"
@@ -263,7 +278,7 @@ export default function MobileSearchForm({
           <Button
             type="submit"
             disabled={isSubmitting || !isFormValid()}
-            className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-lg font-bold py-4 px-6 rounded-full h-14 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-80 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-base font-bold py-3 px-6 rounded-full h-12 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-80 disabled:cursor-not-allowed disabled:transform-none"
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
