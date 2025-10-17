@@ -2,6 +2,7 @@ import { Geist, Geist_Mono, Poppins, Montserrat, Fredoka, Orbitron } from "next/
 import { getBaseUrl } from "@/utils/env";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
+import SitePasswordGate from "@/components/SitePasswordGate";
 import Script from "next/script";
 
 const poppins = Poppins({
@@ -73,8 +74,10 @@ export default function RootLayout({ children }) {
       </head>
       
       <body className={`${montserrat.className} antialiased`}>
-        {children}
-        <CookieConsent />
+        <SitePasswordGate>
+          {children}
+          <CookieConsent />
+        </SitePasswordGate>
       </body>
     </html>
   );
