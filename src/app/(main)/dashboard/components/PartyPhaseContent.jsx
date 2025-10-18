@@ -48,39 +48,68 @@ export default function PartyPhaseContent({
 
   useEffect(() => {
     async function fetchPartyData() {
-      if (!partyDetails?.id) return
+      if (!partyDetails?.id) {
+        console.log('🚫 PartyPhaseContent: No party ID, skipping fetch')
+        return
+      }
+
+      // ✅ Don't update if registry is still loading
+      if (registryLoading) {
+        console.log('⏳ PartyPhaseContent: Registry still loading, skipping update')
+        return
+      }
+
+      console.log('🔄 PartyPhaseContent: Fetching party data for:', partyDetails.id)
 
       try {
         setLoading(true)
 
         const guestResult = await partyDatabaseBackend.getPartyGuests(partyDetails.id)
         const guests = guestResult.success ? guestResult.guests || [] : []
+        console.log('👥 PartyPhaseContent: Guests fetched:', guests.length)
         setGuestList(guests)
 
         const rsvpResult = await partyDatabaseBackend.getPartyRSVPs(partyDetails.id)
         const rsvpData = rsvpResult.success ? rsvpResult.rsvps || [] : []
+        console.log('✅ PartyPhaseContent: RSVPs fetched:', rsvpData.length)
         setRsvps(rsvpData)
 
         const einvitesResult = await partyDatabaseBackend.getEInvites(partyDetails.id)
         const einvitesData = einvitesResult.success ? einvitesResult.einvites : null
+        console.log('💌 PartyPhaseContent: E-invites fetched:', einvitesData ? 'Found' : 'None')
         setEinvites(einvitesData)
 
-        onDataUpdate?.({
+        console.log('🎁 PartyPhaseContent: Registry from hook:', registry ? 'Found (ID: ' + registry.id + ')' : 'None', 'Items:', itemCount)
+
+        const updateData = {
           guestList: guests,
           rsvps: rsvpData,
           einvites: einvitesData,
-          registry,
+          giftRegistry: registry,
           registryItemCount: itemCount,
+        }
+
+        console.log('📤 PartyPhaseContent: Calling onDataUpdate with:', {
+          guestCount: guests.length,
+          rsvpCount: rsvpData.length,
+          hasRegistry: !!registry,
+          itemCount: itemCount,
+          hasEinvites: !!einvitesData
         })
+
+        // ✅ Only call the callback if it exists
+        if (onDataUpdate) {
+          onDataUpdate(updateData)
+        }
       } catch (error) {
-        console.error("Error fetching party data:", error)
+        console.error("❌ PartyPhaseContent: Error fetching party data:", error)
       } finally {
         setLoading(false)
       }
     }
 
     fetchPartyData()
-  }, [partyDetails?.id, registry, itemCount, onDataUpdate])
+  }, [partyDetails?.id, registry, itemCount, registryLoading, onDataUpdate])
 
   const { steps, currentStep, completedSteps, totalSteps, progress } = usePartyJourney({
     suppliers,

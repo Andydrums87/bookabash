@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
+import SupplierQuickViewModal from '@/components/SupplierQuickViewModal'
 
 // Generic category images mapping
 const CATEGORY_IMAGES = {
@@ -204,6 +205,7 @@ export default function EmptySupplierCard({
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
   const [showTipsModal, setShowTipsModal] = useState(false)
+  const [showQuickView, setShowQuickView] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -282,7 +284,13 @@ export default function EmptySupplierCard({
         >
           <div className="relative h-100 w-full">
             {/* Generic Category Image */}
-            <div className="absolute inset-0">
+            <div
+              className="absolute inset-0 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowQuickView(true)
+              }}
+            >
               <Image
                 src={genericImage}
                 alt={categoryDisplayName}
@@ -293,16 +301,16 @@ export default function EmptySupplierCard({
             </div>
 
             {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80" />
+            <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
 
-                        {/* Info icon for tips */}
+                        {/* Info icon for quick view */}
                         <button
               onClick={(e) => {
                 e.stopPropagation()
-                setShowTipsModal(true)
+                setShowQuickView(true)
               }}
               className="absolute top-2 right-2 z-10 w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-              title="Why add this?"
+              title="View supplier details"
             >
               <Info className="w-4 h-4 text-white" />
             </button>
@@ -359,6 +367,16 @@ export default function EmptySupplierCard({
           onClose={() => setShowTipsModal(false)}
           category={type}
         />
+
+        {/* Quick View Modal */}
+        <SupplierQuickViewModal
+          supplier={recommendedSupplier}
+          isOpen={showQuickView}
+          onClose={() => setShowQuickView(false)}
+          onAddSupplier={onAddSupplier}
+          partyDetails={partyDetails}
+          type={type}
+        />
       </>
     )
   }
@@ -366,12 +384,18 @@ export default function EmptySupplierCard({
   // Full size mode - taller image
   return (
     <>
-      <Card 
+      <Card
         className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90"
       >
         <div className="relative h-62 w-full">
           {/* Generic Category Image */}
-          <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowQuickView(true)
+            }}
+          >
             <Image
               src={genericImage}
               alt={categoryDisplayName}
@@ -382,16 +406,16 @@ export default function EmptySupplierCard({
           </div>
 
           {/* Darker overlay for greyed effect */}
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
 
-           {/* Info icon for tips */}
+           {/* Info icon for quick view */}
            <button
               onClick={(e) => {
                 e.stopPropagation()
-                setShowTipsModal(true)
+                setShowQuickView(true)
               }}
-              className="absolute top-2 cursor-pointer right-2 z-10 w-8 h-8  hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-              title="Why add this?"
+              className="absolute top-2 cursor-pointer right-2 z-10 w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+              title="View supplier details"
             >
               <Info className="w-6 h-6 text-white" />
             </button>
@@ -452,6 +476,16 @@ export default function EmptySupplierCard({
         isOpen={showTipsModal}
         onClose={() => setShowTipsModal(false)}
         category={type}
+      />
+
+      {/* Quick View Modal */}
+      <SupplierQuickViewModal
+        supplier={recommendedSupplier}
+        isOpen={showQuickView}
+        onClose={() => setShowQuickView(false)}
+        onAddSupplier={onAddSupplier}
+        partyDetails={partyDetails}
+        type={type}
       />
     </>
   )

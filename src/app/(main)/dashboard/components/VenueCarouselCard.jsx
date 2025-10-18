@@ -248,7 +248,7 @@ export default function VenueCarouselCard({
               🏛️ Venue
             </Badge>
             {isCurrentSelected && (
-              <Badge className="bg-primary-500 text-white shadow-lg backdrop-blur-sm flex items-center gap-1">
+              <Badge className="bg-teal-500 text-white shadow-lg backdrop-blur-sm flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Selected
               </Badge>
@@ -474,8 +474,8 @@ export default function VenueCarouselCard({
             handleSelectVenue()
           }}
           className={`w-full shadow-lg transition-all ${
-            isCurrentSelected 
-              ? 'bg-primary-400 hover:bg-teal-600 text-white cursor-default'
+            isCurrentSelected
+              ? 'bg-teal-500 hover:bg-teal-600 text-white cursor-default'
               : 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white'
           }`}
           disabled={isLoading || isCurrentSelected}

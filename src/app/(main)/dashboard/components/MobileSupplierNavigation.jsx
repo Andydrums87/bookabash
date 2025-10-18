@@ -8,6 +8,9 @@ import VenueCarouselCard from "./VenueCarouselCard" // ✅ ADD THIS IMPORT
 import Image from "next/image"
 import AddonsSection from "./AddonsSection"
 import RecommendedAddons from "@/components/recommended-addons"
+import { useRouter } from "next/navigation"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 export default function MobileSupplierNavigation({
   suppliers,
@@ -44,9 +47,19 @@ export default function MobileSupplierNavigation({
   isSelectingVenue = false,
 
 }) {
+  const router = useRouter()
 
     // ... (keep all existing supplier types array - no changes needed)
     const supplierTypes = [
+      {
+        id: "myParty",
+        type: "myParty",
+        title: "My Party",
+        name: "My Party",
+        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1755719830/bs2klexzuin8ygfndexc.png",
+        icon: <Sparkles className="w-5 h-5" />,
+        isMyPartySection: true,
+      },
       {
         id: "venue",
         type: "venue",
@@ -275,7 +288,7 @@ export default function MobileSupplierNavigation({
 
   const renderAddonsContent = () => {
     const addonCount = getAddonCount()
-    
+
     if (addonCount === 0) {
       return (
         <div className="bg-gradient-to-br from-white to-teal-50 border-2 border-dashed border-teal-200 rounded-xl p-6 text-center">
@@ -287,7 +300,7 @@ export default function MobileSupplierNavigation({
             Enhance your party with amazing extras and add-ons!
           </p>
           <div className="flex justify-center">
-            <button 
+            <button
               onClick={() => console.log('Browse addons')}
               className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2"
             >
@@ -301,7 +314,7 @@ export default function MobileSupplierNavigation({
 
     return (
       <div className="space-y-6">
-        <AddonsSection 
+        <AddonsSection
           addons={addons}
           suppliers={suppliers}
           handleRemoveAddon={handleRemoveAddon}
@@ -314,13 +327,200 @@ export default function MobileSupplierNavigation({
               <Sparkles className="w-5 h-5 text-purple-600" />
               More Add-ons
             </h3>
-            <RecommendedAddons 
+            <RecommendedAddons
               context="mobile"
               maxItems={4}
               onAddToCart={handleAddAddon}
               onAddonClick={onAddonClick}
               className="grid grid-cols-1 gap-3"
             />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderMyPartyContent = () => {
+    // Get all selected suppliers
+    const selectedSuppliers = Object.entries(suppliers).filter(([_, supplier]) => supplier !== null)
+
+    // Supplier selection reasons
+    const selectionReasons = {
+      venue: "Perfect location that matches your party size and style",
+      entertainment: "Top-rated entertainer loved by kids in your area",
+      cakes: "Custom cake designs that match your party theme",
+      decorations: "Beautiful decorations to transform your space",
+      photography: "Professional photos to capture every magical moment",
+      facePainting: "Creative designs that kids absolutely love",
+      catering: "Delicious food options that kids and adults enjoy",
+      activities: "Fun activities to keep everyone entertained",
+      partyBags: "Exciting party bags that kids will love taking home",
+      bouncyCastle: "Safe and fun bouncy castle for hours of entertainment"
+    }
+
+    const getTypeConfig = (supplierType) => {
+      const configs = {
+        venue: { color: "bg-blue-500", icon: "🏛️" },
+        entertainment: { color: "bg-purple-500", icon: "🎭" },
+        catering: { color: "bg-orange-500", icon: "🍽️" },
+        cakes: { color: "bg-pink-500", icon: "🎂" },
+        facePainting: { color: "bg-green-500", icon: "🎨" },
+        activities: { color: "bg-yellow-500", icon: "🎪" },
+        decorations: { color: "bg-indigo-500", icon: "🎈" },
+        balloons: { color: "bg-cyan-500", icon: "🎈" },
+        partyBags: { color: "bg-red-500", icon: "🎁" },
+        bouncyCastle: { color: "bg-teal-500", icon: "🏰" },
+        photography: { color: "bg-violet-500", icon: "📸" }
+      }
+      return configs[supplierType] || { color: "bg-gray-500", icon: "📦" }
+    }
+
+    const fullChildName = partyDetails?.childName || partyDetails?.child_name || 'your child'
+    const childFirstName = fullChildName.split(' ')[0]
+
+    return (
+      <div className="space-y-6">
+        {/* Header Section */}
+        <div className="mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">We've built the perfect party for {childFirstName}!</h2>
+            <p className="text-sm text-gray-600">Here are the best suppliers we've picked</p>
+          </div>
+        </div>
+
+        {/* Suppliers List */}
+        {selectedSuppliers.length > 0 ? (
+          <div className="space-y-4">
+            {selectedSuppliers.map(([type, supplier]) => {
+              // Skip if supplier is not valid
+              if (!supplier || typeof supplier !== 'object') return null
+
+              const supplierTypeData = supplierTypes.find(st => st.type === type)
+              const typeConfig = getTypeConfig(type)
+
+              // Get display name safely - ensure it's a string
+              let displayName = 'Supplier'
+              try {
+                const nameResult = getSupplierDisplayName ? getSupplierDisplayName(supplier) : null
+                if (typeof nameResult === 'string' && nameResult) {
+                  displayName = nameResult
+                } else if (typeof supplier.business_name === 'string' && supplier.business_name) {
+                  displayName = supplier.business_name
+                } else if (typeof supplier.name === 'string' && supplier.name) {
+                  displayName = supplier.name
+                }
+              } catch (e) {
+                console.error('Error getting display name:', e)
+              }
+
+              // Get image safely
+              const supplierImage = supplier?.coverPhoto || supplier?.images?.[0] || supplier?.image || supplier?.imageUrl || supplierTypeData?.image
+
+              // Get price as string - safely
+              let priceDisplay = null
+              try {
+                const enhancedPricing = getSupplierDisplayPricing ? getSupplierDisplayPricing(supplier, partyDetails) : null
+                if (enhancedPricing) {
+                  if (typeof enhancedPricing.displayPrice === 'string') {
+                    priceDisplay = enhancedPricing.displayPrice
+                  } else if (typeof enhancedPricing.finalPrice === 'number') {
+                    priceDisplay = enhancedPricing.finalPrice
+                  }
+                }
+                if (!priceDisplay && typeof supplier.price === 'number') {
+                  priceDisplay = supplier.price
+                }
+              } catch (e) {
+                console.error('Error getting price:', e)
+              }
+
+              // Get location safely
+              const location = typeof supplier.location === 'string' ? supplier.location : null
+
+              // Get category name safely
+              const categoryName = typeof supplierTypeData?.name === 'string' ? supplierTypeData.name : type
+
+              return (
+                <Card
+                  key={type}
+                  className="overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 hover:shadow-2xl"
+                  onClick={() => {
+                    if (supplier.id) {
+                      router.push(`/supplier/${supplier.id}?from=dashboard`)
+                    }
+                  }}
+                >
+                  {/* Image Section */}
+                  <div className="relative h-48 w-full">
+                    {supplierImage && typeof supplierImage === 'string' && (
+                      <Image
+                        src={supplierImage}
+                        alt={displayName}
+                        fill
+                        className="object-cover"
+                        sizes="100vw"
+                      />
+                    )}
+
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
+
+                    {/* Badges */}
+                    <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={`${typeConfig.color} text-white shadow-lg backdrop-blur-sm`}>
+                          {typeConfig.icon} {String(categoryName)}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Supplier info */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                      <div className="text-white">
+                        <h3 className="text-xl font-bold mb-1 drop-shadow-lg truncate">
+                          {String(displayName)}
+                        </h3>
+
+                        <div className="flex items-center justify-between">
+                          <div className="text-white">
+                            {priceDisplay && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl font-black drop-shadow-lg">£{String(priceDisplay)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {location && (
+                          <p className="text-xs text-white/80 mt-1 drop-shadow">📍 {String(location)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Why We Picked This */}
+                  <div className="p-4 bg-gradient-to-r from-[hsl(var(--primary-50))] to-white">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-[hsl(var(--primary-500))] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-[hsl(var(--primary-700))] mb-1">Why we picked this:</p>
+                        <p className="text-sm text-gray-700">{String(selectionReasons[type] || 'Great choice for your party!')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-2">No suppliers selected yet</h3>
+            <p className="text-gray-600 text-sm">
+              Swipe through the tabs to add suppliers to your party
+            </p>
           </div>
         )}
       </div>
@@ -349,9 +549,11 @@ export default function MobileSupplierNavigation({
               <div className="flex space-x-2 min-w-max pr-8">
                 {supplierTypes.map((supplierType, index) => {
                   const isActive = activeTab === index
-                  const hasContent = supplierType.isAddonSection 
-                    ? getAddonCount() > 0 
-                    : !!suppliers[supplierType.type]
+                  const hasContent = supplierType.isMyPartySection
+                    ? Object.values(suppliers).some(s => s !== null)
+                    : supplierType.isAddonSection
+                      ? getAddonCount() > 0
+                      : !!suppliers[supplierType.type]
 
                   return (
                     <button
@@ -462,7 +664,11 @@ export default function MobileSupplierNavigation({
 
       {/* ✅ UPDATED: Supplier Card Content with Venue Carousel */}
       <div className="px-4" id="mobile-supplier-content" data-tour="mobile-supplier-cards">
-        {activeSupplierTypeData?.isAddonSection ? (
+        {activeSupplierTypeData?.isMyPartySection ? (
+          <div>
+            {renderMyPartyContent()}
+          </div>
+        ) : activeSupplierTypeData?.isAddonSection ? (
           <div>
             <div className="mb-4">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -581,6 +787,26 @@ export default function MobileSupplierNavigation({
           })()}
         </div>
         )}
+      </div>
+
+      {/* ✅ COMPLETE BOOKING CTA - ALWAYS VISIBLE ON MOBILE */}
+      <div className="px-4 mt-8 mb-6">
+        <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
+          <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
+          <p className="text-sm text-white/90 mb-4">
+            Swipe to add more suppliers and customize your plan, or complete your booking now!
+          </p>
+          <button
+            onClick={() => router.push('/review-book')}
+            className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
+          >
+            <Check className="w-5 h-5" />
+            Complete Booking
+          </button>
+          <p className="text-xs text-white/80 text-center mt-3">
+            You'll review your full party plan before any payment
+          </p>
+        </div>
       </div>
 
       <style jsx global>{`

@@ -27,6 +27,7 @@ const MobileBottomTabBar = ({
   AddSuppliersSection,
   ProgressWidget,
   CountdownWidget,
+  TimelineAssistant, // ✅ NEW: Timeline Assistant
   getSupplierDisplayName,
   getSupplierDisplayPricing,
   totalCost = 0,
@@ -60,35 +61,61 @@ const MobileBottomTabBar = ({
 
   const timeRemaining = calculateTimeRemaining()
 
-  // ✅ SMART: Check if venue is confirmed (paid)
+  // ✅ SMART: Check if venue is confirmed (manually accepted by venue, not just paid)
   const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
-  const isVenueConfirmed = venueEnquiry?.payment_status === 'paid' || venueEnquiry?.is_paid === true
+  const venueExists = !!suppliers.venue
+  const isVenueConfirmed = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false
+  const venueAwaitingConfirmation = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
 
   // ✅ SMART: Check if suppliers are confirmed (at least one paid supplier)
   const hasPaidSuppliers = enquiries.some(e => 
     e.payment_status === 'paid' || e.is_paid === true
   )
 
-  // ✅ SMART: Party Tools with lock logic
+  // ✅ DEBUG: Log received data
+  console.log('🔍 MobileBottomTabBar Props:', {
+    guestListLength: guestList?.length,
+    hasRegistry: !!giftRegistry,
+    registryItemCount,
+    hasEinvites: !!einvites,
+    einvitesData: einvites
+  })
+
+  // ✅ SMART: Calculate e-invites state
+  const einvitesCreated = !!einvites && (
+    einvites.inviteId ||
+    einvites.shareableLink ||
+    einvites.friendlySlug
+  )
+
+  const inviteId = einvites?.inviteId ||
+                  einvites?.shareableLink?.split('/e-invites/')[1] ||
+                  einvites?.friendlySlug
+
+  const invitesSent = einvites?.guestList?.some(g => g.status === 'sent') || false
+  const sentCount = einvites?.guestList?.filter(g => g.status === 'sent').length || 0
+
+  // ✅ SMART: Party Tools with lock logic and images
   const partyTools = [
     {
       id: 'guests',
-      label: 'Guest List',
+      label: (guestList?.length || 0) > 0 ? 'Manage Guest List' : 'Create Guest List',
       icon: Users,
       href: `/rsvps/${partyDetails?.id || ''}`,
       hasContent: (guestList?.length || 0) > 0,
       count: guestList?.length || 0,
       isLocked: false,
-      status: (guestList?.length || 0) > 0 
-        ? `${guestList.length} guests` 
-        : 'No guests yet',
+      status: (guestList?.length || 0) > 0
+        ? `${guestList.length} guest${guestList.length !== 1 ? 's' : ''}`
+        : 'Not created',
       description: (guestList?.length || 0) > 0
-        ? 'Manage your guest list'
-        : 'Add guests'
+        ? 'View and manage your guest list'
+        : 'Add guests for invites and RSVPs',
+      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/okpcftsuni04yokhex1l.jpg'
     },
     {
       id: 'registry',
-      label: 'Gift Registry',
+      label: giftRegistry ? 'Manage Registry' : 'Create Registry',
       icon: Gift,
       href: '/gift-registry',
       hasContent: !!giftRegistry,
@@ -97,35 +124,43 @@ const MobileBottomTabBar = ({
       lockMessage: 'Secure at least one supplier to create registry',
       status: !hasPaidSuppliers
         ? '🔒 Locked'
-        : giftRegistry 
-          ? registryItemCount > 0 ? `${registryItemCount} items` : 'Empty registry'
+        : giftRegistry
+          ? registryItemCount > 0 ? `${registryItemCount} item${registryItemCount !== 1 ? 's' : ''}` : 'Registry created'
           : 'Not created',
       description: !hasPaidSuppliers
         ? 'Confirm suppliers first'
         : giftRegistry
-          ? 'Manage your gift registry'
-          : 'Set up registry'
+          ? registryItemCount > 0 ? 'Manage your gift registry' : 'Add items to your registry'
+          : 'Help guests know what to bring',
+      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970180/iStock-2000435412-removebg_ewfzxs.png'
     },
     {
       id: 'einvites',
-      label: 'E-Invites',
+      label: einvitesCreated ? (invitesSent ? 'Manage Invites' : 'Send Invites') : 'Create E-Invites',
       icon: Mail,
-      href: einvites?.inviteId 
-        ? `/e-invites/${einvites.inviteId}/manage`
+      href: inviteId
+        ? `/e-invites/${inviteId}/manage`
         : '/e-invites/create',
-      hasContent: !!einvites,
+      hasContent: einvitesCreated,
       isLocked: !isVenueConfirmed,
-      lockMessage: 'Complete venue booking to unlock invites',
-      status: !isVenueConfirmed 
-        ? '🔒 Locked' 
-        : einvites 
-          ? '✓ Created' 
+      lockMessage: venueAwaitingConfirmation
+        ? 'Waiting for venue to confirm your booking'
+        : !venueExists
+          ? 'Add a venue to your party first'
+          : 'Venue must confirm your booking first',
+      status: !isVenueConfirmed
+        ? '🔒 Locked'
+        : einvitesCreated
+          ? invitesSent ? `${sentCount} sent` : '✓ Created'
           : 'Not created',
       description: !isVenueConfirmed
-        ? 'Confirm venue first'
-        : einvites 
-          ? 'Manage your digital invitations'
-          : 'Create invitations'
+        ? venueAwaitingConfirmation
+          ? 'Waiting for venue confirmation'
+          : 'Add and confirm venue first'
+        : einvitesCreated
+          ? invitesSent ? 'Manage and track your invitations' : 'Share with guests'
+          : 'Create beautiful digital invitations',
+      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1754388320/party-invites/seo3b2joo1omjdkdmjtw.png'
     }
   ]
 
@@ -266,26 +301,31 @@ const MobileBottomTabBar = ({
                   return (
                     <div
                       key={tool.id}
-                      className="block p-4 bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 cursor-not-allowed"
+                      className="block bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 cursor-not-allowed overflow-hidden"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                            <Icon className="w-6 h-6 text-gray-400" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full">
-                              <Lock className="w-4 h-4 text-gray-400" />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold text-gray-400">{tool.label}</h4>
-                              <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">
-                                🔒 Locked
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-400">{tool.lockMessage}</p>
+                      {/* Image Header */}
+                      <div className="relative h-32 overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
+                        <img
+                          src={tool.image}
+                          alt={tool.label}
+                          className="w-full h-full object-cover grayscale"
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="bg-white/90 rounded-full p-3">
+                            <Lock className="w-6 h-6 text-gray-500" />
                           </div>
                         </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-gray-400">{tool.label}</h4>
+                          <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+                            🔒 Locked
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400">{tool.lockMessage}</p>
                       </div>
                     </div>
                   )
@@ -296,34 +336,42 @@ const MobileBottomTabBar = ({
                     key={tool.id}
                     href={tool.href}
                     onClick={closeModal}
-                    className="block p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-all active:scale-[0.98]"
+                    className="block bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all active:scale-[0.98] overflow-hidden group"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                          tool.hasContent ? 'bg-green-100' : 'bg-gray-100'
-                        }`}>
-                          <Icon className={`w-6 h-6 ${
-                            tool.hasContent ? 'text-green-600' : 'text-gray-400'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">{tool.label}</h4>
-                            {tool.hasContent && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                                ✓
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-600">{tool.description}</p>
-                        </div>
+                    {/* Image Header */}
+                    <div className="relative h-32 overflow-hidden">
+                      <img
+                        src={tool.image}
+                        alt={tool.label}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                      {/* Status Badge */}
+                      <div className="absolute top-3 right-3">
+                        {tool.hasContent ? (
+                          <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1">
+                            ✓ {tool.status}
+                          </span>
+                        ) : (
+                          <span className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded-full font-semibold">
+                            New
+                          </span>
+                        )}
                       </div>
+
+                      {/* Count Badge */}
                       {tool.count > 0 && (
-                        <div className="bg-purple-100 text-primary-700 px-3 py-1 rounded-full text-sm font-bold">
+                        <div className="absolute bottom-3 right-3 bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
                           {tool.count}
                         </div>
                       )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4">
+                      <h4 className="font-bold text-gray-900 mb-1 text-base">{tool.label}</h4>
+                      <p className="text-xs text-gray-600 leading-relaxed">{tool.description}</p>
                     </div>
                   </Link>
                 )
@@ -333,7 +381,11 @@ const MobileBottomTabBar = ({
             {partyTools.some(t => t.isLocked) && (
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <p className="text-sm text-blue-800">
-                  💡 <strong>Tip:</strong> Complete your venue booking to unlock all party tools
+                  💡 <strong>Tip:</strong> {venueAwaitingConfirmation
+                    ? 'Wait for your venue to confirm your booking to unlock e-invites'
+                    : !venueExists
+                      ? 'Add a venue to unlock e-invites and other party tools'
+                      : 'Your venue needs to confirm your booking to unlock e-invites'}
                 </p>
               </div>
             )}
@@ -592,6 +644,12 @@ const MobileBottomTabBar = ({
       case "timer":
         return (
           <div className="space-y-6">
+            {/* ✅ Snappy's Timeline Assistant */}
+            {TimelineAssistant && (
+              <div>{TimelineAssistant}</div>
+            )}
+
+            {/* Countdown Widget */}
             {CountdownWidget ? (
               <div>{CountdownWidget}</div>
             ) : (

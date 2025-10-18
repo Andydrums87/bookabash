@@ -174,13 +174,14 @@ export function usePartyJourney({
         id: 'track_rsvps',
         number: 7,
         title: 'Track RSVPs',
-        description: rsvpsReceived 
+        description: rsvpsReceived
           ? `${rsvpCount} confirmed attending`
           : 'See who\'s coming to the party',
-        status: guestListCreated ? 'available' : 'available',
+        status: !invitesSent ? 'locked' :
+                rsvpsReceived ? 'completed' : 'available',
         icon: '📊',
-        unlockCondition: null,
-        unlockMessage: null,
+        unlockCondition: 'invites_sent',
+        unlockMessage: 'Send your invites first before tracking RSVPs',
         metrics: {
           total: guestCount,
           confirmed: rsvpCount
@@ -197,9 +198,10 @@ export function usePartyJourney({
         number: 8,
         title: 'Final Details',
         description: 'Confirm numbers and arrangements',
-        status: 'upcoming',
+        status: !partyDetails?.final_details_sent ? 'locked' : 'completed',
         icon: '📝',
-        unlockCondition: null,
+        unlockCondition: 'final_details_sent',
+        unlockMessage: 'Final party details will be sent 7 days before your party',
         daysBeforeParty: 7
       }
     ]

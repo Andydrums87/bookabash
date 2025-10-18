@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 // Icons
-import { RefreshCw, ChevronRight, Plus } from "lucide-react"
+import { RefreshCw, ChevronRight, Plus, Check } from "lucide-react"
 
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -108,7 +108,7 @@ export default function LocalStorageDashboard() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [selectedAddon, setSelectedAddon] = useState(null)
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false)
-  const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('venue')
+  const [activeMobileSupplierType, setActiveMobileSupplierType] = useState('myParty')
   const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
   const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
   const [isSelectingVenue, setIsSelectingVenue] = useState(false)
@@ -1597,42 +1597,46 @@ const handleChildPhotoUpload = async (file) => {
                   />
                 </div>
               </div>
- 
+
+              {/* Complete Booking CTA */}
+              <div data-tour="review-book" className="max-w-2xl mx-auto md:block hidden">
+                <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
+                  <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
+                  <p className="text-sm text-white/90 mb-4">
+                    Swipe to add more suppliers and customize your plan, or complete your booking now!
+                  </p>
+                  <Link href="/review-book">
+                    <button
+                      className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-5 h-5" />
+                      Complete Booking
+                    </button>
+                  </Link>
+                  <p className="text-xs text-white/80 text-center mt-3">
+                    You'll review your full party plan before any payment
+                  </p>
+                </div>
+              </div>
+
               <div className="md:block hidden">
                 <AddonsSectionWrapper suppliers={suppliers} />
               </div>
-              
+
               <div className="md:block hidden w-screen pr-6 md:pr-20">
-                <RecommendedAddonsWrapper 
-                  context="dashboard" 
+                <RecommendedAddonsWrapper
+                  context="dashboard"
                   maxItems={4}
                   onAddonClick={handleAddonClick}
                 />
               </div>
-              
+
               {/* <PartySummarySection
   partyDetails={partyDetails}
   suppliers={suppliers}
   totalCost={totalCost}
   addons={addons}
 /> */}
-
-              {/* Action Section */}
-              <div className="flex flex-col justify-center items-center sm:flex-row gap-4"  data-tour="review-book">
-                <Button
-                  className="flex-3 w-full bg-teal-500 animate-pulse rounded-full hover:bg-teal-600 md:py-8 py-4 text-xl font-bold"
-                  asChild
-                >
-          <Link href="/review-book">Complete Your Booking!</Link>
-                </Button>
-                <p className="text-sm text-gray-500 text-center mt-2">
-  You'll review your full party plan before any payment
-</p>
-              
-                <Button variant="ghost" className="sm:w-auto">
-                  Get Help
-                </Button>
-              </div>
               
               <div className="md:hidden block">
                 <ReferFriend />

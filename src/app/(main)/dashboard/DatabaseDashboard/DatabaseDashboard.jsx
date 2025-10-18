@@ -43,6 +43,7 @@ import SupplierAddedConfirmationModal from "./components/SupplierAddedConfirmati
 import SnappyLoader from "@/components/ui/SnappyLoader"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import { AddSuppliersSection } from "./components/PartyJourney/AddSuppliersSection"
+import SnappyTimelineAssistant from "./components/SnappyTimelineAssistant"
 
 
 
@@ -106,6 +107,15 @@ const [uploadingChildPhoto, setUploadingChildPhoto] = useState(false)
 const childPhotoRef = useRef(null)
   const welcomePopupShownRef = useRef(false)
 
+  // ✅ NEW: Party Tools State
+  const [partyToolsData, setPartyToolsData] = useState({
+    guestList: [],
+    rsvps: [],
+    einvites: null,
+    giftRegistry: null,
+    registryItemCount: 0
+  })
+
   // MAIN PARTY DATA HOOK - This now handles ALL loading
   const {
     partyData,
@@ -137,6 +147,101 @@ const childPhotoRef = useRef(null)
     isPaymentConfirmed,
     paymentDetails,
   } = usePartyPhase(partyData, partyId)
+
+  // ✅ NEW: Fetch party tools data directly (AFTER partyId is declared)
+  useEffect(() => {
+    async function fetchPartyToolsData() {
+      if (!partyId) {
+        console.log('⚠️ No partyId - skipping party tools fetch')
+        return
+      }
+
+      console.log('🔄 Fetching party tools data for party:', partyId)
+
+      try {
+        // Fetch guest list
+        console.log('📋 Fetching guest list...')
+        const guestResult = await partyDatabaseBackend.getPartyGuests(partyId)
+        console.log('📋 Guest result:', guestResult)
+        const guests = guestResult.success ? guestResult.guests || [] : []
+        console.log('📋 Extracted guests:', guests.length, 'guests')
+
+        // Fetch RSVPs
+        console.log('✅ Fetching RSVPs...')
+        const rsvpResult = await partyDatabaseBackend.getPartyRSVPs(partyId)
+        console.log('✅ RSVP result:', rsvpResult)
+        const rsvps = rsvpResult.success ? rsvpResult.rsvps || [] : []
+        console.log('✅ Extracted RSVPs:', rsvps.length, 'rsvps')
+
+        // Fetch e-invites
+        console.log('💌 Fetching e-invites...')
+        const einvitesResult = await partyDatabaseBackend.getEInvites(partyId)
+        console.log('💌 E-invites result:', einvitesResult)
+        const einvites = einvitesResult.success ? einvitesResult.einvites : null
+        console.log('💌 Extracted e-invites:', einvites ? 'Found' : 'None')
+
+        // Fetch gift registry
+        console.log('🎁 Fetching gift registry...')
+        const registryResult = await partyDatabaseBackend.findGiftRegistryForParty(partyId)
+        console.log('🎁 Registry result (RAW):', registryResult)
+
+        // ✅ Handle different response formats
+        let registry = null
+        if (registryResult?.success) {
+          // Format: { success: true, registry: {...} }
+          registry = registryResult.registry
+        } else if (registryResult?.id) {
+          // Format: Direct registry object
+          registry = registryResult
+        } else if (registryResult?.data?.id) {
+          // Format: { data: {...} }
+          registry = registryResult.data
+        }
+
+        console.log('🎁 Extracted registry:', registry ? 'Found (ID: ' + registry.id + ')' : 'None')
+
+        // If registry exists, fetch items
+        let itemCount = 0
+        if (registry?.id) {
+          console.log('📦 Fetching registry items for registry:', registry.id)
+          const { data: items, error } = await supabase
+            .from('party_gift_registry_items')
+            .select('*')
+            .eq('registry_id', registry.id)
+
+          if (error) {
+            console.error('❌ Error fetching registry items:', error)
+          } else {
+            itemCount = items?.length || 0
+            console.log('📦 Registry items found:', itemCount)
+          }
+        }
+
+        console.log('🎯 Party Tools Data Summary:', {
+          guestCount: guests.length,
+          rsvpCount: rsvps.length,
+          hasRegistry: !!registry,
+          registryItemCount: itemCount,
+          hasEinvites: !!einvites
+        })
+
+        const newData = {
+          guestList: guests,
+          rsvps: rsvps,
+          einvites: einvites,
+          giftRegistry: registry,
+          registryItemCount: itemCount
+        }
+        console.log('💾 Setting party tools data:', newData)
+
+        setPartyToolsData(newData)
+      } catch (error) {
+        console.error('❌ Error fetching party tools data:', error)
+      }
+    }
+
+    fetchPartyToolsData()
+  }, [partyId])
 
   // UNIFIED PRICING CALCULATION (same pattern as LocalStorageDashboard)
   const enhancedTotalCost = useMemo(() => {
@@ -1053,7 +1158,7 @@ const addSuppliersSection = (
               recommendationsLoaded={recommendationsLoaded}
               loadingCards={loadingCards}
             /> */}
-        
+
            {/* NEW: Journey takes center stage */}
   <PartyPhaseContent
     phase={partyPhase}
@@ -1079,6 +1184,7 @@ const addSuppliersSection = (
   getRecommendedSupplierForType={getRecommendedSupplierForType}
   onAddRecommendedSupplier={handleAddRecommendedSupplier}
   recommendationsLoaded={recommendationsLoaded}
+  onDataUpdate={setPartyToolsData}
   />
           </main>
 
@@ -1094,7 +1200,18 @@ const addSuppliersSection = (
             showPaymentCTA={true}
             totalOutstandingCost={outstandingData.totalDeposit}
             outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-            AddSuppliersSection={addSuppliersSection} // ✅ ADD THIS
+            AddSuppliersSection={addSuppliersSection}
+            // ✅ Timeline Assistant Data
+            TimelineAssistant={
+              <SnappyTimelineAssistant
+                partyDetails={partyDetails}
+                suppliers={visibleSuppliers}
+                guestList={partyToolsData?.guestList || []}
+                giftRegistry={partyToolsData?.giftRegistry}
+                einvites={partyToolsData?.einvites}
+                onSupplierClick={openSupplierModal}
+              />
+            }
           />
         </div>
       </div>
@@ -1112,8 +1229,19 @@ const addSuppliersSection = (
     totalCost={enhancedTotalCost}
     timeRemaining={24}
     partyDetails={partyDetails}
-    partyData={partyData} // ✅ ADD THIS
-    // ✅ SIMPLE: Just pass the component
+    partyData={partyData}
+    addons={addons}
+    // ✅ NEW: Party Tools Data from PartyPhaseContent
+    guestList={partyToolsData?.guestList || []}
+    giftRegistry={partyToolsData?.giftRegistry}
+    registryItemCount={partyToolsData?.registryItemCount || 0}
+    einvites={partyToolsData?.einvites}
+    // ✅ Payment props
+    onPaymentReady={handlePaymentReady}
+    isPaymentConfirmed={isPaymentConfirmed}
+    hasOutstandingPayments={outstandingData.totalDeposit > 0}
+    totalDepositAmount={outstandingData.totalDeposit}
+    outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
     getSupplierDisplayName={getSupplierDisplayName}
     getSupplierDisplayPricing={getSupplierDisplayPricing}
     AddSuppliersSection={addSuppliersSection}
@@ -1132,7 +1260,16 @@ const addSuppliersSection = (
     CountdownWidget={
       <CountdownWidget
         partyDate={partyDetails?.date}
-
+      />
+    }
+    TimelineAssistant={
+      <SnappyTimelineAssistant
+        partyDetails={partyDetails}
+        suppliers={visibleSuppliers}
+        guestList={partyToolsData?.guestList || []}
+        giftRegistry={partyToolsData?.giftRegistry}
+        einvites={partyToolsData?.einvites}
+        onSupplierClick={openSupplierModal}
       />
     }
     onRemoveSupplier={handleCancelEnquiry}

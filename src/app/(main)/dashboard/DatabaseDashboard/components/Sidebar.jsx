@@ -24,7 +24,8 @@ export default function Sidebar({
   showPaymentCTA,
   totalOutstandingCost,
   outstandingSuppliers,
-  AddSuppliersSection // ✅ NEW: Receive the section as a prop
+  AddSuppliersSection,
+  TimelineAssistant // ✅ NEW: Timeline Assistant
 }) {
   const router = useRouter()
   const [showAddSuppliersModal, setShowAddSuppliersModal] = useState(false)
@@ -112,6 +113,13 @@ export default function Sidebar({
             <p className="text-2xl ml-2 text-white">Party Summary</p>
           </Button>
         </div>
+
+        {/* ✅ SNAPPY'S TIMELINE ASSISTANT */}
+        {TimelineAssistant && (
+          <div className="mt-6">
+            {TimelineAssistant}
+          </div>
+        )}
 
         <CountdownWidget partyDate={partyDate}/>
         <ReferFriend />
