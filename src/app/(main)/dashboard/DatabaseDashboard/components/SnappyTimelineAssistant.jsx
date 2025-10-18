@@ -263,59 +263,88 @@ const generateChecklist = (phase, suppliers, partyDetails, guestList, giftRegist
   return allChecklist[phase] || []
 }
 
-// Get Snappy's tips for current phase
-const getSnappyTips = (phase, suppliers, daysUntil) => {
-  const tips = {
-    planning: [
-      "Venue first! That's where all the magic happens ✨",
-      "Weekend spots disappear fast - grab yours now!",
-      "Pick something your little one will absolutely love 💕"
-    ],
-    organizing: [
-      "The best entertainers get snapped up quick - don't miss out!",
-      "Got any kids with allergies? Better check now than on party day!",
-      "Start that guest list - it'll help you figure out how much food you need"
-    ],
-    booking: [
-      "Give suppliers a few weeks heads up - they'll love you for it!",
-      "Balloons and decorations = instant party vibes 🎈",
-      "Party bags make the kids SO happy when they leave!"
-    ],
-    confirming: [
-      "3 weeks notice = happy guests who can actually make it!",
-      "Digital invites are brilliant - track who's coming in real-time",
-      "Gift registries stop you getting 5 of the same toy 😅"
-    ],
-    finalizing: [
-      "Chase those stragglers who haven't RSVP'd!",
-      "Double-check numbers with venue & caterer - no surprises!",
-      "Make a checklist so you don't forget anything important"
-    ],
-    "final-week": [
-      "Fill those party bags NOW - you'll thank me later!",
-      "Quick reminder text to everyone = fewer no-shows",
-      "Outdoor party? Have a Plan B just in case ☔"
-    ],
-    "party-day": [
-      "Get there early! Setup always takes longer than you think",
-      "Get someone else on photo duty - you need to enjoy this too!",
-      "Take a breath - you've absolutely smashed it! 🌟"
-    ]
+// Get relevant blog posts for current phase
+const getBlogRecommendations = (phase, suppliers, daysUntil) => {
+  // Helper to slugify titles
+  const slugify = (text) => text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\W-]+/g, "-")
+
+  const allBlogPosts = [
+    {
+      id: 1,
+      title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
+      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
+      excerpt: "Everything you need to know about planning the perfect children's party in London this year, from venues to entertainment.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
+      category: "Planning",
+      readTime: "8 min read",
+      phases: ["planning", "organizing", "booking"]
+    },
+    {
+      id: 2,
+      title: "How Much Does a Children's Party Cost in London? A Complete Breakdown",
+      slug: slugify("How Much Does a Children's Party Cost in London? A Complete Breakdown"),
+      excerpt: "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies for parents.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
+      category: "Budget",
+      readTime: "6 min read",
+      phases: ["planning", "organizing"]
+    },
+    {
+      id: 3,
+      title: "15 Trending Children's Party Themes in London for 2025",
+      slug: slugify("15 Trending Children's Party Themes in London for 2025"),
+      excerpt: "Discover the hottest party themes that London kids are loving this year, from tech-inspired celebrations to eco-friendly gatherings.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
+      category: "Themes",
+      readTime: "7 min read",
+      phases: ["planning"]
+    },
+    {
+      id: 4,
+      title: "10 Outdoor Party Games That London Kids Can't Get Enough Of",
+      slug: slugify("10 Outdoor Party Games That London Kids Can't Get Enough Of"),
+      excerpt: "Get kids moving with these popular outdoor party games that are perfect for London parks and gardens.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595136/blog-post-4_d2bv5i.png",
+      category: "Activities",
+      readTime: "5 min read",
+      phases: ["booking", "finalizing", "final-week"]
+    },
+    {
+      id: 5,
+      title: "DIY Party Decorations That Will Wow Your Guests",
+      slug: slugify("DIY Party Decorations That Will Wow Your Guests"),
+      excerpt: "Create stunning party decorations on a budget with these simple DIY ideas that anyone can master.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
+      category: "Planning",
+      readTime: "4 min read",
+      phases: ["booking", "confirming", "finalizing"]
+    },
+    {
+      id: 6,
+      title: "Healthy Party Food Options That Kids Actually Love",
+      slug: slugify("Healthy Party Food Options That Kids Actually Love"),
+      excerpt: "Nutritious and delicious party food ideas that will keep both kids and parents happy at your next celebration.",
+      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
+      category: "Food",
+      readTime: "5 min read",
+      phases: ["organizing", "booking", "confirming"]
+    },
+  ]
+
+  // Filter blog posts by phase
+  const relevantPosts = allBlogPosts.filter(post => post.phases.includes(phase))
+
+  // If no specific posts for this phase, return the planning guide
+  if (relevantPosts.length === 0) {
+    return [allBlogPosts[0]]
   }
 
-  const phaseTips = tips[phase] || tips.planning
-
-  // Add personalized tip about missing suppliers
-  const missingSuppliers = []
-  if (!suppliers.venue) missingSuppliers.push("venue")
-  if (!suppliers.entertainment) missingSuppliers.push("entertainment")
-  if (!suppliers.catering) missingSuppliers.push("food")
-
-  if (missingSuppliers.length > 0 && phase !== "final-week" && phase !== "party-day") {
-    phaseTips.push(`Quick! You still need: ${missingSuppliers.join(", ")}. Let's grab those! 🚀`)
-  }
-
-  return phaseTips
+  // Return up to 3 posts
+  return relevantPosts.slice(0, 3)
 }
 
 const SnappyTimelineAssistant = ({
@@ -341,7 +370,7 @@ const SnappyTimelineAssistant = ({
   const phase = getTimelinePhase(daysUntil)
   const phaseInfo = getPhaseInfo(phase)
   const checklist = generateChecklist(phase, suppliers, partyDetails, guestList, giftRegistry, einvites)
-  const tips = getSnappyTips(phase, suppliers, daysUntil)
+  const blogRecommendations = getBlogRecommendations(phase, suppliers, daysUntil)
 
   const handleItemClick = (item) => {
     if (item.href) {
@@ -417,7 +446,7 @@ const SnappyTimelineAssistant = ({
               </div>
 
               {/* Phase Info */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              {/* <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-lg">{phaseInfo.title}</h3>
@@ -430,19 +459,50 @@ const SnappyTimelineAssistant = ({
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Content */}
             <div className="overflow-y-auto max-h-[60vh] p-6">
-              {/* Snappy's Tips */}
+              {/* Blog Recommendations */}
               <div className="mb-6">
-                <h3 className="font-bold text-gray-900 mb-3 text-lg">Quick Tips from Snappy</h3>
-                <div className="space-y-2">
-                  {tips.map((tip, index) => (
-                    <div key={index} className="p-3 bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-lg">
-                      <p className="text-sm text-gray-900">{tip}</p>
-                    </div>
+                <h3 className="font-bold text-gray-900 mb-3 text-lg">Helpful Guides from Snapspiration</h3>
+                <div className="space-y-3">
+                  {blogRecommendations.map((post) => (
+                    <a
+                      key={post.id}
+                      href={`/blog/${post.slug}`}
+                      className="block bg-white border-2 border-gray-200 rounded-lg overflow-hidden hover:border-[hsl(var(--primary-300))] hover:shadow-md transition-all group"
+                    >
+                      <div className="flex gap-3">
+                        {/* Blog Post Image */}
+                        <div className="relative w-24 h-24 flex-shrink-0">
+                          <Image
+                            src={post.image}
+                            alt={post.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="96px"
+                          />
+                        </div>
+
+                        {/* Blog Post Content */}
+                        <div className="flex-1 p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs bg-[hsl(var(--primary-100))] text-[hsl(var(--primary-700))] px-2 py-0.5 rounded-full font-medium">
+                              {post.category}
+                            </span>
+                            <span className="text-xs text-gray-500">{post.readTime}</span>
+                          </div>
+                          <h4 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2 group-hover:text-[hsl(var(--primary-600))]">
+                            {post.title}
+                          </h4>
+                          <p className="text-xs text-gray-600 line-clamp-2">
+                            {post.excerpt}
+                          </p>
+                        </div>
+                      </div>
+                    </a>
                   ))}
                 </div>
               </div>

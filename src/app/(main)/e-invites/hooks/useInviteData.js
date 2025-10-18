@@ -7,6 +7,7 @@ export const useInviteData = () => {
   const [selectedTheme, setSelectedTheme] = useState("princess")
   const [inviteData, setInviteData] = useState(DEFAULT_INVITE_DATA)
   const [generatedImage, setGeneratedImage] = useState(null)
+  const [savedGuestList, setSavedGuestList] = useState([])
 
   const getVenueName = (partyPlan, fallbackLocation) => {
     try {
@@ -307,6 +308,15 @@ export const useInviteData = () => {
               setGeneratedImage(einvites.image)
             }
 
+            // Load saved guest list
+            if (einvites.guestList && Array.isArray(einvites.guestList)) {
+              console.log("✅ Loading saved guest list:", einvites.guestList.length, "guests")
+              setSavedGuestList(einvites.guestList)
+            } else {
+              console.log("ℹ️ No saved guest list found")
+              setSavedGuestList([])
+            }
+
             console.log("✅ Loaded einvites data:", {
               theme: themeToUse,
               childName: inviteDataToUse.childName,
@@ -315,6 +325,7 @@ export const useInviteData = () => {
               start_time: inviteDataToUse.start_time,
               end_time: inviteDataToUse.end_time,
               hasImage: !!einvites.image && einvites.image !== "/placeholder.jpg",
+              guestCount: einvites.guestList?.length || 0,
             })
           } else {
             console.log("ℹ️ No einvites yet, populating with party details")
@@ -372,5 +383,6 @@ export const useInviteData = () => {
     generatedImage,
     setGeneratedImage,
     handleInputChange,
+    savedGuestList,
   }
 }

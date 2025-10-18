@@ -165,9 +165,9 @@ export default function PaymentSuccessPage() {
         
           {/* Success Icon */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+            {/* <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
               <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
+            </div> */}
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               🎉 Woohoo! {bookingDetails.childName}'s Party is Booked!
             </h1>

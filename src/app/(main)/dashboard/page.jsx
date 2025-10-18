@@ -266,12 +266,15 @@ export default function DashboardPage() {
   useEffect(() => {
     const determineUserType = async () => {
       setIsLoading(true)
-      
+
+      // Small delay to ensure localStorage is available after navigation
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       const debug = {
         timestamp: new Date().toISOString(),
         steps: []
       }
-      
+
       try {
         // ============================================
         // STEP 1: Check Authentication Status
@@ -313,25 +316,47 @@ export default function DashboardPage() {
           console.log('📊 Party Result:', debug.partyCheck)
           
           if (partyResult.success && partyResult.party) {
-            // ✅ Authenticated + Has Party = DATABASE DASHBOARD
+            // ✅ Authenticated + Has Database Party = DATABASE DASHBOARD
             debug.steps.push('✅ Database party found → DATABASE DASHBOARD')
             debug.finalDecision = 'database'
             console.log('✅✅✅ DECISION: DATABASE DASHBOARD')
-            
+
             setDebugInfo(debug)
             setUserType('database')
             setIsLoading(false)
             return
           } else {
-            // ✅ Authenticated but no party = WELCOME
-            debug.steps.push('⚠️ No database party → WELCOME SCREEN')
-            debug.finalDecision = 'welcome'
-            console.log('⚠️⚠️⚠️ DECISION: WELCOME (auth but no party)')
-            
-            setDebugInfo(debug)
-            setUserType('welcome')
-            setIsLoading(false)
-            return
+            // ⚠️ Authenticated but no database party - CHECK LOCALSTORAGE!
+            // This happens when user signs in during review-book flow
+            // Party hasn't migrated to database yet (happens on payment)
+            debug.steps.push('⚠️ No database party - checking localStorage...')
+            console.log('⚠️ No database party - checking localStorage for pre-auth party data...')
+
+            const localStorageCheck = checkLocalStorage()
+            debug.localStorageCheck = localStorageCheck
+            console.log('📊 LocalStorage Check (authenticated user):', localStorageCheck)
+
+            if (localStorageCheck.hasValidData) {
+              // ✅ Authenticated + No DB Party + Has localStorage = LOCALSTORAGE DASHBOARD
+              debug.steps.push('✅ Valid localStorage found → LOCALSTORAGE DASHBOARD (authenticated mode)')
+              debug.finalDecision = 'localStorage'
+              console.log('✅✅✅ DECISION: LOCALSTORAGE DASHBOARD (user is authenticated but party not yet migrated)')
+
+              setDebugInfo(debug)
+              setUserType('localStorage')
+              setIsLoading(false)
+              return
+            } else {
+              // ❌ Authenticated + No DB Party + No localStorage = WELCOME
+              debug.steps.push('❌ No localStorage either → WELCOME SCREEN')
+              debug.finalDecision = 'welcome'
+              console.log('⚠️⚠️⚠️ DECISION: WELCOME (auth but no data anywhere)')
+
+              setDebugInfo(debug)
+              setUserType('welcome')
+              setIsLoading(false)
+              return
+            }
           }
         }
         

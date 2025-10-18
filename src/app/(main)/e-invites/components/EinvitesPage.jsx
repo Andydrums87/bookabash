@@ -40,6 +40,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     generatedImage,
     setGeneratedImage,
     handleInputChange,
+    savedGuestList,
   } = useInviteData()
 
   const {
@@ -65,7 +66,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
     sendViaEmail,
     sendToAllPending,
     updateNewGuest,
-  } = useGuestManagement(inviteData)
+  } = useGuestManagement(inviteData, savedGuestList)
 
   const {
     isSaved,
@@ -116,7 +117,15 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   }
 
   const handleRedirectToDashboard = () => {
-    window.location.href = '/e-invites'
+    // Redirect to manage page using the friendly slug (or fallback to ID)
+    if (saveResult && (saveResult.inviteSlug || saveResult.inviteId)) {
+      const inviteIdentifier = saveResult.inviteSlug || saveResult.inviteId
+      console.log('🔗 Redirecting to manage page with:', inviteIdentifier)
+      window.location.href = `/e-invites/${inviteIdentifier}/manage`
+    } else {
+      // Fallback to dashboard if no invite identifier
+      window.location.href = '/dashboard'
+    }
   }
 
   const handleCloseSuccessModal = () => {

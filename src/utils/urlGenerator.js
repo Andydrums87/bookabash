@@ -2,12 +2,25 @@
 export const urlGenerator = {
     // Generate friendly URLs for AI-generated invites
     createInviteSlug: (partyData, inviteId) => {
-      const childName = partyData.childName?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'party'
-      const theme = partyData.themeName?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'birthday'
-      const shortId = inviteId.slice(-8) // Last 8 chars
-      
-      return `${childName}-${theme}-${shortId}`
-      // Result: emma-princess-abc12345
+      // Get child's first name and last name
+      const childName = partyData.childName || partyData.child_name || 'party'
+      const nameParts = childName.toLowerCase().trim().split(/\s+/)
+      const firstName = nameParts[0] || 'party'
+      const lastName = nameParts[1] || ''
+
+      // Get party date
+      const partyDate = partyData.date || partyData.party_date || new Date().toISOString()
+      const dateObj = new Date(partyDate)
+      const year = dateObj.getFullYear()
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const day = String(dateObj.getDate()).padStart(2, '0')
+
+      // Create slug: firstname-lastname-yyyy-mm-dd
+      const namePart = lastName ? `${firstName}-${lastName}` : firstName
+      const cleanName = namePart.replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-')
+
+      return `${cleanName}-${year}-${month}-${day}`
+      // Result: emma-smith-2025-06-15 or emma-2025-06-15
     },
   
     createRegistrySlug: (partyData, registryId) => {

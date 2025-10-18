@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight, Check, MapPin, Users, Star, X, Gift, ChevronDown, ChevronUp, Eye, MoreVertical, Trash2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Check, CheckCircle, MapPin, Users, Star, X, Gift, ChevronDown, ChevronUp, Eye, MoreVertical, Trash2 } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import AddonSelectionModal from "@/components/supplier/addon-selection-modal"
 import {
@@ -211,9 +211,20 @@ export default function VenueCarouselCard({
   }
 
   return (
-    <Card 
+    <Card
       ref={cardRef}
-      className="overflow-hidden rounded-2xl border-2 border-white shadow-xl relative cursor-pointer"
+      className={`overflow-hidden rounded-2xl border-2 shadow-2xl relative cursor-pointer transition-all duration-300 ${
+        isCurrentSelected
+          ? 'ring-2 ring-offset-2 hover:scale-[1.02]'
+          : ''
+      }`}
+      style={isCurrentSelected ? {
+        borderColor: 'hsl(var(--primary-400))',
+        '--tw-ring-color': 'hsl(var(--primary-300) / 0.5)',
+        boxShadow: '0 25px 50px -12px hsl(var(--primary-200) / 0.3)'
+      } : {
+        borderColor: 'white'
+      }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -236,10 +247,6 @@ export default function VenueCarouselCard({
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
-        {/* Selected venue border highlight */}
-        {isCurrentSelected && (
-          <div className="absolute inset-0  pointer-events-none" />
-        )}
 
         {/* Top badges */}
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
@@ -248,8 +255,10 @@ export default function VenueCarouselCard({
               🏛️ Venue
             </Badge>
             {isCurrentSelected && (
-              <Badge className="bg-teal-500 text-white shadow-lg backdrop-blur-sm flex items-center gap-1">
-                <Check className="w-3 h-3" />
+              <Badge className="text-white shadow-lg backdrop-blur-sm border border-white/20 animate-pulse flex items-center gap-1" style={{
+                background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))'
+              }}>
+                <CheckCircle className="w-3 h-3 mr-1" />
                 Selected
               </Badge>
             )}

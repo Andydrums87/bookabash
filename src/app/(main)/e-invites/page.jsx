@@ -70,27 +70,29 @@ export default function EInvitesOverviewPage() {
   const checkForEinvites = async (partyId) => {
     try {
       setEinvitesLoading(true)
-      
+
       // Use your existing hasCreatedEInvites method
       const result = await partyDatabaseBackend.hasCreatedEInvites(partyId)
-      
+
       if (result.success && result.hasCreated) {
-        // Get the actual e-invites data to get the invite ID
+        // Get the actual e-invites data to get the invite slug or ID
         const einvitesResult = await partyDatabaseBackend.getEInvites(partyId)
-        
-        if (einvitesResult.success && einvitesResult.einvites && einvitesResult.einvites.inviteId) {
-          // Redirect to management page with the actual invite ID
-          console.log('E-invites exist, redirecting to management page:', einvitesResult.einvites.inviteId)
-          router.replace(`/e-invites/${einvitesResult.einvites.inviteId}/manage`)
+
+        if (einvitesResult.success && einvitesResult.einvites && (einvitesResult.einvites.inviteSlug || einvitesResult.einvites.inviteId)) {
+          // Prefer the friendly slug over the ID for the URL
+          const inviteIdentifier = einvitesResult.einvites.inviteSlug || einvitesResult.einvites.inviteId
+          console.log('E-invites exist, redirecting to management page:', inviteIdentifier)
+          router.replace(`/e-invites/${inviteIdentifier}/manage`)
+          // Keep loading state true to prevent flash - don't set it to false
           return
         }
       }
-      
+
       setHasEinvites(false)
+      setEinvitesLoading(false)
     } catch (error) {
       console.error('Error checking for e-invites:', error)
       setHasEinvites(false)
-    } finally {
       setEinvitesLoading(false)
     }
   }

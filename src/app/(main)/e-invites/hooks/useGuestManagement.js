@@ -1,6 +1,6 @@
 // hooks/useGuestManagement.js
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DEFAULT_GUEST, GUEST_STATUS } from '../constants/inviteConstants'
 import { 
   generateWhatsAppMessage, 
@@ -9,9 +9,17 @@ import {
   generateMailtoUrl 
 } from '../utils/helperFunctions'
 
-export const useGuestManagement = (inviteData) => {
-  const [guestList, setGuestList] = useState([])
+export const useGuestManagement = (inviteData, initialGuestList = []) => {
+  const [guestList, setGuestList] = useState(initialGuestList)
   const [newGuest, setNewGuest] = useState(DEFAULT_GUEST)
+
+  // Update guest list when initialGuestList changes (when loaded from database)
+  useEffect(() => {
+    if (initialGuestList && initialGuestList.length > 0) {
+      console.log("📋 Initializing guest list with", initialGuestList.length, "guests")
+      setGuestList(initialGuestList)
+    }
+  }, [initialGuestList])
 
   const addGuest = () => {
     if (newGuest.name.trim() && newGuest.contact.trim()) {

@@ -151,7 +151,11 @@ export default function SelectedSupplierCard({
       <MicroConfettiWrapper 
         isNewlyAdded={isNewlyAdded}
         onAnimationComplete={handleAnimationComplete}>
-        <Card onClick={onClick} className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl transition-all duration-300 relative ${isDeleting ? "opacity-50 scale-95" : ""}`}>
+        <Card onClick={onClick} className={`overflow-hidden rounded-2xl border-2 shadow-2xl transition-all duration-300 relative ring-2 ring-offset-2 ${isDeleting ? "opacity-50 scale-95" : "hover:scale-[1.02]"}`} style={{
+          borderColor: 'hsl(var(--primary-400))',
+          '--tw-ring-color': 'hsl(var(--primary-300) / 0.5)',
+          boxShadow: isDeleting ? undefined : '0 25px 50px -12px hsl(var(--primary-200) / 0.3)'
+        }}>
           
           {/* Image Section - Static Image Only */}
           <div className="relative h-64 w-full">
@@ -179,7 +183,10 @@ export default function SelectedSupplierCard({
                     <Badge className={`${typeConfig.color} text-white shadow-lg backdrop-blur-sm`}>
                       {typeConfig.icon} {type.charAt(0).toUpperCase() + type.slice(1)}
                     </Badge>
-                    <Badge className="bg-teal-500 text-white shadow-lg backdrop-blur-sm">
+                    <Badge className="text-white shadow-lg backdrop-blur-sm border border-white/20 animate-pulse" style={{
+                      background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))'
+                    }}>
+                      <CheckCircle className="w-3 h-3 mr-1" />
                       Selected
                     </Badge>
                   </div>

@@ -22,12 +22,8 @@ export default function EInvitesManagementPage() {
   const [einvites, setEinvites] = useState(null)
   const [partyDetails, setPartyDetails] = useState(null)
   const [partyId, setPartyId] = useState(null)
-  const [guestList, setGuestList] = useState([])
-  const [newGuest, setNewGuest] = useState({ name: "", contact: "", type: "email" })
   const [shareableLink, setShareableLink] = useState("")
-  const [sendingToGuest, setSendingToGuest] = useState(null)
   const [copied, setCopied] = useState(false)
-  const [showAddGuest, setShowAddGuest] = useState(false)
 
   // Load data
   useEffect(() => {
@@ -60,7 +56,6 @@ export default function EInvitesManagementPage() {
       const einvitesResult = await partyDatabaseBackend.getEInvites(foundPartyId)
       if (einvitesResult.success && einvitesResult.einvites) {
         setEinvites(einvitesResult.einvites)
-        setGuestList(einvitesResult.einvites.guestList || [])
         setShareableLink(einvitesResult.einvites.shareableLink || `${window.location.origin}/e-invites/${inviteId}`)
       }
 
@@ -76,119 +71,6 @@ export default function EInvitesManagementPage() {
     }
   }
 
-  // Guest management functions
-  const addGuest = async () => {
-    if (newGuest.name.trim() && newGuest.contact.trim()) {
-      const guest = {
-        id: Date.now(),
-        name: newGuest.name.trim(),
-        contact: newGuest.contact.trim(),
-        type: newGuest.type,
-        status: "pending",
-        addedAt: new Date().toISOString(),
-      }
-
-      const updatedGuestList = [...guestList, guest]
-      setGuestList(updatedGuestList)
-      setNewGuest({ name: "", contact: "", type: "email" })
-      setShowAddGuest(false)
-
-      try {
-        const updatedEinvites = {
-          ...einvites,
-          guestList: updatedGuestList,
-          updatedAt: new Date().toISOString(),
-        }
-        await partyDatabaseBackend.saveEInvites(partyId, updatedEinvites)
-        setEinvites(updatedEinvites)
-      } catch (error) {
-        console.error('Error saving guest:', error)
-      }
-    }
-  }
-
-  const removeGuest = async (guestId) => {
-    const updatedGuestList = guestList.filter(guest => guest.id !== guestId)
-    setGuestList(updatedGuestList)
-
-    try {
-      const updatedEinvites = {
-        ...einvites,
-        guestList: updatedGuestList,
-        updatedAt: new Date().toISOString(),
-      }
-      await partyDatabaseBackend.saveEInvites(partyId, updatedEinvites)
-      setEinvites(updatedEinvites)
-    } catch (error) {
-      console.error('Error removing guest:', error)
-    }
-  }
-
-  const sendViaWhatsApp = async (guest) => {
-    setSendingToGuest(guest.id)
-    try {
-      if (!shareableLink) {
-        alert("No shareable link available")
-        return
-      }
-
-      const childName = partyDetails?.child_name || 'Birthday Child'
-      const theme = partyDetails?.theme || 'Birthday'
-      const age = partyDetails?.child_age || ''
-      const venue = partyDetails?.location || 'Special Location'
-
-      const message = `Hi ${guest.name}! 👋\n\n🎉 You're invited to ${childName}'s ${theme} Party!\n\n${age ? `🎂 ${childName} is turning ${age}!\n` : ''}📍 Location: ${venue}\n\n✨ View your invitation here:\n${shareableLink}\n\nCan't wait to celebrate! 🎈\n\n*Powered by PartySnap*`
-
-      const cleanPhone = guest.contact.replace(/\D/g, "")
-      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
-      window.open(whatsappUrl, "_blank")
-
-      // Update guest status
-      await partyDatabaseBackend.updateGuestSendStatus(partyId, guest.id, 'sent', 'whatsapp')
-      setGuestList(prev => prev.map(g => 
-        g.id === guest.id 
-          ? { ...g, status: "sent", sentAt: new Date().toISOString(), sentMethod: 'whatsapp' }
-          : g
-      ))
-    } catch (error) {
-      console.error('Error sending WhatsApp:', error)
-      alert("Failed to send WhatsApp message")
-    } finally {
-      setSendingToGuest(null)
-    }
-  }
-
-  const sendViaEmail = async (guest) => {
-    setSendingToGuest(guest.id)
-    try {
-      if (!shareableLink) {
-        alert("No shareable link available")
-        return
-      }
-
-      const childName = partyDetails?.child_name || 'Birthday Child'
-      const theme = partyDetails?.theme || 'Birthday'
-      const venue = partyDetails?.location || 'Special Location'
-
-      const subject = `🎉 You're invited to ${childName}'s Birthday Party!`
-      const body = `Hi ${guest.name}!\n\nYou're invited to ${childName}'s magical ${theme} birthday party!\n\n📍 Location: ${venue}\n\nView your beautiful invitation and RSVP here: ${shareableLink}\n\nWe can't wait to celebrate with you! 🎈✨\n\nLove,\nThe Birthday Family`
-
-      const mailtoUrl = `mailto:${guest.contact}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-      window.open(mailtoUrl)
-
-      await partyDatabaseBackend.updateGuestSendStatus(partyId, guest.id, 'sent', 'email')
-      setGuestList(prev => prev.map(g => 
-        g.id === guest.id 
-          ? { ...g, status: "sent", sentAt: new Date().toISOString(), sentMethod: 'email' }
-          : g
-      ))
-    } catch (error) {
-      console.error('Error sending email:', error)
-      alert("Failed to send email")
-    } finally {
-      setSendingToGuest(null)
-    }
-  }
 
   const copyShareableLink = async () => {
     try {
@@ -238,17 +120,33 @@ export default function EInvitesManagementPage() {
     )
   }
 
-  const totalGuests = guestList.length
-  const sentInvites = guestList.filter(g => g.status === 'sent').length
-  const pendingInvites = guestList.filter(g => g.status === 'pending').length
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">
       <ContextualBreadcrumb currentPage="manage-invite" />
-      
+
+      {/* Back to Dashboard Button - Desktop */}
+      <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <Button asChild variant="ghost" className="text-gray-600 hover:text-gray-900">
+          <Link href="/dashboard">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </div>
+
       {/* Mobile Quick Actions Bar */}
       <div className="lg:hidden bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="px-4 py-3">
+          {/* Back to Dashboard - Mobile */}
+          <div className="mb-3">
+            <Button asChild variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 -ml-2">
+              <Link href="/dashboard">
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Dashboard
+              </Link>
+            </Button>
+          </div>
+
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-lg font-bold text-gray-900">Share Invitation</h1>
             <div className="flex gap-2">
@@ -258,7 +156,7 @@ export default function EInvitesManagementPage() {
                 </Link>
               </Button>
               <Button asChild size="sm">
-                <Link href={`/e-invites/${inviteId}/edit`}>
+                <Link href={`/e-invites/create`}>
                   <Edit className="w-4 h-4" />
                 </Link>
               </Button>
@@ -312,12 +210,6 @@ export default function EInvitesManagementPage() {
               {copied ? 'Copied!' : 'Copy'}
             </Button>
           </div>
-          
-          {totalGuests > 0 && (
-            <div className="mt-2 text-xs text-gray-600 text-center">
-              {totalGuests} guests • {sentInvites} sent • {pendingInvites} pending
-            </div>
-          )}
         </div>
       </div>
       
@@ -518,17 +410,17 @@ export default function EInvitesManagementPage() {
                   Copy Direct Link
                 </div>
                 <div className="flex items-center gap-2">
-                  <Input 
-                    value={shareableLink} 
-                    readOnly 
+                  <Input
+                    value={shareableLink}
+                    readOnly
                     className="text-xs bg-gray-50 font-mono border-gray-200 flex-1"
                   />
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={copyShareableLink}
                     className={`px-3 transition-all duration-300 ${
-                      copied 
-                        ? "bg-green-500 hover:bg-green-600 text-white" 
+                      copied
+                        ? "bg-green-500 hover:bg-green-600 text-white"
                         : "bg-gray-800 hover:bg-gray-900 text-white"
                     }`}
                   >
@@ -537,8 +429,6 @@ export default function EInvitesManagementPage() {
                 </div>
               </CardContent>
             </Card>
-
-     
           </div>
         </div>
       </div>

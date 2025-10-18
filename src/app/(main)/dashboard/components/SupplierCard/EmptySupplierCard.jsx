@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info } from "lucide-react"
+import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import SupplierQuickViewModal from '@/components/SupplierQuickViewModal'
 
@@ -201,30 +201,48 @@ export default function EmptySupplierCard({
   currentPhase = "planning",
   isSignedIn = false,
   isCompact = false,
+  isAlreadyAdded = false,
+  deliverooStyle = false,
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
   const [showTipsModal, setShowTipsModal] = useState(false)
   const [showQuickView, setShowQuickView] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
+  // Determine if the button should show as added (either from parent tracking or local state)
+  const isAddedToParty = isAlreadyAdded || justAdded;
+
+
   const handleAddToParty = async (e) => {
     e.stopPropagation()
-    if (!recommendedSupplier || isAdding) return
-    
-    console.log('🎯 [EmptySupplierCard] Starting to add supplier...', recommendedSupplier.name)
+    if (!recommendedSupplier || isAdding || isAddedToParty) return
+
     setIsAdding(true)
-    
+
     try {
-      console.log('📞 [EmptySupplierCard] Calling onAddSupplier...')
       await onAddSupplier(type, recommendedSupplier)
-      console.log('✅ [EmptySupplierCard] onAddSupplier completed!')
+
+      // Show success state
+      setIsAdding(false)
+      setJustAdded(true)
+
+      // Trigger confetti animation for 3 seconds
+      setShowConfetti(true)
+      setTimeout(() => {
+        setShowConfetti(false)
+      }, 3000)
+
+      // Keep the "In Plan" state indefinitely - don't reset
+      // This shows the user which suppliers they've added during this session
     } catch (error) {
-      console.error('❌ [EmptySupplierCard] Error adding supplier:', error)
+      console.error('Error adding supplier:', error)
       setIsAdding(false)
     }
   }
@@ -261,17 +279,147 @@ export default function EmptySupplierCard({
   if (!isMounted || !recommendedSupplier) {
     return (
       <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl ${
-        isCompact ? 'h-48' : 'h-80'
+        deliverooStyle ? 'h-32' : isCompact ? 'h-48' : 'h-80'
       }`}>
         <div className={`relative w-full bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse ${
-          isCompact ? 'h-32' : 'h-64'
+          deliverooStyle ? 'h-20' : isCompact ? 'h-32' : 'h-64'
         }`} />
-        <div className={`bg-white ${isCompact ? 'p-3' : 'p-6'}`}>
+        <div className={`bg-white ${deliverooStyle ? 'p-2' : isCompact ? 'p-3' : 'p-6'}`}>
           <div className={`bg-gray-200 rounded animate-pulse ${
-            isCompact ? 'h-8' : 'h-12'
+            deliverooStyle ? 'h-6' : isCompact ? 'h-8' : 'h-12'
           }`} />
         </div>
       </Card>
+    )
+  }
+
+  // Deliveroo-style: Super compact horizontal card
+  if (deliverooStyle) {
+    return (
+      <>
+        {/* Confetti Effect */}
+        {showConfetti && (
+          <div className="fixed inset-0 pointer-events-none z-50">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute animate-confetti"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: '-10px',
+                  animationDelay: `${Math.random() * 0.3}s`,
+                  animationDuration: `${1.5 + Math.random() * 1}s`,
+                }}
+              >
+                <div
+                  className="rounded-full"
+                  style={{
+                    width: `${6 + Math.random() * 8}px`,
+                    height: `${6 + Math.random() * 8}px`,
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#f43f5e', '#14b8a6'][Math.floor(Math.random() * 7)],
+                    transform: `rotate(${Math.random() * 360}deg)`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Card
+          className="overflow-hidden bg-white rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[hsl(var(--primary-300))] h-full relative"
+        >
+          <div className="flex flex-col h-full">
+            {/* Image section - smaller */}
+            <div className="relative h-32 w-full flex-shrink-0">
+              <div
+                className="absolute inset-0 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowQuickView(true)
+                }}
+              >
+                <Image
+                  src={genericImage}
+                  alt={categoryDisplayName}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                />
+              </div>
+
+              {/* Lighter overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
+
+              {/* Info icon */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowQuickView(true)
+                }}
+                className="absolute top-2 right-2 z-10 w-7 h-7 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-md"
+                title="View supplier details"
+              >
+                <Info className="w-4 h-4 text-gray-700" />
+              </button>
+
+              {/* Category name overlay */}
+              <div className="absolute bottom-2 left-2 right-2 z-10">
+                <h3 className="text-base font-bold text-white drop-shadow-lg truncate">
+                  {categoryDisplayName}
+                </h3>
+                {recommendedSupplier && (
+                  <p className="text-xs text-white/90 truncate">
+                    {recommendedSupplier.name}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom section with compact button */}
+            <div className="p-2 flex-shrink-0">
+              <Button
+                className={`w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+                  isAddedToParty
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                    : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+                }`}
+                onClick={handleAddToParty}
+                disabled={isAdding || isAddedToParty}
+              >
+                {isAdding ? (
+                  <>
+                    <div className="relative w-3 h-3 mr-1.5">
+                      <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
+                      <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <span className="animate-pulse">Adding...</span>
+                  </>
+                ) : isAddedToParty ? (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                    <span className="font-semibold">In Plan</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    <span className="font-semibold">Add</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Quick View Modal */}
+        <SupplierQuickViewModal
+          supplier={recommendedSupplier}
+          isOpen={showQuickView}
+          onClose={() => setShowQuickView(false)}
+          onAddSupplier={onAddSupplier}
+          partyDetails={partyDetails}
+          type={type}
+        />
+      </>
     )
   }
 
@@ -279,6 +427,35 @@ export default function EmptySupplierCard({
   if (isCompact) {
     return (
       <>
+        {/* Confetti Effect */}
+        {showConfetti && (
+          <div className="fixed inset-0 pointer-events-none z-50">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute animate-confetti"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: '-10px',
+                  animationDelay: `${Math.random() * 0.3}s`,
+                  animationDuration: `${1.5 + Math.random() * 1}s`,
+                }}
+              >
+                <div
+                  className="rounded-full"
+                  style={{
+                    width: `${6 + Math.random() * 8}px`,
+                    height: `${6 + Math.random() * 8}px`,
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#f43f5e', '#14b8a6'][Math.floor(Math.random() * 7)],
+                    transform: `rotate(${Math.random() * 360}deg)`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+
         <Card 
           className="overflow-hidden bg-gray-300 rounded-xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90 h-70"
         >
@@ -339,9 +516,13 @@ export default function EmptySupplierCard({
           {/* Compact button */}
           <div className="p-3">
             <Button
-              className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white text-sm py-2 shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+              className={`w-full text-white text-sm py-2 shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
+                isAddedToParty
+                  ? 'bg-gradient-to-r from-green-500 to-green-600'
+                  : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+              }`}
               onClick={handleAddToParty}
-              disabled={isAdding}
+              disabled={isAdding || isAddedToParty}
             >
               {isAdding ? (
                 <>
@@ -350,6 +531,11 @@ export default function EmptySupplierCard({
                     <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <span className="animate-pulse text-xs">Adding...</span>
+                </>
+              ) : isAddedToParty ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  <span className="text-xs font-semibold">In Plan</span>
                 </>
               ) : (
                 <>
@@ -384,6 +570,35 @@ export default function EmptySupplierCard({
   // Full size mode - taller image
   return (
     <>
+      {/* Confetti Effect */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-10px',
+                animationDelay: `${Math.random() * 0.3}s`,
+                animationDuration: `${1.5 + Math.random() * 1}s`,
+              }}
+            >
+              <div
+                className="rounded-full"
+                style={{
+                  width: `${6 + Math.random() * 8}px`,
+                  height: `${6 + Math.random() * 8}px`,
+                  backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#f43f5e', '#14b8a6'][Math.floor(Math.random() * 7)],
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+
       <Card
         className="overflow-hidden bg-gray-300 rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 relative group hover:shadow-xl hover:border-primary-400 opacity-75 hover:opacity-90"
       >
@@ -414,7 +629,7 @@ export default function EmptySupplierCard({
                 e.stopPropagation()
                 setShowQuickView(true)
               }}
-              className="absolute top-2 cursor-pointer right-2 z-10 w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+              className="absolute top-2 cursor-pointer right-2 z-10 w-8 h-8  hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
               title="View supplier details"
             >
               <Info className="w-6 h-6 text-white" />
@@ -448,10 +663,14 @@ export default function EmptySupplierCard({
         {/* Bottom section with single CTA */}
         <div className="p-6">
           <Button
-            className="w-full bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+            className={`w-full text-white shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
+              isAddedToParty
+                ? 'bg-gradient-to-r from-green-500 to-green-600'
+                : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+            }`}
             size="lg"
             onClick={handleAddToParty}
-            disabled={isAdding}
+            disabled={isAdding || isAddedToParty}
           >
             {isAdding ? (
               <>
@@ -459,7 +678,12 @@ export default function EmptySupplierCard({
                   <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
                   <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
-                <span className="animate-pulse">Adding to your party...</span>
+                <span className="animate-pulse">Adding...</span>
+              </>
+            ) : isAddedToParty ? (
+              <>
+                <CheckCircle className="w-5 h-5 mr-2" />
+                In Plan
               </>
             ) : (
               <>

@@ -269,15 +269,21 @@ export default function HomePage() {
               childAge: data.childAge
             }
           }
-          
+
+          // Clear any previous welcome completion flags to ensure modal shows for new party
+          localStorage.removeItem('welcome_completed')
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('welcome_completed')
+          }
+
           localStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
           localStorage.setItem('show_welcome_popup', 'true')
           localStorage.setItem('party_just_created', new Date().toISOString())
-          
+
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('welcome_trigger', JSON.stringify(welcomeData))
           }
-          
+
         } catch (storageError) {
           console.error("Storage error:", storageError)
         }

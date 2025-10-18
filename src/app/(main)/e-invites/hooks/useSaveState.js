@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { AlertCircle, Check, Send } from 'lucide-react'
 import { getCurrentState, checkForUnsavedChanges, generateInviteId, copyToClipboard, formatThemeDisplayName } from '../utils/helperFunctions'
 import { SAVE_BUTTON_STATES } from '../constants/inviteConstants'
+import { urlGenerator } from '@/utils/urlGenerator'
 
 export const useSaveState = (selectedTheme, inviteData, guestList, generatedImage, useAIGeneration, themes) => {
   const [isSaved, setIsSaved] = useState(false)
@@ -140,16 +141,40 @@ const saveInviteToPartyPlan = async (finalImageUrl = null, selectedAiOption = nu
     const party = partyResult.party;
     console.log("✅ Found party:", party.id, "-", party.child_name);
 
-    // Generate invite ID and shareable link
+    // Generate invite ID (for internal use)
     const inviteId = generateInviteId();
-    const generatedShareableLink = `${window.location.origin}/e-invites/${inviteId}`;
-    
-    console.log("🔗 Generated invite ID:", inviteId);
+
+    // Generate user-friendly slug from child name and party date
+    const partyData = {
+      childName: party.child_name || inviteData.childName,
+      child_name: party.child_name,
+      date: party.party_date || inviteData.date,
+      party_date: party.party_date
+    };
+
+    let inviteSlug = urlGenerator.createInviteSlug(partyData, inviteId);
+    console.log("🔗 Generated base slug:", inviteSlug);
+
+    // Check if slug already exists and make it unique if needed
+    let slugExists = await partyDatabaseBackend.checkInviteSlugExists(inviteSlug);
+    let counter = 2;
+    while (slugExists) {
+      inviteSlug = `${urlGenerator.createInviteSlug(partyData, inviteId)}-${counter}`;
+      console.log(`🔗 Slug exists, trying: ${inviteSlug}`);
+      slugExists = await partyDatabaseBackend.checkInviteSlugExists(inviteSlug);
+      counter++;
+    }
+
+    const generatedShareableLink = `${window.location.origin}/e-invites/${inviteSlug}`;
+
+    console.log("🔗 Final invite ID (internal):", inviteId);
+    console.log("🔗 Final invite slug (URL):", inviteSlug);
     console.log("🔗 Generated shareable link:", generatedShareableLink);
 
     // Prepare the data for your existing saveEInvites function
     const einviteData = {
       inviteId: inviteId,
+      inviteSlug: inviteSlug, // Add the friendly slug
       theme: useAIGeneration ? "ai_generated" : selectedTheme,
       inviteData: inviteData,
       guestList: guestList,
@@ -183,9 +208,10 @@ const saveInviteToPartyPlan = async (finalImageUrl = null, selectedAiOption = nu
 
     // 2. ALWAYS create public invite record for shareable links
     console.log("📤 Creating public invite record...");
-    
+
     const publicInviteResult = await partyDatabaseBackend.createPublicInvite({
       inviteId: inviteId,
+      inviteSlug: inviteSlug, // Add the friendly slug
       partyId: party.id,
       theme: useAIGeneration ? "ai_generated" : selectedTheme,
       inviteData: inviteData,
@@ -217,6 +243,7 @@ const saveInviteToPartyPlan = async (finalImageUrl = null, selectedAiOption = nu
       success: true,
       party: party,
       inviteId: inviteId,
+      inviteSlug: inviteSlug, // Return the slug for navigation
       shareableLink: generatedShareableLink
     };
 

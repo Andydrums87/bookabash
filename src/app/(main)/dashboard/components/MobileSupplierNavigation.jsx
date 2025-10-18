@@ -144,15 +144,46 @@ export default function MobileSupplierNavigation({
   
   // ... (keep all existing state and refs)
   const [internalActiveTab, setInternalActiveTab] = useState(0)
-  const activeTab = activeSupplierType !== undefined ? 
-    supplierTypes.findIndex(st => st.type === activeSupplierType) : 
+  const activeTab = activeSupplierType !== undefined ?
+    supplierTypes.findIndex(st => st.type === activeSupplierType) :
     internalActiveTab
 
   const tabsRef = useRef(null)
   const [isAutoScrolling, setIsAutoScrolling] = useState(false)
   const autoScrollIntervalRef = useRef(null)
 
+  // Track if user has explored other tabs (to show CTA)
+  const [hasExploredTabs, setHasExploredTabs] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hasExploredTabs') === 'true'
+    }
+    return false
+  })
 
+  // Track if swipe hint has been shown
+  const [showSwipeHint, setShowSwipeHint] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hasSeenSwipeHint') !== 'true'
+    }
+    return true
+  })
+
+  // Auto-hide swipe hint after 8 seconds
+  useEffect(() => {
+    if (showSwipeHint) {
+      const timer = setTimeout(() => {
+        handleDismissSwipeHint()
+      }, 8000)
+      return () => clearTimeout(timer)
+    }
+  }, [showSwipeHint])
+
+  const handleDismissSwipeHint = () => {
+    setShowSwipeHint(false)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hasSeenSwipeHint', 'true')
+    }
+  }
 
   // ... (keep all existing party tasks)
   const partyTasks = [
@@ -264,7 +295,15 @@ export default function MobileSupplierNavigation({
     if (activeSupplierType === undefined) {
       setInternalActiveTab(index)
     }
-    
+
+    // Track when user explores tabs other than "My Party"
+    if (supplierType.type !== 'myParty' && !hasExploredTabs) {
+      setHasExploredTabs(true)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hasExploredTabs', 'true')
+      }
+    }
+
     if (onSupplierTabChange) {
       onSupplierTabChange(supplierType.type)
     }
@@ -383,8 +422,8 @@ export default function MobileSupplierNavigation({
         {/* Header Section */}
         <div className="mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">We've built the perfect party for {childFirstName}!</h2>
-            <p className="text-sm text-gray-600">Here are the best suppliers we've picked</p>
+            <h2 className="text-3xl mb-4 font-black text-gray-900 leading-tight animate-fade-in">Snappy's built the perfect party for {childFirstName}!</h2>
+            <p className="text-sm text-gray-600">Swipe the tabs above to customize your plan</p>
           </div>
         </div>
 
@@ -657,9 +696,32 @@ export default function MobileSupplierNavigation({
               </div>
             </div>
           </div>
-          
+
           <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
         </div>
+
+        {/* Swipe Hint Tooltip */}
+        {showSwipeHint && (
+          <div className="absolute top-full left-0 right-0 mt-2 px-4 z-40 animate-in slide-in-from-top duration-300">
+            <div className="relative bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white px-4 py-3 rounded-xl shadow-lg">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">👉</span>
+                  <p className="text-sm font-medium">Swipe to add more suppliers to your party!</p>
+                </div>
+                <button
+                  onClick={handleDismissSwipeHint}
+                  className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                  aria-label="Dismiss hint"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Arrow pointing up to tabs */}
+              <div className="absolute -top-2 left-8 w-4 h-4 bg-[hsl(var(--primary-500))] transform rotate-45"></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ✅ UPDATED: Supplier Card Content with Venue Carousel */}
@@ -789,25 +851,27 @@ export default function MobileSupplierNavigation({
         )}
       </div>
 
-      {/* ✅ COMPLETE BOOKING CTA - ALWAYS VISIBLE ON MOBILE */}
-      <div className="px-4 mt-8 mb-6">
-        <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
-          <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
-          <p className="text-sm text-white/90 mb-4">
-            Swipe to add more suppliers and customize your plan, or complete your booking now!
-          </p>
-          <button
-            onClick={() => router.push('/review-book')}
-            className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
-          >
-            <Check className="w-5 h-5" />
-            Complete Booking
-          </button>
-          <p className="text-xs text-white/80 text-center mt-3">
-            You'll review your full party plan before any payment
-          </p>
+      {/* ✅ COMPLETE BOOKING CTA - SHOWN AFTER USER EXPLORES TABS */}
+      {hasExploredTabs && (
+        <div className="px-4 mt-8 mb-6">
+          <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
+            <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
+            <p className="text-sm text-white/90 mb-4">
+              Scroll through the tabs to add more suppliers and customize your plan, or complete your booking now!
+            </p>
+            <button
+              onClick={() => router.push('/review-book')}
+              className="w-full cursor-pointer bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              {/* <Check className="w-5 h-5" /> */}
+              Complete Booking
+            </button>
+            <p className="text-xs text-white/80 text-center mt-3">
+              You'll review your full party plan before any payment
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <style jsx global>{`
         @media (max-width: 768px) {

@@ -2,25 +2,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Plus, Star, Sparkles, Gift } from 'lucide-react'
-import Image from "next/image"
 import { useSuppliers } from "@/utils/mockBackend"
+import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
 
-export default function MissingSuppliersSuggestions({ 
-  partyPlan, 
+export default function MissingSuppliersSuggestions({
+  partyPlan,
   onAddSupplier,
   showTitle = true,
   currentStep = 4,
   navigateWithContext,
   onPlanUpdate,
-  toast
+  toast,
+  addedSupplierIds = new Set()
 }) {
-  const [addingItems, setAddingItems] = useState([])
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
+  const [recentlyAddedTypes, setRecentlyAddedTypes] = useState(new Set())
   const { suppliers, loading, error } = useSuppliers()
 
   // Monitor for plan changes
@@ -113,8 +110,9 @@ export default function MissingSuppliersSuggestions({
       key => partyPlan[key] !== null && partyPlan[key] !== undefined && key !== 'addons'
     )
 
+    // Include types that are missing OR recently added (to show green state)
     const missingTypes = Object.keys(ALL_SUPPLIER_TYPES).filter(
-      type => !currentSuppliers.includes(type)
+      type => !currentSuppliers.includes(type) || recentlyAddedTypes.has(type)
     )
 
     return missingTypes
@@ -201,27 +199,31 @@ export default function MissingSuppliersSuggestions({
     }
   }
 
-  // Handle adding supplier
+  // Handle adding supplier - simplified wrapper
   const handleAddSupplier = async (supplier, supplierType) => {
-    const supplierId = supplier.id
-    
-    if (addingItems.includes(supplierId)) {
-      return
-    }
-
-    setAddingItems(prev => [...prev, supplierId])
-
     try {
       if (onAddSupplier) {
-        await onAddSupplier(supplier, supplierType)
+        // Track this type as recently added to keep it visible
+        setRecentlyAddedTypes(prev => new Set([...prev, supplierType]))
+
+        // Remove from recently added after 3 seconds
+        setTimeout(() => {
+          setRecentlyAddedTypes(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(supplierType)
+            return newSet
+          })
+        }, 3000)
+
+        // Call parent handler
+        const result = await onAddSupplier(supplier, supplierType)
+        return result
       }
 
-      setTimeout(() => {
-        setAddingItems(prev => prev.filter(id => id !== supplierId))
-      }, 2000)
+      return false
     } catch (error) {
       console.error("Error adding supplier:", error)
-      setAddingItems(prev => prev.filter(id => id !== supplierId))
+      throw error // Let EmptySupplierCard handle the error
     }
   }
 
@@ -272,17 +274,17 @@ export default function MissingSuppliersSuggestions({
             </p>
           </div>
         )}
-        
-        <div className="bg-gradient-to-r from-blue-50 to-primary-50 border-2 border-primary-200 rounded-xl p-6 text-center">
+
+        <div className="bg-gradient-to-r from-blue-50 to-[hsl(var(--primary-50))] border-2 border-[hsl(var(--primary-200))] rounded-xl p-6 text-center">
           <div className="flex items-center justify-center mb-3">
-            <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-[hsl(var(--primary-500))] rounded-full flex items-center justify-center">
               <span className="text-2xl">🎊</span>
             </div>
           </div>
-          <p className="text-primary-800 font-semibold text-lg">
+          <p className="text-[hsl(var(--primary-800))] font-semibold text-lg">
             Your party plan is complete!
           </p>
-          <p className="text-primary-700 mt-2">
+          <p className="text-[hsl(var(--primary-700))] mt-2">
             Ready to send those enquiries and make this party happen?
           </p>
         </div>
@@ -302,153 +304,25 @@ export default function MissingSuppliersSuggestions({
         </div>
       )}
 
-      {/* Vertical sections for each category */}
-      {missingSuppliers.map(({ type, config, suppliers }) => (
-        <div key={type} className="space-y-4">
-          {/* Category Header */}
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 ${config.color} rounded-lg flex items-center justify-center`}>
-              <span className="text-lg">{config.icon}</span>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">{config.name}</h3>
-              {/* <p className="text-sm text-gray-600">{config.description}</p> */}
-            </div>
-          </div>
+      {/* Compact horizontal grid - Deliveroo style */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {missingSuppliers.map(({ type, config, suppliers }) => {
+          const isAdded = addedSupplierIds.has(suppliers[0]?.id);
 
-          {/* Horizontal scrollable cards */}
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2">
-            {suppliers.map((supplier) => {
-              const isAdding = addingItems.includes(supplier.id)
-              const isClicked = clickedSuppliers.has(supplier.id)
-
-              return (
-                <Card 
-                  key={supplier.id}
-                  className="flex-shrink-0 w-64 md:w-72 overflow-hidden bg-gradient-to-br from-white to-[hsl(var(--primary-50))] border-2 border-[hsl(var(--primary-200))] shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl hover:scale-[1.02]"
-                >
-                  <CardContent className="p-0 flex flex-col h-full">
-                    {/* Image section */}
-                    <div className="relative h-32 md:h-36 overflow-hidden bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))]">
-                      <Image
-                        src={supplier.image || supplier.imageUrl || `/placeholder.svg?height=256&width=256&query=${supplier.name.replace(/\s+/g, "+")}`}
-                        alt={supplier.name}
-                        fill
-                        className="object-cover group-hover:brightness-110 transition-all duration-300"
-                        sizes="(max-width: 768px) 256px, 288px"
-                      />
-
-                      {/* Popular badge */}
-                      {(supplier.badges?.includes("Highly Rated") || supplier.rating >= 4.8) && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <Badge className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] text-white text-xs px-2 py-1 shadow-lg border-0">
-                            <Star className="w-3 h-3 mr-1 fill-current" />
-                            Popular
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content section */}
-                    <div className="p-4 flex-1 flex flex-col bg-gradient-to-b from-white to-[hsl(var(--primary-50))]">
-                      {/* Title and price */}
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 pr-2">
-                          <h4 className="font-bold text-gray-900 text-sm leading-tight line-clamp-2 mb-1">
-                            {supplier.name}
-                          </h4>
-                          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {supplier.description}
-                          </p>
-                        </div>
-                        <div className="text-lg font-bold text-[hsl(var(--primary-600))] flex-shrink-0">
-                          £{supplier.priceFrom}
-                        </div>
-                      </div>
-
-                      {/* Rating and price unit */}
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
-                        <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span className="font-medium text-amber-700">{supplier.rating}</span>
-                          <span className="text-amber-600">({supplier.reviewCount})</span>
-                        </div>
-                        <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                          {supplier.priceUnit}
-                        </div>
-                      </div>
-
-                      {/* Buttons */}
-                      <div className="flex gap-2 mt-auto">
-                        {/* View Details Button */}
-                        <Button
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleViewDetails(supplier)
-                          }}
-                          disabled={isClicked}
-                          className={`
-                            flex-1 text-xs py-2 transition-all duration-200 rounded-xl
-                            ${isClicked 
-                              ? 'opacity-75 cursor-wait bg-primary-100 text-primary-700' 
-                              : 'hover:scale-105 border-[hsl(var(--primary-500))] text-gray-700 active:scale-95'
-                            }
-                          `}
-                        >
-                          {isClicked ? (
-                            <div className="flex items-center gap-1 justify-center">
-                              <div className="w-3 h-3 border-2 rounded-full border-[hsl(var(--primary-500))] border-t-transparent animate-spin"></div>
-                              Opening...
-                            </div>
-                          ) : (
-                            'View Details'
-                          )}
-                        </Button>
-
-                        {/* Add to Party Button */}
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAddSupplier(supplier, type)
-                          }}
-                          disabled={isAdding}
-                          className={`
-                            flex-1 text-xs py-2 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl
-                            ${isAdding 
-                              ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
-                              : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white"
-                            }
-                          `}
-                        >
-                          {isAdding ? (
-                            <>
-                              <div className="w-3 h-3 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              Adding...
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3 h-3 mr-1" />
-                              Add
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-
-          {/* Scroll hint for mobile */}
-          {suppliers.length > 1 && (
-            <div className="text-center md:hidden">
-              <p className="text-xs text-gray-500">← Swipe to see more {config.name.toLowerCase()} options →</p>
-            </div>
-          )}
-        </div>
-      ))}
+          return (
+            <EmptySupplierCard
+              key={type}
+              type={type}
+              recommendedSupplier={suppliers[0]}
+              partyDetails={partyPlan}
+              onAddSupplier={(supplierType, supplier) => handleAddSupplier(supplier, supplierType)}
+              isCompact={true}
+              isAlreadyAdded={isAdded}
+              deliverooStyle={true}
+            />
+          );
+        })}
+      </div>
     </div>
   )
 }

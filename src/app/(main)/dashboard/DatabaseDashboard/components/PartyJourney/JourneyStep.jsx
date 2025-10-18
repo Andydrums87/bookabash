@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Lock, Circle, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle, Lock, Circle, ArrowRight, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { SupplierJourneyStep } from './SupplierJourneyStep'
 import { VenueConfirmationStep } from './VenueConfirmationStep'
@@ -41,7 +41,7 @@ export function JourneyStep({
   // All steps collapsed by default
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // ✅ SIMPLIFIED: Only 3 states - completed (green), locked (disabled), or active (white)
+  // Simple approach: teal background for completed steps
   const getStatusStyles = () => {
     if (step.status === 'completed') {
       return {
@@ -54,7 +54,7 @@ export function JourneyStep({
         disabled: false
       }
     }
-    
+
     if (step.status === 'locked') {
       return {
         border: 'border-gray-200',
@@ -346,11 +346,11 @@ case 'party_team_browse':
   return (
     <div className="relative">
       <CardWrapper>
-        <Card 
+        <Card
           className={`
-            ${styles.border} 
-            ${styles.bg} 
-            transition-all 
+            ${styles.border}
+            ${styles.bg}
+            transition-all
             ${styles.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}
           `}
         >
@@ -362,8 +362,18 @@ case 'party_team_browse':
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {/* Icon Badge */}
-                <div className={`w-12 h-12 rounded-full ${styles.iconBg} flex items-center justify-center border-2 ${styles.border} relative`}>
-                  <span className="text-2xl">{step.icon}</span>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${styles.border} relative overflow-hidden shadow-md`}>
+                  {/* Check if icon is a URL or emoji */}
+                  {typeof step.icon === 'string' && (step.icon.startsWith('http://') || step.icon.startsWith('https://')) ? (
+                    <img
+                      src={step.icon}
+                      alt={step.title}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <span className={`text-2xl ${styles.iconBg} w-full h-full flex items-center justify-center`}>{step.icon}</span>
+                  )}
+
                   {/* Lock overlay for locked steps */}
                   {styles.disabled && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full">
@@ -378,7 +388,6 @@ case 'party_team_browse':
                     <span className={`text-xs font-medium ${styles.disabled ? 'text-gray-400' : 'text-gray-500'}`}>
                       Step {step.number}
                     </span>
-                    {step.status === 'completed' && styles.icon}
                   </div>
                   <h3 className={`text-lg font-bold ${styles.titleColor}`}>
                     {step.title}
@@ -416,7 +425,7 @@ case 'party_team_browse':
 
       {/* Connector Line */}
       {!isLast && (
-        <div className="absolute left-9 top-full w-0.5 h-6 bg-gray-200 -mt-2 z-0" />
+        <div className="absolute left-10 top-full w-0.5 h-6 bg-gray-200 -mt-2 z-0" />
       )}
     </div>
   )

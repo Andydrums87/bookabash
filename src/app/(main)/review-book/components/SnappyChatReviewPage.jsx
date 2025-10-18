@@ -53,11 +53,12 @@ import { useRouter } from "next/navigation"
 // Import auth and database functions
 import { supabase } from "@/lib/supabase";
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend";
-import { 
-  calculateFinalPrice, 
-  isLeadBasedSupplier, 
+import { partyPlanBackend } from "@/utils/partyPlanBackend";
+import {
+  calculateFinalPrice,
+  isLeadBasedSupplier,
   getDisplayPrice,
-  getPriceBreakdownText 
+  getPriceBreakdownText
 } from '@/utils/unifiedPricing'
 
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
@@ -87,6 +88,7 @@ export default function SnappyChatReviewPage() {
   const [supplierToDelete, setSupplierToDelete] = useState(null);
   const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [addedSupplierIds, setAddedSupplierIds] = useState(new Set());
 
   const { toast } = useToast();
 
@@ -178,6 +180,8 @@ export default function SnappyChatReviewPage() {
     if (currentStep === 1) {
       setInitialSupplierCount(selectedSuppliers.length);
       setHasAddedOnCurrentStep(false);
+      // Reset added suppliers tracking when entering the "anything missing" step
+      setAddedSupplierIds(new Set());
     }
   }, [currentStep]);
 
@@ -701,16 +705,21 @@ export default function SnappyChatReviewPage() {
   const handleAddMissingSupplier = async (supplier, supplierType) => {
     try {
       const result = partyPlanBackend.addSupplierToPlan(supplier);
+
       if (result.success) {
+        // Track this supplier as added
+        setAddedSupplierIds(prev => new Set([...prev, supplier.id]));
+
         loadPartyDataFromLocalStorage();
         setHasAddedOnCurrentStep(true);
-        if (toast) toast.success(`${supplier.name} added to your party!`);
-        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 200);
-        return true;
+
+        return Promise.resolve(true);
       }
-      return false;
+
+      return Promise.resolve(false);
     } catch (error) {
-      return false;
+      console.error('Error adding supplier:', error)
+      return Promise.resolve(false);
     }
   };
   
@@ -968,13 +977,14 @@ export default function SnappyChatReviewPage() {
                     {/* Missing Suppliers */}
                     {currentStepData.showMissingSuppliers && (
                       <div>
-                        <MissingSuppliersSuggestions 
+                        <MissingSuppliersSuggestions
                           partyPlan={fullSupplierData}
                           onAddSupplier={handleAddMissingSupplier}
                           showTitle={false}
                           currentStep={currentStep}
                           navigateWithContext={navigateWithContext}
                           toast={toast}
+                          addedSupplierIds={addedSupplierIds}
                         />
                       </div>
                     )}

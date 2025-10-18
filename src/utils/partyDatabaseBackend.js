@@ -3338,9 +3338,10 @@ async getEInvites(partyId) {
 async createPublicInvite(inviteData) {
   try {
 
-    
+
     const publicInvite = {
       id: inviteData.inviteId,
+      invite_slug: inviteData.inviteSlug, // Add the friendly slug
       theme: inviteData.theme || 'party',
       invite_data: {
         partyId: inviteData.partyId, // Store party ID in the JSONB
@@ -3355,7 +3356,7 @@ async createPublicInvite(inviteData) {
       created_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from('public_invites')
       .upsert(publicInvite, { onConflict: 'id' })
       .select()
@@ -3372,16 +3373,48 @@ async createPublicInvite(inviteData) {
     return { success: false, error: error.message };
   }
 }
-async getPublicInvite(inviteId) {
+async checkInviteSlugExists(slug) {
   try {
-  
-    
-    const { data: invite, error } = await supabase
+    const { data, error } = await supabase
+      .from('public_invites')
+      .select('id')
+      .eq('invite_slug', slug)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.error('❌ Error checking slug:', error);
+      return false; // Assume it doesn't exist on error
+    }
+
+    return !!data; // Returns true if slug exists, false otherwise
+  } catch (error) {
+    console.error('❌ Error in checkInviteSlugExists:', error);
+    return false;
+  }
+}
+async getPublicInvite(inviteIdOrSlug) {
+  try {
+
+
+    // Try to find by slug first (friendly URL), then by ID (legacy support)
+    let query = supabase
       .from('public_invites')
       .select('*')
-      .eq('id', inviteId)
-      .eq('is_active', true)
-      .single();
+      .eq('is_active', true);
+
+    // Check if it looks like a slug (contains dashes and date format) or an ID
+    const looksLikeSlug = inviteIdOrSlug.includes('-') && /\d{4}-\d{2}-\d{2}/.test(inviteIdOrSlug);
+
+    if (looksLikeSlug) {
+      query = query.eq('invite_slug', inviteIdOrSlug);
+      console.log('🔍 Looking up invite by slug:', inviteIdOrSlug);
+    } else {
+      query = query.eq('id', inviteIdOrSlug);
+      console.log('🔍 Looking up invite by ID:', inviteIdOrSlug);
+    }
+
+    const { data: invite, error } = await query.single();
 
     if (error) {
       console.error('❌ [Backend] Error fetching public invite:', error);

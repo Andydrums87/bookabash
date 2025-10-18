@@ -1609,7 +1609,7 @@ const handleChildPhotoUpload = async (file) => {
                     <button
                       className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
                     >
-                      <Check className="w-5 h-5" />
+                      {/* <Check className="w-5 h-5" /> */}
                       Complete Booking
                     </button>
                   </Link>

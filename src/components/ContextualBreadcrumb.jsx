@@ -87,7 +87,7 @@ export function ContextualBreadcrumb({
           show: true,
           backText: "Dashboard",
           currentText: "Manage Invite",
-          action: goBack,
+          action: () => router.push("/dashboard"),
         }
         
       case "party-summary":
@@ -119,7 +119,11 @@ export function ContextualBreadcrumb({
           show: true,
           backText: "Dashboard",
           currentText: "Review & Book",
-          action: () => router.push("/dashboard"),
+          action: () => {
+            // Don't clear party data - just navigate back
+            sessionStorage.removeItem("navigationContext")
+            router.push("/dashboard")
+          },
         }
         
       case "payment":

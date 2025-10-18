@@ -214,7 +214,7 @@ const MobileBottomTabBar = ({
     } else {
       baseTabs.push({
         id: "timer",
-        label: "Timer",
+        label: "Party Tips",
         icon: Clock,
         color: "text-orange-500",
         activeColor: "text-orange-600",
@@ -770,8 +770,8 @@ const MobileBottomTabBar = ({
               <h2 className="text-xl font-bold text-gray-900 capitalize">
                 {activeTab === "add" ? "Add Suppliers" :
                  activeTab === "tools" ? "Party Tools" :
-                 activeTab === "progress" ? "Your Party Plan" : 
-                 activeTab === "timer" ? "Party Countdown" : activeTab}
+                 activeTab === "progress" ? "Your Party Plan" :
+                 activeTab === "timer" ? "Party Tips & Countdown" : activeTab}
               </h2>
               <button
                 onClick={closeModal}

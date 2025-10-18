@@ -40,13 +40,9 @@ export function usePartyJourney({
       einvites.friendlySlug
     )
     
-    const inviteId = einvites?.inviteId || 
+    const inviteId = einvites?.inviteId ||
                     einvites?.shareableLink?.split('/e-invites/')[1] ||
                     einvites?.friendlySlug
-    
-    const invitesSent = einvites?.guestList?.some(g => g.status === 'sent') || false
-    const sentCount = einvites?.guestList?.filter(g => g.status === 'sent').length || 0
-    
 
     return [
       // STEP 1: Payment
@@ -56,7 +52,7 @@ export function usePartyJourney({
         title: 'Payment Secured',
         description: 'Deposit paid and party locked in',
         status: 'completed',
-        icon: '💳'
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1755719830/bs2klexzuin8ygfndexc.png' // My Party image
       },
       
       // STEP 2: Venue Confirmation (formerly Step 3)
@@ -64,20 +60,20 @@ export function usePartyJourney({
         id: 'venue_confirmation',
         number: 2,
         title: 'Venue Confirmation',
-        description: venueAwaitingConfirmation 
+        description: venueAwaitingConfirmation
           ? 'Waiting for venue to confirm availability'
-          : venueConfirmed 
+          : venueConfirmed
           ? 'Venue has confirmed your booking'
           : 'Add a venue to proceed',
         status: !venueExists ? 'locked' :
                 venueConfirmed ? 'completed' : 'current',
-        icon: '🏛️',
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386510/iStock-2194928280_1_j9rcey.jpg',
         component: 'VenueConfirmationStep',
         venueSupplier: suppliers.venue,
         venueEnquiry: venueEnquiry,
         venueAwaitingConfirmation: venueAwaitingConfirmation,
         unlockCondition: 'venue_added',
-        unlockMessage: venueExists 
+        unlockMessage: venueExists
           ? 'Waiting for venue to confirm your booking'
           : 'Add a venue to your party first'
       },
@@ -87,11 +83,11 @@ export function usePartyJourney({
         id: 'guest_list',
         number: 3,
         title: 'Build Guest List',
-        description: guestListCreated 
+        description: guestListCreated
           ? `${guestCount} guest${guestCount !== 1 ? 's' : ''} added`
           : 'Create your list for invites and RSVPs',
         status: guestListCreated ? 'completed' : 'available',
-        icon: '📋',
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753986373/jwq8wmgxqqfue2zsophq.jpg', // RSVP image from mobile tabs
         unlockCondition: null,
         unlockMessage: null,
         hasContent: guestListCreated,
@@ -107,12 +103,12 @@ export function usePartyJourney({
         number: 4,
         title: 'Set Up Gift Registry',
         description: giftRegistrySetup
-          ? registryItemCount > 0 
+          ? registryItemCount > 0
             ? `${registryItemCount} item${registryItemCount !== 1 ? 's' : ''} in registry`
             : 'Registry created - add items'
           : 'Help guests know what to bring',
         status: giftRegistrySetup ? 'completed' : 'available',
-        icon: '🎁',
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/okpcftsuni04yokhex1l.jpg', // Gift registry image from mobile tabs
         unlockCondition: null,
         unlockMessage: null,
         hasContent: giftRegistrySetup,
@@ -127,12 +123,12 @@ export function usePartyJourney({
         id: 'create_einvites',
         number: 5,
         title: 'Design E-Invites',
-        description: einvitesCreated 
+        description: einvitesCreated
           ? 'Invitation created and ready'
           : 'Create beautiful digital invitations',
         status: !venueConfirmed ? 'locked' :
                 einvitesCreated ? 'completed' : 'available',
-        icon: '💌',
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1754405084/party-invites/m02effvlanaxupepzsza.png', // E-Invites image from mobile tabs
         unlockCondition: 'venue_confirmed',
         unlockMessage: 'Venue must be confirmed before creating invites',
         hasContent: einvitesCreated,
@@ -144,44 +140,18 @@ export function usePartyJourney({
         }
       },
       
-      // STEP 6: Send Invites (formerly Step 7)
-      {
-        id: 'send_invites',
-        number: 6,
-        title: 'Send Invitations',
-        description: invitesSent 
-          ? `${sentCount} invite${sentCount !== 1 ? 's' : ''} sent`
-          : 'Share your party with guests',
-        status: !einvitesCreated ? 'locked' :
-                invitesSent ? 'completed' : 'available',
-        icon: '📬',
-        unlockCondition: 'einvites_created',
-        unlockMessage: 'Create your e-invites first before sending',
-        metrics: {
-          total: guestCount,
-          sent: sentCount
-        },
-        action: {
-          label: 'Manage Invites',
-          href: inviteId
-            ? `/e-invites/${inviteId}/manage`
-            : '/e-invites/create'
-        }
-      },
-      
-      // STEP 7: Track RSVPs (formerly Step 8)
+      // STEP 6: Track RSVPs
       {
         id: 'track_rsvps',
-        number: 7,
+        number: 6,
         title: 'Track RSVPs',
         description: rsvpsReceived
           ? `${rsvpCount} confirmed attending`
           : 'See who\'s coming to the party',
-        status: !invitesSent ? 'locked' :
-                rsvpsReceived ? 'completed' : 'available',
-        icon: '📊',
-        unlockCondition: 'invites_sent',
-        unlockMessage: 'Send your invites first before tracking RSVPs',
+        status: rsvpsReceived ? 'completed' : 'available',
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386306/iStock-1702395012_z3e8mp.jpg', // Decorations image (for tracking/organizing)
+        unlockCondition: null,
+        unlockMessage: null,
         metrics: {
           total: guestCount,
           confirmed: rsvpCount
@@ -191,15 +161,15 @@ export function usePartyJourney({
           href: `/rsvps/${partyDetails?.id || ''}`
         }
       },
-      
-      // STEP 8: Final Details (formerly Step 9)
+
+      // STEP 7: Final Details
       {
         id: 'final_details',
-        number: 8,
+        number: 7,
         title: 'Final Details',
         description: 'Confirm numbers and arrangements',
         status: !partyDetails?.final_details_sent ? 'locked' : 'completed',
-        icon: '📝',
+        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386472/iStock-2067025996_p6x3k4.jpg', // Entertainment image (for final party details)
         unlockCondition: 'final_details_sent',
         unlockMessage: 'Final party details will be sent 7 days before your party',
         daysBeforeParty: 7
