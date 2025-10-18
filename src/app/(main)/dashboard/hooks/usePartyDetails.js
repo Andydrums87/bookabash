@@ -136,7 +136,8 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
 
       // Process each supplier in the party plan
       Object.entries(partyPlan).forEach(([category, supplier]) => {
-        if (!supplier || category === 'addons' || !supplier.originalSupplier) {
+        // ✅ FIX: Skip addons, einvites, and suppliers without original data
+        if (!supplier || category === 'addons' || category === 'einvites' || !supplier.originalSupplier) {
           return; // Skip non-suppliers or suppliers without original data
         }
 

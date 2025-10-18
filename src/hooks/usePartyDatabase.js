@@ -280,8 +280,9 @@ export function usePartyDatabase() {
   }
 
   const getPartySummary = () => {
+    // ✅ FIX: Exclude einvites and addons from party summary
     const suppliers = Object.entries(partyPlan)
-      .filter(([key]) => key !== 'addons')
+      .filter(([key]) => key !== 'addons' && key !== 'einvites')
       .filter(([key, supplier]) => supplier !== null)
       .map(([key, supplier]) => ({ ...supplier, type: key }))
     

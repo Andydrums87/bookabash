@@ -145,7 +145,7 @@ export default function PaymentSuccessPage() {
       <div className="bg-green-50 border-b-2 border-green-200 py-3 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-center space-x-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            {/* <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" /> */}
             <div className="text-center">
               <span className="text-sm font-semibold text-green-900">
                 Booking confirmed

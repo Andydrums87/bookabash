@@ -620,22 +620,29 @@ useEffect(() => {
     const unpaidEnquiries = enquiries.filter(enquiry => {
       const isAccepted = enquiry.status === 'accepted'
       const isUnpaid = !enquiry.payment_status || enquiry.payment_status === 'unpaid'
-      return isAccepted && isUnpaid
+      // ✅ FIX: Exclude einvites from payment - digital invites are NOT a paid supplier
+      const isNotEinvites = enquiry.supplier_category !== 'einvites'
+      return isAccepted && isUnpaid && isNotEinvites
     })
-    
+
     if (unpaidEnquiries.length === 0) {
       return { suppliers: [], totalCost: 0, totalDeposit: 0 }
     }
-    
+
     const outstandingSuppliers = unpaidEnquiries
       .map(enquiry => {
         const supplierType = enquiry.supplier_category
         const supplier = visibleSuppliers[supplierType]
-        
+
         if (!supplier) {
           return null
         }
-        
+
+        // ✅ EXTRA SAFETY: Double-check we're not including einvites
+        if (supplierType === 'einvites') {
+          return null
+        }
+
         return { enquiry, supplierType, supplier }
       })
       .filter(Boolean)

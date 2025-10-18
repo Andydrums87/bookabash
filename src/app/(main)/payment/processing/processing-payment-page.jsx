@@ -57,12 +57,15 @@ export default function PaymentProcessing() {
           // Calculate payment breakdown
           const partyPlan = party.party_plan || {}
           const suppliers = Object.entries(partyPlan)
-            .filter(([key, supplier]) => 
-              supplier && 
-              typeof supplier === 'object' && 
-              supplier.name &&
-              key !== 'addons'
-            )
+            .filter(([key, supplier]) => {
+              // ✅ FIX: Exclude einvites and addons from payment
+              if (key === 'addons' || key === 'einvites') {
+                return false
+              }
+              return supplier &&
+                typeof supplier === 'object' &&
+                supplier.name
+            })
             .map(([key, supplier]) => ({
               id: supplier.id,
               category: key,

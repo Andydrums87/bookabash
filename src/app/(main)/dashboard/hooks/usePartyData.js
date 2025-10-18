@@ -175,9 +175,10 @@ useEffect(() => {
   // Helper to calculate localStorage cost
   const calculateLocalStorageCost = (partyPlan) => {
     let total = 0
-    
+
     Object.entries(partyPlan).forEach(([key, supplier]) => {
-      if (supplier && supplier.price && key !== 'addons') {
+      // ✅ FIX: Exclude einvites and addons from cost calculation
+      if (supplier && supplier.price && key !== 'addons' && key !== 'einvites') {
         total += supplier.price
       }
     })

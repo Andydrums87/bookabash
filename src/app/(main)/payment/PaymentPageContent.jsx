@@ -557,28 +557,40 @@ const loadPaymentData = async () => {
 
     // ✅ FIXED: Get enquiries and check for auto-accepted ones
     const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(party.id)
-    
+
     let confirmedSuppliers = []
-    
+
     if (enquiriesResult.success && enquiriesResult.enquiries.length > 0) {
       console.log('📋 Found enquiries, checking status...', enquiriesResult.enquiries)
-      
+      console.log('🔍 RAW ENQUIRIES:', JSON.stringify(enquiriesResult.enquiries.map(e => ({
+        id: e.id,
+        category: e.supplier_category,
+        status: e.status,
+        payment_status: e.payment_status
+      })), null, 2))
+
       // ✅ FIXED: Look for enquiries that need payment (either old flow or new flow)
       confirmedSuppliers = enquiriesResult.enquiries
         .filter(enquiry => {
           console.log(`Enquiry ${enquiry.id}: status=${enquiry.status}, payment_status=${enquiry.payment_status}`)
-          
+
+          // ✅ FIX: Exclude einvites from payment
+          if (enquiry.supplier_category === 'einvites') {
+            console.log('⏭️ Skipping einvites enquiry - digital invites are not paid')
+            return false
+          }
+
           // Old flow: accepted + unpaid
           if (enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid') {
             return true
           }
-          
+
           // ✅ NEW FLOW: auto-accepted (pending payment)
           // These are enquiries that were just auto-accepted for immediate booking
           if (enquiry.status === 'accepted' && !enquiry.payment_status) {
             return true
           }
-          
+
           return false
         })
         .map(enquiry => ({
@@ -590,22 +602,29 @@ const loadPaymentData = async () => {
           image: '/placeholder-supplier.jpg',
           enquiry_id: enquiry.id
         }))
-      
+
       console.log(`✅ Found ${confirmedSuppliers.length} suppliers ready for payment`)
+      console.log('🔍 CONFIRMED SUPPLIERS FROM ENQUIRIES:', JSON.stringify(confirmedSuppliers.map(s => ({
+        category: s.category,
+        price: s.price
+      })), null, 2))
     } 
     
     // ✅ FALLBACK: If no enquiries found, use party plan (shouldn't happen now)
     if (confirmedSuppliers.length === 0) {
       console.log('⚠️ No payment-ready enquiries found, using party plan as fallback')
       const partyPlan = party.party_plan || {}
-      
+      console.log('🔍 PARTY PLAN KEYS:', Object.keys(partyPlan))
+
       confirmedSuppliers = Object.entries(partyPlan)
-        .filter(([key, supplier]) => 
-          supplier && 
-          typeof supplier === 'object' && 
-          supplier.name &&
-          !['einvites', 'addons'].includes(key)
-        )
+        .filter(([key, supplier]) => {
+          const isValid = supplier &&
+            typeof supplier === 'object' &&
+            supplier.name &&
+            !['einvites', 'addons'].includes(key)
+          console.log(`🔍 Party plan entry [${key}]: valid=${isValid}, hasName=${!!supplier?.name}, isExcluded=${['einvites', 'addons'].includes(key)}`)
+          return isValid
+        })
         .map(([category, supplier]) => ({
           id: supplier.id,
           name: supplier.name,
@@ -616,9 +635,18 @@ const loadPaymentData = async () => {
           price: supplier.price || 0,
           status: 'immediate_booking'
         }))
+
+      console.log('🔍 CONFIRMED SUPPLIERS FROM PARTY PLAN:', JSON.stringify(confirmedSuppliers.map(s => ({
+        category: s.category,
+        price: s.price
+      })), null, 2))
     }
-    
+
     console.log(`✅ Final suppliers for payment: ${confirmedSuppliers.length}`)
+    console.log('🔍 FINAL CONFIRMED SUPPLIERS:', JSON.stringify(confirmedSuppliers.map(s => ({
+      category: s.category,
+      price: s.price
+    })), null, 2))
     setConfirmedSuppliers(confirmedSuppliers)
 
   } catch (error) {

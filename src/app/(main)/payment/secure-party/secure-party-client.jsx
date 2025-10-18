@@ -833,13 +833,24 @@ export default function PaymentPageContent() {
   
         const partyPlan = partyResult.party.party_plan || {}
         const supplierList = Object.entries(partyPlan)
-          .filter(([key, supplier]) => 
-            supplier && 
-            typeof supplier === 'object' && 
-            supplier.name &&
-            key !== 'addons' &&
-            !paidCategories.has(key)
-          )
+          .filter(([key, supplier]) => {
+            // ✅ FIX: Exclude einvites and addons from payment
+            if (key === 'addons' || key === 'einvites') {
+              console.log(`⏭️ Skipping ${key} - not a payable supplier`)
+              return false
+            }
+
+            // Exclude already paid suppliers
+            if (paidCategories.has(key)) {
+              console.log(`⏭️ Skipping ${key} - already paid`)
+              return false
+            }
+
+            // Only include valid supplier objects with names
+            return supplier &&
+              typeof supplier === 'object' &&
+              supplier.name
+          })
           .map(([key, supplier]) => ({
             id: supplier.id,
             name: supplier.name,
@@ -853,7 +864,13 @@ export default function PaymentPageContent() {
             packageData: supplier.packageData,
             selectedAddons: supplier.selectedAddons || []
           }))
-        
+
+        console.log('✅ Suppliers loaded for payment:', supplierList.map(s => ({
+          category: s.category,
+          name: s.name,
+          price: s.price
+        })))
+
         if (supplierList.length === 0) {
           router.push('/dashboard?message=no-pending-payments')
           return

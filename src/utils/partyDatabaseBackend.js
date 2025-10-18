@@ -396,23 +396,29 @@ async getActivePlannedParty() {
   // Add this to your partyDatabaseBackend
 async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
   try {
-    
-    
+    // ✅ FIX: Filter out einvites from suppliers to update
+    const validSuppliers = includedSuppliers.filter(cat => cat !== 'einvites')
+
+    if (validSuppliers.length === 0) {
+      console.log('⚠️ No valid suppliers to update payment status for')
+      return { success: true, updatedEnquiries: [] }
+    }
+
     // Update enquiries for suppliers that were included in this payment
     const { data: updatedEnquiries, error } = await supabase
       .from('enquiries')
-      .update({ 
+      .update({
         payment_status: 'paid',
         updated_at: new Date().toISOString()
       })
       .eq('party_id', partyId)
-      .in('supplier_category', includedSuppliers)
+      .in('supplier_category', validSuppliers)
       .eq('status', 'accepted') // Only update accepted enquiries
       .select()
 
     if (error) throw error
 
-  
+    console.log(`✅ Updated payment status for ${updatedEnquiries.length} enquiries`)
     return { success: true, updatedEnquiries }
 
   } catch (error) {
@@ -1005,24 +1011,44 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       if (fetchError) throw fetchError
 
       const partyPlan = party.party_plan || {}
+
+      // ✅ FIX: Get existing enquiries first to avoid duplicates
+      const { data: existingEnquiries, error: existingError } = await supabase
+        .from('enquiries')
+        .select('*')
+        .eq('party_id', partyId)
+
+      if (existingError) {
+        console.error('❌ Error fetching existing enquiries:', existingError)
+      }
+
+      const existingCategories = new Set(
+        (existingEnquiries || []).map(e => e.supplier_category)
+      )
+      console.log('📋 Existing enquiry categories:', Array.from(existingCategories))
+
       const enquiries = []
 
       // Categories to exclude from enquiries
       const excludeCategories = ['einvites', 'addons']
 
-  
+
 
       // Create enquiries for each supplier in the party plan
       for (const [category, supplierInfo] of Object.entries(partyPlan)) {
         // Skip excluded categories
         if (excludeCategories.includes(category)) {
+          continue
+        }
 
+        // ✅ FIX: Skip if enquiry already exists for this category
+        if (existingCategories.has(category)) {
+          console.log(`⏭️ Skipping ${category} - enquiry already exists`)
           continue
         }
 
         // Skip if no supplier
         if (!supplierInfo || !supplierInfo.name) {
-          
           continue
         }
 
@@ -1201,11 +1227,19 @@ const enquiryData = {
 // In partyDatabaseBackend.js - FIXED autoAcceptEnquiries function
 async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
   try {
- 
-    
+    // ✅ FIX: Filter out einvites if specific categories provided
+    let categoriesToUpdate = specificSupplierCategories
+    if (categoriesToUpdate && Array.isArray(categoriesToUpdate)) {
+      categoriesToUpdate = categoriesToUpdate.filter(cat => cat !== 'einvites')
+      if (categoriesToUpdate.length === 0) {
+        console.log('⚠️ No valid categories to auto-accept')
+        return { success: true, updatedEnquiries: [] }
+      }
+    }
+
     let query = supabase
     .from('enquiries')
-    .update({ 
+    .update({
       status: 'accepted', // Keep as accepted
       auto_accepted: true, // This is the key change needed
       updated_at: new Date().toISOString()
@@ -1213,18 +1247,19 @@ async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
     .eq('party_id', partyId)
     .in('status', ['draft', 'pending', 'accepted']) // Include 'accepted' status
     .eq('auto_accepted', false) // Only update non-auto-accepted enquiries
-    
-    if (specificSupplierCategories && specificSupplierCategories.length > 0) {
-      query = query.in('supplier_category', specificSupplierCategories)
+    .neq('supplier_category', 'einvites') // ✅ EXTRA SAFETY: Never auto-accept einvites
+
+    if (categoriesToUpdate && categoriesToUpdate.length > 0) {
+      query = query.in('supplier_category', categoriesToUpdate)
     }
-    
+
     const { data: updatedEnquiries, error } = await query.select()
-    
+
     if (error) throw error;
-    
-    
+
+    console.log(`✅ Auto-accepted ${updatedEnquiries.length} enquiries`)
     return { success: true, updatedEnquiries };
-    
+
   } catch (error) {
     console.error('Error auto-accepting enquiries:', error);
     return { success: false, error: error.message };
@@ -1381,7 +1416,8 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
 
     // Add supplier costs
     Object.entries(partyPlan).forEach(([key, supplier]) => {
-      if (supplier && supplier.price && key !== 'addons') {
+      // ✅ FIX: Exclude einvites and addons from cost calculation
+      if (supplier && supplier.price && key !== 'addons' && key !== 'einvites') {
         total += supplier.price
       }
     })
@@ -3158,11 +3194,11 @@ async applyReplacementToParty(partyId, replacement, originalEnquiryId = null) {
     
     // Map category to supplier type
     let supplierType = this.mapCategoryToSupplierType(replacement.category)
-    
+
     if (!supplierType) {
-   
-      
-      const planKeys = Object.keys(currentPlan).filter(key => key !== 'addons')
+
+      // ✅ FIX: Exclude einvites and addons when finding supplier keys
+      const planKeys = Object.keys(currentPlan).filter(key => key !== 'addons' && key !== 'einvites')
       const matchingKey = planKeys.find(key => {
         const supplier = currentPlan[key]
         return supplier && (

@@ -106,8 +106,9 @@ export default function MissingSuppliersSuggestions({
   const getMissingSuppliers = () => {
     if (!suppliers || suppliers.length === 0) return []
 
+    // ✅ FIX: Exclude einvites and addons from current suppliers list
     const currentSuppliers = Object.keys(partyPlan || {}).filter(
-      key => partyPlan[key] !== null && partyPlan[key] !== undefined && key !== 'addons'
+      key => partyPlan[key] !== null && partyPlan[key] !== undefined && key !== 'addons' && key !== 'einvites'
     )
 
     // Include types that are missing OR recently added (to show green state)
