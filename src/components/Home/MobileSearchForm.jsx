@@ -242,12 +242,6 @@ export default function MobileSearchForm({
                 Please enter a valid UK postcode
               </p>
             )}
-            {formData.postcode && postcodeValid && (
-              <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                <Check className="w-3 h-3" />
-                Valid postcode
-              </p>
-            )}
           </div>
 
           {/* NEW: Own Venue Checkbox */}

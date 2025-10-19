@@ -11,6 +11,7 @@ import RecommendedAddons from "@/components/recommended-addons"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import MyPartyTabContent from "../DatabaseDashboard/components/MyPartyTabContent"
 
 export default function MobileSupplierNavigation({
   suppliers,
@@ -152,13 +153,9 @@ export default function MobileSupplierNavigation({
   const [isAutoScrolling, setIsAutoScrolling] = useState(false)
   const autoScrollIntervalRef = useRef(null)
 
-  // Track if user has explored other tabs (to show CTA)
-  const [hasExploredTabs, setHasExploredTabs] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('hasExploredTabs') === 'true'
-    }
-    return false
-  })
+  // Track if user clicked "I'm Happy" (to show CTA)
+  const [showCompleteCTA, setShowCompleteCTA] = useState(false)
+  const ctaRef = useRef(null)
 
   // Track if swipe hint has been shown
   const [showSwipeHint, setShowSwipeHint] = useState(() => {
@@ -296,14 +293,6 @@ export default function MobileSupplierNavigation({
       setInternalActiveTab(index)
     }
 
-    // Track when user explores tabs other than "My Party"
-    if (supplierType.type !== 'myParty' && !hasExploredTabs) {
-      setHasExploredTabs(true)
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('hasExploredTabs', 'true')
-      }
-    }
-
     if (onSupplierTabChange) {
       onSupplierTabChange(supplierType.type)
     }
@@ -380,6 +369,82 @@ export default function MobileSupplierNavigation({
   }
 
   const renderMyPartyContent = () => {
+    // Calculate total deposit amount for outstanding payments
+    const outstandingSuppliers = Object.entries(suppliers).filter(([type, supplier]) => {
+      if (!supplier || type === "einvites") return false
+      const enquiry = enquiries.find((e) => e.supplier_category === type)
+      const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+      return !isPaid && supplier
+    })
+
+    const totalDepositAmount = outstandingSuppliers.reduce((sum, [type, supplier]) => {
+      return sum + (supplier.price || 0)
+    }, 0)
+
+    const hasOutstandingPayments = outstandingSuppliers.length > 0
+
+    // Handle view details click
+    const handleViewDetails = (type, supplier) => {
+      if (supplier.id) {
+        router.push(`/supplier/${supplier.id}?from=dashboard`)
+      }
+    }
+
+    // Handle remove supplier
+    const handleRemoveSupplier = (type) => {
+      if (handleDeleteSupplier) {
+        handleDeleteSupplier(type)
+      }
+    }
+
+    // Handle add supplier from missing suggestions
+    const handleAddSupplier = async (supplier, supplierType) => {
+      if (onAddSupplier) {
+        return await onAddSupplier(supplierType, supplier)
+      }
+      return false
+    }
+
+    // Build recommended suppliers object for missing suggestions
+    const recommendedSuppliers = {}
+    if (getRecommendedSupplierForType) {
+      const allTypes = ['venue', 'entertainment', 'cakes', 'decorations', 'facePainting', 'activities', 'partyBags', 'balloons', 'catering']
+      allTypes.forEach(type => {
+        const recommended = getRecommendedSupplierForType(type)
+        if (recommended) {
+          recommendedSuppliers[type] = recommended
+        }
+      })
+    }
+
+    return (
+      <MyPartyTabContent
+        suppliers={suppliers}
+        enquiries={enquiries}
+        addons={addons}
+        partyDetails={partyDetails}
+        onRemoveSupplier={handleRemoveSupplier}
+        onViewDetails={handleViewDetails}
+        onAddSupplier={handleAddSupplier}
+        recommendedSuppliers={recommendedSuppliers}
+        onImHappy={() => {
+          setShowCompleteCTA(true)
+          // Scroll to CTA after it renders
+          setTimeout(() => {
+            if (ctaRef.current) {
+              ctaRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+              })
+            }
+          }, 100)
+        }}
+      />
+    )
+  }
+
+  // Keep old implementation as fallback (can be removed later)
+  const renderMyPartyContentOld = () => {
     // Get all selected suppliers
     const selectedSuppliers = Object.entries(suppliers).filter(([_, supplier]) => supplier !== null)
 
@@ -744,7 +809,8 @@ export default function MobileSupplierNavigation({
             {renderAddonsContent()}
           </div>
         ) : (
-          <div className="transition-all duration-300 ease-in-out" data-tour={activeSupplierTypeData.type === 'venue' ? 'venue-card-mobile' : undefined}>
+          <div>
+            <div className="transition-all duration-300 ease-in-out" data-tour={activeSupplierTypeData.type === 'venue' ? 'venue-card-mobile' : undefined}>
           {(() => {
             // Special handling for venue type
             if (activeSupplierTypeData.type === 'venue') {
@@ -848,12 +914,28 @@ export default function MobileSupplierNavigation({
             );
           })()}
         </div>
+
+            {/* Back to My Party Link - Only show when on individual supplier tab with content */}
+            {currentSupplier && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => handleTabSelect(0, supplierTypes[0])}
+                  className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to My Party
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* ✅ COMPLETE BOOKING CTA - SHOWN AFTER USER EXPLORES TABS */}
-      {hasExploredTabs && (
-        <div className="px-4 mt-8 mb-6">
+      {/* ✅ COMPLETE BOOKING CTA - SHOWN AFTER USER CLICKS "I'M HAPPY" */}
+      {showCompleteCTA && (
+        <div ref={ctaRef} className="px-4 mt-8 mb-6">
           <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
             <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
             <p className="text-sm text-white/90 mb-4">

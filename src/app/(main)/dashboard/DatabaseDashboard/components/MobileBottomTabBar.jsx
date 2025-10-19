@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import DeleteConfirmDialog from "../../components/Dialogs/DeleteConfirmDialog"
+import MyPartyTabContent from "./MyPartyTabContent"
 
 const MobileBottomTabBar = ({
   suppliers = {},
@@ -32,7 +33,10 @@ const MobileBottomTabBar = ({
   getSupplierDisplayPricing,
   totalCost = 0,
   addons = [],
-  onRemoveSupplier
+  onRemoveSupplier,
+  recommendedSuppliers = {},
+  onAddSupplier,
+  onViewDetails
 }) => {
   const [activeTab, setActiveTab] = useState(null)
   const [showModal, setShowModal] = useState(false)

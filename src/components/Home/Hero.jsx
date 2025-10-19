@@ -223,15 +223,6 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       </p>
                     </div>
                   )}
-
-                  {postcodeValid && formData.postcode && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-10">
-                      <p className="text-xs text-green-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-green-200">
-                        <Check className="w-3 h-3" />
-                        Valid postcode
-                      </p>
-                    </div>
-                  )}
                 </div>
 
                 {/* Action buttons row */}
