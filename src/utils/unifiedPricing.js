@@ -262,17 +262,9 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
     extraHours = partyDuration - standardDuration;
     extraHourCost = extraHours * extraHourRate;
     
-    console.log('⏰ Extra hour calculation:', {
-      supplier: supplier.name,
-      isVenue: supplier.serviceType === 'venue',
-      partyDuration,
-      standardDuration,
-      extraHours,
-      extraHourRate,
-      extraHourCost
-    });
+
   } else if (isLeadBased && partyDuration > standardDuration) {
-    console.log('⏰ Extra hour cost SKIPPED for lead-based supplier');
+
   }
 
   // 5. Calculate addons total

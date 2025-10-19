@@ -985,6 +985,7 @@ export default function SnappyChatReviewPage() {
                           navigateWithContext={navigateWithContext}
                           toast={toast}
                           addedSupplierIds={addedSupplierIds}
+                          preventNavigation={true}
                         />
                       </div>
                     )}

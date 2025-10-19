@@ -201,6 +201,17 @@ export default function MyPartyTabContent({
     )
   }
 
+  // Calculate total cost
+  const totalCost = allSuppliers.reduce((sum, [type, supplier]) => {
+    const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+      addon.supplierId === supplier.id ||
+      addon.supplierType === type ||
+      addon.attachedToSupplier === type
+    ) : []
+    const addonsCost = supplierAddons.reduce((addonSum, addon) => addonSum + (addon.price || 0), 0)
+    return sum + (supplier.price || 0) + addonsCost
+  }, 0)
+
   return (
     <div className="space-y-6">
       {/* Original Header Section */}
@@ -243,7 +254,7 @@ export default function MyPartyTabContent({
             </div>
           )}
 
-          <p className="text-sm text-gray-600">Swipe the tabs above to customize your plan</p>
+          <p className="text-sm text-gray-600">Here are the suppliers we've chosen for you</p>
         </div>
       </div>
 
@@ -277,6 +288,21 @@ export default function MyPartyTabContent({
             Start building your party by adding suppliers in the tabs above!
           </p>
         </div>
+      )}
+
+      {/* Total Cost Card */}
+      {allSuppliers.length > 0 && (
+        <Card className="bg-primary-500  shadow-lg">
+          <div className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-white">Your Party Total</p>
+              <p className="text-xs text-white/80 mt-0.5">{allSuppliers.length} supplier{allSuppliers.length > 1 ? 's' : ''} selected</p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-black text-white">£{totalCost.toFixed(2)}</p>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* Visual Separator */}
@@ -332,7 +358,6 @@ export default function MyPartyTabContent({
               className="w-full text-white py-6 text-base shadow-lg"
               style={{ background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))' }}
             >
-              <CheckCircle className="w-5 h-5 mr-2" />
               Happy with your plan?
             </Button>
           </div>

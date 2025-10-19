@@ -69,9 +69,14 @@ export default function FloatingCTA() {
           // Scroll to the mobile search form
           const mobileForm = document.getElementById('search-form')
           if (mobileForm) {
-            mobileForm.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start'
+            // Get the position of the form
+            const formRect = mobileForm.getBoundingClientRect()
+            const absoluteTop = formRect.top + window.pageYOffset
+
+            // Scroll with offset to ensure form is visible and not hidden by any fixed headers
+            window.scrollTo({
+              top: absoluteTop - 20, // 20px offset from top
+              behavior: 'smooth'
             })
           }
         }}

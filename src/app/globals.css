@@ -456,11 +456,16 @@ body {
     scroll-behavior: auto;
     overflow-x: hidden;
   }
-  
+
   /* Reset scroll position for mobile navigation */
   body {
     scroll-restoration: manual;
   }
+}
+
+/* Prevent automatic scroll jumps - user can still scroll manually */
+body.prevent-auto-scroll {
+  /* No restrictions - just a marker class for the scroll management logic */
 }
 /* Mobile-first approach - 12px for mobile */
 input[type="text"],

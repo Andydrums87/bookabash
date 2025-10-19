@@ -93,6 +93,8 @@ export default function LocalStorageDashboard() {
   // ✅ PRODUCTION SAFETY: Core state management
   const [isMounted, setIsMounted] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [preventScrollFlag, setPreventScrollFlag] = useState(false)
+  const scrollLockPositionRef = useRef(null)
 
   
   // Refs for tracking
@@ -412,16 +414,21 @@ useEffect(() => {
 
   const handleScrollToSupplier = () => {
     try {
+      // CRITICAL: If preventScrollFlag is set, skip ALL scroll logic
+      if (preventScrollFlag) {
+        return
+      }
+
       // Check URL parameters for scroll hints
       const scrollToSupplier = searchParams.get('scrollTo')
-      const lastAction = searchParams.get('action') 
+      const lastAction = searchParams.get('action')
       const fromPage = searchParams.get('from')
       const source = searchParams.get('source')
-      
-      console.log('📍 Unified scroll management check:', { 
-        scrollToSupplier, 
-        lastAction, 
-        fromPage, 
+
+      console.log('📍 Unified scroll management check:', {
+        scrollToSupplier,
+        lastAction,
+        fromPage,
         source,
         showWelcomePopup,
         activeMobileSupplierType
@@ -434,7 +441,7 @@ useEffect(() => {
         document.body.classList.remove('modal-open', 'overflow-hidden')
         document.documentElement.classList.remove('modal-open', 'overflow-hidden')
       }
-      
+
       unlockScroll() // Immediate unlock
 
       // Handle welcome popup scenario
@@ -519,7 +526,7 @@ useEffect(() => {
 
   const scrollTimeout = setTimeout(handleScrollToSupplier, 200)
   return () => clearTimeout(scrollTimeout)
-}, [isMounted, isClient, searchParams, router, showWelcomePopup, activeMobileSupplierType])
+}, [isMounted, isClient, searchParams, router, showWelcomePopup, activeMobileSupplierType, preventScrollFlag])
 
 // 3. ✅ WELCOME POPUP: Handle scroll after welcome popup closes
 useEffect(() => {
@@ -560,33 +567,31 @@ useEffect(() => {
   }
 }, [showWelcomePopup, isMounted, isClient, searchParams])
 
-// 4. ✅ SAFETY NET: Global scroll unlock effect
+// 4. SAFETY NET: Global scroll unlock effect
 useEffect(() => {
   const unlockScroll = () => {
+    // CRITICAL: Don't unlock if prevent-auto-scroll is active (prevents interference with Optional Extras)
+    if (document.body.classList.contains('prevent-auto-scroll')) {
+      return
+    }
+
     document.body.style.overflow = 'unset'
     document.documentElement.style.overflow = 'unset'
     document.body.classList.remove('modal-open', 'overflow-hidden')
     document.documentElement.classList.remove('modal-open', 'overflow-hidden')
   }
-  
+
   // Run immediately when modals change
   unlockScroll()
-  
+
   // Run again after a short delay as safety net
   const timeoutId = setTimeout(unlockScroll, 100)
-  
+
   return () => {
     clearTimeout(timeoutId)
     unlockScroll() // Cleanup on unmount
   }
 }, [showSupplierModal, showWelcomePopup, isAddonModalOpen])
-
-// Remove the first useEffect completely and replace both with this single one:
-
-// In LocalStorageDashboard.jsx - REPLACE the recommendations useEffect
-
-// In LocalStorageDashboard.jsx - REPLACE both recommendation useEffects with this single one
-// In LocalStorageDashboard.jsx - REPLACE the recommendations useEffect
 
 useEffect(() => {
   console.log('🔥 Recommendations effect triggered')
@@ -1120,15 +1125,16 @@ const handleNameSubmit = (nameData) => {
     setShowAdvancedControls,
   }
   const handleMobileSupplierTabChange = (supplierType) => {
-    console.log('🔄 Mobile tab changed to:', supplierType)
     setActiveMobileSupplierType(supplierType)
-    
-    // Always ensure scroll is unlocked when changing tabs
-    setTimeout(() => {
-      document.body.style.overflow = 'unset'
-      document.documentElement.style.overflow = 'unset'
-      document.body.classList.remove('modal-open', 'overflow-hidden')
-    }, 50)
+
+    // Only unlock scroll if prevent-auto-scroll is NOT active
+    if (!document.body.classList.contains('prevent-auto-scroll')) {
+      setTimeout(() => {
+        document.body.style.overflow = 'unset'
+        document.documentElement.style.overflow = 'unset'
+        document.body.classList.remove('modal-open', 'overflow-hidden')
+      }, 50)
+    }
   }
 
   const handlePartyRebuilt = (rebuildResults) => {
@@ -1182,15 +1188,61 @@ const handleNameSubmit = (nameData) => {
  // In your dashboard's handleAddRecommendedSupplier:
 
 const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
-  console.log('🎯 Adding recommended supplier...', supplier.name, 'shouldNavigate:', shouldNavigate)
-
   try {
+    // Save scroll position AND document height BEFORE any state changes
+    const savedScrollY = !shouldNavigate ? window.scrollY : null
+    const savedDocHeight = !shouldNavigate ? document.documentElement.scrollHeight : null
+
+    // Set prevent scroll flag and save position in ref
+    if (!shouldNavigate && savedScrollY !== null) {
+      scrollLockPositionRef.current = savedScrollY
+      setPreventScrollFlag(true)
+      document.body.classList.add('prevent-auto-scroll')
+    }
+
     setLoadingCards(prev => [...prev, categoryType])
 
     const result = await addSupplier(supplier, supplier.packageData || null)
 
     if (result.success) {
-      console.log('✅ Supplier added successfully!')
+      // Show success toast for Optional Extras additions
+      if (!shouldNavigate) {
+        const categoryNames = {
+          venue: 'Venue',
+          entertainment: 'Entertainment',
+          catering: 'Catering',
+          cakes: 'Cake',
+          facePainting: 'Face Painting',
+          activities: 'Activities',
+          partyBags: 'Party Bags',
+          decorations: 'Decorations',
+          photography: 'Photography',
+          bouncyCastle: 'Bouncy Castle'
+        }
+        const categoryName = categoryNames[categoryType] || categoryType
+
+        toast.success(`${categoryName} added to your party!`, {
+          description: 'View it in the My Party tab',
+          duration: 3000
+        })
+      }
+
+      // CRITICAL FIX: Compensate for document height change
+      if (!shouldNavigate && savedScrollY !== null && savedDocHeight !== null) {
+        // Wait for DOM to update fully
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const newDocHeight = document.documentElement.scrollHeight
+            const heightDelta = newDocHeight - savedDocHeight
+
+            if (heightDelta > 10) {
+              // Document got taller - adjust scroll to compensate
+              const compensatedPosition = savedScrollY + heightDelta
+              window.scrollTo({ top: compensatedPosition, behavior: 'instant' })
+            }
+          })
+        })
+      }
 
       // ✅ Only update URL and trigger navigation if shouldNavigate is true
       if (shouldNavigate) {
@@ -1201,13 +1253,12 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
         const currentUrl = new URL(window.location.href)
         currentUrl.searchParams.set('scrollTo', categoryType)
         currentUrl.searchParams.set('action', 'supplier-added')
-        currentUrl.searchParams.set('ts', addTimestamp.toString()) // ✅ Add timestamp
+        currentUrl.searchParams.set('ts', addTimestamp.toString())
         window.history.replaceState({}, '', currentUrl)
 
         // Clean up URL after animation
         setTimeout(() => {
           const cleanUrl = new URL(window.location.href)
-          // Only clean if the timestamp matches (prevents cleaning during new additions)
           if (cleanUrl.searchParams.get('ts') === addTimestamp.toString()) {
             cleanUrl.searchParams.delete('scrollTo')
             cleanUrl.searchParams.delete('action')
@@ -1215,10 +1266,30 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
             window.history.replaceState({}, '', cleanUrl)
           }
         }, 2500)
+      } else {
+        // Clear prevent scroll flag after card disappears (3 seconds)
+        setTimeout(() => {
+          scrollLockPositionRef.current = null
+          setPreventScrollFlag(false)
+          document.body.classList.remove('prevent-auto-scroll')
+        }, 3500)
+      }
+    } else {
+      // Clear everything if operation failed
+      if (!shouldNavigate) {
+        scrollLockPositionRef.current = null
+        setPreventScrollFlag(false)
+        document.body.classList.remove('prevent-auto-scroll')
       }
     }
   } catch (error) {
-    console.error('💥 Error:', error)
+    console.error('Error adding supplier:', error)
+    // Clear flag on error
+    if (!shouldNavigate) {
+      scrollLockPositionRef.current = null
+      setPreventScrollFlag(false)
+      document.body.classList.remove('prevent-auto-scroll')
+    }
   } finally {
     setLoadingCards(prev => prev.filter(c => c !== categoryType))
   }

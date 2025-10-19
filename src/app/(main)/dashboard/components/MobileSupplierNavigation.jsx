@@ -297,17 +297,22 @@ export default function MobileSupplierNavigation({
       onSupplierTabChange(supplierType.type)
     }
 
-    setTimeout(() => {
-      const contentElement = document.getElementById('mobile-supplier-content')
-      if (contentElement) {
-        const offset = 140
-        const elementPosition = contentElement.getBoundingClientRect().top + window.pageYOffset
-        window.scrollTo({
-          top: elementPosition - offset,
-          behavior: 'smooth'
-        })
-      }
-    }, 100)
+    // Don't auto-scroll if prevent-auto-scroll is active (e.g., adding from Optional Extras)
+    const shouldPreventScroll = document.body.classList.contains('prevent-auto-scroll')
+
+    if (!shouldPreventScroll) {
+      setTimeout(() => {
+        const contentElement = document.getElementById('mobile-supplier-content')
+        if (contentElement) {
+          const offset = 140
+          const elementPosition = contentElement.getBoundingClientRect().top + window.pageYOffset
+          window.scrollTo({
+            top: elementPosition - offset,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+    }
   }
 
   const handleAddAddon = async (addon) => {
@@ -488,7 +493,7 @@ export default function MobileSupplierNavigation({
         <div className="mb-4">
           <div>
             <h2 className="text-3xl mb-4 font-black text-gray-900 leading-tight animate-fade-in">Snappy's built the perfect party for {childFirstName}!</h2>
-            <p className="text-sm text-gray-600">Swipe the tabs above to customize your plan</p>
+            <p className="text-sm text-gray-600">Here are the suppliers we've chosen for you</p>
           </div>
         </div>
 
