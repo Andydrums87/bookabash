@@ -198,9 +198,13 @@ export default function AnimatedRSVPPage() {
     try {
       console.log('📝 Submitting RSVP:', rsvpData)
       console.log('📝 Child name being sent:', rsvpData.childName)
-      
+
+      // ✅ FIX: Use the actual invite ID from loaded data, not the URL param (which might be a slug)
+      const actualInviteId = inviteDetails?.id || inviteId
+      console.log('🎯 Using invite ID:', actualInviteId, '(from URL param:', inviteId, ')')
+
       // Submit to database via backend
-      const result = await partyDatabaseBackend.submitRSVP(inviteId, {
+      const result = await partyDatabaseBackend.submitRSVP(actualInviteId, {
         guestName: rsvpData.guestName,
         guestEmail: rsvpData.email,
         childName: rsvpData.childName,

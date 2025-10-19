@@ -279,15 +279,30 @@ export default function MyPartyTabContent({
         </div>
       )}
 
-      {/* Anything Missing Section - Using neutral colors */}
+      {/* Visual Separator */}
+      {showMissingSuggestions && allSuppliers.length > 0 && (
+        <div className="mt-12 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+            <div className="flex items-center gap-2 text-gray-400">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-xs font-medium uppercase tracking-wider">Optional Extras</span>
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Anything Missing Section - Subtle styling */}
       {showMissingSuggestions && allSuppliers.length > 0 && (
         <>
-          <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-5">
+          <div className="bg-gray-50/50 border border-gray-200/60 rounded-xl p-5">
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Anything else you'd like to add?
+              <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <span>Anything else you'd like to add?</span>
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-500">
                 Here are some suggestions to make your party even better
               </p>
             </div>
@@ -305,7 +320,8 @@ export default function MyPartyTabContent({
           <div className="mt-6">
             <Button
               onClick={handleImHappy}
-              className="w-full bg-primary-500 hover:bg-primary-600 text-white py-6 text-base"
+              className="w-full text-white py-6 text-base shadow-lg"
+              style={{ background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))' }}
             >
               <CheckCircle className="w-5 h-5 mr-2" />
               Happy with your plan?
