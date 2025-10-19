@@ -310,9 +310,18 @@ export default function MyPartyTabContent({
             <MissingSuppliersSuggestions
               partyPlan={suppliers}
               suppliers={Object.values(recommendedSuppliers).filter(s => s)}
-              onAddSupplier={onAddSupplier}
+              onAddSupplier={async (supplier, supplierType) => {
+                // Call the real add function to actually add the supplier
+                // MobileSupplierNavigation.handleAddSupplier expects: (supplier, supplierType, shouldNavigate)
+                if (onAddSupplier) {
+                  await onAddSupplier(supplier, supplierType, false) // false = don't navigate
+                }
+                // Return true to trigger confetti
+                return true
+              }}
               addedSupplierIds={new Set()}
               showTitle={false}
+              preventNavigation={true}
             />
           </div>
 

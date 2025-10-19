@@ -1,5 +1,5 @@
 "use client"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle, Navigation } from "lucide-react"
 import { Calendar } from "../ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -25,6 +25,7 @@ export default function MobileSearchForm({
   showFloatingCTA
 }) {
   const { getPostcodeFromLocation, isLoading: isGettingLocation, error: locationError } = useGeolocation()
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   const isFormValid = () => {
     return (
@@ -70,28 +71,29 @@ export default function MobileSearchForm({
               Event date <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={`
-                      w-full font-normal h-10
+                      w-full font-normal h-12
                       bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
                       hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
-                      ${!formData.date && "text-gray-500"}
                       ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
                     `}
                   >
-                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
                     {formData.date && !isNaN(new Date(formData.date)) ? (
-                      <span className="ml-5 text-sm">{format(new Date(formData.date), "EEE, MMM d, yyyy")}</span>
+                      <span className="ml-5 text-sm text-gray-900">
+                        {format(new Date(formData.date), "EEE, MMM d, yyyy")}
+                      </span>
                     ) : (
-                      <span className="ml-5 text-gray-800 text-sm">Select event date</span>
+                      <span className="ml-5 text-sm text-gray-500">Select event date</span>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent 
-                  className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
+                <PopoverContent
+                  className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl"
                   align="start"
                   side="top"
                   sideOffset={8}
@@ -103,6 +105,7 @@ export default function MobileSearchForm({
                       if (date) {
                         const formattedDate = format(date, "yyyy-MM-dd")
                         handleFieldChange('date', formattedDate)
+                        setCalendarOpen(false) // ✅ Close calendar after selection
                       }
                     }}
                     initialFocus
@@ -133,7 +136,6 @@ export default function MobileSearchForm({
                 value={formData.theme}
                 onValueChange={(value) => handleFieldChange("theme", value)}
                 defaultValue="princess"
-                className="h-12"
                 required
               />
               {!formData.theme && (
@@ -153,19 +155,24 @@ export default function MobileSearchForm({
               Guests <span className="text-red-500">*</span>
             </label>
             <div className="relative ">
-              <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+              <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
               <Select
                 value={formData.guestCount}
                 onValueChange={(value) => handleFieldChange("guestCount", value)}
                 required
               >
                 <SelectTrigger className={`
-                  bg-white text-gray-600 w-full py-5 border-gray-200 focus:border-[hsl(var(--primary-400))] rounded-xl h-10 pl-10 text-sm
+                  bg-white w-full border-gray-200 rounded-xl pl-10 text-sm
+                  !h-12
+                  focus:ring-0 focus-visible:ring-0 focus:outline-none focus-visible:outline-none
+                  focus:border-[hsl(var(--primary-400))] focus-visible:border-[hsl(var(--primary-400))]
+                  data-[placeholder]:text-gray-500
+                  text-gray-900
                   ${!formData.guestCount ? 'border-red-300' : ''}
                 `}>
                   <SelectValue placeholder="Select guest count" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-gray-200">
                   <SelectItem value="5">5 guests</SelectItem>
                   <SelectItem value="10">10 guests</SelectItem>
                   <SelectItem value="15">15 guests</SelectItem>
@@ -191,7 +198,7 @@ export default function MobileSearchForm({
               Postcode <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
               <Input
                 type="text"
                 value={formData.postcode}
@@ -209,16 +216,16 @@ export default function MobileSearchForm({
                 }}
                 placeholder="e.g. W3 7QD or SW1A 1AA"
                 className={`
-                  bg-white placeholder:text-gray-500 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-10 pl-10 pr-10 text-sm
+                  bg-white text-gray-900 placeholder:text-gray-500 border-gray-200 focus:border-[hsl(var(--primary-400))] focus:ring-[hsl(var(--primary-400))] rounded-xl h-12 pl-10 pr-10 text-sm
                   ${formData.postcode && !postcodeValid ? 'border-red-300 focus:border-red-500' : ''}
                 `}
                 required
               />
               {formData.postcode &&
                 (postcodeValid ? (
-                  <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
+                  <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500 z-10" />
                 ) : (
-                  <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
+                  <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500 z-10" />
                 ))}
             </div>
 

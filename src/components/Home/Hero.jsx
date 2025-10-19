@@ -289,9 +289,9 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
           {/* Mobile Hero section - Compact but Impactful */}
           <div className="bg-gradient-to-br from-primary-50 via-white to-primary-100 pb-2 overflow-hidden relative">
 
-            <div className="px-4 pt-6 pb-1 relative z-10">
+            <div className="px-4 pt-6 relative z-10">
               <div className="max-w-screen mx-auto text-center">
-                <h1 className="text-5xl font-black text-gray-900 mb-3 leading-tight animate-fade-in">
+                <h1 className="text-5xl font-black text-gray-900 mb-10 leading-tight animate-fade-in">
                   Book Your Party in a <span className="text-primary-500 relative">
                     Snap!
                     <div className="absolute -bottom-1 left-0 w-full h-1.5 bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] -skew-x-12 opacity-30"></div>

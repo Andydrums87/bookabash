@@ -398,9 +398,9 @@ export default function MobileSupplierNavigation({
     }
 
     // Handle add supplier from missing suggestions
-    const handleAddSupplier = async (supplier, supplierType) => {
+    const handleAddSupplier = async (supplier, supplierType, shouldNavigate = true) => {
       if (onAddSupplier) {
-        return await onAddSupplier(supplierType, supplier)
+        return await onAddSupplier(supplierType, supplier, shouldNavigate)
       }
       return false
     }

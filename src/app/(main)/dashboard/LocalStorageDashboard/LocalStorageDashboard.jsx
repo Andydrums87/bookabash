@@ -1181,38 +1181,41 @@ const handleNameSubmit = (nameData) => {
 
  // In your dashboard's handleAddRecommendedSupplier:
 
-const handleAddRecommendedSupplier = async (categoryType, supplier) => {
-  console.log('🎯 Adding recommended supplier...', supplier.name)
-  
+const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
+  console.log('🎯 Adding recommended supplier...', supplier.name, 'shouldNavigate:', shouldNavigate)
+
   try {
     setLoadingCards(prev => [...prev, categoryType])
-    
+
     const result = await addSupplier(supplier, supplier.packageData || null)
-    
+
     if (result.success) {
       console.log('✅ Supplier added successfully!')
-      
-      // ✅ Create a unique timestamp for this addition
-      const addTimestamp = Date.now()
-      
-      // Update URL with timestamp
-      const currentUrl = new URL(window.location.href)
-      currentUrl.searchParams.set('scrollTo', categoryType)
-      currentUrl.searchParams.set('action', 'supplier-added')
-      currentUrl.searchParams.set('ts', addTimestamp.toString()) // ✅ Add timestamp
-      window.history.replaceState({}, '', currentUrl)
-      
-      // Clean up URL after animation
-      setTimeout(() => {
-        const cleanUrl = new URL(window.location.href)
-        // Only clean if the timestamp matches (prevents cleaning during new additions)
-        if (cleanUrl.searchParams.get('ts') === addTimestamp.toString()) {
-          cleanUrl.searchParams.delete('scrollTo')
-          cleanUrl.searchParams.delete('action')
-          cleanUrl.searchParams.delete('ts')
-          window.history.replaceState({}, '', cleanUrl)
-        }
-      }, 2500)
+
+      // ✅ Only update URL and trigger navigation if shouldNavigate is true
+      if (shouldNavigate) {
+        // ✅ Create a unique timestamp for this addition
+        const addTimestamp = Date.now()
+
+        // Update URL with timestamp
+        const currentUrl = new URL(window.location.href)
+        currentUrl.searchParams.set('scrollTo', categoryType)
+        currentUrl.searchParams.set('action', 'supplier-added')
+        currentUrl.searchParams.set('ts', addTimestamp.toString()) // ✅ Add timestamp
+        window.history.replaceState({}, '', currentUrl)
+
+        // Clean up URL after animation
+        setTimeout(() => {
+          const cleanUrl = new URL(window.location.href)
+          // Only clean if the timestamp matches (prevents cleaning during new additions)
+          if (cleanUrl.searchParams.get('ts') === addTimestamp.toString()) {
+            cleanUrl.searchParams.delete('scrollTo')
+            cleanUrl.searchParams.delete('action')
+            cleanUrl.searchParams.delete('ts')
+            window.history.replaceState({}, '', cleanUrl)
+          }
+        }, 2500)
+      }
     }
   } catch (error) {
     console.error('💥 Error:', error)
@@ -1737,7 +1740,7 @@ const handleChildPhotoUpload = async (file) => {
     
   }
 />
-      <SnappyDashboardTour
+      {/* <SnappyDashboardTour
         isOpen={isTourActive}
         onMobileNavigationStepActive={handleMobileNavigationStepActive} 
         onClose={closeTour}
@@ -1745,7 +1748,7 @@ const handleChildPhotoUpload = async (file) => {
         suppliers={suppliers} // Add this
         partyDetails={partyDetails} // Add this  
         totalCost={totalCost} // Add this
-      />
+      /> */}
     </div>
   )
 }

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { useSuppliers } from "@/utils/mockBackend"
 import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
+import confetti from 'canvas-confetti'
 
 export default function MissingSuppliersSuggestions({
   partyPlan,
@@ -13,11 +14,14 @@ export default function MissingSuppliersSuggestions({
   navigateWithContext,
   onPlanUpdate,
   toast,
-  addedSupplierIds = new Set()
+  addedSupplierIds = new Set(),
+  preventNavigation = false
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
   const [recentlyAddedTypes, setRecentlyAddedTypes] = useState(new Set())
+  const [justAddedTypes, setJustAddedTypes] = useState(new Set())
+  const [hiddenTypes, setHiddenTypes] = useState(new Set())
   const { suppliers, loading, error } = useSuppliers()
 
   // Monitor for plan changes
@@ -111,9 +115,18 @@ export default function MissingSuppliersSuggestions({
       key => partyPlan[key] !== null && partyPlan[key] !== undefined && key !== 'addons' && key !== 'einvites'
     )
 
-    // Include types that are missing OR recently added (to show green state)
+    // Include types that are missing (not in plan, not hidden, or just added to show green state)
     const missingTypes = Object.keys(ALL_SUPPLIER_TYPES).filter(
-      type => !currentSuppliers.includes(type) || recentlyAddedTypes.has(type)
+      type => {
+        // Hide if it's been hidden after adding
+        if (hiddenTypes.has(type)) return false
+
+        // Show if just added (to display green state)
+        if (justAddedTypes.has(type)) return true
+
+        // Show if not in current suppliers
+        return !currentSuppliers.includes(type)
+      }
     )
 
     return missingTypes
@@ -204,20 +217,31 @@ export default function MissingSuppliersSuggestions({
   const handleAddSupplier = async (supplier, supplierType) => {
     try {
       if (onAddSupplier) {
-        // Track this type as recently added to keep it visible
-        setRecentlyAddedTypes(prev => new Set([...prev, supplierType]))
-
-        // Remove from recently added after 3 seconds
-        setTimeout(() => {
-          setRecentlyAddedTypes(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(supplierType)
-            return newSet
-          })
-        }, 3000)
-
-        // Call parent handler
+        // Call parent handler to add the supplier
         const result = await onAddSupplier(supplier, supplierType)
+
+        if (result && preventNavigation) {
+          // Mark as just added (shows green state)
+          setJustAddedTypes(prev => new Set([...prev, supplierType]))
+
+          // Trigger confetti
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          })
+
+          // After 3 seconds, hide this type from the list
+          setTimeout(() => {
+            setJustAddedTypes(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(supplierType)
+              return newSet
+            })
+            setHiddenTypes(prev => new Set([...prev, supplierType]))
+          }, 3000)
+        }
+
         return result
       }
 
@@ -309,6 +333,7 @@ export default function MissingSuppliersSuggestions({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {missingSuppliers.map(({ type, config, suppliers }) => {
           const isAdded = addedSupplierIds.has(suppliers[0]?.id);
+          const isJustAdded = justAddedTypes.has(type);
 
           return (
             <EmptySupplierCard
@@ -318,8 +343,9 @@ export default function MissingSuppliersSuggestions({
               partyDetails={partyPlan}
               onAddSupplier={(supplierType, supplier) => handleAddSupplier(supplier, supplierType)}
               isCompact={true}
-              isAlreadyAdded={isAdded}
+              isAlreadyAdded={isAdded || isJustAdded}
               deliverooStyle={true}
+              showJustAdded={isJustAdded}
             />
           );
         })}

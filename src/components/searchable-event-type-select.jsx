@@ -175,9 +175,9 @@ export default function SearchableEventTypeSelect({
           }
         }}
         onKeyDown={handleKeyDown}
-        className="w-full justify-between md:bg-white bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 px-3 text-left font-normal"
+        className="w-full justify-between md:bg-white bg-white border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 px-3 text-left font-normal text-sm"
       >
-          <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400" />
+          <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
         <span className={selectedValue ? "text-gray-900 ml-6" : "text-gray-500 ml-6"}>
         {selectedLabel}
         </span>

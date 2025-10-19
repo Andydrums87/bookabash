@@ -903,32 +903,34 @@ const getRecommendedSupplierForType = (categoryType) => {
 
 // In DatabaseDashboard.jsx - REPLACE the handleAddRecommendedSupplier function
 
-const handleAddRecommendedSupplier = async (categoryType, supplier) => {
-  console.log('🎯 Adding recommended supplier...', supplier.name)
-  
+const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
+  console.log('🎯 Adding recommended supplier...', supplier.name, 'shouldNavigate:', shouldNavigate)
+
   try {
     // ✅ DON'T add to database yet - just show the confirmation modal
     // This matches the flow when selecting from the supplier modal
-    
+
     // Close any open modals first
     setShowSupplierModal(false)
-    
+
     // Prepare the supplier data for the confirmation modal
     const supplierData = {
       supplier: supplier,
       package: supplier.packageData || null
     }
-    
+
     // Show the confirmation modal (same as regular supplier selection)
     setTimeout(() => {
       setAddedSupplierData(supplierData)
       setShowSupplierAddedModal(true)
       setEnquiryFeedback(null)
     }, 200)
-    
-    // Update the active mobile tab
-    setActiveMobileSupplierType(categoryType)
-    
+
+    // ✅ Only navigate to the tab if shouldNavigate is true
+    if (shouldNavigate) {
+      setActiveMobileSupplierType(categoryType)
+    }
+
   } catch (error) {
     console.error('💥 Error:', error)
     setEnquiryFeedback(`Failed to add ${supplier.name}: ${error.message}`)

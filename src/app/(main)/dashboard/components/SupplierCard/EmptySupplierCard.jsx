@@ -203,6 +203,7 @@ export default function EmptySupplierCard({
   isCompact = false,
   isAlreadyAdded = false,
   deliverooStyle = false,
+  showJustAdded = false,
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -215,6 +216,13 @@ export default function EmptySupplierCard({
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // Update local justAdded state when showJustAdded prop changes
+  useEffect(() => {
+    if (showJustAdded) {
+      setJustAdded(true)
+    }
+  }, [showJustAdded])
 
   // Determine if the button should show as added (either from parent tracking or local state)
   const isAddedToParty = isAlreadyAdded || justAdded;

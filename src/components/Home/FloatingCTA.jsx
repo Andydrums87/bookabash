@@ -3,10 +3,8 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
 
 export default function FloatingCTA() {
-  const router = useRouter()
   const [showFloatingCTA, setShowFloatingCTA] = useState(false)
 
   useEffect(() => {
@@ -66,9 +64,16 @@ export default function FloatingCTA() {
         ? 'translate-y-0 opacity-100' 
         : 'translate-y-16 opacity-0 pointer-events-none'
     }`}>
-      <button 
+      <button
         onClick={() => {
-          router.push('/party-builder')
+          // Scroll to the mobile search form
+          const mobileForm = document.getElementById('search-form')
+          if (mobileForm) {
+            mobileForm.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            })
+          }
         }}
         className="bg-white active:scale-200 active:bg-[hsl(var(--primary-100))] hover:bg-gray-50 text-[hsl(var(--primary-500))] font-bold h-16 w-64 sm:w-72 rounded-full transition-all duration-300 transform hover:scale-105 relative overflow-hidden group border-2 border-[hsl(var(--primary-500))] animate-bounce-gentle shadow-lg hover:shadow-2xl"
         style={{
