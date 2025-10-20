@@ -11,6 +11,8 @@ export default function SupplierGrid({
   enquiries,
   addons,
   onRemoveAddon,
+
+  
   hasEnquiriesPending,
   isPaymentConfirmed,
   onPaymentReady,

@@ -162,7 +162,7 @@ export default function AutoReplacementFlow({ replacements = [], onApproveReplac
                         }}
                       >
                         <CheckCircle className="w-5 h-5 mr-2" />
-                        Approve All - Let's Go! 🎉
+                        Approve All  - Let's Goooo! 🎉
                       </Button>
                     )}
                     {onDismiss && (
