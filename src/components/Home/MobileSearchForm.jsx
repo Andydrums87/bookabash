@@ -114,7 +114,7 @@ export default function MobileSearchForm({
                   />
                 </PopoverContent>
               </Popover>
-              
+
               {hasAttemptedSubmit && !formData.date && (
                 <div className="mt-1">
                   <p className="text-xs text-red-600 flex items-center gap-1">
@@ -123,6 +123,45 @@ export default function MobileSearchForm({
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Party Time Segmented Control */}
+            <div className="pt-2">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">Party time</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleFieldChange('timeSlot', 'morning')}
+                  className={`
+                    flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all
+                    ${formData.timeSlot === 'morning'
+                      ? 'bg-primary-500 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }
+                  `}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="font-semibold">Morning</span>
+                    <span className="text-[10px] opacity-90">11am - 1pm</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFieldChange('timeSlot', 'afternoon')}
+                  className={`
+                    flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all
+                    ${formData.timeSlot === 'afternoon'
+                      ? 'bg-primary-500 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }
+                  `}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="font-semibold">Afternoon</span>
+                    <span className="text-[10px] opacity-90">2pm - 4pm</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 

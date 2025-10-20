@@ -223,13 +223,14 @@ export default function HomePage() {
         timeSlot: data.timeSlot || "afternoon",
         duration: parseFloat(data.duration) || 2,
         time: convertTimeSlotToLegacyTime(data.timeSlot || "afternoon"),
+        startTime: convertTimeSlotToLegacyTime(data.timeSlot || "afternoon"), // Add startTime for header compatibility
         hasOwnVenue: data.hasOwnVenue || false, // IMPORTANT: Pass this through
-        
+
         source: 'homepage_form',
         createdAt: new Date().toISOString(),
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
         environment: process.env.NODE_ENV || 'development',
-        
+
         timePreference: {
           type: 'flexible',
           slot: data.timeSlot || "afternoon",

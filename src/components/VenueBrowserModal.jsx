@@ -63,6 +63,16 @@ export default function VenueBrowserModal({
                 const isSelected = selectedVenue?.id === venue.id
                 const venuePackage = venue.packages?.[0] || {}
 
+                // Get venue name with fallbacks
+                const venueName = venue.name || venue.businessName || venue.data?.name || 'Unnamed Venue'
+
+                // Get price with multiple fallbacks
+                const venuePrice = venue.price ||
+                                  venuePackage.price ||
+                                  venue.priceFrom ||
+                                  venue.data?.priceFrom ||
+                                  0
+
                 return (
                   <div
                     key={venue.id}
@@ -75,8 +85,8 @@ export default function VenueBrowserModal({
                     {/* Image */}
                     <div className="relative h-48 w-full">
                       <Image
-                        src={venue.coverPhoto || venue.image || venue.imageUrl || '/placeholder.png'}
-                        alt={venue.name}
+                        src={venue.coverPhoto || venue.image || venue.imageUrl || venue.data?.coverPhoto || '/placeholder.png'}
+                        alt={venueName}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -96,7 +106,7 @@ export default function VenueBrowserModal({
                       {/* Venue Name Overlay */}
                       <div className="absolute bottom-2 left-2 right-2">
                         <h3 className="text-base font-bold text-white drop-shadow-lg line-clamp-1">
-                          {venue.name}
+                          {venueName}
                         </h3>
                       </div>
                     </div>
@@ -106,7 +116,7 @@ export default function VenueBrowserModal({
                       {/* Price */}
                       <div className="mb-2">
                         <span className="text-2xl font-bold text-[hsl(var(--primary-600))]">
-                          £{venuePackage.price || venue.priceFrom || 0}
+                          £{venuePrice}
                         </span>
                         {venuePackage.duration && (
                           <span className="text-xs text-gray-500 ml-1">
@@ -117,10 +127,10 @@ export default function VenueBrowserModal({
 
                       {/* Quick Stats */}
                       <div className="flex flex-wrap gap-2 mb-3 text-xs text-gray-600">
-                        {venue.location && (
+                        {(venue.location || venue.data?.location) && (
                           <div className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
-                            <span className="line-clamp-1">{venue.location}</span>
+                            <span className="line-clamp-1">{venue.location || venue.data?.location}</span>
                           </div>
                         )}
                         {venue.serviceDetails?.venueDetails?.capacity && (

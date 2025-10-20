@@ -111,8 +111,8 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl" 
+                    <PopoverContent
+                      className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl"
                       align="start"
                       side="top"
                       sideOffset={8}
@@ -132,7 +132,7 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       />
                     </PopoverContent>
                   </Popover>
-                  
+
                   {hasAttemptedSubmit && !formData.date && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-10">
                       <p className="text-xs text-red-600 flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-red-200">
@@ -141,6 +141,45 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* Party Time Segmented Control */}
+                <div className="pt-1">
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Party time</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleFieldChange('timeSlot', 'morning')}
+                      className={`
+                        flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all
+                        ${formData.timeSlot === 'morning'
+                          ? 'bg-primary-500 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }
+                      `}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="font-semibold">Morning</span>
+                        <span className="text-[10px] opacity-90">11am - 1pm</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFieldChange('timeSlot', 'afternoon')}
+                      className={`
+                        flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all
+                        ${formData.timeSlot === 'afternoon'
+                          ? 'bg-primary-500 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }
+                      `}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="font-semibold">Afternoon</span>
+                        <span className="text-[10px] opacity-90">2pm - 4pm</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
 

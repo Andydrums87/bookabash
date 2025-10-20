@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { X, MapPin, Star } from "lucide-react"
+import { X, MapPin, Star, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -55,11 +55,11 @@ export default function SupplierQuickViewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl sm:rounded-3xl max-w-5xl w-full max-h-[75vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-5xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ✅ COMPACT HEADER WITH CAROUSEL - Smaller on mobile */}
@@ -124,19 +124,63 @@ export default function SupplierQuickViewModal({
               </div>
             ) : (
               <>
+                {/* What's Included Section - FIRST */}
+                {(() => {
+                  // Try multiple sources for package data
+                  const packageData = displaySupplier?.packageData ||
+                                     displaySupplier?.selectedPackage ||
+                                     displaySupplier?.packages?.[0]
+
+                  // Try multiple sources for features
+                  let packageFeatures = []
+
+                  if (packageData?.features && Array.isArray(packageData.features)) {
+                    packageFeatures = packageData.features
+                  } else if (packageData?.description && typeof packageData.description === 'string') {
+                    packageFeatures = packageData.description.split('\n').filter(f => f.trim())
+                  } else if (packageData?.included && Array.isArray(packageData.included)) {
+                    packageFeatures = packageData.included
+                  }
+
+                  // Only hide if we truly have no package data at all
+                  if (packageFeatures.length === 0 && !packageData) return null
+
+                  return (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl flex items-center justify-center">
+                          <Package className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">What's Included</h3>
+                          {packageData?.name && (
+                            <p className="text-sm text-gray-600">{packageData.name}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {packageFeatures.length > 0 ? (
+                        <ul className="space-y-2 bg-gray-50 rounded-xl p-4 pl-6">
+                          {packageFeatures.map((feature, index) => (
+                            <li key={index} className="text-gray-700">
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
+                          <p>Package details will be shown after you customize this supplier.</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 {/* Service Details Router */}
                 <ServiceDetailsDisplayRouter
                   supplier={displaySupplier}
                   isPreview={false}
                 />
-
-                {/* Personal Bio */}
-                {displaySupplier.serviceDetails?.personalBio && (
-                  <PersonalBioDisplay
-                    personalBio={displaySupplier.serviceDetails.personalBio}
-                    supplierName={displaySupplier.name}
-                  />
-                )}
               </>
             )}
           </div>

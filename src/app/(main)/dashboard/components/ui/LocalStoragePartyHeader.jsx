@@ -322,35 +322,30 @@ const DateEditModal = ({ isOpen, onClose, currentDate, onSave }) => {
 
 // Time Edit Modal
 const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onSave }) => {
-  const [startTime, setStartTime] = useState(currentStartTime || "14:00")
-  const [duration, setDuration] = useState(currentDuration || 2)
+  // Determine initial timeSlot based on currentStartTime
+  const getInitialTimeSlot = () => {
+    if (!currentStartTime) return "afternoon"
+    const hour = parseInt(currentStartTime.split(':')[0])
+    return hour < 13 ? "morning" : "afternoon"
+  }
 
-  const timeOptions = [
-    { value: "09:00", label: "9am" },
-    { value: "10:00", label: "10am" },
-    { value: "11:00", label: "11am" },
-    { value: "12:00", label: "12pm" },
-    { value: "13:00", label: "1pm" },
-    { value: "14:00", label: "2pm" },
-    { value: "15:00", label: "3pm" },
-    { value: "16:00", label: "4pm" },
-    { value: "17:00", label: "5pm" },
-  ]
-
-  const durationOptions = [
-    { value: 1.5, label: "1½ hours" },
-    { value: 2, label: "2 hours" },
-    { value: 2.5, label: "2½ hours" },
-    { value: 3, label: "3 hours" },
-    { value: 3.5, label: "3½ hours" },
-    { value: 4, label: "4 hours" },
-  ]
+  const [timeSlot, setTimeSlot] = useState(getInitialTimeSlot())
 
   const handleSave = () => {
-    const updates = { startTime, duration }
+    // Convert timeSlot to startTime and set duration
+    const timeSlotMapping = {
+      morning: { startTime: "11:00", duration: 2 },
+      afternoon: { startTime: "14:00", duration: 2 }
+    }
+
+    const updates = timeSlotMapping[timeSlot]
     console.log("TimeEditModal saving:", updates)
     onSave(updates)
     onClose()
+  }
+
+  const getTimeRange = (slot) => {
+    return slot === 'morning' ? '11am - 1pm' : '2pm - 4pm'
   }
 
   return (
@@ -365,41 +360,47 @@ const TimeEditModal = ({ isOpen, onClose, currentStartTime, currentDuration, onS
       <ModalContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Start Time</label>
-            <Select value={startTime} onValueChange={setStartTime}>
-              <SelectTrigger className="w-full pl-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {timeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Duration</label>
-            <Select value={duration.toString()} onValueChange={(value) => setDuration(Number.parseFloat(value))}>
-              <SelectTrigger className="w-full pl-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {durationOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value.toString()}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium text-gray-700">Party Time</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setTimeSlot('morning')}
+                className={`
+                  flex-1 px-4 py-4 rounded-xl text-sm font-medium transition-all
+                  ${timeSlot === 'morning'
+                    ? 'bg-primary-500 text-white shadow-md ring-2 ring-primary-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }
+                `}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="font-semibold text-base">Morning</span>
+                  <span className="text-xs opacity-90">11am - 1pm</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimeSlot('afternoon')}
+                className={`
+                  flex-1 px-4 py-4 rounded-xl text-sm font-medium transition-all
+                  ${timeSlot === 'afternoon'
+                    ? 'bg-primary-500 text-white shadow-md ring-2 ring-primary-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }
+                `}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <span className="font-semibold text-base">Afternoon</span>
+                  <span className="text-xs opacity-90">2pm - 4pm</span>
+                </div>
+              </button>
+            </div>
           </div>
 
           <div className="bg-primary-50 rounded-lg p-3 border border-primary-200">
             <div className="text-sm text-gray-500 font-medium">Party will run:</div>
             <div className="font-bold text-gray-900">
-              {formatTimeForDisplay(startTime)} - {calculateEndTime(startTime, duration)}
+              {getTimeRange(timeSlot)}
             </div>
           </div>
         </div>

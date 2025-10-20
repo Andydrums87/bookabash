@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { X, Eye, CheckCircle, Sparkles, Wand2, Info } from "lucide-react"
+import { X, Eye, CheckCircle, Sparkles, Wand2, Info, Calendar, Clock, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -201,7 +201,7 @@ export default function MyPartyTabContent({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-4 bg-white flex flex-col sm:flex-row gap-3">
+        <div className="p-4 pt-0 bg-white flex flex-col sm:flex-row gap-3">
           <Button
             onClick={(e) => {
               e.stopPropagation()
@@ -255,6 +255,93 @@ export default function MyPartyTabContent({
     return sum + basePrice + addonsCost
   }, 0)
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Date TBD'
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    } catch (e) {
+      return dateString
+    }
+  }
+
+  // Format time for display
+  const formatTime = (timeString) => {
+    if (!timeString) return '2pm - 4pm'
+
+    // Handle timeSlot format
+    if (partyDetails?.timeSlot) {
+      return partyDetails.timeSlot === 'morning' ? '11am - 1pm' : '2pm - 4pm'
+    }
+
+    // Handle HH:MM format
+    if (timeString.includes(':')) {
+      try {
+        const [hours] = timeString.split(':')
+        const hour = parseInt(hours)
+        const endHour = hour + 2
+        const formatHour = (h) => h > 12 ? `${h - 12}pm` : h === 12 ? '12pm' : `${h}am`
+        return `${formatHour(hour)} - ${formatHour(endHour)}`
+      } catch (e) {
+        return timeString
+      }
+    }
+
+    return timeString
+  }
+
+  // Get full venue address
+  const getVenueAddress = () => {
+    const venue = suppliers?.venue
+
+    // Get address from serviceDetails.venueAddress (database structure)
+    if (venue?.serviceDetails?.venueAddress) {
+      const address = venue.serviceDetails.venueAddress
+      const parts = [
+        address.addressLine1,
+        address.addressLine2,
+        address.city,
+        address.postcode
+      ].filter(Boolean) // Remove empty values
+
+      if (parts.length > 0) {
+        return parts.join(', ')
+      }
+    }
+
+    // Try to get full address from venue data.owner (alternative structure)
+    if (venue?.data?.owner?.address) {
+      const address = venue.data.owner.address
+      const parts = [
+        address.street,
+        address.city,
+        address.postcode
+      ].filter(Boolean)
+
+      if (parts.length > 0) {
+        return parts.join(', ')
+      }
+    }
+
+    // Try to get full address from venue owner (direct structure)
+    if (venue?.owner?.address) {
+      const address = venue.owner.address
+      const parts = [
+        address.street,
+        address.city,
+        address.postcode
+      ].filter(Boolean)
+
+      if (parts.length > 0) {
+        return parts.join(', ')
+      }
+    }
+
+    // Fallback to other location sources
+    return venue?.location || partyDetails?.location || partyDetails?.postcode || 'Location TBD'
+  }
+
   return (
     <div className="space-y-6">
       {/* Original Header Section */}
@@ -297,9 +384,32 @@ export default function MyPartyTabContent({
             </div>
           )}
 
-          <p className="text-sm text-gray-600">Here are the suppliers we've chosen for you</p>
+          {/* <p className="text-sm text-gray-600">Here are the suppliers we've chosen for you</p> */}
         </div>
       </div>
+
+      {/* Party Details - Mobile Only */}
+      {allSuppliers.length > 0 && (
+        <div className="md:hidden bg-gray-50 rounded-lg p-4 border border-gray-200">
+          {/* <h3 className="text-lg font-bold text-gray-900 mb-3">
+            {fullChildName}'s {partyDetails?.childAge || 6}th Birthday Party
+          </h3> */}
+          <div className="space-y-2 text-sm text-gray-700">
+            <p>
+              <span className="font-semibold">Date:</span> {formatDate(partyDetails?.date)}
+            </p>
+            <p>
+              <span className="font-semibold">Time:</span> {formatTime(partyDetails?.startTime || partyDetails?.time)}
+            </p>
+            <p>
+              <span className="font-semibold">Location:</span> {getVenueAddress()}
+            </p>
+            <p>
+              <span className="font-semibold">Theme:</span> <span className="capitalize">{partyDetails?.theme?.replace(/-/g, ' ') || 'Party'}</span>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* All Suppliers Section with Category Headings */}
       {allSuppliers.length > 0 ? (

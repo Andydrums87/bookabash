@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Home, ClipboardList, Wallet, Clock, X, DollarSign, Sparkles, PoundSterling, Plus, ChevronRight } from "lucide-react"
+import { Home, ClipboardList, Wallet, Clock, X, DollarSign, Sparkles, PoundSterling, Plus, ChevronRight, PartyPopper, Calendar, MapPin, Cake } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 
@@ -15,7 +15,8 @@ const SimpleMobileBottomTabBar = ({
   budgetPercentage = 0,
   getBudgetCategory,
   CountdownWidget,
-  onSupplierTabChange // ✅ Use existing navigation prop
+  onSupplierTabChange, // ✅ Use existing navigation prop
+  onPartyDetailsChange // ✅ NEW: For editing party details
 }) => {
   const [activeTab, setActiveTab] = useState("party")
   const [showModal, setShowModal] = useState(false)
@@ -72,28 +73,27 @@ const SimpleMobileBottomTabBar = ({
   const timeRemaining = calculateTimeRemaining()
 
   const tabs = [
-    { 
-      id: "party", 
-      label: "Party", 
+    {
+      id: "party",
+      label: "Party",
       icon: Home,
       color: "text-coral-500"
     },
     {
       id: "progress",
-      label: "My Plan",
+      label: "Suppliers",
       icon: ClipboardList,
       badge: confirmedSuppliers,
       total: totalSlots,
       color: "text-teal-500",
-      highlight: true,
       subtext: `${confirmedSuppliers}/${totalSlots}`
     },
-    { 
-      id: "budget", 
-      label: "Budget", 
-      icon: Wallet,
-      color: "text-purple-500",
-      subtext: `£${unifiedTotalCost}`
+    {
+      id: "myparty",
+      label: "Details",
+      icon: PartyPopper,
+      color: "text-primary-500",
+      subtext: partyDetails?.theme || 'Info'
     },
     {
       id: "timer",
@@ -120,8 +120,136 @@ const SimpleMobileBottomTabBar = ({
     setActiveTab("party")
   }
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set'
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    } catch (e) {
+      return dateString
+    }
+  }
+
+  // Format time for display
+  const formatTime = (timeString) => {
+    if (!timeString) return '2pm - 4pm'
+
+    // Handle timeSlot format
+    if (partyDetails?.timeSlot) {
+      return partyDetails.timeSlot === 'morning' ? '11am - 1pm' : '2pm - 4pm'
+    }
+
+    // Handle HH:MM format
+    if (timeString.includes(':')) {
+      try {
+        const [hours] = timeString.split(':')
+        const hour = parseInt(hours)
+        const endHour = hour + 2
+        const formatHour = (h) => h > 12 ? `${h - 12}pm` : h === 12 ? '12pm' : `${h}am`
+        return `${formatHour(hour)} - ${formatHour(endHour)}`
+      } catch (e) {
+        return timeString
+      }
+    }
+
+    return timeString
+  }
+
+  // Get venue address
+  const getVenueAddress = () => {
+    const venue = suppliers?.venue
+
+    if (venue?.serviceDetails?.venueAddress) {
+      const address = venue.serviceDetails.venueAddress
+      const parts = [
+        address.addressLine1,
+        address.addressLine2,
+        address.city,
+        address.postcode
+      ].filter(Boolean)
+
+      if (parts.length > 0) {
+        return parts.join(', ')
+      }
+    }
+
+    return venue?.location || partyDetails?.location || partyDetails?.postcode || 'Location TBD'
+  }
+
   const getModalContent = () => {
     switch (activeTab) {
+      case "myparty":
+        const fullChildName = partyDetails?.childName || partyDetails?.child_name || 'Your child'
+
+        return (
+          <div className="space-y-6">
+            {/* Party Details Card */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <PartyPopper className="w-5 h-5 text-primary-600" />
+                {fullChildName}'s {partyDetails?.childAge || 6}th Birthday Party
+              </h3>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Calendar className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-700">Date</div>
+                    <div className="text-gray-900">{formatDate(partyDetails?.date)}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Clock className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-700">Time</div>
+                    <div className="text-gray-900">{formatTime(partyDetails?.startTime || partyDetails?.time)}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <MapPin className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-700">Location</div>
+                    <div className="text-gray-900">{getVenueAddress()}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Sparkles className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-700">Theme</div>
+                    <div className="text-gray-900 capitalize">{partyDetails?.theme?.replace(/-/g, ' ') || 'Party'}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Cake className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-700">Child's Age</div>
+                    <div className="text-gray-900">{partyDetails?.childAge || 6} years old</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Cost Card */}
+            <div className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl p-5 text-center shadow-lg">
+              <div className="text-xs text-white/80 mb-1 font-medium uppercase tracking-wide">Total Party Cost</div>
+              <div className="text-4xl font-black text-white mb-1">£{unifiedTotalCost.toLocaleString()}</div>
+              <div className="text-xs text-white/70">{confirmedSuppliers} supplier{confirmedSuppliers !== 1 ? 's' : ''} selected</div>
+            </div>
+
+            {/* Note */}
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <p className="text-xs text-blue-800 text-center">
+                💡 Tap on the party details in the header above to edit them
+              </p>
+            </div>
+          </div>
+        )
+
       case "budget":
         // Calculate budget info using unified total
         const isOverBudget = unifiedTotalCost > tempBudget
@@ -244,9 +372,9 @@ const SimpleMobileBottomTabBar = ({
                   <ClipboardList className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Your Party Plan</h3>
+                  <h3 className="text-lg font-bold text-gray-900">Your Suppliers</h3>
                   <p className="text-sm text-gray-600">
-                    {confirmedSuppliers} of {totalSlots} suppliers selected
+                    {confirmedSuppliers} of {totalSlots} selected
                   </p>
                 </div>
               </div>
@@ -277,7 +405,7 @@ const SimpleMobileBottomTabBar = ({
           <div className="space-y-2">
             <h4 className="font-bold text-gray-900 text-base flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[hsl(var(--primary-500))]" />
-              Your Party Team
+              Suppliers
             </h4>
             {supplierEntries.map(({ type, name, isBooked, supplierName, price }) => (
               <button
@@ -380,74 +508,53 @@ const SimpleMobileBottomTabBar = ({
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
-              const isMyPlan = tab.id === "progress"
 
               return (
                 <button
                   key={tab.id}
                   onClick={() => handleTabPress(tab)}
-                  className={`relative flex flex-col items-center justify-center transition-all duration-300 ${
-                    isMyPlan ? 'flex-1 max-w-[100px]' : 'flex-1'
-                  }`}
+                  className="relative flex flex-col items-center justify-center transition-all duration-300 flex-1"
                   data-tour={tab.id === "progress" ? "progress-tab" : undefined}
                 >
-                  {/* My Plan gets special treatment */}
-                  {isMyPlan ? (
-                    <div className={`w-full rounded-xl transition-all duration-300 ${
-                      isActive
-                        ? "bg-primary-500 shadow-md transform scale-105"
-                        : "bg-primary-500"
-                    }`}>
-                      <div className="px-3 py-2 relative">
-                        {/* Badge */}
-                        <div className="absolute -top-1.5 -right-1.5 bg-white rounded-full px-1.5 py-0.5 shadow-sm border border-[hsl(var(--primary-600))]">
-                          <span className="text-[10px] font-black text-primary-500">
-                            {tab.badge}/{tab.total}
-                          </span>
-                        </div>
-                        
-                        <div className="flex flex-col items-center gap-0.5">
-                          <Icon className="w-5 h-5 text-white" />
-                          <span className="text-[11px] font-bold text-white leading-tight text-center">
-                            {tab.label}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Regular tabs - more compact
-                    <div className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? "bg-gray-100"
-                        : ""
-                    }`}>
-                      <div className="relative">
-                        <Icon
-                          className={`w-5 h-5 transition-colors duration-200 ${
-                            isActive ? tab.color : "text-gray-400"
-                          }`}
-                        />
-
-                        {tab.urgent && timeRemaining > 0 && timeRemaining < 3 && (
-                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white"></div>
-                        )}
-                      </div>
-
-                      <span
-                        className={`text-[10px] font-semibold transition-colors duration-200 text-center leading-tight ${
-                          isActive ? "text-gray-900" : "text-gray-500"
+                  {/* All tabs same style */}
+                  <div className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all duration-200 ${
+                    isActive ? "bg-gray-100" : ""
+                  }`}>
+                    <div className="relative">
+                      <Icon
+                        className={`w-5 h-5 transition-colors duration-200 ${
+                          isActive ? tab.color : "text-gray-400"
                         }`}
-                      >
-                        {tab.label}
-                      </span>
-                      
-                      {tab.subtext && (
-                        <span className="text-[9px] text-gray-400 font-medium">
-                          {tab.subtext}
-                        </span>
+                      />
+
+                      {/* Badge for progress/suppliers tab */}
+                      {tab.badge !== undefined && (
+                        <div className="absolute -top-1 -right-1 bg-primary-500 rounded-full px-1 min-w-[16px] h-4 flex items-center justify-center">
+                          <span className="text-[8px] font-black text-white">
+                            {tab.badge}
+                          </span>
+                        </div>
+                      )}
+
+                      {tab.urgent && timeRemaining > 0 && timeRemaining < 3 && (
+                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse border border-white"></div>
                       )}
                     </div>
-                  )}
+
+                    <span
+                      className={`text-[10px] font-semibold transition-colors duration-200 text-center leading-tight ${
+                        isActive ? "text-gray-900" : "text-gray-500"
+                      }`}
+                    >
+                      {tab.label}
+                    </span>
+
+                    {tab.subtext && (
+                      <span className="text-[9px] text-gray-400 font-medium">
+                        {tab.subtext}
+                      </span>
+                    )}
+                  </div>
                 </button>
               )
             })}
@@ -460,7 +567,8 @@ const SimpleMobileBottomTabBar = ({
           <div className="bg-white rounded-t-3xl w-full max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl z-10">
               <h2 className="text-xl font-bold text-gray-900  capitalize">
-                {activeTab === "progress" ? "Your Party Plan" : 
+                {activeTab === "progress" ? "Your Suppliers" :
+                 activeTab === "myparty" ? "Party Details" :
                  activeTab === "timer" ? "Party Countdown" : activeTab}
               </h2>
               <button
