@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef } from "react"
 import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle, Check } from "lucide-react"
 import SupplierCard from "./SupplierCard/SupplierCard"
-import VenueCarouselCard from "./VenueCarouselCard" // ✅ ADD THIS IMPORT
 import Image from "next/image"
 import AddonsSection from "./AddonsSection"
 import RecommendedAddons from "@/components/recommended-addons"
@@ -46,6 +45,9 @@ export default function MobileSupplierNavigation({
   venueCarouselOptions = [],
   onSelectVenue,
   isSelectingVenue = false,
+  onCustomizationComplete, // ✅ NEW PROP for customization
+  showBrowseVenues = false,
+  onBrowseVenues,
 
 }) {
   const router = useRouter()
@@ -432,6 +434,7 @@ export default function MobileSupplierNavigation({
         onViewDetails={handleViewDetails}
         onAddSupplier={handleAddSupplier}
         recommendedSuppliers={recommendedSuppliers}
+        onCustomizationComplete={onCustomizationComplete}
         onImHappy={() => {
           setShowCompleteCTA(true)
           // Scroll to CTA after it renders
@@ -863,35 +866,26 @@ export default function MobileSupplierNavigation({
                     partyDetails={partyDetails}
                     recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType('venue') : null}
                     onAddSupplier={onAddSupplier}
+                    onCustomizationComplete={onCustomizationComplete}
                   />
                 );
               }
               
-              // If user selected a venue OR doesn't have own venue, show carousel
-              if (hasSelectedVenue && hasCarouselOptions) {
-                console.log('✅ Showing venue carousel');
-                return (
-                  <VenueCarouselCard
-                    venues={venueCarouselOptions}
-                    selectedVenue={suppliers.venue}
-                    onSelectVenue={onSelectVenue}
-                    partyDetails={partyDetails}
-                    isLoading={isSelectingVenue}
-                    addons={addons.filter(addon => 
-                      addon.supplierId === suppliers.venue?.id || 
-                      addon.supplierType === 'venue' ||
-                      addon.attachedToSupplier === 'venue'
-                    )}
-                    handleRemoveAddon={handleRemoveAddon}
-                    handleDeleteSupplier={handleDeleteSupplier}
-                    openSupplierModal={openSupplierModal}
-                    type="venue"
-                  />
-                );
+              // Venue logic - falls through to SupplierCard with browse venues option
+              if (activeSupplierTypeData.type === 'venue') {
+                console.log('✅ Venue type - will render SupplierCard with browse option if venues available');
+                // Falls through to default SupplierCard rendering below with showBrowseVenues prop
               }
             }
             
             // Default: Show regular supplier card for all other types
+            // Filter addons for this specific supplier
+            const supplierAddons = currentSupplier ? addons.filter(addon =>
+              addon.supplierId === currentSupplier.id ||
+              addon.supplierType === activeSupplierTypeData.type ||
+              addon.attachedToSupplier === activeSupplierTypeData.type
+            ) : []
+
             return (
               <SupplierCard
                 type={activeSupplierTypeData.type}
@@ -901,7 +895,7 @@ export default function MobileSupplierNavigation({
                 openSupplierModal={openSupplierModal}
                 handleDeleteSupplier={handleDeleteSupplier}
                 getSupplierDisplayName={getSupplierDisplayName}
-                addons={addons}
+                addons={supplierAddons}
                 handleRemoveAddon={handleRemoveAddon}
                 enquiryStatus={getEnquiryStatus(activeSupplierTypeData.type)}
                 enquirySentAt={getEnquiryTimestamp(activeSupplierTypeData.type)}
@@ -915,6 +909,9 @@ export default function MobileSupplierNavigation({
                 partyDetails={partyDetails}
                 recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType(activeSupplierTypeData.type) : null}
                 onAddSupplier={onAddSupplier}
+                onCustomizationComplete={onCustomizationComplete}
+                showBrowseVenues={activeSupplierTypeData.type === 'venue' && showBrowseVenues}
+                onBrowseVenues={onBrowseVenues}
               />
             );
           })()}

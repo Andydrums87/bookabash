@@ -70,15 +70,25 @@ export default function SupplierCustomizationModal({
   const [selectedAddons, setSelectedAddons] = useState([])
   const [showPendingModal, setShowPendingModal] = useState(false)
   const [canAddCheck, setCanAddCheck] = useState({ canAdd: true, reason: 'planning_empty_slot', showModal: false })
-  
+
   // Cake customization state
   const [showCakeCustomization, setShowCakeCustomization] = useState(false)
   const [selectedFlavor, setSelectedFlavor] = useState('vanilla')
   const [customMessage, setCustomMessage] = useState('')
 
+  // Party bags quantity state - ensure it's always a number
+  const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
+
+  // Sync party bags quantity with guest count changes
+  useEffect(() => {
+    if (supplier && (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag'))) {
+      setPartyBagsQuantity(Number(partyDetails?.guestCount) || 10)
+    }
+  }, [partyDetails?.guestCount, supplier])
+
   // ✅ UPDATED: Detect supplier types using unified system
   const supplierTypeDetection = useMemo(() => {
-    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false }
+    if (!supplier) return { isLeadBased: false, isTimeBased: false, isCake: false, isPartyBags: false }
     
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
@@ -89,12 +99,17 @@ export default function SupplierCustomizationModal({
     // Detect if this is a cake supplier
     const isCakeSupplier = supplier?.category?.toLowerCase().includes('cake') ||
                           supplier?.type?.toLowerCase().includes('cake') ||
-                          (supplier?.category?.toLowerCase().includes('catering') && 
+                          (supplier?.category?.toLowerCase().includes('catering') &&
                            (supplier?.serviceDetails?.cateringType?.toLowerCase().includes('cake') ||
                             supplier?.serviceDetails?.cateringType?.toLowerCase().includes('baker') ||
                             supplier?.serviceDetails?.cakeFlavors?.length > 0 ||
                             supplier?.serviceDetails?.cakeSpecialist === true)) ||
                           `${supplier?.name || ''} ${supplier?.description || ''}`.toLowerCase().includes('cake')
+
+    // Detect if this is a party bags supplier
+    const isPartyBagsSupplier = supplier?.category === 'Party Bags' ||
+                               supplier?.category?.toLowerCase().includes('party bag') ||
+                               supplier?.type?.toLowerCase().includes('party bag')
 
     console.log('🔍 Supplier Type Detection:', {
       supplierName: supplier.name,
@@ -102,13 +117,15 @@ export default function SupplierCustomizationModal({
       type: supplier.type,
       isLeadBased,
       isTimeBased,
-      isCakeSupplier
+      isCakeSupplier,
+      isPartyBagsSupplier
     })
 
     return {
       isLeadBased,
       isTimeBased,
-      isCake: isCakeSupplier
+      isCake: isCakeSupplier,
+      isPartyBags: isPartyBagsSupplier
     }
   }, [supplier])
 
@@ -296,8 +313,21 @@ export default function SupplierCustomizationModal({
     }
 
     // Use the pre-calculated enhanced price from packages
-    const packagePrice = selectedPackage.enhancedPrice
+    let packagePrice = selectedPackage.enhancedPrice
     const hasEnhancedPricing = packagePrice !== selectedPackage.price
+
+    // ✅ PARTY BAGS: Adjust price based on custom quantity
+    if (supplierTypeDetection.isPartyBags) {
+      // selectedPackage.price is ALREADY the per-bag price
+      const pricePerBag = selectedPackage.price
+      packagePrice = pricePerBag * partyBagsQuantity
+      console.log('🎒 Party Bags custom quantity pricing:', {
+        originalPrice: selectedPackage.price,
+        pricePerBag,
+        customQuantity: partyBagsQuantity,
+        newPackagePrice: packagePrice
+      })
+    }
 
     // Calculate addons price (addons typically don't have weekend/duration premiums for now)
     const addonsTotalPrice = selectedAddons.reduce((sum, addonId) => {
@@ -437,8 +467,27 @@ export default function SupplierCustomizationModal({
         isTimeBased: supplierTypeDetection.isTimeBased,
         isLeadBased: supplierTypeDetection.isLeadBased
       }
+    } else if (supplierTypeDetection.isPartyBags) {
+      // ✅ PARTY BAGS: Include quantity and per-bag pricing
+      // selectedPackage.price is ALREADY the per-bag price
+      const pricePerBag = selectedPackage.price
+      finalPackage = {
+        ...selectedPackage,
+        price: pricePerBag, // Store per-bag price
+        originalPrice: pricePerBag,
+        enhancedPrice: calculateModalPricing.packagePrice,
+        totalPrice: calculateModalPricing.packagePrice,
+        // Party bags specific data
+        partyBagsQuantity: partyBagsQuantity,
+        guestCount: partyDetails?.guestCount || 10,
+        pricePerBag: pricePerBag,
+        enhancedPricing: calculateModalPricing.pricingInfo,
+        partyDuration: effectivePartyDetails?.duration,
+        isTimeBased: supplierTypeDetection.isTimeBased,
+        isLeadBased: supplierTypeDetection.isLeadBased
+      }
     } else {
-      // ✅ UPDATED: For non-cake suppliers, still apply unified pricing
+      // ✅ UPDATED: For non-cake, non-party-bags suppliers, still apply unified pricing
       finalPackage = {
         ...selectedPackage,
         price: selectedPackage.price, // Keep original price
@@ -460,7 +509,15 @@ export default function SupplierCustomizationModal({
       weekendPremium: supplier.weekendPremium,
       extraHourRate: supplier.extraHourRate,
       isLeadBased: supplierTypeDetection.isLeadBased,
-      isTimeBased: supplierTypeDetection.isTimeBased
+      isTimeBased: supplierTypeDetection.isTimeBased,
+      // ✅ Add partyBagsMetadata for easy access in cards
+      ...(supplierTypeDetection.isPartyBags && {
+        partyBagsMetadata: {
+          quantity: partyBagsQuantity,
+          pricePerBag: selectedPackage.price,
+          totalPrice: calculateModalPricing.packagePrice
+        }
+      })
       },
       package: finalPackage,
       addons: selectedAddonObjects,
@@ -855,6 +912,121 @@ export default function SupplierCustomizationModal({
             </>
           )}
 
+          {/* Party Bags Quantity Section */}
+          {supplierTypeDetection.isPartyBags && selectedPackage && (
+            <div className="space-y-4 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl p-6 border-2 border-[hsl(var(--primary-200))]">
+              <div className="flex items-center gap-2 mb-3">
+                <Gift className="w-6 h-6 text-[hsl(var(--primary-600))]" />
+                <h4 className="font-bold text-lg text-[hsl(var(--primary-900))]">Number of Party Bags</h4>
+              </div>
+
+              {/* Guest Count Info */}
+              <div className="bg-white/80 rounded-lg p-4 border border-[hsl(var(--primary-200))]">
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-[hsl(var(--primary-600))] mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 mb-2">
+                      Your party has <strong>{partyDetails?.guestCount || 10} guests</strong>, so we've pre-set the quantity to match.
+                      You can adjust this if you need more or fewer party bags.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold text-gray-900">
+                  How many party bags do you need?
+                </Label>
+
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
+                    className="h-12 w-12 rounded-full border-2 border-[hsl(var(--primary-400))] hover:bg-[hsl(var(--primary-100))] transition-colors"
+                    disabled={Number(partyBagsQuantity) <= 1}
+                  >
+                    <span className="text-xl font-bold">−</span>
+                  </Button>
+
+                  <div className="flex-1 text-center">
+                    <div className="text-4xl font-bold text-[hsl(var(--primary-900))] mb-1">
+                      {partyBagsQuantity}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      party bags
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
+                    className="h-12 w-12 rounded-full border-2 border-[hsl(var(--primary-400))] hover:bg-[hsl(var(--primary-100))] transition-colors"
+                  >
+                    <span className="text-xl font-bold">+</span>
+                  </Button>
+                </div>
+
+                {/* Quick Set Buttons */}
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPartyBagsQuantity(Number(partyDetails?.guestCount) || 10)}
+                    className="text-xs hover:bg-[hsl(var(--primary-100))] hover:text-[hsl(var(--primary-700))]"
+                  >
+                    Match guests ({partyDetails?.guestCount || 10})
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPartyBagsQuantity(Number(partyDetails?.guestCount || 10) + 2)}
+                    className="text-xs hover:bg-[hsl(var(--primary-100))] hover:text-[hsl(var(--primary-700))]"
+                  >
+                    +2 extras
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPartyBagsQuantity(Number(partyDetails?.guestCount || 10) + 5)}
+                    className="text-xs hover:bg-[hsl(var(--primary-100))] hover:text-[hsl(var(--primary-700))]"
+                  >
+                    +5 extras
+                  </Button>
+                </div>
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="bg-white rounded-lg p-4 border border-[hsl(var(--primary-200))]">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Price per bag:</span>
+                    <span className="font-medium text-gray-900">£{selectedPackage.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Quantity:</span>
+                    <span className="font-medium text-gray-900">{partyBagsQuantity} bags</span>
+                  </div>
+                  <div className="border-t border-[hsl(var(--primary-200))] pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-[hsl(var(--primary-900))]">Total:</span>
+                      <span className="font-bold text-xl text-[hsl(var(--primary-900))]">
+                        £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Add-ons Section - only show when not in cake customization mode */}
           {availableAddons.length > 0 && !showCakeCustomization && (
             <div>
@@ -873,7 +1045,7 @@ export default function SupplierCustomizationModal({
                         id={addon.id}
                         checked={selectedAddons.includes(addon.id)}
                         onCheckedChange={() => handleAddonToggle(addon.id)}
-                        className="data-[state=checked]:bg-primary-500"
+                        className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] data-[state=checked]:text-white border-2"
                       />
                       <div>
                         <div className="flex items-center gap-2">
@@ -902,8 +1074,8 @@ export default function SupplierCustomizationModal({
             </div>
           )}
 
-          {/* ✅ UPDATED: Price Summary with unified pricing info */}
-          {!showCakeCustomization && (
+          {/* ✅ UPDATED: Price Summary with unified pricing info - hide for party bags (has own breakdown) */}
+          {!showCakeCustomization && !supplierTypeDetection.isPartyBags && (
             <div className={`${supplierTypeDetection.isCake ? 'bg-orange-50 border-orange-200' : 'bg-primary-50 border-[hsl(var(--primary-200))]'} rounded-xl p-4 border`}>
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Star className={`w-5 h-5 ${supplierTypeDetection.isCake ? 'text-orange-500' : 'text-primary-500'}`} />

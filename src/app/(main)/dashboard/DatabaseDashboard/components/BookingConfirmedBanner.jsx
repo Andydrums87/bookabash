@@ -146,7 +146,7 @@ export default function BookingConfirmedBanner({ suppliers = {}, enquiries = [],
                 className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-primary-600 text-white font-bold py-4 text-lg shadow-xl transform hover:scale-105 transition-all duration-200"
                 onClick={() => router.push("/e-invites")}
               >
-                Create Invitations
+                Create Your Guest List
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               <Button

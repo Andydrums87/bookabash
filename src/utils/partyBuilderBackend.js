@@ -1221,6 +1221,11 @@ async buildParty(partyDetails) {
 // Export singleton instance
 export const partyBuilderBackend = new PartyBuilderBackend();
 
+// Export standalone function for theme-based scoring
+export function scoreSupplierWithTheme(supplier, theme, timeSlot = 'afternoon', duration = 2) {
+  return partyBuilderBackend.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
+}
+
 // React hook for using the party builder
 export function usePartyBuilder() {
   const [loading, setLoading] = useState(false);

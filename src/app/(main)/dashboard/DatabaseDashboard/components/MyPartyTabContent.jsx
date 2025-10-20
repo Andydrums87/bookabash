@@ -21,7 +21,8 @@ export default function MyPartyTabContent({
   onAddSupplier,
   recommendedSuppliers = {},
   getSupplierDisplayPricing,
-  onImHappy
+  onImHappy,
+  onCustomizationComplete // ✅ NEW PROP
 }) {
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
@@ -96,7 +97,33 @@ export default function MyPartyTabContent({
     ) : []
 
     const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-    const totalPrice = (supplier.price || 0) + addonsCost
+
+    // Calculate base price:
+    // 1. For party bags, use total from metadata (per-bag price × quantity)
+    //    - First try partyBagsMetadata.totalPrice
+    //    - Then try packageData.totalPrice (for party bags)
+    //    - Then calculate from packageData: price × partyBagsQuantity
+    // 2. For packages, use packageData.price (the selected package price)
+    // 3. Otherwise use supplier.price
+    let basePrice = 0
+
+    // Check if this is a party bags supplier
+    const isPartyBags = supplier.category === 'Party Bags' ||
+                        supplier.category?.toLowerCase().includes('party bag')
+
+    if (isPartyBags) {
+      // Try different party bags price sources
+      basePrice = supplier.partyBagsMetadata?.totalPrice ||
+                  supplier.packageData?.totalPrice ||
+                  (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
+                    ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                    : (supplier.price || 0))
+    } else {
+      // For non-party-bags: use packageData.price if available, otherwise supplier.price
+      basePrice = supplier.packageData?.price || (supplier.price || 0)
+    }
+
+    const totalPrice = basePrice + addonsCost
     const supplierName = supplier.name || 'Unknown Supplier'
     const typeConfig = getTypeConfig(type)
 
@@ -209,7 +236,23 @@ export default function MyPartyTabContent({
       addon.attachedToSupplier === type
     ) : []
     const addonsCost = supplierAddons.reduce((addonSum, addon) => addonSum + (addon.price || 0), 0)
-    return sum + (supplier.price || 0) + addonsCost
+
+    // Calculate base price (same logic as renderSupplierCard)
+    let basePrice = 0
+    const isPartyBags = supplier.category === 'Party Bags' ||
+                        supplier.category?.toLowerCase().includes('party bag')
+
+    if (isPartyBags) {
+      basePrice = supplier.partyBagsMetadata?.totalPrice ||
+                  supplier.packageData?.totalPrice ||
+                  (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
+                    ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                    : (supplier.price || 0))
+    } else {
+      basePrice = supplier.packageData?.price || (supplier.price || 0)
+    }
+
+    return sum + basePrice + addonsCost
   }, 0)
 
   return (
@@ -335,6 +378,7 @@ export default function MyPartyTabContent({
 
             <MissingSuppliersSuggestions
               partyPlan={suppliers}
+              partyDetails={partyDetails}
               suppliers={Object.values(recommendedSuppliers).filter(s => s)}
               onAddSupplier={async (supplier, supplierType) => {
                 // Call the real add function to actually add the supplier
@@ -370,6 +414,7 @@ export default function MyPartyTabContent({
           supplier={selectedSupplierForQuickView}
           isOpen={!!selectedSupplierForQuickView}
           onClose={() => setSelectedSupplierForQuickView(null)}
+          isAlreadyAdded={true}
         />
       )}
 
@@ -380,6 +425,20 @@ export default function MyPartyTabContent({
           partyDetails={partyDetails}
           isOpen={!!selectedSupplierForCustomize}
           onClose={() => setSelectedSupplierForCustomize(null)}
+          onAddToPlan={async (data) => {
+            console.log('🎨 MyPartyTab: Customization completed:', data)
+
+            // Call the handler if provided
+            if (onCustomizationComplete) {
+              await onCustomizationComplete(data)
+            }
+
+            setSelectedSupplierForCustomize(null)
+          }}
+          isAdding={false}
+          currentPhase="planning"
+          selectedDate={partyDetails?.date}
+          partyDate={partyDetails?.date}
         />
       )}
     </div>

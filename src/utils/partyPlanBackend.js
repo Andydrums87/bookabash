@@ -178,9 +178,15 @@ class PartyPlanBackend {
 
         delete cleanPlan.einvites;
       }
-      
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanPlan));
+
+      // ✅ CRITICAL: Update the cache so refetch gets fresh data
+      setCachedPartyPlan(cleanPlan);
+
+      console.log('📢 Emitting partyPlanUpdated event with updated plan');
       eventEmitter.emit('partyPlanUpdated', cleanPlan);
+      console.log('✅ Event emitted successfully');
       return true;
     } catch (error) {
       console.error('Error saving party plan:', error);
@@ -253,13 +259,29 @@ addSupplierToPlan(supplier, selectedPackage = null) {
     });
 
     plan[supplierType] = supplierData;
-    
+
+    // If adding a venue, also add it to venueCarouselOptions if not already there
+    if (supplierType === 'venue') {
+      if (!plan.venueCarouselOptions) {
+        plan.venueCarouselOptions = [];
+      }
+
+      // Check if this venue is already in the carousel options
+      const venueExists = plan.venueCarouselOptions.some(v => v.id === supplier.id);
+
+      if (!venueExists) {
+        // Add the full supplier object to carousel options
+        plan.venueCarouselOptions.push(supplier);
+        console.log('✅ Added venue to carousel options:', supplier.name);
+      }
+    }
+
     this.savePartyPlan(plan);
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       supplierType,
-      supplier: supplierData 
+      supplier: supplierData
     };
   } catch (error) {
     console.error('Error adding supplier to plan:', error);
@@ -427,7 +449,7 @@ addAddonToPlan(addon) {
       }
       
       // If not found in global addons, check supplier selectedAddons
-      const supplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+      const supplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
       
       for (const supplierType of supplierTypes) {
         const supplier = plan[supplierType];
@@ -479,17 +501,80 @@ addAddonToPlan(addon) {
     try {
       const plan = this.getPartyPlan();
       let updated = false;
-      
-      // Check main supplier slots
-      const mainSlots = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags'];
-      
+
+      console.log('🔍 updateSupplierPackage called:', {
+        lookingFor: supplierId,
+        slotsWithSuppliers: Object.keys(plan).filter(key => plan[key] && plan[key].id).map(key => ({
+          slot: key,
+          id: plan[key].id,
+          name: plan[key].name,
+          matches: plan[key].id === supplierId
+        }))
+      });
+
+      // Check main supplier slots - INCLUDE ALL POSSIBLE SLOTS
+      const mainSlots = [
+        'venue',
+        'entertainment',
+        'catering',
+        'cakes',        // ✅ ADDED
+        'facePainting',
+        'activities',
+        'partyBags',
+        'decorations',  // ✅ ADDED
+        'balloons'      // ✅ ADDED
+      ];
+
       for (const slot of mainSlots) {
         if (plan[slot] && plan[slot].id === supplierId) {
+          console.log('📦 Updating supplier package for', slot, ':', {
+            oldPrice: plan[slot].price,
+            newPrice: newPackage.price,
+            packageId: newPackage.id
+          });
+
           // Update the package info
           plan[slot].price = newPackage.price;
+          plan[slot].originalPrice = newPackage.price; // ✅ CRITICAL: Update originalPrice too!
+          plan[slot].totalPrice = newPackage.price; // ✅ Also update totalPrice
           plan[slot].priceUnit = newPackage.duration;
           plan[slot].packageId = newPackage.id;
+          plan[slot].packageData = newPackage; // ✅ STORE FULL PACKAGE DATA
           plan[slot].updatedAt = new Date().toISOString();
+
+          // ✅ If cake customization is present, update it
+          if (newPackage.cakeCustomization) {
+            if (!plan[slot].packageData) {
+              plan[slot].packageData = {};
+            }
+            plan[slot].packageData.cakeCustomization = newPackage.cakeCustomization;
+          }
+
+          // ✅ If party bags quantity is present, save it to supplier object
+          if (newPackage.partyBagsQuantity !== undefined) {
+            plan[slot].partyBagsQuantity = newPackage.partyBagsQuantity;
+            plan[slot].pricePerBag = newPackage.pricePerBag;
+            console.log('🎒 Saved party bags quantity to supplier:', {
+              quantity: newPackage.partyBagsQuantity,
+              pricePerBag: newPackage.pricePerBag
+            });
+          }
+
+          // ✅ Update features and description if provided
+          if (newPackage.features) {
+            plan[slot].features = newPackage.features;
+          }
+          if (newPackage.description) {
+            plan[slot].description = newPackage.description;
+          }
+
+          console.log('✅ Supplier package updated:', {
+            slot,
+            newPrice: plan[slot].price,
+            hasPackageData: !!plan[slot].packageData,
+            hasCakeCustomization: !!plan[slot].packageData?.cakeCustomization
+          });
+
           updated = true;
           break;
         }
@@ -508,9 +593,12 @@ addAddonToPlan(addon) {
       }
       
       if (updated) {
+        console.log('💾 Saving updated party plan to localStorage...');
         this.savePartyPlan(plan);
+        console.log('✅ Party plan saved successfully');
         return { success: true, message: 'Package updated successfully' };
       } else {
+        console.error('❌ Supplier not found - checked all slots');
         return { success: false, error: 'Supplier not found in party plan' };
       }
       
@@ -528,9 +616,19 @@ addAddonToPlan(addon) {
 
     try {
       const plan = this.getPartyPlan();
-      
-      // Check main supplier slots
-      const mainSlots = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags'];
+
+      // Check main supplier slots - INCLUDE ALL POSSIBLE SLOTS
+      const mainSlots = [
+        'venue',
+        'entertainment',
+        'catering',
+        'cakes',        // ✅ ADDED
+        'facePainting',
+        'activities',
+        'partyBags',
+        'decorations',  // ✅ ADDED
+        'balloons'      // ✅ ADDED
+      ];
       
       for (const slot of mainSlots) {
         if (plan[slot] && plan[slot].id === supplierId) {
@@ -643,9 +741,9 @@ addAddonToPlan(addon) {
     // ✅ FIXED: Get party summary excluding einvites
     getPartySummary() {
       const plan = this.getPartyPlan();
-      
+
       // Only include real supplier types
-      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
       
       const suppliers = realSupplierTypes
         .filter(type => plan[type] !== null && plan[type] !== undefined)
@@ -692,10 +790,16 @@ export function usePartyPlan() {
       }
       
       const unsubscribe = partyPlanBackend.onUpdate((updatedPlan) => {
+        console.log('📨 usePartyPlan: Received partyPlanUpdated event', {
+          hasVenue: !!updatedPlan.venue,
+          hasCakes: !!updatedPlan.cakes,
+          cakesPrice: updatedPlan.cakes?.price
+        });
         setPartyPlan(updatedPlan);
         setVenueCarouselOptions(updatedPlan.venueCarouselOptions || []);
         // ✅ Update cache when data changes
         setCachedPartyPlan(updatedPlan);
+        console.log('✅ usePartyPlan: State updated with new plan');
       });
 
       const handleStorageChange = (e) => {

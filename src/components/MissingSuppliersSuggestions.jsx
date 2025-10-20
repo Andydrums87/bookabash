@@ -5,9 +5,11 @@ import { useState, useEffect } from "react"
 import { useSuppliers } from "@/utils/mockBackend"
 import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
 import confetti from 'canvas-confetti'
+import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
 
 export default function MissingSuppliersSuggestions({
   partyPlan,
+  partyDetails = {}, // Add partyDetails to get theme info
   onAddSupplier,
   showTitle = true,
   currentStep = 4,
@@ -133,25 +135,38 @@ export default function MissingSuppliersSuggestions({
       .sort((a, b) => ALL_SUPPLIER_TYPES[a].priority - ALL_SUPPLIER_TYPES[b].priority)
       .map(type => {
         const config = ALL_SUPPLIER_TYPES[type]
-        
+        const partyTheme = partyDetails?.theme || 'no-theme'
+
         // Find real suppliers that match this category
-        const matchingSuppliers = suppliers.filter(supplier => 
+        const matchingSuppliers = suppliers.filter(supplier =>
           config.categories.includes(supplier.category)
         )
 
-        // Sort by rating and take top 4 for variety
+        // Sort by theme-based scoring (same as party builder)
         const sortedSuppliers = matchingSuppliers
+          .map(supplier => ({
+            supplier,
+            themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+          }))
           .sort((a, b) => {
-            const aPopular = a.badges?.includes("Highly Rated") ? 1 : 0
-            const bPopular = b.badges?.includes("Highly Rated") ? 1 : 0
+            // First, sort by theme score (higher is better)
+            if (a.themeScore !== b.themeScore) {
+              return b.themeScore - a.themeScore
+            }
+
+            // Then by "Highly Rated" badge
+            const aPopular = a.supplier.badges?.includes("Highly Rated") ? 1 : 0
+            const bPopular = b.supplier.badges?.includes("Highly Rated") ? 1 : 0
             if (aPopular !== bPopular) {
               return bPopular - aPopular
             }
-            
-            const aScore = (a.rating || 0) * (a.reviewCount || 0)
-            const bScore = (b.rating || 0) * (b.reviewCount || 0)
+
+            // Finally by rating × review count
+            const aScore = (a.supplier.rating || 0) * (a.supplier.reviewCount || 0)
+            const bScore = (b.supplier.rating || 0) * (b.supplier.reviewCount || 0)
             return bScore - aScore
           })
+          .map(item => item.supplier) // Extract just the supplier
           .slice(0, 4) // Take top 4 suppliers
 
         if (sortedSuppliers.length > 0) {

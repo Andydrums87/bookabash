@@ -979,6 +979,7 @@ export default function SnappyChatReviewPage() {
                       <div>
                         <MissingSuppliersSuggestions
                           partyPlan={fullSupplierData}
+                          partyDetails={partyDetails}
                           onAddSupplier={handleAddMissingSupplier}
                           showTitle={false}
                           currentStep={currentStep}

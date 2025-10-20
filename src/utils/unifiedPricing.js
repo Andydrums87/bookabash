@@ -151,10 +151,41 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 
   // Special handling for party bags
   if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
+    // Check if we have partyBagsMetadata with totalPrice (from customization modal)
+    if (supplier.partyBagsMetadata?.totalPrice) {
+      console.log('🔍 UNIFIED DEBUG: Using party bags metadata total:', supplier.partyBagsMetadata.totalPrice);
+      return supplier.partyBagsMetadata.totalPrice;
+    }
+
+    // Check if packageData has totalPrice (for existing party bags)
+    if (supplier.packageData?.totalPrice) {
+      console.log('🔍 UNIFIED DEBUG: Using packageData total:', supplier.packageData.totalPrice);
+      return supplier.packageData.totalPrice;
+    }
+
+    // Calculate from packageData if available
+    if (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity) {
+      const total = supplier.packageData.price * supplier.packageData.partyBagsQuantity;
+      console.log('🔍 UNIFIED DEBUG: Calculated from packageData:', total);
+      return total;
+    }
+
+    // Fall back to calculation
     const pricePerBag = supplier.originalPrice || supplier.price || supplier.priceFrom || 5.00;
-    const guestCount = getGuestCount(partyDetails);
-    const total = pricePerBag * guestCount;
-    console.log('🔍 UNIFIED DEBUG: Party bags calculation:', { pricePerBag, guestCount, total });
+    const quantity = supplier.partyBagsQuantity ||
+                    supplier.partyBagsMetadata?.quantity ||
+                    supplier.packageData?.partyBagsQuantity ||
+                    getGuestCount(partyDetails);
+    const total = pricePerBag * quantity;
+    console.log('🔍 UNIFIED DEBUG: Party bags fallback calculation:', {
+      pricePerBag,
+      customQuantity: supplier.partyBagsQuantity,
+      metadataQuantity: supplier.partyBagsMetadata?.quantity,
+      packageQuantity: supplier.packageData?.partyBagsQuantity,
+      guestCount: getGuestCount(partyDetails),
+      usingQuantity: quantity,
+      total
+    });
     return total;
   }
 
@@ -401,8 +432,11 @@ export const getDisplayPrice = (supplier, partyDetails = {}, addons = []) => {
   // Special display for party bags
   if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
     const pricePerBag = supplier.originalPrice || supplier.price || supplier.priceFrom || 5.00;
-    const guestCount = getGuestCount(partyDetails);
-    return `£${pricePerBag} per bag (${guestCount} bags = £${pricing.finalPrice} total)`;
+    const quantity = supplier.partyBagsQuantity ||
+                    supplier.partyBagsMetadata?.quantity ||
+                    supplier.packageData?.partyBagsQuantity ||
+                    getGuestCount(partyDetails);
+    return `£${pricePerBag} per bag (${quantity} bags = £${pricing.finalPrice} total)`;
   }
 
   return `£${pricing.finalPrice}`;
@@ -422,8 +456,11 @@ export const getPriceBreakdownText = (supplier, partyDetails = {}, addons = []) 
   // Special handling for party bags
   if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
     const pricePerBag = supplier.originalPrice || supplier.price || supplier.priceFrom || 5.00;
-    const guestCount = getGuestCount(partyDetails);
-    parts.push(`${guestCount} bags × £${pricePerBag}`);
+    const quantity = supplier.partyBagsQuantity ||
+                    supplier.partyBagsMetadata?.quantity ||
+                    supplier.packageData?.partyBagsQuantity ||
+                    getGuestCount(partyDetails);
+    parts.push(`${quantity} bags × £${pricePerBag}`);
   } else {
     parts.push(`Base £${pricing.basePrice}`);
   }

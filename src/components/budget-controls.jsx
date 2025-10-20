@@ -61,7 +61,7 @@ export default function BudgetControls({
       {/* Decorative background elements */}
       <img src="/Union.png" alt="" className="absolute top-[-50px]" />
       <img src="/Union3.png" alt="" className="absolute bottom-0 right-0" />
-    
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-4 left-6 w-2 h-2 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
         <div className="absolute top-12 right-8 w-1 h-1 bg-[hsl(var(--primary-400))] rounded-full opacity-80"></div>
@@ -77,48 +77,28 @@ export default function BudgetControls({
             <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl flex items-center justify-center shadow-lg">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-white">Budget Tracker</h2>
+            <h2 className="text-3xl font-bold text-white">Total Spend</h2>
           </div>
         </div>
 
-        {/* Budget Display */}
-        <div className="flex items-baseline justify-between mb-4">
+        {/* Total Spend Display */}
+        <div className="flex items-center justify-center py-8">
           <div className="flex items-baseline gap-2">
-            <PoundSterling className="w-6 h-6 text-white mb-1" />
-            <span className="text-3xl font-bold text-white">{safeDisplayValues.totalSpent}</span>
-            <span className="text-white/90 font-medium">of £{tempBudget}</span>
-          </div>
-          <div className="text-right">
-            <div className={`text-xl font-extrabold ${isOverBudget ? 'text-red-600' : 'text-white'}`}>
-              {isOverBudget ? `-£${overBudgetAmount}` : `£${Math.abs(safeDisplayValues.remaining)}`}
-            </div>
-            <div className={`text-sm ${isOverBudget ? 'text-red-500' : 'text-white'}`}>
-              {isOverBudget ? 'over budget' : 'remaining'}
-            </div>
+            <PoundSterling className="w-8 h-8 text-white mb-1" />
+            <span className="text-5xl font-bold text-white">{safeDisplayValues.totalSpent}</span>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="space-y-3 mb-4">
-          <div className="relative">
-            <div className="w-full bg-teal-100 rounded-full h-4 shadow-inner">
-              <div
-                className={`${progressBarColor} h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden`}
-                style={{ width: `${displayPercentage}%` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className={`text-sm font-medium ${isOverBudget ? 'text-red-600' : 'text-white/95'}`}>
-              {safeDisplayValues.budgetPercentage}% used
-            </span>
-          </div>
+        {/* Optional info text */}
+        <div className="text-center">
+          <p className="text-white/80 text-sm">
+            Your party plan total
+          </p>
         </div>
 
-        {/* Expandable Budget Adjustment */}
-        <Button
+        {/* Hidden budget adjustment section - keeping for future use */}
+        <div className="hidden">
+          <Button
           onClick={() => setShowBudgetAdjust(!showBudgetAdjust)}
           variant="outline"
           className="w-full flex items-center justify-between bg-white/80 hover:bg-white border-[hsl(var(--primary-200))] text-gray-700 hover:text-gray-900"
@@ -146,7 +126,7 @@ export default function BudgetControls({
               className="w-full [&>span:first-child]:h-4 [&>span:first-child>span]:h-4 [&>span:first-child>span]:bg-gradient-to-r [&>span:first-child>span]:from-[hsl(var(--primary-500))] [&>span:first-child>span]:to-[hsl(var(--primary-600))] [&>span:first-child]:bg-gradient-to-r [&>span:first-child]:from-[hsl(var(--primary-100))] [&>span:first-child]:to-[hsl(var(--primary-200))] [&>span:first-child]:border [&>span:first-child]:border-[hsl(var(--primary-200))] [&>span:first-child]:shadow-inner"
               disabled={isUpdating}
             />
-            
+
             <div className="flex justify-between text-xs text-gray-500 font-medium">
               <span>£300</span>
               <span>£1000+</span>
@@ -162,6 +142,7 @@ export default function BudgetControls({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )

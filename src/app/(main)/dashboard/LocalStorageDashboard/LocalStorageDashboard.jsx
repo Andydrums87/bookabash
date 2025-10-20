@@ -42,7 +42,7 @@ import ReferFriend from "@/components/ReferFriend"
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
 import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
 import PartySummarySection from "../components/PartySummarySection"
-import VenueCarouselCard from "../components/VenueCarouselCard"
+import VenueBrowserModal from "@/components/VenueBrowserModal"
 
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
@@ -114,6 +114,7 @@ export default function LocalStorageDashboard() {
   const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
   const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
   const [isSelectingVenue, setIsSelectingVenue] = useState(false)
+  const [showVenueBrowserModal, setShowVenueBrowserModal] = useState(false)
   // Add these state variables near your other useState declarations
 
 
@@ -160,10 +161,10 @@ const childPhotoRef = useRef(null)
 
   // Hooks - only run after mounting
   const {
-    partyPlan, 
-    loading: planLoading, 
-    error: planError, 
-    totalCost, 
+    partyPlan,
+    loading: planLoading,
+    error: planError,
+    totalCost,
     addons,
     venueCarouselOptions, // NEW: Get carousel options
     removeSupplier,
@@ -172,6 +173,8 @@ const childPhotoRef = useRef(null)
     addSupplier,
     hasAddon,
     removeAddonFromSupplier,
+    updateSupplierPackage, // Add this to handle customization
+    refetch, // Add this to refresh the party plan
   } = usePartyPlan()
 
   const {
@@ -208,20 +211,18 @@ const childPhotoRef = useRef(null)
     cancelDeleteSupplier
   } = useSupplierManager(removeSupplier)
 
-      // Create suppliers object
-      const suppliers = {
-        venue: partyPlan.venue || null,
-        entertainment: partyPlan.entertainment || null,
-        cakes: partyPlan.cakes || null, 
-        facePainting: partyPlan.facePainting || null,
-        activities: partyPlan.activities || null,
-        partyBags: partyPlan.partyBags || null,
-        decorations: partyPlan.decorations || null,
-        balloons: partyPlan.balloons || null,
-         
-        catering: partyPlan.catering || null,  // 🎂 Just add this line
-    
-      }
+  // ✅ CRITICAL FIX: Create suppliers object with useMemo so it updates when partyPlan changes
+  const suppliers = useMemo(() => ({
+    venue: partyPlan.venue || null,
+    entertainment: partyPlan.entertainment || null,
+    cakes: partyPlan.cakes || null,
+    facePainting: partyPlan.facePainting || null,
+    activities: partyPlan.activities || null,
+    partyBags: partyPlan.partyBags || null,
+    decorations: partyPlan.decorations || null,
+    balloons: partyPlan.balloons || null,
+    catering: partyPlan.catering || null,
+  }), [partyPlan])
 
   // ✅ PRODUCTION SAFE: Welcome popup detection with one-time-only logic
   useEffect(() => {
@@ -1333,15 +1334,197 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
 // In LocalStorageDashboard.jsx - add this handler
 const handleCustomizeSupplier = (type, supplier) => {
   console.log('🎨 Customizing supplier:', type, supplier.name)
-  
+
   // Example: Navigate to supplier page with customize mode
   router.push(`/supplier/${supplier.id}?mode=customize&from=dashboard`)
-  
+
   // OR: Open a customization modal
   // setShowCustomizeModal(true)
   // setCustomizeSupplierData({ type, supplier })
+}
 
+// Handle customization completion from the modal
+const handleCustomizationComplete = async (customizationData) => {
+  const { supplier, package: selectedPackage, addons: selectedAddons = [], totalPrice } = customizationData
 
+  console.log('🎨 Customization completed:', {
+    supplier: supplier.name,
+    supplierId: supplier.id,
+    supplierLegacyId: supplier.legacyId,
+    package: selectedPackage,
+    addons: selectedAddons,
+    totalPrice
+  })
+
+  // DEBUG: Check what's in partyPlan right now
+  console.log('🔍 Current partyPlan state:', {
+    decorations: partyPlan.decorations,
+    decorationsId: partyPlan.decorations?.id,
+    cakes: partyPlan.cakes,
+    cakesId: partyPlan.cakes?.id,
+    allSlots: Object.keys(partyPlan).filter(key => partyPlan[key] && typeof partyPlan[key] === 'object' && partyPlan[key].id)
+  })
+
+  try {
+    // Update the supplier's package if a new package was selected
+    if (selectedPackage && supplier.id) {
+      // ✅ CRITICAL FIX: Find the supplier by matching category OR by checking all possible IDs
+      const supplierCategory = supplier.category?.toLowerCase().replace(/\s+/g, '')
+
+      // Try to find by category first (most reliable)
+      let supplierType = null
+      if (supplierCategory) {
+        // Map common category names to slot names
+        const categoryToSlot = {
+          'decorations': 'decorations',
+          'cakes': 'cakes',
+          'cake': 'cakes',
+          'entertainment': 'entertainment',
+          'venue': 'venue',
+          'facepainting': 'facePainting',
+          'activities': 'activities',
+          'partybags': 'partyBags',
+          'balloons': 'balloons',
+          'catering': 'catering'
+        }
+        supplierType = categoryToSlot[supplierCategory]
+      }
+
+      // Fallback: search by ID matching (including originalSupplier)
+      if (!supplierType) {
+        supplierType = Object.keys(partyPlan).find(key => {
+          const planSupplier = partyPlan[key]
+          if (!planSupplier || typeof planSupplier !== 'object') return false
+
+          // Check direct ID match
+          if (planSupplier.id === supplier.id || planSupplier.id === supplier.legacyId) return true
+
+          // Check originalSupplier IDs
+          if (planSupplier.originalSupplier) {
+            if (planSupplier.originalSupplier.id === supplier.id ||
+                planSupplier.originalSupplier.id === supplier.legacyId ||
+                planSupplier.originalSupplier.legacyId === supplier.id ||
+                planSupplier.originalSupplier.legacyId === supplier.legacyId) {
+              return true
+            }
+          }
+
+          return false
+        })
+      }
+
+      const actualSupplierInPlan = supplierType ? partyPlan[supplierType] : null
+      const supplierIdToUse = actualSupplierInPlan?.id || supplier.id
+
+      console.log('🔑 ID Resolution:', {
+        supplierFromModal: supplier.id,
+        legacyId: supplier.legacyId,
+        category: supplier.category,
+        foundInSlot: supplierType,
+        actualIdInPlan: actualSupplierInPlan?.id,
+        willUseId: supplierIdToUse
+      })
+
+      // Determine the correct price to use
+      let priceToUse
+
+      // ✅ CRITICAL FIX: For party bags, use the per-bag price directly
+      const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
+      if (isPartyBags) {
+        // Party bags packages already have per-bag pricing
+        priceToUse = selectedPackage.pricePerBag || selectedPackage.price
+        console.log('🎒 Party Bags - Using per-bag price:', {
+          pricePerBag: selectedPackage.pricePerBag,
+          price: selectedPackage.price,
+          quantity: selectedPackage.partyBagsQuantity,
+          totalPrice: selectedPackage.totalPrice,
+          usingPrice: priceToUse
+        })
+      } else {
+        // For other suppliers, use enhanced/total/base price
+        priceToUse = selectedPackage.enhancedPrice || selectedPackage.totalPrice || selectedPackage.price
+      }
+
+      console.log('💰 Price selection debug:', {
+        enhancedPrice: selectedPackage.enhancedPrice,
+        totalPrice: selectedPackage.totalPrice,
+        packagePrice: selectedPackage.price,
+        selectedPrice: priceToUse,
+        isPartyBags
+      })
+
+      // Prepare package data with all customization info
+      const packageUpdate = {
+        ...selectedPackage,
+        price: priceToUse,
+        duration: selectedPackage.duration,
+        id: selectedPackage.id,
+        // Include cake customization if present
+        cakeCustomization: selectedPackage.cakeCustomization,
+        // Include party bags quantity if present
+        partyBagsQuantity: selectedPackage.partyBagsQuantity,
+        pricePerBag: selectedPackage.pricePerBag,
+        // Include any other special customizations
+        features: selectedPackage.features,
+        description: selectedPackage.description
+      }
+
+      console.log('📦 Updating package with data:', packageUpdate)
+
+      const updateResult = await updateSupplierPackage(supplierIdToUse, packageUpdate)
+
+      if (!updateResult.success) {
+        console.error('Failed to update supplier package:', updateResult.error)
+        toast.error('Failed to update package')
+        return
+      }
+
+      console.log('✅ Package updated successfully')
+    }
+
+    // Add any new addons that were selected
+    if (selectedAddons && selectedAddons.length > 0) {
+      for (const addon of selectedAddons) {
+        // Check if addon already exists
+        if (!hasAddon(addon.id)) {
+          await handleAddAddon(addon, supplier.id)
+        }
+      }
+      console.log('✅ Addons added successfully')
+    }
+
+    // ✅ CRITICAL: Refresh the party plan to update the UI
+    // The event emitter in savePartyPlan should trigger the update automatically
+    // But we'll force a refetch to be safe
+    await new Promise(resolve => setTimeout(resolve, 200))
+
+    console.log('🔄 Triggering party plan refresh...')
+
+    // DEBUG: Check what's actually in localStorage after update
+    const storedPlan = JSON.parse(localStorage.getItem('user_party_plan'))
+    console.log('🔍 After update, localStorage has:', {
+      cakesPrice: storedPlan?.cakes?.price,
+      cakesPackageDataPrice: storedPlan?.cakes?.packageData?.price,
+      cakesOriginalPrice: storedPlan?.cakes?.originalPrice
+    })
+
+    refetch()
+
+    // Also trigger a manual window storage event to ensure cross-component updates
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'user_party_plan',
+      newValue: localStorage.getItem('user_party_plan')
+    }))
+
+    toast.success(`${supplier.name} customization saved!`, {
+      description: 'Your changes have been applied',
+      duration: 3000
+    })
+
+  } catch (error) {
+    console.error('❌ Error saving customization:', error)
+    toast.error('Failed to save customization')
+  }
 }
 
 // Add this handler function with your other event handlers:
@@ -1465,175 +1648,205 @@ const handleChildPhotoUpload = async (file) => {
                     </>
                   ) : (
                     <>
-                    {/* VENUE CARD */}
-  
+                      {/* ✅ REORGANIZED: All suppliers ordered with selected first, then empty */}
+                      {(() => {
+                        // Helper function to render venue card
+                        const renderVenueCard = (isSelected) => {
+                          const hasSelectedVenue = !!suppliers.venue;
+                          const hasCarouselOptions = venueCarouselOptions && Array.isArray(venueCarouselOptions) && venueCarouselOptions.length > 0;
+                          const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
 
-{/* VENUE CARD */}
-{(() => {
-  const hasSelectedVenue = !!suppliers.venue;
-  // ✅ MORE DEFENSIVE: Check if carousel options exist AND have length > 0
-  const hasCarouselOptions = venueCarouselOptions && Array.isArray(venueCarouselOptions) && venueCarouselOptions.length > 0;
-  const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
-  
+                          // Early return if we're looking for selected but venue is empty (or vice versa)
+                          if (isSelected && !hasSelectedVenue) return null;
+                          if (!isSelected && hasSelectedVenue) return null;
 
-  
-  // ✅ PRIORITY CHECK: If user has own venue AND hasn't selected one yet, show empty card
-  if (userHasOwnVenue && !hasSelectedVenue) {
-    console.log('✅ User has own venue - showing EmptySupplierCard');
-    return (
-      <SupplierCard 
-        key="venue"
-        type="venue" 
-        supplier={null}
-        loadingCards={loadingCards}
-        suppliersToDelete={suppliersToDelete}
-        openSupplierModal={(category) => {
-          console.log('🎯 User clicked to browse venues - clearing hasOwnVenue flag');
-          const updatedPartyDetails = {
-            ...partyDetails,
-            hasOwnVenue: false
-          };
-          localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
-          handlePartyDetailsUpdate(updatedPartyDetails);
-        }}
-        handleDeleteSupplier={handleDeleteSupplier}
-        getSupplierDisplayName={getSupplierDisplayName}
-        addons={[]}
-        handleRemoveAddon={handleRemoveAddon}
-        enquiryStatus={null}
-        enquirySentAt={null}
-        isSignedIn={false}
-        isPaymentConfirmed={false}
-        enquiries={[]}
-        partyDetails={partyDetails}
-        currentPhase="planning"
-        recommendedSupplier={getRecommendedSupplierForType('venue')}
-        onAddSupplier={handleAddRecommendedSupplier}
-        enhancedPricing={null}
-        onCustomize={handleCustomizeSupplier}
-      />
-    );
-  }
-  
-  // ✅ KEY FIX: If NO selected venue, show empty card (ignore carousel options)
-  if (!hasSelectedVenue) {
-    console.log('✅ No selected venue - showing EmptySupplierCard with generic image');
-    return (
-      <SupplierCard 
-        key="venue"
-        type="venue" 
-        supplier={null}
-        loadingCards={loadingCards}
-        suppliersToDelete={suppliersToDelete}
-        openSupplierModal={openSupplierModal}
-        handleDeleteSupplier={handleDeleteSupplier}
-        getSupplierDisplayName={getSupplierDisplayName}
-        addons={[]}
-        handleRemoveAddon={handleRemoveAddon}
-        enquiryStatus={null}
-        enquirySentAt={null}
-        isSignedIn={false}
-        isPaymentConfirmed={false}
-        enquiries={[]}
-        partyDetails={partyDetails}
-        currentPhase="planning"
-        recommendedSupplier={getRecommendedSupplierForType('venue')}
-        onAddSupplier={handleAddRecommendedSupplier}
-        enhancedPricing={null}
-      />
-    );
-  }
-  
-  // ✅ If venue IS selected AND there are carousel options, show carousel
-  if (hasSelectedVenue && hasCarouselOptions) {
-    console.log('✅ Has selected venue + carousel options - showing VenueCarouselCard');
-    return (
-      <VenueCarouselCard
-        type="venue"
-        venues={venueCarouselOptions}
-        selectedVenue={suppliers.venue}
-        onSelectVenue={handleSelectVenue}
-        partyDetails={partyDetails}
-        isLoading={isSelectingVenue}
-        addons={
-          suppliers.venue?.selectedAddons || 
-          addons.filter(addon => 
-            addon.supplierId === suppliers.venue?.id || 
-            addon.supplierType === 'venue' ||
-            addon.attachedToSupplier === 'venue'
-          )
-        }
-        handleRemoveAddon={handleRemoveAddon}
-        handleDeleteSupplier={handleDeleteSupplier}
-        openSupplierModal={openSupplierModal}
-      />
-    );
-  }
-  
-  // ✅ Fallback: Selected venue but no carousel - show empty card
-  console.log('✅ Fallback - showing EmptySupplierCard');
-  return (
-    <SupplierCard 
-      key="venue"
-      type="venue" 
-      supplier={null}
-      loadingCards={loadingCards}
-      suppliersToDelete={suppliersToDelete}
-      openSupplierModal={openSupplierModal}
-      handleDeleteSupplier={handleDeleteSupplier}
-      getSupplierDisplayName={getSupplierDisplayName}
-      addons={[]}
-      handleRemoveAddon={handleRemoveAddon}
-      enquiryStatus={null}
-      enquirySentAt={null}
-      isSignedIn={false}
-      isPaymentConfirmed={false}
-      enquiries={[]}
-      partyDetails={partyDetails}
-      currentPhase="planning"
-      recommendedSupplier={getRecommendedSupplierForType('venue')}
-      onAddSupplier={handleAddRecommendedSupplier}
-      enhancedPricing={null}
-    />
-  );
-})()}
+                          // ✅ PRIORITY CHECK: If user has own venue AND hasn't selected one yet, show empty card
+                          if (userHasOwnVenue && !hasSelectedVenue) {
+                            console.log('✅ User has own venue - showing EmptySupplierCard');
+                            return (
+                              <SupplierCard
+                                key="venue"
+                                type="venue"
+                                supplier={null}
+                                loadingCards={loadingCards}
+                                suppliersToDelete={suppliersToDelete}
+                                openSupplierModal={(category) => {
+                                  console.log('🎯 User clicked to browse venues - clearing hasOwnVenue flag');
+                                  const updatedPartyDetails = {
+                                    ...partyDetails,
+                                    hasOwnVenue: false
+                                  };
+                                  localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
+                                  handlePartyDetailsUpdate(updatedPartyDetails);
+                                }}
+                                handleDeleteSupplier={handleDeleteSupplier}
+                                getSupplierDisplayName={getSupplierDisplayName}
+                                addons={[]}
+                                handleRemoveAddon={handleRemoveAddon}
+                                enquiryStatus={null}
+                                enquirySentAt={null}
+                                isSignedIn={false}
+                                isPaymentConfirmed={false}
+                                enquiries={[]}
+                                partyDetails={partyDetails}
+                                currentPhase="planning"
+                                recommendedSupplier={getRecommendedSupplierForType('venue')}
+                                onAddSupplier={handleAddRecommendedSupplier}
+                                enhancedPricing={null}
+                                onCustomizationComplete={handleCustomizationComplete}
+                              />
+                            );
+                          }
 
-                      {/* ALL OTHER SUPPLIERS - Regular Cards */}
-                      {Object.entries(suppliers)
-                        .filter(([type]) => type !== 'venue') // Skip venue since we handled it above
-                        .map(([type, supplier]) => {
-                          // Get addons for this specific supplier
-                          const supplierAddons = addons.filter(addon => 
-                            addon.supplierId === supplier?.id || 
-                            addon.supplierType === type ||
-                            addon.attachedToSupplier === type
+                          // ✅ KEY FIX: If NO selected venue, show empty card
+                          if (!hasSelectedVenue) {
+                            console.log('✅ No selected venue - showing EmptySupplierCard with generic image');
+                            return (
+                              <SupplierCard
+                                key="venue"
+                                type="venue"
+                                supplier={null}
+                                loadingCards={loadingCards}
+                                suppliersToDelete={suppliersToDelete}
+                                openSupplierModal={openSupplierModal}
+                                handleDeleteSupplier={handleDeleteSupplier}
+                                getSupplierDisplayName={getSupplierDisplayName}
+                                addons={[]}
+                                handleRemoveAddon={handleRemoveAddon}
+                                enquiryStatus={null}
+                                enquirySentAt={null}
+                                isSignedIn={false}
+                                isPaymentConfirmed={false}
+                                enquiries={[]}
+                                partyDetails={partyDetails}
+                                currentPhase="planning"
+                                recommendedSupplier={getRecommendedSupplierForType('venue')}
+                                onAddSupplier={handleAddRecommendedSupplier}
+                                enhancedPricing={null}
+                                onCustomizationComplete={handleCustomizationComplete}
+                              />
+                            );
+                          }
+
+                          // ✅ Selected venue - show regular SupplierCard with Browse Venues option
+                          const venueAddons = addons.filter(addon =>
+                            addon.supplierId === suppliers.venue?.id ||
+                            addon.supplierType === 'venue' ||
+                            addon.attachedToSupplier === 'venue'
                           );
-                          
+
                           return (
-                            <SupplierCard 
-                              key={type}
-                              type={type} 
-                              supplier={supplier}
+                            <SupplierCard
+                              key="venue"
+                              type="venue"
+                              supplier={suppliers.venue}
                               loadingCards={loadingCards}
                               suppliersToDelete={suppliersToDelete}
                               openSupplierModal={openSupplierModal}
                               handleDeleteSupplier={handleDeleteSupplier}
                               getSupplierDisplayName={getSupplierDisplayName}
-                              addons={supplierAddons}
+                              addons={venueAddons}
                               handleRemoveAddon={handleRemoveAddon}
-                              enquiryStatus={getEnquiryStatus(type)}
-                              enquirySentAt={getEnquiryTimestamp(type)}
+                              enquiryStatus={getEnquiryStatus('venue')}
+                              enquirySentAt={getEnquiryTimestamp('venue')}
                               isSignedIn={false}
                               isPaymentConfirmed={false}
                               enquiries={[]}
                               partyDetails={partyDetails}
                               currentPhase="planning"
-                              recommendedSupplier={getRecommendedSupplierForType(type)}
+                              recommendedSupplier={getRecommendedSupplierForType('venue')}
                               onAddSupplier={handleAddRecommendedSupplier}
-                              enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
+                              enhancedPricing={getSupplierDisplayPricing(suppliers.venue, partyDetails, venueAddons)}
+                              onCustomizationComplete={handleCustomizationComplete}
+                              // ✅ Add venue browser props
+                              showBrowseVenues={hasCarouselOptions}
+                              onBrowseVenues={() => setShowVenueBrowserModal(true)}
                             />
-                          )
-                        })}
+                          );
+                        };
+
+                        // Split all other suppliers (excluding venue) into selected and empty
+                        const otherSuppliers = Object.entries(suppliers).filter(([type]) => type !== 'venue');
+                        const selectedSuppliers = otherSuppliers.filter(([, supplier]) => supplier !== null);
+                        const emptySuppliers = otherSuppliers.filter(([, supplier]) => supplier === null);
+
+                        // Render all cards in order: selected (with venue), then empty (with venue)
+                        return (
+                          <>
+                            {/* SELECTED SUPPLIERS - No header needed */}
+                            {renderVenueCard(true)}
+                            {selectedSuppliers.map(([type, supplier]) => {
+                                  const supplierAddons = addons.filter(addon =>
+                                    addon.supplierId === supplier?.id ||
+                                    addon.supplierType === type ||
+                                    addon.attachedToSupplier === type
+                                  );
+
+                                  return (
+                                    <SupplierCard
+                                      key={type}
+                                      type={type}
+                                      supplier={supplier}
+                                      loadingCards={loadingCards}
+                                      suppliersToDelete={suppliersToDelete}
+                                      openSupplierModal={openSupplierModal}
+                                      handleDeleteSupplier={handleDeleteSupplier}
+                                      getSupplierDisplayName={getSupplierDisplayName}
+                                      addons={supplierAddons}
+                                      handleRemoveAddon={handleRemoveAddon}
+                                      enquiryStatus={getEnquiryStatus(type)}
+                                      enquirySentAt={getEnquiryTimestamp(type)}
+                                      isSignedIn={false}
+                                      isPaymentConfirmed={false}
+                                      enquiries={[]}
+                                      partyDetails={partyDetails}
+                                      currentPhase="planning"
+                                      recommendedSupplier={getRecommendedSupplierForType(type)}
+                                      onAddSupplier={handleAddRecommendedSupplier}
+                                      enhancedPricing={getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)}
+                                      onCustomizationComplete={handleCustomizationComplete}
+                                    />
+                                  );
+                            })}
+
+                            {/* EMPTY SUPPLIERS - No divider for gamified experience */}
+                            {renderVenueCard(false)}
+                            {emptySuppliers.map(([type, supplier]) => {
+                                  const supplierAddons = addons.filter(addon =>
+                                    addon.supplierId === supplier?.id ||
+                                    addon.supplierType === type ||
+                                    addon.attachedToSupplier === type
+                                  );
+
+                                  return (
+                                    <SupplierCard
+                                      key={type}
+                                      type={type}
+                                      supplier={supplier}
+                                      loadingCards={loadingCards}
+                                      suppliersToDelete={suppliersToDelete}
+                                      openSupplierModal={openSupplierModal}
+                                      handleDeleteSupplier={handleDeleteSupplier}
+                                      getSupplierDisplayName={getSupplierDisplayName}
+                                      addons={supplierAddons}
+                                      handleRemoveAddon={handleRemoveAddon}
+                                      enquiryStatus={getEnquiryStatus(type)}
+                                      enquirySentAt={getEnquiryTimestamp(type)}
+                                      isSignedIn={false}
+                                      isPaymentConfirmed={false}
+                                      enquiries={[]}
+                                      partyDetails={partyDetails}
+                                      currentPhase="planning"
+                                      recommendedSupplier={getRecommendedSupplierForType(type)}
+                                      onAddSupplier={handleAddRecommendedSupplier}
+                                      enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
+                                      onCustomizationComplete={handleCustomizationComplete}
+                                    />
+                                  );
+                            })}
+                          </>
+                        );
+                      })()}
                     </>
                   )}
                 </div>
@@ -1649,7 +1862,7 @@ const handleChildPhotoUpload = async (file) => {
                     openSupplierModal={openSupplierModal}
                     handleDeleteSupplier={handleDeleteSupplier}
                     getSupplierDisplayName={getSupplierDisplayName}
-                    addons={suppliers.venue?.selectedAddons || addons.filter(addon => addon.supplierId === suppliers.venue?.id || addon.supplierType === 'venue' || addon.attachedToSupplier === 'venue')}
+                    addons={addons}
                     handleRemoveAddon={handleRemoveAddon}
                     getEnquiryStatus={getEnquiryStatus}
                     getEnquiryTimestamp={getEnquiryTimestamp}
@@ -1668,6 +1881,9 @@ const handleChildPhotoUpload = async (file) => {
                     onSelectVenue={handleSelectVenue}
                     isSelectingVenue={isSelectingVenue}
                     type="venue"
+                    onCustomizationComplete={handleCustomizationComplete}
+                    showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
+                    onBrowseVenues={() => setShowVenueBrowserModal(true)}
                   />
                 </div>
               </div>
@@ -1697,13 +1913,13 @@ const handleChildPhotoUpload = async (file) => {
                 <AddonsSectionWrapper suppliers={suppliers} />
               </div>
 
-              <div className="md:block hidden w-screen pr-6 md:pr-20">
+              {/* <div className="md:block hidden w-screen pr-6 md:pr-20">
                 <RecommendedAddonsWrapper
                   context="dashboard"
                   maxItems={4}
                   onAddonClick={handleAddonClick}
                 />
-              </div>
+              </div> */}
 
               {/* <PartySummarySection
   partyDetails={partyDetails}
@@ -1783,6 +1999,16 @@ const handleChildPhotoUpload = async (file) => {
         addon={selectedAddon}
         onAddToParty={handleAddAddonFromModal}
         isAlreadyAdded={selectedAddon ? hasAddon(selectedAddon.id) : false}
+      />
+
+      {/* Venue Browser Modal */}
+      <VenueBrowserModal
+        venues={venueCarouselOptions || []}
+        selectedVenue={suppliers.venue}
+        isOpen={showVenueBrowserModal}
+        onClose={() => setShowVenueBrowserModal(false)}
+        onSelectVenue={handleSelectVenue}
+        partyDetails={partyDetails}
       />
 
       {/* Mobile Add Supplier Button */}

@@ -37,7 +37,11 @@ export default function SupplierCard({
   // Props for recommended suppliers
   recommendedSupplier,
   onAddSupplier,
-  isCompact = false // ✅ NEW PROP
+  isCompact = false, // ✅ NEW PROP
+  onCustomizationComplete, // ✅ NEW PROP - handler for customization
+  // Props for venue browsing
+  showBrowseVenues = false,
+  onBrowseVenues
 }) {
   const router = useRouter()
 
@@ -230,7 +234,18 @@ export default function SupplierCard({
     onCustomize: (type, supplier) => {
       console.log('Customize clicked for:', type, supplier.name)
     },
-    onAddSupplier: onAddSupplier
+    onAddSupplier: onAddSupplier,
+    onCustomizationComplete: onCustomizationComplete,
+    showBrowseVenues: showBrowseVenues,
+    onBrowseVenues: onBrowseVenues
+  }
+
+  // Debug log to verify prop is received
+  if (supplier) {
+    console.log(`🔧 SupplierCard [${type}]: onCustomizationComplete prop`, {
+      isDefined: !!onCustomizationComplete,
+      supplierName: supplier.name
+    })
   }
 
   // ✅ Props specific to EmptySupplierCard - INCLUDING isCompact
