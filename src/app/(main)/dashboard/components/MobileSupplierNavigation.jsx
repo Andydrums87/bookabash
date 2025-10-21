@@ -1000,11 +1000,51 @@ export default function MobileSupplierNavigation({
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <h4 className="font-semibold text-gray-900 mb-2 text-sm">Your Suppliers</h4>
                 <div className="space-y-2 text-sm text-gray-700">
-                  {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => (
-                    <div key={type} className="flex items-center justify-between">
-                      <span>{supplier.name}</span>
+                  {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => {
+                    // Calculate correct price for party bags
+                    const isPartyBags = supplier.category === 'Party Bags' ||
+                                       supplier.category?.toLowerCase().includes('party bag')
+
+                    let displayPrice = supplier.packageData?.price || supplier.price || 0
+
+                    if (isPartyBags) {
+                      displayPrice = supplier.partyBagsMetadata?.totalPrice ||
+                                    supplier.packageData?.totalPrice ||
+                                    (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
+                                      ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                                      : null)
+
+                      // If no metadata exists, calculate from per-bag price × guest count
+                      if (!displayPrice) {
+                        const perBagPrice = supplier.price || supplier.priceFrom || 0
+                        const quantity = partyDetails?.guestCount || 10
+                        displayPrice = perBagPrice * quantity
+                      }
+                    }
+
+                    return (
+                      <div key={type} className="flex items-center justify-between">
+                        <span>{supplier.name}</span>
+                        <span className="font-semibold text-gray-900">
+                          £{displayPrice}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Addons List */}
+            {addons && addons.length > 0 && (
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Add-ons</h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  {addons.map((addon) => (
+                    <div key={addon.id} className="flex items-center justify-between">
+                      <span>{addon.name}</span>
                       <span className="font-semibold text-gray-900">
-                        £{supplier.packageData?.price || supplier.price || 0}
+                        £{addon.price || 0}
                       </span>
                     </div>
                   ))}

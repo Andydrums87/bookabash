@@ -21,6 +21,7 @@ import LocalStoragePartyHeader from "../components/ui/LocalStoragePartyHeader"
 import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
+import GoogleOneTap from "@/components/GoogleOneTap"
 
 // Supplier Components
 import SupplierCard from "../components/SupplierCard/SupplierCard"
@@ -1575,8 +1576,9 @@ const handleChildPhotoUpload = async (file) => {
     <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
-      
-  
+
+      {/* Google One Tap Sign In */}
+      <GoogleOneTap />
 
       <AddonProvider
         addAddon={handleAddAddon}
