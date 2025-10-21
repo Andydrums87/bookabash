@@ -59,13 +59,13 @@ const getExtraHourRate = (supplier) => {
   // For venues, extra hours are charged at their standard hourly rate
   if (supplier.serviceType === 'venue' || supplier.category === 'Venues') {
     const hourlyRate = supplier.serviceDetails?.pricing?.hourlyRate || 0;
-    console.log('🏢 VENUE: Using hourly rate for extra hours:', hourlyRate);
+    // console.log('🏢 VENUE: Using hourly rate for extra hours:', hourlyRate);
     return hourlyRate;
   }
 
   // For all other suppliers, use their set extra hour rate
   const extraHourRate = supplier.serviceDetails?.extraHourRate || supplier.extraHourRate || 0;
-  console.log('👥 NON-VENUE: Using extra hour rate:', extraHourRate);
+  // console.log('👥 NON-VENUE: Using extra hour rate:', extraHourRate);
   return extraHourRate;
 };
 
@@ -89,13 +89,6 @@ const calculateAdditionalEntertainerCost = (supplier, guestCount) => {
   const groupSizeMax = serviceDetails.groupSizeMax || supplier.groupSizeMax || 30;
   const additionalEntertainerPrice = serviceDetails.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0;
 
-  console.log('🎭 ENTERTAINER: Additional entertainer calculation:', {
-    supplier: supplier.name,
-    guestCount,
-    groupSizeMax,
-    additionalEntertainerPrice
-  });
-
   // If no additional entertainer price is set, they don't offer this service
   if (additionalEntertainerPrice <= 0) {
     return { 
@@ -111,11 +104,6 @@ const calculateAdditionalEntertainerCost = (supplier, guestCount) => {
     const additionalEntertainers = Math.ceil(excessGuests / groupSizeMax);
     const additionalEntertainerCost = additionalEntertainers * additionalEntertainerPrice;
 
-    console.log('🎭 ENTERTAINER: Additional entertainers required:', {
-      excessGuests,
-      additionalEntertainers,
-      additionalEntertainerCost
-    });
 
     return {
       additionalEntertainers,
@@ -140,33 +128,26 @@ const calculateAdditionalEntertainerCost = (supplier, guestCount) => {
 const getTrueBasePrice = (supplier, partyDetails = {}) => {
   if (!supplier) return 0;
 
-  console.log('🔍 UNIFIED DEBUG: getTrueBasePrice input:', {
-    name: supplier.name,
-    price: supplier.price,
-    originalPrice: supplier.originalPrice,
-    priceFrom: supplier.priceFrom,
-    packageDataPrice: supplier.packageData?.price,
-    packageDataOriginalPrice: supplier.packageData?.originalPrice
-  });
+
 
   // Special handling for party bags
   if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
     // Check if we have partyBagsMetadata with totalPrice (from customization modal)
     if (supplier.partyBagsMetadata?.totalPrice) {
-      console.log('🔍 UNIFIED DEBUG: Using party bags metadata total:', supplier.partyBagsMetadata.totalPrice);
+      // console.log('🔍 UNIFIED DEBUG: Using party bags metadata total:', supplier.partyBagsMetadata.totalPrice);
       return supplier.partyBagsMetadata.totalPrice;
     }
 
     // Check if packageData has totalPrice (for existing party bags)
     if (supplier.packageData?.totalPrice) {
-      console.log('🔍 UNIFIED DEBUG: Using packageData total:', supplier.packageData.totalPrice);
+      // console.log('🔍 UNIFIED DEBUG: Using packageData total:', supplier.packageData.totalPrice);
       return supplier.packageData.totalPrice;
     }
 
     // Calculate from packageData if available
     if (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity) {
       const total = supplier.packageData.price * supplier.packageData.partyBagsQuantity;
-      console.log('🔍 UNIFIED DEBUG: Calculated from packageData:', total);
+      // console.log('🔍 UNIFIED DEBUG: Calculated from packageData:', total);
       return total;
     }
 
@@ -177,15 +158,7 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
                     supplier.packageData?.partyBagsQuantity ||
                     getGuestCount(partyDetails);
     const total = pricePerBag * quantity;
-    console.log('🔍 UNIFIED DEBUG: Party bags fallback calculation:', {
-      pricePerBag,
-      customQuantity: supplier.partyBagsQuantity,
-      metadataQuantity: supplier.partyBagsMetadata?.quantity,
-      packageQuantity: supplier.packageData?.partyBagsQuantity,
-      guestCount: getGuestCount(partyDetails),
-      usingQuantity: quantity,
-      total
-    });
+
     return total;
   }
 
@@ -194,22 +167,22 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 
   if (supplier.originalPrice) {
     basePrice = supplier.originalPrice;
-    console.log('🔍 UNIFIED DEBUG: Using supplier.originalPrice:', basePrice);
+    // console.log('🔍 UNIFIED DEBUG: Using supplier.originalPrice:', basePrice);
   } else if (supplier.price) {
     basePrice = supplier.price;
-    console.log('🔍 UNIFIED DEBUG: Using supplier.price:', basePrice);
+    // console.log('🔍 UNIFIED DEBUG: Using supplier.price:', basePrice);
   } else if (supplier.packageData?.originalPrice) {
     basePrice = supplier.packageData.originalPrice;
-    console.log('🔍 UNIFIED DEBUG: Using supplier.packageData.originalPrice:', basePrice);
+    // console.log('🔍 UNIFIED DEBUG: Using supplier.packageData.originalPrice:', basePrice);
   } else if (supplier.packageData?.price) {
     basePrice = supplier.packageData.price;
-    console.log('🔍 UNIFIED DEBUG: Using supplier.packageData.price:', basePrice);
+    // console.log('🔍 UNIFIED DEBUG: Using supplier.packageData.price:', basePrice);
   } else if (supplier.priceFrom) {
     basePrice = supplier.priceFrom;
-    console.log('🔍 UNIFIED DEBUG: Using supplier.priceFrom as fallback:', basePrice);
+    // console.log('🔍 UNIFIED DEBUG: Using supplier.priceFrom as fallback:', basePrice);
   }
 
-  console.log('🔍 UNIFIED DEBUG: Final base price:', basePrice);
+
   return basePrice;
 };
 

@@ -73,11 +73,11 @@ export default function SupplierQuickViewModal({
           </button>
 
           {/* Supplier Badge */}
-          <div className="absolute top-2 left-2 z-20">
+          {/* <div className="absolute top-2 left-2 z-20">
             <Badge className="bg-primary-500 text-white shadow-lg text-xs">
               {type?.charAt(0).toUpperCase() + type?.slice(1)}
             </Badge>
-          </div>
+          </div> */}
 
           {/* ✅ CAROUSEL INSTEAD OF STATIC IMAGE */}
           <div className="relative w-full h-full overflow-hidden rounded-t-2xl sm:rounded-t-3xl">

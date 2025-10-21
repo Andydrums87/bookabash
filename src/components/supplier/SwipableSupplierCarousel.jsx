@@ -250,13 +250,13 @@ const SwipeableSupplierCarousel = ({
         )}
 
         {/* Image Counter */}
-        {totalImages > 1 && (
+        {/* {totalImages > 1 && (
           <div className="absolute top-2 right-2 z-20">
             <div className="bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/20">
               {currentImageIndex + 1} / {totalImages}
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Dot Indicators */}

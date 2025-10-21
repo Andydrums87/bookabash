@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,6 +22,8 @@ import {
   Package,
   Gift,
   X,
+  CheckCircle,
+  ImageIcon,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -44,6 +45,92 @@ const DEFAULT_CAKE_FLAVORS = [
   { id: "lemon", name: "Lemon Drizzle" },
   { id: "funfetti", name: "Funfetti/Rainbow" },
 ]
+
+// Package Details Modal (Drawer on mobile)
+const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
+  if (!isOpen) return null
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="relative h-48 sm:h-64 flex-shrink-0">
+          <Image
+            src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+            alt={pkg.name}
+            fill
+            className="object-cover"
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-white hover:bg-gray-100 rounded-full p-1.5 sm:p-2 shadow-md transition-colors z-10"
+          >
+            <X size={18} className="sm:w-5 sm:h-5 text-gray-600" />
+          </button>
+          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-auto bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{pkg.name}</h2>
+            <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2">
+              <span className="text-xl sm:text-3xl font-bold text-[hsl(var(--primary-600))]">
+                £{pkg.enhancedPrice || pkg.price}
+              </span>
+              <div className="flex items-center text-gray-600 text-sm sm:text-base">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span>{pkg.duration}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ minHeight: 0 }}>
+          {/* What's Included */}
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">What's Included</h3>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              {pkg.features?.map((item, i) => (
+                <span key={i} className="bg-[hsl(var(--primary-500))] text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Package Description */}
+          {pkg.description && (
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Package Details</h3>
+              <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <div className="whitespace-pre-line text-sm sm:text-base text-gray-700 leading-relaxed">
+                  {pkg.description}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Package Stats */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="bg-[hsl(var(--primary-50))] rounded-xl p-4 text-center">
+              <Clock className="w-6 h-6 text-[hsl(var(--primary-700))] mx-auto mb-2" />
+              <div className="text-sm text-[hsl(var(--primary-700))]">Duration</div>
+              <div className="font-semibold text-[hsl(var(--primary-700))]">{pkg.duration}</div>
+            </div>
+            <div className="bg-[hsl(var(--primary-500))] rounded-xl p-4 text-center">
+              <Star className="w-6 h-6 text-white mx-auto mb-2" />
+              <div className="text-sm text-white">Price</div>
+              <div className="font-semibold text-white">£{pkg.enhancedPrice || pkg.price}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function SupplierCustomizationModal({
   isOpen,
@@ -75,6 +162,10 @@ export default function SupplierCustomizationModal({
 
   // Party bags quantity state - ensure it's always a number
   const [partyBagsQuantity, setPartyBagsQuantity] = useState(Number(partyDetails?.guestCount) || 10)
+
+  // Package details modal state
+  const [showPackageModal, setShowPackageModal] = useState(false)
+  const [selectedPackageForModal, setSelectedPackageForModal] = useState(null)
 
   // Sync party bags quantity with guest count changes
   useEffect(() => {
@@ -365,7 +456,7 @@ export default function SupplierCustomizationModal({
           }
         : null,
     }
-  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails])
+  }, [selectedPackage, supplier, selectedAddons, availableAddons, supplierTypeDetection, effectivePartyDetails, partyBagsQuantity])
 
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
@@ -578,12 +669,12 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-gray-200 p-6 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-white to-gray-50">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl overflow-hidden border-2 border-primary-200 shadow-sm flex-shrink-0">
+        <div className="border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-white to-gray-50">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-primary-200 shadow-sm flex-shrink-0">
               <Image
                 src={supplier.image || supplier.imageUrl || "/placeholder.png"}
                 alt={supplier.name}
@@ -593,12 +684,12 @@ export default function SupplierCustomizationModal({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-gray-900 truncate flex items-center gap-2">
-                {supplierTypeDetection.isCake && <span>🎂</span>}
-                {supplierTypeDetection.isPartyBags && <Gift className="w-5 h-5 text-primary-600" />}
-                {supplier.name}
+              <h2 className="text-base sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                {supplierTypeDetection.isCake && <span className="flex-shrink-0">🎂</span>}
+                {supplierTypeDetection.isPartyBags && <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 flex-shrink-0" />}
+                <span className="truncate">{supplier.name}</span>
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
+              {/* <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
                 {showCakeCustomization
                   ? "Customize your cake order"
                   : supplierTypeDetection.isLeadBased
@@ -606,7 +697,7 @@ export default function SupplierCustomizationModal({
                     : supplierTypeDetection.isTimeBased
                       ? "Time-based pricing"
                       : supplier.category}
-              </p>
+              </p> */}
             </div>
           </div>
           <button
@@ -626,13 +717,13 @@ export default function SupplierCustomizationModal({
               </div>
 
               {supplierTypeDetection.isCake && showCakeCustomization && selectedPackage && (
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border-2 border-orange-200 mb-6">
+                <div className="bg-primary-50 rounded-xl p-5 border-2 border-[hsl(var(--primary-200))] mb-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="font-semibold text-gray-900 flex items-center gap-2 text-lg">
-                        🎂 {selectedPackage.name}
+                        🎂 {selectedPackage.name} 
                       </h4>
-                      <p className="text-sm text-gray-600 mt-1">{selectedPackage.duration}</p>
+                      {/* <p className="text-sm text-gray-600 mt-1">{selectedPackage.duration}</p> */}
                     </div>
                     <div className="text-right">
                       <div className="text-3xl font-bold text-orange-600">£{calculateModalPricing.packagePrice}</div>
@@ -660,56 +751,142 @@ export default function SupplierCustomizationModal({
               )}
 
               {!showCakeCustomization && (
-                <div className="space-y-3">
-                  {packages.map((pkg) => (
-                    <Card
-                      key={pkg.id}
-                      className={`cursor-pointer transition-all duration-200 ${
-                        selectedPackageId === pkg.id
-                          ? "ring-2 ring-[hsl(var(--primary-500))] bg-primary-50 shadow-md"
-                          : "hover:shadow-md hover:border-[hsl(var(--primary-200))]"
-                      }`}
-                      onClick={() => setSelectedPackageId(pkg.id)}
-                    >
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold text-gray-900 text-base">{pkg.name}</h4>
-                              {pkg.popular && (
-                                <Badge className="bg-primary-500 text-white text-xs px-2 py-0.5">Popular</Badge>
-                              )}
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mb-3">
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-4 h-4" />
-                                <span>{pkg.duration}</span>
+                <div className="relative -mx-6">
+                  {/* Horizontal Scroll Container */}
+                  <div
+                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    style={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch'
+                    }}
+                  >
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackageId === pkg.id
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 cursor-pointer group relative flex-shrink-0 w-[180px] snap-center my-1 ${
+                            isSelected
+                              ? "ring-2 ring-[hsl(var(--primary-500))] scale-[1.02]"
+                              : "hover:shadow-lg hover:ring-2 hover:ring-gray-200"
+                          }`}
+                          onClick={() => setSelectedPackageId(pkg.id)}
+                        >
+                          {/* Package Image with Mask */}
+                          {pkg.image || pkg.imageUrl ? (
+                            <div className="relative w-full">
+                              <div
+                                className="relative w-[85%] h-[120px] mx-auto mt-1"
+                                style={{
+                                  WebkitMaskImage: 'url("/image.svg")',
+                                  WebkitMaskRepeat: 'no-repeat',
+                                  WebkitMaskSize: 'contain',
+                                  WebkitMaskPosition: 'center',
+                                  maskImage: 'url("/image.svg")',
+                                  maskRepeat: 'no-repeat',
+                                  maskSize: 'contain',
+                                  maskPosition: 'center',
+                                }}
+                              >
+                                <Image
+                                  src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+                                  alt={pkg.name}
+                                  fill
+                                  className="object-cover group-hover:brightness-110 transition-all duration-300"
+                                  sizes="180px"
+                                />
                               </div>
-                              {pkg.features[1] && (
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="w-4 h-4" />
-                                  <span>{pkg.features[1]}</span>
-                                </div>
+                            </div>
+                          ) : (
+                            <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                              <ImageIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+
+                          {/* Package Info */}
+                          <div className="p-2 text-center">
+                            {/* Title */}
+                            <div className="flex items-center justify-center gap-1 mb-1">
+                              <h4 className="font-bold text-gray-800 text-xs truncate">
+                                {pkg.name} 
+                              </h4>
+                              {pkg.popular && (
+                                <Badge className="bg-[hsl(var(--primary-500))] text-white text-[10px] px-1.5 py-0">
+                                  ★
+                                </Badge>
                               )}
                             </div>
 
-                            <p className="text-sm text-gray-600 line-clamp-2">{pkg.description}</p>
+                            {/* Price */}
+                            <div className="mb-1">
+                              <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                                £{pkg.enhancedPrice} 
+                              </p>
+                              {pkg.enhancedPrice !== pkg.price && (
+                                <p className="text-[10px] text-gray-500 line-through">£{pkg.price}</p>
+                              )}
+                            </div>
+
+                            {/* Duration */}
+                            <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] mb-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{pkg.duration}</span>
+                            </div>
+
+                            {/* View Details Button */}
+                            <button
+                              className="w-full text-[hsl(var(--primary-600))] hover:text-[hsl(var(--primary-700))] transition-colors text-[10px] py-1 font-medium"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedPackageForModal(pkg)
+                                setShowPackageModal(true)
+                              }}
+                            >
+                              Details
+                            </button>
                           </div>
 
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-2xl font-bold text-primary-600">£{pkg.enhancedPrice}</div>
-                            {pkg.enhancedPrice !== pkg.price && (
-                              <div className="text-xs text-gray-500 line-through">£{pkg.price}</div>
-                            )}
-                            {selectedPackageId === pkg.id && (
-                              <Check className="w-5 h-5 text-primary-500 mt-2 ml-auto" />
-                            )}
-                          </div>
+                          {/* Selection Indicator */}
+                          {isSelected && (
+                            <div className="absolute top-1 right-1 bg-[hsl(var(--primary-500))] rounded-full p-1 shadow-md text-white">
+                              <CheckCircle size={12} />
+                            </div>
+                          )}
+
+                          {/* Deselect Button */}
+                          {isSelected && (
+                            <button
+                              className="absolute top-1 left-1 bg-gray-500 hover:bg-red-500 text-white rounded-full p-1 shadow-md transition-all duration-200 opacity-80 hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedPackageId(null)
+                              }}
+                              title="Deselect package"
+                            >
+                              <X size={10} />
+                            </button>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      )
+                    })}
+                  </div>
+
+                  {/* Scroll Indicator */}
+                  {packages.length > 1 && (
+                    <div className="flex justify-center gap-1 mt-1">
+                      {packages.map((pkg, index) => (
+                        <div
+                          key={pkg.id}
+                          className={`h-1 rounded-full transition-all duration-300 ${
+                            selectedPackageId === pkg.id
+                              ? 'w-6 bg-[hsl(var(--primary-500))]'
+                              : 'w-1 bg-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -729,7 +906,7 @@ export default function SupplierCustomizationModal({
                       </div>
                     ) : (
                       <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-                        <SelectTrigger className="w-full h-12 bg-white border-2 border-gray-200 hover:border-primary-300 rounded-lg">
+                        <SelectTrigger className="w-full h-12 px-3 bg-white border-2 border-gray-200 hover:border-primary-300 rounded-lg">
                           <SelectValue placeholder="Select a flavor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -745,7 +922,7 @@ export default function SupplierCustomizationModal({
 
                   <div>
                     <Label className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2 block">
-                      <MessageSquare className="w-4 h-4" />
+                      {/* <MessageSquare className="w-4 h-4" /> */}
                       Special Requests or Custom Message
                     </Label>
                     <Textarea
@@ -878,18 +1055,21 @@ export default function SupplierCustomizationModal({
                   {availableAddons.map((addon) => (
                     <div
                       key={addon.id}
-                      className="flex items-start gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-primary-300 hover:bg-gray-50 transition-all cursor-pointer"
-                      onClick={() => handleAddonToggle(addon.id)}
+                      className="flex items-start gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-primary-300 hover:bg-gray-50 transition-all"
                     >
                       <Checkbox
                         id={addon.id}
                         checked={selectedAddons.includes(addon.id)}
                         onCheckedChange={() => handleAddonToggle(addon.id)}
-                        className="data-[state=checked]:bg-[hsl(var(--primary-500))]data-[state=checked]:border-[hsl(var(--primary-200))]0 mt-0.5"
+                        className="data-[state=checked]:bg-[hsl(var(--primary-500))] data-[state=checked]:border-[hsl(var(--primary-500))] mt-0.5 cursor-pointer"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <label htmlFor={addon.id} className="font-medium text-gray-900 cursor-pointer">
+                          <label
+                            htmlFor={addon.id}
+                            className="font-medium text-gray-900 cursor-pointer"
+                            onClick={() => handleAddonToggle(addon.id)}
+                          >
                             {addon.name}
                           </label>
                           {addon.popular && (
@@ -1007,6 +1187,18 @@ export default function SupplierCustomizationModal({
           </div>
         </div>
       </div>
+
+      {/* Package Details Modal */}
+      {showPackageModal && selectedPackageForModal && (
+        <PackageDetailsModal
+          pkg={selectedPackageForModal}
+          isOpen={showPackageModal}
+          onClose={() => {
+            setShowPackageModal(false)
+            setSelectedPackageForModal(null)
+          }}
+        />
+      )}
     </div>
   )
 }
