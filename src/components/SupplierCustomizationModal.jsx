@@ -47,13 +47,16 @@ const DEFAULT_CAKE_FLAVORS = [
 ]
 
 // Package Details Modal (Drawer on mobile)
-const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected }) => {
+const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected, isPartyBags, partyBagsQuantity, formattedDuration }) => {
   if (!isOpen) return null
 
   const handleChoosePackage = () => {
     onChoosePackage(pkg.id)
     onClose()
   }
+
+  // Calculate display price for party bags
+  const displayPrice = isPartyBags ? (pkg.price * (partyBagsQuantity || 1)).toFixed(2) : (pkg.enhancedPrice || pkg.price)
 
   return (
     <div
@@ -81,13 +84,22 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
           <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-auto bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4">
             <h2 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{pkg.name}</h2>
             <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2">
-              <span className="text-xl sm:text-3xl font-bold text-[hsl(var(--primary-600))]">
-                £{pkg.enhancedPrice || pkg.price}
-              </span>
-              <div className="flex items-center text-gray-600 text-sm sm:text-base">
-                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span>{pkg.duration}</span>
+              <div>
+                <span className="text-xl sm:text-3xl font-bold text-[hsl(var(--primary-600))]">
+                  £{displayPrice}
+                </span>
+                {isPartyBags && (
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    for {partyBagsQuantity || 1} bags
+                  </p>
+                )}
               </div>
+              {!isPartyBags && (
+                <div className="flex items-center text-gray-600 text-sm sm:text-base">
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <span>{formattedDuration || pkg.duration}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -118,19 +130,6 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
             </div>
           )}
 
-          {/* Package Stats */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div className="bg-[hsl(var(--primary-50))] rounded-xl p-4 text-center">
-              <Clock className="w-6 h-6 text-[hsl(var(--primary-700))] mx-auto mb-2" />
-              <div className="text-sm text-[hsl(var(--primary-700))]">Duration</div>
-              <div className="font-semibold text-[hsl(var(--primary-700))]">{pkg.duration}</div>
-            </div>
-            <div className="bg-[hsl(var(--primary-500))] rounded-xl p-4 text-center">
-              <Star className="w-6 h-6 text-white mx-auto mb-2" />
-              <div className="text-sm text-white">Price</div>
-              <div className="font-semibold text-white">£{pkg.enhancedPrice || pkg.price}</div>
-            </div>
-          </div>
         </div>
 
         {/* Footer with CTA */}
@@ -418,6 +417,21 @@ export default function SupplierCustomizationModal({
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId)
   const selectedFlavorObj = availableFlavors.find((f) => f.id === selectedFlavor) || availableFlavors[0]
+
+  // Helper to format duration for venues
+  const formatDurationText = (duration) => {
+    if (!duration) return duration
+
+    // Check if this is a venue
+    const isVenue = supplier?.category?.toLowerCase() === 'venue' ||
+                    supplier?.type?.toLowerCase() === 'venue'
+
+    if (isVenue && duration.toLowerCase().includes('hour')) {
+      return `${duration} booking (inc. setup & cleanup)`
+    }
+
+    return duration
+  }
 
   // ✅ UPDATED: Unified pricing calculation for modal totals
   const calculateModalPricing = useMemo(() => {
@@ -849,18 +863,31 @@ export default function SupplierCustomizationModal({
 
                             {/* Price */}
                             <div className="mb-1">
-                              <p className="font-bold text-[hsl(var(--primary-600))] text-base">
-                                £{pkg.enhancedPrice} 
-                              </p>
-                              {pkg.enhancedPrice !== pkg.price && (
-                                <p className="text-[10px] text-gray-500 line-through">£{pkg.price}</p>
+                              {supplierTypeDetection.isPartyBags ? (
+                                <>
+                                  <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                                    £{(pkg.price * partyBagsQuantity).toFixed(2)}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500">
+                                    for {partyBagsQuantity} bags
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                                    £{pkg.enhancedPrice}
+                                  </p>
+                                  {pkg.enhancedPrice !== pkg.price && (
+                                    <p className="text-[10px] text-gray-500 line-through">£{pkg.price}</p>
+                                  )}
+                                </>
                               )}
                             </div>
 
                             {/* Duration */}
                             <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] mb-1">
                               <Clock className="w-3 h-3" />
-                              <span>{pkg.duration}</span>
+                              <span>{formatDurationText(pkg.duration)}</span>
                             </div>
 
                             {/* View Details Button */}
@@ -1228,6 +1255,9 @@ export default function SupplierCustomizationModal({
           }}
           onChoosePackage={setSelectedPackageId}
           isSelected={selectedPackageId === selectedPackageForModal.id}
+          isPartyBags={supplierTypeDetection.isPartyBags}
+          partyBagsQuantity={partyBagsQuantity}
+          formattedDuration={formatDurationText(selectedPackageForModal.duration)}
         />
       )}
     </div>

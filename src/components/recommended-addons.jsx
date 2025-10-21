@@ -20,6 +20,7 @@ export default function RecommendedAddons({
   showPricing = true,
   onAddToCart,
   onAddonClick = null,
+  partyDetails = null, // Add partyDetails prop
 }) {
   const [favorites, setFavorites] = useState([])
   const [addingItems, setAddingItems] = useState([])
@@ -27,15 +28,22 @@ export default function RecommendedAddons({
 
   // Get suppliers from your backend
   const { suppliers, loading, error } = useSuppliers()
-  const { hasAddon } = usePartyPlan()
+  const { hasAddon, partyPlan } = usePartyPlan()
+
+  // Get guest count from partyDetails prop or partyPlan
+  const guestCount = partyDetails?.guestCount || partyPlan?.partyDetails?.guestCount || 10
 
   // Convert supplier to addon format helper function
   const convertSupplierToAddon = (supplier) => {
+    const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
+    const addonPrice = isPartyBags ? supplier.priceFrom * guestCount : supplier.priceFrom
+
     return {
       id: supplier.id,
       name: supplier.name,
       description: supplier.description,
-      price: supplier.priceFrom,
+      price: addonPrice,
+      pricePerUnit: supplier.priceFrom, // Keep original per-bag price
       image: supplier.image || supplier.imageUrl,
       category: supplier.category,
       duration: supplier.priceUnit,
@@ -45,7 +53,16 @@ export default function RecommendedAddons({
       popular: supplier.badges?.includes("Highly Rated") || supplier.rating >= 4.8,
       limitedTime: supplier.availability?.includes("Limited") || supplier.availability?.includes("today"),
       features: supplier.features || ["Professional service", "Includes setup", "Perfect for your party"],
-      type: supplier.category // Add type for modal display
+      type: supplier.category, // Add type for modal display
+      // Party bags metadata
+      ...(isPartyBags && {
+        partyBagsQuantity: guestCount,
+        partyBagsMetadata: {
+          pricePerBag: supplier.priceFrom,
+          quantity: guestCount,
+          totalPrice: addonPrice
+        }
+      })
     }
   }
 
@@ -431,17 +448,34 @@ export default function RecommendedAddons({
                                 <h3 className="font-bold text-gray-900 text-sm md:text-base leading-tight line-clamp-2 mb-1">
                                   {supplier.name}
                                 </h3>
-                                {showPricing && (
-                                  <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full inline-block">
-                                    {supplier.priceUnit}
-                                  </div>
-                                )}
+                                {showPricing && (() => {
+                                  const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
+
+                                  if (isPartyBags) {
+                                    return (
+                                      <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full inline-block">
+                                        for {guestCount} bags
+                                      </div>
+                                    )
+                                  }
+
+                                  return (
+                                    <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full inline-block">
+                                      {supplier.priceUnit}
+                                    </div>
+                                  )
+                                })()}
                               </div>
-                              {showPricing && (
-                                <div className="text-lg md:text-xl font-bold text-[hsl(var(--primary-600))] flex-shrink-0">
-                                  £{supplier.priceFrom}
-                                </div>
-                              )}
+                              {showPricing && (() => {
+                                const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
+                                const displayPrice = isPartyBags ? (supplier.priceFrom * guestCount).toFixed(2) : supplier.priceFrom
+
+                                return (
+                                  <div className="text-lg md:text-xl font-bold text-[hsl(var(--primary-600))] flex-shrink-0">
+                                    £{displayPrice}
+                                  </div>
+                                )
+                              })()}
                             </div>
 
                             {/* Compact rating and location */}

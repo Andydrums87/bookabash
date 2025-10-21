@@ -23,11 +23,12 @@ export function useAddonContext() {
 }
 
 // Enhanced Recommended Addons - Works with both dashboard types AND supports modal
-export function RecommendedAddonsWrapper({ 
-  context = "dashboard", 
-  maxItems = 4, 
+export function RecommendedAddonsWrapper({
+  context = "dashboard",
+  maxItems = 4,
   className = "",
-  onAddonClick = null // NEW: Add support for modal approach
+  onAddonClick = null, // NEW: Add support for modal approach
+  partyDetails = null // Add partyDetails prop
 }) {
   const { addAddon: contextAddAddon, hasAddon: contextHasAddon } = useAddonContext()
   
@@ -73,12 +74,13 @@ export function RecommendedAddonsWrapper({
   }
 
   return (
-    <RecommendedAddons 
+    <RecommendedAddons
       context={context}
       maxItems={maxItems}
       onAddToCart={onAddonClick ? null : handleAddToCart} // Only pass if not using modal
       onAddonClick={onAddonClick ? handleAddonInteraction : null} // NEW: Pass click handler for modal
       className={className}
+      partyDetails={partyDetails}
     />
   )
 }

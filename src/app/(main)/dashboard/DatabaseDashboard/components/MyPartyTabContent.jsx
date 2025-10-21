@@ -22,7 +22,8 @@ export default function MyPartyTabContent({
   recommendedSuppliers = {},
   getSupplierDisplayPricing,
   onImHappy,
-  onCustomizationComplete // ✅ NEW PROP
+  onCustomizationComplete, // ✅ NEW PROP
+  onBrowseVenues // ✅ NEW PROP for venue browsing
 }) {
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
@@ -117,7 +118,14 @@ export default function MyPartyTabContent({
                   supplier.packageData?.totalPrice ||
                   (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
                     ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
-                    : (supplier.price || 0))
+                    : null)
+
+      // If no metadata exists, calculate from per-bag price × guest count
+      if (!basePrice) {
+        const perBagPrice = supplier.price || supplier.priceFrom || 0
+        const quantity = partyDetails?.guestCount || 10
+        basePrice = perBagPrice * quantity
+      }
     } else {
       // For non-party-bags: use packageData.price if available, otherwise supplier.price
       basePrice = supplier.packageData?.price || (supplier.price || 0)
@@ -247,7 +255,14 @@ export default function MyPartyTabContent({
                   supplier.packageData?.totalPrice ||
                   (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
                     ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
-                    : (supplier.price || 0))
+                    : null)
+
+      // If no metadata exists, calculate from per-bag price × guest count
+      if (!basePrice) {
+        const perBagPrice = supplier.price || supplier.priceFrom || 0
+        const quantity = partyDetails?.guestCount || 10
+        basePrice = perBagPrice * quantity
+      }
     } else {
       basePrice = supplier.packageData?.price || (supplier.price || 0)
     }
@@ -430,6 +445,18 @@ export default function MyPartyTabContent({
 
                 {/* Supplier Card */}
                 {renderSupplierCard([type, supplier])}
+
+                {/* Venue Change Option */}
+                {type === 'venue' && onBrowseVenues && (
+                  <div className="mt-3 text-center">
+                    <button
+                      onClick={onBrowseVenues}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium underline decoration-dotted underline-offset-2 transition-colors"
+                    >
+                      Want to change venue? Browse other options
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}

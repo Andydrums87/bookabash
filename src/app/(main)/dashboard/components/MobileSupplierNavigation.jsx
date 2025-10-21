@@ -2,7 +2,7 @@
 
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle, Check } from "lucide-react"
+import { Building, Music, Utensils, Palette, Sparkles, Gift, Plus, Camera, Cake, Castle, Check, Users } from "lucide-react"
 import SupplierCard from "./SupplierCard/SupplierCard"
 import Image from "next/image"
 import AddonsSection from "./AddonsSection"
@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import MyPartyTabContent from "../DatabaseDashboard/components/MyPartyTabContent"
+import { useToast } from "@/components/ui/toast"
 
 export default function MobileSupplierNavigation({
   suppliers,
@@ -51,6 +52,7 @@ export default function MobileSupplierNavigation({
 
 }) {
   const router = useRouter()
+  const { toast } = useToast()
 
     // ... (keep all existing supplier types array - no changes needed)
     const supplierTypes = [
@@ -368,6 +370,7 @@ export default function MobileSupplierNavigation({
               onAddToCart={handleAddAddon}
               onAddonClick={onAddonClick}
               className="grid grid-cols-1 gap-3"
+              partyDetails={partyDetails}
             />
           </div>
         )}
@@ -400,7 +403,16 @@ export default function MobileSupplierNavigation({
     // Handle remove supplier
     const handleRemoveSupplier = (type) => {
       if (handleDeleteSupplier) {
+        // Get supplier name before removing
+        const supplierName = suppliers[type]?.name || type
+
         handleDeleteSupplier(type)
+
+        // Show toast notification
+        toast({
+          title: "Supplier removed",
+          description: `${supplierName} has been removed from your party plan`,
+        })
       }
     }
 
@@ -435,6 +447,7 @@ export default function MobileSupplierNavigation({
         onAddSupplier={handleAddSupplier}
         recommendedSuppliers={recommendedSuppliers}
         onCustomizationComplete={onCustomizationComplete}
+        onBrowseVenues={onBrowseVenues}
         onImHappy={() => {
           setShowCompleteCTA(true)
           // Scroll to CTA after it renders
@@ -937,20 +950,86 @@ export default function MobileSupplierNavigation({
 
       {/* ✅ COMPLETE BOOKING CTA - SHOWN AFTER USER CLICKS "I'M HAPPY" */}
       {showCompleteCTA && (
-        <div ref={ctaRef} className="px-4 mt-8 mb-6">
+        <div ref={ctaRef} className="px-4 mt-8 mb-6 space-y-4">
+          {/* Party Details Summary */}
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-3">Your Party Plan</h3>
+
+            {/* Party Info */}
+            <div className="space-y-2 text-sm text-gray-700 mb-4">
+              {partyDetails?.childName && (
+                <p>
+                  <span className="font-semibold">Party for:</span> {partyDetails.childName}{partyDetails.age && `, turning ${partyDetails.age}`}
+                </p>
+              )}
+
+              {partyDetails?.date && (
+                <p>
+                  <span className="font-semibold">Date:</span>{' '}
+                  {new Date(partyDetails.date).toLocaleDateString('en-GB', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                  {partyDetails.time && ` at ${partyDetails.time}`}
+                </p>
+              )}
+
+              {partyDetails?.guestCount && (
+                <p>
+                  <span className="font-semibold">Guests:</span> {partyDetails.guestCount} children
+                </p>
+              )}
+
+              {suppliers?.venue && (
+                <p>
+                  <span className="font-semibold">Venue:</span> {suppliers.venue.name}
+                </p>
+              )}
+
+              {partyDetails?.theme && (
+                <p>
+                  <span className="font-semibold">Theme:</span> <span className="capitalize">{partyDetails.theme.replace(/-/g, ' ')}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Suppliers List */}
+            {Object.keys(suppliers).filter(type => suppliers[type]).length > 0 && (
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Your Suppliers</h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <span>{supplier.name}</span>
+                      <span className="font-semibold text-gray-900">
+                        £{supplier.packageData?.price || supplier.price || 0}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Total */}
+            {totalCost > 0 && (
+              <div className="border-t border-gray-200 mt-3 pt-3 flex items-center justify-between">
+                <span className="font-bold text-base text-gray-900">Total</span>
+                <span className="font-bold text-xl text-gray-900">£{totalCost.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* CTA Button */}
           <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
-            <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
-            <p className="text-sm text-white/90 mb-4">
-              Scroll through the tabs to add more suppliers and customize your plan, or complete your booking now!
-            </p>
             <button
               onClick={() => router.push('/review-book')}
               className="w-full cursor-pointer bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
             >
-              {/* <Check className="w-5 h-5" /> */}
               Complete Booking
             </button>
-            <p className="text-xs text-white/80 text-center mt-3">
+            <p className="text-sm text-white/90 text-center mt-3">
               You'll review your full party plan before any payment
             </p>
           </div>
