@@ -1,20 +1,35 @@
 // components/TemplatesComingSoon.js
+"use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Palette } from "lucide-react"
+import { Palette, ChevronDown, ChevronUp } from "lucide-react"
 
 const TemplatesComingSoon = () => {
+  const [isOpen, setIsOpen] = useState(false)
+
   return (
     <Card className="shadow-xl border-0 bg-gradient-to-br from-gray-50 to-gray-100 backdrop-blur-sm">
       <CardContent className="p-6">
-        <h3 className="text-lg font-bold text-gray-700 mb-3 flex items-center gap-2">
-          <div className="p-2 bg-gray-400 rounded-lg opacity-60">
-            <Palette className="w-4 h-4 text-white" />
-          </div>
-          Pre-made Templates
-        </h3>
-        
-        <div className="text-center py-8">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full text-left flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
+        >
+          <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
+            <div className="p-2 bg-gray-400 rounded-lg opacity-60">
+              <Palette className="w-4 h-4 text-white" />
+            </div>
+            Pre-made Templates
+          </h3>
+          {isOpen ? (
+            <ChevronUp className="w-5 h-5 text-gray-600" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-600" />
+          )}
+        </button>
+
+        {isOpen && (
+          <div className="text-center py-8">
           <div className="text-4xl mb-4 opacity-60">🎨</div>
           <div className="text-xl font-bold text-gray-600 mb-2">Coming Soon!</div>
           <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
@@ -41,6 +56,7 @@ const TemplatesComingSoon = () => {
             ))}
           </div>
         </div>
+        )}
       </CardContent>
     </Card>
   )

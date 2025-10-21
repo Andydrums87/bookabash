@@ -1,15 +1,21 @@
 // hooks/useWizardSteps.js - Updated for AI focus
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export const WIZARD_STEPS = {
   PARTY_DETAILS: 1,
-  CREATE_INVITE: 2,
-  SAVE_COMPLETE: 3
+  GENERATE_INVITE: 2,
+  CHOOSE_INVITE: 3,
+  SAVE_COMPLETE: 4
 }
 
 export const useWizardSteps = (inviteData, generatedImage) => {
   const [currentStep, setCurrentStep] = useState(WIZARD_STEPS.PARTY_DETAILS)
+
+  // Scroll to top whenever step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentStep])
 
   const stepConfig = {
     [WIZARD_STEPS.PARTY_DETAILS]: {
@@ -43,18 +49,25 @@ export const useWizardSteps = (inviteData, generatedImage) => {
         return errors
       }
     },
-    [WIZARD_STEPS.CREATE_INVITE]: {
-      title: "AI Generation",
+    [WIZARD_STEPS.GENERATE_INVITE]: {
+      title: "Generate",
       description: "Create with AI",
+      isComplete: () => false, // Always can proceed from this step
+      canProceed: () => true, // Can always proceed
+      validationErrors: () => []
+    },
+    [WIZARD_STEPS.CHOOSE_INVITE]: {
+      title: "Choose Design",
+      description: "Pick your favorite",
       isComplete: () => {
-        return !!generatedImage // For AI mode, we need a selected AI option
+        return !!generatedImage // Need a selected AI option
       },
       canProceed: () => {
         return !!generatedImage
       },
       validationErrors: () => {
         const errors = []
-        if (!generatedImage) errors.push("Please generate and select an AI invitation option")
+        if (!generatedImage) errors.push("Please select an AI invitation design")
         return errors
       }
     },

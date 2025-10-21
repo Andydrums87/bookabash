@@ -72,11 +72,6 @@ const AIOnlyThemeSelection = ({
               />
             </div>
             
-            <h2 className="text-2xl  font-black text-gray-900 mb-3 flex items-center justify-center gap-2">
-              <Wand2 className="w-6 h-6 text-[hsl(var(--primary-600))]" />
-              Snappy's Magic Workshop
-            </h2>
-            
             <p className="text-gray-700 mb-8 text-lg font-medium leading-relaxed">
                He'll create <span className="font-bold text-[hsl(var(--primary-600))]">5 amazing invitation designs</span> perfectly crafted for {inviteData.childName ? `${inviteData.childName}'s` : 'your'} special party!
             </p>

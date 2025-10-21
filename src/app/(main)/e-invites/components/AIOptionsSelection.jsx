@@ -56,15 +56,15 @@ const MobileAIOptionsSelection = ({
             </p>
           </div>
 
-          {/* Mobile: Horizontal scrollable options */}
-          <div className="flex gap-3 overflow-x-auto pb-2 mb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* Column layout - responsive grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3 mb-4">
             {aiOptions.map((option) => (
-              <div key={option.id} className="flex-shrink-0">
-                <div className="w-32">
+              <div key={option.id}>
+                <div className="w-full">
                   {/* Image - click to preview */}
                   <button
                     onClick={() => handleImageClick(option)}
-                    className="relative w-full h-32 rounded-xl border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-lg active:scale-95 transition-all duration-300 overflow-hidden mb-2"
+                    className="relative w-full aspect-[3/4] rounded-xl border-2 border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-lg active:scale-95 transition-all duration-300 overflow-hidden mb-2"
                   >
                     <img
                       src={option.imageUrl || "/placeholder.png"}

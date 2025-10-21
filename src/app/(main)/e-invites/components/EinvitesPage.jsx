@@ -91,6 +91,21 @@ const EInvitesPage = ({ onSaveSuccess }) => {
   // Local loading state for the complete operation
   const [isCompleting, setIsCompleting] = useState(false)
 
+  // Auto-advance to next step after AI generation completes
+  useEffect(() => {
+    if (
+      !isGeneratingAI &&
+      showAiOptions &&
+      aiOptions.length > 0 &&
+      wizard.currentStep === WIZARD_STEPS.GENERATE_INVITE
+    ) {
+      // Small delay to let users see the success message
+      setTimeout(() => {
+        wizard.nextStep()
+      }, 1500)
+    }
+  }, [isGeneratingAI, showAiOptions, aiOptions.length, wizard.currentStep])
+
   // Enhanced invite data for preview
   const enhancedInviteData = {
     ...inviteData,
@@ -182,21 +197,57 @@ const EInvitesPage = ({ onSaveSuccess }) => {
             />
           </div>
         )
-  
-        case WIZARD_STEPS.CREATE_INVITE:
-          return (
-            <div className="max-w-7xl mx-auto">
-              {/* Mobile Layout: Streamlined Flow */}
-              <div className="lg:hidden space-y-6">
-                {/* AI Generation */}
-                <AIOnlyThemeSelection
-                  generateAIOptions={generateAIOptions}
-                  isGeneratingAI={isGeneratingAI}
-                  selectedAiOption={selectedAiOption}
-                  inviteData={inviteData}
-                />
-                
-                {/* Mobile-Optimized AI Options - Show immediately after generator */}
+
+      case WIZARD_STEPS.GENERATE_INVITE:
+        return (
+          <div className="max-w-4xl mx-auto">
+            <AIOnlyThemeSelection
+              generateAIOptions={generateAIOptions}
+              isGeneratingAI={isGeneratingAI}
+              selectedAiOption={selectedAiOption}
+              inviteData={inviteData}
+            />
+          </div>
+        )
+
+      case WIZARD_STEPS.CHOOSE_INVITE:
+        return (
+          <div className="max-w-7xl mx-auto">
+            {/* Mobile Layout */}
+            <div className="lg:hidden space-y-6">
+              <AIOptionsSelection
+                showAiOptions={showAiOptions}
+                aiOptions={aiOptions}
+                selectedAiOption={selectedAiOption}
+                selectAiOption={selectAiOption}
+                generateAIOptions={generateAIOptions}
+                isGeneratingAI={isGeneratingAI}
+              />
+
+              {/* Templates Coming Soon */}
+              <TemplatesComingSoon />
+
+              {/* Preview - Only show if something is selected, at bottom */}
+              {selectedAiOption && (
+                <div className="bg-white rounded-xl p-4 shadow-lg">
+                  <h3 className="text-lg font-bold mb-3 text-center">Your Selected Design</h3>
+                  <div className="flex justify-center">
+                    <div className="w-48 aspect-[3/4] rounded-lg overflow-hidden shadow-md">
+                      <img
+                        src={selectedAiOption.imageUrl}
+                        alt="Selected Design"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Layout: Side-by-side */}
+            <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+              {/* AI Options - Desktop: Left side */}
+              <div className="lg:col-span-2 space-y-6">
                 <AIOptionsSelection
                   showAiOptions={showAiOptions}
                   aiOptions={aiOptions}
@@ -204,82 +255,39 @@ const EInvitesPage = ({ onSaveSuccess }) => {
                   selectAiOption={selectAiOption}
                   generateAIOptions={generateAIOptions}
                   isGeneratingAI={isGeneratingAI}
+                  selectedTheme={selectedTheme}
+                  setSelectedTheme={setSelectedTheme}
                 />
-        
-                {/* Templates Coming Soon */}
-                <TemplatesComingSoon />
-        
-                {/* Preview - Only show if something is selected, at bottom */}
-                {selectedAiOption && (
-                  <div className="bg-white rounded-xl p-4 shadow-lg">
-                    <h3 className="text-lg font-bold mb-3 text-center">Your Selected Design</h3>
-                    <div className="flex justify-center">
-                      <div className="w-48 aspect-[3/4] rounded-lg overflow-hidden shadow-md">
-                        <img
-                          src={selectedAiOption.imageUrl}
-                          alt="Selected Design"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-        
 
-  
-  
-              {/* Desktop Layout: Side-by-side */}
-              <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-                {/* AI Generation - Desktop: Left side */}
-                <div className="lg:col-span-2 space-y-6">
-                  <AIOnlyThemeSelection
-                    generateAIOptions={generateAIOptions}
-                    isGeneratingAI={isGeneratingAI}
-                    selectedAiOption={selectedAiOption}
-                    inviteData={inviteData}
-                  />
-                  
-                  <AIOptionsSelection
-                    showAiOptions={showAiOptions}
-                    aiOptions={aiOptions}
-                    selectedAiOption={selectedAiOption}
-                    selectAiOption={selectAiOption}
-                    generateAIOptions={generateAIOptions}
-                    isGeneratingAI={isGeneratingAI}
-                    selectedTheme={selectedTheme}
-                    setSelectedTheme={setSelectedTheme}
-                  />
-  
-                  {/* Templates Coming Soon Card */}
-                  <TemplatesComingSoon />
-                </div>
-    
-                {/* Preview - Desktop: Right sidebar */}
-                <div>
-                  <PreviewAndActions
-                    useAIGeneration={true}
-                    selectedAiOption={selectedAiOption}
-                    inviteData={enhancedInviteData}
-                    selectedTheme={selectedTheme}
-                    generatedImage={generatedImage}
-                    saveButtonState={saveButtonState}
-                    saveInviteToPartyPlan={handleSaveInvite}
-                    copyShareableLink={copyShareableLink}
-                    generateShareableLink={generateShareableLink}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    themes={themes}
-                    onLayoutSave={() => {}}
-                  />
-                </div>
+                {/* Templates Coming Soon Card */}
+                <TemplatesComingSoon />
+              </div>
+
+              {/* Preview - Desktop: Right sidebar */}
+              <div>
+                <PreviewAndActions
+                  useAIGeneration={true}
+                  selectedAiOption={selectedAiOption}
+                  inviteData={enhancedInviteData}
+                  selectedTheme={selectedTheme}
+                  generatedImage={generatedImage}
+                  saveButtonState={saveButtonState}
+                  saveInviteToPartyPlan={handleSaveInvite}
+                  copyShareableLink={copyShareableLink}
+                  generateShareableLink={generateShareableLink}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  themes={themes}
+                  onLayoutSave={() => {}}
+                />
               </div>
             </div>
-          )
-  
+          </div>
+        )
+
       case WIZARD_STEPS.SAVE_COMPLETE:
         return (
           <div className="max-w-2xl mx-auto">
-            <SaveCompleteStep 
+            <SaveCompleteStep
               inviteData={enhancedInviteData}
               generatedImage={generatedImage}
               selectedTheme={selectedTheme}
@@ -288,7 +296,7 @@ const EInvitesPage = ({ onSaveSuccess }) => {
             />
           </div>
         )
-  
+
       default:
         return null
     }

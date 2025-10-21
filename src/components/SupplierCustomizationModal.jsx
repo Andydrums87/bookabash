@@ -47,8 +47,13 @@ const DEFAULT_CAKE_FLAVORS = [
 ]
 
 // Package Details Modal (Drawer on mobile)
-const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
+const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected }) => {
   if (!isOpen) return null
+
+  const handleChoosePackage = () => {
+    onChoosePackage(pkg.id)
+    onClose()
+  }
 
   return (
     <div
@@ -126,6 +131,30 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose }) => {
               <div className="font-semibold text-white">£{pkg.enhancedPrice || pkg.price}</div>
             </div>
           </div>
+        </div>
+
+        {/* Footer with CTA */}
+        <div className="border-t border-gray-200 p-4 sm:p-6 bg-white flex-shrink-0">
+          <Button
+            onClick={handleChoosePackage}
+            className={`w-full h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl transition-all ${
+              isSelected
+                ? "bg-green-500 hover:bg-green-600 text-white"
+                : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white shadow-lg"
+            }`}
+          >
+            {isSelected ? (
+              <>
+                <Check className="w-5 h-5 mr-2" />
+                Package Selected
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Choose This Package
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
@@ -1197,6 +1226,8 @@ export default function SupplierCustomizationModal({
             setShowPackageModal(false)
             setSelectedPackageForModal(null)
           }}
+          onChoosePackage={setSelectedPackageId}
+          isSelected={selectedPackageId === selectedPackageForModal.id}
         />
       )}
     </div>
