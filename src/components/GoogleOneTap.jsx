@@ -5,14 +5,14 @@ import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/toast"
 
-export default function GoogleOneTap({ onSuccess }) {
+export default function GoogleOneTap({ onSuccess, shouldInitialize = true }) {
   const router = useRouter()
   const { toast } = useToast()
   const hasInitialized = useRef(false)
 
   useEffect(() => {
-    // Only initialize once
-    if (hasInitialized.current) return
+    // Only initialize once and when allowed
+    if (hasInitialized.current || !shouldInitialize) return
 
     // Check if user is already signed in
     const checkAuth = async () => {
@@ -40,7 +40,7 @@ export default function GoogleOneTap({ onSuccess }) {
         script.remove()
       }
     }
-  }, [])
+  }, [shouldInitialize])
 
   const initializeGoogleOneTap = () => {
     if (!window.google) {
@@ -68,25 +68,29 @@ export default function GoogleOneTap({ onSuccess }) {
         cancel_on_tap_outside: true,
       })
 
+ 
+
       console.log("Attempting to display One Tap prompt...")
-      window.google.accounts.id.prompt((notification) => {
-        console.log("One Tap notification:", notification)
-        if (notification.isNotDisplayed()) {
-          console.log("❌ One Tap NOT displayed. Reason:", notification.getNotDisplayedReason())
-        } else if (notification.isSkippedMoment()) {
-          console.log("⏭️ One Tap skipped. Reason:", notification.getSkippedReason())
-        } else if (notification.isDismissedMoment()) {
-          console.log("🚫 One Tap dismissed. Reason:", notification.getDismissedReason())
-        } else {
-          console.log("✅ One Tap displayed successfully!")
-        }
-      })
+      setTimeout(() => {
+        window.google.accounts.id.prompt((notification) => {
+          console.log("One Tap notification:", notification)
+          if (notification.isSkippedMoment()) {
+            console.log("⏭️ One Tap skipped. Reason:", notification.getSkippedReason())
+          }
+        })
+      }, 500)
     } catch (error) {
       console.error("Error initializing Google One Tap:", error)
     }
   }
 
   const handleCredentialResponse = async (response) => {
+    console.log("✅ One Tap callback fired", response)
+    if (!response?.credential) {
+      console.error("❌ No credential received from Google")
+      return
+    }
+    console.log("🔐 ID token length:", response.credential.length)
     try {
       console.log("✅ Credential received from Google One Tap")
       const idToken = response.credential

@@ -105,6 +105,7 @@ export default function LocalStorageDashboard() {
   // Welcome popup state
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false)
+  const [welcomeFormSubmitted, setWelcomeFormSubmitted] = useState(false)
   const [isTourActiveOnNavigation, setIsTourActiveOnNavigation] = useState(false)
 
   // General state
@@ -273,10 +274,15 @@ const childPhotoRef = useRef(null)
         }
         
         // Check multiple completion flags
-        welcomeCompleted = welcomeCompleted || 
-                          welcomeCompletedFlag === 'true' || 
+        welcomeCompleted = welcomeCompleted ||
+                          welcomeCompletedFlag === 'true' ||
                           welcomeCompletedSession === 'true'
-        
+
+        // Set state if welcome was already completed
+        if (welcomeCompleted) {
+          setWelcomeFormSubmitted(true)
+        }
+
         showWelcomeFlag = showWelcomeRaw === 'true' || redirectWelcome === 'true'
         
         console.log('💾 LocalStorage Check:', {
@@ -666,13 +672,14 @@ useEffect(() => {
 
 const handleNameSubmit = (nameData) => {
   console.log('🎉 Welcome form completed:', nameData)
-  
+
   try {
     if (typeof originalHandleNameSubmit === 'function') {
       originalHandleNameSubmit(nameData)
     }
-    
+
     setWelcomeJustCompleted(true)
+    setWelcomeFormSubmitted(true) // Track that form was submitted
     
     // Set completion flags to prevent re-showing
     try {
@@ -1577,8 +1584,8 @@ const handleChildPhotoUpload = async (file) => {
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
 
-      {/* Google One Tap Sign In */}
-      <GoogleOneTap />
+      {/* Google One Tap Sign In - Only show after welcome form is submitted */}
+      <GoogleOneTap shouldInitialize={welcomeFormSubmitted} />
 
       <AddonProvider
         addAddon={handleAddAddon}
