@@ -702,10 +702,13 @@ addAddonToPlan(addon) {
       .reduce((total, type) => {
         const supplier = plan[type];
         
-        // Special handling for party bags - calculate based on current guest count
+        // Special handling for party bags - use total price from metadata or price directly
         if (type === 'partyBags') {
-          const basePrice = supplier.packageData?.basePrice || supplier.pricePerBag || supplier.price || 5.00;
-          return total + (basePrice * guestCount);
+          const totalPrice = supplier.partyBagsMetadata?.totalPrice ||
+                            supplier.packageData?.totalPrice ||
+                            supplier.price ||
+                            0;
+          return total + totalPrice;
         }
         
         // Normal pricing for everything else

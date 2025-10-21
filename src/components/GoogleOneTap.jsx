@@ -88,14 +88,21 @@ export default function GoogleOneTap({ onSuccess }) {
 
   const handleCredentialResponse = async (response) => {
     try {
+      console.log("✅ Credential received from Google One Tap")
       const idToken = response.credential
+      console.log("🔐 ID Token:", idToken ? "Received" : "Missing")
 
+      console.log("📤 Sending to Supabase...")
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: idToken,
       })
 
+      console.log("📥 Supabase response:", { data, error })
+
       if (error) throw error
+
+      console.log("✅ Successfully signed in!")
 
       toast({
         title: "Welcome back!",
@@ -108,7 +115,7 @@ export default function GoogleOneTap({ onSuccess }) {
         router.refresh()
       }
     } catch (error) {
-      console.error("Error signing in with Google One Tap:", error)
+      console.error("❌ Error signing in with Google One Tap:", error)
       toast({
         title: "Sign in failed",
         description: "There was a problem signing in with Google. Please try again.",

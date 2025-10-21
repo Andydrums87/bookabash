@@ -120,11 +120,9 @@ export default function MyPartyTabContent({
                     ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
                     : null)
 
-      // If no metadata exists, calculate from per-bag price × guest count
+      // If no metadata exists, use price as-is (it's likely already the total)
       if (!basePrice) {
-        const perBagPrice = supplier.price || supplier.priceFrom || 0
-        const quantity = partyDetails?.guestCount || 10
-        basePrice = perBagPrice * quantity
+        basePrice = supplier.price || supplier.priceFrom || 0
       }
     } else {
       // For non-party-bags: use packageData.price if available, otherwise supplier.price
@@ -257,11 +255,9 @@ export default function MyPartyTabContent({
                     ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
                     : null)
 
-      // If no metadata exists, calculate from per-bag price × guest count
+      // If no metadata exists, use price as-is (it's likely already the total)
       if (!basePrice) {
-        const perBagPrice = supplier.price || supplier.priceFrom || 0
-        const quantity = partyDetails?.guestCount || 10
-        basePrice = perBagPrice * quantity
+        basePrice = supplier.price || supplier.priceFrom || 0
       }
     } else {
       basePrice = supplier.packageData?.price || (supplier.price || 0)

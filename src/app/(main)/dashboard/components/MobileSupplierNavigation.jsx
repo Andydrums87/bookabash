@@ -1014,11 +1014,9 @@ export default function MobileSupplierNavigation({
                                       ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
                                       : null)
 
-                      // If no metadata exists, calculate from per-bag price × guest count
+                      // If no metadata exists, use price as-is (it's likely already the total)
                       if (!displayPrice) {
-                        const perBagPrice = supplier.price || supplier.priceFrom || 0
-                        const quantity = partyDetails?.guestCount || 10
-                        displayPrice = perBagPrice * quantity
+                        displayPrice = supplier.price || supplier.priceFrom || 0
                       }
                     }
 
