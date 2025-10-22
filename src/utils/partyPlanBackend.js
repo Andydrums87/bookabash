@@ -220,12 +220,40 @@ addSupplierToPlan(supplier, selectedPackage = null) {
     }
 
     const packageAddons = selectedPackage?.addons || selectedPackage?.selectedAddons || [];
-    
+
+    // Calculate price - special handling for party bags
+    let calculatedPrice = selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom;
+    let partyBagsMetadata = null;
+
+    const isPartyBags = supplier.category === 'Party Bags' ||
+                       supplier.category?.toLowerCase().includes('party bag');
+
+    if (isPartyBags && !selectedPackage) {
+      // Get guest count for party bags calculation
+      let guestCount = 10;
+      try {
+        const partyDetails = JSON.parse(localStorage.getItem('party_details') || '{}');
+        guestCount = parseInt(partyDetails.guestCount) || 10;
+      } catch (error) {
+        // Use default
+      }
+
+      const perBagPrice = supplier.priceFrom || supplier.price || 0;
+      calculatedPrice = perBagPrice * guestCount;
+
+      // Store metadata for later reference
+      partyBagsMetadata = {
+        perBagPrice,
+        quantity: guestCount,
+        totalPrice: calculatedPrice
+      };
+    }
+
     const supplierData = {
       id: supplier.id,
       name: supplier.name,
       description: supplier.description,
-      price: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
+      price: calculatedPrice,
       status: "pending",
       image: supplier.image,
       category: supplier.category,
@@ -243,12 +271,13 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       advanceBookingDays: supplier.advanceBookingDays,
       availabilityNotes: supplier.availabilityNotes,
       weekendPremium: supplier.weekendPremium, // This line was added
-      
+
       packageData: selectedPackage || null,
       selectedAddons: packageAddons,
-      totalPrice: selectedPackage?.totalPrice || selectedPackage?.price || supplier.priceFrom,
-      originalPrice: selectedPackage?.originalPrice || selectedPackage?.price || supplier.priceFrom,
-      addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0
+      totalPrice: calculatedPrice,
+      originalPrice: selectedPackage?.originalPrice || calculatedPrice,
+      addonsPriceTotal: selectedPackage?.addonsPriceTotal || 0,
+      partyBagsMetadata: partyBagsMetadata // Store party bags metadata
     };
 
     // DEBUG: Check what we're about to save

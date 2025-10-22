@@ -23,7 +23,8 @@ export default function MyPartyTabContent({
   getSupplierDisplayPricing,
   onImHappy,
   onCustomizationComplete, // ✅ NEW PROP
-  onBrowseVenues // ✅ NEW PROP for venue browsing
+  onBrowseVenues, // ✅ NEW PROP for venue browsing
+  onEditPartyDetails // ✅ NEW PROP for editing party details
 }) {
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
@@ -402,9 +403,18 @@ export default function MyPartyTabContent({
       {/* Party Details - Mobile Only */}
       {allSuppliers.length > 0 && (
         <div className="md:hidden bg-gray-50 rounded-lg p-4 border border-gray-200">
-          {/* <h3 className="text-lg font-bold text-gray-900 mb-3">
-            {fullChildName}'s {partyDetails?.childAge || 6}th Birthday Party
-          </h3> */}
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-gray-900">Party Details</h4>
+            <button
+              onClick={onEditPartyDetails}
+              className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit
+            </button>
+          </div>
           <div className="space-y-2 text-sm text-gray-700">
             <p>
               <span className="font-semibold">Date:</span> {formatDate(partyDetails?.date)}

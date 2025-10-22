@@ -12,7 +12,6 @@ import {
   Star,
   Check,
   Plus,
-  Users,
   Sparkles,
   ChefHat,
   MessageSquare,
@@ -64,7 +63,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -715,9 +714,9 @@ export default function SupplierCustomizationModal({
         className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-white to-gray-50">
+        <div className="p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-primary-500">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-primary-200 shadow-sm flex-shrink-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-white/30 shadow-sm flex-shrink-0">
               <Image
                 src={supplier.image || supplier.imageUrl || "/placeholder.png"}
                 alt={supplier.name}
@@ -727,27 +726,18 @@ export default function SupplierCustomizationModal({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2">
                 {supplierTypeDetection.isCake && <span className="flex-shrink-0">🎂</span>}
-                {supplierTypeDetection.isPartyBags && <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 flex-shrink-0" />}
+                {supplierTypeDetection.isPartyBags && <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" />}
                 <span className="truncate">{supplier.name}</span>
               </h2>
-              {/* <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
-                {showCakeCustomization
-                  ? "Customize your cake order"
-                  : supplierTypeDetection.isLeadBased
-                    ? "Lead-time based supplier"
-                    : supplierTypeDetection.isTimeBased
-                      ? "Time-based pricing"
-                      : supplier.category}
-              </p> */}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+            className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors flex-shrink-0"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-5 h-5 text-white" />
           </button>
         </div>
 
@@ -1004,94 +994,56 @@ export default function SupplierCustomizationModal({
             )}
 
             {supplierTypeDetection.isPartyBags && selectedPackage && (
-              <section className="bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl p-6 border-2 border-[hsl(var(--primary-200))]">
-                <div className="flex items-center gap-2 mb-5">
-                  <Gift className="w-6 h-6 text-primary-600" />
-                  <h4 className="font-bold text-lg text-primary-900">Number of Party Bags</h4>
+              <section className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="mb-3">
+                  <h4 className="font-semibold text-gray-900 text-sm mb-1">Number of Party Bags</h4>
+                  <p className="text-xs text-gray-600">
+                    Pre-set to match your guest count ({partyDetails?.guestCount || 10}), adjust if needed
+                  </p>
                 </div>
 
-                <div className="bg-white/90 rounded-lg p-4 mb-5 border border-[hsl(var(--primary-200))]">
-                  <div className="flex items-start gap-3">
-                    <Users className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700">
-                      Your party has <strong>{partyDetails?.guestCount || 10} guests</strong>. We've pre-set the
-                      quantity to match, but you can adjust as needed.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-6 mb-5">
+                <div className="flex items-center justify-between gap-4 mb-4">
                   <Button
                     type="button"
                     variant="outline"
-                    size="lg"
+                    size="sm"
                     onClick={() => setPartyBagsQuantity(Math.max(1, Number(partyBagsQuantity) - 1))}
-                    className="h-14 w-14 rounded-full border-2 border-primary-400 hover:bg-primary-100"
+                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
                     disabled={Number(partyBagsQuantity) <= 1}
                   >
-                    <span className="text-2xl font-bold">−</span>
+                    <span className="text-lg">−</span>
                   </Button>
 
-                  <div className="text-center min-w-[120px]">
-                    <div className="text-5xl font-bold text-primary-900">{partyBagsQuantity}</div>
-                    <div className="text-sm text-gray-600 mt-1">party bags</div>
+                  <div className="text-center">
+                    <div className="text-2xl font-semibold text-gray-900">{partyBagsQuantity}</div>
+                    <div className="text-xs text-gray-500">bags</div>
                   </div>
 
                   <Button
                     type="button"
                     variant="outline"
-                    size="lg"
+                    size="sm"
                     onClick={() => setPartyBagsQuantity(Number(partyBagsQuantity) + 1)}
-                    className="h-14 w-14 rounded-full border-2 border-[hsl(var(--primary-400))] hover:bg-[hsl(var(--primary-100))]"
+                    className="h-8 w-8 rounded border border-gray-300 hover:bg-gray-100"
                   >
-                    <span className="text-2xl font-bold">+</span>
+                    <span className="text-lg">+</span>
                   </Button>
                 </div>
 
-                <div className="flex gap-2 justify-center flex-wrap mb-5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPartyBagsQuantity(Number(partyDetails?.guestCount) || 10)}
-                    className="text-xs hover:bg-[hsl(var(--primary-100))]"
-                  >
-                    Match guests ({partyDetails?.guestCount || 10})
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPartyBagsQuantity(Number(partyDetails?.guestCount || 10) + 2)}
-                    className="text-xs hover:bg-[hsl(var(--primary-100))]"
-                  >
-                    +2 extras
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPartyBagsQuantity(Number(partyDetails?.guestCount || 10) + 5)}
-                    className="text-xs hover:bg-[hsl(var(--primary-100))]"
-                  >
-                    +5 extras
-                  </Button>
-                </div>
-
-                <div className="bg-white rounded-lg p-4 border border-primary-200">
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700">Price per bag:</span>
+                <div className="bg-white rounded p-3 border border-gray-200">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Price per bag:</span>
                       <span className="font-medium text-gray-900">£{selectedPackage.price.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700">Quantity:</span>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Quantity:</span>
                       <span className="font-medium text-gray-900">{partyBagsQuantity} bags</span>
                     </div>
-                    <div className="border-t border-primary-200 pt-2.5">
+                    <div className="border-t border-gray-200 pt-2">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-primary-900">Total:</span>
-                        <span className="font-bold text-2xl text-primary-900">
+                        <span className="font-semibold text-gray-900 text-sm">Total:</span>
+                        <span className="font-bold text-xl text-gray-900">
                           £{(selectedPackage.price * Number(partyBagsQuantity)).toFixed(2)}
                         </span>
                       </div>
@@ -1145,42 +1097,41 @@ export default function SupplierCustomizationModal({
             )}
 
             {!showCakeCustomization && !supplierTypeDetection.isPartyBags && (
-              <section className="bg-gradient-to-br from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] rounded-xl p-5 border-2 border-[hsl(var(--primary-200))]">
-                <div className="flex items-center gap-2 mb-4">
-                  <Star className="w-5 h-5 text-primary-600" />
-                  <h4 className="font-semibold text-gray-900 text-lg">Price Summary</h4>
+              <section className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-900 text-base">Price Summary</h4>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700">
+                    <span className="text-sm text-gray-600">
                       {selectedPackage?.name}
                       {calculateModalPricing.pricingInfo?.isTimeBased && (
-                        <span className="text-blue-600 text-sm ml-2">
+                        <span className="text-gray-500 text-xs ml-2">
                           ({formatDuration(effectivePartyDetails?.duration || 2)})
                         </span>
                       )}
                     </span>
-                    <span className="font-semibold text-gray-900 text-lg">£{calculateModalPricing.packagePrice}</span>
+                    <span className="font-semibold text-gray-900">£{calculateModalPricing.packagePrice}</span>
                   </div>
 
                   {selectedAddons.map((addonId) => {
                     const addon = availableAddons.find((a) => a.id === addonId)
                     return addon ? (
                       <div key={addonId} className="flex justify-between items-center">
-                        <span className="text-gray-700">{addon.name}</span>
+                        <span className="text-sm text-gray-600">{addon.name}</span>
                         <span className="font-medium text-gray-900">£{addon.price}</span>
                       </div>
                     ) : null
                   })}
 
-                  <div className="border-t-2 border-[hsl(var(--primary-300))] pt-3 flex justify-between items-center">
-                    <span className="font-bold text-gray-900 text-lg">Total</span>
-                    <span className="font-bold text-3xl text-primary-600">£{totalPrice}</span>
+                  <div className="border-t border-gray-300 pt-3 mt-3 flex justify-between items-center">
+                    <span className="font-bold text-gray-900">Total</span>
+                    <span className="font-bold text-2xl text-gray-900">£{totalPrice}</span>
                   </div>
 
                   {calculateModalPricing.hasEnhancedPricing && (
-                    <div className="text-xs text-primary-700 bg-white/60 rounded-lg p-3 text-center">
-                      ✨ Enhanced pricing applied based on your party details
+                    <div className="text-xs text-gray-600 bg-gray-100 rounded p-2.5 text-center mt-3">
+                      Enhanced pricing applied based on your party details
                     </div>
                   )}
                 </div>

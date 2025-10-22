@@ -108,6 +108,9 @@ export default function LocalStorageDashboard() {
   const [welcomeFormSubmitted, setWelcomeFormSubmitted] = useState(false)
   const [isTourActiveOnNavigation, setIsTourActiveOnNavigation] = useState(false)
 
+  // Party header expansion state
+  const [isPartyHeaderExpanded, setIsPartyHeaderExpanded] = useState(false)
+
   // General state
   const [isUpdating, setIsUpdating] = useState(false)
   const [selectedAddon, setSelectedAddon] = useState(null)
@@ -669,6 +672,13 @@ useEffect(() => {
   
 }, [isMounted, partyDetails, partyPlan]) // ✅ Use partyPlan instead of suppliers
 
+
+// Handle edit party details - expand header and scroll to it
+const handleEditPartyDetails = () => {
+  setIsPartyHeaderExpanded(true)
+  // Scroll to top where the header is
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const handleNameSubmit = (nameData) => {
   console.log('🎉 Welcome form completed:', nameData)
@@ -1595,10 +1605,12 @@ const handleChildPhotoUpload = async (file) => {
       >
         <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
           <div data-tour="party-header">
-          <LocalStoragePartyHeader 
+          <LocalStoragePartyHeader
   theme={partyTheme}
   partyDetails={partyDetails}
   onPartyDetailsChange={handlePartyDetailsUpdate}
+  forceExpanded={isPartyHeaderExpanded}
+  onExpandChange={setIsPartyHeaderExpanded}
   suppliers={suppliers}
   onPartyRebuilt={handlePartyRebuilt}
 
@@ -1893,6 +1905,7 @@ const handleChildPhotoUpload = async (file) => {
                     onCustomizationComplete={handleCustomizationComplete}
                     showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
                     onBrowseVenues={() => setShowVenueBrowserModal(true)}
+                    onEditPartyDetails={handleEditPartyDetails}
                   />
                 </div>
               </div>

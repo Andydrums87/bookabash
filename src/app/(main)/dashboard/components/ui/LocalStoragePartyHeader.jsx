@@ -1,7 +1,7 @@
 // LocalStoragePartyHeader.jsx - Full editing capabilities for localStorage users
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -606,14 +606,31 @@ export default function LocalStoragePartyHeader({
   childPhoto = null,
   onPhotoUpload = null,
   uploadingPhoto = false,
+  forceExpanded = false, // ✅ NEW: Allow external control of expansion
+  onExpandChange = null, // ✅ NEW: Callback when expansion changes
 }) {
   const [editingModal, setEditingModal] = useState(null)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
   const [pendingChanges, setPendingChanges] = useState(null)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(forceExpanded)
 
   const currentTheme = theme
   const { toast } = useToast()
+
+  // Sync with forceExpanded prop
+  useEffect(() => {
+    if (forceExpanded !== isExpanded) {
+      setIsExpanded(forceExpanded)
+    }
+  }, [forceExpanded])
+
+  // Helper to update expansion state
+  const updateExpanded = (newValue) => {
+    setIsExpanded(newValue)
+    if (onExpandChange) {
+      onExpandChange(newValue)
+    }
+  }
 
   // Get theme emoji helper
   const getThemeEmoji = () => {
@@ -1004,7 +1021,7 @@ export default function LocalStoragePartyHeader({
                   </button>
 
                   <button
-                    onClick={() => setIsExpanded(!isExpanded)}
+                    onClick={() => updateExpanded(!isExpanded)}
                     className="md:hidden hover:scale-110 transition-transform"
                     aria-label={isExpanded ? "Show less" : "Show more"}
                   >
@@ -1027,12 +1044,9 @@ export default function LocalStoragePartyHeader({
               <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <button
                   onClick={() => handleCardClick("theme")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-white/90" />
-                    <p className="text-xs text-white/80 font-medium">Theme</p>
-                  </div>
+                  <p className="text-xs text-white/70 font-medium mb-1">Theme</p>
                   <p suppressHydrationWarning={true} className="font-bold text-sm text-white leading-tight">
                     {capitalizedTheme}
                   </p>
@@ -1040,12 +1054,9 @@ export default function LocalStoragePartyHeader({
 
                 <button
                   onClick={() => handleCardClick("date")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-white/90" />
-                    <p className="text-xs text-white/80 font-medium">Date</p>
-                  </div>
+                  <p className="text-xs text-white/70 font-medium mb-1">Date</p>
                   <p suppressHydrationWarning={true} className="font-bold text-sm text-white leading-tight">
                     {getDisplayDate()}
                   </p>
@@ -1053,12 +1064,9 @@ export default function LocalStoragePartyHeader({
 
                 <button
                   onClick={() => handleCardClick("time")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Clock className="w-3.5 h-3.5 text-white/90" />
-                    <p className="text-xs text-white/80 font-medium">Time</p>
-                  </div>
+                  <p className="text-xs text-white/70 font-medium mb-1">Time</p>
                   <p suppressHydrationWarning={true} className="font-bold text-xs text-white leading-tight">
                     {displayTimeRange}
                   </p>
@@ -1066,12 +1074,9 @@ export default function LocalStoragePartyHeader({
 
                 <button
                   onClick={() => handleCardClick("age")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Users className="w-3.5 h-3.5 text-white/90" />
-                    <p className="text-xs text-white/80 font-medium">Age</p>
-                  </div>
+                  <p className="text-xs text-white/70 font-medium mb-1">Age</p>
                   <p suppressHydrationWarning={true} className="font-bold text-sm text-white">
                     {getChildAge()}
                   </p>
@@ -1079,12 +1084,9 @@ export default function LocalStoragePartyHeader({
 
                 <button
                   onClick={() => handleCardClick("guests")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Users className="w-3.5 h-3.5 text-white/90" />
-                    <p className="text-xs text-white/80 font-medium">Guests</p>
-                  </div>
+                  <p className="text-xs text-white/70 font-medium mb-1">Guests</p>
                   <p suppressHydrationWarning={true} className="font-bold text-sm text-white">
                     {getGuestCount()}
                   </p>
@@ -1092,12 +1094,9 @@ export default function LocalStoragePartyHeader({
 
                 <button
                   onClick={() => handleCardClick("location")}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left"
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-white/90" />
-                    <p className="text-xs text-white/80 font-medium">Location</p>
-                  </div>
+                  <p className="text-xs text-white/70 font-medium mb-1">Location</p>
                   <p suppressHydrationWarning={true} className="font-bold text-sm text-white leading-tight truncate">
                     {getLocation()}
                   </p>

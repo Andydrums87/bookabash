@@ -49,6 +49,7 @@ export default function MobileSupplierNavigation({
   onCustomizationComplete, // ✅ NEW PROP for customization
   showBrowseVenues = false,
   onBrowseVenues,
+  onEditPartyDetails, // ✅ NEW PROP for editing party details
 
 }) {
   const router = useRouter()
@@ -448,6 +449,7 @@ export default function MobileSupplierNavigation({
         recommendedSuppliers={recommendedSuppliers}
         onCustomizationComplete={onCustomizationComplete}
         onBrowseVenues={onBrowseVenues}
+        onEditPartyDetails={onEditPartyDetails}
         onImHappy={() => {
           setShowCompleteCTA(true)
           // Scroll to CTA after it renders
