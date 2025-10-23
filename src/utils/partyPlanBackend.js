@@ -59,11 +59,10 @@ const getCachedPartyPlan = () => {
     const { data, timestamp } = JSON.parse(cached);
     
     if (Date.now() - timestamp < 5 * 60 * 1000) {
-      console.log('✅ Using cached party plan');
+
       return data;
     }
     
-    console.log('⏰ Party plan cache expired');
     sessionStorage.removeItem(CACHE_KEY);
     return null;
   } catch (error) {

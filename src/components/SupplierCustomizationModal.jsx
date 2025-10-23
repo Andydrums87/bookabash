@@ -208,8 +208,6 @@ export default function SupplierCustomizationModal({
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
 
-    console.log("🔍 DEBUG: Modal version check - LEAD_BASED_FIX_v2")
-    console.log("🔍 DEBUG: Supplier data:", supplier?.name, supplier?.category)
 
     // Detect if this is a cake supplier
     const isCakeSupplier =
@@ -228,15 +226,7 @@ export default function SupplierCustomizationModal({
       supplier?.category?.toLowerCase().includes("party bag") ||
       supplier?.type?.toLowerCase().includes("party bag")
 
-    console.log("🔍 Supplier Type Detection:", {
-      supplierName: supplier.name,
-      category: supplier.category,
-      type: supplier.type,
-      isLeadBased,
-      isTimeBased,
-      isCakeSupplier,
-      isPartyBagsSupplier,
-    })
+
 
     return {
       isLeadBased,
@@ -329,23 +319,10 @@ export default function SupplierCustomizationModal({
         price: packagePrice,
       }
 
-      console.log("🎭 Modal: Calculating package price:", {
-        packagePrice,
-        supplier: supplier.name,
-        partyDetails: effectivePartyDetails,
-        guestCount: effectivePartyDetails?.guestCount,
-        isLeadBased: supplierTypeDetection.isLeadBased,
-        isTimeBased: supplierTypeDetection.isTimeBased,
-      })
-
+     
       const pricing = calculateFinalPrice(supplierForPricing, effectivePartyDetails, [])
 
-      console.log("🎭 Modal: Package pricing result:", {
-        originalPrice: packagePrice,
-        finalPrice: pricing.finalPrice,
-        breakdown: pricing.breakdown,
-        isEnhanced: pricing.finalPrice !== packagePrice,
-      })
+   
 
       return pricing.finalPrice
     }
@@ -470,18 +447,7 @@ export default function SupplierCustomizationModal({
     // Final totals
     const totalPrice = packagePrice + addonsTotalPrice
 
-    console.log("🎭 Modal: Final pricing calculation:", {
-      packageOriginalPrice: selectedPackage.price,
-      packageEnhancedPrice: packagePrice,
-      addonsTotalPrice,
-      totalPrice,
-      hasEnhancedPricing,
-      supplierType: {
-        isLeadBased: supplierTypeDetection.isLeadBased,
-        isTimeBased: supplierTypeDetection.isTimeBased,
-        isCake: supplierTypeDetection.isCake,
-      },
-    })
+  
 
     return {
       packagePrice,

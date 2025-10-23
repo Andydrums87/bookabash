@@ -79,24 +79,16 @@ export default function SupplierCard({
 
   const getSupplierState = () => {
     if (!supplier) {
-      console.log(`🔴 SupplierCard [${type}]: No supplier, returning "empty"`)
+
       return "empty"
     }
     
     // Find the SPECIFIC enquiry for THIS supplier type
     const enquiry = enquiries.find(e => e.supplier_category === type)
     
-    console.log(`🔍 SupplierCard [${type}]: Enquiry check:`, {
-      hasEnquiry: !!enquiry,
-      status: enquiry?.status,
-      paymentStatus: enquiry?.payment_status,
-      supplierResponseDate: enquiry?.supplier_response_date,
-      supplierResponse: enquiry?.supplier_response
-    })
     
     // If no enquiry exists for this supplier type, it's just selected
     if (!enquiry) {
-      console.log(`🟡 SupplierCard [${type}]: No enquiry found - returning "selected"`)
       return isSignedIn ? "selected" : "selected"
     }
     
@@ -148,7 +140,7 @@ export default function SupplierCard({
   }
 
   const supplierState = getSupplierState()
-  console.log(`🔵 SupplierCard [${type}]: State determined as "${supplierState}"`)
+
 
   // Enhanced addon collection that includes enquiry addons
   const supplierAddons = (() => {
@@ -241,12 +233,12 @@ export default function SupplierCard({
   }
 
   // Debug log to verify prop is received
-  if (supplier) {
-    console.log(`🔧 SupplierCard [${type}]: onCustomizationComplete prop`, {
-      isDefined: !!onCustomizationComplete,
-      supplierName: supplier.name
-    })
-  }
+  // if (supplier) {
+  //   console.log(`🔧 SupplierCard [${type}]: onCustomizationComplete prop`, {
+  //     isDefined: !!onCustomizationComplete,
+  //     supplierName: supplier.name
+  //   })
+  // }
 
   // ✅ Props specific to EmptySupplierCard - INCLUDING isCompact
   const emptyCardProps = {
@@ -266,7 +258,7 @@ export default function SupplierCard({
   // Render the appropriate card component based on state
   switch (supplierState) {
     case "empty":
-      console.log(`🎨 SupplierCard [${type}]: Rendering EmptySupplierCard with props:`, emptyCardProps)
+
       return <EmptySupplierCard {...emptyCardProps} />
       
     case "selected":

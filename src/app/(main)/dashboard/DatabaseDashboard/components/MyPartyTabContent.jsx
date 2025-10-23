@@ -2,7 +2,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { X, Eye, CheckCircle, Sparkles, Wand2, Info, Calendar, Clock, MapPin } from "lucide-react"
+import { X, Eye, CheckCircle, Sparkles, Wand2, Info, Calendar, Clock, MapPin, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,12 +24,22 @@ export default function MyPartyTabContent({
   onImHappy,
   onCustomizationComplete, // ✅ NEW PROP
   onBrowseVenues, // ✅ NEW PROP for venue browsing
-  onEditPartyDetails // ✅ NEW PROP for editing party details
+  onEditPartyDetails, // ✅ NEW PROP for editing party details
+  onPhotoUpload, // ✅ NEW PROP for photo upload
+  childPhoto, // ✅ NEW PROP for child photo
+  uploadingPhoto, // ✅ NEW PROP for upload state
 }) {
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
   const [showPlanInfo, setShowPlanInfo] = useState(false)
+
+  // Photo upload handler
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !onPhotoUpload) return
+    await onPhotoUpload(file)
+  }
 
   const getTypeConfig = (supplierType) => {
     const configs = {
@@ -359,7 +369,7 @@ export default function MyPartyTabContent({
       {/* Original Header Section */}
       <div className="mb-4">
         <div>
-          <div className="flex items-start gap-3 mb-4">
+          {/* <div className="flex items-start gap-3 mb-4">
             <h2 className="text-3xl font-black text-gray-900 leading-tight animate-fade-in flex-1">
               Snappy's built the perfect party for {childFirstName}!
             </h2>
@@ -370,7 +380,7 @@ export default function MyPartyTabContent({
             >
               <Info className="w-4 h-4 text-primary-600" />
             </button>
-          </div>
+          </div> */}
 
           {showPlanInfo && (
             <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
@@ -415,6 +425,7 @@ export default function MyPartyTabContent({
               Edit
             </button>
           </div>
+
           <div className="space-y-2 text-sm text-gray-700">
             <p>
               <span className="font-semibold">Date:</span> {formatDate(partyDetails?.date)}
@@ -429,6 +440,57 @@ export default function MyPartyTabContent({
               <span className="font-semibold">Theme:</span> <span className="capitalize">{partyDetails?.theme?.replace(/-/g, ' ') || 'Party'}</span>
             </p>
           </div>
+
+          {/* Photo Upload Section - At Bottom */}
+          {onPhotoUpload && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-3">
+                {childPhoto ? (
+                  <div className="relative group">
+                    <img
+                      src={childPhoto}
+                      alt={partyDetails?.childName || 'Child'}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+                    />
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                    {!uploadingPhoto && (
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <span className="text-white text-xs font-semibold">Change</span>
+                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative group">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 border-2 border-primary-300 flex items-center justify-center cursor-pointer hover:scale-105 transition-all">
+                      {uploadingPhoto ? (
+                        <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <Camera className="w-5 h-5 text-primary-700" strokeWidth={2.5} />
+                        </div>
+                      )}
+                    </div>
+                    {!uploadingPhoto && (
+                      <label className="absolute inset-0 flex items-center justify-center rounded-full cursor-pointer">
+                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{partyDetails?.childName || 'Child'}'s Photo</p>
+                  <p className="text-xs text-gray-500">
+                    {childPhoto ? 'Click photo to change' : 'Add a photo'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -142,7 +142,7 @@ const childPhotoRef = useRef(null)
   useDisableScroll([showSupplierModal, showWelcomePopup, showSupplierModal])
 
   const handleMobileNavigationStepActive = (isActive) => {
-    console.log('Dashboard received mobile nav step active:', isActive)
+
     setIsTourActiveOnNavigation(isActive)
   }
 
@@ -161,7 +161,7 @@ const childPhotoRef = useRef(null)
   useEffect(() => {
     setIsMounted(true)
     setIsClient(typeof window !== 'undefined')
-    console.log('🔧 Dashboard: Component mounted')
+
   }, [])
 
   // Hooks - only run after mounting
@@ -288,14 +288,7 @@ const childPhotoRef = useRef(null)
 
         showWelcomeFlag = showWelcomeRaw === 'true' || redirectWelcome === 'true'
         
-        console.log('💾 LocalStorage Check:', {
-          welcomeTrigger: !!welcomeTrigger,
-          partyDetails: !!partyDetailsData,
-          showWelcomeFlag,
-          partyJustCreated: !!partyJustCreated,
-          redirectWelcome: !!redirectWelcome,
-          welcomeCompleted // ✅ NEW: Log completion status
-        })
+
 
         // Update debug info
         setDebugInfo({
@@ -325,15 +318,7 @@ const childPhotoRef = useRef(null)
         !welcomePopupShownRef.current
       )
       
-      console.log('🎯 Welcome popup decision:', {
-        showWelcomeFromURL,
-        welcomeTriggerFlag: welcomeTrigger?.shouldShowWelcome,
-        showWelcomeFlag,
-        hasPartyData,
-        welcomeCompleted, // ✅ NEW: Log completion status
-        alreadyShown: welcomePopupShownRef.current,
-        finalDecision: shouldShowWelcome
-      })
+  
       
       if (shouldShowWelcome) {
         console.log('🎉 SHOWING WELCOME POPUP!')
@@ -383,7 +368,7 @@ const childPhotoRef = useRef(null)
   // ✅ PRODUCTION SAFE: Confetti effect
   useEffect(() => {
     if (welcomeJustCompleted && !showWelcomePopup && !confettiTriggeredRef.current && isMounted) {
-      console.log('🎊 Triggering confetti celebration!')
+
       
       confettiTriggeredRef.current = true
       
@@ -436,14 +421,7 @@ useEffect(() => {
       const fromPage = searchParams.get('from')
       const source = searchParams.get('source')
 
-      console.log('📍 Unified scroll management check:', {
-        scrollToSupplier,
-        lastAction,
-        fromPage,
-        source,
-        showWelcomePopup,
-        activeMobileSupplierType
-      })
+   
 
       // ✅ ALWAYS ensure scroll is unlocked first
       const unlockScroll = () => {
@@ -477,7 +455,7 @@ useEffect(() => {
           // Try desktop scroll first
           const desktopElement = document.getElementById(`supplier-${scrollToSupplier}`)
           if (desktopElement && window.innerWidth >= 768) {
-            console.log(`🖥️ Desktop: Scrolling to supplier-${scrollToSupplier}`)
+
             desktopElement.scrollIntoView({ 
               behavior: 'smooth',
               block: 'center',
@@ -487,7 +465,7 @@ useEffect(() => {
             // Mobile: Scroll to mobile content area
             const mobileContent = document.getElementById('mobile-supplier-content')
             if (mobileContent) {
-              console.log(`📱 Mobile: Scrolling to mobile content area`)
+           
               mobileContent.scrollIntoView({ 
                 behavior: 'smooth',
                 block: 'start',
@@ -546,7 +524,7 @@ useEffect(() => {
     const lastAction = searchParams.get('action')
     
     if (scrollToSupplier && lastAction === 'supplier-added') {
-      console.log('🎉 Welcome popup closed, handling delayed scroll to:', scrollToSupplier)
+
       
       // Update mobile tab
       setActiveMobileSupplierType(scrollToSupplier)
@@ -605,10 +583,10 @@ useEffect(() => {
 }, [showSupplierModal, showWelcomePopup, isAddonModalOpen])
 
 useEffect(() => {
-  console.log('🔥 Recommendations effect triggered')
+
   
   if (!isMounted || !partyDetails) {
-    console.log('❌ Not ready - isMounted:', isMounted, 'partyDetails:', !!partyDetails)
+
     return
   }
   
@@ -616,13 +594,12 @@ useEffect(() => {
   const timeoutId = setTimeout(() => {
     const loadRecommendations = async () => {
       try {
-        console.log('📡 Loading recommendations...')
+
         
         const { suppliersAPI } = await import('@/utils/mockBackend')
         const allSuppliers = await suppliersAPI.getAllSuppliers()
         
-        console.log('📦 Total suppliers available:', allSuppliers.length)
-        console.log('🔍 Current suppliers state:', suppliers)
+ 
         
         const categoryMap = {
           venue: 'Venues',
@@ -648,14 +625,14 @@ useEffect(() => {
             
             if (categorySupplier) {
               newRecommendations[categoryKey] = categorySupplier
-              console.log(`✅ Recommending ${categorySupplier.name} for ${categoryKey}`)
+  
             }
           } else {
             console.log(`⏭️ Skipping ${categoryKey} - already has supplier`)
           }
         })
         
-        console.log('🎯 Final recommendations:', Object.keys(newRecommendations))
+ 
         setRecommendedSuppliers(newRecommendations)
         setRecommendationsLoaded(true)
         
@@ -681,7 +658,7 @@ const handleEditPartyDetails = () => {
 }
 
 const handleNameSubmit = (nameData) => {
-  console.log('🎉 Welcome form completed:', nameData)
+
 
   try {
     if (typeof originalHandleNameSubmit === 'function') {
@@ -711,10 +688,8 @@ const handleNameSubmit = (nameData) => {
         }
         
         localStorage.setItem('party_details', JSON.stringify(updatedDetails))
-        console.log('📝 Updated party details with welcome data and completion flag')
+
       }
-      
-      console.log('✅ Welcome completion flags set - popup will not show again')
       
       // NEW: Start tour after confetti completes
       setTimeout(() => {
@@ -735,7 +710,7 @@ const handleNameSubmit = (nameData) => {
 }
 
   const openSupplierModal = (category, theme = 'superhero') => {
-    console.log('🔓 Opening supplier modal:', { category, theme })
+
     
     // Map frontend category to backend supplier type
     const supplierTypeMapping = {
@@ -780,13 +755,12 @@ const handleNameSubmit = (nameData) => {
       
       // Force a style recalculation
       document.body.offsetHeight
-      
-      console.log('✅ Scroll cleanup completed')
+
     }, 50)
   }
 
   const handleSupplierSelection = async (supplierData) => {
-    console.log('Supplier selected:', supplierData)
+
     
     try {
       const { supplier, package: selectedPackage, addons: selectedAddons = [] } = supplierData
@@ -906,7 +880,7 @@ const handleNameSubmit = (nameData) => {
       const storedState = getStoredModalState()
       
       if (storedState) {
-        console.log('🔄 Restoring modal state:', storedState)
+ 
         
         setModalConfig({
           category: storedState.category,
@@ -936,8 +910,7 @@ const handleNameSubmit = (nameData) => {
       const { detail: modalState } = event
       
       if (modalState) {
-        console.log('🎯 Restoring modal via custom event:', modalState)
-        
+    
         setModalConfig({
           category: modalState.category,
           theme: modalState.theme,
@@ -961,7 +934,7 @@ const handleNameSubmit = (nameData) => {
 
   // Addon handlers
   const handleAddonClick = (addon) => {
-    console.log('🎯 Addon clicked:', addon)
+    
     setSelectedAddon(addon)
     setIsAddonModalOpen(true)
   }
@@ -977,7 +950,7 @@ const handleNameSubmit = (nameData) => {
 
   const handleAddAddon = async (addon, supplierId = null) => {
     if (hasAddon(addon.id)) {
-      console.log('🔍 Addon already exists, returning early')
+  
       return
     }
     
@@ -1032,7 +1005,7 @@ const handleNameSubmit = (nameData) => {
         parentSupplierName: finalSupplierName
       }
       
-      console.log('🔧 Adding addon with full association:', addonWithSupplier)
+
       
       const result = await addAddon(addonWithSupplier)
       
@@ -1048,7 +1021,7 @@ const handleNameSubmit = (nameData) => {
 
   const handleRemoveAddon = async (addonId) => {
     try {
-      console.log('🗑️ Removing addon:', addonId)
+
       
       let result = await removeAddon(addonId)
       
@@ -1101,7 +1074,7 @@ const handleNameSubmit = (nameData) => {
       if (type === 'venue') {
         // For venue, get addons from selectedAddons property
         supplierAddons = supplier.selectedAddons || [];
-        console.log('📊 Venue addons from selectedAddons:', supplierAddons);
+
       } else {
         // For other suppliers, get from global addons array
         supplierAddons = addons.filter(addon => 
@@ -1111,14 +1084,13 @@ const handleNameSubmit = (nameData) => {
         );
       }
   
-      // FIXED: ALWAYS calculate fresh pricing - never use pre-enhanced values
-      console.log('📊 Dashboard Total: Calculating pricing for', supplier.name, 'with', supplierAddons.length, 'addons');
+
       const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
       const supplierCost = pricing.finalPrice;
   
       total += supplierCost;
       
-      console.log('📊 Dashboard Total: Added supplier', supplier.name, 'cost:', supplierCost, 'breakdown:', pricing.breakdown);
+
     });
   
     // Add standalone addons (not attached to any supplier)
@@ -1128,7 +1100,7 @@ const handleNameSubmit = (nameData) => {
     const standaloneAddonsTotal = standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
     total += standaloneAddonsTotal;
   
-    console.log('📊 Dashboard Total: Final calculated total:', total);
+
     return total;
   }, [suppliers, addons, partyDetails]);
 
@@ -1157,7 +1129,7 @@ const handleNameSubmit = (nameData) => {
   }
 
   const handlePartyRebuilt = (rebuildResults) => {
-    console.log('Party rebuild result:', rebuildResults)
+
     
     if (rebuildResults.type === 'needs_replacements') {
       // User wants to find replacements for unavailable suppliers
@@ -1186,7 +1158,7 @@ const handleNameSubmit = (nameData) => {
       
     } else if (rebuildResults.type === 'replacements') {
       // Direct replacement applied (if you implement auto-replacement later)
-      console.log('Replacements applied:', rebuildResults.replacements)
+
       
       // Update localStorage with new party plan
       if (rebuildResults.partyPlan) {
@@ -1199,8 +1171,7 @@ const handleNameSubmit = (nameData) => {
   }
 
   const getRecommendedSupplierForType = (categoryType) => {
-    console.log('🔍 Getting recommended supplier for:', categoryType)
-    console.log('📦 Available recommendations:', recommendedSuppliers)
+  
     return recommendedSuppliers[categoryType] || null
   }
 
@@ -1320,7 +1291,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
   setIsSelectingVenue(true)
   
   try {
-    console.log('🏛️ Selecting venue:', venue.name)
+
     
     // Use the addSupplier function from usePartyPlan hook
     const result = await addSupplier(venue, venue.packageData || null)
@@ -1337,7 +1308,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
       // Trigger party details update
       handlePartyDetailsUpdate(updatedPartyDetails)
       
-      console.log('✅ Venue selected successfully:', venue.name)
+
     }
     
   } catch (error) {
@@ -1351,7 +1322,7 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
 
 // In LocalStorageDashboard.jsx - add this handler
 const handleCustomizeSupplier = (type, supplier) => {
-  console.log('🎨 Customizing supplier:', type, supplier.name)
+
 
   // Example: Navigate to supplier page with customize mode
   router.push(`/supplier/${supplier.id}?mode=customize&from=dashboard`)
@@ -1364,24 +1335,6 @@ const handleCustomizeSupplier = (type, supplier) => {
 // Handle customization completion from the modal
 const handleCustomizationComplete = async (customizationData) => {
   const { supplier, package: selectedPackage, addons: selectedAddons = [], totalPrice } = customizationData
-
-  console.log('🎨 Customization completed:', {
-    supplier: supplier.name,
-    supplierId: supplier.id,
-    supplierLegacyId: supplier.legacyId,
-    package: selectedPackage,
-    addons: selectedAddons,
-    totalPrice
-  })
-
-  // DEBUG: Check what's in partyPlan right now
-  console.log('🔍 Current partyPlan state:', {
-    decorations: partyPlan.decorations,
-    decorationsId: partyPlan.decorations?.id,
-    cakes: partyPlan.cakes,
-    cakesId: partyPlan.cakes?.id,
-    allSlots: Object.keys(partyPlan).filter(key => partyPlan[key] && typeof partyPlan[key] === 'object' && partyPlan[key].id)
-  })
 
   try {
     // Update the supplier's package if a new package was selected
@@ -1434,15 +1387,6 @@ const handleCustomizationComplete = async (customizationData) => {
       const actualSupplierInPlan = supplierType ? partyPlan[supplierType] : null
       const supplierIdToUse = actualSupplierInPlan?.id || supplier.id
 
-      console.log('🔑 ID Resolution:', {
-        supplierFromModal: supplier.id,
-        legacyId: supplier.legacyId,
-        category: supplier.category,
-        foundInSlot: supplierType,
-        actualIdInPlan: actualSupplierInPlan?.id,
-        willUseId: supplierIdToUse
-      })
-
       // Determine the correct price to use
       let priceToUse
 
@@ -1451,25 +1395,10 @@ const handleCustomizationComplete = async (customizationData) => {
       if (isPartyBags) {
         // Party bags packages already have per-bag pricing
         priceToUse = selectedPackage.pricePerBag || selectedPackage.price
-        console.log('🎒 Party Bags - Using per-bag price:', {
-          pricePerBag: selectedPackage.pricePerBag,
-          price: selectedPackage.price,
-          quantity: selectedPackage.partyBagsQuantity,
-          totalPrice: selectedPackage.totalPrice,
-          usingPrice: priceToUse
-        })
       } else {
         // For other suppliers, use enhanced/total/base price
         priceToUse = selectedPackage.enhancedPrice || selectedPackage.totalPrice || selectedPackage.price
       }
-
-      console.log('💰 Price selection debug:', {
-        enhancedPrice: selectedPackage.enhancedPrice,
-        totalPrice: selectedPackage.totalPrice,
-        packagePrice: selectedPackage.price,
-        selectedPrice: priceToUse,
-        isPartyBags
-      })
 
       // Prepare package data with all customization info
       const packageUpdate = {
@@ -1487,7 +1416,7 @@ const handleCustomizationComplete = async (customizationData) => {
         description: selectedPackage.description
       }
 
-      console.log('📦 Updating package with data:', packageUpdate)
+
 
       const updateResult = await updateSupplierPackage(supplierIdToUse, packageUpdate)
 
@@ -1516,15 +1445,11 @@ const handleCustomizationComplete = async (customizationData) => {
     // But we'll force a refetch to be safe
     await new Promise(resolve => setTimeout(resolve, 200))
 
-    console.log('🔄 Triggering party plan refresh...')
+
 
     // DEBUG: Check what's actually in localStorage after update
     const storedPlan = JSON.parse(localStorage.getItem('user_party_plan'))
-    console.log('🔍 After update, localStorage has:', {
-      cakesPrice: storedPlan?.cakes?.price,
-      cakesPackageDataPrice: storedPlan?.cakes?.packageData?.price,
-      cakesOriginalPrice: storedPlan?.cakes?.originalPrice
-    })
+ 
 
     refetch()
 

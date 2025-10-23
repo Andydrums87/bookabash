@@ -255,7 +255,7 @@ import SnappyLoader from "@/components/ui/SnappyLoader"
 
 // ✅ SIMPLIFIED: Remove complex caching logic that's causing confusion
 export default function DashboardPage() {
-  console.log('🎯 DashboardPage component rendering!')
+
   const router = useRouter()
   
   const [userType, setUserType] = useState(null)
@@ -280,7 +280,7 @@ export default function DashboardPage() {
         // STEP 1: Check Authentication Status
         // ============================================
         debug.steps.push('🔐 STEP 1: Checking authentication...')
-        console.log('🔐 STEP 1: Checking authentication...')
+  
         
         const userResult = await partyDatabaseBackend.getCurrentUser()
         
@@ -298,11 +298,11 @@ export default function DashboardPage() {
         // ============================================
         if (userResult.success && userResult.user) {
           debug.steps.push('✅ User is authenticated')
-          console.log('✅ User is authenticated:', userResult.user.email)
+    
           
           // Check for database party
           debug.steps.push('🔍 STEP 2: Checking for database party...')
-          console.log('🔍 STEP 2: Checking for database party...')
+
           
           const partyResult = await partyDatabaseBackend.getCurrentParty()
           
@@ -313,13 +313,13 @@ export default function DashboardPage() {
             error: partyResult.error
           }
           
-          console.log('📊 Party Result:', debug.partyCheck)
+  
           
           if (partyResult.success && partyResult.party) {
             // ✅ Authenticated + Has Database Party = DATABASE DASHBOARD
             debug.steps.push('✅ Database party found → DATABASE DASHBOARD')
             debug.finalDecision = 'database'
-            console.log('✅✅✅ DECISION: DATABASE DASHBOARD')
+
 
             setDebugInfo(debug)
             setUserType('database')
@@ -330,17 +330,17 @@ export default function DashboardPage() {
             // This happens when user signs in during review-book flow
             // Party hasn't migrated to database yet (happens on payment)
             debug.steps.push('⚠️ No database party - checking localStorage...')
-            console.log('⚠️ No database party - checking localStorage for pre-auth party data...')
+      
 
             const localStorageCheck = checkLocalStorage()
             debug.localStorageCheck = localStorageCheck
-            console.log('📊 LocalStorage Check (authenticated user):', localStorageCheck)
+        
 
             if (localStorageCheck.hasValidData) {
               // ✅ Authenticated + No DB Party + Has localStorage = LOCALSTORAGE DASHBOARD
               debug.steps.push('✅ Valid localStorage found → LOCALSTORAGE DASHBOARD (authenticated mode)')
               debug.finalDecision = 'localStorage'
-              console.log('✅✅✅ DECISION: LOCALSTORAGE DASHBOARD (user is authenticated but party not yet migrated)')
+    
 
               setDebugInfo(debug)
               setUserType('localStorage')
@@ -449,7 +449,7 @@ export default function DashboardPage() {
     )
   }
 
-  console.log('🎯 Rendering dashboard with userType:', userType)
+
 
   // ============================================
   // RENDER APPROPRIATE DASHBOARD

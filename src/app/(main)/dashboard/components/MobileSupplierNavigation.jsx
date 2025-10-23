@@ -50,7 +50,9 @@ export default function MobileSupplierNavigation({
   showBrowseVenues = false,
   onBrowseVenues,
   onEditPartyDetails, // ✅ NEW PROP for editing party details
-
+  onPhotoUpload, // ✅ NEW PROP for photo upload
+  childPhoto, // ✅ NEW PROP for child photo
+  uploadingPhoto, // ✅ NEW PROP for upload state
 }) {
   const router = useRouter()
   const { toast } = useToast()
@@ -62,7 +64,7 @@ export default function MobileSupplierNavigation({
         type: "myParty",
         title: "My Party",
         name: "My Party",
-        image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1755719830/bs2klexzuin8ygfndexc.png",
+        image: childPhoto || "https://res.cloudinary.com/dghzq6xtd/image/upload/v1755719830/bs2klexzuin8ygfndexc.png",
         icon: <Sparkles className="w-5 h-5" />,
         isMyPartySection: true,
       },
@@ -450,6 +452,9 @@ export default function MobileSupplierNavigation({
         onCustomizationComplete={onCustomizationComplete}
         onBrowseVenues={onBrowseVenues}
         onEditPartyDetails={onEditPartyDetails}
+        onPhotoUpload={onPhotoUpload}
+        childPhoto={childPhoto}
+        uploadingPhoto={uploadingPhoto}
         onImHappy={() => {
           setShowCompleteCTA(true)
           // Scroll to CTA after it renders
@@ -507,14 +512,6 @@ export default function MobileSupplierNavigation({
 
     return (
       <div className="space-y-6">
-        {/* Header Section */}
-        <div className="mb-4">
-          <div>
-            <h2 className="text-3xl mb-4 font-black text-gray-900 leading-tight animate-fade-in">Snappy's built the perfect party for {childFirstName}!</h2>
-            <p className="text-sm text-gray-600">Here are the suppliers we've chosen for you</p>
-          </div>
-        </div>
-
         {/* Suppliers List */}
         {selectedSuppliers.length > 0 ? (
           <div className="space-y-4">

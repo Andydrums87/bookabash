@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles } from "lucide-react"
+import { Edit2, Calendar, Users, MapPin, Clock, ChevronDown, ChevronUp, Sparkles, Camera } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar as CalendarPicker } from "@/components/ui/calendar"
@@ -632,26 +632,49 @@ export default function LocalStoragePartyHeader({
     }
   }
 
-  // Get theme emoji helper
-  const getThemeEmoji = () => {
-    if (!theme) return "🎉"
+  // Get theme image helper
+  const getThemeImage = () => {
+    if (!theme) return null
 
-    const themeEmojis = {
-      superhero: "🦸",
-      princess: "👸",
-      pirate: "🏴‍☠️",
-      dinosaur: "🦕",
-      unicorn: "🦄",
-      space: "🚀",
-      mermaid: "🧜‍♀️",
-      football: "⚽",
-      animal: "🦁",
-      construction: "🚧",
-      "tea party": "🫖",
-      science: "🔬",
+    const themeImages = {
+      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381349/iStock-1059655678_mfuiu6.jpg",
+      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829350/jng4z1rdtb9mik2n6mp6.jpg",
+      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380783/iStock-1646650260_douzyr.jpg",
+      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381224/iStock-1385363961_iltnu7.jpg",
+      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380880/iStock-1603218889_xq4kqi.jpg",
+      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381418/iStock-1474890351_fduaev.jpg",
+      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380937/iStock-2201784646_cdvevq.jpg",
+      cars: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380995/iStock-2176668301_cstncj.jpg",
+      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381070/iStock-684090490_smtflw.jpg",
+      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381160/iStock-1564856102_abqkpd.jpg",
+      football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
     }
 
-    return themeEmojis[theme.toLowerCase()] || "🎉"
+    return themeImages[theme.toLowerCase()] || null
+  }
+
+  // Get theme gradient fallback
+  const getThemeGradient = () => {
+    if (!theme) return "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
+
+    const themeGradients = {
+      princess: "linear-gradient(to right, #f472b6, #c084fc, #ec4899)",
+      superhero: "linear-gradient(to right, #3b82f6, #ef4444, #eab308)",
+      dinosaur: "linear-gradient(to right, #10b981, #059669, #047857)",
+      unicorn: "linear-gradient(to right, #c084fc, #f472b6, #60a5fa)",
+      science: "linear-gradient(to right, #06b6d4, #3b82f6, #4f46e5)",
+      spiderman: "linear-gradient(to right, #dc2626, #2563eb, #dc2626)",
+      "taylor-swift": "linear-gradient(to right, #a855f7, #ec4899, #f43f5e)",
+      cars: "linear-gradient(to right, #2563eb, #4b5563, #1d4ed8)",
+      space: "linear-gradient(to right, #312e81, #581c87, #1e3a8a)",
+      jungle: "linear-gradient(to right, #16a34a, #ca8a04, #15803d)",
+      football: "linear-gradient(to right, #16a34a, #059669, #047857)",
+      pirate: "linear-gradient(to right, #d97706, #7f1d1d, #374151)",
+      mermaid: "linear-gradient(to right, #2dd4bf, #06b6d4, #3b82f6)",
+      default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
+    }
+
+    return themeGradients[theme.toLowerCase()] || themeGradients.default
   }
 
   // Photo upload handler
@@ -906,48 +929,55 @@ export default function LocalStoragePartyHeader({
 
   return (
     <>
-      <div
-        style={{
-          backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "100px, cover",
-          backgroundPosition: "center",
-        }}
-        className="relative md:h-auto rounded-2xl shadow-2xl overflow-hidden mb-8 bg-primary-400 transition-all duration-300"
-      >
-        {/* Decorative elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-4 left-8 w-16 h-16 bg-white rounded-full animate-pulse"></div>
-          <div
-            className="absolute top-12 right-12 w-8 h-8 bg-white rounded-full animate-pulse"
-            style={{ animationDelay: "1s" }}
-          ></div>
-          <div
-            className="absolute bottom-8 left-16 w-12 h-12 bg-white rounded-full animate-pulse"
-            style={{ animationDelay: "2s" }}
-          ></div>
-          <div
-            className="absolute bottom-16 right-8 w-6 h-6 bg-white rounded-full animate-pulse"
-            style={{ animationDelay: "0.5s" }}
-          ></div>
-        </div>
+      <div className="relative rounded-2xl shadow-2xl overflow-hidden mb-8 transition-all duration-300">
+        {/* Theme Image Background */}
+        {getThemeImage() && (
+          <div className="absolute inset-0">
+            <img
+              src={getThemeImage()}
+              alt={capitalizedTheme}
+              className="w-full h-full object-cover"
+            />
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
+          </div>
+        )}
 
-        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/10"></div>
+        {/* Fallback gradient if no theme image */}
+        {!getThemeImage() && (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: getThemeGradient()
+              }}
+            ></div>
+            {/* Optional: Add party pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: `url('/party-pattern.svg')`,
+                backgroundRepeat: "repeat",
+                backgroundSize: "100px",
+              }}
+            ></div>
+          </>
+        )}
 
-        <div className="relative px-4 py-4 md:p-10 text-white">
+        <div className="relative px-4 py-5 md:p-10 text-white">
           <div className="md:space-y-6">
-            <div className="space-y-2 md:space-y-2">
-              <div className="flex items-start gap-3">
+            <div className="space-y-3 md:space-y-4">
+              <div className="flex items-start gap-3 md:gap-4">
                 {/* Photo Avatar and Name */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {/* Child Photo Avatar */}
-                  <div className="relative flex-shrink-0">
+                  {/* Child Photo Avatar - Desktop Only */}
+                  <div className="relative flex-shrink-0 hidden md:block">
                     {childPhoto ? (
                       <div className="relative group">
                         <img
                           src={childPhoto}
                           alt={getFirstName()}
-                          className="w-20 h-20 md:w-30 md:h-30 rounded-full object-cover border-4 border-white shadow-lg"
+                          className="w-30 h-30 rounded-full object-cover border-4 border-white shadow-lg"
                         />
                         {uploadingPhoto && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
@@ -963,13 +993,18 @@ export default function LocalStoragePartyHeader({
                       </div>
                     ) : (
                       <div className="relative group">
-                        <div className="w-20 h-20 md:w-30 md:h-30 rounded-full bg-white/30 backdrop-blur-sm border-4 border-white/60 border-dashed shadow-lg flex flex-col items-center justify-center text-3xl md:text-4xl cursor-pointer hover:bg-white/40 transition-all">
+                        <div className="w-30 h-30 rounded-full bg-white/30 backdrop-blur-sm border-4 border-white/60 shadow-lg flex flex-col items-center justify-center cursor-pointer hover:bg-white/40 transition-all">
                           {uploadingPhoto ? (
                             <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
                           ) : (
-                            <div className="text-[9px] md:text-[10px] font-bold text-white/90 leading-none text-center px-1">
-                              Upload Photo
-                            </div>
+                            <>
+                              <div className="bg-white/40 rounded-full p-2 mb-1 group-hover:bg-white/50 transition-colors">
+                                <Camera className="w-6 h-6 text-white" strokeWidth={2.5} />
+                              </div>
+                              <div className="text-xs font-bold text-white leading-tight text-center">
+                                Add<br />Photo
+                              </div>
+                            </>
                           )}
                         </div>
                         {onPhotoUpload && !uploadingPhoto && (
@@ -982,12 +1017,12 @@ export default function LocalStoragePartyHeader({
                   </div>
 
                   {/* Name and Info */}
-                  <div className="flex-1 min-w-0 pr-16 md:pr-0">
+                  <div className="flex-1 min-w-0 pr-14 md:pr-0">
                     <h1
                       suppressHydrationWarning={true}
-                      className="text-3xl md:text-6xl font-black text-white drop-shadow-2xl leading-tight tracking-tight"
+                      className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
                       style={{
-                        textShadow: "0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)",
+                        textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
                       }}
                     >
                       {getFirstName()}'s Party
@@ -995,7 +1030,7 @@ export default function LocalStoragePartyHeader({
 
                     {!isExpanded && (
                       <div className="md:hidden mt-2">
-                        <div className="flex items-center gap-1 text-xs text-white/95 font-medium overflow-hidden">
+                        <div className="flex items-center gap-1.5 text-xs text-white/95 font-medium overflow-hidden">
                           <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="whitespace-nowrap">{getDisplayDate(true)}</span>
                           <span className="text-white/60 flex-shrink-0">•</span>
@@ -1011,24 +1046,24 @@ export default function LocalStoragePartyHeader({
                 </div>
 
                 {/* Edit buttons - positioned absolutely on mobile */}
-                <div className="flex md:relative absolute top-4 right-4 items-center gap-3 flex-shrink-0">
+                <div className="flex md:relative absolute top-4 right-4 items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleCardClick("name")}
-                    className="hover:scale-110 transition-transform"
+                    className="hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm p-1.5 md:p-2 rounded-full hover:bg-white/30"
                     aria-label="Edit party name"
                   >
-                    <Edit2 className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-lg" />
+                    <Edit2 className="w-3.5 h-3.5 md:w-5 md:h-5 text-white drop-shadow-lg" />
                   </button>
 
                   <button
                     onClick={() => updateExpanded(!isExpanded)}
-                    className="md:hidden hover:scale-110 transition-transform"
+                    className="md:hidden hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/30"
                     aria-label={isExpanded ? "Show less" : "Show more"}
                   >
                     {isExpanded ? (
-                      <ChevronUp className="w-6 h-6 text-white drop-shadow-lg" />
+                      <ChevronUp className="w-4 h-4 text-white drop-shadow-lg" />
                     ) : (
-                      <ChevronDown className="w-6 h-6 text-white drop-shadow-lg" />
+                      <ChevronDown className="w-4 h-4 text-white drop-shadow-lg" />
                     )}
                   </button>
                 </div>
@@ -1041,7 +1076,7 @@ export default function LocalStoragePartyHeader({
                 isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
               }`}
             >
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <div className="grid grid-cols-2 gap-2.5 pt-3">
                 <button
                   onClick={() => handleCardClick("theme")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
@@ -1112,7 +1147,7 @@ export default function LocalStoragePartyHeader({
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Theme</p>
                 </div>
@@ -1127,7 +1162,7 @@ export default function LocalStoragePartyHeader({
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <Calendar className="w-5 h-5" />
+                    <Calendar className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Date</p>
                 </div>
@@ -1142,7 +1177,7 @@ export default function LocalStoragePartyHeader({
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <Clock className="w-5 h-5" />
+                    <Clock className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Time</p>
                 </div>
@@ -1157,7 +1192,7 @@ export default function LocalStoragePartyHeader({
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <Users className="w-5 h-5" />
+                    <Users className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Age</p>
                 </div>
@@ -1172,7 +1207,7 @@ export default function LocalStoragePartyHeader({
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <Users className="w-5 h-5" />
+                    <Users className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Guests</p>
                 </div>
@@ -1187,7 +1222,7 @@ export default function LocalStoragePartyHeader({
               >
                 <div className="flex items-center space-x-2">
                   <div className="p-2 bg-white/20 rounded-full">
-                    <MapPin className="w-5 h-5" />
+                    <MapPin className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-sm opacity-90 font-medium">Where</p>
                 </div>
@@ -1198,8 +1233,6 @@ export default function LocalStoragePartyHeader({
             </div>
           </div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-300 to-secondary"></div>
       </div>
 
       {/* Supplier Availability Modal */}
