@@ -1831,6 +1831,9 @@ const handleChildPhotoUpload = async (file) => {
                     showBrowseVenues={venueCarouselOptions && venueCarouselOptions.length > 0}
                     onBrowseVenues={() => setShowVenueBrowserModal(true)}
                     onEditPartyDetails={handleEditPartyDetails}
+                    childPhoto={partyDetails?.childPhoto}
+                    onPhotoUpload={handleChildPhotoUpload}
+                    uploadingPhoto={uploadingChildPhoto}
                   />
                 </div>
               </div>

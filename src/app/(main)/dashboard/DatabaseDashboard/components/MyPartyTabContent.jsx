@@ -411,8 +411,7 @@ export default function MyPartyTabContent({
       </div>
 
       {/* Party Details - Mobile Only */}
-      {allSuppliers.length > 0 && (
-        <div className="md:hidden bg-gray-50 rounded-lg p-4 border border-gray-200">
+      <div className="md:hidden bg-gray-50 rounded-lg p-4 border border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-gray-900">Party Details</h4>
             <button
@@ -466,9 +465,9 @@ export default function MyPartyTabContent({
                   </div>
                 ) : (
                   <div className="relative group">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 border-2 border-primary-300 flex items-center justify-center cursor-pointer hover:scale-105 transition-all">
+                    <div className="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center cursor-pointer hover:scale-105 transition-all">
                       {uploadingPhoto ? (
-                        <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-[hsl(var(--primary-500))] border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <div className="flex flex-col items-center">
                           <Camera className="w-5 h-5 text-primary-700" strokeWidth={2.5} />
@@ -492,7 +491,6 @@ export default function MyPartyTabContent({
             </div>
           )}
         </div>
-      )}
 
       {/* All Suppliers Section with Category Headings */}
       {allSuppliers.length > 0 ? (

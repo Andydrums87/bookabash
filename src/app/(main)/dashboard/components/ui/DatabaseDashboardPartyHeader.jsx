@@ -2,7 +2,7 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar, Clock, Camera } from "lucide-react"
 import ChatNotificationIcon from "../../DatabaseDashboard/components/ChatNotificationIcon";
 
 export default function DatabasePartyHeader({ 
@@ -85,27 +85,50 @@ export default function DatabasePartyHeader({
     return `${diffDays} days away`;
   };
 
-  // Get theme emoji
-  const getThemeEmoji = () => {
-    if (!currentTheme) return "🎉";
-    
-    const themeEmojis = {
-      'superhero': '🦸',
-      'princess': '👸',
-      'pirate': '🏴‍☠️',
-      'dinosaur': '🦕',
-      'unicorn': '🦄',
-      'space': '🚀',
-      'mermaid': '🧜‍♀️',
-      'football': '⚽',
-      'animal': '🦁',
-      'construction': '🚧',
-      'tea party': '🫖',
-      'science': '🔬',
-    };
-    
-    return themeEmojis[currentTheme.toLowerCase()] || '🎉';
-  };
+  // Get theme image helper
+  const getThemeImage = () => {
+    if (!currentTheme) return null
+
+    const themeImages = {
+      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381349/iStock-1059655678_mfuiu6.jpg",
+      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1749829350/jng4z1rdtb9mik2n6mp6.jpg",
+      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380783/iStock-1646650260_douzyr.jpg",
+      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381224/iStock-1385363961_iltnu7.jpg",
+      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380880/iStock-1603218889_xq4kqi.jpg",
+      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381418/iStock-1474890351_fduaev.jpg",
+      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380937/iStock-2201784646_cdvevq.jpg",
+      cars: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380995/iStock-2176668301_cstncj.jpg",
+      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381070/iStock-684090490_smtflw.jpg",
+      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381160/iStock-1564856102_abqkpd.jpg",
+      football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
+    }
+
+    return themeImages[currentTheme.toLowerCase()] || null
+  }
+
+  // Get theme gradient fallback
+  const getThemeGradient = () => {
+    if (!currentTheme) return "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
+
+    const themeGradients = {
+      princess: "linear-gradient(to right, #f472b6, #c084fc, #ec4899)",
+      superhero: "linear-gradient(to right, #3b82f6, #ef4444, #eab308)",
+      dinosaur: "linear-gradient(to right, #10b981, #059669, #047857)",
+      unicorn: "linear-gradient(to right, #c084fc, #f472b6, #60a5fa)",
+      science: "linear-gradient(to right, #06b6d4, #3b82f6, #4f46e5)",
+      spiderman: "linear-gradient(to right, #dc2626, #2563eb, #dc2626)",
+      "taylor-swift": "linear-gradient(to right, #a855f7, #ec4899, #f43f5e)",
+      cars: "linear-gradient(to right, #2563eb, #4b5563, #1d4ed8)",
+      space: "linear-gradient(to right, #312e81, #581c87, #1e3a8a)",
+      jungle: "linear-gradient(to right, #16a34a, #ca8a04, #15803d)",
+      football: "linear-gradient(to right, #16a34a, #059669, #047857)",
+      pirate: "linear-gradient(to right, #d97706, #7f1d1d, #374151)",
+      mermaid: "linear-gradient(to right, #2dd4bf, #06b6d4, #3b82f6)",
+      default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
+    }
+
+    return themeGradients[currentTheme.toLowerCase()] || themeGradients.default
+  }
 
   if (!partyDetails) {
     return (
@@ -131,44 +154,61 @@ export default function DatabasePartyHeader({
   };
 
   return (
-    <div 
-      style={{
-        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '100px, cover',
-        backgroundPosition: 'center',
-      }} 
-      className="relative rounded-xl shadow-lg overflow-hidden mb-6 bg-primary-400"
-    >
-      {/* Notification Icon */}
-      {/* {hasNewMessages && (
-        <div className="absolute top-3 right-3 z-10">
-          <ChatNotificationIcon
-            unreadCount={unreadCount}
-            hasNewMessages={hasNewMessages}
-            onClick={onNotificationClick}
-            iconColor="text-white"
-            badgeColor="bg-red-500 text-white"
-            className="hover:bg-white/20 rounded-full p-2 transition-colors"
+    <div className="relative rounded-2xl shadow-2xl overflow-hidden mb-6 transition-all duration-300">
+      {/* Theme Image Background */}
+      {getThemeImage() && (
+        <div className="absolute inset-0">
+          <img
+            src={getThemeImage()}
+            alt={currentTheme}
+            className="w-full h-full object-cover"
           />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
         </div>
-      )} */}
+      )}
+
+      {/* Fallback gradient if no theme image */}
+      {!getThemeImage() && (
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: getThemeGradient()
+            }}
+          ></div>
+          {/* Optional: Add party pattern overlay */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `url('/party-pattern.svg')`,
+              backgroundRepeat: "repeat",
+              backgroundSize: "100px",
+            }}
+          ></div>
+        </>
+      )}
 
       {/* Compact Content */}
       <div className="relative px-4 py-4 md:px-6 md:py-5 text-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           {/* Party Name & Theme with Photo */}
           <div className="flex items-center gap-3">
-            {/* ✅ Child Photo Avatar */}
-            <div className="relative flex-shrink-0">
+            {/* ✅ Child Photo Avatar - Desktop Only */}
+            <div className="relative flex-shrink-0 hidden md:block">
               {childPhoto ? (
                 <div className="relative group">
                   <img
                     src={childPhoto}
                     alt={firstName}
-                    className="w-25 h-25 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-lg"
+                    className="w-30 h-30 rounded-full object-cover border-4 border-white shadow-lg"
                   />
-                  {onPhotoUpload && (
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+                      <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {onPhotoUpload && !uploadingPhoto && (
                     <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                       <span className="text-white text-xs font-semibold">Change</span>
                       <input
@@ -182,12 +222,22 @@ export default function DatabasePartyHeader({
                 </div>
               ) : (
                 <div className="relative group">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/50 shadow-lg flex items-center justify-center text-3xl md:text-4xl">
-                    {getThemeEmoji()}
+                  <div className="w-30 h-30 rounded-full bg-white/30 backdrop-blur-sm border-4 border-white/60 shadow-lg flex flex-col items-center justify-center cursor-pointer hover:bg-white/40 transition-all">
+                    {uploadingPhoto ? (
+                      <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <div className="bg-white/40 rounded-full p-2 mb-1 group-hover:bg-white/50 transition-colors">
+                          <Camera className="w-6 h-6 text-white" strokeWidth={2.5} />
+                        </div>
+                        <div className="text-xs font-bold text-white leading-tight text-center">
+                          Add<br />Photo
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {onPhotoUpload && (
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                      <span className="text-white text-xs font-semibold">Add Photo</span>
+                  {onPhotoUpload && !uploadingPhoto && (
+                    <label className="absolute inset-0 flex items-center justify-center rounded-full cursor-pointer">
                       <input
                         type="file"
                         accept="image/*"
@@ -202,14 +252,16 @@ export default function DatabasePartyHeader({
 
             {/* Text Content */}
             <div>
-              <h1 className="text-3xl md:text-6xl font-bold text-white drop-shadow-lg leading-tight capitalize">
-                <span className="md:hidden">{firstName}'s</span>
-                <span className="hidden md:inline">{getFullName()}'s</span>
-                {' '}
-                {currentTheme} Party
+              <h1
+                className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight capitalize"
+                style={{
+                  textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
+                }}
+              >
+                {firstName}'s Party
               </h1>
               {formattedDate && (
-                <p className="text-sm md:text-base text-white/90 font-medium flex items-center gap-2 mt-1">
+                <p className="text-sm md:text-base text-white/95 font-medium flex items-center gap-2 mt-2">
                   <Calendar className="w-4 h-4" />
                   {formattedDate}
                 </p>
@@ -228,9 +280,6 @@ export default function DatabasePartyHeader({
           )}
         </div>
       </div>
-
-      {/* Bottom accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary-300 to-secondary"></div>
     </div>
   );
 }
