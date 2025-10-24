@@ -107,7 +107,7 @@ const [uploadingChildPhoto, setUploadingChildPhoto] = useState(false)
 const childPhotoRef = useRef(null)
   const welcomePopupShownRef = useRef(false)
 
-  // ✅ NEW: Party Tools State
+  // ✅ NEW: Guests & Gifts State
   const [partyToolsData, setPartyToolsData] = useState({
     guestList: [],
     rsvps: [],
@@ -217,7 +217,7 @@ const childPhotoRef = useRef(null)
           }
         }
 
-        console.log('🎯 Party Tools Data Summary:', {
+        console.log('🎯 Guests & Gifts Data Summary:', {
           guestCount: guests.length,
           rsvpCount: rsvps.length,
           hasRegistry: !!registry,
@@ -1244,7 +1244,7 @@ const addSuppliersSection = (
     partyDetails={partyDetails}
     partyData={partyData}
     addons={addons}
-    // ✅ NEW: Party Tools Data from PartyPhaseContent
+    // ✅ NEW: Guests & Gifts Data from PartyPhaseContent
     guestList={partyToolsData?.guestList || []}
     giftRegistry={partyToolsData?.giftRegistry}
     registryItemCount={partyToolsData?.registryItemCount || 0}

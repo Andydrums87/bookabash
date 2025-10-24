@@ -73,16 +73,46 @@ export default function DatabasePartyHeader({
   // Calculate days until party
   const getDaysUntil = () => {
     if (!partyDetails?.date) return null;
-    
+
     const partyDate = new Date(partyDetails.date);
     const today = new Date();
     const diffTime = partyDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) return "Past";
     if (diffDays === 0) return "Today!";
     if (diffDays === 1) return "Tomorrow!";
     return `${diffDays} days away`;
+  };
+
+  // Format party time
+  const getFormattedTime = () => {
+    if (!partyDetails?.startTime) return null;
+
+    try {
+      const [hours, minutes] = partyDetails.startTime.split(':');
+      const startDate = new Date();
+      startDate.setHours(parseInt(hours), parseInt(minutes || 0));
+
+      const formattedStart = startDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: minutes && minutes !== '00' ? '2-digit' : undefined,
+        hour12: true,
+      });
+
+      // Calculate end time based on duration (default 2 hours)
+      const duration = partyDetails?.duration || 2;
+      const endDate = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
+      const formattedEnd = endDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: endDate.getMinutes() > 0 ? '2-digit' : undefined,
+        hour12: true,
+      });
+
+      return `${formattedStart} - ${formattedEnd}`;
+    } catch (error) {
+      return null;
+    }
   };
 
   // Get theme image helper
@@ -142,6 +172,7 @@ export default function DatabasePartyHeader({
   }
 
   const formattedDate = getFormattedDate();
+  const formattedTime = getFormattedTime();
   const daysUntil = getDaysUntil();
   const firstName = getFirstName();
 
@@ -260,11 +291,24 @@ export default function DatabasePartyHeader({
               >
                 {firstName}'s Party
               </h1>
-              {formattedDate && (
-                <p className="text-sm md:text-base text-white/95 font-medium flex items-center gap-2 mt-2">
-                  <Calendar className="w-4 h-4" />
-                  {formattedDate}
-                </p>
+              {(formattedDate || formattedTime) && (
+                <div className="flex items-center gap-2 mt-2 text-sm md:text-base text-white/95 font-medium flex-wrap">
+                  {formattedDate && (
+                    <>
+                      <Calendar className="w-4 h-4" />
+                      <span>{formattedDate}</span>
+                    </>
+                  )}
+                  {formattedDate && formattedTime && (
+                    <span className="text-white/60">•</span>
+                  )}
+                  {formattedTime && (
+                    <>
+                      <Clock className="w-4 h-4" />
+                      <span>{formattedTime}</span>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>

@@ -72,42 +72,37 @@ export function ProgressHeader({ partyDetails, progress, completedSteps, totalSt
       </div>
 
       {/* Mobile view - enhanced progress bar */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-3">
         {/* Large progress bar */}
         <div className="px-4">
           <div className="relative">
             {/* Progress bar container */}
-            <div className="h-4 bg-gray-200 border-[hsl(var(--primary-200))] border-1 rounded-full overflow-hidden shadow-inner">
+            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] transition-all duration-700 ease-out rounded-full shadow-sm"
+                className="h-full bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] transition-all duration-700 ease-out rounded-full"
                 style={{ width: `${progress}%` }}
               />
-            </div>
-            
-            {/* Progress percentage overlay */}
-            <div className="absolute -top-8 left-0 right-0 flex justify-center">
-              {/* <div className="bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                {Math.round(progress)}%
-              </div> */}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Progress text - shown on both mobile and desktop */}
-      <div className="mt-6 text-center">
-        <p className="text-sm text-muted-foreground">
-          {completedSteps} of {totalSteps} steps complete
-          {progress === 100 && <span className="ml-2 text-primary font-semibold">All done! 🎉</span>}
-        </p>
-        {onViewTeam && (
-          <button 
-            onClick={onViewTeam} 
-            className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium hover:underline"
-          >
-            View your party team ({supplierCount}/9)
-          </button>
-        )}
+      {/* Progress text and button - responsive layout */}
+      <div className="mt-4 px-4 md:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
+            {completedSteps} of {totalSteps} steps complete
+            {progress === 100 && <span className="ml-2 text-primary font-semibold">All done! 🎉</span>}
+          </p>
+          {onViewTeam && (
+            <button
+              onClick={onViewTeam}
+              className="text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline whitespace-nowrap"
+            >
+              View your party team ({supplierCount}/9)
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

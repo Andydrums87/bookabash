@@ -99,7 +99,7 @@ const MobileBottomTabBar = ({
   const invitesSent = einvites?.guestList?.some(g => g.status === 'sent') || false
   const sentCount = einvites?.guestList?.filter(g => g.status === 'sent').length || 0
 
-  // ✅ SMART: Party Tools with lock logic and images
+  // ✅ SMART: Guests & Gifts with lock logic and images
   const partyTools = [
     {
       id: 'guests',
@@ -195,7 +195,7 @@ const MobileBottomTabBar = ({
       },
       {
         id: "tools",
-        label: "Party Tools",
+        label: "Guests & Gifts",
         icon: PartyPopper,
         color: "text-primary-500",
         activeColor: "text-primary-600",
@@ -287,7 +287,7 @@ const MobileBottomTabBar = ({
               <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <PartyPopper className="w-8 h-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Party Tools</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Guests & Gifts</h3>
               <p className="text-sm text-gray-600">
                 Manage invitations, guests, and gifts
               </p>
@@ -773,7 +773,7 @@ const MobileBottomTabBar = ({
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-3xl z-10">
               <h2 className="text-xl font-bold text-gray-900 capitalize">
                 {activeTab === "add" ? "Add Suppliers" :
-                 activeTab === "tools" ? "Party Tools" :
+                 activeTab === "tools" ? "Guests & Gifts" :
                  activeTab === "progress" ? "Your Party Plan" :
                  activeTab === "timer" ? "Party Tips & Countdown" : activeTab}
               </h2>

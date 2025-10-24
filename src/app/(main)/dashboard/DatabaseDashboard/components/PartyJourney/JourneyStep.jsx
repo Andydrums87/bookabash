@@ -355,14 +355,14 @@ case 'party_team_browse':
           `}
         >
           {/* ✅ CLEAN HEADER */}
-          <div 
-            className={`p-4 ${styles.disabled ? 'pointer-events-none' : ''}`}
+          <div
+            className={`p-3 ${styles.disabled ? 'pointer-events-none' : ''}`}
             onClick={() => !styles.disabled && setIsExpanded(!isExpanded)}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {/* Icon Badge */}
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${styles.border} relative overflow-hidden shadow-md`}>
+              <div className="flex items-center gap-3">
+                {/* Icon Badge - Smaller */}
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${styles.border} relative overflow-hidden shadow-sm`}>
                   {/* Check if icon is a URL or emoji */}
                   {typeof step.icon === 'string' && (step.icon.startsWith('http://') || step.icon.startsWith('https://')) ? (
                     <img
@@ -371,29 +371,29 @@ case 'party_team_browse':
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <span className={`text-2xl ${styles.iconBg} w-full h-full flex items-center justify-center`}>{step.icon}</span>
+                    <span className={`text-xl ${styles.iconBg} w-full h-full flex items-center justify-center`}>{step.icon}</span>
                   )}
 
                   {/* Lock overlay for locked steps */}
                   {styles.disabled && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full">
-                      <Lock className="w-5 h-5 text-gray-400" />
+                      <Lock className="w-4 h-4 text-gray-400" />
                     </div>
                   )}
                 </div>
-                
+
                 {/* Title & Description */}
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
                     <span className={`text-xs font-medium ${styles.disabled ? 'text-gray-400' : 'text-gray-500'}`}>
                       Step {step.number}
                     </span>
+                    <h3 className={`text-base font-bold ${styles.titleColor} truncate`}>
+                      {step.title}
+                    </h3>
                   </div>
-                  <h3 className={`text-lg font-bold ${styles.titleColor}`}>
-                    {step.title}
-                  </h3>
-                  {!isExpanded && (
-                    <p className={`text-xs ${styles.descColor} mt-1`}>
+                  {!isExpanded && step.status === 'completed' && (
+                    <p className={`text-xs ${styles.descColor} mt-0.5 line-clamp-1`}>
                       {step.description}
                     </p>
                   )}
@@ -402,11 +402,11 @@ case 'party_team_browse':
 
               {/* Collapse Toggle - only show if not disabled */}
               {!styles.disabled && (
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
                   {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-gray-600" />
+                    <ChevronUp className="w-4 h-4 text-gray-600" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
                   )}
                 </button>
               )}
