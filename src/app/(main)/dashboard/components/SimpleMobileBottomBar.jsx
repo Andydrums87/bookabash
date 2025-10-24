@@ -363,50 +363,16 @@ const SimpleMobileBottomTabBar = ({
         })
 
         return (
-          <div className="space-y-6">
-          {/* Header Card - Primary theme */}
-          <div className="bg-primary-50 rounded-xl p-4 border-2 border-[hsl(var(--primary-300))]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-full flex items-center justify-center shadow-md">
-                  <ClipboardList className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Your Suppliers</h3>
-                  <p className="text-sm text-gray-600">
-                    {confirmedSuppliers} of {totalSlots} selected
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-black text-[hsl(var(--primary-600))]">{progressPercentage}%</div>
-                <div className="text-xs text-gray-500">Complete</div>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="relative mt-3">
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] h-full rounded-full transition-all duration-700 ease-out"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            {confirmedSuppliers < totalSlots && (
-              <p className="text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg inline-block mt-3 border border-amber-200">
-                🎯 {totalSlots - confirmedSuppliers} more to go!
-              </p>
-            )}
+          <div className="space-y-4">
+          {/* Simple Header */}
+          <div className="flex items-center justify-end">
+            <p className="text-sm text-gray-600 font-medium">
+              {confirmedSuppliers} of {totalSlots} selected
+            </p>
           </div>
-    
+
           {/* Supplier List */}
           <div className="space-y-2">
-            <h4 className="font-bold text-gray-900 text-base flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[hsl(var(--primary-500))]" />
-              Suppliers
-            </h4>
             {supplierEntries.map(({ type, name, isBooked, supplierName, price }) => (
               <button
                 key={type}

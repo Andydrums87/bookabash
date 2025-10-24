@@ -20,43 +20,34 @@ const RSVPHeroSection = ({ stats }) => {
         backgroundSize: '100px, cover',
         backgroundPosition: 'center',
       }}
-      className="relative h-[40vh] md:h-[45vh] shadow-xl overflow-hidden mb-8 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600"
+      className="relative rounded-2xl shadow-lg overflow-hidden mb-8 mx-3 sm:mx-4 mt-6 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600"
     >
       <div className="absolute inset-0 bg-black/10"></div>
 
-      <div className="relative h-full flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center text-white">
-          <div className="mb-4 flex justify-center">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <UserCheck className="w-8 h-8 text-white" />
-            </div>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-4 drop-shadow-2xl leading-tight">
+      <div className="relative px-4 py-6 sm:px-6 sm:py-8 text-white">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 drop-shadow-2xl leading-tight">
             Guest Management
           </h1>
 
-          <p className="text-lg sm:text-xl lg:text-2xl mb-6 max-w-3xl mx-auto leading-relaxed drop-shadow-lg font-medium">
+          <p className="text-sm sm:text-base lg:text-lg mb-5 max-w-2xl leading-relaxed drop-shadow-lg">
             Track invitations and manage RSVPs for your party
           </p>
 
           {/* Quick Stats */}
-          <div className="flex flex-wrap justify-center gap-3 opacity-90">
-            <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-semibold">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border border-white/30">
               👥 {stats.totalGuests} Guests
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-semibold">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border border-white/30">
               ✓ {stats.confirmed} Confirmed
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-semibold hidden sm:block">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border border-white/30 hidden sm:block">
               📊 {stats.totalAttendees} Total Attendees
             </div>
           </div>
         </div>
       </div>
-
-      {/* Smooth transition to content */}
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-50 to-transparent" />
     </div>
   )
 }

@@ -1049,7 +1049,7 @@ const addSuppliersSection = (
 
   // MAIN COMPONENT JSX
   return (
-    <div className="min-h-screen bg-primary-50 w-screen overflow-hidden">
+    <div className="min-h-screen w-screen overflow-hidden">
       <ContextualBreadcrumb currentPage="dashboard"/>
  
       <SupplierAddedConfirmationModal
@@ -1091,12 +1091,13 @@ const addSuppliersSection = (
           remainingBalance: enhancedTotalCost * 0.8 // Use enhancedTotalCost
         }}
       />
-      <EnquirySuccessBanner 
+      <EnquirySuccessBanner
         partyId={partyId}
       />
-      
-      <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
-        <DatabasePartyHeader 
+
+      {/* Full Width Header */}
+      <div className="mb-8">
+        <DatabasePartyHeader
           theme={partyTheme}
           partyDetails={partyDetails}
           currentParty={currentParty}
@@ -1105,12 +1106,15 @@ const addSuppliersSection = (
           unreadCount={unreadCount}
           hasNewMessages={hasNewMessages}
           onNotificationClick={handleNotificationClick}
-          loading={loading} // ✅ ADD THIS LINE
-          childPhoto={currentParty?.child_photo || partyDetails?.childPhoto} // ✅ ADD THIS
-          onPhotoUpload={handleChildPhotoUpload} // ✅ ADD THIS
-          uploadingPhoto={uploadingChildPhoto} // ✅ PASS THE LOADING STATE
+          loading={loading}
+          childPhoto={currentParty?.child_photo || partyDetails?.childPhoto}
+          onPhotoUpload={handleChildPhotoUpload}
+          uploadingPhoto={uploadingChildPhoto}
         />
+      </div>
 
+      {/* Container for rest of content */}
+      <div className="container min-w-screen px-4 sm:px-6 lg:px-8 pb-8">
         <SupplierSelectionModal
           isOpen={showSupplierModal}
           onClose={closeSupplierModal}

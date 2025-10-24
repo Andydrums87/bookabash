@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function ProductDetailModal({ item, isOpen, onClose, onClaim, isClaimingDisabled, guestName }) {
+export default function ProductDetailModal({ item, isOpen, onClose, onClaim, isClaimingDisabled, guestName, isCreateMode = false }) {
   if (!isOpen || !item) return null;
 
   const getItemName = () => {
@@ -165,36 +165,40 @@ export default function ProductDetailModal({ item, isOpen, onClose, onClaim, isC
                   </div>
                 )}
 
-                {/* Claimed Status */}
-                {item.is_claimed ? (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2">
-                      <Heart className="w-5 h-5 text-green-600" />
-                      <span className="font-semibold text-green-900">
-                        {item.claimed_by} is bringing this gift
-                      </span>
-                    </div>
-                    <p className="text-green-700 text-sm mt-1">
-                      This item has already been claimed
-                    </p>
-                  </div>
-                ) : (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Package className="w-5 h-5 text-blue-600" />
-                      <span className="font-semibold text-blue-900">
-                        Available to claim
-                      </span>
-                    </div>
-                    <p className="text-blue-700 text-sm">
-                      Click "I'll bring this!" to let everyone know you're getting this gift
-                    </p>
-                  </div>
+                {/* Claimed Status - Only show in preview mode */}
+                {!isCreateMode && (
+                  <>
+                    {item.is_claimed ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-2">
+                          <Heart className="w-5 h-5 text-green-600" />
+                          <span className="font-semibold text-green-900">
+                            {item.claimed_by} is bringing this gift
+                          </span>
+                        </div>
+                        <p className="text-green-700 text-sm mt-1">
+                          This item has already been claimed
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Package className="w-5 h-5 text-blue-600" />
+                          <span className="font-semibold text-blue-900">
+                            Available to claim
+                          </span>
+                        </div>
+                        <p className="text-blue-700 text-sm">
+                          Click "I'll bring this!" to let everyone know you're getting this gift
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-4">
-                  {!item.is_claimed && (
+                  {!isCreateMode && !item.is_claimed && (
                     <Button
                       onClick={() => {
                         onClaim(item);
@@ -208,7 +212,7 @@ export default function ProductDetailModal({ item, isOpen, onClose, onClaim, isC
                       {isClaimingDisabled ? 'Enter your name first' : 'I\'ll bring this gift!'}
                     </Button>
                   )}
-                  
+
                   {getBuyUrl() !== '#' && (
                     <Button
                       variant="outline"

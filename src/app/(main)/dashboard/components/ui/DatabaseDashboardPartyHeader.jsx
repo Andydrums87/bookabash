@@ -154,7 +154,7 @@ export default function DatabasePartyHeader({
   };
 
   return (
-    <div className="relative rounded-2xl shadow-2xl overflow-hidden mb-6 transition-all duration-300">
+    <div className="relative shadow-2xl overflow-hidden mb-8 transition-all duration-300">
       {/* Theme Image Background */}
       {getThemeImage() && (
         <div className="absolute inset-0">
@@ -190,7 +190,7 @@ export default function DatabasePartyHeader({
       )}
 
       {/* Compact Content */}
-      <div className="relative px-4 py-4 md:px-6 md:py-5 text-white">
+      <div className="relative px-4 py-8 md:px-10 md:py-12 text-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           {/* Party Name & Theme with Photo */}
           <div className="flex items-center gap-3">

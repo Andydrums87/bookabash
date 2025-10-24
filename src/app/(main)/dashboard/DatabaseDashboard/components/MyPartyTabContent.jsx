@@ -365,9 +365,9 @@ export default function MyPartyTabContent({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Original Header Section */}
-      <div className="mb-4">
+      <div className="mb-3">
         <div>
           {/* <div className="flex items-start gap-3 mb-4">
             <h2 className="text-3xl font-black text-gray-900 leading-tight animate-fade-in flex-1">

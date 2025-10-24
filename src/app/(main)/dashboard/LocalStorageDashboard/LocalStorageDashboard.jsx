@@ -1528,25 +1528,24 @@ const handleChildPhotoUpload = async (file) => {
         hasAddon={hasAddon}
         addons={addons}
       >
-        <div className="container min-w-screen px-4 sm:px-6 lg:px-8 py-8">
-          <div data-tour="party-header">
+        {/* Full Width Header */}
+        <div data-tour="party-header" className="mb-8">
           <LocalStoragePartyHeader
-  theme={partyTheme}
-  partyDetails={partyDetails}
-  onPartyDetailsChange={handlePartyDetailsUpdate}
-  forceExpanded={isPartyHeaderExpanded}
-  onExpandChange={setIsPartyHeaderExpanded}
-  suppliers={suppliers}
-  onPartyRebuilt={handlePartyRebuilt}
+            theme={partyTheme}
+            partyDetails={partyDetails}
+            onPartyDetailsChange={handlePartyDetailsUpdate}
+            forceExpanded={isPartyHeaderExpanded}
+            onExpandChange={setIsPartyHeaderExpanded}
+            suppliers={suppliers}
+            onPartyRebuilt={handlePartyRebuilt}
+            childPhoto={partyDetails?.childPhoto}
+            onPhotoUpload={handleChildPhotoUpload}
+            uploadingPhoto={uploadingChildPhoto}
+          />
+        </div>
 
-  childPhoto={partyDetails?.childPhoto} // ✅ ADD THIS
-  onPhotoUpload={handleChildPhotoUpload} // ✅ ADD THIS
-  uploadingPhoto={uploadingChildPhoto} // ✅ ADD THIS
-/>
-           
-          </div>
-      
-
+        {/* Container for rest of content */}
+        <div className="container min-w-screen px-4 sm:px-6 lg:px-8 pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
             {/* Main Content */}
             <main className="lg:col-span-2 space-y-8">

@@ -296,7 +296,7 @@ export default function VenueCarouselCard({
                 className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
               >
                 <Eye className="w-4 h-4" />
-                <span>View Details</span>
+                <span className="text-sm">View Details</span>
               </DropdownMenuItem>
               
               <DropdownMenuItem
@@ -308,7 +308,7 @@ export default function VenueCarouselCard({
                 className="flex items-center gap-2 cursor-pointer hover:bg-red-50 text-red-600 hover:text-red-700"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Remove</span>
+                <span className="text-sm">Remove</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -318,7 +318,7 @@ export default function VenueCarouselCard({
         <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
           <div className="text-white">
             <h3 className="text-2xl font-bold mb-2 drop-shadow-lg">
-              {currentVenue.name}
+              {currentVenue?.name || 'Venue'}
             </h3>
            
             {/* Quick stats */}

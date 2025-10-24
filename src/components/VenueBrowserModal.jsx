@@ -153,28 +153,30 @@ export default function VenueBrowserModal({
                           variant="outline"
                           size="sm"
                           onClick={() => setSelectedForPreview(venue)}
-                          className="flex-1 text-xs"
+                          className="flex-1 border-gray-200 hover:bg-gray-50"
                         >
-                          View Details
+                          <span className="text-xs">View Details</span>
                         </Button>
                         <Button
                           size="sm"
                           onClick={() => handleSelectVenue(venue)}
                           disabled={isSelected}
-                          className={`flex-1 text-xs ${
+                          className={`flex-1 ${
                             isSelected
                               ? 'bg-green-500 hover:bg-green-600'
                               : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
                           }`}
                         >
-                          {isSelected ? (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Selected
-                            </>
-                          ) : (
-                            'Select'
-                          )}
+                          <span className="text-xs">
+                            {isSelected ? (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1 inline" />
+                                Selected
+                              </>
+                            ) : (
+                              'Select'
+                            )}
+                          </span>
                         </Button>
                       </div>
                     </div>

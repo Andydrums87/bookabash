@@ -172,46 +172,46 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   // Helper function to render expandable badge list
   const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
     if (!items?.length) return null;
-    
+
     const displayItems = showAll ? items : items.slice(0, maxInitial);
     const hasMore = items.length > maxInitial;
-    
+
     return (
-      <div className="mb-6">
-        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-          {icon && <span className="w-4 h-4">{icon}</span>}
+      <div className="mb-4">
+        <h4 className="font-semibold text-sm text-gray-900 mb-2 flex items-center gap-1">
+          {icon && <span className="w-3 h-3">{icon}</span>}
           {title}
           {items.length > 0 && (
-            <span className="text-sm text-gray-500 font-normal">({items.length})</span>
+            <span className="text-xs text-gray-500 font-normal">({items.length})</span>
           )}
         </h4>
-        
-        <div className="space-y-3">
+
+        <div className="space-y-2">
           {/* Grid layout for better organization */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             {displayItems.map((item, index) => (
-              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center`}>
+              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center text-xs`}>
                 {item}
               </Badge>
             ))}
           </div>
-          
+
           {/* Show more/less button */}
           {hasMore && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowAll(!showAll)}
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal"
+              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal text-xs"
             >
               {showAll ? (
                 <>
-                  <ChevronUp className="w-4 h-4 mr-1" />
+                  <ChevronUp className="w-3 h-3 mr-1" />
                   Show less
                 </>
               ) : (
                 <>
-                  <ChevronDown className="w-4 h-4 mr-1" />
+                  <ChevronDown className="w-3 h-3 mr-1" />
                   Show {items.length - maxInitial} more
                 </>
               )}
@@ -226,11 +226,11 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   const renderAgeGroups = (ageGroups) => {
     if (!ageGroups?.length) return null;
     return (
-      <div className="mb-6">
-        <h4 className="font-semibold text-gray-900 mb-3">Suitable Age Groups</h4>
+      <div className="mb-4">
+        <h4 className="font-semibold text-sm text-gray-900 mb-2">Suitable Age Groups</h4>
         <div className="flex flex-wrap gap-2">
           {ageGroups.map((age, index) => (
-            <Badge key={index} variant="outline" className="text-slate-700 border-slate-300 bg-slate-50">
+            <Badge key={index} variant="outline" className="text-xs text-slate-700 border-slate-300 bg-slate-50">
               {age}
             </Badge>
           ))}
@@ -469,44 +469,32 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
   return (
     <div className="space-y-6">
       {/* About Us Section */}
-      <Card className="border-gray-300">
-        <CardContent className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Building className="w-5 h-5 text-gray-600" />
-            About Our Venue
-          </h2>
-          
-          {serviceDetails.aboutUs && (
-            <div className="mb-6">
-              <p className="text-gray-700 leading-relaxed">{serviceDetails.aboutUs}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {serviceDetails.aboutUs && (
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-gray-900 mb-3">About Our Venue</h2>
+          <p className="text-sm text-gray-700 leading-relaxed">{serviceDetails.aboutUs}</p>
+        </div>
+      )}
 
       {/* Venue Information */}
-      <Card className="border-gray-300">
-        <CardContent className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Building className="w-5 h-5 text-gray-600" />
-            Venue Information
-          </h2>
+      <div className="mb-6">
+        <h2 className="text-base font-bold text-gray-900 mb-4">Venue Information</h2>
           
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
             {serviceDetails.venueType && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Venue Type</h4>
-                <p className="text-gray-700">{serviceDetails.venueType}</p>
+                <h4 className="font-semibold text-sm text-gray-900 mb-1">Venue Type</h4>
+                <p className="text-sm text-gray-700">{serviceDetails.venueType}</p>
               </div>
             )}
-            
+
             {serviceDetails.capacity && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
-                  <Users className="w-4 h-4" />
+                <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
+                  <Users className="w-3 h-3" />
                   Capacity
                 </h4>
-                <div className="text-gray-700">
+                <div className="text-sm text-gray-700">
                   {serviceDetails.capacity?.min && serviceDetails.capacity?.max ? (
                     <p>{serviceDetails.capacity.min}-{serviceDetails.capacity.max} guests</p>
                   ) : serviceDetails.capacity?.max ? (
@@ -532,11 +520,11 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
 
             {serviceDetails.availability?.minimumBookingHours && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
+                <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
                   Minimum Booking
                 </h4>
-                <p className="text-gray-700">{serviceDetails.availability.minimumBookingHours} hours</p>
+                <p className="text-sm text-gray-700">{serviceDetails.availability.minimumBookingHours} hours</p>
               </div>
             )}
           </div>
@@ -545,7 +533,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
           {renderExpandableBadges(
             serviceDetails.facilities,
             "Available Facilities",
-            <Settings className="w-4 h-4" />,
+            <Settings className="w-3 h-3" />,
             "text-gray-700 border-gray-300 bg-gray-50",
             showAllFacilities,
             setShowAllFacilities,
@@ -556,7 +544,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
           {renderExpandableBadges(
             serviceDetails.setupOptions,
             "Setup Options",
-            <Settings className="w-4 h-4" />,
+            <Settings className="w-3 h-3" />,
             "text-gray-700 border-gray-300 bg-gray-50",
             showAllSetupOptions,
             setShowAllSetupOptions,
@@ -567,7 +555,7 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
           {renderExpandableBadges(
             serviceDetails.cateringOptions,
             "Catering Options",
-            <Sparkles className="w-4 h-4" />,
+            <Sparkles className="w-3 h-3" />,
             "text-gray-700 border-gray-300 bg-gray-50",
             showAllCateringOptions,
             setShowAllCateringOptions,
@@ -575,30 +563,25 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
           )}
 
           {renderAgeGroups(serviceDetails.ageGroups)}
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Location & Access */}
       {(supplier?.owner?.address || serviceDetails.venueDetails) && (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-gray-600" />
-              Location & Access
-            </h2>
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-gray-900 mb-3">Location & Access</h2>
             
             {supplier?.owner?.address && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Address</h4>
-                <p className="text-gray-800">
+              <div className="mb-3">
+                <h4 className="font-semibold text-sm text-gray-900 mb-1">Address</h4>
+                <p className="text-sm text-gray-700">
                   {supplier.owner.address.street}, {supplier.owner.address.city}, {supplier.owner.address.postcode}
                 </p>
               </div>
             )}
             {supplier.venueAddress && (
-               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-               <h4 className="font-semibold text-gray-900 mb-2">Address</h4>
-               <p className="text-gray-800">
+               <div className="mb-3">
+               <h4 className="font-semibold text-sm text-gray-900 mb-1">Address</h4>
+               <p className="text-sm text-gray-700">
                  {supplier?.venueAddress?.addressLine1}, {supplier.venueAddress?.addressLine2}, {supplier.venueAddress?.city}, {supplier.venueAddress.postcode}
                </p>
              </div>
@@ -612,101 +595,92 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
 />
 
             {serviceDetails.venueDetails && (
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
                 {serviceDetails.venueDetails.parkingInfo && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
-                      <Car className="w-4 h-4" />
+                    <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
+                      <Car className="w-3 h-3" />
                       Parking
                     </h4>
-                    <p className="text-gray-700">{serviceDetails.venueDetails.parkingInfo}</p>
+                    <p className="text-sm text-gray-700">{serviceDetails.venueDetails.parkingInfo}</p>
                   </div>
                 )}
-                
+
                 {serviceDetails.venueDetails.accessInstructions && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Access Instructions</h4>
-                    <p className="text-gray-700">{serviceDetails.venueDetails.accessInstructions}</p>
+                    <h4 className="font-semibold text-sm text-gray-900 mb-1">Access Instructions</h4>
+                    <p className="text-sm text-gray-700">{serviceDetails.venueDetails.accessInstructions}</p>
                   </div>
                 )}
 
                 {serviceDetails.venueDetails.nearestStation && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Nearest Station</h4>
-                    <p className="text-gray-700">{serviceDetails.venueDetails.nearestStation}</p>
+                    <h4 className="font-semibold text-sm text-gray-900 mb-1">Nearest Station</h4>
+                    <p className="text-sm text-gray-700">{serviceDetails.venueDetails.nearestStation}</p>
                   </div>
                 )}
 
                 {serviceDetails.venueDetails.landmarks && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Local Landmarks</h4>
-                    <p className="text-gray-700">{serviceDetails.venueDetails.landmarks}</p>
+                    <h4 className="font-semibold text-sm text-gray-900 mb-1">Local Landmarks</h4>
+                    <p className="text-sm text-gray-700">{serviceDetails.venueDetails.landmarks}</p>
                   </div>
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {/* Equipment & Tables */}
       {serviceDetails.equipment && Object.keys(serviceDetails.equipment).some(key => serviceDetails.equipment[key]) && (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-gray-600" />
-              Equipment & Setup
-            </h2>
-            
-            <div className="grid md:grid-cols-2 gap-6">
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-gray-900 mb-3">Equipment & Setup</h2>
+
+          <div className="grid md:grid-cols-2 gap-4">
               {(serviceDetails.equipment.tables || serviceDetails.equipment.chairs) && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Available Equipment</h4>
+                  <h4 className="font-semibold text-sm text-gray-900 mb-1">Available Equipment</h4>
                   {serviceDetails.equipment.tables && (
-                    <p className="text-gray-700">Tables: {serviceDetails.equipment.tables}</p>
+                    <p className="text-sm text-gray-700">Tables: {serviceDetails.equipment.tables}</p>
                   )}
                   {serviceDetails.equipment.chairs && (
-                    <p className="text-gray-700">Chairs: {serviceDetails.equipment.chairs}</p>
+                    <p className="text-sm text-gray-700">Chairs: {serviceDetails.equipment.chairs}</p>
                   )}
                 </div>
               )}
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Equipment Available</h4>
+                <h4 className="font-semibold text-sm text-gray-900 mb-1">Equipment Available</h4>
                 <div className="space-y-1">
                   {serviceDetails.equipment.soundSystem && (
-                    <p className="text-gray-700 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    <p className="text-sm text-gray-700 flex items-center gap-2">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
                       Sound System
                     </p>
                   )}
                   {serviceDetails.equipment.projector && (
-                    <p className="text-gray-700 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    <p className="text-sm text-gray-700 flex items-center gap-2">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
                       Projector/Screen
                     </p>
                   )}
                   {serviceDetails.equipment.kitchen && (
-                    <p className="text-gray-700 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    <p className="text-sm text-gray-700 flex items-center gap-2">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
                       Kitchen Access
                     </p>
                   )}
                   {serviceDetails.equipment.bar && (
-                    <p className="text-gray-700 flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    <p className="text-sm text-gray-700 flex items-center gap-2">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
                       Bar Facilities
                     </p>
                   )}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </div>
       )}
-
-      {/* Add-on Services - Now with horizontal scrolling */}
-      {renderAddOnServices(serviceDetails.addOnServices)}
 
       {/* NEW: Items We Welcome - Show allowed items */}
       {renderAllowedItems(serviceDetails.allowedItems)}
@@ -719,22 +693,18 @@ const VenueDisplay = ({ supplier, serviceDetails }) => {
 
       {/* Special Features */}
       {serviceDetails.specialFeatures && (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Special Features</h2>
-            <p className="text-gray-700 leading-relaxed">{serviceDetails.specialFeatures}</p>
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-gray-900 mb-3">Special Features</h2>
+          <p className="text-sm text-gray-700 leading-relaxed">{serviceDetails.specialFeatures}</p>
+        </div>
       )}
 
       {/* Legacy Support */}
       {serviceDetails.aboutService && (
-        <Card className="border-gray-300">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">About This Venue</h2>
-            <p className="text-gray-700 leading-relaxed text-base">{serviceDetails.aboutService}</p>
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-gray-900 mb-3">About This Venue</h2>
+          <p className="text-sm text-gray-700 leading-relaxed">{serviceDetails.aboutService}</p>
+        </div>
       )}
     </div>
   );

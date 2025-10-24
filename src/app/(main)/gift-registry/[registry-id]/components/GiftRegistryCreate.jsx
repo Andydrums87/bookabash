@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { useEnhancedGiftProducts } from "../hooks/useEnhancedGiftProducts"
-import { Gift, Plus, Check, Search, ArrowLeft, Grid3X3, List, Star, ShoppingCart, SlidersHorizontal, Loader2, Sparkles, Filter, X } from 'lucide-react'
+import { Gift, Plus, Check, Search, ArrowLeft, Grid3X3, List, Star, ShoppingCart, Loader2, Sparkles, Filter, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -344,48 +344,36 @@ const isProductInRegistry = (productId) => {
     <div className="min-h-screen bg-gray-50">
       <ContextualBreadcrumb currentPage="Browse Gifts" />
 
-      {/* Header with Your Pattern */}
-      <div 
+      {/* Header - Smaller and cleaner */}
+      <div
         style={{
           backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
           backgroundRepeat: 'repeat',
           backgroundSize: '100px, cover',
           backgroundPosition: 'center',
-        }} 
-        className="relative md:h-auto h-auto rounded-2xl shadow-2xl overflow-hidden mb-2 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] mx-3 mt-6 sm:mx-4"
+        }}
+        className="relative rounded-2xl shadow-lg overflow-hidden mb-4 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] mx-3 mt-6 sm:mx-4"
       >
-        <div className="relative z-10 p-6 sm:p-8 text-white">
-          {/* Header Content */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            {/* Left Side - Title and Description */}
+        <div className="relative z-10 px-4 py-4 sm:px-6 sm:py-5 text-white">
+          <div className="flex items-center justify-between">
+            {/* Title and Stats */}
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-              
-                <div>
-                  <h1 className="text-6xl  font-black leading-tight">
-                    Gift Shop 
-                  </h1>
-                  <p className="text-white/90 text-sm sm:text-base mt-1">
-                    {activeMode === 'trending' 
-                      ? `Perfect gifts for ${childAge ? `age ${childAge}` : 'kids'}! ✨`
-                      : activeMode === 'search'
-                      ? `Search results for "${searchTerm}"`
-                      : `${categories.find(c => c.id === activeCategory)?.name || 'Products'} for ${partyDetails?.child_name}`}
-                  </p>
-                </div>
-              </div>
+              <h1 className="text-3xl sm:text-4xl font-black leading-tight mb-3">
+                {partyDetails?.child_name ? `${partyDetails.child_name}'s Gift Shop` : 'Gift Shop'}
+              </h1>
 
               {/* Registry Stats */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/30">
                   <ShoppingCart className="w-4 h-4 text-white" />
-                  <span className="text-sm font-medium text-white">
-                    {registryItems.length} items in registry
+                  <span className="text-xs sm:text-sm font-medium text-white">
+                    {registryItems.length} items
                   </span>
                 </div>
                 <Button
                   variant="outline"
-                  className="border-white/30 text-white hover:bg-white/20 bg-white/10 backdrop-blur-sm"
+                  size="sm"
+                  className="border-white/30 text-white hover:bg-white/20 bg-white/10 backdrop-blur-sm text-xs sm:text-sm"
                   asChild
                 >
                   <Link href={`/gift-registry/${registryId}/preview`}>
@@ -393,107 +381,105 @@ const isProductInRegistry = (productId) => {
                   </Link>
                 </Button>
               </div>
-
-              {/* Search Bar */}
-              <div className="flex gap-3 max-w-2xl">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                  <Input
-  placeholder="Search for perfect gifts..."
-  value={searchTerm}
-  onChange={(e) => handleSearchChange(e.target.value)}
-  className="pl-12 h-12 border-2 border-white/30 focus:border-white bg-white backdrop-blur-sm text-gray-500 placeholder:text-red-500 rounded-xl"
-  onKeyDown={(e) => {
-    if (e.key === "Enter" && !isSearching && searchTerm.trim()) {
-      handleSearchSubmit()
-    }
-  }}
-/>
-
-                  
-                  {/* Search indicator */}
-                  {isSearching && (
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    </div>
-                  )}
-                  
-                  {/* Clear search button */}
-                  {searchTerm && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm("")
-                        handleCategoryChange("all")
-                      }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/20 rounded-full transition-colors"
-                      type="button"
-                    >
-                      <X className="w-4 h-4 text-white/70 hover:text-white" />
-                    </button>
-                  )}
-                </div>
-                
-                <Button
-                  onClick={handleSearchSubmit}
-                  disabled={productsLoading || !searchTerm.trim()}
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/30 px-6 h-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
-                >
-                  {productsLoading ? (
-                    <>
-                      <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      <span className="hidden sm:inline">Searching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="hidden sm:inline">Search</span>
-                      <Search className="w-4 h-4 sm:hidden" />
-                    </>
-                  )}
-                </Button>
-              </div>
             </div>
 
-            {/* Right Side - Decorative Elements */}
+            {/* Right Side - Decorative Elements - Hidden on mobile */}
             <div className="hidden lg:block">
               <div className="relative">
-                <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Sparkles className="w-16 h-16 text-white/80" />
+                <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Sparkles className="w-10 h-10 text-white/80" />
                 </div>
-                {/* Floating decorative elements */}
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-white/20 rounded-full animate-bounce"></div>
-                <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-                <div className="absolute top-1/2 -left-4 w-3 h-3 bg-white/25 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
               </div>
             </div>
           </div>
 
-          {/* Error Message */}
-          {productsError && (
-            <div className="mt-6 p-4 bg-red-500/20 border border-red-300/30 rounded-xl backdrop-blur-sm">
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-white font-medium">{productsError}</span>
-                <button
-                  onClick={() => {
-                    reset()
-                    if (activeMode === 'search') {
-                      handleSearchSubmit()
-                    } else if (activeMode === 'category') {
-                      handleCategoryChange(activeCategory)
-                    } else {
-                      loadProducts('trending', { age: childAge, limit: 20 })
-                    }
-                  }}
-                  className="ml-auto text-white hover:text-white/80 underline font-medium"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          )}
         </div>
+      </div>
+
+      {/* Search Bar - Outside Header */}
+      <div className="px-3 sm:px-4 mb-4">
+        <div className="flex gap-2 sm:gap-3 max-w-4xl mx-auto">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            <Input
+              placeholder="Search for perfect gifts..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9 sm:pl-12 h-11 sm:h-12 border-2 border-gray-200 focus:border-[hsl(var(--primary-500))] bg-white text-gray-900 placeholder:text-gray-400 rounded-xl"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isSearching && searchTerm.trim()) {
+                  handleSearchSubmit()
+                }
+              }}
+            />
+
+            {/* Search indicator */}
+            {isSearching && (
+              <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-gray-300 border-t-[hsl(var(--primary-500))]" />
+              </div>
+            )}
+
+            {/* Clear search button */}
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm("")
+                  handleCategoryChange("all")
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                type="button"
+              >
+                <X className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+              </button>
+            )}
+          </div>
+
+          <Button
+            onClick={handleSearchSubmit}
+            disabled={productsLoading || !searchTerm.trim()}
+            className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-4 sm:px-6 h-11 sm:h-12 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {productsLoading ? (
+              <>
+                <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span className="hidden sm:inline">Searching...</span>
+              </>
+            ) : (
+              <>
+                <span className="hidden sm:inline">Search</span>
+                <Search className="w-4 h-4 sm:hidden" />
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Error Message */}
+        {productsError && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl max-w-4xl mx-auto">
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-red-800 font-medium text-sm">{productsError}</span>
+              <button
+                onClick={() => {
+                  reset()
+                  if (activeMode === 'search') {
+                    handleSearchSubmit()
+                  } else if (activeMode === 'category') {
+                    handleCategoryChange(activeCategory)
+                  } else {
+                    loadProducts('trending', { age: childAge, limit: 20 })
+                  }
+                }}
+                className="ml-auto text-red-700 hover:text-red-800 underline font-medium text-sm"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="px-3 sm:px-4 py-4 sm:py-6">
@@ -655,35 +641,35 @@ const isProductInRegistry = (productId) => {
           <div className="flex-1">
             {/* Toolbar - Mobile Optimized */}
             <div className="flex items-center justify-between mb-4 sm:mb-6 bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <span className="text-xs sm:text-sm text-gray-600">
+              <div className="flex items-center gap-3">
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">
                   {sortedProducts.length} products
                 </span>
-                
+
                 {/* Mobile Filters Button */}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowFilters(!showFilters)} 
-                  className="lg:hidden border border-gray-200 hover:bg-gray-50"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="lg:hidden h-8 px-2.5 text-xs border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-colors"
                 >
-                  <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  Filters
+                  <Filter className="w-3.5 h-3.5 mr-1" />
+                  <span>Filters</span>
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {/* Sort - Mobile Optimized */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-52 px-2  sm:w-48 text-xs">
+                  <SelectTrigger className="w-[130px] sm:w-[160px] h-8 text-[11px] border-gray-300">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance">Most Relevant</SelectItem>
-                    <SelectItem value="popularity">Most Popular</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
-                    <SelectItem value="rating">Highest Rated</SelectItem>
+                    <SelectItem value="relevance" className="text-xs">Most Relevant</SelectItem>
+                    <SelectItem value="popularity" className="text-xs">Most Popular</SelectItem>
+                    <SelectItem value="price-low" className="text-xs">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high" className="text-xs">Price: High to Low</SelectItem>
+                    <SelectItem value="rating" className="text-xs">Highest Rated</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -903,6 +889,7 @@ const isProductInRegistry = (productId) => {
         onClaim={handleClaimItem}
         isClaimingDisabled={!guestName.trim()}
         guestName={guestName}
+        isCreateMode={true}
       />
     </div>
   )

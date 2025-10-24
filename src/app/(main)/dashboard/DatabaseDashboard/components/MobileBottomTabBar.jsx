@@ -283,7 +283,7 @@ const MobileBottomTabBar = ({
         return (
           <div className="space-y-4">
             
-            <div className="text-center mb-6">
+            {/* <div className="text-center mb-6">
               <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <PartyPopper className="w-8 h-8 text-primary-600" />
               </div>
@@ -294,7 +294,7 @@ const MobileBottomTabBar = ({
               <div className="mt-2 text-xs text-gray-500">
                 {completedTools} of {availableTools} completed
               </div>
-            </div>
+            </div> */}
 
             <div className="space-y-3">
               {partyTools.map((tool) => {

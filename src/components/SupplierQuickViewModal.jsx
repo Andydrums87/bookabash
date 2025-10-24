@@ -23,6 +23,20 @@ export default function SupplierQuickViewModal({
   const [fullSupplier, setFullSupplier] = useState(null)
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
 
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    // Cleanup function to restore scroll when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
   // Fetch full supplier data when modal opens
   useEffect(() => {
     const fetchFullSupplierData = async () => {
@@ -112,7 +126,7 @@ export default function SupplierQuickViewModal({
         </div>
 
         {/* ✅ MAXIMUM HEIGHT: Scrollable Content Area - Less padding on mobile */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6" style={{ minHeight: 0 }}>
+        <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4" style={{ minHeight: 0 }}>
           {/* Supplier Details - No tabs needed, just show content */}
           <div className="space-y-4">
             {isLoadingSupplier ? (
@@ -147,30 +161,23 @@ export default function SupplierQuickViewModal({
 
                   return (
                     <div className="mb-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl flex items-center justify-center">
-                          <Package className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">What's Included</h3>
-                          {packageData?.name && (
-                            <p className="text-sm text-gray-600">{packageData.name}</p>
-                          )}
-                        </div>
-                      </div>
+                      <h3 className="text-base font-bold text-gray-900 mb-3">What's Included</h3>
+                      {packageData?.name && (
+                        <p className="text-xs text-gray-600 mb-3">{packageData.name}</p>
+                      )}
 
                       {packageFeatures.length > 0 ? (
-                        <ul className="space-y-2 bg-gray-50 rounded-xl p-4 pl-6">
+                        <ul className="space-y-1.5 pl-4">
                           {packageFeatures.map((feature, index) => (
-                            <li key={index} className="text-gray-700">
+                            <li key={index} className="text-sm text-gray-700">
                               {feature}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
-                          <p>Package details will be shown after you customize this supplier.</p>
-                        </div>
+                        <p className="text-xs text-gray-600">
+                          Package details will be shown after you customize this supplier.
+                        </p>
                       )}
                     </div>
                   )
