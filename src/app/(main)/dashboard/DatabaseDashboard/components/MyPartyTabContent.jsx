@@ -505,7 +505,7 @@ export default function MyPartyTabContent({
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
             <div className="flex items-center gap-2 text-gray-400">
               <Sparkles className="w-4 h-4" />
-              <span className="text-xs font-medium uppercase tracking-wider">Optional Extras</span>
+              <span className="text-xs font-medium uppercase tracking-wider">Add More Magic</span>
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>

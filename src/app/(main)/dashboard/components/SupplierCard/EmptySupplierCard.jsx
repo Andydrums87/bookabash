@@ -337,56 +337,43 @@ export default function EmptySupplierCard({
           className="overflow-hidden bg-white rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[hsl(var(--primary-300))] h-full relative"
         >
           <div className="flex flex-col h-full">
-            {/* Image section - smaller */}
-            <div className="relative h-32 w-full flex-shrink-0">
-              <div
-                className="absolute inset-0 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowQuickView(true)
-                }}
-              >
-                <Image
-                  src={genericImage}
-                  alt={categoryDisplayName}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 33vw"
-                />
-              </div>
+            {/* Image section - clickable and smaller */}
+            <div
+              className="relative h-32 w-full flex-shrink-0 cursor-pointer group/img"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowQuickView(true)
+              }}
+            >
+              <Image
+                src={genericImage}
+                alt={categoryDisplayName}
+                fill
+                className="object-cover transition-transform duration-300 group-hover/img:scale-105"
+                sizes="(max-width: 768px) 50vw, 33vw"
+              />
 
-              {/* Lighter overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
-
-              {/* Info icon */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowQuickView(true)
-                }}
-                className="absolute top-2 right-2 z-10 w-7 h-7 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-md"
-                title="View supplier details"
-              >
-                <Info className="w-4 h-4 text-gray-700" />
-              </button>
-
-              {/* Category name overlay */}
-              <div className="absolute bottom-2 left-2 right-2 z-10">
-                <h3 className="text-base font-bold text-white drop-shadow-lg truncate">
-                  {categoryDisplayName}
-                </h3>
-                {recommendedSupplier && (
-                  <p className="text-xs text-white/90 truncate">
-                    {recommendedSupplier.name}
-                  </p>
-                )}
-              </div>
+              {/* Subtle overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/40 transition-opacity group-hover/img:opacity-80" />
             </div>
 
-            {/* Bottom section with compact button */}
-            <div className="p-2 flex-shrink-0">
+            {/* Content section below image */}
+            <div className="p-3 flex-1 flex flex-col">
+              {/* Category name - larger */}
+              <h3 className="text-base font-bold text-gray-900 truncate mb-2">
+                {categoryDisplayName}
+              </h3>
+
+              {/* Price */}
+              {pricing.finalPrice > 0 && (
+                <p className="text-xs text-gray-500 mb-3">
+                  from <span className="font-bold text-gray-900">£{pricing.finalPrice}</span>
+                </p>
+              )}
+
+              {/* Button at bottom */}
               <Button
-                className={`w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+                className={`w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed mt-auto ${
                   isAddedToParty
                     ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
                     : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
