@@ -468,8 +468,8 @@ const SimpleMobileBottomTabBar = ({
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-lg">
-        <div className="px-2 py-2 safe-area-pb">
+      <div className="md:hidden fixed left-0 right-0 bg-white border-t border-gray-200 z-30 shadow-lg" style={{ bottom: 0 }}>
+        <div className="px-2 py-2 safe-area-pb" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
           <div className="flex justify-around items-center max-w-md mx-auto gap-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
@@ -552,12 +552,20 @@ const SimpleMobileBottomTabBar = ({
       <style jsx global>{`
         @media (max-width: 768px) {
           body {
-            padding-bottom: 65px;
+            padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px));
           }
         }
-        
+
         .safe-area-pb {
           padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+
+        @supports (padding: max(0px)) {
+          @media (max-width: 768px) {
+            body {
+              padding-bottom: max(65px, calc(65px + env(safe-area-inset-bottom, 0px)));
+            }
+          }
         }
       `}</style>
     </>

@@ -167,7 +167,7 @@ export default function MyPartyTabContent({
         key={type}
         className="overflow-hidden rounded-2xl border-2 transition-all duration-300 relative ring-2 ring-offset-2 hover:scale-[1.02]"
         style={{
-          borderColor: 'hsl(var(--primary-400))',
+          borderColor: 'hsl(var(--primary-200))',
           '--tw-ring-color': 'hsl(var(--primary-300) / 0.5)',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
         }}
