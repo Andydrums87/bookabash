@@ -47,6 +47,18 @@ const DEFAULT_CAKE_FLAVORS = [
 
 // Package Details Modal (Drawer on mobile)
 const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected, isPartyBags, partyBagsQuantity, formattedDuration }) => {
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
   if (!isOpen) return null
 
   const handleChoosePackage = () => {
@@ -74,29 +86,29 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
             fill
             className="object-cover"
           />
+          {/* Dark gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+
           <button
             onClick={onClose}
             className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-white hover:bg-gray-100 rounded-full p-1.5 sm:p-2 shadow-md transition-colors z-10"
           >
             <X size={18} className="sm:w-5 sm:h-5 text-gray-600" />
           </button>
-          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-auto bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{pkg.name}</h2>
-            <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2">
+
+          {/* Package info directly on image */}
+          <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-10">
+            <h2 className="text-xl sm:text-3xl font-bold text-white drop-shadow-lg mb-2">{pkg.name}</h2>
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <div>
-                <span className="text-xl sm:text-3xl font-bold text-[hsl(var(--primary-600))]">
+                <span className="text-2xl sm:text-4xl font-black text-white drop-shadow-lg">
                   £{displayPrice}
                 </span>
-                {isPartyBags && (
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    for {partyBagsQuantity || 1} bags
-                  </p>
-                )}
               </div>
               {!isPartyBags && (
-                <div className="flex items-center text-gray-600 text-sm sm:text-base">
-                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                  <span>{formattedDuration || pkg.duration}</span>
+                <div className="flex items-center text-white text-sm sm:text-base drop-shadow-md">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5" />
+                  <span className="font-semibold">{formattedDuration || pkg.duration}</span>
                 </div>
               )}
             </div>
@@ -193,6 +205,18 @@ export default function SupplierCustomizationModal({
   // Package details modal state
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [selectedPackageForModal, setSelectedPackageForModal] = useState(null)
+
+  // Disable body scroll when main modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
 
   // Sync party bags quantity with guest count changes
   useEffect(() => {
@@ -820,35 +844,25 @@ export default function SupplierCustomizationModal({
                             {/* Price */}
                             <div className="mb-1">
                               {supplierTypeDetection.isPartyBags ? (
-                                <>
-                                  <p className="font-bold text-[hsl(var(--primary-600))] text-base">
-                                    £{(pkg.price * partyBagsQuantity).toFixed(2)}
-                                  </p>
-                                  <p className="text-[10px] text-gray-500">
-                                    for {partyBagsQuantity} bags
-                                  </p>
-                                </>
+                                <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                                  £{(pkg.price * partyBagsQuantity).toFixed(2)}
+                                </p>
                               ) : (
-                                <>
-                                  <p className="font-bold text-[hsl(var(--primary-600))] text-base">
-                                    £{pkg.enhancedPrice}
-                                  </p>
-                                  {pkg.enhancedPrice !== pkg.price && (
-                                    <p className="text-[10px] text-gray-500 line-through">£{pkg.price}</p>
-                                  )}
-                                </>
+                                <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                                  £{pkg.enhancedPrice}
+                                </p>
                               )}
                             </div>
 
                             {/* Duration */}
-                            <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] mb-1">
+                            {/* <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] mb-1">
                               <Clock className="w-3 h-3" />
                               <span>{formatDurationText(pkg.duration)}</span>
-                            </div>
+                            </div> */}
 
                             {/* View Details Button */}
                             <button
-                              className="w-full text-[hsl(var(--primary-600))] hover:text-[hsl(var(--primary-700))] transition-colors text-[10px] py-1 font-medium"
+                              className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white transition-colors text-sm py-2 font-semibold rounded-lg"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setSelectedPackageForModal(pkg)
@@ -858,13 +872,6 @@ export default function SupplierCustomizationModal({
                               Details
                             </button>
                           </div>
-
-                          {/* Selection Indicator */}
-                          {isSelected && (
-                            <div className="absolute top-1 right-1 bg-[hsl(var(--primary-500))] rounded-full p-1 shadow-md text-white">
-                              <CheckCircle size={12} />
-                            </div>
-                          )}
 
                           {/* Deselect Button */}
                           {isSelected && (
@@ -998,10 +1005,6 @@ export default function SupplierCustomizationModal({
 
                 <div className="bg-white rounded p-3 border border-gray-200">
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600">Price per bag:</span>
-                      <span className="font-medium text-gray-900">£{selectedPackage.price.toFixed(2)}</span>
-                    </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-600">Quantity:</span>
                       <span className="font-medium text-gray-900">{partyBagsQuantity} bags</span>

@@ -658,8 +658,8 @@ export default function MobileSupplierNavigation({
 
   return (
     <div className="w-full relative">
-      {/* Sticky Tab Navigation - KEEP AS IS */}
-      <div className="sticky top-0 z-30 bg-white  border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
+      {/* Hidden original tab navigation */}
+      <div className="hidden sticky top-0 z-30 bg-white  border-b-2 border-[hsl(var(--primary-200))] mb-6" data-tour="mobile-navigation-tabs">
         <div className="relative overflow-hidden ">
           {/* <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-2 left-8 w-1.5 h-1.5 bg-[hsl(var(--primary-300))] rounded-full opacity-60"></div>
@@ -809,142 +809,9 @@ export default function MobileSupplierNavigation({
         )}
       </div>
 
-      {/* ✅ UPDATED: Supplier Card Content with Venue Carousel */}
-      <div className="px-4" id="mobile-supplier-content" data-tour="mobile-supplier-cards">
-        {activeSupplierTypeData?.isMyPartySection ? (
-          <div>
-            {renderMyPartyContent()}
-          </div>
-        ) : activeSupplierTypeData?.isAddonSection ? (
-          <div>
-            <div className="mb-4">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Gift className="w-5 h-5 text-purple-600" />
-                Add-ons & Extras
-              </h2>
-              <p className="text-sm text-gray-600">
-                Enhance your party with special extras
-              </p>
-            </div>
-            {renderAddonsContent()}
-          </div>
-        ) : (
-          <div>
-            <div className="transition-all duration-300 ease-in-out" data-tour={activeSupplierTypeData.type === 'venue' ? 'venue-card-mobile' : undefined}>
-          {(() => {
-            // Special handling for venue type
-            if (activeSupplierTypeData.type === 'venue') {
-              const userHasOwnVenue = partyDetails?.hasOwnVenue === true;
-              const hasSelectedVenue = !!suppliers.venue;
-              const hasCarouselOptions = venueCarouselOptions && venueCarouselOptions.length > 0;
-              
-              console.log('🏛️ Mobile Venue Decision:', {
-                userHasOwnVenue,
-                hasSelectedVenue,
-                hasCarouselOptions
-              });
-              
-              // If user has own venue AND hasn't selected one, show empty card
-              if (userHasOwnVenue && !hasSelectedVenue) {
-                console.log('✅ Showing empty venue card (user has own venue)');
-                return (
-                  <SupplierCard
-                    type="venue"
-                    supplier={null} // ✅ Pass null to show EmptySupplierCard
-                    loadingCards={loadingCards}
-                    suppliersToDelete={suppliersToDelete}
-                    openSupplierModal={(category) => {
-                      console.log('🎯 User wants to browse venues - clearing hasOwnVenue');
-                      const updatedPartyDetails = {
-                        ...partyDetails,
-                        hasOwnVenue: false
-                      };
-                      localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails));
-                      window.location.reload();
-                    }}
-                    handleDeleteSupplier={handleDeleteSupplier}
-                    getSupplierDisplayName={getSupplierDisplayName}
-                    addons={[]}
-                    handleRemoveAddon={handleRemoveAddon}
-                    enquiryStatus={null}
-                    enquirySentAt={null}
-                    isSignedIn={true}
-                    isPaymentConfirmed={false}
-                    enquiries={[]}
-                    currentPhase={currentPhase}
-                    handleCancelEnquiry={handleCancelEnquiry}
-                    onPaymentReady={onPaymentReady}
-                    enhancedPricing={null}
-                    partyDetails={partyDetails}
-                    recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType('venue') : null}
-                    onAddSupplier={onAddSupplier}
-                    onCustomizationComplete={onCustomizationComplete}
-                  />
-                );
-              }
-              
-              // Venue logic - falls through to SupplierCard with browse venues option
-              if (activeSupplierTypeData.type === 'venue') {
-                console.log('✅ Venue type - will render SupplierCard with browse option if venues available');
-                // Falls through to default SupplierCard rendering below with showBrowseVenues prop
-              }
-            }
-            
-            // Default: Show regular supplier card for all other types
-            // Filter addons for this specific supplier
-            const supplierAddons = currentSupplier ? addons.filter(addon =>
-              addon.supplierId === currentSupplier.id ||
-              addon.supplierType === activeSupplierTypeData.type ||
-              addon.attachedToSupplier === activeSupplierTypeData.type
-            ) : []
-
-            return (
-              <SupplierCard
-                type={activeSupplierTypeData.type}
-                supplier={currentSupplier}
-                loadingCards={loadingCards}
-                suppliersToDelete={suppliersToDelete}
-                openSupplierModal={openSupplierModal}
-                handleDeleteSupplier={handleDeleteSupplier}
-                getSupplierDisplayName={getSupplierDisplayName}
-                addons={supplierAddons}
-                handleRemoveAddon={handleRemoveAddon}
-                enquiryStatus={getEnquiryStatus(activeSupplierTypeData.type)}
-                enquirySentAt={getEnquiryTimestamp(activeSupplierTypeData.type)}
-                isSignedIn={true}
-                isPaymentConfirmed={isPaymentConfirmed}
-                enquiries={enquiries}
-                currentPhase={currentPhase}
-                handleCancelEnquiry={handleCancelEnquiry}
-                onPaymentReady={onPaymentReady}
-                enhancedPricing={currentSupplier ? getSupplierDisplayPricing(currentSupplier, partyDetails) : null}
-                partyDetails={partyDetails}
-                recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType(activeSupplierTypeData.type) : null}
-                onAddSupplier={onAddSupplier}
-                onCustomizationComplete={onCustomizationComplete}
-                showBrowseVenues={activeSupplierTypeData.type === 'venue' && showBrowseVenues}
-                onBrowseVenues={onBrowseVenues}
-              />
-            );
-          })()}
-        </div>
-
-            {/* Back to My Party Link - Only show when on individual supplier tab with content */}
-            {currentSupplier && (
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => handleTabSelect(0, supplierTypes[0])}
-                  className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to My Party
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+      {/* ✅ My Party Content - Always Visible */}
+      <div className="px-4 -mt-4" id="mobile-supplier-content" data-tour="mobile-supplier-cards">
+        {renderMyPartyContent()}
       </div>
 
       {/* ✅ COMPLETE BOOKING CTA - SHOWN AFTER USER CLICKS "I'M HAPPY" */}

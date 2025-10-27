@@ -88,14 +88,14 @@ export default function MyPartyTabContent({
   // Group suppliers by category
   const getCategoryName = (type) => {
     const categoryNames = {
-      venue: 'Venue',
-      entertainment: 'Entertainment',
-      catering: 'Catering',
-      cakes: 'Cakes',
+      venue: 'The Place',
+      entertainment: 'The Entertainment',
+      catering: 'The Food',
+      cakes: 'The Cake',
       facePainting: 'Face Painting',
       activities: 'Activities',
       partyBags: 'Party Bags',
-      decorations: 'Decorations',
+      decorations: 'The Decorations',
       balloons: 'Balloons'
     }
     return categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
@@ -365,9 +365,9 @@ export default function MyPartyTabContent({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Original Header Section */}
-      <div className="mb-3">
+      <div>
         <div>
           {/* <div className="flex items-start gap-3 mb-4">
             <h2 className="text-3xl font-black text-gray-900 leading-tight animate-fade-in flex-1">
@@ -410,91 +410,10 @@ export default function MyPartyTabContent({
         </div>
       </div>
 
-      {/* Party Details - Mobile Only */}
-      <div className="md:hidden bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-gray-900">Party Details</h4>
-            <button
-              onClick={onEditPartyDetails}
-              className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit
-            </button>
-          </div>
-
-          <div className="space-y-2 text-sm text-gray-700">
-            <p>
-              <span className="font-semibold">Date:</span> {formatDate(partyDetails?.date)}
-            </p>
-            <p>
-              <span className="font-semibold">Time:</span> {formatTime(partyDetails?.startTime || partyDetails?.time)}
-            </p>
-            <p>
-              <span className="font-semibold">Location:</span> {getVenueAddress()}
-            </p>
-            <p>
-              <span className="font-semibold">Theme:</span> <span className="capitalize">{partyDetails?.theme?.replace(/-/g, ' ') || 'Party'}</span>
-            </p>
-          </div>
-
-          {/* Photo Upload Section - At Bottom */}
-          {onPhotoUpload && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-3">
-                {childPhoto ? (
-                  <div className="relative group">
-                    <img
-                      src={childPhoto}
-                      alt={partyDetails?.childName || 'Child'}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
-                    />
-                    {uploadingPhoto && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                    {!uploadingPhoto && (
-                      <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <span className="text-white text-xs font-semibold">Change</span>
-                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-                      </label>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative group">
-                    <div className="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center cursor-pointer hover:scale-105 transition-all">
-                      {uploadingPhoto ? (
-                        <div className="w-5 h-5 border-2 border-[hsl(var(--primary-500))] border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <div className="flex flex-col items-center">
-                          <Camera className="w-5 h-5 text-primary-700" strokeWidth={2.5} />
-                        </div>
-                      )}
-                    </div>
-                    {!uploadingPhoto && (
-                      <label className="absolute inset-0 flex items-center justify-center rounded-full cursor-pointer">
-                        <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-                      </label>
-                    )}
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{partyDetails?.childName || 'Child'}'s Photo</p>
-                  <p className="text-xs text-gray-500">
-                    {childPhoto ? 'Click photo to change' : 'Add a photo'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
       {/* All Suppliers Section with Category Headings */}
       {allSuppliers.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {allSuppliers.map(([type, supplier]) => {
             const categoryName = getCategoryName(type)
             const typeConfig = getTypeConfig(type)
@@ -503,9 +422,8 @@ export default function MyPartyTabContent({
               <div key={type} id={`supplier-card-${type}`}>
                 {/* Category Heading */}
                 <div className="mb-3">
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <span className="text-xl">{typeConfig.icon}</span>
-                    <span>{categoryName}</span>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {categoryName}
                   </h3>
                 </div>
 
@@ -536,19 +454,19 @@ export default function MyPartyTabContent({
         </div>
       )}
 
-      {/* Total Cost Card */}
+      {/* Total Cost Summary - Subtle Info Box */}
       {allSuppliers.length > 0 && (
-        <Card className="bg-primary-500  shadow-lg">
-          <div className="p-4 flex items-center justify-between">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">Your Party Total</p>
-              <p className="text-xs text-white/80 mt-0.5">{allSuppliers.length} supplier{allSuppliers.length > 1 ? 's' : ''} selected</p>
+              <p className="text-sm font-medium text-gray-700">Party Total</p>
+              <p className="text-xs text-gray-500 mt-0.5">{allSuppliers.length} supplier{allSuppliers.length > 1 ? 's' : ''} selected</p>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-black text-white">£{totalCost.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">£{totalCost.toFixed(2)}</p>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Visual Separator */}
