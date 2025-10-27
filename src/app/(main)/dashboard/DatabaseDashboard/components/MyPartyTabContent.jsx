@@ -173,17 +173,23 @@ export default function MyPartyTabContent({
         }}
       >
         {/* Image Section */}
-        <div className="relative h-64 w-full">
+        <div
+          className="relative h-64 w-full cursor-pointer group/image"
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedSupplierForQuickView(supplier)
+          }}
+        >
           <Image
             src={supplier.coverPhoto || supplier.image || supplier.imageUrl || '/placeholder.png'}
             alt={supplierName}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover/image:scale-105"
             sizes="(max-width: 1024px) 50vw, 33vw"
           />
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70 transition-opacity group-hover/image:opacity-90" />
 
           {/* Status Badge and Remove Button */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
