@@ -328,6 +328,17 @@ export default function HomePage() {
     return timeSlotDefaults[timeSlot] || '14:00';
   }
 
+  // Calculate budget for loader based on guest count (matches partyBuilderBackend logic)
+  const getDefaultBudgetForGuests = (guestCount) => {
+    const guests = parseInt(guestCount);
+    if (guests <= 5) return 400;
+    if (guests <= 10) return 500;
+    if (guests <= 15) return 600;
+    if (guests <= 20) return 700;
+    if (guests <= 25) return 800;
+    return 900;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(var(--primary-50))] to-white">
 
@@ -336,6 +347,10 @@ export default function HomePage() {
         theme={mapThemeValue(formData.theme)}
         childName={formData.childName || "Your Child"}
         progress={buildingProgress}
+        partyDetails={{
+          budget: getDefaultBudgetForGuests(formData.guestCount),
+          guestCount: formData.guestCount
+        }}
       />
 
       <Hero

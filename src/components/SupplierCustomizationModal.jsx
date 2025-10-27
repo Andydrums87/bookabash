@@ -156,7 +156,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
             onClick={handleChoosePackage}
             className={`w-full h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl transition-all ${
               isSelected
-                ? "bg-green-500 hover:bg-green-600 text-white"
+                ? "bg-gray-200 hover:bg-green-600 text-white"
                 : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white shadow-lg"
             }`}
           >

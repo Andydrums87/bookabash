@@ -1017,7 +1017,7 @@ export default function LocalStoragePartyHeader({
                 {/* Photo Avatar and Name */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   {/* Child Photo Avatar - Desktop Only */}
-                  <div className="relative flex-shrink-0 hidden md:block">
+                  <div className="relative flex-shrink-0 hidden md:block" onClick={(e) => e.stopPropagation()}>
                     {childPhoto ? (
                       <div className="relative group">
                         <img
@@ -1063,7 +1063,15 @@ export default function LocalStoragePartyHeader({
                   </div>
 
                   {/* Name and Info */}
-                  <div className="flex-1 min-w-0 pr-14 md:pr-0">
+                  <div
+                    className="flex-1 min-w-0 pr-14 md:pr-0 md:cursor-default cursor-pointer"
+                    onClick={() => {
+                      // Only toggle on mobile
+                      if (window.innerWidth < 768) {
+                        updateExpanded(!isExpanded)
+                      }
+                    }}
+                  >
                     <h1
                       suppressHydrationWarning={true}
                       className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
@@ -1097,7 +1105,10 @@ export default function LocalStoragePartyHeader({
                 {/* Edit buttons - positioned absolutely on mobile */}
                 <div className="flex md:relative absolute top-4 right-4 items-center gap-2 flex-shrink-0">
                   <button
-                    onClick={() => handleCardClick("name")}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCardClick("name")
+                    }}
                     className="hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm p-1.5 md:p-2 rounded-full hover:bg-white/30"
                     aria-label="Edit party name"
                   >
@@ -1105,7 +1116,10 @@ export default function LocalStoragePartyHeader({
                   </button>
 
                   <button
-                    onClick={() => updateExpanded(!isExpanded)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      updateExpanded(!isExpanded)
+                    }}
                     className="md:hidden hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/30"
                     aria-label={isExpanded ? "Show less" : "Show more"}
                   >
