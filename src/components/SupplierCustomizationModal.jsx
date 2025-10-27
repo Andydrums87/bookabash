@@ -47,15 +47,22 @@ const DEFAULT_CAKE_FLAVORS = [
 
 // Package Details Modal (Drawer on mobile)
 const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected, isPartyBags, partyBagsQuantity, formattedDuration }) => {
-  // Disable body scroll when modal is open
+  // Disable body scroll when modal is open (iOS Safari compatible)
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
+
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
     }
   }, [isOpen])
 
@@ -206,15 +213,22 @@ export default function SupplierCustomizationModal({
   const [showPackageModal, setShowPackageModal] = useState(false)
   const [selectedPackageForModal, setSelectedPackageForModal] = useState(null)
 
-  // Disable body scroll when main modal is open
+  // Disable body scroll when main modal is open (iOS Safari compatible)
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
+
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.width = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
     }
   }, [isOpen])
 

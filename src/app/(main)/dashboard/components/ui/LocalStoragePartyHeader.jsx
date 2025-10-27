@@ -995,7 +995,7 @@ export default function LocalStoragePartyHeader({
           </>
         )}
 
-        <div className="relative px-4 py-8 md:px-10 md:py-12 text-white">
+        <div className="relative px-4 py-12 md:px-10 md:py-16 text-white">
           <div className="md:space-y-6">
             <div className="space-y-3 md:space-y-4">
               <div className="flex items-start gap-3 md:gap-4">

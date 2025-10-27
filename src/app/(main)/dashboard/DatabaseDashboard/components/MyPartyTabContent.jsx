@@ -516,14 +516,14 @@ export default function MyPartyTabContent({
             />
           </div>
 
-          {/* Happy with your plan button - Outside the suggestions box */}
+          {/* Continue to book button - Outside the suggestions box */}
           <div className="mt-6">
             <Button
               onClick={handleImHappy}
               className="w-full text-white py-6 text-base shadow-lg"
               style={{ background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))' }}
             >
-              Happy with your plan?
+              Continue to Book
             </Button>
           </div>
         </>
