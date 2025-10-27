@@ -536,6 +536,7 @@ export default function MyPartyTabContent({
               addedSupplierIds={new Set()}
               showTitle={false}
               preventNavigation={true}
+              horizontalScroll={true}
             />
           </div>
 
@@ -543,10 +544,22 @@ export default function MyPartyTabContent({
           <div className="mt-6">
             <Button
               onClick={handleImHappy}
-              className="w-full text-white py-6 text-base shadow-lg"
-              style={{ background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))' }}
+              className="w-full text-white py-7 text-lg font-bold shadow-2xl relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-600)) 100%)',
+                boxShadow: '0 10px 40px -10px hsl(var(--primary-500) / 0.6)'
+              }}
             >
-              Continue to Book
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+
+              <span className="relative flex items-center justify-center gap-2">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+                Continue to Book
+                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
             </Button>
           </div>
         </>

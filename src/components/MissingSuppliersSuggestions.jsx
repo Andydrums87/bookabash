@@ -17,7 +17,8 @@ export default function MissingSuppliersSuggestions({
   onPlanUpdate,
   toast,
   addedSupplierIds = new Set(),
-  preventNavigation = false
+  preventNavigation = false,
+  horizontalScroll = false // NEW: Enable horizontal scroll mode
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
@@ -180,7 +181,6 @@ export default function MissingSuppliersSuggestions({
         return null
       })
       .filter(Boolean)
-      .slice(0, 3) // Show max 3 categories
   }
 
   // Handle viewing supplier details
@@ -232,13 +232,15 @@ export default function MissingSuppliersSuggestions({
   const handleAddSupplier = async (supplier, supplierType) => {
     try {
       if (onAddSupplier) {
+        // Mark as just added BEFORE calling parent (prevents flicker)
+        if (preventNavigation) {
+          setJustAddedTypes(prev => new Set([...prev, supplierType]))
+        }
+
         // Call parent handler to add the supplier
         const result = await onAddSupplier(supplier, supplierType)
 
         if (result && preventNavigation) {
-          // Mark as just added (shows green state)
-          setJustAddedTypes(prev => new Set([...prev, supplierType]))
-
           // Trigger confetti
           confetti({
             particleCount: 100,
@@ -246,15 +248,22 @@ export default function MissingSuppliersSuggestions({
             origin: { y: 0.6 }
           })
 
-          // After 3 seconds, hide this type from the list
+          // After 2 seconds, start fade out, then hide after animation
           setTimeout(() => {
+            setHiddenTypes(prev => new Set([...prev, supplierType]))
             setJustAddedTypes(prev => {
               const newSet = new Set(prev)
               newSet.delete(supplierType)
               return newSet
             })
-            setHiddenTypes(prev => new Set([...prev, supplierType]))
-          }, 3000)
+          }, 2000)
+        } else if (!result && preventNavigation) {
+          // If failed, remove from justAddedTypes
+          setJustAddedTypes(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(supplierType)
+            return newSet
+          })
         }
 
         return result
@@ -263,6 +272,14 @@ export default function MissingSuppliersSuggestions({
       return false
     } catch (error) {
       console.error("Error adding supplier:", error)
+      // Remove from justAddedTypes on error
+      if (preventNavigation) {
+        setJustAddedTypes(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(supplierType)
+          return newSet
+        })
+      }
       throw error // Let EmptySupplierCard handle the error
     }
   }
@@ -344,27 +361,44 @@ export default function MissingSuppliersSuggestions({
         </div>
       )}
 
-      {/* Compact horizontal grid - Deliveroo style */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Compact grid or horizontal scroll */}
+      <div className={horizontalScroll
+        ? "flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      }>
         {missingSuppliers.map(({ type, config, suppliers }) => {
           const isAdded = addedSupplierIds.has(suppliers[0]?.id);
           const isJustAdded = justAddedTypes.has(type);
 
           return (
-            <EmptySupplierCard
+            <div
               key={type}
-              type={type}
-              recommendedSupplier={suppliers[0]}
-              partyDetails={partyPlan}
-              onAddSupplier={(supplierType, supplier) => handleAddSupplier(supplier, supplierType)}
-              isCompact={true}
-              isAlreadyAdded={isAdded || isJustAdded}
-              deliverooStyle={true}
-              showJustAdded={isJustAdded}
-            />
+              className={horizontalScroll ? "flex-shrink-0 w-[180px] snap-start" : ""}
+            >
+              <EmptySupplierCard
+                type={type}
+                recommendedSupplier={suppliers[0]}
+                partyDetails={partyPlan}
+                onAddSupplier={(supplierType, supplier) => handleAddSupplier(supplier, supplierType)}
+                isCompact={true}
+                isAlreadyAdded={isAdded || isJustAdded}
+                deliverooStyle={true}
+                showJustAdded={isJustAdded}
+              />
+            </div>
           );
         })}
       </div>
+
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   )
 }
