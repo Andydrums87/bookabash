@@ -101,6 +101,21 @@ export default function MyPartyTabContent({
     return categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
   }
 
+  const getCategoryTagline = (type) => {
+    const taglines = {
+      venue: 'Where the party happens',
+      entertainment: 'Keep them laughing for hours',
+      catering: 'Delicious food everyone will love',
+      cakes: 'Every party needs a showstopper',
+      facePainting: 'Transform into their favorite character',
+      activities: 'Fun games and activities',
+      partyBags: 'Send them home with a smile',
+      decorations: 'Set the perfect party scene',
+      balloons: 'Add color and excitement'
+    }
+    return taglines[type] || ''
+  }
+
   const renderSupplierCard = ([type, supplier]) => {
     const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
       addon.supplierId === supplier.id ||
@@ -150,11 +165,11 @@ export default function MyPartyTabContent({
     return (
       <Card
         key={type}
-        className="overflow-hidden rounded-2xl border-2 shadow-2xl transition-all duration-300 relative ring-2 ring-offset-2 hover:scale-[1.02]"
+        className="overflow-hidden rounded-2xl border-2 transition-all duration-300 relative ring-2 ring-offset-2 hover:scale-[1.02]"
         style={{
           borderColor: 'hsl(var(--primary-400))',
           '--tw-ring-color': 'hsl(var(--primary-300) / 0.5)',
-          boxShadow: '0 25px 50px -12px hsl(var(--primary-200) / 0.3)'
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
         }}
       >
         {/* Image Section */}
@@ -416,15 +431,23 @@ export default function MyPartyTabContent({
         <div className="space-y-4">
           {allSuppliers.map(([type, supplier]) => {
             const categoryName = getCategoryName(type)
+            const categoryTagline = getCategoryTagline(type)
             const typeConfig = getTypeConfig(type)
 
             return (
               <div key={type} id={`supplier-card-${type}`}>
-                {/* Category Heading */}
-                <div className="mb-3">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {categoryName}
-                  </h3>
+                {/* Visual Separator */}
+                <div className="border-t-2 border-gray-100 pt-6 mb-4">
+                  {/* Category Heading */}
+                  <div className="mb-3">
+                    <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                      {categoryName}
+                      <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                    </h3>
+                    {categoryTagline && (
+                      <p className="text-sm text-gray-600 mt-2">{categoryTagline}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Supplier Card */}
