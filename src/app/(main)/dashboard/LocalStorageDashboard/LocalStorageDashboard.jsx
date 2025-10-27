@@ -41,7 +41,7 @@ import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import ReferFriend from "@/components/ReferFriend"
 // Make sure you have this import
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
-import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
+// import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
 import PartySummarySection from "../components/PartySummarySection"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
 
@@ -1515,7 +1515,7 @@ const handleChildPhotoUpload = async (file) => {
 };
 
   return (
-    <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen overflow-hidden`}>
+    <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen`}>
       <ContextualBreadcrumb currentPage="dashboard"/>
       <EnquirySuccessBanner />
 
@@ -1541,6 +1541,7 @@ const handleChildPhotoUpload = async (file) => {
             childPhoto={partyDetails?.childPhoto}
             onPhotoUpload={handleChildPhotoUpload}
             uploadingPhoto={uploadingChildPhoto}
+            totalCost={enhancedTotalCost}
           />
         </div>
 
@@ -1971,21 +1972,21 @@ const handleChildPhotoUpload = async (file) => {
           </svg>
         </button>
       </div> */}
-  <SimpleMobileBottomTabBar
+      {/* <SimpleMobileBottomTabBar
   suppliers={suppliers}
   partyDetails={partyDetails}
-  addons={addons} // ✅ ADD THIS LINE
+  addons={addons}
   tempBudget={tempBudget}
   budgetPercentage={budgetPercentage}
   getBudgetCategory={getBudgetCategory}
-  onSupplierTabChange={handleMobileSupplierTabChange} // ✅ Already exists!
+  onSupplierTabChange={handleMobileSupplierTabChange}
   CountdownWidget={
     <CountdownWidget
       partyDate={partyDetails?.date}
     />
-    
+
   }
-/>
+/> */}
       {/* <SnappyDashboardTour
         isOpen={isTourActive}
         onMobileNavigationStepActive={handleMobileNavigationStepActive} 

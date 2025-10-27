@@ -102,7 +102,167 @@ export default function MyPartyTabContent({
   }
 
   const getCategoryTagline = (type) => {
-    const taglines = {
+    const theme = partyDetails?.theme?.toLowerCase() || 'party'
+
+    const themeTaglines = {
+      dinosaur: {
+        venue: 'Where the prehistoric adventure begins',
+        entertainment: 'Roar-some fun for little explorers',
+        catering: 'Dino-mite food for hungry adventurers',
+        cakes: 'A roar-some centerpiece',
+        facePainting: 'Transform into a fearsome dinosaur',
+        activities: 'Jurassic games and dino discoveries',
+        partyBags: 'Prehistoric treats to take home',
+        decorations: 'Journey back to the Jurassic',
+        balloons: 'Dino eggs and prehistoric colors'
+      },
+      princess: {
+        venue: 'A royal palace for the celebration',
+        entertainment: 'Enchanting magic for little royals',
+        catering: 'A feast fit for a princess',
+        cakes: 'A magical royal masterpiece',
+        facePainting: 'Become a beautiful princess',
+        activities: 'Enchanting games for little royalty',
+        partyBags: 'Royal treasures for each guest',
+        decorations: 'Transform into an enchanted castle',
+        balloons: 'Sparkles and princess colors'
+      },
+      superhero: {
+        venue: 'The hero headquarters awaits',
+        entertainment: 'Super-powered fun for heroes',
+        catering: 'Power-up food for little heroes',
+        cakes: 'A super-powered showstopper',
+        facePainting: 'Become your favorite superhero',
+        activities: 'Hero training and super missions',
+        partyBags: 'Super supplies for every hero',
+        decorations: 'Create an epic hero hideout',
+        balloons: 'Bold colors for brave heroes'
+      },
+      unicorn: {
+        venue: 'A magical realm for unicorns',
+        entertainment: 'Magical fun for believers',
+        catering: 'Rainbow treats and magical delights',
+        cakes: 'A magical unicorn masterpiece',
+        facePainting: 'Transform into a magical unicorn',
+        activities: 'Enchanted games and unicorn quests',
+        partyBags: 'Magical treasures to take home',
+        decorations: 'Create a rainbow wonderland',
+        balloons: 'Pastel magic and rainbow colors'
+      },
+      space: {
+        venue: 'Launch pad for cosmic adventures',
+        entertainment: 'Out-of-this-world entertainment',
+        catering: 'Astronaut fuel for space explorers',
+        cakes: 'A stellar cosmic creation',
+        facePainting: 'Become a space explorer',
+        activities: 'Galactic missions and star games',
+        partyBags: 'Space treasures for young astronauts',
+        decorations: 'Transform into outer space',
+        balloons: 'Planets and cosmic colors'
+      },
+      pirate: {
+        venue: 'Set sail for adventure',
+        entertainment: 'Swashbuckling fun for buccaneers',
+        catering: 'Pirate feast for hungry crew',
+        cakes: 'A treasure-worthy masterpiece',
+        facePainting: 'Become a fearsome pirate',
+        activities: 'Treasure hunts and pirate games',
+        partyBags: 'Booty for every buccaneer',
+        decorations: 'Transform into a pirate ship',
+        balloons: 'Treasure chest colors'
+      },
+      jungle: {
+        venue: 'A wild jungle adventure awaits',
+        entertainment: 'Wild fun for jungle explorers',
+        catering: 'Jungle feast for wild adventurers',
+        cakes: 'A wild jungle masterpiece',
+        facePainting: 'Transform into jungle animals',
+        activities: 'Safari games and jungle expeditions',
+        partyBags: 'Jungle treasures to discover',
+        decorations: 'Create a tropical jungle',
+        balloons: 'Lush jungle greens and wildlife'
+      },
+      mermaid: {
+        venue: 'Dive into an underwater palace',
+        entertainment: 'Magical fun under the sea',
+        catering: 'Ocean treasures and sea delights',
+        cakes: 'A magical underwater creation',
+        facePainting: 'Become a beautiful mermaid',
+        activities: 'Ocean adventures and pearl hunts',
+        partyBags: 'Sea treasures for every mermaid',
+        decorations: 'Transform into an ocean paradise',
+        balloons: 'Ocean blues and shimmering scales'
+      },
+      underwater: {
+        venue: 'Explore the ocean depths',
+        entertainment: 'Splashing fun for sea explorers',
+        catering: 'Sea-inspired treats and delights',
+        cakes: 'A stunning ocean masterpiece',
+        facePainting: 'Become a sea creature',
+        activities: 'Underwater adventures and games',
+        partyBags: 'Ocean treasures to take home',
+        decorations: 'Create an underwater wonderland',
+        balloons: 'Deep sea blues and bubbles'
+      },
+      football: {
+        venue: 'The ultimate stadium experience',
+        entertainment: 'Championship fun for players',
+        catering: 'Match day fuel for champions',
+        cakes: 'A winning goal celebration',
+        facePainting: 'Team colors and player pride',
+        activities: 'Skills training and football games',
+        partyBags: 'Championship goodies for players',
+        decorations: 'Transform into a football stadium',
+        balloons: 'Team colors and victory vibes'
+      },
+      cars: {
+        venue: 'Rev up at the race track',
+        entertainment: 'High-speed fun for racers',
+        catering: 'Pit stop fuel for champions',
+        cakes: 'A turbocharged masterpiece',
+        facePainting: 'Racing stripes and checkered flags',
+        activities: 'Racing games and speed challenges',
+        partyBags: 'Racing goodies for champions',
+        decorations: 'Create the ultimate race track',
+        balloons: 'Racing colors and checkered flags'
+      },
+      spiderman: {
+        venue: 'Swing into action headquarters',
+        entertainment: 'Web-slinging fun for heroes',
+        catering: 'Hero fuel for web-slingers',
+        cakes: 'A spectacular spider masterpiece',
+        facePainting: 'Become the friendly neighborhood hero',
+        activities: 'Web-slinging missions and hero training',
+        partyBags: 'Spider-gear for every hero',
+        decorations: 'Transform into New York City',
+        balloons: 'Red, blue, and web-tastic'
+      },
+      'taylor-swift': {
+        venue: 'The ultimate Swiftie stage',
+        entertainment: 'Shake it off with amazing fun',
+        catering: 'Treats fit for Swifties',
+        cakes: 'A fearless masterpiece',
+        facePainting: 'Glitter and Swiftie sparkles',
+        activities: 'Sing-along and dance party fun',
+        partyBags: 'Era-inspired treats for Swifties',
+        decorations: 'Create the Eras Tour experience',
+        balloons: 'Sparkles and Swiftie colors'
+      },
+      science: {
+        venue: 'The ultimate science laboratory',
+        entertainment: 'Mind-blowing experiments and fun',
+        catering: 'Brain food for young scientists',
+        cakes: 'An explosive scientific creation',
+        facePainting: 'Transform into a mad scientist',
+        activities: 'Experiments and discovery missions',
+        partyBags: 'Science kits for young explorers',
+        decorations: 'Create a working laboratory',
+        balloons: 'Bright colors and bubbling reactions'
+      }
+    }
+
+    // Default taglines if theme not found
+    const defaultTaglines = {
       venue: 'Where the party happens',
       entertainment: 'Keep them laughing for hours',
       catering: 'Delicious food everyone will love',
@@ -113,6 +273,8 @@ export default function MyPartyTabContent({
       decorations: 'Set the perfect party scene',
       balloons: 'Add color and excitement'
     }
+
+    const taglines = themeTaglines[theme] || defaultTaglines
     return taglines[type] || ''
   }
 

@@ -636,6 +636,7 @@ export default function LocalStoragePartyHeader({
   uploadingPhoto = false,
   forceExpanded = false, // ✅ NEW: Allow external control of expansion
   onExpandChange = null, // ✅ NEW: Callback when expansion changes
+  totalCost = 0, // ✅ NEW: Total party cost
 }) {
   const [editingModal, setEditingModal] = useState(null)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false)
@@ -943,6 +944,12 @@ export default function LocalStoragePartyHeader({
     return partyDetails?.location || "W1A 1AA"
   }
 
+  const getOrdinalAge = () => {
+    const age = partyDetails?.childAge || 6
+    const ordinal = getDaySuffix(age)
+    return `${age}${ordinal}`
+  }
+
   const displayDate = getDisplayDate()
   const displayTimeRange = getDisplayTimeRange()
   const capitalizedTheme = currentTheme?.charAt(0).toUpperCase() + currentTheme?.slice(1)
@@ -960,10 +967,10 @@ export default function LocalStoragePartyHeader({
 
   return (
     <>
-      <div className="relative shadow-2xl overflow-hidden mb-8 transition-all duration-300">
+      <div className="relative shadow-2xl overflow-hidden transition-all duration-300" style={{ marginTop: 'calc(-1 * env(safe-area-inset-top, 0px))' }}>
         {/* Theme Image Background */}
         {getThemeImage() && (
-          <div className="absolute inset-0">
+          <div className="absolute inset-0" style={{ top: 'calc(-1 * env(safe-area-inset-top, 0px))' }}>
             <img
               src={getThemeImage()}
               alt={capitalizedTheme}
@@ -980,7 +987,8 @@ export default function LocalStoragePartyHeader({
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: getThemeGradient()
+                backgroundImage: getThemeGradient(),
+                top: 'calc(-1 * env(safe-area-inset-top, 0px))'
               }}
             ></div>
             {/* Optional: Add party pattern overlay */}
@@ -990,12 +998,19 @@ export default function LocalStoragePartyHeader({
                 backgroundImage: `url('/party-pattern.svg')`,
                 backgroundRepeat: "repeat",
                 backgroundSize: "100px",
+                top: 'calc(-1 * env(safe-area-inset-top, 0px))'
               }}
             ></div>
           </>
         )}
 
-        <div className="relative px-4 py-12 md:px-10 md:py-16 text-white">
+        <div
+          className="relative pl-6 pr-2 md:px-10 text-white"
+          style={{
+            paddingTop: 'calc(3rem + env(safe-area-inset-top, 0px))',
+            paddingBottom: '3rem'
+          }}
+        >
           <div className="md:space-y-6">
             <div className="space-y-3 md:space-y-4">
               <div className="flex items-start gap-3 md:gap-4">
@@ -1061,7 +1076,7 @@ export default function LocalStoragePartyHeader({
 
                     {!isExpanded && (
                       <div className="md:hidden mt-2">
-                        <div className="flex items-center gap-1.5 text-xs text-white/95 font-medium overflow-hidden">
+                        <div className="flex items-center flex-wrap gap-1.5 w-screen text-xs text-white/95 font-medium">
                           <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="whitespace-nowrap">{getDisplayDate(true)}</span>
                           <span className="text-white/60 flex-shrink-0">•</span>
@@ -1069,7 +1084,10 @@ export default function LocalStoragePartyHeader({
                           <span className="whitespace-nowrap">{displayTimeRange.split(" - ")[0]}</span>
                           <span className="text-white/60 flex-shrink-0">•</span>
                           <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="truncate min-w-0">{capitalizedTheme}</span>
+                          <span className="whitespace-nowrap">{capitalizedTheme}</span>
+                          <span className="text-white/60 flex-shrink-0">•</span>
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="whitespace-nowrap">{getLocation()}</span>
                         </div>
                       </div>
                     )}
