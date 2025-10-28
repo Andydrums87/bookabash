@@ -606,14 +606,7 @@ function PaymentForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Express Checkout
             </label>
-            <div className={`bg-white border border-gray-200 rounded-lg p-3 relative ${!bookingTermsAccepted ? 'opacity-50 pointer-events-none' : ''}`}>
-              {!bookingTermsAccepted && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg z-10">
-                  <p className="text-sm font-medium text-gray-600 px-4 text-center">
-                    Please accept booking terms below to use express checkout
-                  </p>
-                </div>
-              )}
+            <div className="bg-white border border-gray-200 rounded-lg p-3">
               <PaymentRequestButtonElement
                 options={{
                   paymentRequest,
