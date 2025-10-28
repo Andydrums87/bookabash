@@ -1,33 +1,15 @@
 // components/supplier/display/EntertainerDisplay.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Users, 
-  User, 
-  Clock,
-  MapPin,
-  Target,
-  Settings,
-  Sparkles,
-  Star,
-  Heart,
-  Zap,
-  ChevronDown,
-  ChevronUp,
-  Info,
+import {
   Gift,
   Key,
   Music,
-  Truck
+  Truck,
+  Star
 } from "lucide-react";
 
-const EntertainerDisplay = ({ supplier, serviceDetails }) => {
-
-  // State for expandable sections
-  const [showAllThemes, setShowAllThemes] = useState(false);
-  const [showAllStyles, setShowAllStyles] = useState(false);
+const EntertainerDisplay = ({ supplier, serviceDetails, themeAccentColor }) => {
 
     // Helper function to get category icon and color
     const getCategoryInfo = (category) => {
@@ -41,75 +23,6 @@ const EntertainerDisplay = ({ supplier, serviceDetails }) => {
       return categories[category] || categories.service;
     };
 
-  // Helper function to render age groups
-  const renderAgeGroups = (ageGroups) => {
-    if (!ageGroups?.length) return null;
-    return (
-      <div className="mb-4">
-        <h4 className="font-semibold text-sm text-gray-900 mb-2">Age Groups</h4>
-        <div className="flex flex-wrap gap-2">
-          {ageGroups.map((age, index) => (
-            <Badge key={index} variant="outline" className="text-xs text-slate-700 border-slate-300 bg-slate-50">
-              {age}
-            </Badge>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Helper function to render expandable badge list
-  const renderExpandableBadges = (items, title, icon, colorClass, showAll, setShowAll, maxInitial = 6) => {
-    if (!items?.length) return null;
-
-    const displayItems = showAll ? items : items.slice(0, maxInitial);
-    const hasMore = items.length > maxInitial;
-
-    return (
-      <div className="mb-4">
-        <h4 className="font-semibold text-sm text-gray-900 mb-2 flex items-center gap-1">
-          {icon && <span className="w-3 h-3">{icon}</span>}
-          {title}
-          {items.length > 0 && (
-            <span className="text-xs text-gray-500 font-normal">({items.length})</span>
-          )}
-        </h4>
-
-        <div className="space-y-2">
-          {/* Grid layout for better organization */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {displayItems.map((item, index) => (
-              <Badge key={index} variant="outline" className={`${colorClass} justify-center text-center text-xs`}>
-                {item}
-              </Badge>
-            ))}
-          </div>
-
-          {/* Show more/less button */}
-          {hasMore && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAll(!showAll)}
-              className="text-gray-600 hover:text-gray-800 p-0 h-auto font-normal text-xs"
-            >
-              {showAll ? (
-                <>
-                  <ChevronUp className="w-3 h-3 mr-1" />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3 h-3 mr-1" />
-                  Show {items.length - maxInitial} more
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
 
  // Helper function to render add-on services with horizontal scroll
 const renderAddOnServices = (addOnServices) => {
@@ -186,281 +99,134 @@ const renderAddOnServices = (addOnServices) => {
   );
 };
 
-  // Alternative: Categorized themes helper
-  const renderCategorizedThemes = (themes) => {
-    if (!themes?.length) return null;
 
-    // Group themes by category (you could expand this logic)
-    const categories = {
-      'Characters': themes.filter(theme => 
-        ['Princess', 'Pirate', 'Disney Princess', 'DC Heroes', 'Fairy'].includes(theme)
-      ),
-      'Adventure': themes.filter(theme => 
-        ['Animal Safari', 'Jungle Safari', 'Deep Sea', 'Space', 'Dinosaur'].includes(theme)
-      ),
-      'Learning': themes.filter(theme => 
-        ['Mad Scientist', 'Science Lab', 'Robot Building', 'Engineering'].includes(theme)
-      ),
-      'Fantasy': themes.filter(theme => 
-        ['Fairy Tale', 'Frozen', 'Fairy'].includes(theme)
-      ),
-      'Sports & Active': themes.filter(theme => 
-        ['Sports'].includes(theme)
-      )
-    };
 
-    // Remove empty categories and collect uncategorized
-    const filledCategories = Object.entries(categories).filter(([_, items]) => items.length > 0);
-    const categorizedThemes = filledCategories.flatMap(([_, items]) => items);
-    const uncategorized = themes.filter(theme => !categorizedThemes.includes(theme));
 
-    return (
-      <div className="mb-6">
-        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-1">
-          <Star className="w-4 h-4" />
-          Available Themes
-          <span className="text-sm text-gray-500 font-normal">({themes.length})</span>
-        </h4>
-        
-        <div className="space-y-4">
-          {filledCategories.map(([category, categoryThemes]) => (
-            <div key={category}>
-              <h5 className="text-sm font-medium text-gray-700 mb-2">{category}</h5>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pl-2">
-                {categoryThemes.map((theme, index) => (
-                  <Badge key={index} variant="outline" className="text-primary-700 border-primary-300 bg-primary-50 justify-center text-center">
-                    {theme}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ))}
-          
-          {uncategorized.length > 0 && (
-            <div>
-              <h5 className="text-sm font-medium text-gray-700 mb-2">Other Themes</h5>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pl-2">
-                {uncategorized.map((theme, index) => (
-                  <Badge key={index} variant="outline" className="text-primary-700 border-primary-300 bg-primary-50 justify-center text-center">
-                    {theme}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  // Helper to format age groups into a readable range
+  const formatAgeRange = (ageGroups) => {
+    if (!ageGroups?.length) return 'All ages';
+
+    // Extract numbers from age group strings
+    const ages = ageGroups.flatMap(group => {
+      const matches = group.match(/\d+/g);
+      return matches ? matches.map(Number) : [];
+    });
+
+    if (ages.length === 0) return ageGroups.join(', ');
+
+    const min = Math.min(...ages);
+    const max = Math.max(...ages);
+
+    if (min === max) return `${min} years`;
+    return `${min}-${max} years`;
   };
 
-
+  // Get package pricing info
+  const packageData = supplier?.packageData || supplier?.selectedPackage || supplier?.packages?.[0];
+  const price = packageData?.price || packageData?.originalPrice || null;
 
   return (
-    <div className="space-y-6">
-         {/* About Us Section */}
-         {serviceDetails.aboutUs && (
-        <div className="mb-6">
-          <h2 className="text-base font-bold text-gray-900 mb-3">About Us</h2>
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-            {serviceDetails.aboutUs}
-          </p>
-        </div>
-      )}
-      {/* Entertainment Details */}
-      <div className="mb-6">
-        <h2 className="text-base font-bold text-gray-900 mb-4">Entertainment Details</h2>
-          
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            {serviceDetails.performerType && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-900 mb-1">Performer Type</h4>
-                <p className="text-sm text-gray-700">{serviceDetails.performerType}</p>
-              </div>
-            )}
+    <div className="space-y-6 relative z-10">
+      {/* What You Need to Know - Simple and Natural */}
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+          What You Need to Know
+          <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+        </h2>
 
-            {serviceDetails.experienceLevel && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-900 mb-1">Experience Level</h4>
-                <p className="text-sm text-gray-700">{serviceDetails.experienceLevel}</p>
-              </div>
-            )}
-
-            {serviceDetails.travelRadius && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  Travel Radius
-                </h4>
-                <p className="text-sm text-gray-700">{serviceDetails.travelRadius} miles</p>
-              </div>
-            )}
-
-            {serviceDetails.setupTime && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  Setup Time
-                </h4>
-                <p className="text-sm text-gray-700">{serviceDetails.setupTime} minutes</p>
-              </div>
-            )}
-
-            {(serviceDetails.groupSizeMin || serviceDetails.groupSizeMax) && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  Group Size
-                </h4>
-                <p className="text-sm text-gray-700">
-                  {serviceDetails.groupSizeMin && serviceDetails.groupSizeMax
-                    ? `${serviceDetails.groupSizeMin}-${serviceDetails.groupSizeMax} people`
-                    : serviceDetails.groupSizeMin
-                      ? `${serviceDetails.groupSizeMin}+ people`
-                      : `Up to ${serviceDetails.groupSizeMax} people`
-                  }
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* IMPROVED: Performance Styles with expandable layout */}
-          {renderExpandableBadges(
-            serviceDetails.performanceStyle,
-            "Performance Styles",
-            <Zap className="w-4 h-4" />,
-            "text-teal-700 border-teal-300 bg-teal-50",
-            showAllStyles,
-            setShowAllStyles,
-            6
-          )}
-
-          {/* IMPROVED: Themes - Choose one of these approaches */}
-          
-          {/* Option 1: Simple expandable grid */}
-          {renderExpandableBadges(
-            serviceDetails.themes,
-            "Available Themes",
-            <Star className="w-4 h-4" />,
-            "text-primary-700 border-[hsl(var(--primary-300))] bg-primary-50",
-            showAllThemes,
-            setShowAllThemes,
-            8
-          )}
-
-          {/* Option 2: Categorized themes (uncomment to use instead) */}
-          {/* {renderCategorizedThemes(serviceDetails.themes)} */}
-
-          {renderAgeGroups(serviceDetails.ageGroups)}
-
-          {serviceDetails.equipment && (
-            <div className="mb-4">
-              <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
-                <Settings className="w-3 h-3" />
-                Equipment Provided
-              </h4>
-              <p className="text-sm text-gray-700 leading-relaxed">{serviceDetails.equipment}</p>
-            </div>
-          )}
-
-          {serviceDetails.specialSkills && (
+        <div className="space-y-4 text-base text-gray-700">
+          {/* Price */}
+          {price && (
             <div>
-              <h4 className="font-semibold text-sm text-gray-900 mb-1">Special Skills & Qualifications</h4>
-              <p className="text-sm text-gray-700 leading-relaxed">{serviceDetails.specialSkills}</p>
+              <span className="font-semibold text-gray-900">Price: </span>
+              <span className="text-xl font-bold text-[hsl(var(--primary-500))]">£{price}</span>
+              {serviceDetails.groupSizeMax && (
+                <span className="text-gray-600"> for up to {serviceDetails.groupSizeMax} children</span>
+              )}
+              {serviceDetails.groupSizeMax && (
+                <span className="block text-sm text-gray-600 mt-1">
+                  Groups of {serviceDetails.groupSizeMax}+ available
+                </span>
+              )}
             </div>
           )}
+
+          {/* Age Range */}
+          {serviceDetails.ageGroups && serviceDetails.ageGroups.length > 0 && (
+            <div>
+              <span className="font-semibold text-gray-900">Perfect for: </span>
+              <span>{formatAgeRange(serviceDetails.ageGroups)}</span>
+            </div>
+          )}
+
+          {/* Space Requirements */}
+          {serviceDetails.performanceSpecs?.spaceRequired && (
+            <div>
+              <span className="font-semibold text-gray-900">Space needed: </span>
+              <span>{serviceDetails.performanceSpecs.spaceRequired}</span>
+            </div>
+          )}
+
+          {/* Travel Radius */}
+          {serviceDetails.travelRadius && (
+            <div>
+              <span className="font-semibold text-gray-900">Coverage area: </span>
+              <span>Up to {serviceDetails.travelRadius} miles</span>
+            </div>
+          )}
+
+          {/* Timings */}
+          {(serviceDetails.setupTime || packageData?.duration) && (
+            <div>
+              <span className="font-semibold text-gray-900 block mb-2">Timings:</span>
+              <div className="pl-4 space-y-1.5">
+                {serviceDetails.setupTime && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                    <span>Team arrive {serviceDetails.setupTime} minutes before to setup</span>
+                  </div>
+                )}
+                {packageData?.duration && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                      <span>First {Math.floor(packageData.duration * 60 * 0.6)} minutes of games and activities</span>
+                    </div>
+                    {packageData.duration >= 2 && (
+                      <>
+                        <div className="flex items-start gap-2">
+                          <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                          <span>20 minutes for food and refreshments</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-[hsl(var(--primary-500))] mt-1">•</span>
+                          <span>Final {Math.floor(packageData.duration * 60 * 0.33)} minutes of more entertainment</span>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-
-
-      {/* Personal Bio */}
-      {serviceDetails.personalBio && Object.keys(serviceDetails.personalBio).some(key => serviceDetails.personalBio[key]) && (
-        <div className="mb-6">
-          <h2 className="text-base font-bold text-gray-900 mb-3">Meet the Entertainer</h2>
-
-          <div>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                {serviceDetails.personalBio.yearsExperience && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-900 mb-1">Years Experience</h4>
-                    <p className="text-sm text-gray-700">{serviceDetails.personalBio.yearsExperience} years</p>
-                  </div>
-                )}
-                
-                {serviceDetails.personalBio.inspiration && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-gray-900 mb-1 flex items-center gap-1">
-                      <Heart className="w-3 h-3" />
-                      Inspiration
-                    </h4>
-                    <p className="text-sm text-gray-700">{serviceDetails.personalBio.inspiration}</p>
-                  </div>
-                )}
-
-                {serviceDetails.personalBio.favoriteEvent && (
-                  <div className="md:col-span-2">
-                    <h4 className="font-semibold text-sm text-gray-900 mb-1">Favorite Event</h4>
-                    <p className="text-sm text-gray-700">{serviceDetails.personalBio.favoriteEvent}</p>
-                  </div>
-                )}
-
-                {serviceDetails.personalBio.dreamClient && (
-                  <div className="md:col-span-2">
-                    <h4 className="font-semibold text-sm text-gray-900 mb-1">Dream Celebrity Client</h4>
-                    <p className="text-sm text-gray-700 italic">{serviceDetails.personalBio.dreamClient}</p>
-                  </div>
-                )}
-              </div>
-
-              {serviceDetails.personalBio.personalStory && (
-                <div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-2">My Story</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">{serviceDetails.personalBio.personalStory}</p>
-                </div>
-              )}
-            </div>
-        </div>
-      )}
-
-      {/* Performance Requirements */}
-      {serviceDetails.performanceSpecs && Object.keys(serviceDetails.performanceSpecs).some(key => serviceDetails.performanceSpecs[key]) && (
-        <div className="mb-6">
-          <h2 className="text-base font-bold text-gray-900 mb-3">Performance Requirements</h2>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              {serviceDetails.performanceSpecs.spaceRequired && (
-                <div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-1">Space Required</h4>
-                  <p className="text-sm text-gray-700">{serviceDetails.performanceSpecs.spaceRequired}</p>
-                </div>
-              )}
-
-              {serviceDetails.performanceSpecs.maxGroupSize && (
-                <div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-1">Maximum Group Size</h4>
-                  <p className="text-sm text-gray-700">{serviceDetails.performanceSpecs.maxGroupSize} people</p>
-                </div>
-              )}
-
-              {serviceDetails.performanceSpecs.powerRequired !== undefined && (
-                <div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-1">Power Supply</h4>
-                  <p className="text-xs text-gray-700">
-                    {serviceDetails.performanceSpecs.powerRequired ? 'Required' : 'Not required'}
-                  </p>
-                </div>
-              )}
-
-              {serviceDetails.performanceSpecs.supervisionRequired !== undefined && (
-                <div>
-                  <h4 className="font-semibold text-sm text-gray-900 mb-1">Adult Supervision</h4>
-                  <p className="text-xs text-gray-700">
-                    {serviceDetails.performanceSpecs.supervisionRequired
-                      ? 'Required during performance'
-                      : 'Not required'}
-                  </p>
-                </div>
-              )}
-            </div>
+      {/* Meet the Entertainer - if exists */}
+      {serviceDetails.personalBio?.personalStory && (
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+            Meet the Entertainer
+            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+          </h2>
+          {serviceDetails.personalBio.yearsExperience && (
+            <p className="text-base text-gray-700 mb-3">
+              <span className="font-semibold">{serviceDetails.personalBio.yearsExperience} years of experience</span> bringing joy to parties
+            </p>
+          )}
+          <p className="text-base text-gray-700 leading-relaxed">
+            {serviceDetails.personalBio.personalStory}
+          </p>
         </div>
       )}
 

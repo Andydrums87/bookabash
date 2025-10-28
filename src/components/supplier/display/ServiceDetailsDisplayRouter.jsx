@@ -146,7 +146,7 @@ const detectCategory = (supplier) => {
   return 'basic';
 };
 
-const ServiceDetailsDisplayRouter = ({ supplier, isPreview }) => {
+const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) => {
   const serviceDetails = supplier?.serviceDetails;
 
   console.log('🚀 ServiceDetailsDisplayRouter called:', {
@@ -155,7 +155,7 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview }) => {
     supplierName: supplier?.name,
     serviceType: supplier?.serviceType
   });
-  
+
   if (!serviceDetails) {
     return (
       <div className="bg-gray-50 p-6 rounded-lg border-2 border-dashed border-gray-300">
@@ -166,17 +166,18 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview }) => {
       </div>
     );
   }
-  
+
   const detectedCategory = detectCategory(supplier);
-  
-  // Create props WITH isPreview for the specific display components
-  const displayProps = { 
-    supplier, 
+
+  // Create props WITH isPreview and themeAccentColor for the specific display components
+  const displayProps = {
+    supplier,
     serviceDetails: {
       ...serviceDetails,
       personalBio: undefined // Remove personalBio from service details
     },
-    isPreview // ✅ ADD THIS - Pass isPreview to all display components
+    isPreview, // ✅ ADD THIS - Pass isPreview to all display components
+    themeAccentColor // ✅ Pass theme accent color
   };
   
   // Render based on detected category
