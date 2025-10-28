@@ -68,9 +68,32 @@ export default function MyPartyTabContent({
     if (!supplier?.id) return
 
     try {
+      console.log('🔍 [MyPartyTab] Fetching supplier data for:', supplier.name)
+      console.log('🔍 [MyPartyTab] Current supplier prop:', supplier)
+
       const { suppliersAPI } = await import('@/utils/mockBackend')
       const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
-      setSelectedSupplierForCustomize(fullSupplier)
+
+      // ✅ CRITICAL FIX: Merge the stored customization data with fetched supplier
+      const mergedSupplier = {
+        ...fullSupplier,
+        // Preserve customization data from localStorage/database
+        packageId: supplier.packageId,
+        packageData: supplier.packageData,
+        partyBagsQuantity: supplier.partyBagsQuantity,
+        partyBagsMetadata: supplier.partyBagsMetadata,
+        selectedAddons: supplier.selectedAddons,
+        pricePerBag: supplier.pricePerBag,
+      }
+
+      console.log('📦 [MyPartyTab] Merged supplier data:', {
+        name: mergedSupplier.name,
+        packageId: mergedSupplier.packageId,
+        packageDataId: mergedSupplier.packageData?.id,
+        hasPackageData: !!mergedSupplier.packageData,
+      })
+
+      setSelectedSupplierForCustomize(mergedSupplier)
     } catch (error) {
       console.error('❌ Error fetching supplier data:', error)
       setSelectedSupplierForCustomize(supplier)

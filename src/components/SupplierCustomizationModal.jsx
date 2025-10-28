@@ -196,6 +196,19 @@ export default function SupplierCustomizationModal({
   databasePartyData = null,
   userType = null,
 }) {
+  // ✅ DEBUG: Log when modal receives new supplier prop
+  useEffect(() => {
+    if (isOpen && supplier) {
+      console.log('🎯 [Modal] Received supplier prop:', {
+        name: supplier.name,
+        packageId: supplier.packageId,
+        packageData: supplier.packageData,
+        packageDataId: supplier.packageData?.id,
+        hasPackageData: !!supplier.packageData,
+        supplierKeys: Object.keys(supplier)
+      });
+    }
+  }, [isOpen, supplier]);
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [showPendingModal, setShowPendingModal] = useState(false)
@@ -232,12 +245,23 @@ export default function SupplierCustomizationModal({
     }
   }, [isOpen])
 
-  // Sync party bags quantity with guest count changes
+  // ✅ Initialize party bags quantity from existing data or guest count
   useEffect(() => {
-    if (supplier && (supplier.category === "Party Bags" || supplier.category?.toLowerCase().includes("party bag"))) {
-      setPartyBagsQuantity(Number(partyDetails?.guestCount) || 10)
+    if (isOpen && supplier && (supplier.category === "Party Bags" || supplier.category?.toLowerCase().includes("party bag"))) {
+      // Check if supplier already has a custom quantity set
+      const existingQuantity = supplier?.partyBagsQuantity ||
+                               supplier?.packageData?.partyBagsQuantity ||
+                               supplier?.partyBagsMetadata?.quantity;
+
+      if (existingQuantity) {
+        console.log('🎒 Restoring party bags quantity:', existingQuantity);
+        setPartyBagsQuantity(Number(existingQuantity));
+      } else {
+        // Default to guest count
+        setPartyBagsQuantity(Number(partyDetails?.guestCount) || 10);
+      }
     }
-  }, [partyDetails?.guestCount, supplier])
+  }, [isOpen, supplier, partyDetails?.guestCount])
 
   // ✅ UPDATED: Detect supplier types using unified system
   const supplierTypeDetection = useMemo(() => {
@@ -507,27 +531,96 @@ export default function SupplierCustomizationModal({
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
 
-  // Initialize states when modal opens
+  // ✅ Initialize cake customization from existing data or defaults
   useEffect(() => {
-    if (isOpen) {
-      // Set initial flavor
-      if (availableFlavors.length > 0 && !selectedFlavor) {
-        setSelectedFlavor(availableFlavors[0].id)
-      }
+    if (isOpen && availableFlavors.length > 0) {
+      // Check if supplier already has cake customization data
+      const existingCakeData = supplier?.packageData?.cakeCustomization;
 
-      // Reset cake customization form
-      if (showCakeCustomization) {
-        setSelectedFlavor(availableFlavors[0]?.id || "vanilla")
-        setCustomMessage("")
+      if (existingCakeData) {
+        // Restore previous customization
+        console.log('🎂 Restoring cake customization:', existingCakeData);
+        setSelectedFlavor(existingCakeData.flavor || availableFlavors[0].id);
+        setCustomMessage(existingCakeData.customMessage || "");
+        setShowCakeCustomization(true); // Show customization if it exists
+      } else {
+        // Set default flavor only on first open
+        setSelectedFlavor(availableFlavors[0].id);
+        setCustomMessage("");
+        setShowCakeCustomization(false);
       }
     }
-  }, [isOpen, showCakeCustomization, availableFlavors])
 
+    // Reset when modal closes
+    if (!isOpen) {
+      console.log('🔄 Modal closed, resetting cake customization');
+      setShowCakeCustomization(false);
+      setCustomMessage("");
+    }
+  }, [isOpen, availableFlavors, supplier])
+
+  // ✅ Initialize selected package when modal opens or supplier changes
   useEffect(() => {
-    if (!selectedPackageId && packages.length > 0) {
+    if (isOpen && packages.length > 0) {
+      // Check if supplier already has a selected package
+      const existingPackageId = supplier?.packageData?.id || supplier?.packageId;
+
+      console.log('🔍 Initializing package selection:', {
+        existingPackageId,
+        currentSelectedId: selectedPackageId,
+        availablePackages: packages.map(p => p.id),
+        // ✅ ADD: Debug what supplier actually has
+        supplierPackageId: supplier?.packageId,
+        supplierPackageDataId: supplier?.packageData?.id,
+        supplierPackageData: supplier?.packageData,
+        supplierKeys: supplier ? Object.keys(supplier) : [],
+        fullSupplier: supplier
+      });
+
+      if (existingPackageId) {
+        // Verify the package still exists in the packages array
+        const packageExists = packages.some(pkg => pkg.id === existingPackageId);
+        if (packageExists) {
+          console.log('🎯 Restoring previously selected package:', existingPackageId);
+          setSelectedPackageId(existingPackageId);
+          return;
+        }
+      }
+
+      // Default to first package if no existing selection
+      console.log('📦 Defaulting to first package:', packages[0].id);
       setSelectedPackageId(packages[0].id)
     }
-  }, [packages, selectedPackageId])
+
+    // Reset when modal closes
+    if (!isOpen) {
+      console.log('🔄 Modal closed, resetting package selection');
+      setSelectedPackageId(null);
+    }
+  }, [isOpen, packages, supplier])
+
+  // ✅ Restore previously selected addons when modal opens/closes
+  useEffect(() => {
+    if (isOpen && supplier) {
+      // Check if supplier has previously selected addons
+      const existingAddons = supplier?.selectedAddons || supplier?.packageData?.selectedAddons || [];
+
+      if (existingAddons.length > 0) {
+        const existingAddonIds = existingAddons.map(addon => addon.id);
+        console.log('🎯 Restoring previously selected addons:', existingAddonIds);
+        setSelectedAddons(existingAddonIds);
+      } else {
+        // Reset addons if no existing selection
+        setSelectedAddons([]);
+      }
+    }
+
+    // Reset when modal closes
+    if (!isOpen) {
+      console.log('🔄 Modal closed, resetting addon selection');
+      setSelectedAddons([]);
+    }
+  }, [isOpen, supplier])
 
   if (!supplier) return null
 
@@ -617,6 +710,12 @@ export default function SupplierCustomizationModal({
         partyBagsQuantity: partyBagsQuantity,
         guestCount: partyDetails?.guestCount || 10,
         pricePerBag: pricePerBag,
+        // ✅ CRITICAL FIX: Include partyBagsMetadata for pricing calculations
+        partyBagsMetadata: {
+          quantity: partyBagsQuantity,
+          pricePerBag: pricePerBag,
+          totalPrice: calculateModalPricing.packagePrice,
+        },
         enhancedPricing: calculateModalPricing.pricingInfo,
         partyDuration: effectivePartyDetails?.duration,
         isTimeBased: supplierTypeDetection.isTimeBased,
@@ -756,11 +855,17 @@ export default function SupplierCustomizationModal({
               {supplierTypeDetection.isCake && showCakeCustomization && selectedPackage && (
                 <div className="bg-primary-50 rounded-xl p-5 border-2 border-[hsl(var(--primary-200))] mb-6">
                   <div className="flex justify-between items-start mb-4">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 flex items-center gap-2 text-lg">
-                        🎂 {selectedPackage.name} 
+                        🎂 {selectedPackage.name}
                       </h4>
-                      {/* <p className="text-sm text-gray-600 mt-1">{selectedPackage.duration}</p> */}
+                      {/* ✅ Add Change Package button */}
+                      <button
+                        onClick={() => setShowCakeCustomization(false)}
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium mt-1 underline"
+                      >
+                        Change Package
+                      </button>
                     </div>
                     <div className="text-right">
                       <div className="text-3xl font-bold text-orange-600">£{calculateModalPricing.packagePrice}</div>

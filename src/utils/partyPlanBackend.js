@@ -564,7 +564,7 @@ addAddonToPlan(addon) {
           // Update the package info
           plan[slot].price = newPackage.price;
           plan[slot].originalPrice = newPackage.price; // ✅ CRITICAL: Update originalPrice too!
-          plan[slot].totalPrice = newPackage.price; // ✅ Also update totalPrice
+          plan[slot].totalPrice = newPackage.totalPrice || newPackage.price; // ✅ Use totalPrice for party bags, price for others
           plan[slot].priceUnit = newPackage.duration;
           plan[slot].packageId = newPackage.id;
           plan[slot].packageData = newPackage; // ✅ STORE FULL PACKAGE DATA
@@ -586,6 +586,26 @@ addAddonToPlan(addon) {
               quantity: newPackage.partyBagsQuantity,
               pricePerBag: newPackage.pricePerBag
             });
+          }
+
+          // ✅ CRITICAL: Save partyBagsMetadata for single source of truth pricing
+          if (newPackage.partyBagsMetadata) {
+            plan[slot].partyBagsMetadata = newPackage.partyBagsMetadata;
+            // Also store in packageData
+            if (!plan[slot].packageData) {
+              plan[slot].packageData = {};
+            }
+            plan[slot].packageData.partyBagsMetadata = newPackage.partyBagsMetadata;
+            plan[slot].packageData.totalPrice = newPackage.partyBagsMetadata.totalPrice;
+            console.log('🎒 Saved party bags metadata to supplier:', {
+              metadata: newPackage.partyBagsMetadata
+            });
+          }
+
+          // ✅ Save totalPrice if provided (for all suppliers, especially party bags)
+          if (newPackage.totalPrice !== undefined) {
+            plan[slot].packageData = plan[slot].packageData || {};
+            plan[slot].packageData.totalPrice = newPackage.totalPrice;
           }
 
           // ✅ Update features and description if provided

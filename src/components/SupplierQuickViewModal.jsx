@@ -81,13 +81,6 @@ export default function SupplierQuickViewModal({
 
   const themeImage = getThemeImage();
 
-  // Debug logging
-  console.log('🎨 Theme Detection:', {
-    detectedTheme,
-    themeImage,
-    supplierName: fullSupplier?.name
-  });
-
   // Disable body scroll when modal is open
   useEffect(() => {
     if (isOpen) {

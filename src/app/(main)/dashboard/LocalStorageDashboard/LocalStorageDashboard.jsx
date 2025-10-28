@@ -1411,6 +1411,10 @@ const handleCustomizationComplete = async (customizationData) => {
         // Include party bags quantity if present
         partyBagsQuantity: selectedPackage.partyBagsQuantity,
         pricePerBag: selectedPackage.pricePerBag,
+        // ✅ CRITICAL: Include partyBagsMetadata with totalPrice for pricing calculations
+        partyBagsMetadata: selectedPackage.partyBagsMetadata,
+        // ✅ Include totalPrice for party bags
+        totalPrice: selectedPackage.partyBagsMetadata?.totalPrice || totalPrice,
         // Include any other special customizations
         features: selectedPackage.features,
         description: selectedPackage.description

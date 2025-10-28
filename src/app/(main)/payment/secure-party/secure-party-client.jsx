@@ -43,6 +43,27 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
 })
 
 // ========================================
+// DATE FORMATTING HELPER
+// ========================================
+const formatDateWithOrdinal = (dateString) => {
+  if (!dateString) return '';
+
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleString('en-GB', { month: 'long' });
+  const year = date.getFullYear();
+
+  // Add ordinal suffix (st, nd, rd, th)
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  return `${getOrdinal(day)} ${month} ${year}`;
+};
+
+// ========================================
 // SKELETON LOADER COMPONENT
 // ========================================
 function PaymentPageSkeleton() {
@@ -316,52 +337,10 @@ const isLeadBasedSupplierEnhanced = (supplier) => {
   )
 }
 
-const calculateFinalPriceEnhanced = (supplier, partyDetails, addons = []) => {
-  if (!supplier) {
-    return {
-      finalPrice: 0,
-      breakdown: { base: 0, weekend: 0, extraHours: 0, addons: 0 },
-      details: { isWeekend: false, extraHours: 0, hasAddons: false, isLeadBased: false }
-    }
-  }
-
-  const isPartyBags = supplier.category === 'partyBags' || 
-                     supplier.category === 'Party Bags' || 
-                     supplier.category?.toLowerCase().includes('party bag')
-
-  let basePrice = 0
-
-  if (isPartyBags) {
-    const guestCount = partyDetails.guestCount || 15
-    const pricePerBag = supplier.originalPrice || supplier.price || 5
-    
-    if (supplier.price && supplier.price > (pricePerBag * 2)) {
-      basePrice = supplier.price
-    } else {
-      basePrice = pricePerBag * guestCount
-    }
-  } else {
-    const pricing = calculateFinalPrice(supplier, partyDetails, addons)
-    return pricing
-  }
-
-  return {
-    finalPrice: basePrice,
-    basePrice,
-    breakdown: { base: basePrice, weekend: 0, extraHours: 0, addons: 0 },
-    details: {
-      isWeekend: false,
-      extraHours: 0,
-      hasAddons: false,
-      isLeadBased: true,
-      guestCount: partyDetails.guestCount || 15
-    }
-  }
-}
+// REMOVED - Use unified pricing for ALL suppliers including party bags
+// This ensures single source of truth for pricing calculations
 
 const calculatePaymentBreakdown = (suppliers, partyDetails) => {
-  let depositAmount = 0
-  let fullPaymentAmount = 0
   const paymentDetails = []
 
   const pricingPartyDetails = {
@@ -372,24 +351,38 @@ const calculatePaymentBreakdown = (suppliers, partyDetails) => {
   }
 
   suppliers.forEach(supplier => {
-    const pricing = calculateFinalPriceEnhanced(supplier, pricingPartyDetails, [])
-    const isLeadBased = isLeadBasedSupplierEnhanced(supplier)
-    const totalPrice = pricing.finalPrice
-    
-    let paymentType, amountToday, remaining
-    
-    if (isLeadBased) {
-      paymentType = 'full_payment'
-      amountToday = totalPrice
-      remaining = 0
-      fullPaymentAmount += totalPrice
+    const isPartyBags = supplier.category?.toLowerCase().includes('party bag')
+
+    // ✅ CRITICAL FIX: For party bags, use stored totalPrice from metadata
+    let totalPrice
+
+    if (isPartyBags && (supplier.partyBagsMetadata?.totalPrice || supplier.packageData?.partyBagsMetadata?.totalPrice)) {
+      // Use the stored total price that was calculated with custom quantity
+      totalPrice = supplier.partyBagsMetadata?.totalPrice || supplier.packageData?.partyBagsMetadata?.totalPrice
+      console.log('🎒 PARTY BAGS: Using stored totalPrice from metadata:', totalPrice)
+    } else if (isPartyBags && supplier.packageData?.totalPrice) {
+      // Fallback to packageData totalPrice
+      totalPrice = supplier.packageData.totalPrice
+      console.log('🎒 PARTY BAGS: Using packageData totalPrice:', totalPrice)
     } else {
-      paymentType = 'deposit'
-      amountToday = Math.round(totalPrice * 0.3)
-      remaining = totalPrice - amountToday
-      depositAmount += amountToday
+      // Use unified pricing for all other suppliers
+      const pricing = calculateFinalPrice(supplier, pricingPartyDetails, [])
+      totalPrice = pricing.finalPrice
     }
-    
+
+    // Debug logging for party bags
+    if (isPartyBags) {
+      console.log('🎒 PARTY BAGS PRICING DEBUG:', {
+        supplierName: supplier.name,
+        totalPrice,
+        partyBagsMetadata: supplier.partyBagsMetadata,
+        packageData: supplier.packageData,
+        originalPrice: supplier.originalPrice,
+        price: supplier.price
+      })
+    }
+
+    // ✅ SIMPLIFIED: Everything is full payment now
     paymentDetails.push({
       id: supplier.id,
       name: supplier.name,
@@ -397,26 +390,19 @@ const calculatePaymentBreakdown = (suppliers, partyDetails) => {
       image: supplier.image,
       rating: supplier.rating || 4.5,
       totalAmount: totalPrice,
-      amountToday,
-      remaining,
-      paymentType,
-      isLeadBased,
+      amountToday: totalPrice, // Full payment
+      remaining: 0, // No remaining balance
+      paymentType: 'full_payment',
       breakdown: getPriceBreakdownText(supplier, pricingPartyDetails, [])
     })
   })
 
-  const totalPaymentToday = depositAmount + fullPaymentAmount
-  const totalCost = paymentDetails.reduce((sum, detail) => sum + detail.totalAmount, 0)
-  const remainingBalance = totalCost - totalPaymentToday
+  const totalPaymentToday = paymentDetails.reduce((sum, detail) => sum + detail.amountToday, 0)
 
   return {
-    depositAmount,
-    fullPaymentAmount,
     totalPaymentToday,
-    totalCost,
-    remainingBalance,
-    hasDeposits: depositAmount > 0,
-    hasFullPayments: fullPaymentAmount > 0,
+    totalCost: totalPaymentToday, // Same as totalPaymentToday since no deposits
+    remainingBalance: 0, // No remaining balance
     paymentDetails
   }
 }
@@ -465,6 +451,14 @@ function PaymentForm({
       })
 
       pr.on('paymentmethod', async (ev) => {
+        // ✅ CRITICAL: Check if terms are accepted before processing Apple Pay
+        if (!bookingTermsAccepted) {
+          ev.complete('fail')
+          setPaymentError('Please accept the booking terms before completing payment')
+          setIsProcessing(false)
+          return
+        }
+
         setIsProcessing(true)
         setPaymentError(null)
 
@@ -612,8 +606,15 @@ function PaymentForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Express Checkout
             </label>
-            <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <PaymentRequestButtonElement 
+            <div className={`bg-white border border-gray-200 rounded-lg p-3 relative ${!bookingTermsAccepted ? 'opacity-50 pointer-events-none' : ''}`}>
+              {!bookingTermsAccepted && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg z-10">
+                  <p className="text-sm font-medium text-gray-600 px-4 text-center">
+                    Please accept booking terms below to use express checkout
+                  </p>
+                </div>
+              )}
+              <PaymentRequestButtonElement
                 options={{
                   paymentRequest,
                   style: {
@@ -851,19 +852,43 @@ export default function PaymentPageContent() {
               typeof supplier === 'object' &&
               supplier.name
           })
-          .map(([key, supplier]) => ({
-            id: supplier.id,
-            name: supplier.name,
-            image: supplier.image || '/placeholder.jpg',
-            rating: supplier.rating || 4.5,
-            description: supplier.description || 'Professional service provider',
-            category: key,
-            price: supplier.price || 0,
-            originalPrice: supplier.originalPrice,
-            priceFrom: supplier.priceFrom,
-            packageData: supplier.packageData,
-            selectedAddons: supplier.selectedAddons || []
-          }))
+          .map(([key, supplier]) => {
+            // ✅ CRITICAL FIX: For party bags, use totalPrice from metadata
+            const isPartyBags = key === 'partyBags' || supplier.category?.toLowerCase().includes('party bag')
+            let supplierPrice = supplier.price || 0
+
+            if (isPartyBags) {
+              // Use stored totalPrice for party bags
+              supplierPrice = supplier.partyBagsMetadata?.totalPrice ||
+                             supplier.packageData?.partyBagsMetadata?.totalPrice ||
+                             supplier.packageData?.totalPrice ||
+                             supplier.totalPrice ||
+                             supplier.price || 0
+
+              console.log('🎒 PAYMENT PAGE: Setting party bags price:', {
+                name: supplier.name,
+                finalPrice: supplierPrice,
+                metadata: supplier.partyBagsMetadata,
+                packageData: supplier.packageData
+              })
+            }
+
+            return {
+              id: supplier.id,
+              name: supplier.name,
+              image: supplier.image || '/placeholder.jpg',
+              rating: supplier.rating || 4.5,
+              description: supplier.description || 'Professional service provider',
+              category: key,
+              price: supplierPrice,
+              // ✅ CRITICAL: For party bags, use total price as originalPrice too
+              originalPrice: isPartyBags ? supplierPrice : supplier.originalPrice,
+              priceFrom: supplier.priceFrom,
+              packageData: supplier.packageData,
+              partyBagsMetadata: supplier.partyBagsMetadata,
+              selectedAddons: supplier.selectedAddons || []
+            }
+          })
 
         console.log('✅ Suppliers loaded for payment:', supplierList.map(s => ({
           category: s.category,
@@ -943,12 +968,10 @@ export default function PaymentPageContent() {
         .eq('id', partyId)
   
       await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
-        payment_status: paymentBreakdown.remainingBalance > 0 ? 'partial_paid' : 'fully_paid',
+        payment_status: 'fully_paid',
         payment_intent_id: paymentIntent.id,
-        deposit_amount: paymentBreakdown.depositAmount,
-        full_payment_amount: paymentBreakdown.fullPaymentAmount,
         total_paid_today: paymentBreakdown.totalPaymentToday,
-        remaining_balance: paymentBreakdown.remainingBalance,
+        remaining_balance: 0,
         payment_date: new Date().toISOString()
       })
   
@@ -964,13 +987,10 @@ export default function PaymentPageContent() {
       if (enquiriesAlreadyExist) {
         await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay)
         await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-          partyId, 
+          partyId,
           supplierCategoriesToPay,
           {
-            payment_breakdown: paymentBreakdown.paymentDetails,
-            lead_time_suppliers: supplierCategoriesToPay.filter(cat => 
-              paymentBreakdown.paymentDetails.find(p => p.category === cat)?.paymentType === 'full_payment'
-            )
+            payment_breakdown: paymentBreakdown.paymentDetails
           }
         )
       } else {
@@ -1070,7 +1090,7 @@ export default function PaymentPageContent() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center space-x-2 text-gray-600">
                   <Calendar className="w-4 h-4" />
-                  <span>{partyDetails.date}</span>
+                  <span>{formatDateWithOrdinal(partyDetails.date)}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-gray-600">
                   <Users className="w-4 h-4" />
@@ -1086,42 +1106,6 @@ export default function PaymentPageContent() {
                 </div>
               </div>
             </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Selected Services</h2>
-              <div className="space-y-3">
-                {paymentBreakdown.paymentDetails.map((supplier) => (
-                  <div key={supplier.id} className="p-3 sm:p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <img 
-                          src={supplier.image || "/placeholder.jpg"} 
-                          alt={supplier.name}
-                          className="w-12 h-12 rounded-lg object-cover bg-gray-200"
-                        />
-                        <div>
-                          <h3 className="font-medium text-gray-900">{supplier.name}</h3>
-                          <div className="flex items-center space-x-3 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span>{supplier.rating}</span>
-                            </div>
-                            <span>•</span>
-                            <span className="capitalize">{supplier.category}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-gray-900">£{supplier.amountToday}</div>
-                        {supplier.remaining > 0 && (
-                          <div className="text-xs text-gray-500">£{supplier.remaining} on day</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -1132,7 +1116,7 @@ export default function PaymentPageContent() {
                 {paymentBreakdown.paymentDetails.map((supplier) => (
                   <div key={supplier.id} className="flex justify-between text-sm">
                     <span className="text-gray-600 capitalize">
-                      {supplier.category} ({supplier.paymentType === 'full_payment' ? 'Full' : 'Deposit'})
+                      {supplier.category}
                     </span>
                     <span className="text-gray-900">£{supplier.amountToday}</span>
                   </div>
@@ -1140,17 +1124,10 @@ export default function PaymentPageContent() {
               </div>
 
               <div className="border-t border-gray-200 pt-4 mb-6">
-                <div className="flex justify-between text-base font-medium text-gray-900 mb-3">
-                  <span>Total Due Today</span>
+                <div className="flex justify-between text-base font-medium text-gray-900">
+                  <span>Total</span>
                   <span>£{paymentBreakdown.totalPaymentToday}</span>
                 </div>
-                
-                {paymentBreakdown.remainingBalance > 0 && (
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Remaining balance (due on party day)</span>
-                    <span>£{paymentBreakdown.remainingBalance}</span>
-                  </div>
-                )}
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

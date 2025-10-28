@@ -135,22 +135,6 @@ const renderAddOnServices = (addOnServices) => {
         </h2>
 
         <div className="space-y-4 text-base text-gray-700">
-          {/* Price */}
-          {price && (
-            <div>
-              <span className="font-semibold text-gray-900">Price: </span>
-              <span className="text-xl font-bold text-[hsl(var(--primary-500))]">£{price}</span>
-              {serviceDetails.groupSizeMax && (
-                <span className="text-gray-600"> for up to {serviceDetails.groupSizeMax} children</span>
-              )}
-              {serviceDetails.groupSizeMax && (
-                <span className="block text-sm text-gray-600 mt-1">
-                  Groups of {serviceDetails.groupSizeMax}+ available
-                </span>
-              )}
-            </div>
-          )}
-
           {/* Age Range */}
           {serviceDetails.ageGroups && serviceDetails.ageGroups.length > 0 && (
             <div>

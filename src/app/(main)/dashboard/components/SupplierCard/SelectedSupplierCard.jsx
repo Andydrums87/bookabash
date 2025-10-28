@@ -52,21 +52,45 @@ export default function SelectedSupplierCard({
     if (!supplier?.id) return
 
     try {
-      console.log('🔍 Fetching full supplier data for:', supplier.name)
-      
+      console.log('🔍 [SelectedSupplierCard] Fetching full supplier data for:', supplier.name)
+      console.log('🔍 [SelectedSupplierCard] Current supplier prop:', supplier)
+
       const { suppliersAPI } = await import('@/utils/mockBackend')
       const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
-      
-      console.log('📦 Full supplier data:', {
-        name: fullSupplier.name,
-        hasPackages: !!fullSupplier.packages,
-        packageCount: fullSupplier.packages?.length || 0,
-        packages: fullSupplier.packages
+
+      // ✅ CRITICAL FIX: Merge the stored customization data with fetched supplier
+      console.log('🔍 [SelectedSupplierCard] Supplier data BEFORE merge:', {
+        supplierPackageId: supplier.packageId,
+        supplierPackageData: supplier.packageData,
+        supplierPackageDataId: supplier.packageData?.id,
+        fullSupplierData: fullSupplier,
+        supplierKeys: Object.keys(supplier)
+      });
+
+      const mergedSupplier = {
+        ...fullSupplier,
+        // Preserve customization data from localStorage
+        packageId: supplier.packageId,
+        packageData: supplier.packageData,
+        partyBagsQuantity: supplier.partyBagsQuantity,
+        partyBagsMetadata: supplier.partyBagsMetadata,
+        selectedAddons: supplier.selectedAddons,
+        pricePerBag: supplier.pricePerBag,
+      }
+
+      console.log('📦 [SelectedSupplierCard] Merged supplier data AFTER merge:', {
+        name: mergedSupplier.name,
+        hasPackages: !!mergedSupplier.packages,
+        packageCount: mergedSupplier.packages?.length || 0,
+        mergedPackageId: mergedSupplier.packageId,
+        mergedPackageData: mergedSupplier.packageData,
+        mergedPackageDataId: mergedSupplier.packageData?.id,
       })
-      
-      setFullSupplierData(fullSupplier)
+
+      console.log('📦 [SelectedSupplierCard] About to open modal with supplier:', mergedSupplier)
+      setFullSupplierData(mergedSupplier)
       setShowCustomizationModal(true)
-      
+
     } catch (error) {
       console.error('❌ Error fetching supplier data:', error)
       setFullSupplierData(supplier)
