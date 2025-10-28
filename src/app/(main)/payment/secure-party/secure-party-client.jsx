@@ -340,7 +340,7 @@ const isLeadBasedSupplierEnhanced = (supplier) => {
 // REMOVED - Use unified pricing for ALL suppliers including party bags
 // This ensures single source of truth for pricing calculations
 
-const calculatePaymentBreakdown = (suppliers, partyDetails) => {
+const calculatePaymentBreakdown = (suppliers, partyDetails, addons = []) => {
   const paymentDetails = []
 
   const pricingPartyDetails = {
@@ -397,13 +397,30 @@ const calculatePaymentBreakdown = (suppliers, partyDetails) => {
     })
   })
 
+  // ✅ Add add-ons to payment details
+  addons.forEach(addon => {
+    paymentDetails.push({
+      id: addon.id,
+      name: addon.name,
+      category: 'Add-on',
+      image: addon.image || '/placeholder.jpg',
+      rating: addon.rating || 4.5,
+      totalAmount: addon.price || 0,
+      amountToday: addon.price || 0,
+      remaining: 0,
+      paymentType: 'full_payment',
+      breakdown: `Add-on: ${addon.name}`
+    })
+  })
+
   const totalPaymentToday = paymentDetails.reduce((sum, detail) => sum + detail.amountToday, 0)
 
   return {
     totalPaymentToday,
     totalCost: totalPaymentToday, // Same as totalPaymentToday since no deposits
     remainingBalance: 0, // No remaining balance
-    paymentDetails
+    paymentDetails,
+    addons // Include addons in the return for reference
   }
 }
 
@@ -826,6 +843,11 @@ export default function PaymentPageContent() {
         )
   
         const partyPlan = partyResult.party.party_plan || {}
+
+        // ✅ Extract add-ons from party_plan
+        const addonsList = partyPlan.addons || []
+        console.log('📦 Add-ons from party_plan:', addonsList)
+
         const supplierList = Object.entries(partyPlan)
           .filter(([key, supplier]) => {
             // ✅ FIX: Exclude einvites and addons from payment
@@ -894,11 +916,11 @@ export default function PaymentPageContent() {
           return
         }
         
-        const breakdown = calculatePaymentBreakdown(supplierList, partyResult.party)
+        const breakdown = calculatePaymentBreakdown(supplierList, partyResult.party, addonsList)
 
         const newResetKey = supplierList.map(s => s.id).join('-')
         setTimerResetKey(newResetKey)
-        
+
         setConfirmedSuppliers(supplierList)
         setPaymentBreakdown(breakdown)
         setPartyId(partyResult.party.id)

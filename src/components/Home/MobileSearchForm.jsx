@@ -1,8 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
-import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle, Navigation } from "lucide-react"
+import { Calendar as CalendarIcon, UsersIcon, MapPin, Check, AlertCircle, Navigation, X } from "lucide-react"
 import { Calendar } from "../ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -71,49 +70,71 @@ export default function MobileSearchForm({
               Event date <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={`
-                      w-full font-normal h-12
-                      bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
-                      hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
-                      ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
-                    `}
-                  >
-                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
-                    {formData.date && !isNaN(new Date(formData.date)) ? (
-                      <span className="ml-5 text-sm text-gray-900">
-                        {format(new Date(formData.date), "EEE, MMM d, yyyy")}
-                      </span>
-                    ) : (
-                      <span className="ml-5 text-sm text-gray-500">Select event date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto p-0 border-primary-200 shadow-xl rounded-2xl"
-                  align="start"
-                  side="top"
-                  sideOffset={8}
-                >
-                  <Calendar
-                    mode="single"
-                    selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
-                    onSelect={(date) => {
-                      if (date) {
-                        const formattedDate = format(date, "yyyy-MM-dd")
-                        handleFieldChange('date', formattedDate)
-                        setCalendarOpen(false) // ✅ Close calendar after selection
-                      }
-                    }}
-                    initialFocus
-                    disabled={(date) => date < new Date()}
-                    className="rounded-lg"
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCalendarOpen(true)}
+                className={`
+                  w-full font-normal h-12
+                  bg-white border-gray-200 focus:border-[hsl(var(--primary-400))] justify-start rounded-xl
+                  hover:bg-gray-50 hover:border-[hsl(var(--primary-400))] transition-colors
+                  ${hasAttemptedSubmit && !formData.date ? 'border-red-300' : ''}
+                `}
+              >
+                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
+                {formData.date && !isNaN(new Date(formData.date)) ? (
+                  <span className="ml-5 text-sm text-gray-900">
+                    {format(new Date(formData.date), "EEE, MMM d, yyyy")}
+                  </span>
+                ) : (
+                  <span className="ml-5 text-sm text-gray-500">Select event date</span>
+                )}
+              </Button>
+
+              {/* Bottom Sheet Calendar */}
+              {calendarOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 bg-black/50 z-50 animate-in fade-in duration-200"
+                    onClick={() => setCalendarOpen(false)}
                   />
-                </PopoverContent>
-              </Popover>
+
+                  {/* Bottom Sheet */}
+                  <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center animate-in slide-in-from-bottom duration-300">
+                    <div className="bg-white rounded-t-3xl shadow-2xl max-h-[80vh] overflow-hidden w-full max-w-md mx-4">
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-4 bg-primary-500">
+                        <h3 className="text-lg font-semibold text-white">Select Date</h3>
+                        <button
+                          onClick={() => setCalendarOpen(false)}
+                          className="p-2 hover:bg-primary-600 rounded-full transition-colors"
+                        >
+                          <X className="w-5 h-5 text-white" />
+                        </button>
+                      </div>
+
+                      {/* Calendar */}
+                      <div className="p-6 flex justify-center">
+                        <Calendar
+                          mode="single"
+                          selected={formData.date && !isNaN(new Date(formData.date)) ? new Date(formData.date) : null}
+                          onSelect={(date) => {
+                            if (date) {
+                              const formattedDate = format(date, "yyyy-MM-dd")
+                              handleFieldChange('date', formattedDate)
+                              setCalendarOpen(false)
+                            }
+                          }}
+                          initialFocus
+                          disabled={(date) => date < new Date()}
+                          className="rounded-lg scale-110"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {hasAttemptedSubmit && !formData.date && (
                 <div className="mt-1">
