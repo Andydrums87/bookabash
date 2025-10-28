@@ -81,17 +81,24 @@ export default function SupplierQuickViewModal({
 
   const themeImage = getThemeImage();
 
-  // Disable body scroll when modal is open
+  // Disable body scroll when modal is open - Enhanced for mobile
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
 
-    // Cleanup function to restore scroll when component unmounts
-    return () => {
-      document.body.style.overflow = 'unset'
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
     }
   }, [isOpen])
 
@@ -129,10 +136,14 @@ export default function SupplierQuickViewModal({
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
       onClick={onClose}
+      onTouchMove={(e) => e.preventDefault()}
+      style={{ touchAction: 'none' }}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-5xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 relative"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-5xl w-full h-[85vh] sm:max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 relative"
         onClick={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        style={{ touchAction: 'auto' }}
       >
         {/* Close Button - Floating over carousel */}
         <button
@@ -191,21 +202,6 @@ export default function SupplierQuickViewModal({
                     />
                   </div>
 
-                  {/* Swipe indicator - floating over images */}
-                  <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center pointer-events-none">
-                    <div
-                      className="px-4 py-2 rounded-full backdrop-blur-md shadow-lg"
-                      style={{
-                        backgroundColor: themeAccentColor
-                          ? `${themeAccentColor}CC`
-                          : 'rgba(0,0,0,0.7)'
-                      }}
-                    >
-                      <p className="text-xs text-white font-bold uppercase tracking-wider">
-                        ← Swipe to see more →
-                      </p>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Content with padding */}

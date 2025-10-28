@@ -80,10 +80,14 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
     <div
       className="fixed inset-0 bg-black/60 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}
+      onTouchMove={(e) => e.preventDefault()}
+      style={{ touchAction: 'none' }}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full h-[85vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        style={{ touchAction: 'auto' }}
       >
         {/* Modal Header */}
         <div className="relative h-48 sm:h-64 flex-shrink-0">

@@ -103,17 +103,21 @@ const SwipeableSupplierCarousel = ({
   const minSwipeDistance = 50
 
   const onTouchStart = (e) => {
+    e.stopPropagation() // Prevent event from bubbling to modal backdrop
     setTouchEnd(0)
     setTouchStart(e.targetTouches[0].clientX)
   }
 
   const onTouchMove = (e) => {
+    e.stopPropagation() // Prevent event from bubbling to modal backdrop
+    e.preventDefault() // Prevent page scroll on iOS
     setTouchEnd(e.targetTouches[0].clientX)
   }
 
-  const onTouchEnd = () => {
+  const onTouchEnd = (e) => {
+    e.stopPropagation() // Prevent event from bubbling to modal backdrop
     if (!touchStart || !touchEnd) return
-    
+
     const distance = touchStart - touchEnd
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
