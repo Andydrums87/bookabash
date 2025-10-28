@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import {
@@ -446,6 +446,12 @@ function PaymentForm({
   const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false)
   const [paymentRequest, setPaymentRequest] = useState(null)
   const [canMakePayment, setCanMakePayment] = useState(false)
+  const bookingTermsAcceptedRef = useRef(false)
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    bookingTermsAcceptedRef.current = bookingTermsAccepted
+  }, [bookingTermsAccepted])
 
   useEffect(() => {
     if (stripe && !timerExpired && clientSecret) {
@@ -469,7 +475,7 @@ function PaymentForm({
 
       pr.on('paymentmethod', async (ev) => {
         // ✅ CRITICAL: Check if terms are accepted before processing Apple Pay
-        if (!bookingTermsAccepted) {
+        if (!bookingTermsAcceptedRef.current) {
           ev.complete('fail')
           setPaymentError('Please accept the booking terms before completing payment')
           setIsProcessing(false)
