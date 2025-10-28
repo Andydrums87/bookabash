@@ -155,10 +155,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
           setSuccess("🎉 Account created and signed in successfully!")
           setIsSuccessComplete(true)
           
-          toast.success(`Welcome ${formData.firstName}! Your account is ready.`, {
-            title: "Account Created Successfully",
-            duration: 4000
-          })
+          // toast.success(`Welcome ${formData.firstName}! Your account is ready.`, {
+          //   title: "Account Created Successfully",
+          //   duration: 4000
+          // })
           
           setTimeout(() => {
             onSuccess(user, {
