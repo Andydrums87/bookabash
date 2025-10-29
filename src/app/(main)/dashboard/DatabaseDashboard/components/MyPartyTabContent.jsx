@@ -33,6 +33,7 @@ export default function MyPartyTabContent({
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
   const [showPlanInfo, setShowPlanInfo] = useState(false)
+  const [hasClickedContinue, setHasClickedContinue] = useState(false)
 
   // Photo upload handler
   const handlePhotoChange = async (e) => {
@@ -57,7 +58,9 @@ export default function MyPartyTabContent({
   }
 
   const handleImHappy = () => {
-    setShowMissingSuggestions(false)
+    // Keep missing suggestions visible - users can continue adding suppliers
+    // But hide the "Continue to Book" button since a new CTA appears
+    setHasClickedContinue(true)
     if (onImHappy) {
       onImHappy()
     }
@@ -350,6 +353,7 @@ export default function MyPartyTabContent({
     return (
       <Card
         key={type}
+        id={`supplier-card-${type}`}
         className="overflow-hidden rounded-2xl border-2 transition-all duration-300 relative ring-2 ring-offset-2 hover:scale-[1.02]"
         style={{
           borderColor: 'hsl(var(--primary-200))',
@@ -721,6 +725,18 @@ export default function MyPartyTabContent({
                 if (onAddSupplier) {
                   await onAddSupplier(supplier, supplierType, false) // false = don't navigate
                 }
+
+                // After confetti animation (2 seconds), scroll to the newly added supplier card
+                setTimeout(() => {
+                  const cardElement = document.getElementById(`supplier-card-${supplierType}`)
+                  if (cardElement) {
+                    cardElement.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'center'
+                    })
+                  }
+                }, 2000) // Wait for confetti animation to finish
+
                 // Return true to trigger confetti
                 return true
               }}
@@ -731,28 +747,30 @@ export default function MyPartyTabContent({
             />
           </div>
 
-          {/* Continue to book button - Outside the suggestions box */}
-          <div className="mt-6">
-            <Button
-              onClick={handleImHappy}
-              className="w-full text-white py-7 text-lg font-bold shadow-2xl relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                background: 'linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-600)) 100%)',
-                boxShadow: '0 10px 40px -10px hsl(var(--primary-500) / 0.6)'
-              }}
-            >
-              {/* Animated shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+          {/* Continue to book button - Only show if user hasn't clicked it yet */}
+          {!hasClickedContinue && (
+            <div className="mt-6">
+              <Button
+                onClick={handleImHappy}
+                className="w-full text-white py-7 text-lg font-bold shadow-2xl relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-600)) 100%)',
+                  boxShadow: '0 10px 40px -10px hsl(var(--primary-500) / 0.6)'
+                }}
+              >
+                {/* Animated shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
 
-              <span className="relative flex items-center justify-center gap-2">
-                <Sparkles className="w-5 h-5 animate-pulse" />
-                Continue to Book
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
-            </Button>
-          </div>
+                <span className="relative flex items-center justify-center gap-2">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                  Continue to Book
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </Button>
+            </div>
+          )}
         </>
       )}
 

@@ -148,9 +148,9 @@ export default function SupplierQuickViewModal({
         {/* Close Button - Floating over carousel */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 w-10 h-10 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all shadow-lg"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 w-8 h-8 bg-white/90 hover:bg-white backdrop-blur-sm rounded-full flex items-center justify-center transition-all shadow-lg"
         >
-          <X className="w-5 h-5 text-gray-700" />
+          <X className="w-4 h-4 text-gray-700" />
         </button>
 
         {/* ✅ MAXIMUM HEIGHT: Scrollable Content Area with background image */}

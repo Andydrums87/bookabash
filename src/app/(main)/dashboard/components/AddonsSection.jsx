@@ -12,17 +12,11 @@ export default function AddonsSection({
   handleRemoveAddon 
 }) {
   // ✅ UPDATED: Only show standalone addons (NOT attached to suppliers)
-  const standaloneAddons = addons.filter(addon => 
-    !addon.supplierId && 
-    !addon.attachedToSupplier && 
+  const standaloneAddons = addons.filter(addon =>
+    !addon.supplierId &&
+    !addon.attachedToSupplier &&
     !addon.isSupplierAddon
   )
- 
-  
-  // Don't render if no standalone addons
-  if (standaloneAddons.length === 0) {
-    return null
-  }
 
   return (
     <div className="mt-8">
@@ -59,8 +53,9 @@ export default function AddonsSection({
       </div>
 
       {/* Enhanced Add-ons Grid - Only Standalone */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {standaloneAddons.map((addon) => (
+      {standaloneAddons.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {standaloneAddons.map((addon) => (
           <Card
             key={addon.id}
             onClick={() => console.log("Addon clicked:", addon.name)}
@@ -174,8 +169,19 @@ export default function AddonsSection({
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-12 px-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-dashed border-gray-300">
+          <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mb-4">
+            <Gift className="w-8 h-8 text-gray-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">No extra services added yet</h3>
+          <p className="text-sm text-gray-500 text-center max-w-md">
+            Browse our recommended add-ons above to enhance your party experience!
+          </p>
+        </div>
+      )}
     </div>
   )
 }
