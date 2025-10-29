@@ -1195,27 +1195,8 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
     const result = await addSupplier(supplier, supplier.packageData || null)
 
     if (result.success) {
-      // Show success toast for Optional Extras additions
-      if (!shouldNavigate) {
-        const categoryNames = {
-          venue: 'Venue',
-          entertainment: 'Entertainment',
-          catering: 'Catering',
-          cakes: 'Cake',
-          facePainting: 'Face Painting',
-          activities: 'Activities',
-          partyBags: 'Party Bags',
-          decorations: 'Decorations',
-          photography: 'Photography',
-          bouncyCastle: 'Bouncy Castle'
-        }
-        const categoryName = categoryNames[categoryType] || categoryType
-
-        toast.success(`${categoryName} added to your party!`, {
-          description: 'View it in the My Party tab',
-          duration: 3000
-        })
-      }
+      // Toast notification removed - confetti animation provides visual feedback
+      // when adding suppliers from the missing suppliers section
 
       // CRITICAL FIX: Compensate for document height change
       if (!shouldNavigate && savedScrollY !== null && savedDocHeight !== null) {

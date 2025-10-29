@@ -36,23 +36,23 @@ export default function VenueBrowserModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="border-b border-gray-200 p-4 sm:p-6 flex items-center justify-between flex-shrink-0">
+          <div className="bg-primary-500 p-4 sm:p-6 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                 <Building className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Choose Your Venue</h2>
-                <p className="text-sm text-gray-600 mt-0.5">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">Choose Your Venue</h2>
+                <p className="text-sm text-white/90 mt-0.5">
                   {venues.length} venues available in your area
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+              className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
             >
-              <X className="w-4 h-4 text-gray-600" />
+              <X className="w-4 h-4 text-white" />
             </button>
           </div>
 
@@ -96,7 +96,7 @@ export default function VenueBrowserModal({
                       {/* Selected Badge */}
                       {isSelected && (
                         <div className="absolute top-2 right-2">
-                          <Badge className="bg-green-500 text-white shadow-lg">
+                          <Badge className="bg-teal-500 text-white shadow-lg">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Selected
                           </Badge>
@@ -163,7 +163,7 @@ export default function VenueBrowserModal({
                           disabled={isSelected}
                           className={`flex-1 ${
                             isSelected
-                              ? 'bg-green-500 hover:bg-green-600'
+                              ? 'bg-teal-500 hover:bg-teal-600'
                               : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
                           }`}
                         >
@@ -202,9 +202,8 @@ export default function VenueBrowserModal({
           {/* Footer */}
           <div className="border-t border-gray-200 p-4 flex-shrink-0">
             <Button
-              variant="outline"
               onClick={onClose}
-              className="w-full"
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white"
             >
               Close
             </Button>
