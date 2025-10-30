@@ -20,7 +20,8 @@ import { usePartyDetails } from "../hooks/usePartyDetails"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
 import { useBudgetManager } from "../hooks/useBudgetManager"
 import { useSupplierManager } from "../hooks/useSupplierManager"
-import BookingConfirmedBanner from "./components/BookingConfirmedBanner"
+import NextStepsWelcomeCard from "./components/NextStepsWelcomeCard"
+import SupplierAddedBanner from "./components/SupplierAddedBanner"
 import MobileBottomTabBar from "./components/MobileBottomTabBar"
 import useDisableScroll from "@/hooks/useDisableScroll"
 import { useChatNotifications } from '../hooks/useChatNotifications'
@@ -885,7 +886,32 @@ useEffect(() => {
   }
 
   const handleAddSupplier = () => navigateWithContext('/browse', 'dashboard')
-  const handlePaymentReady = () => router.push(`/payment/secure-party?party_id=${partyId}`)
+
+  const handlePaymentReady = () => {
+    // DatabaseDashboard payment flow is ALWAYS adding a supplier (initial booking happened elsewhere)
+    const unpaidEnquiry = enquiries.find(e =>
+      e.payment_status !== 'paid' && e.is_paid !== true
+    )
+
+    if (unpaidEnquiry) {
+      const supplierType = unpaidEnquiry.supplier_category
+      const supplier = visibleSuppliers[supplierType]
+
+      const params = new URLSearchParams({
+        party_id: partyId,
+        add_supplier: 'true',
+        ...(supplier?.name && { supplier_name: supplier.name }),
+        ...(supplierType && { supplier_category: supplierType })
+      })
+
+      console.log('✅ DatabaseDashboard - Adding supplier with params:', params.toString())
+      router.push(`/payment/secure-party?${params.toString()}`)
+    } else {
+      console.log('⚠️ No unpaid enquiry found, redirecting without add_supplier param')
+      router.push(`/payment/secure-party?party_id=${partyId}`)
+    }
+  }
+
   const handleCreateInvites = () => window.location.href = "/e-invites/create"
 
   const handleNotificationClick = () => {
@@ -1082,15 +1108,15 @@ const addSuppliersSection = (
           </button>
         </div>
       )}
-      
-      <BookingConfirmedBanner 
+
+      {/* Next Steps Welcome Card - Shows after initial booking */}
+      <NextStepsWelcomeCard
         suppliers={visibleSuppliers}
         enquiries={enquiries}
-        paymentDetails={{
-          depositAmount: enhancedTotalCost * 0.2, // Use enhancedTotalCost
-          remainingBalance: enhancedTotalCost * 0.8 // Use enhancedTotalCost
-        }}
       />
+
+      {/* Supplier Added Banner - Shows when adding suppliers later */}
+      <SupplierAddedBanner />
       <EnquirySuccessBanner
         partyId={partyId}
       />
@@ -1110,6 +1136,7 @@ const addSuppliersSection = (
           childPhoto={currentParty?.child_photo || partyDetails?.childPhoto}
           onPhotoUpload={handleChildPhotoUpload}
           uploadingPhoto={uploadingChildPhoto}
+          venue={visibleSuppliers?.venue || null}
         />
       </div>
 

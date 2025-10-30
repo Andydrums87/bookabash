@@ -2,12 +2,12 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Camera } from "lucide-react"
+import { Calendar, Clock, Camera, MapPin, Sparkles } from "lucide-react"
 import ChatNotificationIcon from "../../DatabaseDashboard/components/ChatNotificationIcon";
 
-export default function DatabasePartyHeader({ 
-  theme, 
-  partyDetails, 
+export default function DatabasePartyHeader({
+  theme,
+  partyDetails,
   currentParty,
   dataSource = 'database',
   isSignedIn = true,
@@ -20,6 +20,8 @@ export default function DatabasePartyHeader({
   childPhoto = null, // URL to child's photo
   onPhotoUpload = null, // Callback when photo is uploaded
   uploadingPhoto = false, // ✅ NEW: Loading state
+  // ✅ NEW: Venue location for address display
+  venue = null, // Venue from party plan
 }) {
   
   const currentTheme = theme;
@@ -115,6 +117,32 @@ export default function DatabasePartyHeader({
     }
   };
 
+  // ✅ Get venue location/address
+  const getVenueLocation = () => {
+    // Try to get location from venue data
+    if (venue?.data?.location) {
+      return venue.data.location;
+    }
+    if (venue?.location) {
+      return venue.location;
+    }
+    // Fallback to party details location
+    if (partyDetails?.location) {
+      return partyDetails.location;
+    }
+    return null;
+  };
+
+  // ✅ Get formatted theme name
+  const getFormattedTheme = () => {
+    if (!currentTheme) return null;
+    // Capitalize first letter and replace hyphens with spaces
+    return currentTheme
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   // Get theme image helper
   const getThemeImage = () => {
     if (!currentTheme) return null
@@ -178,6 +206,8 @@ export default function DatabasePartyHeader({
   const formattedTime = getFormattedTime();
   const daysUntil = getDaysUntil();
   const firstName = getFirstName();
+  const venueLocation = getVenueLocation();
+  const formattedTheme = getFormattedTheme();
 
   // ✅ Handle photo upload
   const handlePhotoChange = (e) => {
@@ -294,21 +324,36 @@ export default function DatabasePartyHeader({
               >
                 {firstName}'s Party
               </h1>
-              {(formattedDate || formattedTime) && (
-                <div className="flex items-center gap-2 mt-2 text-sm md:text-base text-white/95 font-medium flex-wrap">
+              {/* ✅ Party Info Row with all details */}
+              {(formattedDate || formattedTime || formattedTheme || venueLocation) && (
+                <div className="flex items-center gap-1.5 mt-2 text-xs text-white/95 font-medium flex-wrap">
                   {formattedDate && (
                     <>
-                      <Calendar className="w-4 h-4" />
-                      <span>{formattedDate}</span>
+                      <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="whitespace-nowrap">{formattedDate}</span>
                     </>
                   )}
                   {formattedDate && formattedTime && (
-                    <span className="text-white/60">•</span>
+                    <span className="text-white/60 flex-shrink-0">•</span>
                   )}
                   {formattedTime && (
                     <>
-                      <Clock className="w-4 h-4" />
-                      <span>{formattedTime}</span>
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="whitespace-nowrap">{formattedTime}</span>
+                    </>
+                  )}
+                  {formattedTheme && (
+                    <>
+                      <span className="text-white/60 flex-shrink-0">•</span>
+                      <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="whitespace-nowrap">{formattedTheme}</span>
+                    </>
+                  )}
+                  {venueLocation && (
+                    <>
+                      <span className="text-white/60 flex-shrink-0">•</span>
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="whitespace-nowrap">{venueLocation}</span>
                     </>
                   )}
                 </div>

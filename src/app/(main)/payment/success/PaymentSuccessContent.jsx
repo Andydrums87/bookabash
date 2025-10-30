@@ -21,6 +21,9 @@ export default function PaymentSuccessPage() {
   const [loading, setLoading] = useState(true)
 
   const paymentIntentId = searchParams.get("payment_intent")
+  const isAddingSupplier = searchParams.get("add_supplier") === "true"
+  const supplierName = searchParams.get("supplier_name")
+  const supplierCategory = searchParams.get("supplier_category")
 
   useEffect(() => {
     const loadBookingDetails = () => {
@@ -84,7 +87,32 @@ export default function PaymentSuccessPage() {
   }
 
   const handleReturnToDashboard = () => {
-    router.push(`/dashboard?payment_success=true&booking_confirmed=true&timestamp=${Date.now()}`)
+    // Check if this is adding a supplier (vs initial booking)
+    const isAddingSupplier = searchParams.get("add_supplier") === "true"
+    const supplierName = searchParams.get("supplier_name")
+    const supplierCategory = searchParams.get("supplier_category")
+
+    console.log('🔍 Payment Success - Redirect Check:', {
+      isAddingSupplier,
+      supplierName,
+      supplierCategory,
+      allParams: Object.fromEntries(searchParams.entries())
+    })
+
+    if (isAddingSupplier) {
+      // Redirect with supplier_added parameters
+      const params = new URLSearchParams({
+        supplier_added: "true",
+        ...(supplierName && { supplier_name: supplierName }),
+        ...(supplierCategory && { supplier_category: supplierCategory })
+      })
+      console.log('✅ Redirecting to supplier added:', params.toString())
+      router.push(`/dashboard?${params.toString()}`)
+    } else {
+      // Initial booking - show full welcome card
+      console.log('✅ Redirecting to party booked')
+      router.push(`/dashboard?payment_success=true&booking_confirmed=true&timestamp=${Date.now()}`)
+    }
   }
 
   const formatTime = (time) => {
@@ -138,9 +166,87 @@ export default function PaymentSuccessPage() {
     )
   }
 
+  // Different content for adding supplier vs initial booking
+  if (isAddingSupplier) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Email Confirmation Banner */}
+        <div className="bg-green-50 border-b-2 border-green-200 py-3 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="text-center">
+                <span className="text-sm font-semibold text-green-900">
+                  Payment successful
+                </span>
+                <span className="text-sm text-green-800 mx-2 hidden sm:inline">•</span>
+                <span className="text-sm text-green-800 block sm:inline mt-1 sm:mt-0">
+                  Confirmation sent to <span className="font-medium">{bookingDetails.email}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-2xl">
+
+            {/* Success Message */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {supplierName ? (
+                  <>🎉 Woohoo! {supplierName} is Joining the Party!</>
+                ) : (
+                  <>🎉 Woohoo! Your {supplierCategory || 'Supplier'} is Joining the Party!</>
+                )}
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Your party just got even more amazing! Get ready for an unforgettable celebration! 🎈
+              </p>
+            </div>
+
+            {/* What's Happening Now */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+              <p className="text-sm text-blue-900 font-medium mb-3">
+                ✨ What's Happening Now?
+              </p>
+              <ul className="text-sm text-blue-800 space-y-2">
+                <li>• Payment confirmation is already in your inbox 📧</li>
+                <li>• {supplierName ? <><span className="font-semibold">{supplierName}</span> will</> : <>Your supplier will</>} be in touch within 24 hours to finalize the exciting details! 🎊</li>
+                <li>• Check your dashboard to see your complete party lineup 🎪</li>
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={handleReturnToDashboard}
+                className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Return to Dashboard
+              </Button>
+            </div>
+
+            {/* Reference Number */}
+            {paymentIntentId && (
+              <p className="text-xs text-gray-400 text-center mt-6">
+                Payment Reference: {paymentIntentId.slice(-8).toUpperCase()}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Initial booking success page
   return (
     <div className="min-h-screen bg-gray-50">
-      
+
       {/* Email Confirmation Banner - Fixed at Top like Treatwell */}
       <div className="bg-green-50 border-b-2 border-green-200 py-3 px-4">
         <div className="container mx-auto max-w-4xl">
@@ -162,7 +268,7 @@ export default function PaymentSuccessPage() {
       {/* Main Content */}
       <div className="flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl">
-        
+
           {/* Success Icon */}
           <div className="text-center mb-8">
             {/* <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">

@@ -19,10 +19,18 @@ export default function PaymentProcessing() {
       const partyId = searchParams.get('party_id')
       const redirectStatus = searchParams.get('redirect_status')
 
+      // Get add_supplier parameters to pass through
+      const addSupplier = searchParams.get('add_supplier')
+      const supplierName = searchParams.get('supplier_name')
+      const supplierCategory = searchParams.get('supplier_category')
+
       console.log('🔍 Payment processing page loaded:', {
         paymentIntent,
         redirectStatus,
-        partyId
+        partyId,
+        addSupplier,
+        supplierName,
+        supplierCategory
       })
 
       if (!partyId) {
@@ -148,18 +156,30 @@ export default function PaymentProcessing() {
           
           setStatus('success')
           setMessage('Payment successful! Redirecting...')
-          
+
           setTimeout(() => {
-            router.push(`/payment/success?payment_intent=${paymentIntent}`)
+            const successParams = new URLSearchParams({
+              payment_intent: paymentIntent,
+              ...(addSupplier && { add_supplier: addSupplier }),
+              ...(supplierName && { supplier_name: supplierName }),
+              ...(supplierCategory && { supplier_category: supplierCategory })
+            })
+            router.push(`/payment/success?${successParams.toString()}`)
           }, 1500)
           
         } catch (error) {
           console.error('❌ Error completing payment:', error)
           setStatus('error')
           setMessage('Payment was successful, but there was an issue. Please contact support.')
-          
+
           setTimeout(() => {
-            router.push(`/payment/success?payment_intent=${paymentIntent}`)
+            const successParams = new URLSearchParams({
+              payment_intent: paymentIntent,
+              ...(addSupplier && { add_supplier: addSupplier }),
+              ...(supplierName && { supplier_name: supplierName }),
+              ...(supplierCategory && { supplier_category: supplierCategory })
+            })
+            router.push(`/payment/success?${successParams.toString()}`)
           }, 3000)
         }
         
@@ -185,9 +205,15 @@ export default function PaymentProcessing() {
           if (intent.status === 'succeeded') {
             setStatus('success')
             setMessage('Payment successful! Redirecting to confirmation...')
-            
+
             setTimeout(() => {
-              router.push(`/payment/success?payment_intent=${intent.id}`)
+              const successParams = new URLSearchParams({
+                payment_intent: intent.id,
+                ...(addSupplier && { add_supplier: addSupplier }),
+                ...(supplierName && { supplier_name: supplierName }),
+                ...(supplierCategory && { supplier_category: supplierCategory })
+              })
+              router.push(`/payment/success?${successParams.toString()}`)
             }, 2000)
             
           } else if (intent.status === 'processing') {

@@ -571,10 +571,23 @@ function PaymentForm({
           })
       }
 
+      // Build return_url with add_supplier parameters from current URL
+      const currentParams = new URLSearchParams(window.location.search)
+      const addSupplier = currentParams.get('add_supplier')
+      const supplierName = currentParams.get('supplier_name')
+      const supplierCategory = currentParams.get('supplier_category')
+
+      const returnParams = new URLSearchParams({
+        party_id: partyDetails.id,
+        ...(addSupplier && { add_supplier: addSupplier }),
+        ...(supplierName && { supplier_name: supplierName }),
+        ...(supplierCategory && { supplier_category: supplierCategory })
+      })
+
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/payment/processing?party_id=${partyDetails.id}`,
+          return_url: `${window.location.origin}/payment/processing?${returnParams.toString()}`,
           payment_method_data: {
             billing_details: {
               name: partyDetails.parentName,
@@ -1033,7 +1046,35 @@ export default function PaymentPageContent() {
         }
       }
       
-      router.push(`/payment/success?payment_intent=${paymentIntent.id}&child_name=${encodeURIComponent(partyDetails.childName)}&theme=${encodeURIComponent(partyDetails.theme)}&date=${partyDetails.date}&time=${partyDetails.startTime || partyDetails.time || '14:00'}&location=${encodeURIComponent(partyDetails.location)}&guests=${partyDetails.guestCount}&email=${encodeURIComponent(partyDetails.email)}&age=${partyDetails.childAge}`)
+      // Check if this is adding a supplier from current URL
+      const currentParams = new URLSearchParams(window.location.search)
+      const addSupplier = currentParams.get('add_supplier')
+      const supplierName = currentParams.get('supplier_name')
+      const supplierCategory = currentParams.get('supplier_category')
+
+      console.log('🔍 Payment Page - Redirect to Success:', {
+        addSupplier,
+        supplierName,
+        supplierCategory
+      })
+
+      const successParams = new URLSearchParams({
+        payment_intent: paymentIntent.id,
+        child_name: partyDetails.childName,
+        theme: partyDetails.theme,
+        date: partyDetails.date,
+        time: partyDetails.startTime || partyDetails.time || '14:00',
+        location: partyDetails.location,
+        guests: partyDetails.guestCount,
+        email: partyDetails.email,
+        age: partyDetails.childAge,
+        ...(addSupplier && { add_supplier: addSupplier }),
+        ...(supplierName && { supplier_name: supplierName }),
+        ...(supplierCategory && { supplier_category: supplierCategory })
+      })
+
+      console.log('✅ Success URL:', `/payment/success?${successParams.toString()}`)
+      router.push(`/payment/success?${successParams.toString()}`)
       
     } catch (error) {
       console.error('Error handling payment success:', error)
