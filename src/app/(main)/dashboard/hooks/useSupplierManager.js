@@ -6,6 +6,7 @@ import { useState } from "react"
 export function useSupplierManager(removeSupplier, partyId, currentPhase) {
   const [loadingCards, setLoadingCards] = useState([])
   const [suppliersToDelete, setSuppliersToDelete] = useState([])
+  const [recentlyDeleted, setRecentlyDeleted] = useState([]) // Track recently deleted to prevent flash
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [selectedSupplierModal, setSelectedSupplierModal] = useState({
@@ -63,10 +64,13 @@ const handleDeleteSupplier = (supplierType) => {
 
     // Simulate removal animation
     setTimeout(async () => {
+      // ✅ Add to recently deleted BEFORE removing to prevent any gap
+      setRecentlyDeleted(prev => [...prev, supplierType])
+
       // Special handling for e-invites - reset to default instead of removing
       if (supplierType === 'einvites') {
         const currentPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
-        
+
         // Reset to default e-invites structure
         currentPlan.einvites = {
           id: "digital-invites",
@@ -79,22 +83,22 @@ const handleDeleteSupplier = (supplierType) => {
           priceUnit: "per set",
           addedAt: new Date().toISOString()
         };
-        
+
         // Save back to localStorage
         localStorage.setItem('user_party_plan', JSON.stringify(currentPlan));
-        
+
         // Remove detailed invite data
         localStorage.removeItem('party_einvites');
-        
+
         // Trigger events for real-time updates
         const event = new CustomEvent('partyPlanUpdated', { detail: currentPlan });
         window.dispatchEvent(event);
-        
+
         window.dispatchEvent(new StorageEvent('storage', {
           key: 'user_party_plan',
           newValue: JSON.stringify(currentPlan)
         }));
-        
+
 
       } else {
         // Regular supplier removal for other types (including cakes)
@@ -107,10 +111,15 @@ const handleDeleteSupplier = (supplierType) => {
           }
         }
       }
-      
+
       // Remove from deletion animation list
       setTimeout(() => {
         setSuppliersToDelete(prev => prev.filter(type => type !== supplierType))
+
+        // Clear from recently deleted after state settles (keep for longer to ensure smooth transition)
+        setTimeout(() => {
+          setRecentlyDeleted(prev => prev.filter(type => type !== supplierType))
+        }, 500)
       }, 500)
     }, 300)
   }
@@ -149,6 +158,7 @@ const handleDeleteSupplier = (supplierType) => {
     setLoadingCards,
     suppliersToDelete,
     setSuppliersToDelete,
+    recentlyDeleted, // Export recently deleted to prevent flash
     showDeleteConfirm,
     setShowDeleteConfirm,
     selectedSupplierModal,

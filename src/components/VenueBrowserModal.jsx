@@ -1,7 +1,7 @@
 // components/VenueBrowserModal.jsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { X, MapPin, Users, CheckCircle, Star, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,28 @@ export default function VenueBrowserModal({
   partyDetails
 }) {
   const [selectedForPreview, setSelectedForPreview] = useState(null)
+
+  // Lock scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Lock scroll
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      document.body.classList.add('modal-open')
+    } else {
+      // Unlock scroll
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      document.body.classList.remove('modal-open')
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+      document.body.classList.remove('modal-open')
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -78,7 +100,7 @@ export default function VenueBrowserModal({
                     key={venue.id}
                     className={`relative rounded-xl border-2 overflow-hidden transition-all duration-200 ${
                       isSelected
-                        ? 'border-[hsl(var(--primary-500))] shadow-lg ring-2 ring-[hsl(var(--primary-200))]'
+                        ? 'border-teal-500 shadow-lg ring-2 ring-teal-200'
                         : 'border-gray-200 hover:border-[hsl(var(--primary-300))] hover:shadow-md'
                     }`}
                   >

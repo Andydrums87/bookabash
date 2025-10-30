@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 // Icons
-import { RefreshCw, ChevronRight, Plus, Check } from "lucide-react"
+import { RefreshCw, ChevronRight, Plus, Check, Sparkles } from "lucide-react"
 
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -120,6 +120,7 @@ export default function LocalStorageDashboard() {
   const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
   const [isSelectingVenue, setIsSelectingVenue] = useState(false)
   const [showVenueBrowserModal, setShowVenueBrowserModal] = useState(false)
+  const [showDesktopCompleteCTA, setShowDesktopCompleteCTA] = useState(false)
   // Add these state variables near your other useState declarations
 
 
@@ -205,6 +206,7 @@ const childPhotoRef = useRef(null)
     loadingCards,
     setLoadingCards,
     suppliersToDelete,
+    recentlyDeleted,
     showDeleteConfirm,
     selectedSupplierModal,
     getSupplierDisplayName,
@@ -584,23 +586,25 @@ useEffect(() => {
 
 useEffect(() => {
 
-  
+
   if (!isMounted || !partyDetails) {
 
     return
   }
-  
+
   // ✅ Debounce the loading to prevent multiple triggers
   const timeoutId = setTimeout(() => {
     const loadRecommendations = async () => {
       try {
 
-        
+
         const { suppliersAPI } = await import('@/utils/mockBackend')
+        const { scoreSupplierWithTheme } = await import('@/utils/partyBuilderBackend')
         const allSuppliers = await suppliersAPI.getAllSuppliers()
-        
- 
-        
+
+        const partyTheme = partyDetails?.theme || 'no-theme'
+        console.log('🎨 Loading recommendations for theme:', partyTheme)
+
         const categoryMap = {
           venue: 'Venues',
           entertainment: 'Entertainment',
@@ -612,41 +616,51 @@ useEffect(() => {
           decorations: 'Decorations',
           balloons: 'Balloons'
         }
-        
+
         const newRecommendations = {}
-        
-        // For each category, if no supplier exists, recommend one
+
+        // For each category, if no supplier exists, recommend one based on theme
         Object.entries(categoryMap).forEach(([categoryKey, categoryName]) => {
           const hasSupplier = suppliers[categoryKey]
-          
+
           if (!hasSupplier) {
-            // Find first supplier in this category
-            const categorySupplier = allSuppliers.find(s => s.category === categoryName)
-            
-            if (categorySupplier) {
-              newRecommendations[categoryKey] = categorySupplier
-  
+            // Find all suppliers in this category
+            const categorySuppliers = allSuppliers.filter(s => s.category === categoryName)
+
+            if (categorySuppliers.length > 0) {
+              // ✅ Sort by theme score and pick the best match
+              const sortedByTheme = categorySuppliers
+                .map(supplier => ({
+                  supplier,
+                  themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+                }))
+                .sort((a, b) => b.themeScore - a.themeScore)
+
+              const bestMatch = sortedByTheme[0].supplier
+              newRecommendations[categoryKey] = bestMatch
+
+              console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
             }
           } else {
             console.log(`⏭️ Skipping ${categoryKey} - already has supplier`)
           }
         })
-        
- 
+
+
         setRecommendedSuppliers(newRecommendations)
         setRecommendationsLoaded(true)
-        
+
       } catch (error) {
         console.error('❌ Error loading recommendations:', error)
         setRecommendationsLoaded(true)
       }
     }
-    
+
     loadRecommendations()
   }, 300) // ✅ 300ms debounce
-  
+
   return () => clearTimeout(timeoutId)
-  
+
 }, [isMounted, partyDetails, partyPlan]) // ✅ Use partyPlan instead of suppliers
 
 
@@ -1696,84 +1710,78 @@ const handleChildPhotoUpload = async (file) => {
                           );
                         };
 
-                        // Split all other suppliers (excluding venue) into selected and empty
-                        const otherSuppliers = Object.entries(suppliers).filter(([type]) => type !== 'venue');
-                        const selectedSuppliers = otherSuppliers.filter(([, supplier]) => supplier !== null);
-                        const emptySuppliers = otherSuppliers.filter(([, supplier]) => supplier === null);
+                        // Define fixed order for all supplier types (keeps cards in same position)
+                        const supplierOrder = [
+                          'venue',
+                          'entertainment',
+                          'cakes',
+                          'catering',
+                          'facePainting',
+                          'activities',
+                          'partyBags',
+                          'decorations',
+                          'balloons',
+                          'photography'
+                        ];
 
-                        // Render all cards in order: selected (with venue), then empty (with venue)
+                        // Render all suppliers in fixed order
                         return (
                           <>
-                            {/* SELECTED SUPPLIERS - No header needed */}
-                            {renderVenueCard(true)}
-                            {selectedSuppliers.map(([type, supplier]) => {
-                                  const supplierAddons = addons.filter(addon =>
-                                    addon.supplierId === supplier?.id ||
-                                    addon.supplierType === type ||
-                                    addon.attachedToSupplier === type
-                                  );
+                            {supplierOrder.map(type => {
+                              const supplier = suppliers[type];
+                              const recommendedSupplier = getRecommendedSupplierForType(type);
+                              const isLoading = loadingCards[type];
+                              const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
 
-                                  return (
-                                    <SupplierCard
-                                      key={type}
-                                      type={type}
-                                      supplier={supplier}
-                                      loadingCards={loadingCards}
-                                      suppliersToDelete={suppliersToDelete}
-                                      openSupplierModal={openSupplierModal}
-                                      handleDeleteSupplier={handleDeleteSupplier}
-                                      getSupplierDisplayName={getSupplierDisplayName}
-                                      addons={supplierAddons}
-                                      handleRemoveAddon={handleRemoveAddon}
-                                      enquiryStatus={getEnquiryStatus(type)}
-                                      enquirySentAt={getEnquiryTimestamp(type)}
-                                      isSignedIn={false}
-                                      isPaymentConfirmed={false}
-                                      enquiries={[]}
-                                      partyDetails={partyDetails}
-                                      currentPhase="planning"
-                                      recommendedSupplier={getRecommendedSupplierForType(type)}
-                                      onAddSupplier={handleAddRecommendedSupplier}
-                                      enhancedPricing={getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)}
-                                      onCustomizationComplete={handleCustomizationComplete}
-                                    />
-                                  );
-                            })}
+                              // Hide card if no supplier, no recommended supplier, AND not in loading/deleting state
+                              if (!supplier && !recommendedSupplier && !isLoading && !isDeleting) {
+                                return null;
+                              }
 
-                            {/* EMPTY SUPPLIERS - No divider for gamified experience */}
-                            {renderVenueCard(false)}
-                            {emptySuppliers.map(([type, supplier]) => {
-                                  const supplierAddons = addons.filter(addon =>
-                                    addon.supplierId === supplier?.id ||
-                                    addon.supplierType === type ||
-                                    addon.attachedToSupplier === type
-                                  );
+                              const supplierAddons = addons.filter(addon =>
+                                addon.supplierId === supplier?.id ||
+                                addon.supplierType === type ||
+                                addon.attachedToSupplier === type
+                              );
 
-                                  return (
-                                    <SupplierCard
-                                      key={type}
-                                      type={type}
-                                      supplier={supplier}
-                                      loadingCards={loadingCards}
-                                      suppliersToDelete={suppliersToDelete}
-                                      openSupplierModal={openSupplierModal}
-                                      handleDeleteSupplier={handleDeleteSupplier}
-                                      getSupplierDisplayName={getSupplierDisplayName}
-                                      addons={supplierAddons}
-                                      handleRemoveAddon={handleRemoveAddon}
-                                      enquiryStatus={getEnquiryStatus(type)}
-                                      enquirySentAt={getEnquiryTimestamp(type)}
-                                      isSignedIn={false}
-                                      isPaymentConfirmed={false}
-                                      enquiries={[]}
-                                      partyDetails={partyDetails}
-                                      currentPhase="planning"
-                                      recommendedSupplier={getRecommendedSupplierForType(type)}
-                                      onAddSupplier={handleAddRecommendedSupplier}
-                                      enhancedPricing={supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null}
-                                      onCustomizationComplete={handleCustomizationComplete}
-                                    />
-                                  );
+                              return (
+                                <div key={type}>
+                                  <SupplierCard
+                                    type={type}
+                                    supplier={isDeleting ? null : (supplier || null)}
+                                    loadingCards={loadingCards}
+                                    suppliersToDelete={suppliersToDelete}
+                                    openSupplierModal={openSupplierModal}
+                                    handleDeleteSupplier={handleDeleteSupplier}
+                                    getSupplierDisplayName={getSupplierDisplayName}
+                                    addons={supplierAddons}
+                                    handleRemoveAddon={handleRemoveAddon}
+                                    enquiryStatus={getEnquiryStatus(type)}
+                                    enquirySentAt={getEnquiryTimestamp(type)}
+                                    isSignedIn={false}
+                                    isPaymentConfirmed={false}
+                                    enquiries={[]}
+                                    partyDetails={partyDetails}
+                                    currentPhase="planning"
+                                    recommendedSupplier={recommendedSupplier}
+                                    onAddSupplier={handleAddRecommendedSupplier}
+                                    enhancedPricing={isDeleting ? null : (supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null)}
+                                    onCustomizationComplete={handleCustomizationComplete}
+                                  />
+
+                                  {/* Browse Venues button underneath venue card */}
+                                  {type === 'venue' && supplier && !isDeleting && venueCarouselOptions && venueCarouselOptions.length > 0 && (
+                                    <div className="mt-3 text-center">
+                                      <button
+                                        onClick={() => setShowVenueBrowserModal(true)}
+                                        className="text-sm text-primary-600 hover:text-primary-700 font-medium underline decoration-dotted underline-offset-2 transition-colors"
+                                      >
+                                        Want to change venue? Browse other options
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
                             })}
                           </>
                         );
@@ -1828,24 +1836,24 @@ const handleChildPhotoUpload = async (file) => {
                 <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
                   <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
                   <p className="text-sm text-white/90 mb-4">
-                    Swipe to add more suppliers and customize your plan, or complete your booking now!
+                    Review your party plan and complete your booking
                   </p>
-                  <Link href="/review-book">
-                    <button
-                      className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
-                    >
-                      {/* <Check className="w-5 h-5" /> */}
-                      Complete Booking
-                    </button>
-                  </Link>
-                  <p className="text-xs text-white/80 text-center mt-3">
-                    You'll review your full party plan before any payment
-                  </p>
-                </div>
-              </div>
+                  <Button
+                    onClick={() => setShowDesktopCompleteCTA(true)}
+                    className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 relative overflow-hidden group"
+                  >
+                    {/* Animated shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
 
-              <div className="md:block hidden">
-                <AddonsSectionWrapper suppliers={suppliers} />
+                    <span className="relative flex items-center justify-center gap-2">
+                      <Sparkles className="w-5 h-5" />
+                      Continue to Book
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  </Button>
+                </div>
               </div>
 
               {/* <div className="md:block hidden w-screen pr-6 md:pr-20">
@@ -1945,6 +1953,154 @@ const handleChildPhotoUpload = async (file) => {
         onSelectVenue={handleSelectVenue}
         partyDetails={partyDetails}
       />
+
+      {/* Party Plan Review Modal - Desktop Only */}
+      {showDesktopCompleteCTA && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowDesktopCompleteCTA(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-primary-500 p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-bold">Your Party Plan</h2>
+                <button
+                  onClick={() => setShowDesktopCompleteCTA(false)}
+                  className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-sm text-white/90">
+                Review all the details before completing your booking
+              </p>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto max-h-[calc(90vh-250px)] p-6">
+              {/* Party Info - Simple List */}
+              <div className="space-y-2 text-sm text-gray-700 mb-6">
+                {partyDetails?.childName && (
+                  <p>
+                    <span className="font-semibold">Party for:</span> {partyDetails.childName}{partyDetails.age && `, turning ${partyDetails.age}`}
+                  </p>
+                )}
+
+                {partyDetails?.date && (
+                  <p>
+                    <span className="font-semibold">Date:</span>{' '}
+                    {new Date(partyDetails.date).toLocaleDateString('en-GB', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                    {partyDetails.time && ` at ${partyDetails.time}`}
+                  </p>
+                )}
+
+                {partyDetails?.guestCount && (
+                  <p>
+                    <span className="font-semibold">Guests:</span> {partyDetails.guestCount} children
+                  </p>
+                )}
+
+                {suppliers?.venue && (
+                  <p>
+                    <span className="font-semibold">Venue:</span> {suppliers.venue.name}
+                  </p>
+                )}
+
+                {partyDetails?.theme && (
+                  <p>
+                    <span className="font-semibold">Theme:</span> <span className="capitalize">{partyDetails.theme.replace(/-/g, ' ')}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Suppliers List */}
+              {Object.keys(suppliers).filter(type => suppliers[type]).length > 0 && (
+                <div className="border-t border-gray-200 pt-4 mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Your Suppliers</h4>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => {
+                      // Calculate correct price for party bags
+                      const isPartyBags = supplier.category === 'Party Bags' ||
+                                         supplier.category?.toLowerCase().includes('party bag')
+
+                      let displayPrice = supplier.packageData?.price || supplier.price || 0
+
+                      if (isPartyBags) {
+                        displayPrice = supplier.partyBagsMetadata?.totalPrice ||
+                                      supplier.packageData?.totalPrice ||
+                                      (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
+                                        ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                                        : null)
+
+                        if (!displayPrice) {
+                          displayPrice = supplier.price || supplier.priceFrom || 0
+                        }
+                      }
+
+                      return (
+                        <div key={type} className="flex items-center justify-between py-2">
+                          <span>{supplier.name}</span>
+                          <span className="font-semibold text-gray-900">£{displayPrice}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Addons List */}
+              {addons && addons.length > 0 && (
+                <div className="border-t border-gray-200 pt-4 mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Add-ons</h4>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    {addons.map((addon) => (
+                      <div key={addon.id} className="flex items-center justify-between py-2">
+                        <span>{addon.name}</span>
+                        <span className="font-semibold text-gray-900">£{addon.price || 0}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with Total and CTA */}
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
+              {/* Total */}
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <span className="text-lg font-bold text-gray-900">Total</span>
+                <span className="text-3xl font-bold text-primary-600">£{totalCost.toFixed(2)}</span>
+              </div>
+
+              {/* CTA Button */}
+              <Link href="/review-book">
+                <button
+                  className="w-full cursor-pointer bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  Complete Booking
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              </Link>
+              <p className="text-xs text-gray-600 text-center mt-3">
+                You'll review your full party plan before any payment
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Add Supplier Button */}
       {/* <div className="md:hidden fixed bottom-5 right-4 z-40" data-tour="mobile-add-supplier">

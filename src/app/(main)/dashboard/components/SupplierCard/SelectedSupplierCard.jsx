@@ -391,24 +391,6 @@ export default function SelectedSupplierCard({
                   <span className="truncate">Customize</span>
                 </Button>
               </div>
-
-              {/* Browse Venues Button - Full width below for venue type */}
-              {showBrowseVenues && type === 'venue' && onBrowseVenues && (
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onBrowseVenues()
-                  }}
-                  variant="outline"
-                  className="w-full border-[hsl(var(--primary-500))] text-[hsl(var(--primary-600))] hover:bg-[hsl(var(--primary-50))] text-sm"
-                  disabled={isDeleting}
-                >
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  Browse Other Venues
-                </Button>
-              )}
             </div>
           </div>
         </Card>
