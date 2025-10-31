@@ -36,6 +36,7 @@ import NextStepsWelcomeCard from "./components/NextStepsWelcomeCard"
 import SupplierAddedBanner from "./components/SupplierAddedBanner"
 import useDisableScroll from "@/hooks/useDisableScroll"
 import { useChatNotifications } from '../hooks/useChatNotifications'
+import { useToast } from '@/components/ui/toast'
 
 // Layout Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -116,6 +117,9 @@ export default function DatabaseDashboard() {
   const [showChecklistModal, setShowChecklistModal] = useState(false)
 const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
 const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
+
+  // Toast notifications
+  const { toast } = useToast()
 const [loadingCards, setLoadingCards] = useState([])
 const [activeBottomTabModal, setActiveBottomTabModal] = useState(null)
 const [uploadingChildPhoto, setUploadingChildPhoto] = useState(false)
@@ -162,6 +166,11 @@ const childPhotoRef = useRef(null)
     isPaymentConfirmed,
     paymentDetails,
   } = usePartyPhase(partyData, partyId)
+
+  // Scroll to top when component mounts/navigates to this page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // ✅ NEW: Load theme-based supplier recommendations for empty slots
   useEffect(() => {
@@ -323,22 +332,47 @@ const childPhotoRef = useRef(null)
   // UNIFIED PRICING CALCULATION (same pattern as LocalStorageDashboard)
   const enhancedTotalCost = useMemo(() => {
     let total = 0;
-  
+
     // Calculate each supplier's cost, checking for pre-calculated pricing
     Object.entries(visibleSuppliers).forEach(([type, supplier]) => {
       if (!supplier) return;
-  
+
       // Get addons for this specific supplier
-      const supplierAddons = addons.filter(addon => 
-        addon.supplierId === supplier.id || 
+      const supplierAddons = addons.filter(addon =>
+        addon.supplierId === supplier.id ||
         addon.supplierType === type ||
         addon.attachedToSupplier === type
       );
-  
-      // Check if pricing has already been enhanced
+
+      // Check if this is party bags - handle specially
+      const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
       let supplierCost = 0;
-  
-      if (supplier.enhancedPrice && supplier.originalPrice) {
+
+      if (isPartyBags) {
+        // Get quantity - check multiple sources
+        const quantity = supplier.partyBagsQuantity ||
+                         supplier.partyBagsMetadata?.quantity ||
+                         supplier.packageData?.partyBagsQuantity ||
+                         10 // fallback
+
+        // Get price per bag
+        const pricePerBag = supplier.partyBagsMetadata?.pricePerBag ||
+                            supplier.packageData?.pricePerBag ||
+                            supplier.packageData?.price ||
+                            supplier.price ||
+                            supplier.priceFrom ||
+                            0
+
+        // Calculate total price
+        supplierCost = pricePerBag * quantity
+
+        console.log('📊 Total Cost - Party Bags:', {
+          supplierName: supplier.name,
+          pricePerBag,
+          quantity,
+          totalPrice: supplierCost
+        })
+      } else if (supplier.enhancedPrice && supplier.originalPrice) {
         // Use pre-calculated enhanced price
         console.log('📊 Database Dashboard Total: Using pre-calculated enhanced pricing for', supplier.name, ':', supplier.enhancedPrice);
         supplierCost = supplier.enhancedPrice;
@@ -346,7 +380,7 @@ const childPhotoRef = useRef(null)
         // Use package enhanced price
         console.log('📊 Database Dashboard Total: Using package enhanced pricing for', supplier.name, ':', supplier.packageData.enhancedPrice);
         supplierCost = supplier.packageData.enhancedPrice;
-      } else if (supplier.packageData?.totalPrice && supplier.packageData?.price && 
+      } else if (supplier.packageData?.totalPrice && supplier.packageData?.price &&
                  supplier.packageData.totalPrice !== supplier.packageData.price) {
         // Use package total price
         console.log('📊 Database Dashboard Total: Using package totalPrice for', supplier.name, ':', supplier.packageData.totalPrice);
@@ -357,21 +391,21 @@ const childPhotoRef = useRef(null)
         const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
         supplierCost = pricing.finalPrice;
       }
-  
+
       total += supplierCost;
-  
+
       // Add addon costs (addons typically don't have enhanced pricing)
       const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
       total += addonsCost;
     });
-  
+
     // Add standalone addons (not attached to any supplier)
-    const standaloneAddons = addons.filter(addon => 
+    const standaloneAddons = addons.filter(addon =>
       !addon.supplierId && !addon.supplierType && !addon.attachedToSupplier
     );
     const standaloneAddonsTotal = standaloneAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
     total += standaloneAddonsTotal;
-  
+
     console.log('📊 Database Dashboard Total: Final calculated total:', total);
     return total;
   }, [visibleSuppliers, addons, partyDetails]);
@@ -912,12 +946,24 @@ useEffect(() => {
       setShowSupplierAddedModal(false)
       setAddedSupplierData(null)
 
+      // Show success toast notification
+      toast.success(`${supplier.name} has been added to your party!`, {
+        title: 'Supplier Added',
+        duration: 3000
+      })
+
       // Don't show the enquiry success banner when securing booking
       // Just silently refresh the page without URL parameters
 
     } catch (error) {
       console.error('CRITICAL ERROR in handleModalSendEnquiry:', error)
       setEnquiryFeedback(`Failed to add ${supplier.name}: ${error.message}`)
+
+      // Show error toast
+      toast.error(`Failed to add ${supplier.name}. Please try again.`, {
+        title: 'Error',
+        duration: 4000
+      })
     } finally {
       console.log('FINAL STEP: Setting sendingEnquiry to false')
       setSendingEnquiry(false)
@@ -1330,11 +1376,11 @@ const addSuppliersSection = (
                       £{enhancedTotalCost.toFixed(2)}
                     </p>
                   </div>
-                  {outstandingData.totalDeposit > 0 && (
+                  {outstandingData.totalCost > 0 && (
                     <div className="text-right">
                       <p className="text-white/80 text-xs font-medium mb-1">Due Now</p>
                       <p className="text-white text-xl font-bold">
-                        £{outstandingData.totalDeposit.toFixed(2)}
+                        £{outstandingData.totalCost.toFixed(2)}
                       </p>
                     </div>
                   )}
@@ -1406,7 +1452,41 @@ const addSuppliersSection = (
                       ) : []
 
                       const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-                      const totalPrice = (supplier.price || 0) + addonsCost
+
+                      // Calculate base price - handle party bags differently
+                      const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
+                      let basePrice = 0
+
+                      if (isPartyBags) {
+                        // Get quantity - check multiple sources
+                        const quantity = supplier.partyBagsQuantity ||
+                                         supplier.partyBagsMetadata?.quantity ||
+                                         supplier.packageData?.partyBagsQuantity ||
+                                         10 // fallback
+
+                        // Get price per bag
+                        const pricePerBag = supplier.partyBagsMetadata?.pricePerBag ||
+                                            supplier.packageData?.pricePerBag ||
+                                            supplier.packageData?.price ||
+                                            supplier.price ||
+                                            supplier.priceFrom ||
+                                            0
+
+                        // Calculate total price
+                        basePrice = pricePerBag * quantity
+
+                        console.log('🎒 MY PLAN - Party Bags Price:', {
+                          supplierName: supplier.name,
+                          pricePerBag,
+                          quantity,
+                          totalPrice: basePrice,
+                          supplier
+                        })
+                      } else {
+                        basePrice = supplier.packageData?.price || supplier.price || 0
+                      }
+
+                      const totalPrice = basePrice + addonsCost
                       const supplierName = supplier.name || 'Unknown Supplier'
                       const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
 
@@ -1533,7 +1613,7 @@ const addSuppliersSection = (
             <div className="md:hidden mt-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                  Add More Suppliers
+                  Level Up Your Party
                   <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                 </h2>
                 <p className="text-sm text-gray-600 mt-3">Complete your party with these recommendations</p>

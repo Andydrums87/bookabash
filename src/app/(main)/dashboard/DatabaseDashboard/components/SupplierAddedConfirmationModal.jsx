@@ -206,6 +206,12 @@ export default function SupplierAddedConfirmationModal({
     // If going to payment, trigger navigation
     if (goToPayment && onGoToPayment) {
       onGoToPayment()
+    } else {
+      // If keeping browsing, scroll to top after a short delay so they can see the cart
+      // Delay ensures the modal has closed and page has updated
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }, 300)
     }
   }
 

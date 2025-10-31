@@ -94,21 +94,27 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
     }
 
     setIsLoading(true);
-    
+
+    // Wait for user/currentParty to be determined (not undefined)
     if (user === undefined || currentParty === undefined) {
       return;
     }
-    
+
     let details;
-    
+
     if (user && currentParty) {
+      // Database user with party - load from database
       details = getPartyDetailsFromDatabase(currentParty);
-    } else {
+    } else if (user === null && currentParty === null) {
+      // Confirmed no user/party - use localStorage
       console.log("📦 Loading party details from localStorage (user:", !!user, "currentParty:", !!currentParty, ")");
       details = getPartyDetailsFromLocalStorage();
       console.log("✅ localStorage details processed:", details);
+    } else {
+      // Still waiting for data
+      return;
     }
-  
+
     setPartyDetails(details);
 
     if (details.theme) {

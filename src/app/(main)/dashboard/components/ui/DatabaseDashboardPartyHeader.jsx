@@ -22,6 +22,8 @@ export default function DatabasePartyHeader({
   uploadingPhoto = false, // ✅ NEW: Loading state
   // ✅ NEW: Venue location for address display
   venue = null, // Venue from party plan
+  // ✅ Loading state
+  loading = false,
 }) {
   
   const currentTheme = theme;
@@ -191,12 +193,47 @@ export default function DatabasePartyHeader({
     return themeGradients[currentTheme.toLowerCase()] || themeGradients.default
   }
 
-  if (!partyDetails) {
+  // Check if we have real child name data (not just fallback "Emma")
+  const hasRealChildName = partyDetails && (
+    (dataSource === 'database' && currentParty?.child_name) ||
+    partyDetails?.firstName ||
+    partyDetails?.lastName ||
+    (partyDetails?.childName && partyDetails.childName !== 'Emma')
+  );
+
+  // Show skeleton loader while loading OR if we don't have real data yet
+  if (loading || !partyDetails || !hasRealChildName) {
     return (
-      <div className="h-24 bg-primary-50 rounded-xl animate-pulse flex items-center justify-center mb-6">
-        <div className="text-center">
-          <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-          <p className="text-sm">Loading...</p>
+      <div className="relative shadow-2xl overflow-hidden mb-8">
+        {/* Gradient background skeleton */}
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 animate-pulse"></div>
+
+        {/* Content skeleton */}
+        <div className="relative px-4 py-8 md:px-10 md:py-12">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            {/* Avatar + Text skeleton */}
+            <div className="flex items-center gap-3">
+              {/* Avatar skeleton - Desktop only */}
+              <div className="hidden md:block w-30 h-30 rounded-full bg-white/40 animate-pulse flex-shrink-0"></div>
+
+              {/* Text content skeleton */}
+              <div className="space-y-2">
+                {/* Title skeleton */}
+                <div className="h-12 bg-white/40 rounded-lg w-64 animate-pulse"></div>
+                {/* Info row skeleton */}
+                <div className="flex items-center gap-2">
+                  <div className="h-4 bg-white/30 rounded w-32 animate-pulse"></div>
+                  <div className="h-4 bg-white/30 rounded w-24 animate-pulse"></div>
+                  <div className="h-4 bg-white/30 rounded w-28 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Badge skeleton */}
+            <div className="hidden md:block absolute top-4 right-4">
+              <div className="h-8 bg-white/30 rounded-full w-32 animate-pulse"></div>
+            </div>
+          </div>
         </div>
       </div>
     );

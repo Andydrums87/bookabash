@@ -428,13 +428,13 @@ const refreshPartyData = async () => {
     partyId,
     totalCost,
     addons,
-    loading: isLoading, // ✅ Return our custom loading state
+    loading: isLoading || partyDetailsLoading, // ✅ Include partyDetails loading
     user,
     currentParty,
     suppliers,
     dataSource,
     isSignedIn,
-    
+
     // Party details
     partyDetails,
     partyTheme,

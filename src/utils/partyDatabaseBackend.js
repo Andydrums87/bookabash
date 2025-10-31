@@ -592,9 +592,13 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
     const packageType = selectedPackage?.packageType || 'standard'
     const supplierTypeEnhanced = selectedPackage?.supplierType || 'standard'
 
-   
-       
-    // ✅ ENHANCED: Create supplier data with cake customization
+    // ✅ NEW: Extract party bags metadata if present
+    const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
+    const partyBagsMetadata = selectedPackage?.partyBagsMetadata || null
+    const partyBagsQuantity = selectedPackage?.partyBagsQuantity || null
+
+
+    // ✅ ENHANCED: Create supplier data with cake customization and party bags metadata
     const supplierData = {
       id: supplier.id,
       name: supplier.name,
@@ -606,12 +610,18 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
       priceUnit: selectedPackage ? selectedPackage.duration : supplier.priceUnit,
       addedAt: new Date().toISOString(),
       packageId: selectedPackage?.id || null,
-      
+
       // ✅ NEW: Add cake customization data
       packageType: packageType,
       supplierType: supplierTypeEnhanced,
       cakeCustomization: cakeCustomization,
-      
+
+      // ✅ NEW: Add party bags metadata at top level for easy access
+      ...(partyBagsMetadata && {
+        partyBagsMetadata: partyBagsMetadata,
+        partyBagsQuantity: partyBagsQuantity,
+      }),
+
       // ✅ ENHANCED: Package details with customization
       packageData: selectedPackage ? {
         ...selectedPackage,
@@ -620,7 +630,7 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
         packageType: packageType,
         supplierType: supplierTypeEnhanced
       } : null,
-      
+
       originalSupplier: {
         ...supplier,
         category: supplier.category // ✅ Preserve in original too
