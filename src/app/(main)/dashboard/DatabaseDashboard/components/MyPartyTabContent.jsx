@@ -805,6 +805,8 @@ export default function MyPartyTabContent({
           currentPhase="planning"
           selectedDate={partyDetails?.date}
           partyDate={partyDetails?.date}
+          mobileHeight="max-h-[92vh]"
+          desktopHeight="md:h-[95vh]"
         />
       )}
     </div>

@@ -234,7 +234,7 @@ export default function SupplierAddedConfirmationModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[85vh] md:h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

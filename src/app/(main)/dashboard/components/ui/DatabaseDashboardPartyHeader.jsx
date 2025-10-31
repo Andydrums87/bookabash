@@ -193,7 +193,7 @@ export default function DatabasePartyHeader({
     return themeGradients[currentTheme.toLowerCase()] || themeGradients.default
   }
 
-  // Check if we have real child name data (not just fallback "Emma")
+  // Check if we have real party data
   const hasRealChildName = partyDetails && (
     (dataSource === 'database' && currentParty?.child_name) ||
     partyDetails?.firstName ||
@@ -201,8 +201,27 @@ export default function DatabasePartyHeader({
     (partyDetails?.childName && partyDetails.childName !== 'Emma')
   );
 
+  // Also check if we have a real date (another indicator of real data)
+  const hasRealDate = partyDetails?.date && partyDetails.date !== 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM';
+
+  // Debug logging (can be removed later)
+  if (typeof window !== 'undefined' && partyDetails) {
+    console.log('🎯 Header validation:', {
+      loading,
+      hasPartyDetails: !!partyDetails,
+      hasRealChildName,
+      hasRealDate,
+      childName: partyDetails?.childName,
+      firstName: partyDetails?.firstName,
+      date: partyDetails?.date,
+      dataSource,
+      currentPartyChildName: currentParty?.child_name
+    });
+  }
+
   // Show skeleton loader while loading OR if we don't have real data yet
-  if (loading || !partyDetails || !hasRealChildName) {
+  // If we have a real date, show the header even if name validation fails (handles edge cases)
+  if (loading || !partyDetails || (!hasRealChildName && !hasRealDate)) {
     return (
       <div className="relative shadow-2xl overflow-hidden mb-8">
         {/* Gradient background skeleton */}

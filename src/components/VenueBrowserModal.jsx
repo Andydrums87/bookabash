@@ -50,11 +50,11 @@ export default function VenueBrowserModal({
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-2xl sm:rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+          className="bg-white rounded-t-3xl sm:rounded-3xl max-w-6xl w-full h-[92vh] sm:max-h-[90vh] sm:h-auto overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

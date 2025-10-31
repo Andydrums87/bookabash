@@ -199,6 +199,8 @@ export default function SupplierCustomizationModal({
   partyDetails = null, // New prop for complete party details
   databasePartyData = null,
   userType = null,
+  mobileHeight = "max-h-[85vh]", // Mobile height (default 85vh)
+  desktopHeight = "md:h-[90vh]", // Desktop height (default 90vh)
 }) {
   // ✅ DEBUG: Log when modal receives new supplier prop
   useEffect(() => {
@@ -818,7 +820,7 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
+        className={`bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full ${desktopHeight} ${mobileHeight} overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-primary-500">
