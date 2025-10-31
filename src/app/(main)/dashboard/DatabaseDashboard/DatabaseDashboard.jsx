@@ -840,37 +840,44 @@ useEffect(() => {
     }, 200)
   }
 
-  const handleModalSendEnquiry = async (supplier, selectedPackage, partyId) => {
+  const handleModalSendEnquiry = async (supplier, selectedPackage, partyId, selectedAddons = []) => {
     setSendingEnquiry(true)
-    
+
     try {
       const addResult = await partyDatabaseBackend.addSupplierToParty(
         partyId,
         supplier,
         selectedPackage
       )
-  
+
       if (!addResult.success) {
         throw new Error(addResult.error)
       }
-      
+
+      // Add any selected addons
+      if (selectedAddons && selectedAddons.length > 0) {
+        for (const addon of selectedAddons) {
+          await handleAddAddon(addon)
+        }
+      }
+
       const enquiryResult = await partyDatabaseBackend.sendIndividualEnquiry(
         partyId,
         supplier,
         selectedPackage,
         `Immediate booking confirmed for ${supplier.name}`
       )
-  
+
       if (!enquiryResult.success) {
         console.error('Booking failed but supplier was added:', enquiryResult.error)
         setEnquiryFeedback(`${supplier.name} added, but booking confirmation failed`)
       } else {
         console.log('STEP 2: Booking confirmed successfully')
       }
-  
+
       const replacementContextString = sessionStorage.getItem('replacementContext')
       let replacementContext = null
-      
+
       if (replacementContextString) {
         try {
           replacementContext = JSON.parse(replacementContextString)
@@ -886,7 +893,7 @@ useEffect(() => {
             replacementContext.originalSupplierCategory,
             supplier.id
           )
-          
+
           if (markResult.success) {
             console.log('STEP 3: Replacement marked as processed successfully')
           } else {
@@ -895,7 +902,7 @@ useEffect(() => {
         } catch (error) {
           console.error('STEP 3: Exception marking replacement as processed:', error)
         }
-        
+
         sessionStorage.removeItem('replacementContext')
       } else {
         console.log('Not a replacement flow - skipping replacement processing')
@@ -1166,6 +1173,7 @@ const addSuppliersSection = (
         partyId={partyId}
         enquiries={enquiries}
         hasEnquiriesPending={hasEnquiriesPending}
+        onGoToPayment={handlePaymentReady}
       />
 
       {notification && (
@@ -1537,6 +1545,10 @@ const addSuppliersSection = (
                   // Use the same logic as AddSuppliersSection (from bottom bar)
                   await handleAddRecommendedSupplier(supplierType, supplier, false)
                   return true
+                }}
+                onCustomize={(supplier, supplierType) => {
+                  // Open customization modal when clicking on supplier card
+                  handleAddRecommendedSupplier(supplierType, supplier, false)
                 }}
                 showTitle={false}
                 horizontalScroll={true}

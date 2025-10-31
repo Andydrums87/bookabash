@@ -204,6 +204,8 @@ export default function EmptySupplierCard({
   isAlreadyAdded = false,
   deliverooStyle = false,
   showJustAdded = false,
+  onCustomize, // NEW: If provided, clicking will open customization modal instead
+  disableSuccessState = false, // NEW: If true, don't show "In Plan" state or confetti
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -219,36 +221,50 @@ export default function EmptySupplierCard({
 
   // Update local justAdded state when showJustAdded prop changes
   useEffect(() => {
-    if (showJustAdded) {
+    if (showJustAdded && !disableSuccessState) {
       setJustAdded(true)
     }
-  }, [showJustAdded])
+  }, [showJustAdded, disableSuccessState])
 
   // Determine if the button should show as added (either from parent tracking or local state)
-  const isAddedToParty = isAlreadyAdded || justAdded;
+  // If disableSuccessState is true, never show as added
+  const isAddedToParty = disableSuccessState ? false : (isAlreadyAdded || justAdded);
 
 
   const handleAddToParty = async (e) => {
     e.stopPropagation()
-    if (!recommendedSupplier || isAdding || isAddedToParty) return
+    if (!recommendedSupplier || isAdding) return
+
+    // If onCustomize is provided, open customization modal instead
+    if (onCustomize) {
+      onCustomize(recommendedSupplier, type)
+      return
+    }
+
+    // Don't proceed if already added (unless disableSuccessState is true)
+    if (isAddedToParty) return
 
     setIsAdding(true)
 
     try {
       await onAddSupplier(type, recommendedSupplier)
 
-      // Show success state
-      setIsAdding(false)
-      setJustAdded(true)
+      // Only show success state if not disabled
+      if (!disableSuccessState) {
+        setIsAdding(false)
+        setJustAdded(true)
 
-      // Trigger confetti animation for 3 seconds
-      setShowConfetti(true)
-      setTimeout(() => {
-        setShowConfetti(false)
-      }, 3000)
+        // Trigger confetti animation for 3 seconds
+        setShowConfetti(true)
+        setTimeout(() => {
+          setShowConfetti(false)
+        }, 3000)
 
-      // Keep the "In Plan" state indefinitely - don't reset
-      // This shows the user which suppliers they've added during this session
+        // Keep the "In Plan" state indefinitely - don't reset
+        // This shows the user which suppliers they've added during this session
+      } else {
+        setIsAdding(false)
+      }
     } catch (error) {
       console.error('Error adding supplier:', error)
       setIsAdding(false)
@@ -305,8 +321,8 @@ export default function EmptySupplierCard({
   if (deliverooStyle) {
     return (
       <>
-        {/* Confetti Effect */}
-        {showConfetti && (
+        {/* Confetti Effect - only show if not disabled */}
+        {showConfetti && !disableSuccessState && (
           <div className="fixed inset-0 pointer-events-none z-50">
             {[...Array(50)].map((_, i) => (
               <div
@@ -422,8 +438,8 @@ export default function EmptySupplierCard({
   if (isCompact) {
     return (
       <>
-        {/* Confetti Effect */}
-        {showConfetti && (
+        {/* Confetti Effect - only show if not disabled */}
+        {showConfetti && !disableSuccessState && (
           <div className="fixed inset-0 pointer-events-none z-50">
             {[...Array(50)].map((_, i) => (
               <div
@@ -565,8 +581,8 @@ export default function EmptySupplierCard({
   // Full size mode - taller image
   return (
     <>
-      {/* Confetti Effect */}
-      {showConfetti && (
+      {/* Confetti Effect - only show if not disabled */}
+      {showConfetti && !disableSuccessState && (
         <div className="fixed inset-0 pointer-events-none z-50">
           {[...Array(50)].map((_, i) => (
             <div

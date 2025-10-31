@@ -19,7 +19,8 @@ export default function MissingSuppliersSuggestions({
   addedSupplierIds = new Set(),
   preventNavigation = false,
   horizontalScroll = false, // NEW: Enable horizontal scroll mode
-  disableConfetti = false // NEW: Disable confetti animation
+  disableConfetti = false, // NEW: Disable confetti animation
+  onCustomize, // NEW: Callback to open customization modal
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
@@ -387,6 +388,8 @@ export default function MissingSuppliersSuggestions({
                 isAlreadyAdded={!disableConfetti && (isAdded || isJustAdded)}
                 deliverooStyle={true}
                 showJustAdded={!disableConfetti && isJustAdded}
+                onCustomize={onCustomize}
+                disableSuccessState={disableConfetti}
               />
             </div>
           );
