@@ -54,7 +54,7 @@ export default function VenueBrowserModal({
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-t-3xl sm:rounded-3xl max-w-6xl w-full h-[92vh] sm:max-h-[90vh] sm:h-auto overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
+          className="bg-white rounded-t-3xl sm:rounded-3xl max-w-6xl w-full md:max-h-[92vh] max-h-[90vh] sm:h-auto overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
