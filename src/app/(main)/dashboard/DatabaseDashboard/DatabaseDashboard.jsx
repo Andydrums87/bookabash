@@ -34,7 +34,6 @@ import { useBudgetManager } from "../hooks/useBudgetManager"
 import { useSupplierManager } from "../hooks/useSupplierManager"
 import NextStepsWelcomeCard from "./components/NextStepsWelcomeCard"
 import SupplierAddedBanner from "./components/SupplierAddedBanner"
-import MobileBottomTabBar from "./components/MobileBottomTabBar"
 import useDisableScroll from "@/hooks/useDisableScroll"
 import { useChatNotifications } from '../hooks/useChatNotifications'
 
@@ -1881,61 +1880,6 @@ const addSuppliersSection = (
         partyId={partyId}
         suppliers={visibleSuppliers}
       />
-
-
-{!showSupplierModal && (
-  <MobileBottomTabBar
-    suppliers={visibleSuppliers}
-    enquiries={enquiries}
-    totalCost={enhancedTotalCost}
-    timeRemaining={24}
-    partyDetails={partyDetails}
-    partyData={partyData}
-    addons={addons}
-    // ✅ NEW: Guests & Gifts Data from PartyPhaseContent
-    guestList={partyToolsData?.guestList || []}
-    giftRegistry={partyToolsData?.giftRegistry}
-    registryItemCount={partyToolsData?.registryItemCount || 0}
-    einvites={partyToolsData?.einvites}
-    // ✅ Payment props
-    onPaymentReady={handlePaymentReady}
-    isPaymentConfirmed={isPaymentConfirmed}
-    hasOutstandingPayments={outstandingData.totalDeposit > 0}
-    totalDepositAmount={outstandingData.totalDeposit}
-    outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-    getSupplierDisplayName={getSupplierDisplayName}
-    getSupplierDisplayPricing={getSupplierDisplayPricing}
-    AddSuppliersSection={addSuppliersSection}
-    ProgressWidget={
-      <SnappysPresentParty
-        suppliers={visibleSuppliers}
-        enquiries={enquiries}
-        timeRemaining={24}
-        onPaymentReady={handlePaymentReady}
-        showPaymentCTA={true}
-        isPaymentComplete={isPaymentConfirmed}
-        totalOutstandingCost={outstandingData.totalDeposit}
-        outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
-      />
-    }
-    CountdownWidget={
-      <CountdownWidget
-        partyDate={partyDetails?.date}
-      />
-    }
-    TimelineAssistant={
-      <SnappyTimelineAssistant
-        partyDetails={partyDetails}
-        suppliers={visibleSuppliers}
-        guestList={partyToolsData?.guestList || []}
-        giftRegistry={partyToolsData?.giftRegistry}
-        einvites={partyToolsData?.einvites}
-        onSupplierClick={openSupplierModal}
-      />
-    }
-    onRemoveSupplier={handleCancelEnquiry}
-  />
-)}
     </div>
   )
 }

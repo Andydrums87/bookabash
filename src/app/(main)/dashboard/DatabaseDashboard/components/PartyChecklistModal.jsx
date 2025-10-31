@@ -16,40 +16,37 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
   const [checklist, setChecklist] = useState({
     preParty: {
       title: "Pre-Party Tasks",
-      icon: "🎪",
       items: [
-        { id: 'venue', label: 'Book venue', icon: '🏛️', completed: false },
-        { id: 'entertainment', label: 'Book entertainment', icon: '🎭', completed: false },
-        { id: 'cake', label: 'Order cake', icon: '🎂', completed: false },
-        { id: 'invitations', label: 'Send invitations', icon: '✉️', completed: false },
-        { id: 'rsvps', label: 'Confirm RSVPs', icon: '✓', completed: false },
-        { id: 'partyBags', label: 'Buy party bags', icon: '🎁', completed: false },
-        { id: 'decorations', label: 'Get decorations/balloons', icon: '🎈', completed: false },
-        { id: 'menu', label: 'Plan menu (kids + adults)', icon: '🍽️', completed: false },
-        { id: 'playlist', label: 'Create playlist', icon: '🎵', completed: false },
-        { id: 'tableware', label: 'Buy tableware/napkins', icon: '🍴', completed: false },
-        { id: 'candles', label: 'Get candles & matches', icon: '🕯️', completed: false },
+        { id: 'venue', label: 'Book venue', completed: false },
+        { id: 'entertainment', label: 'Book entertainment', completed: false },
+        { id: 'cake', label: 'Order cake', completed: false },
+        { id: 'invitations', label: 'Send invitations', completed: false },
+        { id: 'rsvps', label: 'Confirm RSVPs', completed: false },
+        { id: 'partyBags', label: 'Buy party bags', completed: false },
+        { id: 'decorations', label: 'Get decorations/balloons', completed: false },
+        { id: 'menu', label: 'Plan menu (kids + adults)', completed: false },
+        { id: 'playlist', label: 'Create playlist', completed: false },
+        { id: 'tableware', label: 'Buy tableware/napkins', completed: false },
+        { id: 'candles', label: 'Get candles & matches', completed: false },
       ]
     },
     dayBefore: {
       title: "Day Before",
-      icon: "📅",
       items: [
-        { id: 'confirmSuppliers', label: 'Confirm all suppliers', icon: '☎️', completed: false },
-        { id: 'prepBags', label: 'Prep party bags', icon: '🎁', completed: false },
-        { id: 'shopping', label: 'Shop for fresh food', icon: '🛒', completed: false },
-        { id: 'chargeDevices', label: 'Charge camera/phone', icon: '📱', completed: false },
+        { id: 'confirmSuppliers', label: 'Confirm all suppliers', completed: false },
+        { id: 'prepBags', label: 'Prep party bags', completed: false },
+        { id: 'shopping', label: 'Shop for fresh food', completed: false },
+        { id: 'chargeDevices', label: 'Charge camera/phone', completed: false },
       ]
     },
     dayOf: {
       title: "Day Of Party",
-      icon: "🎉",
       items: [
-        { id: 'weather', label: 'Check weather & pack accordingly', icon: '☔', completed: false },
-        { id: 'binBags', label: 'Bring bin bags', icon: '🗑️', completed: false },
-        { id: 'presentBag', label: 'Bring bag for presents', icon: '🎁', completed: false },
-        { id: 'decorationsSetup', label: 'Set up decorations', icon: '🎈', completed: false },
-        { id: 'speaker', label: 'Test speaker/music', icon: '🔊', completed: false },
+        { id: 'weather', label: 'Check weather & pack accordingly', completed: false },
+        { id: 'binBags', label: 'Bring bin bags', completed: false },
+        { id: 'presentBag', label: 'Bring bag for presents', completed: false },
+        { id: 'decorationsSetup', label: 'Set up decorations', completed: false },
+        { id: 'speaker', label: 'Test speaker/music', completed: false },
       ]
     }
   })
@@ -211,7 +208,6 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
                             </svg>
                           )}
                         </div>
-                        <span className="text-2xl mr-2">{item.icon}</span>
                         <span className={`text-left flex-1 text-2xl ${item.completed ? 'line-through text-gray-500' : 'text-gray-900 font-bold'}`} style={{ fontFamily: 'Caveat, cursive', fontWeight: item.completed ? 600 : 700 }}>
                           {item.label}
                         </span>
