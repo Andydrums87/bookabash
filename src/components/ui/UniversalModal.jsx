@@ -81,15 +81,15 @@ const UniversalModal = ({
         {showCloseButton && (
           <button
             onClick={onClose}
-            className={`absolute cursor-pointer top-4 right-4 p-1 rounded-full transition-colors z-20 ${
-              theme === 'fun' 
-                ? 'bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/30' 
-                : 'hover:bg-gray-100'
+            className={`absolute cursor-pointer top-4 right-4 p-2 rounded-full transition-colors z-20 ${
+              theme === 'fun'
+                ? 'bg-white/20 backdrop-blur-sm hover:bg-white/30 border border-white/30'
+                : 'bg-gray-100 hover:bg-gray-200'
             }`}
             aria-label="Close modal"
           >
-            <X className={`w-4 h-4 ${
-              theme === 'fun' ? 'text-white' : 'text-gray-500'
+            <X className={`w-5 h-5 ${
+              theme === 'fun' ? 'text-white' : 'text-gray-700'
             }`} />
           </button>
         )}

@@ -87,21 +87,13 @@ export function ProgressHeader({ partyDetails, progress, completedSteps, totalSt
         </div>
       </div>
 
-      {/* Progress text and button - responsive layout */}
+      {/* Progress text - responsive layout */}
       <div className="mt-4 px-4 md:px-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
             {completedSteps} of {totalSteps} steps complete
             {progress === 100 && <span className="ml-2 text-primary font-semibold">All done! 🎉</span>}
           </p>
-          {onViewTeam && (
-            <button
-              onClick={onViewTeam}
-              className="text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline whitespace-nowrap"
-            >
-              View your party team ({supplierCount}/9)
-            </button>
-          )}
         </div>
       </div>
     </div>

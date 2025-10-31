@@ -18,7 +18,8 @@ export default function MissingSuppliersSuggestions({
   toast,
   addedSupplierIds = new Set(),
   preventNavigation = false,
-  horizontalScroll = false // NEW: Enable horizontal scroll mode
+  horizontalScroll = false, // NEW: Enable horizontal scroll mode
+  disableConfetti = false // NEW: Disable confetti animation
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
@@ -241,12 +242,14 @@ export default function MissingSuppliersSuggestions({
         const result = await onAddSupplier(supplier, supplierType)
 
         if (result && preventNavigation) {
-          // Trigger confetti
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 }
-          })
+          // Trigger confetti only if not disabled
+          if (!disableConfetti) {
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+            })
+          }
 
           // After 2 seconds, start fade out, then hide after animation
           setTimeout(() => {
@@ -363,12 +366,12 @@ export default function MissingSuppliersSuggestions({
 
       {/* Compact grid or horizontal scroll */}
       <div className={horizontalScroll
-        ? "flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide"
+        ? "flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide"
         : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
       }>
         {missingSuppliers.map(({ type, config, suppliers }) => {
           const isAdded = addedSupplierIds.has(suppliers[0]?.id);
-          const isJustAdded = justAddedTypes.has(type);
+          const isJustAdded = !disableConfetti && justAddedTypes.has(type);
 
           return (
             <div
@@ -381,9 +384,9 @@ export default function MissingSuppliersSuggestions({
                 partyDetails={partyPlan}
                 onAddSupplier={(supplierType, supplier) => handleAddSupplier(supplier, supplierType)}
                 isCompact={true}
-                isAlreadyAdded={isAdded || isJustAdded}
+                isAlreadyAdded={!disableConfetti && (isAdded || isJustAdded)}
                 deliverooStyle={true}
-                showJustAdded={isJustAdded}
+                showJustAdded={!disableConfetti && isJustAdded}
               />
             </div>
           );

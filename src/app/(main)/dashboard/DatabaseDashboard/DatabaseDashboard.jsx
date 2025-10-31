@@ -2,8 +2,20 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
+
+// Import Google Font for handwritten style
+if (typeof document !== 'undefined') {
+  const link = document.createElement('link')
+  link.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap'
+  link.rel = 'stylesheet'
+  if (!document.querySelector(`link[href="${link.href}"]`)) {
+    document.head.appendChild(link)
+  }
+}
 import { supabase } from "@/lib/supabase"
 import { useSearchParams, useRouter } from "next/navigation"
+import Link from "next/link"
+import { Lock, Users, Mail, Gift, Trash2 } from "lucide-react"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,6 +57,8 @@ import SnappyLoader from "@/components/ui/SnappyLoader"
 import WelcomeDashboardPopup from "@/components/welcome-dashboard-popup"
 import { AddSuppliersSection } from "./components/PartyJourney/AddSuppliersSection"
 import SnappyTimelineAssistant from "./components/SnappyTimelineAssistant"
+import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestions"
+import PartyChecklistModal from "./components/PartyChecklistModal"
 
 
 
@@ -100,6 +114,7 @@ export default function DatabaseDashboard() {
   })
   const [isCancelling, setIsCancelling] = useState(false)
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
+  const [showChecklistModal, setShowChecklistModal] = useState(false)
 const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
 const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
 const [loadingCards, setLoadingCards] = useState([])
@@ -148,6 +163,68 @@ const childPhotoRef = useRef(null)
     isPaymentConfirmed,
     paymentDetails,
   } = usePartyPhase(partyData, partyId)
+
+  // ✅ NEW: Load theme-based supplier recommendations for empty slots
+  useEffect(() => {
+    const loadRecommendations = async () => {
+      if (!partyDetails || !visibleSuppliers) {
+        return
+      }
+
+      try {
+        const { suppliersAPI } = await import('@/utils/mockBackend')
+        const { scoreSupplierWithTheme } = await import('@/utils/partyBuilderBackend')
+        const allSuppliers = await suppliersAPI.getAllSuppliers()
+
+        const partyTheme = partyDetails?.theme || 'no-theme'
+        console.log('🎨 Loading recommendations for theme:', partyTheme)
+
+        const categoryMap = {
+          venue: 'Venues',
+          entertainment: 'Entertainment',
+          cakes: 'Cakes',
+          decorations: 'Decorations',
+          facePainting: 'Face Painting',
+          activities: 'Activities',
+          partyBags: 'Party Bags',
+          balloons: 'Balloons',
+          catering: 'Catering'
+        }
+
+        const newRecommendations = {}
+
+        Object.entries(categoryMap).forEach(([categoryKey, categoryName]) => {
+          // Only load recommendations for empty slots
+          if (!visibleSuppliers[categoryKey]) {
+            const categorySuppliers = allSuppliers.filter(s => s.category === categoryName)
+
+            if (categorySuppliers.length > 0) {
+              // Sort by theme score
+              const sortedByTheme = categorySuppliers
+                .map(supplier => ({
+                  supplier,
+                  themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+                }))
+                .sort((a, b) => b.themeScore - a.themeScore)
+
+              const bestMatch = sortedByTheme[0].supplier
+              newRecommendations[categoryKey] = bestMatch
+              console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
+            }
+          }
+        })
+
+        setRecommendedSuppliers(newRecommendations)
+        setRecommendationsLoaded(true)
+
+      } catch (error) {
+        console.error('❌ Error loading recommendations:', error)
+        setRecommendationsLoaded(true)
+      }
+    }
+
+    loadRecommendations()
+  }, [partyDetails, visibleSuppliers])
 
   // ✅ NEW: Fetch party tools data directly (AFTER partyId is declared)
   useEffect(() => {
@@ -828,12 +905,10 @@ useEffect(() => {
       await refreshPartyData()
       setShowSupplierAddedModal(false)
       setAddedSupplierData(null)
-      
-      const currentUrl = new URL(window.location)
-      currentUrl.searchParams.set('enquiry_sent', 'true')
-      currentUrl.searchParams.set('supplier_name', encodeURIComponent(supplier.name))
-      router.push(currentUrl.toString())
-      
+
+      // Don't show the enquiry success banner when securing booking
+      // Just silently refresh the page without URL parameters
+
     } catch (error) {
       console.error('CRITICAL ERROR in handleModalSendEnquiry:', error)
       setEnquiryFeedback(`Failed to add ${supplier.name}: ${error.message}`)
@@ -1049,6 +1124,7 @@ const handleChildPhotoUpload = async (file) => {
       </div>
     )
   }
+
   // Inside the component, before the return:
 const addSuppliersSection = (
   <AddSuppliersSection
@@ -1200,6 +1276,16 @@ const addSuppliersSection = (
             /> */}
 
            {/* NEW: Journey takes center stage */}
+  <div className="md:hidden mb-8 px-4">
+    <div className="mb-6">
+      <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+        Your Party Journey
+        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+      </h2>
+      <p className="text-sm text-gray-600 mt-3">Track your planning progress</p>
+    </div>
+  </div>
+
   <PartyPhaseContent
     phase={partyPhase}
     suppliers={visibleSuppliers}
@@ -1226,6 +1312,534 @@ const addSuppliersSection = (
   recommendationsLoaded={recommendationsLoaded}
   onDataUpdate={setPartyToolsData}
   />
+
+            {/* Mobile: Total Cost Summary Card */}
+            <div className="md:hidden mt-8 px-4">
+              <div className="bg-primary-500 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white/80 text-xs font-medium mb-1">Total Party Cost</p>
+                    <p className="text-white text-2xl font-bold">
+                      £{enhancedTotalCost.toFixed(2)}
+                    </p>
+                  </div>
+                  {outstandingData.totalDeposit > 0 && (
+                    <div className="text-right">
+                      <p className="text-white/80 text-xs font-medium mb-1">Due Now</p>
+                      <p className="text-white text-xl font-bold">
+                        £{outstandingData.totalDeposit.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile: My Party Plan Section - Horizontal Scroll with Remove Option */}
+            <div className="md:hidden mt-8 mb-8">
+              <div className="mb-6 px-4">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  My Party Plan
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">All suppliers in your plan</p>
+              </div>
+
+              {(() => {
+                // Get ALL suppliers (both paid and unpaid)
+                const allPlanSuppliers = Object.entries(visibleSuppliers).filter(([type, supplier]) => {
+                  return supplier && type !== "einvites"
+                })
+
+                // Sort suppliers: pending first, then paid
+                const sortedSuppliers = allPlanSuppliers.sort(([typeA, supplierA], [typeB, supplierB]) => {
+                  const enquiryA = enquiries.find((e) => e.supplier_category === typeA)
+                  const enquiryB = enquiries.find((e) => e.supplier_category === typeB)
+                  const isPaidA = enquiryA?.payment_status === "paid" || enquiryA?.is_paid === true
+                  const isPaidB = enquiryB?.payment_status === "paid" || enquiryB?.is_paid === true
+
+                  // Pending (not paid) comes first
+                  if (!isPaidA && isPaidB) return -1
+                  if (isPaidA && !isPaidB) return 1
+                  return 0
+                })
+
+                // Category name mapping
+                const categoryNames = {
+                  venue: 'Venue',
+                  entertainment: 'Entertainment',
+                  catering: 'Catering',
+                  cakes: 'Cakes',
+                  facePainting: 'Face Painting',
+                  activities: 'Activities',
+                  partyBags: 'Party Bags',
+                  decorations: 'Decorations',
+                  balloons: 'Balloons'
+                }
+
+                if (sortedSuppliers.length === 0) {
+                  return (
+                    <div className="px-4">
+                      <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 text-center">
+                        <div className="text-4xl mb-3">🎯</div>
+                        <h3 className="font-bold text-gray-900 mb-2">No suppliers in your plan yet</h3>
+                        <p className="text-sm text-gray-600">Start building your party by adding suppliers</p>
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
+                    {sortedSuppliers.map(([type, supplier]) => {
+                      const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+                        addon.supplierId === supplier.id ||
+                        addon.supplierType === type ||
+                        addon.attachedToSupplier === type
+                      ) : []
+
+                      const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+                      const totalPrice = (supplier.price || 0) + addonsCost
+                      const supplierName = supplier.name || 'Unknown Supplier'
+                      const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
+
+                      // Check if supplier is paid
+                      const enquiry = enquiries.find((e) => e.supplier_category === type)
+                      const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                      const canRemove = !isPaid // Can only remove if not paid
+
+                      return (
+                        <div
+                          key={type}
+                          className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl overflow-hidden hover:border-primary-300 hover:shadow-md transition-all"
+                        >
+                          {/* Supplier Image */}
+                          {supplier.image && (
+                            <div className="relative h-32 overflow-hidden">
+                              <img
+                                src={supplier.image}
+                                alt={supplierName}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                              <div className="absolute top-3 right-3">
+                                {isPaid ? (
+                                  <span className="bg-teal-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                                    ✓ Paid
+                                  </span>
+                                ) : (
+                                  <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Supplier Details */}
+                          <div className="p-4">
+                            <p className="text-xs text-primary-600 uppercase tracking-wide mb-1 font-semibold">
+                              {categoryName}
+                            </p>
+                            <h4 className="font-bold text-gray-900 text-base mb-2 line-clamp-1">
+                              {supplierName}
+                            </h4>
+
+                            <div className="mt-2">
+                              <p className="text-lg font-bold text-primary-600">
+                                £{totalPrice.toFixed(2)}
+                              </p>
+                              {supplierAddons.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Base: £{(supplier.price || 0).toFixed(2)} + {supplierAddons.length} add-on{supplierAddons.length > 1 ? 's' : ''}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Remove Button for Unpaid Suppliers */}
+                            {canRemove && (
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Remove ${supplierName} from your plan?`)) {
+                                    await handleCancelEnquiry(type)
+                                  }
+                                }}
+                                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-semibold border border-red-200 hover:border-red-300"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Remove from Plan
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+
+              <style jsx>{`
+                .scrollbar-hide {
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+            </div>
+
+            {/* Mobile: Party Checklist Button */}
+            <div className="md:hidden mt-8 px-4">
+              <button
+                onClick={() => setShowChecklistModal(true)}
+                className="w-full bg-primary-50 border-2 border-[hsl(var(--primary-200))] rounded-lg p-6 hover:shadow-lg transition-all active:scale-[0.98] relative overflow-hidden"
+                style={{
+                  transform: 'rotate(-0.5deg)',
+                  boxShadow: '3px 3px 8px rgba(0,0,0,0.1)'
+                }}
+              >
+                {/* Tape effect at top */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-6 bg-white/60 border border-[hsl(var(--primary-200))]/40 rotate-0"
+                  style={{
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                />
+
+                <div className="text-left relative">
+                  <h3 className="text-primary-800 text-3xl mb-2" style={{ fontFamily: 'Caveat, cursive', fontWeight: 700 }}>
+                    Party Checklist ✓
+                  </h3>
+                  <p className="text-primary-700 text-xl leading-tight" style={{ fontFamily: 'Caveat, cursive' }}>
+                    Don't forget anything for the big day!
+                  </p>
+
+                  {/* Hand-drawn arrow */}
+                  <div className="absolute -right-2 top-1/2 -translate-y-1/2 text-primary-400 text-4xl" style={{ fontFamily: 'Caveat, cursive', transform: 'translateY(-50%) rotate(-5deg)' }}>
+                    →
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {/* Mobile: Add More Suppliers Section - Horizontal Scroll */}
+            <div className="md:hidden mt-8">
+              <div className="mb-6 px-4">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Add More Suppliers
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">Complete your party with these recommendations</p>
+              </div>
+              <MissingSuppliersSuggestions
+                partyPlan={visibleSuppliers}
+                partyDetails={partyDetails}
+                onAddSupplier={async (supplier, supplierType) => {
+                  // Use the same logic as AddSuppliersSection (from bottom bar)
+                  await handleAddRecommendedSupplier(supplierType, supplier, false)
+                  return true
+                }}
+                showTitle={false}
+                horizontalScroll={true}
+                preventNavigation={true}
+                disableConfetti={true}
+              />
+            </div>
+
+            {/* Mobile: Party Tools Horizontal Scroll - RSVP, E-Invites, Registry */}
+            <div className="md:hidden mt-8 mb-8">
+              <div className="mb-6 px-4">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Guests & Gifts
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">Manage invitations, RSVPs, and gift registry</p>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
+                {(() => {
+                  const venueEnquiry = enquiries.find(e => e.supplier_category === 'venue')
+                  const venueExists = !!visibleSuppliers.venue
+                  const isVenueConfirmed = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false
+                  const venueAwaitingConfirmation = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
+                  const hasPaidSuppliers = enquiries.some(e => e.payment_status === 'paid' || e.is_paid === true)
+
+                  const einvitesData = partyToolsData?.einvites
+                  const einvitesCreated = !!einvitesData && (einvitesData.inviteId || einvitesData.shareableLink || einvitesData.friendlySlug)
+                  const inviteId = einvitesData?.inviteId || einvitesData?.shareableLink?.split('/e-invites/')[1] || einvitesData?.friendlySlug
+                  const invitesSent = einvitesData?.guestList?.some(g => g.status === 'sent') || false
+                  const sentCount = einvitesData?.guestList?.filter(g => g.status === 'sent').length || 0
+
+                  const guestListData = partyToolsData?.guestList || []
+                  const giftRegistryData = partyToolsData?.giftRegistry
+                  const registryItemCountData = partyToolsData?.registryItemCount || 0
+
+                  const partyTools = [
+                    {
+                      id: 'guests',
+                      label: guestListData.length > 0 ? 'Manage Guest List' : 'Create Guest List',
+                      icon: Users,
+                      href: `/rsvps/${partyDetails?.id || ''}`,
+                      hasContent: guestListData.length > 0,
+                      count: guestListData.length,
+                      isLocked: false,
+                      status: guestListData.length > 0 ? `${guestListData.length} guest${guestListData.length !== 1 ? 's' : ''}` : 'Not created',
+                      description: guestListData.length > 0 ? 'View and manage your guest list' : 'Add guests for invites and RSVPs',
+                      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/okpcftsuni04yokhex1l.jpg'
+                    },
+                    {
+                      id: 'einvites',
+                      label: einvitesCreated ? (invitesSent ? 'Manage Invites' : 'Send Invites') : 'Create E-Invites',
+                      icon: Mail,
+                      href: inviteId ? `/e-invites/${inviteId}/manage` : '/e-invites/create',
+                      hasContent: einvitesCreated,
+                      isLocked: !isVenueConfirmed,
+                      lockMessage: venueAwaitingConfirmation ? 'Waiting for venue to confirm your booking' : !venueExists ? 'Add a venue to your party first' : 'Venue must confirm your booking first',
+                      status: !isVenueConfirmed ? '🔒 Locked' : einvitesCreated ? invitesSent ? `${sentCount} sent` : '✓ Created' : 'Not created',
+                      description: !isVenueConfirmed ? (venueAwaitingConfirmation ? 'Waiting for venue confirmation' : 'Add and confirm venue first') : einvitesCreated ? (invitesSent ? 'Manage and track your invitations' : 'Share with guests') : 'Create beautiful digital invitations',
+                      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1754388320/party-invites/seo3b2joo1omjdkdmjtw.png'
+                    },
+                    {
+                      id: 'registry',
+                      label: giftRegistryData ? 'Manage Registry' : 'Create Registry',
+                      icon: Gift,
+                      href: '/gift-registry',
+                      hasContent: !!giftRegistryData,
+                      count: registryItemCountData,
+                      isLocked: !hasPaidSuppliers,
+                      lockMessage: 'Secure at least one supplier to create registry',
+                      status: !hasPaidSuppliers ? '🔒 Locked' : giftRegistryData ? registryItemCountData > 0 ? `${registryItemCountData} item${registryItemCountData !== 1 ? 's' : ''}` : 'Registry created' : 'Not created',
+                      description: !hasPaidSuppliers ? 'Confirm suppliers first' : giftRegistryData ? registryItemCountData > 0 ? 'Manage your gift registry' : 'Add items to your registry' : 'Help guests know what to bring',
+                      image: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753970180/iStock-2000435412-removebg_ewfzxs.png'
+                    }
+                  ]
+
+                  return partyTools.map((tool) => {
+                    const Icon = tool.icon
+                    const isLocked = tool.isLocked
+
+                    if (isLocked) {
+                      return (
+                        <div
+                          key={tool.id}
+                          className="flex-shrink-0 w-[280px] snap-start bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 cursor-not-allowed overflow-hidden"
+                        >
+                          <div className="relative h-32 overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
+                            <img src={tool.image} alt={tool.label} className="w-full h-full object-cover grayscale" />
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                              <div className="bg-white/90 rounded-full p-3">
+                                <Lock className="w-6 h-6 text-gray-500" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold text-gray-400">{tool.label}</h4>
+                              <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">🔒 Locked</span>
+                            </div>
+                            <p className="text-xs text-gray-400">{tool.lockMessage}</p>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <Link
+                        key={tool.id}
+                        href={tool.href}
+                        className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all active:scale-[0.98] overflow-hidden group"
+                      >
+                        <div className="relative h-32 overflow-hidden">
+                          <img src={tool.image} alt={tool.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          <div className="absolute top-3 right-3">
+                            {tool.hasContent ? (
+                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1">✓ {tool.status}</span>
+                            ) : (
+                              <span className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded-full font-semibold">New</span>
+                            )}
+                          </div>
+                          {tool.count > 0 && (
+                            <div className="absolute bottom-3 right-3 bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">{tool.count}</div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-bold text-gray-900 mb-1 text-base">{tool.label}</h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">{tool.description}</p>
+                        </div>
+                      </Link>
+                    )
+                  })
+                })()}
+              </div>
+
+              <style jsx>{`
+                .scrollbar-hide {
+                  -ms-overflow-style: none;
+                  scrollbar-width: none;
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+            </div>
+
+            {/* Mobile: Party Tips & Blog Recommendations Horizontal Scroll */}
+            <div className="md:hidden mt-8 mb-8">
+              <div className="mb-6 px-4">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Snappy's Tips
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">Helpful guides & inspiration</p>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
+                {(() => {
+                  // Calculate days until party
+                  const calculateDaysUntil = () => {
+                    if (!partyDetails?.date) return 60
+                    const partyDate = new Date(partyDetails.date)
+                    const now = new Date()
+                    const diffInDays = Math.ceil((partyDate - now) / (1000 * 60 * 60 * 24))
+                    return Math.max(0, diffInDays)
+                  }
+
+                  const daysUntil = calculateDaysUntil()
+
+                  // Determine phase
+                  const getTimelinePhase = (days) => {
+                    if (days > 90) return "planning"
+                    if (days > 60) return "organizing"
+                    if (days > 30) return "booking"
+                    if (days > 14) return "confirming"
+                    if (days > 7) return "finalizing"
+                    if (days > 0) return "final-week"
+                    return "party-day"
+                  }
+
+                  const phase = getTimelinePhase(daysUntil)
+
+                  // Blog posts
+                  const slugify = (text) => text
+                    .toString()
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[\s\W-]+/g, "-")
+
+                  const allBlogPosts = [
+                    {
+                      id: 1,
+                      title: "The Ultimate Guide to Planning a Children's Party in London: 2025 Edition",
+                      slug: slugify("The Ultimate Guide to Planning a Children's Party in London: 2025"),
+                      excerpt: "Everything you need to know about planning the perfect children's party in London this year",
+                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595127/blog-post-1_lztnfr.png",
+                      category: "Planning",
+                      readTime: "8 min read",
+                      phases: ["planning", "organizing", "booking"]
+                    },
+                    {
+                      id: 2,
+                      title: "How Much Does a Children's Party Cost in London?",
+                      slug: slugify("How Much Does a Children's Party Cost in London? A Complete Breakdown"),
+                      excerpt: "A detailed analysis of children's party costs in London, with budgeting tips and money-saving strategies",
+                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595130/blog-post-2_tjjp76.png",
+                      category: "Budget",
+                      readTime: "6 min read",
+                      phases: ["planning", "organizing"]
+                    },
+                    {
+                      id: 3,
+                      title: "15 Trending Children's Party Themes in London for 2025",
+                      slug: slugify("15 Trending Children's Party Themes in London for 2025"),
+                      excerpt: "Discover the hottest party themes that London kids are loving this year",
+                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595133/blog-post-3_ltyj0d.png",
+                      category: "Themes",
+                      readTime: "7 min read",
+                      phases: ["planning"]
+                    },
+                    {
+                      id: 4,
+                      title: "10 Outdoor Party Games That London Kids Can't Get Enough Of",
+                      slug: slugify("10 Outdoor Party Games That London Kids Can't Get Enough Of"),
+                      excerpt: "Get kids moving with these popular outdoor party games perfect for London parks",
+                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595136/blog-post-4_d2bv5i.png",
+                      category: "Activities",
+                      readTime: "5 min read",
+                      phases: ["booking", "finalizing", "final-week"]
+                    },
+                    {
+                      id: 5,
+                      title: "DIY Party Decorations That Will Wow Your Guests",
+                      slug: slugify("DIY Party Decorations That Will Wow Your Guests"),
+                      excerpt: "Create stunning party decorations on a budget with these simple DIY ideas",
+                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595139/blog-post-5_nvozyq.png",
+                      category: "Planning",
+                      readTime: "4 min read",
+                      phases: ["booking", "confirming", "finalizing"]
+                    },
+                    {
+                      id: 6,
+                      title: "Healthy Party Food Options That Kids Actually Love",
+                      slug: slugify("Healthy Party Food Options That Kids Actually Love"),
+                      excerpt: "Nutritious and delicious party food ideas that will keep both kids and parents happy",
+                      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1748595143/blog-post-6_jguagy.png",
+                      category: "Food",
+                      readTime: "5 min read",
+                      phases: ["organizing", "booking", "confirming"]
+                    }
+                  ]
+
+                  // Filter posts by phase
+                  const relevantPosts = allBlogPosts.filter(post => post.phases.includes(phase))
+                  const blogPosts = relevantPosts.length > 0 ? relevantPosts.slice(0, 3) : [allBlogPosts[0]]
+
+                  return blogPosts.map((post) => (
+                    <Link
+                      key={post.id}
+                      href={`/blog/${post.slug}`}
+                      className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all active:scale-[0.98] overflow-hidden group"
+                    >
+                      <div className="relative h-32 overflow-hidden">
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-primary-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                            {post.category}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-3 right-3">
+                          <span className="bg-white/90 text-gray-700 text-xs px-2 py-1 rounded-full font-semibold">
+                            {post.readTime}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="font-bold text-gray-900 mb-1 text-sm leading-tight line-clamp-2">{post.title}</h4>
+                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{post.excerpt}</p>
+                      </div>
+                    </Link>
+                  ))
+                })()}
+              </div>
+            </div>
+
+            {/* Mobile: Party Countdown Section */}
+            <div className="md:hidden mt-8 mb-12 px-4">
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Party Countdown
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">How long until the big day?</p>
+              </div>
+
+              <CountdownWidget partyDate={partyDetails?.date} />
+            </div>
           </main>
 
           <Sidebar
@@ -1256,11 +1870,18 @@ const addSuppliersSection = (
         </div>
       </div>
 
-      <WelcomeDashboardPopup 
-        isOpen={showWelcomePopup} 
+      <WelcomeDashboardPopup
+        isOpen={showWelcomePopup}
         onClose={() => setShowWelcomePopup(false)}
       />
-      
+
+      <PartyChecklistModal
+        isOpen={showChecklistModal}
+        onClose={() => setShowChecklistModal(false)}
+        partyId={partyId}
+        suppliers={visibleSuppliers}
+      />
+
 
 {!showSupplierModal && (
   <MobileBottomTabBar
