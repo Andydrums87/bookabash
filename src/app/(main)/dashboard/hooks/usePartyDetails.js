@@ -93,12 +93,13 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
       return
     }
 
-    setIsLoading(true);
-
     // Wait for user/currentParty to be determined (not undefined)
     if (user === undefined || currentParty === undefined) {
+      // Don't set loading state until we know what we're loading
       return;
     }
+
+    setIsLoading(true);
 
     let details;
 

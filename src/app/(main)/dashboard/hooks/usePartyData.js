@@ -110,14 +110,14 @@ useEffect(() => {
             estimated_cost: party.estimated_cost,
             deposit_amount: party.deposit_amount
           }
-          
+
           setCurrentParty(party)
           setPartyData(partyDataWithPayment)
           setPartyId(party.id)
           setTotalCost(party.estimated_cost || 0)
           setDataSource('database')
           setAddons(party.party_plan?.addons || [])
-          
+
           // Cache it
           setCachedData({
             user,
@@ -231,12 +231,12 @@ const refreshPartyData = async () => {
           estimated_cost: party.estimated_cost,
           deposit_amount: party.deposit_amount
         }
-        
+
         setCurrentParty(party)
         setPartyData(partyDataWithPayment)
         setTotalCost(party.estimated_cost || 0)
         setAddons(party.party_plan?.addons || [])
-        
+
         // ✅ Update cache with party details
         setCachedData(
           {

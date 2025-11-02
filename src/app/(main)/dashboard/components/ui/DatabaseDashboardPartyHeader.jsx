@@ -193,35 +193,31 @@ export default function DatabasePartyHeader({
     return themeGradients[currentTheme.toLowerCase()] || themeGradients.default
   }
 
-  // Check if we have real party data
-  const hasRealChildName = partyDetails && (
-    (dataSource === 'database' && currentParty?.child_name) ||
-    partyDetails?.firstName ||
-    partyDetails?.lastName ||
-    (partyDetails?.childName && partyDetails.childName !== 'Emma')
-  );
-
-  // Also check if we have a real date (another indicator of real data)
-  const hasRealDate = partyDetails?.date && partyDetails.date !== 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM';
+  // ✅ SIMPLIFIED: For database users, check currentParty directly instead of waiting for partyDetails
+  const hasRealData = dataSource === 'database'
+    ? currentParty?.child_name || currentParty?.party_date
+    : partyDetails && (
+        partyDetails?.firstName ||
+        partyDetails?.lastName ||
+        (partyDetails?.childName && partyDetails.childName !== 'Emma') ||
+        (partyDetails?.date && partyDetails.date !== 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM')
+      );
 
   // Debug logging (can be removed later)
-  if (typeof window !== 'undefined' && partyDetails) {
+  if (typeof window !== 'undefined') {
     console.log('🎯 Header validation:', {
       loading,
-      hasPartyDetails: !!partyDetails,
-      hasRealChildName,
-      hasRealDate,
-      childName: partyDetails?.childName,
-      firstName: partyDetails?.firstName,
-      date: partyDetails?.date,
       dataSource,
-      currentPartyChildName: currentParty?.child_name
+      hasCurrentParty: !!currentParty,
+      hasPartyDetails: !!partyDetails,
+      hasRealData,
+      currentPartyChildName: currentParty?.child_name,
+      partyDetailsChildName: partyDetails?.childName
     });
   }
 
   // Show skeleton loader while loading OR if we don't have real data yet
-  // If we have a real date, show the header even if name validation fails (handles edge cases)
-  if (loading || !partyDetails || (!hasRealChildName && !hasRealDate)) {
+  if (loading || !hasRealData) {
     return (
       <div className="relative shadow-2xl overflow-hidden mb-8">
         {/* Gradient background skeleton */}

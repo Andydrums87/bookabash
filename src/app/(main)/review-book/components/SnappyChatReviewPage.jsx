@@ -62,6 +62,7 @@ import {
 } from '@/utils/unifiedPricing'
 
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
+import { BookingTermsModal } from '@/components/booking-terms-modal';
 
 export default function SnappyChatReviewPage() {
   const router = useRouter();
@@ -89,6 +90,8 @@ export default function SnappyChatReviewPage() {
   const [showReadinessModal, setShowReadinessModal] = useState(false);
   const [phoneError, setPhoneError] = useState('');
   const [addedSupplierIds, setAddedSupplierIds] = useState(new Set());
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   const { toast } = useToast();
 
@@ -549,6 +552,9 @@ export default function SnappyChatReviewPage() {
         accessibilityRequirements: formData.accessibilityRequirements,
         accessibilityRequirementsArray: accessibilityRequirementsArray,
         hasAccessibilityRequirements: accessibilityRequirementsArray.length > 0,
+        termsAccepted: termsAccepted,
+        termsAcceptedAt: new Date().toISOString(),
+        marketingConsent: marketingConsent,
         submittedAt: new Date().toISOString(),
         status: 'draft'
       };
@@ -664,10 +670,10 @@ export default function SnappyChatReviewPage() {
     const step = currentStepData;
     if (step.id === 'main-form') {
       const phoneValid = phoneError === '' && formData.phoneNumber.length > 0;
-      const addressValid = formData.addressLine1.length > 0 && 
-                          formData.city.length > 0 && 
+      const addressValid = formData.addressLine1.length > 0 &&
+                          formData.city.length > 0 &&
                           formData.postcode.length > 0;
-      return formData.parentName.length > 0 && phoneValid && formData.email.length > 0 && addressValid;
+      return formData.parentName.length > 0 && phoneValid && formData.email.length > 0 && addressValid && termsAccepted;
     }
     return true;
   };
@@ -895,10 +901,10 @@ export default function SnappyChatReviewPage() {
                           </div>
                         </div>
 
-                        {/* Dietary & Accessibility */}
-                        <div className=" rounded-lg ">
+                        {/* Dietary & Accessibility - TEMPORARILY COMMENTED OUT */}
+                        {/* <div className=" rounded-lg ">
                           <h3 className="text-lg font-semibold text-gray-900 mb-3">Dietary & Accessibility</h3>
-                          
+
                           <div className="space-y-4">
                             <div>
                               <h4 className="text-xs font-medium text-gray-700 mb-2">Dietary Requirements</h4>
@@ -926,7 +932,7 @@ export default function SnappyChatReviewPage() {
                                 ))}
                               </div>
                             </div>
-                            
+
                             <div>
                               <h4 className="text-xs font-medium text-gray-700 mb-2">Accessibility Needs</h4>
                               <div className="grid grid-cols-1 gap-2">
@@ -952,7 +958,7 @@ export default function SnappyChatReviewPage() {
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </div> */}
 
                         {/* Special Requests */}
                         <div className="rounded-lg ">
@@ -963,13 +969,70 @@ export default function SnappyChatReviewPage() {
                           <p className="text-xs text-gray-600 mb-3">
                             Any special requests or theme details for suppliers
                           </p>
-                          
+
                           <Textarea
                             placeholder="e.g., 'Please set up by 1pm', 'Superhero theme', 'Child sensitive to loud noises'..."
                             value={formData.additionalMessage}
                             onChange={(e) => updateFormData('additionalMessage', e.target.value)}
                             className="min-h-[100px] placeholder:text-gray-400 placeholder:text-xs text-base border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-md"
                           />
+                        </div>
+
+                        {/* T&Cs and Marketing */}
+                        <div className="rounded-lg border-t pt-5 mt-5">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            Terms & Preferences
+                          </h3>
+
+                          <div className="space-y-3">
+                            {/* Booking Terms */}
+                            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                              <div className="flex items-start space-x-3">
+                                <Checkbox
+                                  id="booking-terms"
+                                  checked={termsAccepted}
+                                  onCheckedChange={setTermsAccepted}
+                                  className="mt-1 data-[state=checked]:bg-[hsl(var(--primary-500))]"
+                                  required
+                                />
+                                <div className="flex-1">
+                                  <label htmlFor="booking-terms" className="text-sm font-medium cursor-pointer block text-gray-900">
+                                    I accept PartySnap's{" "}
+                                    <BookingTermsModal partyDetails={partyDetails}>
+                                      <button type="button" className="text-[hsl(var(--primary-600))] hover:underline font-semibold">
+                                        Booking Terms & Conditions
+                                      </button>
+                                    </BookingTermsModal>{" "}
+                                    and understand the cancellation policy *
+                                  </label>
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    Required to proceed. Covers payments, cancellations, and party day responsibilities.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Marketing Preferences */}
+                            <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                              <div className="flex items-start space-x-3">
+                                <Checkbox
+                                  id="marketing-consent"
+                                  checked={marketingConsent}
+                                  onCheckedChange={setMarketingConsent}
+                                  className="mt-1 data-[state=checked]:bg-[hsl(var(--primary-500))]"
+                                />
+                                <div className="flex-1">
+                                  <label htmlFor="marketing-consent" className="text-sm font-medium cursor-pointer block text-gray-900">
+                                    Keep me updated with party ideas and special offers
+                                  </label>
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    Get party inspiration, tips, and exclusive supplier deals (optional)
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

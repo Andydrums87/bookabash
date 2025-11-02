@@ -453,6 +453,49 @@ function PaymentForm({
     bookingTermsAcceptedRef.current = bookingTermsAccepted
   }, [bookingTermsAccepted])
 
+  // ✅ Auto-accept terms if already accepted in review-book page
+  useEffect(() => {
+    const autoAcceptTerms = async () => {
+      if (partyDetails && partyDetails.termsAccepted && !bookingTermsAccepted) {
+        setBookingTermsAccepted(true)
+
+        // Log acceptance to database if not already logged
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            // Check if already logged
+            const { data: existing } = await supabase
+              .from('terms_acceptances')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('booking_id', partyDetails.id)
+              .maybeSingle()
+
+            if (!existing) {
+              await supabase
+                .from('terms_acceptances')
+                .insert({
+                  user_id: user.id,
+                  user_email: user.email,
+                  booking_id: partyDetails.id,
+                  terms_version: "1.0",
+                  privacy_version: "1.0",
+                  ip_address: await getUserIP(),
+                  user_agent: navigator.userAgent,
+                  accepted_at: partyDetails.termsAcceptedAt || new Date().toISOString(),
+                  acceptance_context: 'booking'
+                })
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to log terms acceptance:', error)
+        }
+      }
+    }
+
+    autoAcceptTerms()
+  }, [partyDetails, bookingTermsAccepted])
+
   useEffect(() => {
     if (stripe && !timerExpired && clientSecret) {
       const pr = stripe.paymentRequest({
@@ -728,12 +771,28 @@ function PaymentForm({
           </div>
         )}
 
-        <BookingTermsAcceptance
-          termsAccepted={bookingTermsAccepted}
-          setTermsAccepted={setBookingTermsAccepted}
-          partyDetails={partyDetails}
-          required={true}
-        />
+        {partyDetails?.termsAccepted ? (
+          <div className="border border-green-200 rounded-lg p-4 mb-4 bg-green-50">
+            <div className="flex items-start space-x-3">
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-900">
+                  Terms & Conditions Accepted
+                </p>
+                <p className="text-xs text-green-700 mt-1">
+                  You accepted our booking terms during checkout. Ready to complete payment.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <BookingTermsAcceptance
+            termsAccepted={bookingTermsAccepted}
+            setTermsAccepted={setBookingTermsAccepted}
+            partyDetails={partyDetails}
+            required={true}
+          />
+        )}
 
         <button 
           onClick={handlePayment}
@@ -952,7 +1011,9 @@ export default function PaymentPageContent() {
           location: partyResult.party.location,
           guestCount: partyResult.party.guest_count,
           email: userResult.user.email,
-          parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim()
+          parentName: `${userResult.user.first_name} ${userResult.user.last_name}`.trim(),
+          termsAccepted: partyResult.party.terms_accepted || false,
+          termsAcceptedAt: partyResult.party.terms_accepted_at || null
         })
 
         const paymentAmount = Math.round(breakdown.totalPaymentToday * 100)

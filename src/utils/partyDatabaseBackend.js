@@ -215,7 +215,12 @@ class PartyDatabaseBackend {
         special_requirements: partyDetails.specialRequirements,
         party_plan: partyPlan,
         estimated_cost: this.calculatePartyPlanCost(partyPlan),
-        
+
+        // Terms and marketing preferences
+        terms_accepted: partyDetails.termsAccepted || false,
+        terms_accepted_at: partyDetails.termsAcceptedAt || null,
+        marketing_consent: partyDetails.marketingConsent || false,
+
         // NEW: Additional metadata
         submitted_at: partyDetails.submittedAt || new Date().toISOString(),
         status: partyDetails.status || 'draft'
