@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { UniversalModal, ModalHeader, ModalContent } from '@/components/ui/UniversalModal.jsx'
-import { CheckCircle, Circle, ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 // Import Google Font for handwritten style
 if (typeof document !== 'undefined') {
   const link = document.createElement('link')
-  link.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap'
+  link.href = 'https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap'
   link.rel = 'stylesheet'
   document.head.appendChild(link)
 }
@@ -147,70 +147,82 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
   return (
     <UniversalModal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalContent className="bg-white">
-        {/* Checklist Sections */}
-        <div className="space-y-4">
+        {/* Simple Clean Checklist */}
+        <div className="space-y-6">
           {Object.entries(checklist).map(([key, section]) => {
             const sectionCompleted = section.items.filter(i => i.completed).length
             const isExpanded = expandedSections[key]
 
             return (
-              <div key={key} className="rounded-xl overflow-hidden shadow-lg border-2 border-[hsl(var(--primary-200))] relative" style={{ transform: 'rotate(-0.3deg)' }}>
-                {/* Tape effect at top */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-6 bg-white/60 border border-[hsl(var(--primary-200))]/40 rotate-0"
-                  style={{
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
-                    zIndex: 10
-                  }}
-                />
-
+              <div key={key} className="border-b border-gray-200 pb-4 last:border-b-0">
                 {/* Section Header */}
                 <button
                   onClick={() => toggleSection(key)}
-                  className="w-full flex items-center justify-between p-5 bg-primary-50 text-gray-800 transition-all hover:shadow-md relative"
+                  className="w-full flex flex-col items-center mb-3 hover:text-primary-600 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="text-left">
-                      <h3 className="font-black text-gray-800 text-3xl" style={{ fontFamily: 'Caveat, cursive', fontWeight: 900 }}>{section.title}</h3>
-                      <p className="text-lg text-gray-600 font-semibold" style={{ fontFamily: 'Caveat, cursive', fontWeight: 600 }}>{sectionCompleted}/{section.items.length} done</p>
-                    </div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Indie Flower, cursive', fontWeight: 800, WebkitTextStroke: '0.3px currentColor' }}>{section.title}</h3>
+                  <div>
+                    {isExpanded ? (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    )}
                   </div>
-                  {isExpanded ? (
-                    <ChevronDown className="w-6 h-6 text-gray-600" />
-                  ) : (
-                    <ChevronRight className="w-6 h-6 text-gray-600" />
-                  )}
                 </button>
 
                 {/* Section Items */}
                 {isExpanded && (
-                  <div className="p-4 space-y-2 bg-white">
-                    {section.items.map(item => (
+                  <div className="space-y-2">
+                    {section.items.map((item, index) => (
                       <button
                         key={item.id}
                         onClick={() => toggleItem(key, item.id)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                        className="w-full flex items-center gap-3 py-2 px-1 hover:bg-gray-50 transition-colors group rounded"
                       >
                         {/* Hand-drawn style checkbox */}
-                        <div className={`w-7 h-7 flex items-center justify-center flex-shrink-0 transition-all ${
+                        <div className={`w-6 h-6 flex items-center justify-center flex-shrink-0 transition-all ${
                           item.completed
-                            ? 'bg-teal-500 border-teal-600'
-                            : 'border-gray-300 group-hover:border-gray-400'
+                            ? 'bg-gray-700 border-gray-800'
+                            : 'border-gray-400 group-hover:border-gray-500'
                         }`} style={{
-                          borderWidth: '2.5px',
+                          borderWidth: '2px',
                           borderStyle: 'solid',
-                          borderRadius: '4px',
-                          transform: 'rotate(-1deg)',
-                          boxShadow: item.completed ? '2px 2px 0px rgba(0,0,0,0.1)' : 'none'
+                          borderRadius: '2px',
+                          transform: `rotate(${(index % 2 === 0 ? -1 : 1)}deg)`,
                         }}>
                           {item.completed && (
-                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: 'rotate(3deg)' }}>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: 'rotate(2deg)' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           )}
                         </div>
-                        <span className={`text-left flex-1 text-2xl ${item.completed ? 'line-through text-gray-500' : 'text-gray-900 font-bold'}`} style={{ fontFamily: 'Caveat, cursive', fontWeight: item.completed ? 600 : 700 }}>
-                          {item.label}
-                        </span>
+
+                        {/* Item with hand-drawn line */}
+                        <div className="flex-1 flex flex-col py-1">
+                          <span className={`text-left text-xl pb-1 ${item.completed ? 'line-through text-gray-400' : 'text-gray-900'}`} style={{ fontFamily: 'Indie Flower, cursive', fontWeight: 500, WebkitTextStroke: '0.15px currentColor' }}>
+                            {item.label}
+                          </span>
+                          {/* Hand-drawn line - very wobbly */}
+                          <svg width="100%" height="4" viewBox="0 0 400 4" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                            <path
+                              d={`M 0 ${2 + Math.sin(index * 0.7) * 0.8}
+                                  C ${50 + Math.cos(index * 1.3) * 3} ${2 + Math.sin(index * 1.1) * 0.9},
+                                    ${100 + Math.sin(index * 1.7) * 3} ${2 + Math.cos(index * 1.9) * 0.7},
+                                    ${150 + Math.cos(index * 2.1) * 2} ${2 + Math.sin(index * 2.3) * 0.8}
+                                  C ${200 + Math.sin(index * 2.7) * 3} ${2 + Math.cos(index * 2.9) * 0.9},
+                                    ${250 + Math.cos(index * 3.1) * 3} ${2 + Math.sin(index * 3.3) * 0.7},
+                                    ${300 + Math.sin(index * 3.7) * 2} ${2 + Math.cos(index * 3.9) * 0.8}
+                                  C ${350 + Math.cos(index * 4.1) * 3} ${2 + Math.sin(index * 4.3) * 0.9},
+                                    ${375 + Math.sin(index * 4.7) * 2} ${2 + Math.cos(index * 4.9) * 0.7},
+                                    400 ${2 + Math.sin(index * 5.1) * 0.8}`}
+                              stroke="#6b7280"
+                              strokeWidth="1.8"
+                              fill="none"
+                              strokeLinecap="round"
+                              opacity="0.7"
+                            />
+                          </svg>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -221,10 +233,10 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
 
           {/* Completion Message */}
           {progress.percentage === 100 && (
-            <div className="mt-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl p-6 text-center shadow-lg">
-              <div className="text-5xl mb-3">🎊✨🎉</div>
-              <h4 className="font-black text-white text-4xl mb-2" style={{ fontFamily: 'Caveat, cursive', fontWeight: 900 }}>ALL DONE!</h4>
-              <p className="text-white text-xl font-bold" style={{ fontFamily: 'Caveat, cursive', fontWeight: 700 }}>You're ready for an AMAZING party!</p>
+            <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-lg p-4 text-center">
+              <div className="text-3xl mb-2">🎉</div>
+              <h4 className="font-bold text-green-900 text-2xl mb-1" style={{ fontFamily: 'Indie Flower, cursive', fontWeight: 700, WebkitTextStroke: '0.2px currentColor' }}>All Done!</h4>
+              <p className="text-green-700 text-lg" style={{ fontFamily: 'Indie Flower, cursive', fontWeight: 500, WebkitTextStroke: '0.15px currentColor' }}>You're ready for an amazing party!</p>
             </div>
           )}
         </div>

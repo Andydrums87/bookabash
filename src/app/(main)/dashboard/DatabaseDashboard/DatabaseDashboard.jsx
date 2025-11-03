@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useMemo } from "react"
 // Import Google Font for handwritten style
 if (typeof document !== 'undefined') {
   const link = document.createElement('link')
-  link.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap'
+  link.href = 'https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap'
   link.rel = 'stylesheet'
   if (!document.querySelector(`link[href="${link.href}"]`)) {
     document.head.appendChild(link)
@@ -59,6 +59,9 @@ import { AddSuppliersSection } from "./components/PartyJourney/AddSuppliersSecti
 import SnappyTimelineAssistant from "./components/SnappyTimelineAssistant"
 import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestions"
 import PartyChecklistModal from "./components/PartyChecklistModal"
+import WeatherWidget from "./components/WeatherWidget"
+import PartyTimeline from "./components/PartyTimeline"
+import EmergencyContacts from "./components/EmergencyContacts"
 
 
 
@@ -1594,15 +1597,15 @@ const addSuppliersSection = (
                 />
 
                 <div className="text-left relative">
-                  <h3 className="text-primary-800 text-3xl mb-2" style={{ fontFamily: 'Caveat, cursive', fontWeight: 700 }}>
+                  <h3 className="text-primary-800 text-3xl mb-2" style={{ fontFamily: 'Indie Flower, cursive', fontWeight: 700 }}>
                     Party Checklist ✓
                   </h3>
-                  <p className="text-primary-700 text-xl leading-tight" style={{ fontFamily: 'Caveat, cursive' }}>
+                  <p className="text-primary-700 text-xl leading-tight" style={{ fontFamily: 'Indie Flower, cursive' }}>
                     Don't forget anything for the big day!
                   </p>
 
                   {/* Hand-drawn arrow */}
-                  <div className="absolute -right-2 top-1/2 -translate-y-1/2 text-primary-400 text-4xl" style={{ fontFamily: 'Caveat, cursive', transform: 'translateY(-50%) rotate(-5deg)' }}>
+                  <div className="absolute -right-2 top-1/2 -translate-y-1/2 text-primary-400 text-4xl" style={{ fontFamily: 'Indie Flower, cursive', transform: 'translateY(-50%) rotate(-5deg)' }}>
                     →
                   </div>
                 </div>
@@ -1775,6 +1778,23 @@ const addSuppliersSection = (
               `}</style>
             </div>
 
+            {/* Mobile: Party Day Timeline */}
+            <div className="md:hidden mt-8">
+              <div className="mb-6 px-4">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Party Timeline
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">Your suggested schedule for the big day</p>
+              </div>
+              <div className="px-4">
+                <PartyTimeline
+                  partyDetails={partyDetails}
+                  suppliers={visibleSuppliers}
+                />
+              </div>
+            </div>
+
             {/* Mobile: Party Tips & Blog Recommendations Horizontal Scroll */}
             <div className="md:hidden mt-8 mb-8">
               <div className="mb-6 px-4">
@@ -1920,7 +1940,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Party Countdown Section */}
-            <div className="md:hidden mt-8 mb-12 px-4">
+            <div className="md:hidden mt-8 px-4">
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   Party Countdown
@@ -1930,6 +1950,49 @@ const addSuppliersSection = (
               </div>
 
               <CountdownWidget partyDate={partyDetails?.date} />
+            </div>
+
+            {/* Mobile: Weather Forecast Widget */}
+            <div className="md:hidden mt-8 px-4">
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Weather Forecast
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">Check the forecast for your party day</p>
+              </div>
+
+              <WeatherWidget
+                partyDate={partyDetails?.date}
+                venueLocation={
+                  visibleSuppliers?.venue?.location ||
+                  visibleSuppliers?.venue?.venueAddress?.postcode ||
+                  visibleSuppliers?.venue?.serviceDetails?.venueAddress?.postcode ||
+                  visibleSuppliers?.venue?.data?.location ||
+                  partyDetails?.venue?.location ||
+                  partyDetails?.venue?.venueAddress?.postcode ||
+                  partyDetails?.party_plan?.venue?.location ||
+                  partyDetails?.location
+                }
+              />
+            </div>
+
+            {/* Mobile: Emergency Contacts */}
+            <div className="md:hidden mt-8 mb-12">
+              <div className="mb-6 px-4">
+                <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                  Emergency Contacts
+                  <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                </h2>
+                <p className="text-sm text-gray-600 mt-3">Quick access to all your supplier contacts</p>
+              </div>
+              <div className="px-4">
+                <EmergencyContacts
+                  suppliers={visibleSuppliers}
+                  enquiries={enquiries}
+                  partyDetails={partyDetails}
+                />
+              </div>
             </div>
           </main>
 
