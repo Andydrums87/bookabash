@@ -52,9 +52,9 @@ export function usePartyJourney({
         title: 'Payment Secured',
         description: 'Deposit paid and party locked in',
         status: 'completed',
-        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1755719830/bs2klexzuin8ygfndexc.png' // My Party image
+        icon: '/journey-icons/payment.png'
       },
-      
+
       // STEP 2: Venue Confirmation (formerly Step 3)
       {
         id: 'venue_confirmation',
@@ -67,7 +67,7 @@ export function usePartyJourney({
           : 'Add a venue to proceed',
         status: !venueExists ? 'locked' :
                 venueConfirmed ? 'completed' : 'current',
-        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386510/iStock-2194928280_1_j9rcey.jpg',
+        icon: '/journey-icons/location.png',
         component: 'VenueConfirmationStep',
         venueSupplier: suppliers.venue,
         venueEnquiry: venueEnquiry,
@@ -77,7 +77,7 @@ export function usePartyJourney({
           ? 'Waiting for venue to confirm your booking'
           : 'Add a venue to your party first'
       },
-      
+
       // STEP 3: Guest List (formerly Step 4)
       {
         id: 'guest_list',
@@ -87,7 +87,7 @@ export function usePartyJourney({
           ? `${guestCount} guest${guestCount !== 1 ? 's' : ''} added`
           : 'Create your list for invites and RSVPs',
         status: guestListCreated ? 'completed' : 'available',
-        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753986373/jwq8wmgxqqfue2zsophq.jpg', // RSVP image from mobile tabs
+        icon: '/journey-icons/guestlist.png',
         unlockCondition: null,
         unlockMessage: null,
         hasContent: guestListCreated,
@@ -96,7 +96,7 @@ export function usePartyJourney({
           href: `/rsvps/${partyDetails?.id || ''}`
         }
       },
-      
+
       // STEP 4: Gift Registry (formerly Step 5)
       {
         id: 'gift_registry',
@@ -108,7 +108,7 @@ export function usePartyJourney({
             : 'Registry created - add items'
           : 'Help guests know what to bring',
         status: giftRegistrySetup ? 'completed' : 'available',
-        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361425/okpcftsuni04yokhex1l.jpg', // Gift registry image from mobile tabs
+        icon: '/journey-icons/gift.png',
         unlockCondition: null,
         unlockMessage: null,
         hasContent: giftRegistrySetup,
@@ -128,7 +128,7 @@ export function usePartyJourney({
           : 'Create beautiful digital invitations',
         status: !venueConfirmed ? 'locked' :
                 einvitesCreated ? 'completed' : 'available',
-        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1754405084/party-invites/m02effvlanaxupepzsza.png', // E-Invites image from mobile tabs
+        icon: '/journey-icons/einvites.png',
         unlockCondition: 'venue_confirmed',
         unlockMessage: 'Venue must be confirmed before creating invites',
         hasContent: einvitesCreated,
@@ -139,7 +139,7 @@ export function usePartyJourney({
             : '/e-invites/create'
         }
       },
-      
+
       // STEP 6: Track RSVPs
       {
         id: 'track_rsvps',
@@ -149,7 +149,7 @@ export function usePartyJourney({
           ? `${rsvpCount} confirmed attending`
           : 'See who\'s coming to the party',
         status: rsvpsReceived ? 'completed' : 'available',
-        icon: 'https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386306/iStock-1702395012_z3e8mp.jpg', // Decorations image (for tracking/organizing)
+        icon: '/journey-icons/rsvps.png',
         unlockCondition: null,
         unlockMessage: null,
         metrics: {

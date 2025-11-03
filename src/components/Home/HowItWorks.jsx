@@ -10,27 +10,24 @@ export default function HowItWorks() {
       number: 1,
       title: "Tell us about your party",
       description: "Share your theme, date, guest count, and budget. Snappy will start working his magic instantly!",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753256633/efskkluawfqzjsryy1yh.png",
-      alt: "Snappy the crocodile thinking with question marks",
-      color: "from-primary-400 to-primary-500",
+      icon: "/journey-icons/location.png",
+      alt: "Location icon",
       bgColor: "bg-primary-50",
     },
     {
       number: 2,
       title: "We create your personalized dashboard",
       description: "Get matched with perfect suppliers for your theme. Everything organized in one beautiful place.",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361571/v4l1f7puqvhswqb6j9tz.png",
-      alt: "Snappy the crocodile celebrating with party hat",
-      color: "from-primary-300 to-primary-400",
+      icon: "/journey-icons/confirmation.png",
+      alt: "Confirmation icon",
       bgColor: "bg-primary-200",
     },
     {
       number: 3,
       title: "Review, customize, and book everything",
       description: "Complete coordination in one place. Snappy handles the details while you focus on the fun!",
-      image: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753291661/qjdvo5qnbylnzwhlawhf.png",
-      alt: "Snappy the crocodile giving thumbs up with confetti",
-      color: "from-primary-500 to-primary-600",
+      icon: "/journey-icons/gift.png",
+      alt: "Gift icon",
       bgColor: "bg-primary-500",
     },
   ]
@@ -58,18 +55,16 @@ export default function HowItWorks() {
                 <div key={index} className="relative">
                   {/* Step Card */}
                   <div className={`${step.bgColor} rounded-3xl p-8 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative`}>
-                    {/* Snappy Avatar on Timeline */}
+                    {/* Icon on Timeline */}
                     <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
-                      <div className={`w-24 h-24 bg-gradient-to-br ${step.color} rounded-full p-2 shadow-xl`}>
-                        <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
-                          <Image
-                            src={step.image}
-                            alt={step.alt}
-                            width={80}
-                            height={80}
-                            className="w-16 h-16 object-contain"
-                          />
-                        </div>
+                      <div className="w-24 h-24 flex items-center justify-center">
+                        <Image
+                          src={step.icon}
+                          alt={step.alt}
+                          width={96}
+                          height={96}
+                          className="w-24 h-24 object-contain"
+                        />
                       </div>
                       {/* Step number badge */}
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-white border-4 border-gray-900 text-gray-900 rounded-full flex items-center justify-center font-black text-sm shadow-lg">
@@ -101,18 +96,16 @@ export default function HowItWorks() {
               <div key={index} className="relative">
                 <div className={`${step.bgColor} rounded-3xl p-6 shadow-xl border border-gray-100`}>
                   <div className="flex items-start space-x-6">
-                    {/* Snappy Avatar */}
+                    {/* Icon */}
                     <div className="relative flex-shrink-0">
-                      <div className={`w-20 h-20 bg-gradient-to-br ${step.color} rounded-full p-2 shadow-xl`}>
-                        <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
-                          <Image
-                            src={step.image}
-                            alt={step.alt}
-                            width={64}
-                            height={64}
-                            className="w-14 h-14 object-contain"
-                          />
-                        </div>
+                      <div className="w-20 h-20 flex items-center justify-center">
+                        <Image
+                          src={step.icon}
+                          alt={step.alt}
+                          width={80}
+                          height={80}
+                          className="w-20 h-20 object-contain"
+                        />
                       </div>
                       <div className="absolute -top-2 -right-2 w-7 h-7 bg-white border-3 border-gray-900 text-gray-900 rounded-full flex items-center justify-center font-black text-xs shadow-lg">
                         {step.number}

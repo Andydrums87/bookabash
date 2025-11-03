@@ -41,16 +41,16 @@ export function JourneyStep({
   // All steps collapsed by default
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Simple approach: teal background for completed steps
+  // Clean, minimal styling with coral accents
   const getStatusStyles = () => {
     if (step.status === 'completed') {
       return {
-        border: 'border-teal-200',
-        bg: 'bg-teal-50',
-        icon: <CheckCircle className="w-5 h-5 text-teal-600" />,
-        titleColor: 'text-teal-900',
-        descColor: 'text-teal-700',
-        iconBg: 'bg-teal-100',
+        border: 'border-gray-200',
+        bg: 'bg-white',
+        icon: <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))]" />,
+        titleColor: 'text-gray-900',
+        descColor: 'text-gray-600',
+        iconBg: 'bg-[hsl(var(--primary-50))]',
         disabled: false
       }
     }
@@ -352,6 +352,7 @@ case 'party_team_browse':
             ${styles.bg}
             transition-all
             ${styles.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}
+            ${step.status === 'completed' ? 'border-l-4 border-l-[hsl(var(--primary-500))]' : ''}
           `}
         >
           {/* ✅ CLEAN HEADER */}
@@ -361,22 +362,22 @@ case 'party_team_browse':
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {/* Icon Badge - Smaller */}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${styles.border} relative overflow-hidden shadow-sm`}>
+                {/* Icon */}
+                <div className="w-12 h-12 flex items-center justify-center relative">
                   {/* Check if icon is a URL or emoji */}
-                  {typeof step.icon === 'string' && (step.icon.startsWith('http://') || step.icon.startsWith('https://')) ? (
+                  {typeof step.icon === 'string' && (step.icon.startsWith('http://') || step.icon.startsWith('https://') || step.icon.startsWith('/')) ? (
                     <img
                       src={step.icon}
                       alt={step.title}
-                      className="w-full h-full object-cover rounded-full"
+                      className="w-12 h-12 object-contain"
                     />
                   ) : (
-                    <span className={`text-xl ${styles.iconBg} w-full h-full flex items-center justify-center`}>{step.icon}</span>
+                    <span className="text-xl">{step.icon}</span>
                   )}
 
                   {/* Lock overlay for locked steps */}
                   {styles.disabled && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-full">
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80">
                       <Lock className="w-4 h-4 text-gray-400" />
                     </div>
                   )}
