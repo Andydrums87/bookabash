@@ -194,22 +194,22 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                 />
               </div>
 
-              {/* Guests */}
+              {/* Children Attending */}
               <div className="col-span-1 md:col-span-1 space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Guests (up to)  <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700">Children Attending  <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-primary-400" />
                   <Select value={formData.guestCount} onValueChange={(value) => handleFieldChange('guestCount', value)} required>
                     <SelectTrigger className="bg-white py-6 px-28 text-gray-700 border-gray-200 focus:border-[hsl(var(--primary-500))] rounded-xl h-12 pl-10">
-                      <SelectValue placeholder="Guests" />
+                      <SelectValue placeholder="Children" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="5">5 guests</SelectItem>
-                      <SelectItem value="10">10 guests</SelectItem>
-                      <SelectItem value="15">15 guests</SelectItem>
-                      <SelectItem value="20">20 guests</SelectItem>
-                      <SelectItem value="25">25 guests</SelectItem>
-                      <SelectItem value="30">30+ guests</SelectItem>
+                      <SelectItem value="5">5 children</SelectItem>
+                      <SelectItem value="10">10 children</SelectItem>
+                      <SelectItem value="15">15 children</SelectItem>
+                      <SelectItem value="20">20 children</SelectItem>
+                      <SelectItem value="25">25 children</SelectItem>
+                      <SelectItem value="30">30+ children</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

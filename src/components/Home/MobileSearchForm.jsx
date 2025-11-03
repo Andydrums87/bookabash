@@ -209,10 +209,10 @@ export default function MobileSearchForm({
             </div>
           </div>
     
-          {/* Guests */}
+          {/* Children Attending */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-700">
-              Guests <span className="text-red-500">*</span>
+              Children Attending <span className="text-red-500">*</span>
             </label>
             <div className="relative ">
               <UsersIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary-400 z-10" />
@@ -230,22 +230,22 @@ export default function MobileSearchForm({
                   text-gray-900
                   ${!formData.guestCount ? 'border-red-300' : ''}
                 `}>
-                  <SelectValue placeholder="Select guest count" />
+                  <SelectValue placeholder="Select number of children" />
                 </SelectTrigger>
                 <SelectContent className="border-gray-200">
-                  <SelectItem value="5">5 guests</SelectItem>
-                  <SelectItem value="10">10 guests</SelectItem>
-                  <SelectItem value="15">15 guests</SelectItem>
-                  <SelectItem value="20">20 guests</SelectItem>
-                  <SelectItem value="25">25 guests</SelectItem>
-                  <SelectItem value="30">30+ guests</SelectItem>
+                  <SelectItem value="5">5 children</SelectItem>
+                  <SelectItem value="10">10 children</SelectItem>
+                  <SelectItem value="15">15 children</SelectItem>
+                  <SelectItem value="20">20 children</SelectItem>
+                  <SelectItem value="25">25 children</SelectItem>
+                  <SelectItem value="30">30+ children</SelectItem>
                 </SelectContent>
               </Select>
               {hasAttemptedSubmit && !formData.guestCount && (
                 <div className="mt-1">
                   <p className="text-xs text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Guest Count is required
+                    Number of children is required
                   </p>
                 </div>
               )}

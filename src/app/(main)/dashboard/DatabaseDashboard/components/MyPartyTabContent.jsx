@@ -34,6 +34,7 @@ export default function MyPartyTabContent({
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
   const [showPlanInfo, setShowPlanInfo] = useState(false)
   const [hasClickedContinue, setHasClickedContinue] = useState(false)
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true)
 
   // Photo upload handler
   const handlePhotoChange = async (e) => {
@@ -576,6 +577,29 @@ export default function MyPartyTabContent({
 
   return (
     <div className="space-y-3">
+      {/* Welcome Message */}
+      {showWelcomeMessage && (
+        <div className="flex items-start gap-3 mb-2 relative">
+          <Image
+            src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
+            alt="Snappy"
+            width={40}
+            height={40}
+            className="flex-shrink-0"
+          />
+          <p className="text-sm text-gray-700 leading-relaxed pt-1 flex-1">
+            Here's your party plan for <span className="font-semibold">{partyDetails?.guestCount || 'your'} children</span>! Customize, swap, or add suppliers below.
+          </p>
+          <button
+            onClick={() => setShowWelcomeMessage(false)}
+            className="flex-shrink-0 w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+            aria-label="Dismiss message"
+          >
+            <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+      )}
+
       {/* Original Header Section */}
       <div>
         <div>
@@ -633,12 +657,16 @@ export default function MyPartyTabContent({
               <div key={type} id={`supplier-card-${type}`}>
                 {/* Visual Separator */}
                 <div className="border-t-2 border-gray-100 pt-6 mb-4">
+                  
                   {/* Category Heading */}
                   <div className="mb-3">
+
                     <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                      {categoryName}
+                        {categoryName}
                       <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                     </h3>
+           
+                 
                     {categoryTagline && (
                       <p className="text-sm text-gray-600 mt-2">{categoryTagline}</p>
                     )}

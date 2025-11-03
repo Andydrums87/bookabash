@@ -92,7 +92,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
         {/* Modal Header */}
         <div className="relative h-48 sm:h-64 flex-shrink-0">
           <Image
-            src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+            src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
             alt={pkg.name}
             fill
             className="object-cover"
@@ -827,7 +827,7 @@ export default function SupplierCustomizationModal({
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
             <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-white/30 shadow-sm flex-shrink-0">
               <Image
-                src={supplier.image || supplier.imageUrl || "/placeholder.png"}
+                src={typeof supplier.image === 'object' ? supplier.image.src : (supplier.image || supplier.imageUrl || "/placeholder.png")}
                 alt={supplier.name}
                 width={56}
                 height={56}
@@ -938,7 +938,7 @@ export default function SupplierCustomizationModal({
                                 }}
                               >
                                 <Image
-                                  src={pkg.image || pkg.imageUrl || "/placeholder.png"}
+                                  src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
                                   alt={pkg.name}
                                   fill
                                   className="object-cover group-hover:brightness-110 transition-all duration-300"
