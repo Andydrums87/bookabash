@@ -344,55 +344,48 @@ const isProductInRegistry = (productId) => {
     <div className="min-h-screen bg-gray-50">
       <ContextualBreadcrumb currentPage="Browse Gifts" />
 
-      {/* Header - Smaller and cleaner */}
+      {/* Header */}
       <div
         style={{
-          backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '100px, cover',
+          backgroundImage: `url('https://res.cloudinary.com/dghzq6xtd/image/upload/v1762167081/iStock-2240680866_lacbrh.jpg')`,
+          backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
-        className="relative rounded-2xl shadow-lg overflow-hidden mb-4 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] mx-3 mt-6 sm:mx-4"
+        className="relative rounded-2xl shadow-lg overflow-hidden mb-4 mx-3 mt-6 sm:mx-4"
       >
-        <div className="relative z-10 px-4 py-4 sm:px-6 sm:py-5 text-white">
-          <div className="flex items-center justify-between">
-            {/* Title and Stats */}
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-black leading-tight mb-3">
-                {partyDetails?.child_name ? `${partyDetails.child_name}'s Gift Shop` : 'Gift Shop'}
-              </h1>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/40"></div>
 
-              {/* Registry Stats */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/30">
-                  <ShoppingCart className="w-4 h-4 text-white" />
-                  <span className="text-xs sm:text-sm font-medium text-white">
-                    {registryItems.length} items
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-white/30 text-white hover:bg-white/20 bg-white/10 backdrop-blur-sm text-xs sm:text-sm"
-                  asChild
-                >
-                  <Link href={`/gift-registry/${registryId}/preview`}>
-                    View Registry
-                  </Link>
-                </Button>
-              </div>
-            </div>
+        <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10 text-white">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Title */}
+            <h1 className="text-3xl sm:text-4xl font-black mb-3 drop-shadow-2xl">
+              {partyDetails?.child_name ? `${partyDetails.child_name.split(' ')[0]}'s Gift Shop` : 'Gift Shop'}
+            </h1>
 
-            {/* Right Side - Decorative Elements - Hidden on mobile */}
-            <div className="hidden lg:block">
-              <div className="relative">
-                <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Sparkles className="w-10 h-10 text-white/80" />
-                </div>
+            <p className="text-base sm:text-lg mb-5 max-w-2xl mx-auto drop-shadow-lg font-medium">
+              Build your perfect gift registry
+            </p>
+
+            {/* Registry Stats */}
+            <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center gap-2 bg-white/25 backdrop-blur-md rounded-full px-4 py-2 border border-white/30">
+                <ShoppingCart className="w-4 h-4 text-white" />
+                <span className="text-sm font-semibold text-white">
+                  {registryItems.length} items
+                </span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-white/30 text-white hover:bg-white/20 bg-white/10 backdrop-blur-md text-sm rounded-full font-semibold"
+                asChild
+              >
+                <Link href={`/gift-registry/${registryId}/preview`}>
+                  View Registry
+                </Link>
+              </Button>
             </div>
           </div>
-
         </div>
       </div>
 

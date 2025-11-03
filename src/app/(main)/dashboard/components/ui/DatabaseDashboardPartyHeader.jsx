@@ -67,18 +67,22 @@ export default function DatabasePartyHeader({
 
   // Format party date
   const getFormattedDate = () => {
-    if (!partyDetails?.date) return null;
-    
-    const date = new Date(partyDetails.date);
+    // ✅ Try partyDetails first, then fallback to currentParty for database users
+    const dateSource = partyDetails?.date || (dataSource === 'database' && currentParty?.party_date);
+    if (!dateSource) return null;
+
+    const date = new Date(dateSource);
     const options = { weekday: 'long', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
   };
 
   // Calculate days until party
   const getDaysUntil = () => {
-    if (!partyDetails?.date) return null;
+    // ✅ Try partyDetails first, then fallback to currentParty for database users
+    const dateSource = partyDetails?.date || (dataSource === 'database' && currentParty?.party_date);
+    if (!dateSource) return null;
 
-    const partyDate = new Date(partyDetails.date);
+    const partyDate = new Date(dateSource);
     const today = new Date();
     const diffTime = partyDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -91,10 +95,17 @@ export default function DatabasePartyHeader({
 
   // Format party time
   const getFormattedTime = () => {
-    if (!partyDetails?.startTime) return null;
+    // ✅ Try partyDetails first, then fallback to currentParty for database users
+    const startTimeSource = partyDetails?.startTime ||
+                           (dataSource === 'database' && (currentParty?.start_time || currentParty?.party_time));
+    const durationSource = partyDetails?.duration ||
+                          (dataSource === 'database' && currentParty?.duration) ||
+                          2;
+
+    if (!startTimeSource) return null;
 
     try {
-      const [hours, minutes] = partyDetails.startTime.split(':');
+      const [hours, minutes] = startTimeSource.split(':');
       const startDate = new Date();
       startDate.setHours(parseInt(hours), parseInt(minutes || 0));
 
@@ -104,8 +115,8 @@ export default function DatabasePartyHeader({
         hour12: true,
       });
 
-      // Calculate end time based on duration (default 2 hours)
-      const duration = partyDetails?.duration || 2;
+      // Calculate end time based on duration
+      const duration = durationSource;
       const endDate = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
       const formattedEnd = endDate.toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -119,27 +130,56 @@ export default function DatabasePartyHeader({
     }
   };
 
-  // ✅ Get venue location/address
+  // ✅ Get venue location/address - Returns VENUE postcode, not user's search postcode
   const getVenueLocation = () => {
-    // Try to get location from venue data
+    // PRIORITY 1: Venue prop location (from visibleSuppliers.venue)
+    if (venue?.location) {
+      return venue.location; // "W5 4UA"
+    }
     if (venue?.data?.location) {
       return venue.data.location;
     }
-    if (venue?.location) {
-      return venue.location;
+    if (venue?.venueAddress?.postcode) {
+      return venue.venueAddress.postcode;
     }
-    // Fallback to party details location
-    if (partyDetails?.location) {
-      return partyDetails.location;
+    if (venue?.serviceDetails?.venueAddress?.postcode) {
+      return venue.serviceDetails.venueAddress.postcode;
     }
+
+    // PRIORITY 2: For database users, check if venue exists in party plan
+    if (dataSource === 'database' && currentParty?.party_plan?.venue) {
+      const venueFromPlan = currentParty.party_plan.venue;
+      if (venueFromPlan.location) {
+        return venueFromPlan.location;
+      }
+      if (venueFromPlan.data?.location) {
+        return venueFromPlan.data.location;
+      }
+      if (venueFromPlan.venueAddress?.postcode) {
+        return venueFromPlan.venueAddress.postcode;
+      }
+      if (venueFromPlan.serviceDetails?.venueAddress?.postcode) {
+        return venueFromPlan.serviceDetails.venueAddress.postcode;
+      }
+    }
+
+    // PRIORITY 3: Check partyDetails venue
+    if (partyDetails?.venue?.location) {
+      return partyDetails.venue.location;
+    }
+
+    // NO FALLBACK to user's postcode - only show venue location
+    // If no venue, don't show location at all
     return null;
   };
 
   // ✅ Get formatted theme name
   const getFormattedTheme = () => {
-    if (!currentTheme) return null;
+    // Try to use currentTheme (from partyTheme or currentParty)
+    const themeSource = currentTheme || (dataSource === 'database' && currentParty?.theme);
+    if (!themeSource) return null;
     // Capitalize first letter and replace hyphens with spaces
-    return currentTheme
+    return themeSource
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
@@ -147,7 +187,9 @@ export default function DatabasePartyHeader({
 
   // Get theme image helper
   const getThemeImage = () => {
-    if (!currentTheme) return null
+    // Try to use currentTheme, fallback to currentParty theme for database users
+    const themeSource = currentTheme || (dataSource === 'database' && currentParty?.theme);
+    if (!themeSource) return null
 
     const themeImages = {
       princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296152/iStock-1433142692_ukadz6.jpg",
@@ -166,12 +208,14 @@ export default function DatabasePartyHeader({
       underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg"
     }
 
-    return themeImages[currentTheme.toLowerCase()] || null
+    return themeImages[themeSource.toLowerCase()] || null
   }
 
   // Get theme gradient fallback
   const getThemeGradient = () => {
-    if (!currentTheme) return "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
+    // Try to use currentTheme, fallback to currentParty theme for database users
+    const themeSource = currentTheme || (dataSource === 'database' && currentParty?.theme);
+    if (!themeSource) return "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
 
     const themeGradients = {
       princess: "linear-gradient(to right, #f472b6, #c084fc, #ec4899)",
@@ -190,7 +234,7 @@ export default function DatabasePartyHeader({
       default: "linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))"
     }
 
-    return themeGradients[currentTheme.toLowerCase()] || themeGradients.default
+    return themeGradients[themeSource.toLowerCase()] || themeGradients.default
   }
 
   // ✅ SIMPLIFIED: For database users, check currentParty directly instead of waiting for partyDetails
@@ -203,6 +247,11 @@ export default function DatabasePartyHeader({
         (partyDetails?.date && partyDetails.date !== 'Saturday, June 14, 2025 • 2:00 PM - 4:00 PM')
       );
 
+  // ✅ For database users with currentParty, don't wait for full loading - show immediately
+  const shouldShowSkeleton = dataSource === 'database'
+    ? loading && !currentParty
+    : loading || !hasRealData;
+
   // Debug logging (can be removed later)
   if (typeof window !== 'undefined') {
     console.log('🎯 Header validation:', {
@@ -211,13 +260,14 @@ export default function DatabasePartyHeader({
       hasCurrentParty: !!currentParty,
       hasPartyDetails: !!partyDetails,
       hasRealData,
+      shouldShowSkeleton,
       currentPartyChildName: currentParty?.child_name,
       partyDetailsChildName: partyDetails?.childName
     });
   }
 
-  // Show skeleton loader while loading OR if we don't have real data yet
-  if (loading || !hasRealData) {
+  // Show skeleton loader only when we don't have enough data yet
+  if (shouldShowSkeleton) {
     return (
       <div className="relative shadow-2xl overflow-hidden mb-8">
         {/* Gradient background skeleton */}

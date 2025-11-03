@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, CheckCircle, XCircle, Clock3, Edit, Trash2, Mail, MessageSquare, UtensilsCrossed, ChevronRight, ChevronDown, Plus, UserPlus, BarChart3, TrendingUp, UserCheck } from "lucide-react"
+import { Users, CheckCircle, XCircle, Clock3, Edit, Trash2, Mail, MessageSquare, UtensilsCrossed, ChevronRight, ChevronDown, Plus, UserPlus, BarChart3, TrendingUp, UserCheck, ArrowLeft } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,43 +9,30 @@ import { Input } from "@/components/ui/input"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import SnappyLoader from "@/components/ui/SnappyLoader"
+import { useRouter } from "next/navigation"
 
 // Hero Header Component
 const RSVPHeroSection = ({ stats }) => {
   return (
     <div
       style={{
-        backgroundImage: `url('/party-pattern.svg'), linear-gradient(to right, hsl(14, 100%, 64%), hsl(12, 100%, 68%))`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '100px, cover',
+        backgroundImage: `url('https://res.cloudinary.com/dghzq6xtd/image/upload/v1762166371/iStock-1179556448_xbvoag.jpg')`,
+        backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
-      className="relative rounded-2xl shadow-lg overflow-hidden mb-8 mx-3 sm:mx-4 mt-6 bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600"
+      className="relative rounded-2xl shadow-lg overflow-hidden mb-8 mx-3 sm:mx-4 mt-6"
     >
-      <div className="absolute inset-0 bg-black/10"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/40"></div>
 
-      <div className="relative px-4 py-6 sm:px-6 sm:py-8 text-white">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 drop-shadow-2xl leading-tight">
+      <div className="relative px-4 py-8 sm:px-6 sm:py-10 text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-3xl sm:text-4xl font-black mb-3 drop-shadow-2xl">
             Guest Management
           </h1>
 
-          <p className="text-sm sm:text-base lg:text-lg mb-5 max-w-2xl leading-relaxed drop-shadow-lg">
+          <p className="text-base sm:text-lg mb-5 max-w-2xl mx-auto drop-shadow-lg font-medium">
             Track invitations and manage RSVPs for your party
           </p>
-
-          {/* Quick Stats */}
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border border-white/30">
-              👥 {stats.totalGuests} Guests
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border border-white/30">
-              ✓ {stats.confirmed} Confirmed
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border border-white/30 hidden sm:block">
-              📊 {stats.totalAttendees} Total Attendees
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -420,6 +407,7 @@ const RSVPCard = ({ rsvp, onEdit, onRemove }) => {
 }
 
 export default function RSVPManagementPage({ partyId, onBack }) {
+  const router = useRouter()
   const [rsvps, setRsvps] = useState([])
   const [guests, setGuests] = useState([])
   const [partyData, setPartyData] = useState(null)
@@ -534,17 +522,6 @@ export default function RSVPManagementPage({ partyId, onBack }) {
       <RSVPHeroSection stats={stats} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Add Guest Button - Top Right */}
-        <div className="flex justify-end mb-6">
-          <Button
-            onClick={() => setShowAddGuestModal(true)}
-            className="bg-primary-500 hover:bg-primary-600 text-white font-medium px-6 py-2.5 rounded-lg shadow-md"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Guest
-          </Button>
-        </div>
-
         {/* Collapsible Stats Section */}
         <div className="mb-6">
           <Card className="bg-white border border-gray-200 shadow-sm">
@@ -637,9 +614,9 @@ export default function RSVPManagementPage({ partyId, onBack }) {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6">
-          <Card className="bg-white border border-gray-200 shadow-sm">
+        {/* Tabs and Add Guest Button */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-3">
+          <Card className="bg-white border border-gray-200 shadow-sm flex-1">
             <CardContent className="p-1">
               <div className="flex gap-1">
                 <button
@@ -677,6 +654,15 @@ export default function RSVPManagementPage({ partyId, onBack }) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Add Guest Button */}
+          <Button
+            onClick={() => setShowAddGuestModal(true)}
+            className="bg-primary-500 hover:bg-primary-600 text-white font-medium px-6 py-3 rounded-lg shadow-md h-auto whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Guest
+          </Button>
         </div>
 
         {/* Tab Content */}
@@ -744,6 +730,24 @@ export default function RSVPManagementPage({ partyId, onBack }) {
             )}
           </div>
         )}
+
+        {/* Save and Exit Button */}
+        <div className="mt-8 flex justify-center pb-8">
+          <Button
+            onClick={() => {
+              if (onBack) {
+                onBack()
+              } else {
+                router.push('/dashboard')
+              }
+            }}
+            variant="outline"
+            className="px-8 py-3 border-2 border-gray-300 hover:bg-gray-50 font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Save & Return to Dashboard
+          </Button>
+        </div>
       </div>
 
       {/* Add Guest Modal */}

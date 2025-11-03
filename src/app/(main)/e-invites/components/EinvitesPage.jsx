@@ -309,14 +309,14 @@ const EInvitesPage = ({ onSaveSuccess }) => {
       {/* Only show hero on first step */}
       {wizard.currentStep === WIZARD_STEPS.PARTY_DETAILS && <HeroSection />}
 
-      {/* Wizard Progress */}
-      <WizardProgress
+      {/* Wizard Progress - REMOVED */}
+      {/* <WizardProgress
         currentStep={wizard.currentStep}
         allSteps={wizard.allSteps}
         getStepStatus={wizard.getStepStatus}
         goToStep={wizard.goToStep}
         getProgress={wizard.getProgress}
-      />
+      /> */}
 
       {/* Step Content */}
       <div className="px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
