@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { useToast } from "@/components/ui/toast"
 import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal.jsx"
 
-export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, selectedSuppliersCount = 0 }) {
+export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, selectedSuppliersCount = 0, defaultEmail = "" }) {
   const [isSignUp, setIsSignUp] = useState(true)
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(null)
@@ -24,10 +24,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
+    email: defaultEmail,
     password: "",
     confirmPassword: "",
   })
+
+  // Update email when defaultEmail prop changes
+  useEffect(() => {
+    if (defaultEmail && defaultEmail !== formData.email) {
+      setFormData((prev) => ({ ...prev, email: defaultEmail }))
+    }
+  }, [defaultEmail])
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -413,16 +420,19 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
       )}
 
       {/* Header */}
-      <ModalHeader 
+      <ModalHeader
         title={isSignUp ? "Create Account" : "Welcome Back"}
-        subtitle={isSignUp ? "Join the party planning fun!" : "Ready to continue planning?"}
+        subtitle={isSignUp ? "Get access to your dashboard, RSVP tracking, supplier messaging & more" : "Ready to continue planning?"}
         theme="fun"
         icon={isSignUp ? <UserPlus className="w-5 h-5 text-white" /> : <LogIn className="w-5 h-5 text-white" />}
       />
 
       {/* Content */}
       <ModalContent>
-        <div className="space-y-2">
+        {/* Desktop Two-Column Layout */}
+        <div className={isSignUp ? "md:grid md:grid-cols-[1fr,320px] md:gap-6" : ""}>
+          {/* Left Column: Form (or full width for login) */}
+          <div className="space-y-2">
           {/* Name fields for sign up */}
           {isSignUp && (
             <div className="grid grid-cols-2 gap-2">
@@ -663,7 +673,43 @@ export default function AuthModal({ isOpen, onClose, onSuccess, returnTo, select
               Facebook
             </Button>
           </div>
+          </div>
+          {/* End Left Column: Form */}
+
+          {/* Right Column: Benefits (Desktop Only, Signup Only) */}
+          {isSignUp && (
+            <div className="hidden md:block">
+              <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg p-5 border-2 border-primary-200 h-full">
+                <div className="flex items-start gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">What you'll get:</h3>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">Access your party dashboard & manage everything</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">Track RSVPs and manage your guest list</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">Message suppliers directly about your booking</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">View booking confirmations & party timeline</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* End Right Column: Benefits */}
         </div>
+        {/* End Two-Column Layout */}
       </ModalContent>
 
       {/* Footer */}

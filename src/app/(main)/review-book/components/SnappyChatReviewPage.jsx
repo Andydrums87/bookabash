@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,16 +20,16 @@ import SnappyLoader from '@/components/ui/SnappyLoader';
 import PartyReadinessModal from '@/components/party-readiness-modal';
 import Image from 'next/image';
 
-import { 
-  Send, 
-  Calendar, 
-  Clock, 
-  MapPin, 
+import {
+  Send,
+  Calendar,
+  Clock,
+  MapPin,
   Zap,
-  Users, 
-  CheckCircle, 
-  ChevronDown, 
-  ChevronUp, 
+  Users,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
   Edit3,
   User,
   Phone,
@@ -46,7 +47,10 @@ import {
   Building,
   Music,
   Utensils,
-  Palette
+  Palette,
+  Eye,
+  EyeOff,
+  Sparkles
 } from 'lucide-react';
 import { useRouter } from "next/navigation"
 
@@ -91,7 +95,17 @@ export default function SnappyChatReviewPage() {
   const [phoneError, setPhoneError] = useState('');
   const [addedSupplierIds, setAddedSupplierIds] = useState(new Set());
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Signup form state
+  const [signupFormData, setSignupFormData] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [signupError, setSignupError] = useState("");
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [authMode, setAuthMode] = useState("signup"); // "signup" or "signin"
 
   const { toast } = useToast();
 
@@ -120,8 +134,17 @@ export default function SnappyChatReviewPage() {
 
   const { navigateWithContext } = useContextualNavigation();
 
-  // Chat steps - simplified to 2 steps
+  // Chat steps - add signup step FIRST if user is not logged in
   const chatSteps = [
+    // Add signup step FIRST if user is not authenticated
+    ...(!user ? [{
+      id: 'create-account',
+      title: authMode === "signin" ? "Welcome Back!" : "Let's Get Started",
+      description: authMode === "signin"
+        ? "Sign in to continue with your party booking"
+        : "Create your account to start planning your perfect party",
+      showSignupForm: true
+    }] : []),
     {
       id: 'main-form',
       title: "Review Your Party Details",
@@ -602,6 +625,192 @@ export default function SnappyChatReviewPage() {
     }
   };
 
+  const validatePassword = (pwd) => {
+    if (pwd.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(pwd)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(pwd)) {
+      return "Password must contain at least one number";
+    }
+    return null;
+  };
+
+  const handleSigninSubmit = async () => {
+    setSignupError("");
+    setIsSubmitting(true);
+
+    try {
+      // Validation
+      if (!formData.email.trim() || !signupFormData.password.trim()) {
+        throw new Error("Please enter your email and password");
+      }
+
+      console.log("🔐 Starting customer sign-in from review-book...");
+
+      // Sign in with email/password
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: signupFormData.password,
+      });
+
+      if (authError) throw authError;
+
+      const authenticatedUser = authData.user;
+      if (!authenticatedUser) throw new Error("Sign-in failed");
+
+      console.log("✅ Customer signed in:", authenticatedUser.id);
+
+      // Get customer profile
+      const userResult = await partyDatabaseBackend.getCurrentUser();
+
+      if (userResult.success && userResult.user) {
+        setCustomerProfile(userResult.user);
+
+        // Pre-fill form data with user info
+        setFormData((prev) => ({
+          ...prev,
+          parentName: `${userResult.user.first_name || ""} ${userResult.user.last_name || ""}`.trim() || prev.parentName,
+          email: userResult.user.email || prev.email,
+          phoneNumber: userResult.user.phone || prev.phoneNumber,
+          addressLine1: userResult.user.address_line_1 || prev.addressLine1,
+          addressLine2: userResult.user.address_line_2 || prev.addressLine2,
+          city: userResult.user.city || prev.city,
+          postcode: userResult.user.postcode || prev.postcode,
+        }));
+      }
+
+      // Set the user and proceed to next step
+      setUser(authenticatedUser);
+
+      toast.success("Welcome back!", {
+        duration: 3000
+      });
+
+      // IMPORTANT: After setting user, chatSteps array changes (signup step removed)
+      // So we reset to step 0, which is now the party details form
+      setIsSubmitting(false);
+      setCurrentStep(0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+      console.error("❌ Sign-in error:", err);
+
+      if (err.message.includes("Invalid login credentials")) {
+        setSignupError("Incorrect email or password. Please try again.");
+      } else {
+        const errorMessage = err.message || "Sign-in failed. Please try again.";
+        setSignupError(errorMessage);
+      }
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSignupSubmit = async () => {
+    setSignupError("");
+    setIsSubmitting(true);
+
+    try {
+      // Validation
+      if (!formData.parentName.trim() || !formData.email.trim() || !signupFormData.password.trim()) {
+        throw new Error("Please fill in all required fields");
+      }
+
+      if (!termsAccepted) {
+        throw new Error("Please accept the Terms & Conditions to continue");
+      }
+
+      const passwordError = validatePassword(signupFormData.password);
+      if (passwordError) {
+        throw new Error(passwordError);
+      }
+
+      if (signupFormData.password !== signupFormData.confirmPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      console.log("🔐 Starting customer sign-up from review-book...");
+
+      const [firstName, ...lastNameParts] = formData.parentName.trim().split(" ");
+      const lastName = lastNameParts.join(" ");
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: signupFormData.password,
+        options: {
+          data: {
+            full_name: formData.parentName.trim(),
+            user_type: "customer",
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback/customer`,
+        },
+      });
+
+      if (authError) throw authError;
+
+      const authenticatedUser = authData.user;
+      if (!authenticatedUser) throw new Error("No user created");
+
+      console.log("✅ New customer account created:", authenticatedUser.id);
+
+      // Create customer profile
+      const userResult = await partyDatabaseBackend.createOrGetUser({
+        firstName: firstName,
+        lastName: lastName,
+        email: formData.email,
+        phone: formData.phoneNumber || "",
+        postcode: "",
+      });
+
+      if (!userResult.success) {
+        console.error("❌ Failed to create customer profile:", userResult.error);
+        throw new Error("Failed to create customer profile");
+      }
+
+      console.log("✅ Customer profile created:", userResult.user.id);
+
+      // Set the user and proceed to next step
+      setUser(authenticatedUser);
+      setCustomerProfile(userResult.user);
+
+      // Pre-fill form data with user info
+      setFormData((prev) => ({
+        ...prev,
+        parentName: formData.parentName || `${firstName} ${lastName}`.trim(),
+        email: formData.email,
+        phoneNumber: formData.phoneNumber || userResult.user.phone || prev.phoneNumber,
+      }));
+
+      toast.success("Account created successfully!", {
+        title: "Welcome to PartySnap!",
+        duration: 3000
+      });
+
+      // IMPORTANT: After setting user, chatSteps array changes (signup step removed)
+      // So we reset to step 0, which is now the party details form
+      setIsSubmitting(false);
+      setCurrentStep(0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (err) {
+      console.error("❌ Signup error:", err);
+
+      if (err.message.includes("already registered")) {
+        setSignupError("An account with this email already exists. Please sign in instead.");
+      } else {
+        const errorMessage = err.message || "Sign-up failed. Please try again.";
+        setSignupError(errorMessage);
+      }
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmitEnquiry = async (authenticatedUser = null) => {
     try {
       setIsSubmitting(true);
@@ -677,7 +886,20 @@ export default function SnappyChatReviewPage() {
       const addressValid = formData.addressLine1.length > 0 &&
                           formData.city.length > 0 &&
                           formData.postcode.length > 0;
-      return formData.parentName.length > 0 && phoneValid && formData.email.length > 0 && addressValid && termsAccepted;
+      return formData.parentName.length > 0 && phoneValid && formData.email.length > 0 && addressValid;
+    }
+    if (step.id === 'create-account') {
+      if (authMode === "signin") {
+        // Signin only needs email and password
+        return formData.email.length > 0 && signupFormData.password.length > 0;
+      } else {
+        // Signup needs name, email, passwords match, and terms accepted
+        return formData.parentName.length > 0 &&
+               formData.email.length > 0 &&
+               signupFormData.password.length > 0 &&
+               signupFormData.confirmPassword.length > 0 &&
+               termsAccepted;
+      }
     }
     return true;
   };
@@ -689,14 +911,8 @@ export default function SnappyChatReviewPage() {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // If we're on the last step, check auth before proceeding to payment
-      if (!user) {
-        // User not logged in - show auth modal
-        setAuthRequired(true);
-        setShowAuthModal(true);
-        return;
-      }
-      // User is logged in - proceed to payment
+      // On the last step - proceed to payment
+      // If user is not logged in, they should have gone through the signup step first
       await handleSubmitEnquiry();
     }
   };
@@ -988,15 +1204,177 @@ export default function SnappyChatReviewPage() {
                             className="min-h-[100px] placeholder:text-gray-400 placeholder:text-xs text-base border-gray-300 focus:border-[hsl(var(--primary-500))] resize-none rounded-md"
                           />
                         </div>
+                      </div>
+                    )}
 
-                        {/* T&Cs and Marketing */}
-                        <div className="rounded-lg border-t pt-5 mt-5">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Terms & Preferences
-                          </h3>
+                    {/* Missing Suppliers */}
+                    {currentStepData.showMissingSuppliers && (
+                      <div>
+                        <MissingSuppliersSuggestions
+                          partyPlan={fullSupplierData}
+                          partyDetails={partyDetails}
+                          onAddSupplier={handleAddMissingSupplier}
+                          showTitle={false}
+                          currentStep={currentStep}
+                          navigateWithContext={navigateWithContext}
+                          toast={toast}
+                          addedSupplierIds={addedSupplierIds}
+                          preventNavigation={true}
+                        />
+                      </div>
+                    )}
 
+                    {/* Signup Form */}
+                    {currentStepData.showSignupForm && (
+                      <div className="max-w-md mx-auto">
+                        <div className="space-y-4">
+                          {/* Social Login Options */}
                           <div className="space-y-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full h-11 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                              onClick={async () => {
+                                try {
+                                  // Store return path - callback checks localStorage for this
+                                  localStorage.setItem('oauth_return_to', '/review-book');
+                                  localStorage.setItem('oauth_preserve_party', 'true');
+                                  localStorage.setItem('oauth_context', 'review_book');
+
+                                  const { error } = await supabase.auth.signInWithOAuth({
+                                    provider: 'google',
+                                    options: {
+                                      redirectTo: `${window.location.origin}/auth/callback/customer?return_to=/review-book&preserve_party=true&context=review_book`,
+                                    },
+                                  });
+                                  if (error) throw error;
+                                } catch (err) {
+                                  setSignupError("Failed to sign in with Google. Please try again.");
+                                }
+                              }}
+                              disabled={isSubmitting}
+                            >
+                              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                              </svg>
+                              <span className="font-medium text-gray-700">Continue with Google</span>
+                            </Button>
+
+                            <div className="relative">
+                              <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-300"></div>
+                              </div>
+                              <div className="relative flex justify-center text-xs">
+                                <span className="px-2 bg-white text-gray-500">Or create account with email</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Name (signup only) */}
+                          {authMode === "signup" && (
+                            <div>
+                              <Label htmlFor="signup-name" className="text-sm font-semibold text-gray-700">
+                                Your Name <span className="text-red-500">*</span>
+                              </Label>
+                              <Input
+                                id="signup-name"
+                                type="text"
+                                placeholder="John Smith"
+                                value={formData.parentName}
+                                onChange={(e) => updateFormData('parentName', e.target.value)}
+                                disabled={isSubmitting}
+                                className="mt-1"
+                              />
+                            </div>
+                          )}
+
+                          {/* Email */}
+                          <div>
+                            <Label htmlFor="signup-email" className="text-sm font-semibold text-gray-700">
+                              Email Address <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="signup-email"
+                              type="email"
+                              placeholder="your.email@example.com"
+                              value={formData.email}
+                              onChange={(e) => updateFormData('email', e.target.value)}
+                              disabled={isSubmitting}
+                              className="mt-1"
+                            />
+                          </div>
+
+                          {/* Password */}
+                          <div>
+                            <Label htmlFor="signup-password" className="text-sm font-semibold text-gray-700">
+                              {authMode === "signup" ? "Choose a Password" : "Password"} <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="relative mt-1">
+                              <Input
+                                id="signup-password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={signupFormData.password}
+                                onChange={(e) => {
+                                  setSignupFormData(prev => ({ ...prev, password: e.target.value }));
+                                  setSignupError("");
+                                }}
+                                disabled={isSubmitting}
+                                className="pr-10"
+                                required
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                            {authMode === "signup" && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Must be 8+ characters with uppercase, lowercase, and number
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Confirm Password (signup only) */}
+                          {authMode === "signup" && (
+                            <div>
+                            <Label htmlFor="signup-confirm-password" className="text-sm font-semibold text-gray-700">
+                              Confirm Password <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="relative mt-1">
+                              <Input
+                                id="signup-confirm-password"
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={signupFormData.confirmPassword}
+                                onChange={(e) => {
+                                  setSignupFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                                  setSignupError("");
+                                }}
+                                disabled={isSubmitting}
+                                className="pr-10"
+                                required
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+                          )}
+
+                          {/* T&Cs and Marketing (signup only) */}
+                          {authMode === "signup" && (
+                            <div className="space-y-3 pt-4 border-t border-gray-200">
                             {/* Booking Terms */}
                             <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                               <div className="flex items-start space-x-3">
@@ -1044,24 +1422,52 @@ export default function SnappyChatReviewPage() {
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    )}
+                          )}
 
-                    {/* Missing Suppliers */}
-                    {currentStepData.showMissingSuppliers && (
-                      <div>
-                        <MissingSuppliersSuggestions
-                          partyPlan={fullSupplierData}
-                          partyDetails={partyDetails}
-                          onAddSupplier={handleAddMissingSupplier}
-                          showTitle={false}
-                          currentStep={currentStep}
-                          navigateWithContext={navigateWithContext}
-                          toast={toast}
-                          addedSupplierIds={addedSupplierIds}
-                          preventNavigation={true}
-                        />
+                          {/* Error Message */}
+                          {signupError && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                              <p className="text-sm text-red-700">{signupError}</p>
+                            </div>
+                          )}
+
+                          {/* Toggle between signin/signup */}
+                          <div className="text-center pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-600">
+                              {authMode === "signup" ? (
+                                <>
+                                  Already have an account?{" "}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAuthMode("signin");
+                                      setSignupError("");
+                                      setSignupFormData({ password: "", confirmPassword: "" });
+                                    }}
+                                    className="text-[hsl(var(--primary-600))] hover:underline font-semibold"
+                                  >
+                                    Sign in
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  Don't have an account?{" "}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAuthMode("signup");
+                                      setSignupError("");
+                                      setSignupFormData({ password: "", confirmPassword: "" });
+                                    }}
+                                    className="text-[hsl(var(--primary-600))] hover:underline font-semibold"
+                                  >
+                                    Create account
+                                  </button>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1078,9 +1484,11 @@ export default function SnappyChatReviewPage() {
                       </Button>
                     )}
 
-                    <div className={currentStep === 0 ? "w-full" : "ml-auto"}>
+                    <div className={currentStep === 0 && !user ? "w-full" : "ml-auto"}>
                     <Button
-                        onClick={handleNext}
+                        onClick={currentStepData.showSignupForm
+                          ? (authMode === "signin" ? handleSigninSubmit : handleSignupSubmit)
+                          : handleNext}
                         disabled={!canProceed() || isSubmitting}
                         className="bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white px-5 py-2 text-sm font-semibold rounded-md shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
@@ -1091,8 +1499,12 @@ export default function SnappyChatReviewPage() {
                           </div>
                         ) : (
                           <>
-                            {currentStep === chatSteps.length - 1 ? 'Proceed to Payment' : getButtonText(currentStepData)}
-                            {currentStep === chatSteps.length - 1 ? null : getButtonIcon(currentStepData)}
+                            {currentStepData.showSignupForm
+                              ? (authMode === "signin" ? 'Sign In & Continue' : 'Create Account & Continue')
+                              : currentStep === chatSteps.length - 1
+                                ? 'Proceed to Payment'
+                                : getButtonText(currentStepData)}
+                            {currentStep === chatSteps.length - 1 || currentStepData.showSignupForm ? null : getButtonIcon(currentStepData)}
                           </>
                         )}
                       </Button>
@@ -1248,13 +1660,13 @@ export default function SnappyChatReviewPage() {
                   <div className="space-y-3">
                     <Button
                       onClick={() => {
-                        // Check auth before proceeding to payment
-                        if (!user) {
-                          setAuthRequired(true);
-                          setShowAuthModal(true);
-                          return;
+                        // This button appears in alternate view - just proceed through normal flow
+                        if (currentStep < chatSteps.length - 1) {
+                          setCurrentStep(currentStep + 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          handleSubmitEnquiry();
                         }
-                        handleSubmitEnquiry();
                       }}
                       disabled={isSubmitting}
                       className="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 px-6 text-sm font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
@@ -1265,7 +1677,7 @@ export default function SnappyChatReviewPage() {
                           <span>Preparing Payment...</span>
                         </div>
                       ) : (
-                        <span>Secure My Dream Party Now!</span>
+                        <span>Continue</span>
                       )}
                     </Button>
                     
@@ -1312,15 +1724,15 @@ export default function SnappyChatReviewPage() {
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => {
-            if (authRequired) {
-              router.push('/dashboard');
-            } else {
-              setShowAuthModal(false);
-            }
+            // Just close the modal and stay on review-book page
+            // User can try payment again when ready
+            setShowAuthModal(false);
+            setAuthRequired(false);
           }}
           onSuccess={handleAuthSuccess}
           returnTo={window.location.href}
           selectedSuppliersCount={selectedSuppliers.length}
+          defaultEmail={formData.email}
         />
       )}
 
