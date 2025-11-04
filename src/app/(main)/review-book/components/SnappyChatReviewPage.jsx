@@ -106,6 +106,12 @@ export default function SnappyChatReviewPage() {
   const [signupError, setSignupError] = useState("");
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [authMode, setAuthMode] = useState("signup"); // "signup" or "signin"
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+  });
 
   const { toast } = useToast();
 
@@ -142,7 +148,7 @@ export default function SnappyChatReviewPage() {
       title: authMode === "signin" ? "Welcome Back!" : "Let's Get Started",
       description: authMode === "signin"
         ? "Sign in to continue with your party booking"
-        : "Create your account to start planning your perfect party",
+        : "Create your account and let's make it happen",
       showSignupForm: true
     }] : []),
     {
@@ -623,6 +629,24 @@ export default function SnappyChatReviewPage() {
     if (authRequired) {
       await handleSubmitEnquiry(authenticatedUser);
     }
+  };
+
+  const checkPasswordRequirements = (pwd) => {
+    const requirements = {
+      minLength: pwd.length >= 8,
+      hasUppercase: /[A-Z]/.test(pwd),
+      hasLowercase: /[a-z]/.test(pwd),
+      hasNumber: /[0-9]/.test(pwd),
+    };
+    setPasswordRequirements(requirements);
+    return requirements;
+  };
+
+  const isPasswordValid = () => {
+    return passwordRequirements.minLength &&
+           passwordRequirements.hasUppercase &&
+           passwordRequirements.hasLowercase &&
+           passwordRequirements.hasNumber;
   };
 
   const validatePassword = (pwd) => {
@@ -1220,6 +1244,7 @@ export default function SnappyChatReviewPage() {
                           toast={toast}
                           addedSupplierIds={addedSupplierIds}
                           preventNavigation={true}
+                          horizontalScroll={true}
                         />
                       </div>
                     )}
@@ -1233,7 +1258,7 @@ export default function SnappyChatReviewPage() {
                             <Button
                               type="button"
                               variant="outline"
-                              className="w-full h-11 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                              className="w-full h-12 bg-white border-2 border-gray-300 hover:border-[hsl(var(--primary-500))] hover:bg-gray-50 hover:shadow-md transition-all duration-200 shadow-sm"
                               onClick={async () => {
                                 try {
                                   // Store return path - callback checks localStorage for this
@@ -1260,7 +1285,7 @@ export default function SnappyChatReviewPage() {
                                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                               </svg>
-                              <span className="font-medium text-gray-700">Continue with Google</span>
+                              <span className="font-semibold text-gray-800">Continue with Google</span>
                             </Button>
 
                             <div className="relative">
@@ -1268,7 +1293,7 @@ export default function SnappyChatReviewPage() {
                                 <div className="w-full border-t border-gray-300"></div>
                               </div>
                               <div className="relative flex justify-center text-xs">
-                                <span className="px-2 bg-white text-gray-500">Or create account with email</span>
+                                <span className="px-2 bg-white text-gray-500">Or {authMode === "signup" ? "create account" : "sign in"} with email</span>
                               </div>
                             </div>
                           </div>
@@ -1319,25 +1344,49 @@ export default function SnappyChatReviewPage() {
                                 placeholder="••••••••"
                                 value={signupFormData.password}
                                 onChange={(e) => {
-                                  setSignupFormData(prev => ({ ...prev, password: e.target.value }));
+                                  const newPassword = e.target.value;
+                                  setSignupFormData(prev => ({ ...prev, password: newPassword }));
                                   setSignupError("");
+                                  if (authMode === "signup") {
+                                    checkPasswordRequirements(newPassword);
+                                  }
                                 }}
                                 disabled={isSubmitting}
-                                className="pr-10"
+                                className="pr-20"
                                 required
                               />
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                {authMode === "signup" && signupFormData.password.length > 0 && isPasswordValid() && (
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                              </div>
                             </div>
-                            {authMode === "signup" && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Must be 8+ characters with uppercase, lowercase, and number
-                              </p>
+                            {authMode === "signup" && signupFormData.password.length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                <div className={`flex items-center gap-2 text-xs ${passwordRequirements.minLength ? "text-green-600" : "text-red-600"}`}>
+                                  {passwordRequirements.minLength ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                                  <span>At least 8 characters</span>
+                                </div>
+                                <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasUppercase ? "text-green-600" : "text-red-600"}`}>
+                                  {passwordRequirements.hasUppercase ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                                  <span>One uppercase letter</span>
+                                </div>
+                                <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasLowercase ? "text-green-600" : "text-red-600"}`}>
+                                  {passwordRequirements.hasLowercase ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                                  <span>One lowercase letter</span>
+                                </div>
+                                <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasNumber ? "text-green-600" : "text-red-600"}`}>
+                                  {passwordRequirements.hasNumber ? <CheckCircle className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                                  <span>One number</span>
+                                </div>
+                              </div>
                             )}
                           </div>
 
@@ -1374,54 +1423,40 @@ export default function SnappyChatReviewPage() {
 
                           {/* T&Cs and Marketing (signup only) */}
                           {authMode === "signup" && (
-                            <div className="space-y-3 pt-4 border-t border-gray-200">
-                            {/* Booking Terms */}
-                            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                              <div className="flex items-start space-x-3">
+                            <div className="space-y-3 pt-4">
+                              {/* Booking Terms */}
+                              <div className="flex items-start gap-2">
                                 <Checkbox
                                   id="booking-terms"
                                   checked={termsAccepted}
                                   onCheckedChange={setTermsAccepted}
-                                  className="mt-1 data-[state=checked]:bg-[hsl(var(--primary-500))]"
+                                  className="mt-0.5 rounded-full data-[state=checked]:bg-[hsl(var(--primary-500))]"
                                   required
                                 />
-                                <div className="flex-1">
-                                  <label htmlFor="booking-terms" className="text-sm font-medium cursor-pointer block text-gray-900">
-                                    I accept PartySnap's{" "}
-                                    <BookingTermsModal partyDetails={partyDetails}>
-                                      <button type="button" className="text-[hsl(var(--primary-600))] hover:underline font-semibold">
-                                        Booking Terms & Conditions
-                                      </button>
-                                    </BookingTermsModal>{" "}
-                                    and understand the cancellation policy *
-                                  </label>
-                                  <p className="text-xs text-gray-600 mt-1">
-                                    Required to proceed. Covers payments, cancellations, and party day responsibilities.
-                                  </p>
-                                </div>
+                                <label htmlFor="booking-terms" className="text-sm cursor-pointer text-gray-700">
+                                  I accept PartySnap's{" "}
+                                  <BookingTermsModal partyDetails={partyDetails}>
+                                    <button type="button" className="text-[hsl(var(--primary-600))] hover:underline font-medium">
+                                      Terms & Conditions
+                                    </button>
+                                  </BookingTermsModal>
+                                  {" "}<span className="text-red-500">*</span>
+                                </label>
                               </div>
-                            </div>
 
-                            {/* Marketing Preferences */}
-                            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                              <div className="flex items-start space-x-3">
+                              {/* Marketing Preferences */}
+                              <div className="flex items-start gap-2">
                                 <Checkbox
                                   id="marketing-consent"
                                   checked={marketingConsent}
                                   onCheckedChange={setMarketingConsent}
-                                  className="mt-1 data-[state=checked]:bg-[hsl(var(--primary-500))]"
+                                  className="mt-0.5 rounded-full data-[state=checked]:bg-[hsl(var(--primary-500))]"
                                 />
-                                <div className="flex-1">
-                                  <label htmlFor="marketing-consent" className="text-sm font-medium cursor-pointer block text-gray-900">
-                                    Keep me updated with party ideas and special offers
-                                  </label>
-                                  <p className="text-xs text-gray-600 mt-1">
-                                    Get party inspiration, tips, and exclusive supplier deals (optional)
-                                  </p>
-                                </div>
+                                <label htmlFor="marketing-consent" className="text-sm cursor-pointer text-gray-700">
+                                  Send me party ideas and special offers
+                                </label>
                               </div>
                             </div>
-                          </div>
                           )}
 
                           {/* Error Message */}

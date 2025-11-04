@@ -21,14 +21,12 @@ export default function MissingSuppliersSuggestions({
   horizontalScroll = false, // NEW: Enable horizontal scroll mode
   disableConfetti = false, // NEW: Disable confetti animation
   onCustomize, // NEW: Callback to open customization modal
-  maxVisible = 3, // NEW: Max number of suppliers to show at once
 }) {
   const [clickedSuppliers, setClickedSuppliers] = useState(new Set())
   const [lastPlanHash, setLastPlanHash] = useState("")
   const [recentlyAddedTypes, setRecentlyAddedTypes] = useState(new Set())
   const [justAddedTypes, setJustAddedTypes] = useState(new Set())
   const [hiddenTypes, setHiddenTypes] = useState(new Set())
-  const [visibleCount, setVisibleCount] = useState(maxVisible)
   const { suppliers, loading, error } = useSuppliers()
 
   // Monitor for plan changes
@@ -37,14 +35,13 @@ export default function MissingSuppliersSuggestions({
     if (lastPlanHash && lastPlanHash !== currentPlanHash) {
       console.log('🔄 Party plan changed, updating missing suppliers')
       setClickedSuppliers(new Set())
-      setVisibleCount(maxVisible) // Reset to show initial set
 
       if (onPlanUpdate) {
         onPlanUpdate()
       }
     }
     setLastPlanHash(currentPlanHash)
-  }, [partyPlan, lastPlanHash, onPlanUpdate, maxVisible])
+  }, [partyPlan, lastPlanHash, onPlanUpdate])
 
   // Define supplier categories
   const ALL_SUPPLIER_TYPES = {
@@ -287,8 +284,6 @@ export default function MissingSuppliersSuggestions({
               newSet.delete(supplierType)
               return newSet
             })
-            // Show the next supplier in the queue
-            setVisibleCount(prev => prev + 1)
           }, 2000)
         } else if (!result && preventNavigation) {
           // If failed, remove from justAddedTypes
@@ -396,10 +391,10 @@ export default function MissingSuppliersSuggestions({
 
       {/* Compact grid or horizontal scroll */}
       <div className={horizontalScroll
-        ? "flex gap-4 overflow-x-auto pb-2 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide"
+        ? "flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
         : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
       }>
-        {missingSuppliers.slice(0, visibleCount).map(({ type, config, suppliers }) => {
+        {missingSuppliers.map(({ type, config, suppliers }) => {
           const isAdded = addedSupplierIds.has(suppliers[0]?.id);
           const isJustAdded = !disableConfetti && justAddedTypes.has(type);
 
