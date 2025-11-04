@@ -229,6 +229,8 @@ const childPhotoRef = useRef(null)
     decorations: partyPlan.decorations || null,
     balloons: partyPlan.balloons || null,
     catering: partyPlan.catering || null,
+    photography: partyPlan.photography || null,
+    bouncyCastle: partyPlan.bouncyCastle || null,
   }), [partyPlan])
 
   // ✅ PRODUCTION SAFE: Welcome popup detection with one-time-only logic
@@ -614,7 +616,9 @@ useEffect(() => {
           activities: 'Activities',
           partyBags: 'Party Bags',
           decorations: 'Decorations',
-          balloons: 'Balloons'
+          balloons: 'Balloons',
+          photography: 'Photography',
+          bouncyCastle: 'Bouncy Castle'
         }
 
         const newRecommendations = {}
@@ -725,17 +729,20 @@ const handleNameSubmit = (nameData) => {
 
   const openSupplierModal = (category, theme = 'superhero') => {
 
-    
+
     // Map frontend category to backend supplier type
     const supplierTypeMapping = {
       venue: 'Venues',
-      entertainment: 'Entertainment', 
+      entertainment: 'Entertainment',
       catering: 'Catering',
-      cakes: 'Cakes',              // 🎂 Now searches for "Cakes" supplier type
+      cakes: 'Cakes',
       facePainting: 'Face Painting',
       activities: 'Activities',
       decorations: 'Decorations',
-      // ... others
+      partyBags: 'Party Bags',
+      balloons: 'Balloons',
+      photography: 'Photography',
+      bouncyCastle: 'Bouncy Castle'
     }
     
     setModalConfig({
@@ -1072,6 +1079,92 @@ const handleNameSubmit = (nameData) => {
   // Helper functions
   const getEnquiryStatus = (type) => null
   const getEnquiryTimestamp = (type) => null
+
+  // Category helpers for desktop grid
+  const getCategoryName = (type) => {
+    const categoryNames = {
+      venue: 'The Place',
+      entertainment: 'The Entertainment',
+      catering: 'The Food',
+      cakes: 'The Cake',
+      facePainting: 'Face Painting',
+      activities: 'Activities',
+      partyBags: 'Party Bags',
+      decorations: 'The Decorations',
+      balloons: 'Balloons',
+      photography: 'Photography',
+      bouncyCastle: 'Bouncy Castle'
+    }
+    return categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
+  }
+
+  const getCategoryIcon = (type) => {
+    const categoryIcons = {
+      venue: '/journey-icons/location.png',
+      entertainment: '/category-icons/entertainment.png',
+      cakes: '/category-icons/cake.png',
+      partyBags: '/category-icons/party-bags.png',
+      catering: '/category-icons/catering.png',
+      decorations: '/category-icons/decorations.png',
+      facePainting: '/category-icons/face-painting.png',
+      activities: '/category-icons/activities.png',
+      balloons: '/category-icons/balloons.png',
+      photography: '/category-icons/photography.png',
+      bouncyCastle: '/category-icons/bouncy-castle.png'
+    }
+    return categoryIcons[type] || null
+  }
+
+  const getCategoryTagline = (type) => {
+    const theme = partyDetails?.theme?.toLowerCase() || 'party'
+
+    const themeTaglines = {
+      superhero: {
+        venue: 'The hero headquarters awaits',
+        entertainment: 'Super-powered fun for heroes',
+        catering: 'Power-up food for little heroes',
+        cakes: 'A super-powered showstopper',
+        facePainting: 'Become your favorite superhero',
+        activities: 'Hero training and super missions',
+        partyBags: 'Super supplies for every hero',
+        decorations: 'Create an epic hero hideout',
+        balloons: 'Bold colors for brave heroes',
+        photography: 'Capture heroic action shots',
+        bouncyCastle: 'Bounce like a superhero'
+      },
+      princess: {
+        venue: 'A royal palace for the celebration',
+        entertainment: 'Enchanting magic for little royals',
+        catering: 'A feast fit for a princess',
+        cakes: 'A magical royal masterpiece',
+        facePainting: 'Become a beautiful princess',
+        activities: 'Enchanting games for little royalty',
+        partyBags: 'Royal treasures for each guest',
+        decorations: 'Transform into an enchanted castle',
+        balloons: 'Sparkles and princess colors',
+        photography: 'Capture royal memories',
+        bouncyCastle: 'Bounce in the royal court'
+      },
+      // Add more themes as needed
+    }
+
+    const defaultTaglines = {
+      venue: 'Where the party happens',
+      entertainment: 'Keep them laughing for hours',
+      catering: 'Delicious food everyone will love',
+      cakes: 'Every party needs a showstopper',
+      facePainting: 'Transform into their favorite character',
+      activities: 'Fun games and activities',
+      partyBags: 'Send them home with a smile',
+      decorations: 'Set the perfect party scene',
+      balloons: 'Add color and excitement',
+      photography: 'Capture all the magical moments',
+      bouncyCastle: 'Non-stop bouncing fun'
+    }
+
+    const taglines = themeTaglines[theme] || defaultTaglines
+    return taglines[type] || ''
+  }
 
 
 
@@ -1593,8 +1686,23 @@ const handleChildPhotoUpload = async (file) => {
                     </>
                   ) : (
                     <>
-                      {/* ✅ REORGANIZED: All suppliers ordered with selected first, then empty */}
+                      {/* ✅ NEW: Category-based layout with headers */}
                       {(() => {
+                        // Define fixed order for all supplier types
+                        const supplierOrder = [
+                          'venue',
+                          'entertainment',
+                          'cakes',
+                          'catering',
+                          'facePainting',
+                          'activities',
+                          'partyBags',
+                          'decorations',
+                          'balloons',
+                          'photography',
+                          'bouncyCastle'
+                        ];
+
                         // Helper function to render venue card
                         const renderVenueCard = (isSelected) => {
                           const hasSelectedVenue = !!suppliers.venue;
@@ -1710,21 +1818,7 @@ const handleChildPhotoUpload = async (file) => {
                           );
                         };
 
-                        // Define fixed order for all supplier types (keeps cards in same position)
-                        const supplierOrder = [
-                          'venue',
-                          'entertainment',
-                          'cakes',
-                          'catering',
-                          'facePainting',
-                          'activities',
-                          'partyBags',
-                          'decorations',
-                          'balloons',
-                          'photography'
-                        ];
-
-                        // Render all suppliers in fixed order
+                        // Render all suppliers with category headers
                         return (
                           <>
                             {supplierOrder.map(type => {
@@ -1733,8 +1827,13 @@ const handleChildPhotoUpload = async (file) => {
                               const isLoading = loadingCards[type];
                               const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
 
+                              // Always show photography and bouncyCastle even when empty
+                              const alwaysShowCategories = ['photography', 'bouncyCastle'];
+                              const shouldAlwaysShow = alwaysShowCategories.includes(type);
+
                               // Hide card if no supplier, no recommended supplier, AND not in loading/deleting state
-                              if (!supplier && !recommendedSupplier && !isLoading && !isDeleting) {
+                              // EXCEPT for categories that should always show
+                              if (!supplier && !recommendedSupplier && !isLoading && !isDeleting && !shouldAlwaysShow) {
                                 return null;
                               }
 
@@ -1744,8 +1843,33 @@ const handleChildPhotoUpload = async (file) => {
                                 addon.attachedToSupplier === type
                               );
 
+                              const categoryName = getCategoryName(type);
+                              const categoryTagline = getCategoryTagline(type);
+                              const categoryIcon = getCategoryIcon(type);
+
                               return (
-                                <div key={type}>
+                                <div key={type} className="flex flex-col">
+                                  {/* Category Header */}
+                                  <div className="mb-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      {categoryIcon && (
+                                        <img
+                                          src={categoryIcon}
+                                          alt={categoryName}
+                                          className="w-10 h-10 object-contain flex-shrink-0"
+                                        />
+                                      )}
+                                      <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                                        {categoryName}
+                                        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                                      </h3>
+                                    </div>
+                                    {categoryTagline && (
+                                      <p className="text-sm text-gray-600">{categoryTagline}</p>
+                                    )}
+                                  </div>
+
+                                  {/* Supplier Card */}
                                   <SupplierCard
                                     type={type}
                                     supplier={isDeleting ? null : (supplier || null)}

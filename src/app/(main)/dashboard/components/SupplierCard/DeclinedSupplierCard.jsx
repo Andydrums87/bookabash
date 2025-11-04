@@ -48,13 +48,15 @@ export default function DeclinedSupplierCard({
     }
     const displayNames = {
       venue: "Venue",
-      entertainment: "Entertainment", 
+      entertainment: "Entertainment",
       catering: "Catering",
       facePainting: "Face Painting",
       activities: "Activities",
       decorations: "Decorations",
       balloons: "Balloons",
       partyBags: "Party Bags",
+      photography: "Photography",
+      bouncyCastle: "Bouncy Castle"
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { UniversalModal, ModalHeader, ModalContent } from '@/components/ui/UniversalModal.jsx'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, MapPin, Sparkles, Cake, Mail, Users, Gift, Balloon, UtensilsCrossed, Music, Coffee, Candle, CheckCircle, ShoppingBag, Camera, Cloud, Trash2, Package, Speaker } from 'lucide-react'
 
 // Import Google Font for handwritten style
 if (typeof document !== 'undefined') {
@@ -12,44 +12,47 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(link)
 }
 
+// Default checklist with icons
+const getDefaultChecklist = () => ({
+  preParty: {
+    title: "Pre-Party Tasks",
+    items: [
+      { id: 'venue', label: 'Book venue', completed: false, icon: MapPin },
+      { id: 'entertainment', label: 'Book entertainment', completed: false, icon: Sparkles },
+      { id: 'cake', label: 'Order cake', completed: false, icon: Cake },
+      { id: 'invitations', label: 'Send invitations', completed: false, icon: Mail },
+      { id: 'rsvps', label: 'Confirm RSVPs', completed: false, icon: Users },
+      { id: 'partyBags', label: 'Buy party bags', completed: false, icon: Gift },
+      { id: 'decorations', label: 'Get decorations/balloons', completed: false, icon: Balloon },
+      { id: 'menu', label: 'Plan menu (kids + adults)', completed: false, icon: UtensilsCrossed },
+      { id: 'playlist', label: 'Create playlist', completed: false, icon: Music },
+      { id: 'tableware', label: 'Buy tableware/napkins', completed: false, icon: Coffee },
+      { id: 'candles', label: 'Get candles & matches', completed: false, icon: Candle },
+    ]
+  },
+  dayBefore: {
+    title: "Day Before",
+    items: [
+      { id: 'confirmSuppliers', label: 'Confirm all suppliers', completed: false, icon: CheckCircle },
+      { id: 'prepBags', label: 'Prep party bags', completed: false, icon: Package },
+      { id: 'shopping', label: 'Shop for fresh food', completed: false, icon: ShoppingBag },
+      { id: 'chargeDevices', label: 'Charge camera/phone', completed: false, icon: Camera },
+    ]
+  },
+  dayOf: {
+    title: "Day Of Party",
+    items: [
+      { id: 'weather', label: 'Check weather & pack accordingly', completed: false, icon: Cloud },
+      { id: 'binBags', label: 'Bring bin bags', completed: false, icon: Trash2 },
+      { id: 'presentBag', label: 'Bring bag for presents', completed: false, icon: Gift },
+      { id: 'decorationsSetup', label: 'Set up decorations', completed: false, icon: Balloon },
+      { id: 'speaker', label: 'Test speaker/music', completed: false, icon: Speaker },
+    ]
+  }
+})
+
 export default function PartyChecklistModal({ isOpen, onClose, partyId, suppliers = {} }) {
-  const [checklist, setChecklist] = useState({
-    preParty: {
-      title: "Pre-Party Tasks",
-      items: [
-        { id: 'venue', label: 'Book venue', completed: false },
-        { id: 'entertainment', label: 'Book entertainment', completed: false },
-        { id: 'cake', label: 'Order cake', completed: false },
-        { id: 'invitations', label: 'Send invitations', completed: false },
-        { id: 'rsvps', label: 'Confirm RSVPs', completed: false },
-        { id: 'partyBags', label: 'Buy party bags', completed: false },
-        { id: 'decorations', label: 'Get decorations/balloons', completed: false },
-        { id: 'menu', label: 'Plan menu (kids + adults)', completed: false },
-        { id: 'playlist', label: 'Create playlist', completed: false },
-        { id: 'tableware', label: 'Buy tableware/napkins', completed: false },
-        { id: 'candles', label: 'Get candles & matches', completed: false },
-      ]
-    },
-    dayBefore: {
-      title: "Day Before",
-      items: [
-        { id: 'confirmSuppliers', label: 'Confirm all suppliers', completed: false },
-        { id: 'prepBags', label: 'Prep party bags', completed: false },
-        { id: 'shopping', label: 'Shop for fresh food', completed: false },
-        { id: 'chargeDevices', label: 'Charge camera/phone', completed: false },
-      ]
-    },
-    dayOf: {
-      title: "Day Of Party",
-      items: [
-        { id: 'weather', label: 'Check weather & pack accordingly', completed: false },
-        { id: 'binBags', label: 'Bring bin bags', completed: false },
-        { id: 'presentBag', label: 'Bring bag for presents', completed: false },
-        { id: 'decorationsSetup', label: 'Set up decorations', completed: false },
-        { id: 'speaker', label: 'Test speaker/music', completed: false },
-      ]
-    }
-  })
+  const [checklist, setChecklist] = useState(getDefaultChecklist())
 
   const [expandedSections, setExpandedSections] = useState({
     preParty: true,
@@ -75,11 +78,22 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
   useEffect(() => {
     if (partyId && suppliers) {
       const stored = localStorage.getItem(`party_checklist_${partyId}`)
-      let newChecklist = { ...checklist }
+      let newChecklist = getDefaultChecklist()
 
+      // Merge stored completion states with default checklist (which has icons)
       if (stored) {
         try {
-          newChecklist = JSON.parse(stored)
+          const storedData = JSON.parse(stored)
+          Object.keys(storedData).forEach(sectionKey => {
+            if (newChecklist[sectionKey]) {
+              storedData[sectionKey].items.forEach(storedItem => {
+                const defaultItem = newChecklist[sectionKey].items.find(i => i.id === storedItem.id)
+                if (defaultItem) {
+                  defaultItem.completed = storedItem.completed
+                }
+              })
+            }
+          })
         } catch (e) {
           console.error('Error loading checklist:', e)
         }
@@ -111,10 +125,18 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
     }
   }, [partyId, suppliers])
 
-  // Save checklist to localStorage
+  // Save checklist to localStorage (without icons)
   const saveChecklist = (newChecklist) => {
     if (partyId) {
-      localStorage.setItem(`party_checklist_${partyId}`, JSON.stringify(newChecklist))
+      // Create a copy without the icon components for serialization
+      const checklistToSave = Object.entries(newChecklist).reduce((acc, [key, section]) => {
+        acc[key] = {
+          ...section,
+          items: section.items.map(({ icon, ...item }) => item)
+        }
+        return acc
+      }, {})
+      localStorage.setItem(`party_checklist_${partyId}`, JSON.stringify(checklistToSave))
     }
     setChecklist(newChecklist)
   }
@@ -196,6 +218,11 @@ export default function PartyChecklistModal({ isOpen, onClose, partyId, supplier
                             </svg>
                           )}
                         </div>
+
+                        {/* Icon */}
+                        {item.icon && (
+                          <item.icon className="w-5 h-5 text-[hsl(var(--primary-500))] flex-shrink-0" strokeWidth={2} />
+                        )}
 
                         {/* Item with hand-drawn line */}
                         <div className="flex-1 flex flex-col py-1">

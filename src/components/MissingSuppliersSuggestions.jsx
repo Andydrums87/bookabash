@@ -69,12 +69,20 @@ export default function MissingSuppliersSuggestions({
       priority: 3,
       categories: ["Decorations"]
     },
+    balloons: {
+      name: "Balloons",
+      icon: "🎈",
+      color: "bg-cyan-500",
+      description: "Add color and fun",
+      priority: 4,
+      categories: ["Balloons"]
+    },
     venue: {
       name: "Venue",
       icon: "🏛️",
       color: "bg-blue-500",
       description: "Perfect party location",
-      priority: 4,
+      priority: 5,
       categories: ["Venues"]
     },
     entertainment: {
@@ -82,7 +90,7 @@ export default function MissingSuppliersSuggestions({
       icon: "🎭",
       color: "bg-purple-500",
       description: "Keep the kids engaged",
-      priority: 5,
+      priority: 6,
       categories: ["Entertainment"]
     },
     catering: {
@@ -90,7 +98,7 @@ export default function MissingSuppliersSuggestions({
       icon: "🍽️",
       color: "bg-orange-500",
       description: "Delicious party food",
-      priority: 6,
+      priority: 7,
       categories: ["Catering"]
     },
     facePainting: {
@@ -98,7 +106,7 @@ export default function MissingSuppliersSuggestions({
       icon: "🎨",
       color: "bg-green-500",
       description: "Creative fun for kids",
-      priority: 7,
+      priority: 8,
       categories: ["Face Painting"]
     },
     activities: {
@@ -106,8 +114,24 @@ export default function MissingSuppliersSuggestions({
       icon: "🎪",
       color: "bg-yellow-500",
       description: "Extra fun activities",
-      priority: 8,
+      priority: 9,
       categories: ["Activities"]
+    },
+    bouncyCastle: {
+      name: "Bouncy Castle",
+      icon: "🏰",
+      color: "bg-orange-400",
+      description: "Bouncing fun for all",
+      priority: 10,
+      categories: ["Bouncy Castle"]
+    },
+    photography: {
+      name: "Photography",
+      icon: "📸",
+      color: "bg-purple-400",
+      description: "Capture the memories",
+      priority: 11,
+      categories: ["Photography"]
     }
   }
 

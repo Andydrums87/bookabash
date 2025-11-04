@@ -123,9 +123,28 @@ export default function MyPartyTabContent({
       activities: 'Activities',
       partyBags: 'Party Bags',
       decorations: 'The Decorations',
-      balloons: 'Balloons'
+      balloons: 'Balloons',
+      photography: 'Photography',
+      bouncyCastle: 'Bouncy Castle'
     }
     return categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
+  }
+
+  const getCategoryIcon = (type) => {
+    const categoryIcons = {
+      venue: '/journey-icons/location.png',
+      entertainment: '/category-icons/entertainment.png',
+      cakes: '/category-icons/cake.png',
+      partyBags: '/category-icons/party-bags.png',
+      catering: '/category-icons/catering.png',
+      decorations: '/category-icons/decorations.png',
+      facePainting: '/category-icons/face-painting.png',
+      activities: '/category-icons/activities.png',
+      balloons: '/category-icons/balloons.png',
+      photography: '/category-icons/photography.png',
+      bouncyCastle: '/category-icons/bouncy-castle.png'
+    }
+    return categoryIcons[type] || null
   }
 
   const getCategoryTagline = (type) => {
@@ -141,7 +160,9 @@ export default function MyPartyTabContent({
         activities: 'Jurassic games and dino discoveries',
         partyBags: 'Prehistoric treats to take home',
         decorations: 'Journey back to the Jurassic',
-        balloons: 'Dino eggs and prehistoric colors'
+        balloons: 'Dino eggs and prehistoric colors',
+        photography: 'Capture prehistoric memories',
+        bouncyCastle: 'Bounce with the dinosaurs'
       },
       princess: {
         venue: 'A royal palace for the celebration',
@@ -152,7 +173,9 @@ export default function MyPartyTabContent({
         activities: 'Enchanting games for little royalty',
         partyBags: 'Royal treasures for each guest',
         decorations: 'Transform into an enchanted castle',
-        balloons: 'Sparkles and princess colors'
+        balloons: 'Sparkles and princess colors',
+        photography: 'Capture royal memories',
+        bouncyCastle: 'Bounce in the royal court'
       },
       superhero: {
         venue: 'The hero headquarters awaits',
@@ -163,7 +186,9 @@ export default function MyPartyTabContent({
         activities: 'Hero training and super missions',
         partyBags: 'Super supplies for every hero',
         decorations: 'Create an epic hero hideout',
-        balloons: 'Bold colors for brave heroes'
+        balloons: 'Bold colors for brave heroes',
+        photography: 'Capture heroic action shots',
+        bouncyCastle: 'Bounce like a superhero'
       },
       unicorn: {
         venue: 'A magical realm for unicorns',
@@ -174,7 +199,9 @@ export default function MyPartyTabContent({
         activities: 'Enchanted games and unicorn quests',
         partyBags: 'Magical treasures to take home',
         decorations: 'Create a rainbow wonderland',
-        balloons: 'Pastel magic and rainbow colors'
+        balloons: 'Pastel magic and rainbow colors',
+        photography: 'Capture magical unicorn moments',
+        bouncyCastle: 'Bounce through the rainbow'
       },
       space: {
         venue: 'Launch pad for cosmic adventures',
@@ -185,7 +212,9 @@ export default function MyPartyTabContent({
         activities: 'Galactic missions and star games',
         partyBags: 'Space treasures for young astronauts',
         decorations: 'Transform into outer space',
-        balloons: 'Planets and cosmic colors'
+        balloons: 'Planets and cosmic colors',
+        photography: 'Capture cosmic adventures',
+        bouncyCastle: 'Bounce to the moon'
       },
       pirate: {
         venue: 'Set sail for adventure',
@@ -196,7 +225,9 @@ export default function MyPartyTabContent({
         activities: 'Treasure hunts and pirate games',
         partyBags: 'Booty for every buccaneer',
         decorations: 'Transform into a pirate ship',
-        balloons: 'Treasure chest colors'
+        balloons: 'Treasure chest colors',
+        photography: 'Capture pirate adventures',
+        bouncyCastle: 'Bounce on the high seas'
       },
       jungle: {
         venue: 'A wild jungle adventure awaits',
@@ -207,7 +238,9 @@ export default function MyPartyTabContent({
         activities: 'Safari games and jungle expeditions',
         partyBags: 'Jungle treasures to discover',
         decorations: 'Create a tropical jungle',
-        balloons: 'Lush jungle greens and wildlife'
+        balloons: 'Lush jungle greens and wildlife',
+        photography: 'Capture wild safari moments',
+        bouncyCastle: 'Bounce through the jungle'
       },
       mermaid: {
         venue: 'Dive into an underwater palace',
@@ -218,7 +251,9 @@ export default function MyPartyTabContent({
         activities: 'Ocean adventures and pearl hunts',
         partyBags: 'Sea treasures for every mermaid',
         decorations: 'Transform into an ocean paradise',
-        balloons: 'Ocean blues and shimmering scales'
+        balloons: 'Ocean blues and shimmering scales',
+        photography: 'Capture underwater memories',
+        bouncyCastle: 'Bounce like ocean waves'
       },
       underwater: {
         venue: 'Explore the ocean depths',
@@ -229,7 +264,9 @@ export default function MyPartyTabContent({
         activities: 'Underwater adventures and games',
         partyBags: 'Ocean treasures to take home',
         decorations: 'Create an underwater wonderland',
-        balloons: 'Deep sea blues and bubbles'
+        balloons: 'Deep sea blues and bubbles',
+        photography: 'Capture deep sea adventures',
+        bouncyCastle: 'Bounce beneath the waves'
       },
       football: {
         venue: 'The ultimate stadium experience',
@@ -240,7 +277,9 @@ export default function MyPartyTabContent({
         activities: 'Skills training and football games',
         partyBags: 'Championship goodies for players',
         decorations: 'Transform into a football stadium',
-        balloons: 'Team colors and victory vibes'
+        balloons: 'Team colors and victory vibes',
+        photography: 'Capture championship moments',
+        bouncyCastle: 'Bounce like a champion'
       },
       cars: {
         venue: 'Rev up at the race track',
@@ -251,7 +290,9 @@ export default function MyPartyTabContent({
         activities: 'Racing games and speed challenges',
         partyBags: 'Racing goodies for champions',
         decorations: 'Create the ultimate race track',
-        balloons: 'Racing colors and checkered flags'
+        balloons: 'Racing colors and checkered flags',
+        photography: 'Capture racing action',
+        bouncyCastle: 'Bounce to victory lane'
       },
       spiderman: {
         venue: 'Swing into action headquarters',
@@ -262,7 +303,9 @@ export default function MyPartyTabContent({
         activities: 'Web-slinging missions and hero training',
         partyBags: 'Spider-gear for every hero',
         decorations: 'Transform into New York City',
-        balloons: 'Red, blue, and web-tastic'
+        balloons: 'Red, blue, and web-tastic',
+        photography: 'Capture spider-tacular moments',
+        bouncyCastle: 'Bounce like Spider-Man'
       },
       'taylor-swift': {
         venue: 'The ultimate Swiftie stage',
@@ -273,7 +316,9 @@ export default function MyPartyTabContent({
         activities: 'Sing-along and dance party fun',
         partyBags: 'Era-inspired treats for Swifties',
         decorations: 'Create the Eras Tour experience',
-        balloons: 'Sparkles and Swiftie colors'
+        balloons: 'Sparkles and Swiftie colors',
+        photography: 'Capture your era',
+        bouncyCastle: 'Bounce to the beat'
       },
       science: {
         venue: 'The ultimate science laboratory',
@@ -284,7 +329,9 @@ export default function MyPartyTabContent({
         activities: 'Experiments and discovery missions',
         partyBags: 'Science kits for young explorers',
         decorations: 'Create a working laboratory',
-        balloons: 'Bright colors and bubbling reactions'
+        balloons: 'Bright colors and bubbling reactions',
+        photography: 'Document your experiments',
+        bouncyCastle: 'Bounce with physics'
       }
     }
 
@@ -298,7 +345,9 @@ export default function MyPartyTabContent({
       activities: 'Fun games and activities',
       partyBags: 'Send them home with a smile',
       decorations: 'Set the perfect party scene',
-      balloons: 'Add color and excitement'
+      balloons: 'Add color and excitement',
+      photography: 'Capture all the magical moments',
+      bouncyCastle: 'Non-stop bouncing fun'
     }
 
     const taglines = themeTaglines[theme] || defaultTaglines
@@ -652,21 +701,30 @@ export default function MyPartyTabContent({
             const categoryName = getCategoryName(type)
             const categoryTagline = getCategoryTagline(type)
             const typeConfig = getTypeConfig(type)
+            const categoryIcon = getCategoryIcon(type)
 
             return (
               <div key={type} id={`supplier-card-${type}`}>
                 {/* Visual Separator */}
                 <div className="border-t-2 border-gray-100 pt-6 mb-4">
-                  
+
                   {/* Category Heading */}
                   <div className="mb-3">
+                    <div className="flex items-center gap-3">
+                      {categoryIcon && (
+                        <img
+                          src={categoryIcon}
+                          alt={categoryName}
+                          className="w-10 h-10 object-contain flex-shrink-0"
+                        />
+                      )}
+                      <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          {categoryName}
+                        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                      </h3>
+                    </div>
 
-                    <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                        {categoryName}
-                      <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                    </h3>
-           
-                 
+
                     {categoryTagline && (
                       <p className="text-sm text-gray-600 mt-2">{categoryTagline}</p>
                     )}

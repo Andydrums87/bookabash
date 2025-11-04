@@ -1063,24 +1063,36 @@ export default function LocalStoragePartyHeader({
                   </div>
 
                   {/* Name and Info */}
-                  <div
-                    className="flex-1 min-w-0 pr-14 md:pr-0 md:cursor-default cursor-pointer"
-                    onClick={() => {
-                      // Only toggle on mobile
-                      if (window.innerWidth < 768) {
-                        updateExpanded(!isExpanded)
-                      }
-                    }}
-                  >
+                  <div className="flex-1 min-w-0 pr-14 md:pr-0">
+                    {/* Mobile: Static name */}
                     <h1
                       suppressHydrationWarning={true}
-                      className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
+                      className="md:hidden text-4xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight"
                       style={{
                         textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
                       }}
                     >
                       {getFirstName()}'s Party
                     </h1>
+
+                    {/* Desktop: Clickable name */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCardClick("name")
+                      }}
+                      className="hidden md:block text-left hover:opacity-80 transition-opacity group"
+                    >
+                      <h1
+                        suppressHydrationWarning={true}
+                        className="text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight group-hover:underline decoration-2 underline-offset-4"
+                        style={{
+                          textShadow: "0 4px 12px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)",
+                        }}
+                      >
+                        {getFirstName()}'s Party
+                      </h1>
+                    </button>
 
                     {!isExpanded && (
                       <div className="md:hidden mt-2">
@@ -1091,9 +1103,6 @@ export default function LocalStoragePartyHeader({
                           <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="whitespace-nowrap">{displayTimeRange.split(" - ")[0]}</span>
                           <span className="text-white/60 flex-shrink-0">•</span>
-                          <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="whitespace-nowrap">{capitalizedTheme}</span>
-                          <span className="text-white/60 flex-shrink-0">•</span>
                           <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className="whitespace-nowrap">{getLocation()}</span>
                         </div>
@@ -1102,32 +1111,20 @@ export default function LocalStoragePartyHeader({
                   </div>
                 </div>
 
-                {/* Edit buttons - positioned absolutely on mobile */}
-                <div className="flex md:relative absolute top-4 right-4 items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCardClick("name")
-                    }}
-                    className="hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm p-1.5 md:p-2 rounded-full hover:bg-white/30"
-                    aria-label="Edit party name"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 md:w-5 md:h-5 text-white drop-shadow-lg" />
-                  </button>
-
+                {/* Edit button - positioned absolutely on mobile */}
+                <div className="md:relative absolute top-4 right-4 flex-shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       updateExpanded(!isExpanded)
                     }}
-                    className="md:hidden hover:scale-110 transition-transform bg-white/20 backdrop-blur-sm p-1.5 rounded-full hover:bg-white/30"
-                    aria-label={isExpanded ? "Show less" : "Show more"}
+                    className="bg-white/20 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 rounded-full hover:bg-white/30 transition-all flex items-center gap-2"
+                    aria-label="Edit party details"
                   >
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-white drop-shadow-lg" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-white drop-shadow-lg" />
-                    )}
+                    <Edit2 className="w-4 h-4 md:w-4 md:h-4 text-white drop-shadow-lg" />
+                    <span className="text-white text-sm md:text-base font-semibold drop-shadow-lg">
+                      Edit
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1141,12 +1138,12 @@ export default function LocalStoragePartyHeader({
             >
               <div className="grid grid-cols-2 gap-2.5 pt-3">
                 <button
-                  onClick={() => handleCardClick("theme")}
+                  onClick={() => handleCardClick("name")}
                   className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-colors text-left flex flex-col"
                 >
-                  <p className="text-xs text-white/70 font-medium mb-1">Theme</p>
+                  <p className="text-xs text-white/70 font-medium mb-1">Name</p>
                   <p suppressHydrationWarning={true} className="font-bold text-sm text-white leading-tight">
-                    {capitalizedTheme}
+                    {getFullName()}
                   </p>
                 </button>
 
@@ -1203,22 +1200,7 @@ export default function LocalStoragePartyHeader({
             </div>
 
             {/* Desktop: Grid Layout - Always Visible */}
-            <div className="hidden md:grid md:grid-cols-6 gap-4">
-              <button
-                onClick={() => handleCardClick("theme")}
-                className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-white/20 rounded-full">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="text-sm opacity-90 font-medium">Theme</p>
-                </div>
-                <p suppressHydrationWarning={true} className="font-bold text-base leading-tight">
-                  {capitalizedTheme}
-                </p>
-              </button>
-
+            <div className="hidden md:grid md:grid-cols-5 gap-4">
               <button
                 onClick={() => handleCardClick("date")}
                 className="flex flex-col items-start space-y-2 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors text-left"

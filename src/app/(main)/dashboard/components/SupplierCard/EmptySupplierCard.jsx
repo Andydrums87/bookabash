@@ -20,7 +20,9 @@ const CATEGORY_IMAGES = {
   activities: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386709/bouncy-castle-3587770_640_dhjv02.webp",
   partyBags: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386272/iStock-2212524051_v1njlh.jpg",
   decorations: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1760617929/iStock-1463458517_vqltq9.jpg",
-  balloons: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381160/iStock-1564856102_abqkpd.jpg"
+  balloons: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381160/iStock-1564856102_abqkpd.jpg",
+  photography: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386547/iStock-1181011006_tf3w8n.jpg",
+  bouncyCastle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1756386872/iStock-120532646_bdk29o.jpg"
 }
 
 // Snappy's expert tips for each category
@@ -277,7 +279,7 @@ export default function EmptySupplierCard({
     }
     const displayNames = {
       venue: "Venue",
-      entertainment: "Entertainment", 
+      entertainment: "Entertainment",
       catering: "Catering",
       facePainting: "Face Painting",
       activities: "Activities",
@@ -285,6 +287,8 @@ export default function EmptySupplierCard({
       balloons: "Balloons",
       cakes: "Cakes",
       partyBags: "Party Bags",
+      photography: "Photography",
+      bouncyCastle: "Bouncy Castle"
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }

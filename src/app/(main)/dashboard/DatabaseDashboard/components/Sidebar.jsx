@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import BudgetControls from "@/components/budget-controls"
 import CountdownWidget from "../../components/ui/CountdownWidget"
+import WeatherWidget from "./WeatherWidget"
 import ReferFriend from "@/components/ReferFriend"
 import { Button } from "@/components/ui/button"
 import { FileText, Plus, Sparkles, X } from "lucide-react"
@@ -25,7 +26,9 @@ export default function Sidebar({
   totalOutstandingCost,
   outstandingSuppliers,
   AddSuppliersSection,
-  TimelineAssistant // ✅ NEW: Timeline Assistant
+  TimelineAssistant, // ✅ NEW: Timeline Assistant
+  partyDetails, // ✅ NEW: For weather widget
+  venueLocation // ✅ NEW: For weather widget
 }) {
   const router = useRouter()
   const [showAddSuppliersModal, setShowAddSuppliersModal] = useState(false)
@@ -100,28 +103,13 @@ export default function Sidebar({
           </Card>
         )}
 
-        <div className="mt-6">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/party-summary')}
-            className="relative w-full font-bold pl-8 text-white flex justify-start border-none py-10 hover:bg-[hsl(var(--primary-500))] hover:text-white bg-primary-400 shadow-sm"
-          >
-            <div className="bg-primary-500 p-3 rounded-xl shadow-lg">
-              <FileText className="w-6 h-6 text-white" />
-            </div>
-            <img src="/Vector.svg" alt="" className="absolute w-18 right-0" />
-            <p className="text-2xl ml-2 text-white">Party Summary</p>
-          </Button>
-        </div>
-
-        {/* ✅ SNAPPY'S TIMELINE ASSISTANT */}
-        {TimelineAssistant && (
-          <div className="mt-6">
-            {TimelineAssistant}
-          </div>
-        )}
-
         <CountdownWidget partyDate={partyDate}/>
+
+        <WeatherWidget
+          partyDate={partyDate}
+          venueLocation={venueLocation}
+        />
+
         <ReferFriend />
       </aside>
 

@@ -1332,7 +1332,7 @@ const addSuppliersSection = (
             /> */}
 
            {/* NEW: Journey takes center stage */}
-  <div className="md:hidden mb-8 px-4">
+  <div className="mb-8 px-4">
     <div className="mb-6">
       <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
         Your Party Journey
@@ -1370,7 +1370,7 @@ const addSuppliersSection = (
   />
 
             {/* Mobile: Total Cost Summary Card */}
-            <div className="md:hidden mt-8 px-4">
+            <div className="mt-8 px-4">
               <div className="bg-primary-500 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1392,7 +1392,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: My Party Plan Section - Horizontal Scroll with Remove Option */}
-            <div className="md:hidden mt-8 mb-8">
+            <div className="mt-8 mb-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   My Party Plan
@@ -1580,7 +1580,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Party Checklist Button */}
-            <div className="md:hidden mt-8 px-4">
+            <div className="mt-8 px-4">
               <button
                 onClick={() => setShowChecklistModal(true)}
                 className="w-full bg-primary-50 border-2 border-[hsl(var(--primary-200))] rounded-lg p-6 hover:shadow-lg transition-all active:scale-[0.98] relative overflow-hidden"
@@ -1613,7 +1613,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Add More Suppliers Section - Horizontal Scroll */}
-            <div className="md:hidden mt-8">
+            <div className="mt-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   Level Up Your Party
@@ -1641,7 +1641,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Party Tools Horizontal Scroll - RSVP, E-Invites, Registry */}
-            <div className="md:hidden mt-8 mb-8">
+            <div className="mt-8 mb-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   Guests & Gifts
@@ -1779,7 +1779,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Party Day Timeline */}
-            <div className="md:hidden mt-8">
+            <div className="mt-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   Party Timeline
@@ -1796,7 +1796,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Party Tips & Blog Recommendations Horizontal Scroll */}
-            <div className="md:hidden mt-8 mb-8">
+            <div className="mt-8 mb-8">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   Snappy's Tips
@@ -1978,7 +1978,7 @@ const addSuppliersSection = (
             </div>
 
             {/* Mobile: Emergency Contacts */}
-            <div className="md:hidden mt-8 mb-12">
+            <div className="mt-8 mb-12">
               <div className="mb-6 px-4">
                 <h2 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                   Emergency Contacts
@@ -2009,6 +2009,17 @@ const addSuppliersSection = (
             totalOutstandingCost={outstandingData.totalDeposit}
             outstandingSuppliers={outstandingData.suppliers.map(s => s.type)}
             AddSuppliersSection={addSuppliersSection}
+            partyDetails={partyDetails}
+            venueLocation={
+              visibleSuppliers?.venue?.location ||
+              visibleSuppliers?.venue?.venueAddress?.postcode ||
+              visibleSuppliers?.venue?.serviceDetails?.venueAddress?.postcode ||
+              visibleSuppliers?.venue?.data?.location ||
+              partyDetails?.venue?.location ||
+              partyDetails?.venue?.venueAddress?.postcode ||
+              partyDetails?.party_plan?.venue?.location ||
+              partyDetails?.location
+            }
             // ✅ Timeline Assistant Data
             TimelineAssistant={
               <SnappyTimelineAssistant

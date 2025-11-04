@@ -9,11 +9,13 @@ const CACHE_KEY = 'party_plan_cache'; // ✅ ADD THIS
 
 const CATEGORY_TYPE_MAP = {
     'Entertainment': 'entertainment',
-    'Venues': 'venue', 
+    'Venues': 'venue',
     'Catering': 'catering',
     'Decorations': 'decorations',
     'Party Bags': 'partyBags',
     'Photography': 'photography',
+    'Bouncy Castle': 'bouncyCastle',
+    'Balloons': 'balloons',
     'Activities': 'activities',
     'Face Painting': 'facePainting',
     'Cakes' : 'cakes'
@@ -97,6 +99,10 @@ const DEFAULT_PARTY_PLAN = {
   activities: null,
   partyBags: null,
   cakes: null,
+  decorations: null,
+  balloons: null,
+  photography: null,
+  bouncyCastle: null,
   addons: []
 };
 
@@ -477,7 +483,7 @@ addAddonToPlan(addon) {
       }
       
       // If not found in global addons, check supplier selectedAddons
-      const supplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+      const supplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography', 'bouncyCastle'];
       
       for (const supplierType of supplierTypes) {
         const supplier = plan[supplierType];
@@ -550,7 +556,9 @@ addAddonToPlan(addon) {
         'activities',
         'partyBags',
         'decorations',  // ✅ ADDED
-        'balloons'      // ✅ ADDED
+        'balloons',     // ✅ ADDED
+        'photography',
+        'bouncyCastle'
       ];
 
       for (const slot of mainSlots) {
@@ -675,7 +683,9 @@ addAddonToPlan(addon) {
         'activities',
         'partyBags',
         'decorations',  // ✅ ADDED
-        'balloons'      // ✅ ADDED
+        'balloons',     // ✅ ADDED
+        'photography',
+        'bouncyCastle'
       ];
       
       for (const slot of mainSlots) {
@@ -743,7 +753,7 @@ addAddonToPlan(addon) {
       // Use fallback
     }
     
-    const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes'];
+    const realSupplierTypes = ['venue', 'entertainment', 'catering', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'cakes', 'photography', 'bouncyCastle'];
     
     const supplierCost = realSupplierTypes
       .filter(type => plan[type] !== null && plan[type] !== undefined)
@@ -794,7 +804,7 @@ addAddonToPlan(addon) {
       const plan = this.getPartyPlan();
 
       // Only include real supplier types
-      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons'];
+      const realSupplierTypes = ['venue', 'entertainment', 'catering', 'cakes', 'facePainting', 'activities', 'partyBags', 'decorations', 'balloons', 'photography', 'bouncyCastle'];
       
       const suppliers = realSupplierTypes
         .filter(type => plan[type] !== null && plan[type] !== undefined)

@@ -110,7 +110,7 @@ export default function SelectedSupplierCard({
     }
     const displayNames = {
       venue: "Venue",
-      entertainment: "Entertainment", 
+      entertainment: "Entertainment",
       catering: "Catering",
       cakes: "Cakes",
       facePainting: "Face Painting",
@@ -118,6 +118,8 @@ export default function SelectedSupplierCard({
       decorations: "Decorations",
       balloons: "Balloons",
       partyBags: "Party Bags",
+      photography: "Photography",
+      bouncyCastle: "Bouncy Castle"
     }
     return displayNames[supplierType] || supplierType.charAt(0).toUpperCase() + supplierType.slice(1)
   }
@@ -197,21 +199,8 @@ export default function SelectedSupplierCard({
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/70" />
 
-                {/* Badges and Remove Button */}
-                <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-20">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className={`${typeConfig.color} text-white shadow-lg backdrop-blur-sm`}>
-                      {typeConfig.icon} {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </Badge>
-                    <Badge className="text-white shadow-lg backdrop-blur-sm border border-white/20 animate-pulse" style={{
-                      background: 'linear-gradient(to right, hsl(var(--primary-500)), hsl(var(--primary-600)))'
-                    }}>
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Selected
-                    </Badge>
-                  </div>
-
-                  {/* Remove button */}
+                {/* Remove Button Only */}
+                <div className="absolute top-4 right-4 z-20">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()

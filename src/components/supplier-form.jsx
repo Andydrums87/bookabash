@@ -26,6 +26,7 @@ const serviceTypes = [
   { id: "Bouncy Castle", name: "Bouncy Castle"},
   { id: "Cakes", name: "Cakes & Desserts" },   
   { id: "Party Bags", name: "Party Bags" }, 
+  { id: "Balloons", name: "Balloons"},
   { id: "other", name: "Other" },
 ]
 
