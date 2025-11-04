@@ -145,16 +145,12 @@ export default function SnappyChatReviewPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const needsReadinessCheck = urlParams.get('check_readiness') === 'true';
-    
-    if (!loadingProfile && !user && !authRequired) {
-      if (needsReadinessCheck && !showReadinessModal) {
-        setShowReadinessModal(true);
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-      } else if (!needsReadinessCheck) {
-        setAuthRequired(true);
-        setShowAuthModal(true);
-      }
+
+    // Only show readiness modal if needed, don't force auth on page load
+    if (!loadingProfile && !user && !authRequired && needsReadinessCheck && !showReadinessModal) {
+      setShowReadinessModal(true);
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
     } else if (!loadingProfile && user && authRequired) {
       setAuthRequired(false);
       setShowAuthModal(false);
@@ -598,19 +594,27 @@ export default function SnappyChatReviewPage() {
         phoneNumber: authenticatedUser.user_metadata?.phone || prev.phoneNumber,
       }));
     }
+
+    // If user just authenticated while trying to pay, automatically proceed to payment
+    // This happens when they click "Proceed to Payment" or "Secure My Dream Party Now!" without being logged in
+    if (authRequired) {
+      await handleSubmitEnquiry(authenticatedUser);
+    }
   };
 
-  const handleSubmitEnquiry = async () => {
+  const handleSubmitEnquiry = async (authenticatedUser = null) => {
     try {
       setIsSubmitting(true);
       setLoadingError(null);
-      
+
       const partyPlan = JSON.parse(localStorage.getItem('user_party_plan') || '{}');
-      const supplierCount = Object.values(partyPlan).filter(supplier => 
+      const supplierCount = Object.values(partyPlan).filter(supplier =>
         supplier && typeof supplier === 'object' && supplier.name
       ).length;
 
-      const migratedParty = await migratePartyToDatabase(user);
+      // Use the passed authenticatedUser if available, otherwise use state
+      const userToUse = authenticatedUser || user;
+      const migratedParty = await migratePartyToDatabase(userToUse);
       
       await supabase.from('parties').update({ status: 'draft' }).eq('id', migratedParty.id);
       
@@ -685,7 +689,14 @@ export default function SnappyChatReviewPage() {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // If we're on the last step, go directly to payment
+      // If we're on the last step, check auth before proceeding to payment
+      if (!user) {
+        // User not logged in - show auth modal
+        setAuthRequired(true);
+        setShowAuthModal(true);
+        return;
+      }
+      // User is logged in - proceed to payment
       await handleSubmitEnquiry();
     }
   };
@@ -1236,7 +1247,15 @@ export default function SnappyChatReviewPage() {
 
                   <div className="space-y-3">
                     <Button
-                      onClick={handleSubmitEnquiry}
+                      onClick={() => {
+                        // Check auth before proceeding to payment
+                        if (!user) {
+                          setAuthRequired(true);
+                          setShowAuthModal(true);
+                          return;
+                        }
+                        handleSubmitEnquiry();
+                      }}
                       disabled={isSubmitting}
                       className="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 px-6 text-sm font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >

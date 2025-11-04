@@ -160,9 +160,6 @@ export default function MobileSupplierNavigation({
   const [isAutoScrolling, setIsAutoScrolling] = useState(false)
   const autoScrollIntervalRef = useRef(null)
 
-  // Track if user clicked "I'm Happy" (to show CTA)
-  const [showCompleteCTA, setShowCompleteCTA] = useState(false)
-  const ctaRef = useRef(null)
 
   // Track if swipe hint has been shown
   const [showSwipeHint, setShowSwipeHint] = useState(() => {
@@ -455,18 +452,7 @@ export default function MobileSupplierNavigation({
         onPhotoUpload={onPhotoUpload}
         childPhoto={childPhoto}
         uploadingPhoto={uploadingPhoto}
-        onImHappy={() => {
-          setShowCompleteCTA(true)
-          // Scroll to CTA after it renders
-          setTimeout(() => {
-            if (ctaRef.current) {
-              ctaRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-              })
-            }
-          }, 100)
-        }}
+        onImHappy={onPaymentReady}
       />
     )
   }
@@ -814,131 +800,6 @@ export default function MobileSupplierNavigation({
         {renderMyPartyContent()}
       </div>
 
-      {/* ✅ COMPLETE BOOKING CTA - SHOWN AFTER USER CLICKS "I'M HAPPY" */}
-      {showCompleteCTA && (
-        <div ref={ctaRef} className="px-4 mt-8 mb-6 space-y-4">
-          {/* Party Details Summary */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">Your Party Plan</h3>
-
-            {/* Party Info */}
-            <div className="space-y-2 text-sm text-gray-700 mb-4">
-              {partyDetails?.childName && (
-                <p>
-                  <span className="font-semibold">Party for:</span> {partyDetails.childName}{partyDetails.age && `, turning ${partyDetails.age}`}
-                </p>
-              )}
-
-              {partyDetails?.date && (
-                <p>
-                  <span className="font-semibold">Date:</span>{' '}
-                  {new Date(partyDetails.date).toLocaleDateString('en-GB', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
-                  {partyDetails.time && ` at ${partyDetails.time}`}
-                </p>
-              )}
-
-              {partyDetails?.guestCount && (
-                <p>
-                  <span className="font-semibold">Guests:</span> {partyDetails.guestCount} children
-                </p>
-              )}
-
-              {suppliers?.venue && (
-                <p>
-                  <span className="font-semibold">Venue:</span> {suppliers.venue.name}
-                </p>
-              )}
-
-              {partyDetails?.theme && (
-                <p>
-                  <span className="font-semibold">Theme:</span> <span className="capitalize">{partyDetails.theme.replace(/-/g, ' ')}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Suppliers List */}
-            {Object.keys(suppliers).filter(type => suppliers[type]).length > 0 && (
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Your Suppliers</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  {Object.entries(suppliers).filter(([type, supplier]) => supplier).map(([type, supplier]) => {
-                    // Calculate correct price for party bags
-                    const isPartyBags = supplier.category === 'Party Bags' ||
-                                       supplier.category?.toLowerCase().includes('party bag')
-
-                    let displayPrice = supplier.packageData?.price || supplier.price || 0
-
-                    if (isPartyBags) {
-                      displayPrice = supplier.partyBagsMetadata?.totalPrice ||
-                                    supplier.packageData?.totalPrice ||
-                                    (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
-                                      ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
-                                      : null)
-
-                      // If no metadata exists, use price as-is (it's likely already the total)
-                      if (!displayPrice) {
-                        displayPrice = supplier.price || supplier.priceFrom || 0
-                      }
-                    }
-
-                    return (
-                      <div key={type} className="flex items-center justify-between">
-                        <span>{supplier.name}</span>
-                        <span className="font-semibold text-gray-900">
-                          £{displayPrice}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Addons List */}
-            {addons && addons.length > 0 && (
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Add-ons</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  {addons.map((addon) => (
-                    <div key={addon.id} className="flex items-center justify-between">
-                      <span>{addon.name}</span>
-                      <span className="font-semibold text-gray-900">
-                        £{addon.price || 0}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Total */}
-            {totalCost > 0 && (
-              <div className="border-t border-gray-200 mt-3 pt-3 flex items-center justify-between">
-                <span className="font-bold text-base text-gray-900">Total</span>
-                <span className="font-bold text-xl text-gray-900">£{totalCost.toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* CTA Button */}
-          <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
-            <button
-              onClick={() => router.push('/review-book')}
-              className="w-full cursor-pointer bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2"
-            >
-              Complete Booking
-            </button>
-            <p className="text-sm text-white/90 text-center mt-3">
-              You'll review your full party plan before any payment
-            </p>
-          </div>
-        </div>
-      )}
 
       <style jsx global>{`
         @media (max-width: 768px) {

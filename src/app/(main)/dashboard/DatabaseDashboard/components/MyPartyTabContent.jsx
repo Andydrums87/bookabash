@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import MissingSuppliersSuggestions from "@/components/MissingSuppliersSuggestions"
 import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
 import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
@@ -29,12 +30,13 @@ export default function MyPartyTabContent({
   childPhoto, // ✅ NEW PROP for child photo
   uploadingPhoto, // ✅ NEW PROP for upload state
 }) {
+  const router = useRouter()
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
   const [showPlanInfo, setShowPlanInfo] = useState(false)
-  const [hasClickedContinue, setHasClickedContinue] = useState(false)
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Photo upload handler
   const handlePhotoChange = async (e) => {
@@ -58,13 +60,25 @@ export default function MyPartyTabContent({
     return configs[supplierType] || { color: "bg-gray-500", icon: "📦" }
   }
 
-  const handleImHappy = () => {
-    // Keep missing suggestions visible - users can continue adding suppliers
-    // But hide the "Continue to Book" button since a new CTA appears
-    setHasClickedContinue(true)
+  const handleImHappy = async () => {
+    // Show loading state
+    setIsProcessing(true)
+
+    // Small delay to show the loading animation
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Call onImHappy if provided (for custom handlers)
     if (onImHappy) {
       onImHappy()
+    } else {
+      // Default behavior: navigate to review-book
+      router.push('/review-book')
     }
+
+    // Reset loading state after navigation
+    setTimeout(() => {
+      setIsProcessing(false)
+    }, 100)
   }
 
   // Fetch full supplier data for customization
@@ -758,21 +772,6 @@ export default function MyPartyTabContent({
         </div>
       )}
 
-      {/* Total Cost Summary - Subtle Info Box */}
-      {allSuppliers.length > 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Party Total</p>
-              <p className="text-xs text-gray-500 mt-0.5">{allSuppliers.length} supplier{allSuppliers.length > 1 ? 's' : ''} selected</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900">£{totalCost.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Visual Separator */}
       {showMissingSuggestions && allSuppliers.length > 0 && (
         <div className="mt-12 mb-8">
@@ -833,30 +832,141 @@ export default function MyPartyTabContent({
             />
           </div>
 
-          {/* Continue to book button - Only show if user hasn't clicked it yet */}
-          {!hasClickedContinue && (
-            <div className="mt-6">
-              <Button
-                onClick={handleImHappy}
-                className="w-full text-white py-7 text-lg font-bold shadow-2xl relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-600)) 100%)',
-                  boxShadow: '0 10px 40px -10px hsl(var(--primary-500) / 0.6)'
-                }}
-              >
-                {/* Animated shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
-                <span className="relative flex items-center justify-center gap-2">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
-                  Continue to Book
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </span>
-              </Button>
+          {/* Party Plan Summary */}
+          <div className="mt-6 bg-gradient-to-br from-gray-50 to-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+              <h3 className="text-lg font-bold text-gray-900">Your Party Plan</h3>
             </div>
-          )}
+
+            {/* Party Details */}
+            <div className="space-y-2 text-sm text-gray-700 mb-4 pb-4 border-b border-gray-200">
+              {partyDetails?.childName && (
+                <p>
+                  <span className="font-semibold">Party for:</span> {partyDetails.childName}
+                  {partyDetails.age && `, turning ${partyDetails.age}`}
+                </p>
+              )}
+
+              {partyDetails?.date && (
+                <p>
+                  <span className="font-semibold">Date:</span>{' '}
+                  {new Date(partyDetails.date).toLocaleDateString('en-GB', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                  {partyDetails.time && ` at ${partyDetails.time}`}
+                </p>
+              )}
+
+              {partyDetails?.guestCount && (
+                <p>
+                  <span className="font-semibold">Guests:</span> {partyDetails.guestCount} children
+                </p>
+              )}
+
+              {partyDetails?.theme && (
+                <p>
+                  <span className="font-semibold">Theme:</span>{' '}
+                  <span className="capitalize">{partyDetails.theme.replace(/-/g, ' ')}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Suppliers List */}
+            {Object.keys(suppliers).filter(type => suppliers[type]).length > 0 && (
+              <div className="mb-4">
+                <h4 className="font-semibold text-gray-900 mb-3 text-sm">Selected Suppliers</h4>
+                <div className="space-y-2">
+                  {Object.entries(suppliers)
+                    .filter(([type, supplier]) => supplier)
+                    .map(([type, supplier]) => {
+                      const displayPrice = supplier.packageData?.price || supplier.price || 0
+                      return (
+                        <div key={type} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">{supplier.name}</span>
+                          <span className="font-semibold text-gray-900">£{displayPrice}</span>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Addons List */}
+            {addons && addons.length > 0 && (
+              <div className="mb-4 pt-3 border-t border-gray-200">
+                <h4 className="font-semibold text-gray-900 mb-3 text-sm">Add-ons</h4>
+                <div className="space-y-2">
+                  {addons.map((addon) => (
+                    <div key={addon.id} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{addon.name}</span>
+                      <span className="font-semibold text-gray-900">£{addon.price || 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Total */}
+            {(() => {
+              const supplierTotal = Object.values(suppliers)
+                .filter(s => s)
+                .reduce((sum, s) => sum + (s.packageData?.price || s.price || 0), 0)
+              const addonTotal = addons?.reduce((sum, a) => sum + (a.price || 0), 0) || 0
+              const totalCost = supplierTotal + addonTotal
+
+              return totalCost > 0 ? (
+                <div className="pt-4 border-t-2 border-gray-300 flex items-center justify-between">
+                  <span className="font-bold text-base text-gray-900">Total</span>
+                  <span className="font-bold text-2xl text-[hsl(var(--primary-600))]">
+                    £{totalCost.toFixed(2)}
+                  </span>
+                </div>
+              ) : null
+            })()}
+          </div>
+
+          {/* Complete Booking CTA - Single click to start booking */}
+          <div className="mt-4">
+            <Button
+              onClick={handleImHappy}
+              disabled={isProcessing}
+              className="w-full text-white py-7 text-lg font-bold shadow-2xl relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-90 disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg, hsl(var(--primary-500)) 0%, hsl(var(--primary-600)) 100%)',
+                boxShadow: '0 10px 40px -10px hsl(var(--primary-500) / 0.6)'
+              }}
+            >
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+
+              <span className="relative flex items-center justify-center gap-2">
+                {isProcessing ? (
+                  <>
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                    Complete Booking
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                )}
+              </span>
+            </Button>
+            <p className="text-xs text-center text-gray-600 mt-3">
+              You'll review your full party plan before any payment
+            </p>
+          </div>
         </>
       )}
 
