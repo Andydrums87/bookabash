@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 // Icons
-import { RefreshCw, ChevronRight, Plus, Check, Sparkles } from "lucide-react"
+import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building } from "lucide-react"
 
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
@@ -97,7 +97,7 @@ export default function LocalStorageDashboard() {
   const [preventScrollFlag, setPreventScrollFlag] = useState(false)
   const scrollLockPositionRef = useRef(null)
 
-  
+
   // Refs for tracking
   const welcomePopupShownRef = useRef(false)
   const confettiTriggeredRef = useRef(false)
@@ -107,6 +107,7 @@ export default function LocalStorageDashboard() {
   const [welcomeJustCompleted, setWelcomeJustCompleted] = useState(false)
   const [welcomeFormSubmitted, setWelcomeFormSubmitted] = useState(false)
   const [isTourActiveOnNavigation, setIsTourActiveOnNavigation] = useState(false)
+  const [isCheckingWelcome, setIsCheckingWelcome] = useState(true) // NEW: Track if we're still checking for welcome popup
 
   // Party header expansion state
   const [isPartyHeaderExpanded, setIsPartyHeaderExpanded] = useState(false)
@@ -162,7 +163,7 @@ const childPhotoRef = useRef(null)
   useEffect(() => {
     setIsMounted(true)
     setIsClient(typeof window !== 'undefined')
-
+    // Note: isCheckingWelcome starts as true, so loading screen shows immediately
   }, [])
 
   // Hooks - only run after mounting
@@ -241,13 +242,13 @@ const childPhotoRef = useRef(null)
     }
 
     console.log('🔍 Dashboard: Starting welcome popup detection...')
-    
+
     try {
       // Check URL parameters
       const showWelcomeFromURL = searchParams.get("show_welcome") === "true"
       const sourceFromURL = searchParams.get("source")
       const timestampFromURL = searchParams.get("t")
-      
+
       console.log('📊 URL Check:', { showWelcomeFromURL, sourceFromURL, timestampFromURL })
 
       // Check localStorage with error handling
@@ -256,7 +257,7 @@ const childPhotoRef = useRef(null)
       let hasPartyData = false
       let showWelcomeFlag = false
       let welcomeCompleted = false
-      
+
       try {
         // Check multiple localStorage keys
         const welcomeTriggerData = localStorage.getItem('welcome_trigger')
@@ -264,22 +265,22 @@ const childPhotoRef = useRef(null)
         const showWelcomeRaw = localStorage.getItem('show_welcome_popup')
         const partyJustCreated = localStorage.getItem('party_just_created')
         const redirectWelcome = localStorage.getItem('redirect_welcome')
-        
+
         // ✅ NEW: Check if welcome was already completed
         const welcomeCompletedFlag = localStorage.getItem('welcome_completed')
         const welcomeCompletedSession = sessionStorage.getItem('welcome_completed')
-        
+
         if (welcomeTriggerData) {
           welcomeTrigger = JSON.parse(welcomeTriggerData)
         }
-        
+
         if (partyDetailsRaw) {
           partyDetailsData = JSON.parse(partyDetailsRaw)
           hasPartyData = true
           // Check if welcome was completed in party details
           welcomeCompleted = partyDetailsData.welcomeCompleted === true
         }
-        
+
         // Check multiple completion flags
         welcomeCompleted = welcomeCompleted ||
                           welcomeCompletedFlag === 'true' ||
@@ -291,7 +292,7 @@ const childPhotoRef = useRef(null)
         }
 
         showWelcomeFlag = showWelcomeRaw === 'true' || redirectWelcome === 'true'
-        
+
 
 
         // Update debug info
@@ -308,30 +309,29 @@ const childPhotoRef = useRef(null)
           alreadyShown: welcomePopupShownRef.current,
           timestamp: new Date().toISOString()
         })
-        
+
       } catch (storageError) {
         console.error('❌ LocalStorage error:', storageError)
       }
-      
+
       // ✅ FIXED: Only show welcome if not completed and other conditions met
       const shouldShowWelcome = (
         !welcomeCompleted && // ✅ NEW: Don't show if already completed
-        (showWelcomeFromURL || 
-         welcomeTrigger?.shouldShowWelcome || 
+        (showWelcomeFromURL ||
+         welcomeTrigger?.shouldShowWelcome ||
          showWelcomeFlag) && // ✅ REMOVED: hasPartyData (too broad)
         !welcomePopupShownRef.current
       )
-      
-  
-      
+
+
+
       if (shouldShowWelcome) {
         console.log('🎉 SHOWING WELCOME POPUP!')
-        
-        // Use setTimeout for production safety
-        setTimeout(() => {
-          setShowWelcomePopup(true)
-          welcomePopupShownRef.current = true
-        }, 200)
+
+        // ✅ NEW: Show popup immediately without delay to prevent flashing
+        setShowWelcomePopup(true)
+        welcomePopupShownRef.current = true
+        setIsCheckingWelcome(false) // Done checking
 
         // Clean up URL parameters
         try {
@@ -340,16 +340,16 @@ const childPhotoRef = useRef(null)
           newSearchParams.delete("show_welcome")
           newSearchParams.delete("source")
           newSearchParams.delete("t")
-          
-          const newURL = newSearchParams.toString() ? 
-            `${currentPath}?${newSearchParams.toString()}` : 
+
+          const newURL = newSearchParams.toString() ?
+            `${currentPath}?${newSearchParams.toString()}` :
             currentPath
-          
+
           router.replace(newURL, { scroll: false })
         } catch (urlError) {
           console.warn('⚠️ URL cleanup error:', urlError)
         }
-        
+
         // Clean up localStorage triggers
         try {
           localStorage.removeItem('welcome_trigger')
@@ -362,10 +362,14 @@ const childPhotoRef = useRef(null)
         }
       } else {
         console.log('❌ NOT showing welcome popup', welcomeCompleted ? '(already completed)' : '')
+        // ✅ NEW: Done checking, allow dashboard to render
+        setIsCheckingWelcome(false)
       }
-      
+
     } catch (error) {
       console.error('💥 Welcome popup detection error:', error)
+      // ✅ NEW: On error, also stop checking
+      setIsCheckingWelcome(false)
     }
   }, [isMounted, isClient, searchParams, router])
 
@@ -373,9 +377,9 @@ const childPhotoRef = useRef(null)
   useEffect(() => {
     if (welcomeJustCompleted && !showWelcomePopup && !confettiTriggeredRef.current && isMounted) {
 
-      
+
       confettiTriggeredRef.current = true
-      
+
       const triggerConfetti = () => {
         confetti({
           particleCount: 150,
@@ -383,7 +387,7 @@ const childPhotoRef = useRef(null)
           origin: { y: 0.6 },
           colors: ['#ff6b35', '#f7931e', '#ffd23f', '#06d6a0', '#118ab2', '#073b4c']
         })
-        
+
         setTimeout(() => {
           confetti({
             particleCount: 100,
@@ -392,7 +396,7 @@ const childPhotoRef = useRef(null)
             colors: ['#ff6b35', '#f7931e', '#ffd23f']
           })
         }, 300)
-        
+
         setTimeout(() => {
           confetti({
             particleCount: 80,
@@ -402,7 +406,7 @@ const childPhotoRef = useRef(null)
           })
         }, 600)
       }
-      
+
       setTimeout(triggerConfetti, 500)
       setTimeout(() => setWelcomeJustCompleted(false), 2000)
     }
@@ -685,12 +689,12 @@ const handleNameSubmit = (nameData) => {
 
     setWelcomeJustCompleted(true)
     setWelcomeFormSubmitted(true) // Track that form was submitted
-    
+
     // Set completion flags to prevent re-showing
     try {
       localStorage.setItem('welcome_completed', 'true')
       sessionStorage.setItem('welcome_completed', 'true')
-      
+
       // Update party details with completion flag
       const existingPartyDetails = localStorage.getItem('party_details')
       if (existingPartyDetails) {
@@ -704,11 +708,11 @@ const handleNameSubmit = (nameData) => {
           welcomeCompleted: true,
           welcomeCompletedAt: new Date().toISOString()
         }
-        
+
         localStorage.setItem('party_details', JSON.stringify(updatedDetails))
 
       }
-      
+
       // NEW: Start tour after confetti completes
       setTimeout(() => {
         const tourCompleted = localStorage.getItem('dashboard_tour_completed') === 'true'
@@ -717,11 +721,11 @@ const handleNameSubmit = (nameData) => {
           startTour()
         }
       }, 3000) // Wait 3 seconds for confetti to finish
-      
+
     } catch (updateError) {
       console.warn('⚠️ Error updating party details:', updateError)
     }
-    
+
   } catch (error) {
     console.error('💥 Error in handleNameSubmit:', error)
   }
@@ -1606,10 +1610,14 @@ const handleChildPhotoUpload = async (file) => {
   }
 };
 
+  // ✅ UPDATED: Don't show loading screen - just hide dashboard content while checking
+  // The welcome popup will overlay immediately when needed
   return (
-    <div className={`${showWelcomePopup ? "blur-sm opacity-50" : ""} min-h-screen`}>
-      <ContextualBreadcrumb currentPage="dashboard"/>
-      <EnquirySuccessBanner />
+    <div className="min-h-screen">
+      {/* ✅ Hide dashboard content while checking for welcome popup to prevent flashing */}
+      <div className={showWelcomePopup || isCheckingWelcome ? "opacity-0 pointer-events-none" : "opacity-100 transition-opacity duration-200"}>
+          <ContextualBreadcrumb currentPage="dashboard"/>
+          <EnquirySuccessBanner />
 
       {/* Google One Tap Sign In - Only show after welcome form is submitted */}
       <GoogleOneTap shouldInitialize={welcomeFormSubmitted} />
@@ -1655,9 +1663,26 @@ const handleChildPhotoUpload = async (file) => {
                     <h2 className="text-2xl md:text-3xl font-extrabold text-gray-700 leading-tight">
                       Meet Your Party Team!
                     </h2>
-                    <p className="text-sm md:text-base text-gray-600 mt-1">
-                      Snappy's picked the best suppliers for your big day 
-                    </p>
+                    <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3 w-full">
+                      <p className="text-xs md:text-sm text-gray-700 font-medium leading-relaxed">
+                        💡 <span className="font-semibold">Top tip:</span> You can {' '}
+                        <span className="inline-block relative font-bold text-gray-900">
+                          swap
+                          <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
+                        </span>
+                        , {' '}
+                        <span className="inline-block relative font-bold text-gray-900">
+                          tweak
+                          <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
+                        </span>
+                        , or {' '}
+                        <span className="inline-block relative font-bold text-gray-900">
+                          add your own touches
+                          <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
+                        </span>
+                        {' '} anytime.
+                      </p>
+                    </div>
                   </div>
                  
                 </div>
@@ -2040,11 +2065,12 @@ const handleChildPhotoUpload = async (file) => {
         isSignedIn={false}
         currentPartyId={null}
       />
+      </div>
 
       {/* ✅ PRODUCTION SAFE: Welcome Popup */}
-      {isMounted && (
-        <WelcomeDashboardPopup 
-          isOpen={showWelcomePopup} 
+      {isMounted && showWelcomePopup && (
+        <WelcomeDashboardPopup
+          isOpen={showWelcomePopup}
           onClose={() => {
             console.log('🔒 Closing welcome popup')
             setShowWelcomePopup(false)
@@ -2052,6 +2078,7 @@ const handleChildPhotoUpload = async (file) => {
           onNameSubmit={handleNameSubmit}
         />
       )}
+
 
       <DeleteConfirmDialog
         isOpen={!!showDeleteConfirm}

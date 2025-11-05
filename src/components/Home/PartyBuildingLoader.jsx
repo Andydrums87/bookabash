@@ -1,10 +1,10 @@
 "use client"
 import { useState, useEffect, useMemo } from "react"
-import { CheckCircle, Circle, MapPin, Sparkles, Cake, Palette, Gift, PartyPopper, Activity } from "lucide-react"
+import Lottie from "lottie-react"
+import partyAnimation from "@/../../public/animations/#0101J_S_07 (1).json"
 
-export default function PartyBuilderLoader({ isVisible, theme, childName, progress, partyDetails }) {
+export default function PartyBuilderLoader({ isVisible, theme, childName, progress, partyDetails, partyPlan }) {
   const [completedItems, setCompletedItems] = useState(0)
-  const [showConfetti, setShowConfetti] = useState(false)
 
   // Determine what's being built based on budget and guest count
   const checklistItems = useMemo(() => {
@@ -14,28 +14,28 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
     const items = []
 
-    // Always included
-    items.push({ icon: MapPin, label: "Finding the perfect venue", color: "text-blue-500" })
-    items.push({ icon: Sparkles, label: "Booking amazing entertainment", color: "text-purple-500" })
-    items.push({ icon: Cake, label: "Choosing the perfect cake", color: "text-orange-500" })
+    // Always included - using themed party images
+    items.push({ image: "/puzzle-pieces/venue.png", label: "Recommending a great venue" })
+    items.push({ image: "/puzzle-pieces/entertainment.png", label: "Selecting amazing entertainment" })
+    items.push({ image: "/puzzle-pieces/cake.png", label: "Picking the perfect cake" })
 
     // Budget > 700: Add decorations, activities, party bags
     if (budget > 700) {
-      items.push({ icon: Palette, label: "Adding beautiful decorations", color: "text-pink-500" })
-      items.push({ icon: Activity, label: "Planning fun activities", color: "text-green-500" })
-      items.push({ icon: Gift, label: "Preparing party bags", color: "text-teal-500" })
+      items.push({ image: "/category-icons/decorations.png", label: "Suggesting beautiful decorations" })
+      items.push({ image: "/category-icons/activities.png", label: "Finding fun activities" })
+      items.push({ image: "/puzzle-pieces/partybags.png", label: "Choosing party bags" })
 
       // Large party (30+ guests): Add soft play
       if (isLargeParty) {
-        items.push({ icon: Activity, label: "Setting up soft play", color: "text-indigo-500" })
+        items.push({ image: "/category-icons/bouncy-castle.png", label: "Adding soft play options" })
       }
     }
 
-    // Final item
-    items.push({ icon: PartyPopper, label: "Your party is ready!", color: "text-primary-500" })
+    // Final item - use emoji as icon
+    items.push({ icon: "🎉", label: "Your party plan is ready!", isSupplier: false })
 
     return items
-  }, [partyDetails?.budget, partyDetails?.guestCount])
+  }, [partyDetails?.budget, partyDetails?.guestCount, partyPlan])
 
   // Disable scrolling when loader is visible
   useEffect(() => {
@@ -64,6 +64,7 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
     const interval = setInterval(() => {
       setCompletedItems((prev) => {
+        // ✅ Stop at the last item (checklistItems.length - 1) and keep it visible
         if (prev < checklistItems.length - 1) {
           return prev + 1
         }
@@ -71,137 +72,79 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       })
     }, itemDuration)
 
-    // Show final confetti when all items complete
-    const confettiTimeout = setTimeout(() => {
-      setCompletedItems(checklistItems.length)
-      setShowConfetti(true)
-    }, totalDuration)
-
     return () => {
       clearInterval(interval)
-      clearTimeout(confettiTimeout)
     }
   }, [isVisible, checklistItems.length])
-
-  // Get theme image - same as LocalStoragePartyHeader
-  const getThemeImage = () => {
-    if (!theme) return null
-    const themeImages = {
-      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296152/iStock-1433142692_ukadz6.jpg",
-      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296218/iStock-1150984736_evfnwn.jpg",
-      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761295969/iStock-1126856615_wg9qil.jpg",
-      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296364/iStock-1202380918_flcyof.jpg",
-      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380880/iStock-1603218889_xq4kqi.jpg",
-      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761209443/iStock-1165735224_ayrkw1.jpg",
-      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380937/iStock-2201784646_cdvevq.jpg",
-      cars: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380995/iStock-2176668301_cstncj.jpg",
-      pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296485/iStock-1283573104_bzl4zs.jpg",
-      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296596/iStock-2221104953_mhafl2.jpg",
-      football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
-      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296848/iStock-1474868329_hxmo8u.jpg",
-      mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297169/iStock-1434335578_h3dzbb.jpg",
-      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg"
-    }
-    return themeImages[theme.toLowerCase()] || null
-  }
-
-  const themeImage = getThemeImage()
 
   if (!isVisible) return null
 
   return (
     <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center px-4 overflow-hidden">
-      {/* Theme Background Image */}
-      {themeImage && (
-        <div className="absolute inset-0">
-          <img
-            src={themeImage}
-            alt={theme}
-            className="w-full h-full object-cover"
-          />
-          {/* Lighter overlay for stronger image visibility */}
-          <div className="absolute inset-0 bg-white/70"></div>
-        </div>
-      )}
-
       {/* Content */}
       <div className="relative z-10 w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-2">
-            Building Your Party!
+        <div className="text-center mb-12 animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-black text-gray-900">
+            Building Your Party Plan
           </h1>
-          <p className="text-base text-gray-700 font-medium">
-            Curating supplier recommendations for you
-          </p>
         </div>
 
-        {/* Animated Checklist */}
-        <div className="w-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-gray-100 p-6 space-y-3">
-          {checklistItems.map((item, index) => {
-            const isCompleted = index < completedItems
-            const isCurrent = index === completedItems
-            const Icon = item.icon
-
-            return (
-              <div
-                key={index}
-                className={`flex items-center gap-4 transition-all duration-500 ${
-                  isCompleted || isCurrent ? 'opacity-100 translate-x-0' : 'opacity-40 translate-x-4'
-                }`}
-              >
-                {/* Icon */}
-                <div className={`relative flex-shrink-0 ${isCompleted ? 'animate-check-bounce' : ''}`}>
-                  {isCompleted ? (
-                    <CheckCircle className="w-6 h-6 text-[hsl(var(--primary-500))] fill-current" />
-                  ) : (
-                    <Circle className="w-6 h-6 text-gray-300" />
-                  )}
-                </div>
-
-                {/* Label */}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold transition-all ${
-                    isCompleted ? 'text-gray-500 line-through' : isCurrent ? 'text-gray-900' : 'text-gray-400'
-                  }`}>
-                    {item.label}
-                  </p>
-                </div>
-
-                {/* Loading spinner for current item */}
-                {isCurrent && !isCompleted && (
-                  <div className="flex-shrink-0 w-5 h-5 border-2 border-[hsl(var(--primary-500))] border-t-transparent rounded-full animate-spin"></div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Confetti animation when complete */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute animate-confetti"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: '-10%',
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${2 + Math.random()}s`,
-              }}
-            >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{
-                  backgroundColor: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#A8E6CF', '#FF8B94'][Math.floor(Math.random() * 5)],
-                }}
+        {/* Custom Lottie Animation */}
+        <div className="text-center space-y-6">
+          {/* Lottie Animation */}
+          <div className="flex justify-center mb-6">
+            <div className="w-64 h-64 md:w-80 md:h-80">
+              <Lottie
+                animationData={partyAnimation}
+                loop={true}
+                autoplay={true}
               />
             </div>
-          ))}
+          </div>
+
+          {/* Current item label */}
+          {completedItems >= 0 && completedItems < checklistItems.length && (
+            <div className="animate-fade-in-scale">
+              <h2 className="text-xl font-bold text-gray-900">
+                {checklistItems[completedItems]?.label}
+              </h2>
+            </div>
+          )}
+
+          {/* ✅ Show helpful message on final item */}
+          {completedItems === checklistItems.length - 1 && (
+            <div className="mt-6 space-y-3 animate-fade-in">
+              <p className="text-gray-600 text-base font-medium">
+                Taking you to your dashboard...
+              </p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto">
+                <p className="text-sm text-gray-700">
+                  💡 Once in your dashboard, you can <span className="font-semibold">customize</span>, <span className="font-semibold">swap</span>, or <span className="font-semibold">add</span> anything you like!
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Progress indicator */}
+          <div className="pt-8">
+            <div className="flex justify-center gap-2">
+              {checklistItems.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index < completedItems
+                      ? 'w-8 bg-[hsl(var(--primary-500))]'
+                      : index === completedItems
+                      ? 'w-12 bg-[hsl(var(--primary-400))]'
+                      : 'w-8 bg-gray-200'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Animations */}
       <style jsx>{`
@@ -216,19 +159,132 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
           }
         }
 
-        @keyframes check-bounce {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.2); }
+        @keyframes fade-in-scale {
+          from {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
         }
 
-        @keyframes confetti {
+        @keyframes pop {
           0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 1;
+            transform: scale(0);
+          }
+          50% {
+            transform: scale(1.1);
           }
           100% {
-            transform: translateY(100vh) rotate(720deg);
+            transform: scale(1);
+          }
+        }
+
+        @keyframes bounce-in {
+          0% {
+            transform: scale(0);
+          }
+          50% {
+            transform: scale(1.2);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+          }
+          25% {
+            transform: translateY(-20px) translateX(10px);
+          }
+          75% {
+            transform: translateY(-10px) translateX(-10px);
+          }
+        }
+
+        @keyframes float-slow {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-30px) rotate(10deg);
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200% center;
+          }
+          100% {
+            background-position: 200% center;
+          }
+        }
+
+        @keyframes shimmer-progress {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes pulse-subtle {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.9;
+          }
+        }
+
+        @keyframes pulse-gentle {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
+        }
+
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes cake-tier-pop {
+          0% {
+            transform: translateY(20px) scale(0.8);
             opacity: 0;
+          }
+          60% {
+            transform: translateY(-10px) scale(1.05);
+          }
+          100% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes flicker {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(0.95);
           }
         }
 
@@ -236,12 +292,61 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
           animation: fade-in 0.6s ease-out;
         }
 
-        .animate-check-bounce {
-          animation: check-bounce 0.5s ease-out;
+        .animate-cake-tier-pop {
+          animation: cake-tier-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        .animate-confetti {
-          animation: confetti forwards;
+        .animate-flicker {
+          animation: flicker 0.5s infinite;
+        }
+
+        .animate-fade-in-scale {
+          animation: fade-in-scale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animate-pop {
+          animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animate-bounce-in {
+          animation: bounce-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animate-float {
+          animation: float infinite ease-in-out;
+        }
+
+        .animate-float-slow {
+          animation: float-slow 6s infinite ease-in-out;
+        }
+
+        .animate-shimmer {
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.8) 50%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite;
+          -webkit-background-clip: text;
+          background-clip: text;
+        }
+
+        .animate-shimmer-progress {
+          animation: shimmer-progress 1s infinite;
+        }
+
+        .animate-pulse-subtle {
+          animation: pulse-subtle 2s infinite;
+        }
+
+        .animate-pulse-gentle {
+          animation: pulse-gentle 2s infinite;
+        }
+
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
         }
       `}</style>
     </div>

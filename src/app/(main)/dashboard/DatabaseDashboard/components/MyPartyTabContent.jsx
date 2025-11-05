@@ -35,7 +35,6 @@ export default function MyPartyTabContent({
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
   const [showPlanInfo, setShowPlanInfo] = useState(false)
-  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Photo upload handler
@@ -640,28 +639,6 @@ export default function MyPartyTabContent({
 
   return (
     <div className="space-y-3">
-      {/* Welcome Message */}
-      {showWelcomeMessage && (
-        <div className="flex items-start gap-3 mb-2 relative">
-          <Image
-            src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
-            alt="Snappy"
-            width={40}
-            height={40}
-            className="flex-shrink-0"
-          />
-          <p className="text-sm text-gray-700 leading-relaxed pt-1 flex-1">
-            Here's your party plan for <span className="font-semibold">{partyDetails?.guestCount || 'your'} children</span>! Customize, swap, or add suppliers below.
-          </p>
-          <button
-            onClick={() => setShowWelcomeMessage(false)}
-            className="flex-shrink-0 w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-            aria-label="Dismiss message"
-          >
-            <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-          </button>
-        </div>
-      )}
 
       {/* Original Header Section */}
       <div>
@@ -703,7 +680,26 @@ export default function MyPartyTabContent({
             </div>
           )}
 
-          {/* <p className="text-sm text-gray-600">Here are the suppliers we've chosen for you</p> */}
+          <div className="mb-4 bg-[#FAFAFA] border border-gray-200 rounded-lg p-3 w-full">
+            <p className="text-sm text-gray-700 font-medium leading-relaxed">
+              💡 <span className="font-semibold">Top tip:</span> You can {' '}
+              <span className="inline-block relative font-bold text-gray-900">
+                swap
+                <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
+              </span>
+              , {' '}
+              <span className="inline-block relative font-bold text-gray-900">
+                tweak
+                <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
+              </span>
+              , or {' '}
+              <span className="inline-block relative font-bold text-gray-900">
+                add your own touches
+                <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-primary-500 -skew-x-12 opacity-70"></span>
+              </span>
+              {' '} anytime.
+            </p>
+          </div>
         </div>
       </div>
 

@@ -43,6 +43,7 @@ export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPartyLoader, setShowPartyLoader] = useState(false)
   const [buildingProgress, setBuildingProgress] = useState(0)
+  const [builtPartyPlan, setBuiltPartyPlan] = useState(null)
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
@@ -240,23 +241,18 @@ export default function HomePage() {
       }
   
       console.log('🎉 Building party with hasOwnVenue:', partyDetails.hasOwnVenue); // Debug
-  
-      setBuildingProgress(15)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setBuildingProgress(30)
-      await new Promise((resolve) => setTimeout(resolve, 600))
-      setBuildingProgress(50)
-  
+
+      // ✅ Build party immediately without artificial delays
       const result = await buildParty(partyDetails)
-      
-      setBuildingProgress(75)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setBuildingProgress(90)
-      await new Promise((resolve) => setTimeout(resolve, 600))
-  
+
+      // Store the party plan for the loader to display
+      if (result.success && result.data) {
+        setBuiltPartyPlan(result.data.partyPlan)
+      }
+
       if (result.success) {
         setBuildingProgress(100)
-        
+
         try {
           const welcomeData = {
             shouldShowWelcome: true,
@@ -288,18 +284,21 @@ export default function HomePage() {
         } catch (storageError) {
           console.error("Storage error:", storageError)
         }
-        
-        await new Promise((resolve) => setTimeout(resolve, 1500))
-        
+
+        // ✅ Wait exactly 5 seconds to match the PartyBuildingLoader animation duration
+        // This ensures we redirect right after "Your party plan is ready!" shows
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+
         try {
           const redirectURL = "/dashboard?show_welcome=true&source=homepage&t=" + Date.now()
-          
+
           if (typeof window !== 'undefined') {
             window.localStorage.setItem('redirect_welcome', 'true')
           }
-          
+
+          // Redirect to dashboard
           router.push(redirectURL)
-          
+
         } catch (redirectError) {
           console.error("Redirect error:", redirectError)
           window.location.href = "/dashboard?show_welcome=true"
@@ -351,6 +350,7 @@ export default function HomePage() {
           budget: getDefaultBudgetForGuests(formData.guestCount),
           guestCount: formData.guestCount
         }}
+        partyPlan={builtPartyPlan}
       />
 
       <Hero
