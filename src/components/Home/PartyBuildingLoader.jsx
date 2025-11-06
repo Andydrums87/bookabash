@@ -4,6 +4,9 @@ import Lottie from "lottie-react"
 import partyAnimation from "@/../../public/animations/#0101J_S_07 (1).json"
 import clownJugglingAnimation from "@/../../public/animations/clown-juggling.json"
 import mapPinAnimation from "@/../../public/animations/map-pin-location.json"
+import shoppingBagAnimation from "@/../../public/animations/shopping-bag.json"
+import birthdayConfettiAnimation from "@/../../public/animations/birthday-confetti-balloon.json"
+import trampolineAnimation from "@/../../public/animations/trampoline.json"
 
 export default function PartyBuilderLoader({ isVisible, theme, childName, progress, partyDetails, partyPlan }) {
   const [completedItems, setCompletedItems] = useState(0)
@@ -16,7 +19,7 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
     const items = []
 
-    // Always included - with custom Lottie animations
+    // Always included - core items for all budgets
     items.push({
       animation: mapPinAnimation,
       label: "Recommending a great venue",
@@ -32,23 +35,23 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       label: "Picking the perfect cake",
       type: "cake"
     })
+    items.push({
+      animation: shoppingBagAnimation,
+      label: "Choosing party bags",
+      type: "partybags"
+    })
 
-    // Budget > 700: Add decorations, activities, party bags
+    // Budget > 700: Add decorations and activities
     if (budget > 700) {
       items.push({
-        animation: partyAnimation,
+        animation: birthdayConfettiAnimation,
         label: "Suggesting beautiful decorations",
         type: "decorations"
       })
       items.push({
-        animation: partyAnimation,
+        animation: trampolineAnimation,
         label: "Finding fun activities",
         type: "activities"
-      })
-      items.push({
-        animation: partyAnimation,
-        label: "Choosing party bags",
-        type: "partybags"
       })
 
       // Large party (30+ guests): Add soft play
@@ -137,6 +140,15 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
                 </h2>
               </div>
             </>
+          )}
+
+          {/* Show "Nearly there..." after last item completes */}
+          {completedItems === checklistItems.length && (
+            <div className="animate-fade-in text-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                Nearly there...
+              </h2>
+            </div>
           )}
 
 

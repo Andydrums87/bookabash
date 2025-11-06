@@ -670,31 +670,32 @@ checkSupplierLocation(supplier, partyLocation) {
     let budgetAllocation, includedCategories;
     
     if (budget <= 500) {
-      // NOTE: Venue is handled separately in buildParty now
-      includedCategories = ['entertainment', 'cakes'];
-      budgetAllocation = { entertainment: 0.55, cakes: 0.25 }; // Adjusted since venue is separate
+      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
+      budgetAllocation = { venue: 0.20, entertainment: 0.45, cakes: 0.25, partyBags: 0.05 };
     } else if (budget <= 700) {
-      includedCategories = ['entertainment', 'cakes'];
-      budgetAllocation = { entertainment: 0.50, cakes: 0.30 };
+      includedCategories = ['venue', 'entertainment', 'cakes', 'partyBags'];
+      budgetAllocation = { venue: 0.20, entertainment: 0.40, cakes: 0.30, partyBags: 0.05 };
     } else {
-      includedCategories = ['entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
+      includedCategories = ['venue', 'entertainment', 'cakes', 'decorations', 'activities', 'partyBags'];
       if (isLargeParty) {
-        budgetAllocation = { 
-          entertainment: 0.30, 
-          cakes: 0.20, 
-          decorations: 0.10, 
-          activities: 0.20, 
-          partyBags: 0.05, 
-          softPlay: 0.10 
+        budgetAllocation = {
+          venue: 0.05,
+          entertainment: 0.30,
+          cakes: 0.20,
+          decorations: 0.10,
+          activities: 0.20,
+          partyBags: 0.05,
+          softPlay: 0.10
         };
         includedCategories.push('softPlay');
       } else {
-        budgetAllocation = { 
-          entertainment: 0.35, 
-          cakes: 0.25, 
-          decorations: 0.20, 
-          activities: 0.10, 
-          partyBags: 0.05 
+        budgetAllocation = {
+          venue: 0.05,
+          entertainment: 0.30,
+          cakes: 0.25,
+          decorations: 0.20,
+          activities: 0.10,
+          partyBags: 0.05
         };
       }
     }

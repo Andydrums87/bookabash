@@ -285,11 +285,24 @@ export default function HomePage() {
           console.error("Storage error:", storageError)
         }
 
-        // ✅ Calculate total duration based on number of items
-        // Regular items: 2.5 seconds each
-        // For a typical party: 3 core items (Venue, Entertainment, Cake) × 2500ms = 7500ms
-        const regularItems = 3 // Venue, Entertainment, Cake
-        const totalDuration = regularItems * 2500
+        // ✅ Calculate total duration dynamically based on budget and guest count
+        // Each item: 2.5 seconds
+        const budget = getDefaultBudgetForGuests(formData.guestCount)
+        const guestCount = parseInt(formData.guestCount || 0)
+        const isLargeParty = guestCount >= 30
+
+        // Calculate number of items that will be shown
+        let itemCount = 4 // Core items: Venue, Entertainment, Cake, Party Bags
+
+        if (budget > 700) {
+          itemCount += 2 // Decorations, Activities
+          if (isLargeParty) {
+            itemCount += 1 // Soft Play
+          }
+        }
+
+        const totalDuration = itemCount * 2500
+        console.log(`⏱️ Loader duration: ${itemCount} items × 2.5s = ${totalDuration}ms`)
         await new Promise((resolve) => setTimeout(resolve, totalDuration))
 
         try {
