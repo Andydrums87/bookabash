@@ -61,9 +61,6 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       }
     }
 
-    // Final item - use emoji as icon
-    items.push({ icon: "🎉", label: "Your party plan is ready!", isSupplier: false })
-
     return items
   }, [partyDetails?.budget, partyDetails?.guestCount, partyPlan])
 
@@ -95,12 +92,11 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
     const advanceItem = () => {
       currentItem++
-      if (currentItem < checklistItems.length - 1) {
+      if (currentItem < checklistItems.length) {
         setCompletedItems(currentItem)
-        setTimeout(advanceItem, itemDuration)
-      } else if (currentItem === checklistItems.length - 1) {
-        // Last item (party ready) - show for less time (1 second)
-        setCompletedItems(currentItem)
+        if (currentItem < checklistItems.length - 1) {
+          setTimeout(advanceItem, itemDuration)
+        }
       }
     }
 
@@ -115,16 +111,9 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
   if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center px-4 overflow-hidden">
+    <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-50))] flex flex-col items-center justify-center px-4 overflow-hidden">
       {/* Content */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-black text-gray-900">
-            Building Your Party Plan
-          </h1>
-        </div>
-
         {/* Custom Lottie Animation */}
         <div className="text-center space-y-6">
           {/* Show current item's Lottie Animation */}
@@ -132,21 +121,12 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
             <>
               <div className="flex justify-center mb-6">
                 <div className="w-64 h-64 md:w-80 md:h-80">
-                  {checklistItems[completedItems]?.animation ? (
-                    <Lottie
-                      animationData={checklistItems[completedItems].animation}
-                      loop={true}
-                      autoplay={true}
-                      key={completedItems} // Force re-render when item changes
-                    />
-                  ) : (
-                    // Show emoji for final item
-                    <div className="flex items-center justify-center h-full">
-                      <div className="w-32 h-32 bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-full flex items-center justify-center shadow-xl">
-                        <span className="text-7xl">{checklistItems[completedItems]?.icon}</span>
-                      </div>
-                    </div>
-                  )}
+                  <Lottie
+                    animationData={checklistItems[completedItems].animation}
+                    loop={true}
+                    autoplay={true}
+                    key={completedItems} // Force re-render when item changes
+                  />
                 </div>
               </div>
 
@@ -159,19 +139,6 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
             </>
           )}
 
-          {/* ✅ Show helpful message on final item */}
-          {completedItems === checklistItems.length - 1 && (
-            <div className="mt-6 space-y-3 animate-fade-in">
-              <p className="text-gray-600 text-base font-medium">
-                Taking you to your dashboard...
-              </p>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-md mx-auto">
-                <p className="text-sm text-gray-700">
-                  💡 Once in your dashboard, you can <span className="font-semibold">customize</span>, <span className="font-semibold">swap</span>, or <span className="font-semibold">add</span> anything you like!
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Progress indicator */}
           <div className="pt-8">
