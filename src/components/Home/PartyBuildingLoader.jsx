@@ -2,6 +2,8 @@
 import { useState, useEffect, useMemo } from "react"
 import Lottie from "lottie-react"
 import partyAnimation from "@/../../public/animations/#0101J_S_07 (1).json"
+import clownJugglingAnimation from "@/../../public/animations/clown-juggling.json"
+import mapPinAnimation from "@/../../public/animations/map-pin-location.json"
 
 export default function PartyBuilderLoader({ isVisible, theme, childName, progress, partyDetails, partyPlan }) {
   const [completedItems, setCompletedItems] = useState(0)
@@ -14,20 +16,48 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
     const items = []
 
-    // Always included - using themed party images
-    items.push({ image: "/puzzle-pieces/venue.png", label: "Recommending a great venue" })
-    items.push({ image: "/puzzle-pieces/entertainment.png", label: "Selecting amazing entertainment" })
-    items.push({ image: "/puzzle-pieces/cake.png", label: "Picking the perfect cake" })
+    // Always included - with custom Lottie animations
+    items.push({
+      animation: mapPinAnimation,
+      label: "Recommending a great venue",
+      type: "venue"
+    })
+    items.push({
+      animation: clownJugglingAnimation,
+      label: "Selecting amazing entertainment",
+      type: "entertainment"
+    })
+    items.push({
+      animation: partyAnimation,
+      label: "Picking the perfect cake",
+      type: "cake"
+    })
 
     // Budget > 700: Add decorations, activities, party bags
     if (budget > 700) {
-      items.push({ image: "/category-icons/decorations.png", label: "Suggesting beautiful decorations" })
-      items.push({ image: "/category-icons/activities.png", label: "Finding fun activities" })
-      items.push({ image: "/puzzle-pieces/partybags.png", label: "Choosing party bags" })
+      items.push({
+        animation: partyAnimation,
+        label: "Suggesting beautiful decorations",
+        type: "decorations"
+      })
+      items.push({
+        animation: partyAnimation,
+        label: "Finding fun activities",
+        type: "activities"
+      })
+      items.push({
+        animation: partyAnimation,
+        label: "Choosing party bags",
+        type: "partybags"
+      })
 
       // Large party (30+ guests): Add soft play
       if (isLargeParty) {
-        items.push({ image: "/category-icons/bouncy-castle.png", label: "Adding soft play options" })
+        items.push({
+          animation: partyAnimation,
+          label: "Adding soft play options",
+          type: "bouncycastle"
+        })
       }
     }
 
@@ -59,21 +89,26 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       return
     }
 
-    const totalDuration = 5000 // Total time for all items
-    const itemDuration = totalDuration / checklistItems.length
+    // ✅ 2.5 seconds per item to enjoy the animations
+    const itemDuration = 2500
+    let currentItem = 0
 
-    const interval = setInterval(() => {
-      setCompletedItems((prev) => {
-        // ✅ Stop at the last item (checklistItems.length - 1) and keep it visible
-        if (prev < checklistItems.length - 1) {
-          return prev + 1
-        }
-        return prev
-      })
-    }, itemDuration)
+    const advanceItem = () => {
+      currentItem++
+      if (currentItem < checklistItems.length - 1) {
+        setCompletedItems(currentItem)
+        setTimeout(advanceItem, itemDuration)
+      } else if (currentItem === checklistItems.length - 1) {
+        // Last item (party ready) - show for less time (1 second)
+        setCompletedItems(currentItem)
+      }
+    }
+
+    // Start the sequence
+    const initialTimeout = setTimeout(advanceItem, itemDuration)
 
     return () => {
-      clearInterval(interval)
+      clearTimeout(initialTimeout)
     }
   }, [isVisible, checklistItems.length])
 
@@ -92,24 +127,36 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
 
         {/* Custom Lottie Animation */}
         <div className="text-center space-y-6">
-          {/* Lottie Animation */}
-          <div className="flex justify-center mb-6">
-            <div className="w-64 h-64 md:w-80 md:h-80">
-              <Lottie
-                animationData={partyAnimation}
-                loop={true}
-                autoplay={true}
-              />
-            </div>
-          </div>
-
-          {/* Current item label */}
+          {/* Show current item's Lottie Animation */}
           {completedItems >= 0 && completedItems < checklistItems.length && (
-            <div className="animate-fade-in-scale">
-              <h2 className="text-xl font-bold text-gray-900">
-                {checklistItems[completedItems]?.label}
-              </h2>
-            </div>
+            <>
+              <div className="flex justify-center mb-6">
+                <div className="w-64 h-64 md:w-80 md:h-80">
+                  {checklistItems[completedItems]?.animation ? (
+                    <Lottie
+                      animationData={checklistItems[completedItems].animation}
+                      loop={true}
+                      autoplay={true}
+                      key={completedItems} // Force re-render when item changes
+                    />
+                  ) : (
+                    // Show emoji for final item
+                    <div className="flex items-center justify-center h-full">
+                      <div className="w-32 h-32 bg-gradient-to-br from-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] rounded-full flex items-center justify-center shadow-xl">
+                        <span className="text-7xl">{checklistItems[completedItems]?.icon}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Current item label */}
+              <div className="animate-fade-in-scale">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {checklistItems[completedItems]?.label}
+                </h2>
+              </div>
+            </>
           )}
 
           {/* ✅ Show helpful message on final item */}

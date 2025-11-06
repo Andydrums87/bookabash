@@ -285,9 +285,15 @@ export default function HomePage() {
           console.error("Storage error:", storageError)
         }
 
-        // ✅ Wait exactly 5 seconds to match the PartyBuildingLoader animation duration
-        // This ensures we redirect right after "Your party plan is ready!" shows
-        await new Promise((resolve) => setTimeout(resolve, 5000))
+        // ✅ Calculate total duration based on number of items
+        // Regular items: 2.5 seconds each
+        // Final "ready" message: 1 second
+        // For a typical party: 3 core items (Venue, Entertainment, Cake) × 2500ms = 7500ms
+        // Plus final message: 1000ms
+        // Total: 8500ms
+        const regularItems = 3 // Venue, Entertainment, Cake
+        const totalDuration = (regularItems * 2500) + 1000
+        await new Promise((resolve) => setTimeout(resolve, totalDuration))
 
         try {
           const redirectURL = "/dashboard?show_welcome=true&source=homepage&t=" + Date.now()
