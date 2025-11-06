@@ -53,15 +53,6 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
         label: "Finding fun activities",
         type: "activities"
       })
-
-      // Large party (30+ guests): Add soft play
-      if (isLargeParty) {
-        items.push({
-          animation: partyAnimation,
-          label: "Adding soft play options",
-          type: "bouncycastle"
-        })
-      }
     }
 
     return items

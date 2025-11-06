@@ -288,17 +288,12 @@ export default function HomePage() {
         // ✅ Calculate total duration dynamically based on budget and guest count
         // Each item: 2.5 seconds
         const budget = getDefaultBudgetForGuests(formData.guestCount)
-        const guestCount = parseInt(formData.guestCount || 0)
-        const isLargeParty = guestCount >= 30
 
         // Calculate number of items that will be shown
         let itemCount = 4 // Core items: Venue, Entertainment, Cake, Party Bags
 
         if (budget > 700) {
           itemCount += 2 // Decorations, Activities
-          if (isLargeParty) {
-            itemCount += 1 // Soft Play
-          }
         }
 
         const totalDuration = itemCount * 2500
