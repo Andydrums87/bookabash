@@ -137,6 +137,13 @@ const childPhotoRef = useRef(null)
     giftRegistry: null,
     registryItemCount: 0
   })
+  const [partyToolsLoading, setPartyToolsLoading] = useState(false)
+  const [partyToolsKey, setPartyToolsKey] = useState(0) // Force re-render key
+
+  // ✅ NEW: Multiple parties state
+  const [allParties, setAllParties] = useState([])
+  const [selectedPartyId, setSelectedPartyId] = useState(null)
+  const [loadingParties, setLoadingParties] = useState(true)
 
   // MAIN PARTY DATA HOOK - This now handles ALL loading
   const {
@@ -174,6 +181,55 @@ const childPhotoRef = useRef(null)
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // ✅ NEW: IMMEDIATELY clear and set loading when party changes
+  useEffect(() => {
+    console.log('🔄 Party ID changed to:', partyId, '- clearing party tools data and starting fresh load')
+
+    // Immediately clear data and set loading to true
+    setPartyToolsLoading(true)
+    setPartyToolsData({
+      guestList: [],
+      rsvps: [],
+      einvites: null,
+      giftRegistry: null,
+      registryItemCount: 0
+    })
+
+    // Increment key to force re-render of dependent components
+    setPartyToolsKey(prev => prev + 1)
+  }, [partyId])
+
+  // ✅ NEW: Load all user parties on mount
+  useEffect(() => {
+    const loadAllParties = async () => {
+      if (!user?.id) {
+        setLoadingParties(false)
+        return
+      }
+
+      console.log('🔄 Loading all user parties...')
+      const result = await partyDatabaseBackend.getAllUserParties()
+
+      if (result.success && result.parties) {
+        console.log('✅ Loaded', result.parties.length, 'parties')
+        setAllParties(result.parties)
+
+        // Set initial selected party to the current one or the first one
+        if (partyId) {
+          setSelectedPartyId(partyId)
+        } else if (result.parties.length > 0) {
+          setSelectedPartyId(result.parties[0].id)
+        }
+      } else {
+        console.error('❌ Failed to load parties:', result.error)
+      }
+
+      setLoadingParties(false)
+    }
+
+    loadAllParties()
+  }, [user?.id, partyId])
 
   // ✅ NEW: Load theme-based supplier recommendations for empty slots
   useEffect(() => {
@@ -242,6 +298,7 @@ const childPhotoRef = useRef(null)
     async function fetchPartyToolsData() {
       if (!partyId) {
         console.log('⚠️ No partyId - skipping party tools fetch')
+        setPartyToolsLoading(false)
         return
       }
 
@@ -326,11 +383,14 @@ const childPhotoRef = useRef(null)
         setPartyToolsData(newData)
       } catch (error) {
         console.error('❌ Error fetching party tools data:', error)
+      } finally {
+        // ✅ ALWAYS set loading to false when done
+        setPartyToolsLoading(false)
       }
     }
 
     fetchPartyToolsData()
-  }, [partyId])
+  }, [partyId]) // ✅ Trigger on partyId change only
 
   // UNIFIED PRICING CALCULATION (same pattern as LocalStorageDashboard)
   const enhancedTotalCost = useMemo(() => {
@@ -352,28 +412,15 @@ const childPhotoRef = useRef(null)
       let supplierCost = 0;
 
       if (isPartyBags) {
-        // Get quantity - check multiple sources
-        const quantity = supplier.partyBagsQuantity ||
-                         supplier.partyBagsMetadata?.quantity ||
-                         supplier.packageData?.partyBagsQuantity ||
-                         10 // fallback
+        // ✅ FIX: Use unified pricing for party bags
+        const pricing = calculateFinalPrice(supplier, partyDetails, supplierAddons);
+        supplierCost = pricing.finalPrice;
 
-        // Get price per bag
-        const pricePerBag = supplier.partyBagsMetadata?.pricePerBag ||
-                            supplier.packageData?.pricePerBag ||
-                            supplier.packageData?.price ||
-                            supplier.price ||
-                            supplier.priceFrom ||
-                            0
-
-        // Calculate total price
-        supplierCost = pricePerBag * quantity
-
-        console.log('📊 Total Cost - Party Bags:', {
+        console.log('📊 Total Cost - Party Bags (Unified Pricing):', {
           supplierName: supplier.name,
-          pricePerBag,
-          quantity,
-          totalPrice: supplierCost
+          finalPrice: pricing.finalPrice,
+          basePrice: pricing.basePrice,
+          breakdown: pricing.breakdown
         })
       } else if (supplier.enhancedPrice && supplier.originalPrice) {
         // Use pre-calculated enhanced price
@@ -1049,6 +1096,22 @@ useEffect(() => {
     router.push('/party-summary#supplier-messages') // Navigate to chat
   }
 
+  // ✅ NEW: Handle party selection from dropdown
+  const handleSelectParty = (newPartyId) => {
+    console.log('🔄 Switching to party:', newPartyId)
+    setSelectedPartyId(newPartyId)
+
+    // Navigate to the new party (this will cause usePartyData to reload with the new partyId)
+    router.push(`/dashboard?party_id=${newPartyId}`)
+  }
+
+  // ✅ NEW: Handle create new party
+  const handleCreateNewParty = () => {
+    console.log('➕ Creating new party...')
+    // Navigate to homepage to create a new party
+    router.push('/')
+  }
+
   // Add these helper functions before your event handlers section
 
 const getRecommendedSupplierForType = (categoryType) => {
@@ -1256,7 +1319,8 @@ const addSuppliersSection = (
       {/* Full Width Header */}
       <div className="mb-8">
         <DatabasePartyHeader
-          theme={partyTheme}
+          key={`party-header-${partyId || 'default'}-${currentParty?.theme || partyTheme}`}
+          theme={currentParty?.theme || partyTheme}
           partyDetails={partyDetails}
           currentParty={currentParty}
           dataSource="database"
@@ -1269,6 +1333,10 @@ const addSuppliersSection = (
           onPhotoUpload={handleChildPhotoUpload}
           uploadingPhoto={uploadingChildPhoto}
           venue={visibleSuppliers?.venue || null}
+          allParties={allParties}
+          selectedPartyId={selectedPartyId || partyId}
+          onSelectParty={handleSelectParty}
+          onCreateNewParty={handleCreateNewParty}
         />
       </div>
 
@@ -1343,6 +1411,7 @@ const addSuppliersSection = (
   </div>
 
   <PartyPhaseContent
+    key={`party-phase-${partyId || 'default'}`}
     phase={partyPhase}
     suppliers={visibleSuppliers}
     enquiries={enquiries}
@@ -1715,7 +1784,7 @@ const addSuppliersSection = (
                     if (isLocked) {
                       return (
                         <div
-                          key={tool.id}
+                          key={`${partyToolsKey}-${partyId}-${tool.id}`}
                           className="flex-shrink-0 w-[280px] snap-start bg-gray-50 border-2 border-gray-200 rounded-xl opacity-60 cursor-not-allowed overflow-hidden"
                         >
                           <div className="relative h-32 overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
@@ -1739,7 +1808,7 @@ const addSuppliersSection = (
 
                     return (
                       <Link
-                        key={tool.id}
+                        key={`${partyToolsKey}-${partyId}-${tool.id}`}
                         href={tool.href}
                         className="flex-shrink-0 w-[280px] snap-start bg-white border-2 border-gray-200 rounded-xl hover:border-primary-300 hover:shadow-md transition-all active:scale-[0.98] overflow-hidden group"
                       >

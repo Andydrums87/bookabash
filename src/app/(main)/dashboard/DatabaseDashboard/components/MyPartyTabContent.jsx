@@ -374,39 +374,65 @@ export default function MyPartyTabContent({
       addon.attachedToSupplier === type
     ) : []
 
-    const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-
-    // Calculate base price:
-    // 1. For party bags, use total from metadata (per-bag price × quantity)
-    //    - First try partyBagsMetadata.totalPrice
-    //    - Then try packageData.totalPrice (for party bags)
-    //    - Then calculate from packageData: price × partyBagsQuantity
-    // 2. For packages, use packageData.price (the selected package price)
-    // 3. Otherwise use supplier.price
-    let basePrice = 0
-
-    // Check if this is a party bags supplier
-    const isPartyBags = supplier.category === 'Party Bags' ||
-                        supplier.category?.toLowerCase().includes('party bag')
-
+    // ✅ DEBUG: Log party bags data
+    const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
     if (isPartyBags) {
-      // Try different party bags price sources
-      basePrice = supplier.partyBagsMetadata?.totalPrice ||
-                  supplier.packageData?.totalPrice ||
-                  (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
-                    ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
-                    : null)
-
-      // If no metadata exists, use price as-is (it's likely already the total)
-      if (!basePrice) {
-        basePrice = supplier.price || supplier.priceFrom || 0
-      }
-    } else {
-      // For non-party-bags: use packageData.price if available, otherwise supplier.price
-      basePrice = supplier.packageData?.price || (supplier.price || 0)
+      console.log('🎁 [MyPartyTab] Party Bags Supplier Data:', {
+        name: supplier.name,
+        price: supplier.price,
+        originalPrice: supplier.originalPrice,
+        priceFrom: supplier.priceFrom,
+        partyBagsQuantity: supplier.partyBagsQuantity,
+        partyBagsMetadata: supplier.partyBagsMetadata,
+        packageData: supplier.packageData,
+        partyDetailsGuestCount: partyDetails?.guestCount,
+        supplierKeys: Object.keys(supplier)
+      })
     }
 
-    const totalPrice = basePrice + addonsCost
+    // ✅ USE: Unified pricing function if available
+    let basePrice = 0
+    let totalPrice = 0
+
+    if (getSupplierDisplayPricing) {
+      const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
+      basePrice = pricing?.basePrice || 0
+      totalPrice = pricing?.totalPrice || 0
+
+      if (isPartyBags) {
+        console.log('🎁 [MyPartyTab] Unified Pricing Result:', {
+          basePrice,
+          totalPrice,
+          pricingObject: pricing
+        })
+      }
+    } else {
+      // Fallback to manual calculation
+      const addonsCost = supplierAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+
+      // Check if this is a party bags supplier
+      const isPartyBags = supplier.category === 'Party Bags' ||
+                          supplier.category?.toLowerCase().includes('party bag')
+
+      if (isPartyBags) {
+        // Try different party bags price sources
+        basePrice = supplier.partyBagsMetadata?.totalPrice ||
+                    supplier.packageData?.totalPrice ||
+                    (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity
+                      ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
+                      : null)
+
+        // If no metadata exists, use price as-is (it's likely already the total)
+        if (!basePrice) {
+          basePrice = supplier.price || supplier.priceFrom || 0
+        }
+      } else {
+        // For non-party-bags: use packageData.price if available, otherwise supplier.price
+        basePrice = supplier.packageData?.price || (supplier.price || 0)
+      }
+
+      totalPrice = basePrice + addonsCost
+    }
     const supplierName = supplier.name || 'Unknown Supplier'
     const typeConfig = getTypeConfig(type)
 
@@ -525,9 +551,15 @@ export default function MyPartyTabContent({
       addon.supplierType === type ||
       addon.attachedToSupplier === type
     ) : []
-    const addonsCost = supplierAddons.reduce((addonSum, addon) => addonSum + (addon.price || 0), 0)
 
-    // Calculate base price (same logic as renderSupplierCard)
+    // ✅ USE: Unified pricing function if available
+    if (getSupplierDisplayPricing) {
+      const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
+      return sum + (pricing?.totalPrice || 0)
+    }
+
+    // Fallback to manual calculation
+    const addonsCost = supplierAddons.reduce((addonSum, addon) => addonSum + (addon.price || 0), 0)
     let basePrice = 0
     const isPartyBags = supplier.category === 'Party Bags' ||
                         supplier.category?.toLowerCase().includes('party bag')
@@ -539,7 +571,6 @@ export default function MyPartyTabContent({
                     ? supplier.packageData.price * supplier.packageData.partyBagsQuantity
                     : null)
 
-      // If no metadata exists, use price as-is (it's likely already the total)
       if (!basePrice) {
         basePrice = supplier.price || supplier.priceFrom || 0
       }
@@ -879,7 +910,35 @@ export default function MyPartyTabContent({
                   {Object.entries(suppliers)
                     .filter(([type, supplier]) => supplier)
                     .map(([type, supplier]) => {
-                      const displayPrice = supplier.packageData?.price || supplier.price || 0
+                      // ✅ FIX: Use unified pricing for party bags
+                      const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
+
+                      let displayPrice = 0
+                      if (getSupplierDisplayPricing) {
+                        const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+                          addon.supplierId === supplier.id ||
+                          addon.supplierType === type ||
+                          addon.attachedToSupplier === type
+                        ) : []
+                        const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
+                        displayPrice = pricing?.basePrice || 0
+
+                        if (isPartyBags) {
+                          console.log('🎁 [Summary] Party Bags Price:', {
+                            name: supplier.name,
+                            hasFunction: !!getSupplierDisplayPricing,
+                            pricing: pricing,
+                            basePrice: pricing?.basePrice,
+                            displayPrice
+                          })
+                        }
+                      } else {
+                        displayPrice = supplier.packageData?.price || supplier.price || 0
+                        if (isPartyBags) {
+                          console.log('🎁 [Summary] NO PRICING FUNCTION - Fallback:', displayPrice)
+                        }
+                      }
+
                       return (
                         <div key={type} className="flex items-center justify-between text-sm">
                           <span className="text-gray-700">{supplier.name}</span>
@@ -908,9 +967,22 @@ export default function MyPartyTabContent({
 
             {/* Total */}
             {(() => {
-              const supplierTotal = Object.values(suppliers)
-                .filter(s => s)
-                .reduce((sum, s) => sum + (s.packageData?.price || s.price || 0), 0)
+              // ✅ FIX: Use unified pricing for all suppliers including party bags
+              const supplierTotal = Object.entries(suppliers)
+                .filter(([type, s]) => s)
+                .reduce((sum, [type, supplier]) => {
+                  if (getSupplierDisplayPricing) {
+                    const supplierAddons = Array.isArray(addons) ? addons.filter(addon =>
+                      addon.supplierId === supplier.id ||
+                      addon.supplierType === type ||
+                      addon.attachedToSupplier === type
+                    ) : []
+                    const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
+                    return sum + (pricing?.basePrice || 0)
+                  }
+                  return sum + (supplier.packageData?.price || supplier.price || 0)
+                }, 0)
+
               const addonTotal = addons?.reduce((sum, a) => sum + (a.price || 0), 0) || 0
               const totalCost = supplierTotal + addonTotal
 

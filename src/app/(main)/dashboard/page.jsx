@@ -305,16 +305,58 @@ export default function DashboardPage() {
 
           
           const partyResult = await partyDatabaseBackend.getCurrentParty()
-          
+
           debug.partyCheck = {
             success: partyResult.success,
             hasParty: !!partyResult.party,
             partyId: partyResult.party?.id,
             error: partyResult.error
           }
-          
-  
-          
+
+          // ✅ NEW: Check if localStorage party is newer than database party
+          const localStorageCheck = checkLocalStorage()
+          let isLocalStorageNewer = false
+
+          if (localStorageCheck.hasValidData && partyResult.success && partyResult.party) {
+            try {
+              const partyDetails = JSON.parse(localStorage.getItem('party_details') || '{}')
+              const localCreatedAt = partyDetails.createdAt ? new Date(partyDetails.createdAt).getTime() : 0
+              const dbCreatedAt = partyResult.party.created_at ? new Date(partyResult.party.created_at).getTime() : 0
+
+              isLocalStorageNewer = localCreatedAt > dbCreatedAt
+
+              debug.partyTimestamps = {
+                localCreatedAt: partyDetails.createdAt,
+                dbCreatedAt: partyResult.party.created_at,
+                isLocalStorageNewer,
+                timeDiff: localCreatedAt - dbCreatedAt
+              }
+            } catch (e) {
+              console.warn('Error comparing timestamps:', e)
+            }
+          }
+
+          debug.newPartyCheck = {
+            hasLocalStorage: localStorageCheck.hasValidData,
+            hasDbParty: partyResult.success && !!partyResult.party,
+            isLocalStorageNewer
+          }
+
+          console.log('🔍 NEW PARTY CHECK:', debug.newPartyCheck)
+
+          // ✅ PRIORITY: If localStorage party is newer than DB party, show LocalStorageDashboard
+          if (isLocalStorageNewer && localStorageCheck.hasValidData) {
+            debug.steps.push('🎉 LocalStorage party is NEWER → LOCALSTORAGE DASHBOARD (will be saved as new party)')
+            debug.finalDecision = 'localStorage'
+
+            console.log('✅✅✅ SHOWING LOCALSTORAGE DASHBOARD FOR NEW PARTY')
+
+            setDebugInfo(debug)
+            setUserType('localStorage')
+            setIsLoading(false)
+            return
+          }
+
           if (partyResult.success && partyResult.party) {
             // ✅ Authenticated + Has Database Party = DATABASE DASHBOARD
             debug.steps.push('✅ Database party found → DATABASE DASHBOARD')

@@ -223,7 +223,25 @@ class PartyBuilderBackend {
         // Preserve original pricing for reference
         originalPrice: supplier.priceFrom || supplier.price || 0
       };
-      
+
+      // ✅ CRITICAL: For party bags, set the quantity based on guest count
+      const isPartyBags = supplier.category === 'Party Bags' ||
+                         supplier.category?.toLowerCase().includes('party bag');
+      if (isPartyBags && partyDetails) {
+        const guestCount = partyDetails.guestCount || 10;
+        enhancedSupplier.partyBagsQuantity = guestCount;
+        enhancedSupplier.partyBagsMetadata = {
+          quantity: guestCount,
+          pricePerBag: supplier.priceFrom || supplier.price || 5.00,
+          totalPrice: (supplier.priceFrom || supplier.price || 5.00) * guestCount
+        };
+        // Update package data with quantity
+        if (enhancedSupplier.packageData) {
+          enhancedSupplier.packageData.partyBagsQuantity = guestCount;
+          enhancedSupplier.packageData.totalPrice = enhancedSupplier.partyBagsMetadata.totalPrice;
+        }
+      }
+
       // ✅ NEW: Calculate pricing using unified pricing system
       const pricingResult = calculateFinalPrice(enhancedSupplier, partyDetails, []);
       
@@ -849,7 +867,7 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
   Object.entries(selectedSuppliers).forEach(([category, supplier]) => {
     // Skip the carousel options array itself
     if (category === 'venueCarouselOptions') return;
-    
+
     if (supplier && partyPlan.hasOwnProperty(category)) {
       console.log(`🔍 Converting ${supplier.name} to party plan:`, {
         originalPrice: supplier.originalPrice,
@@ -857,39 +875,53 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
         hasWeekendPremium: !!supplier.weekendPremium,
         weekendPremiumConfig: supplier.weekendPremium
       });
-      
+
+      // Special handling for party bags - ensure quantity and metadata are preserved
+      const isPartyBags = supplier.category === 'Party Bags' ||
+                         supplier.category?.toLowerCase().includes('party bag');
+
       partyPlan[category] = {
         id: supplier.id,
         name: supplier.name,
         description: supplier.description || '',
-        
+
         // Store enhanced price for display
         price: supplier.enhancedPrice || supplier.priceFrom || 0,
         originalPrice: supplier.originalPrice || supplier.priceFrom || 0,
-        
+
         status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
         image: supplier.image || '',
         category: supplier.category || category,
-        priceUnit: supplier.priceUnit || "per event",
+        priceUnit: isPartyBags ? "per bag" : (supplier.priceUnit || "per event"),
         addedAt: new Date().toISOString(),
-        
+
         // Preserve ALL pricing configuration for dynamic calculation
         packageData: supplier.packageData,
-        
+
+        // CRITICAL: Preserve party bags metadata if present
+        ...(isPartyBags && {
+          partyBagsQuantity: supplier.partyBagsQuantity,
+          partyBagsMetadata: supplier.partyBagsMetadata
+        }),
+
         // CRITICAL: Preserve weekend premium configuration
         weekendPremium: supplier.weekendPremium,
         extraHourRate: supplier.extraHourRate || supplier.serviceDetails?.extraHourRate || 0,
         serviceDetails: supplier.serviceDetails,
-        
+
         originalSupplier: {
           ...supplier,
           weekendPremium: supplier.weekendPremium,
           extraHourRate: supplier.extraHourRate,
-          serviceDetails: supplier.serviceDetails
+          serviceDetails: supplier.serviceDetails,
+          ...(isPartyBags && {
+            partyBagsQuantity: supplier.partyBagsQuantity,
+            partyBagsMetadata: supplier.partyBagsMetadata
+          })
         },
         isFallbackSelection: supplier.isFallbackSelection || false
       };
-      
+
       console.log(`✅ Stored ${supplier.name} with weekend premium:`, {
         storedWeekendPremium: partyPlan[category].weekendPremium,
         originalSupplierWeekendPremium: partyPlan[category].originalSupplier.weekendPremium
@@ -920,8 +952,8 @@ async buildParty(partyDetails) {
   try {
     const {
       date, theme, guestCount, location, budget,
-      childAge = 6, childName = "Snappy The Crocodile",
-      firstName = "Snappy", lastName = "The Crocodile",
+      childAge = 6, childName = "Your Child",
+      firstName = "Your", lastName = "Child",
       timeSlot, duration = 2, time,
       hasOwnVenue = false // NEW: Extract this flag
     } = partyDetails;
@@ -942,14 +974,16 @@ async buildParty(partyDetails) {
     // Handle name processing
     let processedFirstName = firstName;
     let processedLastName = lastName;
+    let processedChildName = childName; // Preserve original childName
+
     if (!firstName && !lastName && childName) {
       const nameParts = childName.split(' ');
-      processedFirstName = nameParts[0] || "Snappy";
-      processedLastName = nameParts.slice(1).join(' ') || "The Crocodile";
+      processedFirstName = nameParts[0] || "Your";
+      processedLastName = nameParts.slice(1).join(' ') || "Child";
     }
 
-    console.log(`Building party for ${processedFirstName} ${processedLastName} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
-    
+    console.log(`Building party for ${processedChildName || `${processedFirstName} ${processedLastName}`} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
+
     // NEW: Log venue preference
     if (hasOwnVenue) {
       console.log('🏠 User has their own venue - skipping venue selection');
@@ -963,7 +997,7 @@ async buildParty(partyDetails) {
       duration,
       firstName: processedFirstName,
       lastName: processedLastName,
-      childName: `${processedFirstName} ${processedLastName}`.trim(),
+      childName: processedChildName, // Use the original childName if provided, don't overwrite it
       time: time || this.convertTimeSlotToTime(processedTimeSlot),
       displayTimeSlot: this.formatTimeSlotForDisplay(processedTimeSlot),
       displayDuration: this.formatDurationForDisplay(duration),
@@ -1032,7 +1066,7 @@ async buildParty(partyDetails) {
 
     // Create party plan with venue carousel options
     const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
-    
+
     // Save to localStorage
     this.savePartyDetailsToLocalStorage(enhancedPartyDetails);
     this.savePartyPlanToLocalStorage(partyPlan);

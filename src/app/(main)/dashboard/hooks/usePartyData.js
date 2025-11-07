@@ -1,29 +1,40 @@
 // hooks/usePartyData.js - FIXED VERSION with consolidated loading
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import { usePartyDetails } from '../hooks/usePartyDetails'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { supabase } from '@/lib/supabase'
 import { useConsolidatedLoading } from './useConsolidatedLoading'
+import { useSearchParams } from 'next/navigation'
 
 
 const CACHE_KEY = 'party_data_cache'
 const CACHE_DURATION = 5 * 60 * 1000
 
-const getCachedData = () => {
+const getCachedData = (partyId) => {
   if (typeof window === 'undefined') return null
-  
+
   try {
     const cached = sessionStorage.getItem(CACHE_KEY)
     if (!cached) return null
-    
-    const { data, timestamp, partyDetails, partyTheme } = JSON.parse(cached) // ✅ Add partyDetails and theme
-    
+
+    const { data, timestamp, partyDetails, partyTheme, cachedPartyId } = JSON.parse(cached) // ✅ Add partyId
+
+    // ✅ FIX: Only invalidate cache if we have BOTH IDs and they don't match
+    // If partyId is null/undefined (no URL param), allow cache to be used
+    if (partyId && cachedPartyId && cachedPartyId !== partyId) {
+      console.log('🔄 Party ID changed - invalidating cache', { cachedPartyId, newPartyId: partyId })
+      sessionStorage.removeItem(CACHE_KEY)
+      // Also clear any other cached data to force fresh load
+      sessionStorage.removeItem('party_plan_cache')
+      return null
+    }
+
     if (Date.now() - timestamp < CACHE_DURATION) {
-      console.log('✅ Cache hit with party details')
+      console.log('✅ Cache hit with party details, cachedPartyId:', cachedPartyId, 'urlPartyId:', partyId)
       return { data, partyDetails, partyTheme } // ✅ Return all
     }
-    
+
     sessionStorage.removeItem(CACHE_KEY)
     return null
   } catch (error) {
@@ -31,17 +42,18 @@ const getCachedData = () => {
   }
 }
 
-const setCachedData = (data, partyDetails, partyTheme) => { // ✅ Add params
+const setCachedData = (data, partyDetails, partyTheme, partyId) => { // ✅ Add partyId param
   if (typeof window === 'undefined') return
-  
+
   try {
     sessionStorage.setItem(CACHE_KEY, JSON.stringify({
       data,
       partyDetails, // ✅ Cache party details
       partyTheme,   // ✅ Cache theme
+      cachedPartyId: partyId, // ✅ Cache party ID
       timestamp: Date.now()
     }))
-    console.log('💾 Cached with party details')
+    console.log('💾 Cached with party details and party ID:', partyId)
   } catch (error) {
     console.error('Cache error:', error)
   }
@@ -49,45 +61,84 @@ const setCachedData = (data, partyDetails, partyTheme) => { // ✅ Add params
 
 
 export function usePartyData() {
+  const searchParams = useSearchParams()
+  const urlPartyId = searchParams.get('party_id')
 
-  const cachedData = getCachedData()
-  const hasCache = cachedData !== null
+  // ✅ FIX: Track previous partyId to detect changes
+  const prevPartyIdRef = useRef(null)
 
-  const [simpleLoading, setSimpleLoading] = useState(!hasCache)
+  const [simpleLoading, setSimpleLoading] = useState(true)
 
-   // Still use consolidated loading for compatibility, but ignore its state if we have cache
+   // Still use consolidated loading for compatibility
    const consolidatedLoading = useConsolidatedLoading({
     minimumDuration: 2000,
     defaultText: "Loading your party...",
-    preventFlashing: !hasCache
+    preventFlashing: true
   })
 
-  const isLoading = hasCache ? simpleLoading : consolidatedLoading.isLoading
+  const isLoading = simpleLoading || consolidatedLoading.isLoading
 
-  console.log('🎯 Loading state:', { hasCache, simpleLoading, consolidatedLoading: consolidatedLoading.isLoading, finalIsLoading: isLoading })
-    
-  
-  // Core state - Initialize with cache
-  const [partyData, setPartyData] = useState(cachedData?.partyData || {})
-  const [partyId, setPartyId] = useState(cachedData?.partyId || null)
-  const [totalCost, setTotalCost] = useState(cachedData?.totalCost || 0)
-  const [addons, setAddons] = useState(cachedData?.addons || [])
-  const [user, setUser] = useState(cachedData?.user || null)
-  const [currentParty, setCurrentParty] = useState(cachedData?.currentParty || null)
+  console.log('🎯 Loading state:', { simpleLoading, consolidatedLoading: consolidatedLoading.isLoading, finalIsLoading: isLoading })
+
+
+  // Core state - Don't initialize from cache here, let useEffect handle it
+  const [partyData, setPartyData] = useState({})
+  const [partyId, setPartyId] = useState(null)
+  const [totalCost, setTotalCost] = useState(0)
+  const [addons, setAddons] = useState([])
+  const [user, setUser] = useState(null)
+  const [currentParty, setCurrentParty] = useState(null)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [dataSource, setDataSource] = useState(cachedData?.dataSource || 'unknown')
-  const [isSignedIn, setIsSignedIn] = useState(cachedData?.isSignedIn || false)
-  const [initialized, setInitialized] = useState(hasCache)
+  const [dataSource, setDataSource] = useState('unknown')
+  const [isSignedIn, setIsSignedIn] = useState(false)
+  const [initialized, setInitialized] = useState(false)
+
+// ✅ FIX: Clear cache when URL party ID changes
+useEffect(() => {
+  // Check if partyId actually changed
+  if (prevPartyIdRef.current !== null && prevPartyIdRef.current !== urlPartyId) {
+    console.log('🔄 URL Party ID changed from', prevPartyIdRef.current, 'to', urlPartyId, '- clearing cache to force fresh load')
+
+    // Clear cache to force fresh data fetch
+    sessionStorage.removeItem(CACHE_KEY)
+    sessionStorage.removeItem('party_plan_cache')
+
+    // Set loading state
+    setSimpleLoading(true)
+    setInitialized(false)
+  }
+
+  // Update ref
+  prevPartyIdRef.current = urlPartyId
+}, [urlPartyId])
 
 // Load initial party data
 useEffect(() => {
   const loadPartyData = async () => {
-    if (!hasCache) {
-      consolidatedLoading.startLoading('party-data', 'Loading your party...')
-    } else {
-      setSimpleLoading(false) // ✅ Immediately turn off loading
+    console.log('🔄 loadPartyData triggered for urlPartyId:', urlPartyId)
+
+    // Check for cache INSIDE the effect
+    const cachedData = getCachedData(urlPartyId)
+    const hasCache = cachedData !== null
+
+    if (hasCache) {
+      console.log('✅ Using cached data for party:', urlPartyId)
+      // Immediately set state from cache
+      setUser(cachedData.data.user)
+      setCurrentParty(cachedData.data.currentParty)
+      setPartyData(cachedData.data.partyData)
+      setPartyId(cachedData.data.partyId)
+      setTotalCost(cachedData.data.totalCost)
+      setAddons(cachedData.data.addons)
+      setDataSource(cachedData.data.dataSource)
+      setIsSignedIn(cachedData.data.isSignedIn)
+      setInitialized(true)
+      setSimpleLoading(false)
+      return // Exit early, don't fetch
     }
-    
+
+    consolidatedLoading.startLoading('party-data', 'Loading your party...')
+
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
       
@@ -95,13 +146,19 @@ useEffect(() => {
       
       if (user && !error) {
         setIsSignedIn(true)
-        
-        if (!hasCache) {
-          consolidatedLoading.startLoading('database-party', 'Loading party details...')
+
+        consolidatedLoading.startLoading('database-party', 'Loading party details...')
+
+        // ✅ FIX: Check if we have a specific party_id in URL, otherwise get current party
+        let partyResult
+        if (urlPartyId) {
+          console.log('🔍 Loading specific party from URL:', urlPartyId)
+          partyResult = await partyDatabaseBackend.getPartyById(urlPartyId)
+        } else {
+          console.log('🔍 Loading current party')
+          partyResult = await partyDatabaseBackend.getCurrentParty()
         }
-        
-        const partyResult = await partyDatabaseBackend.getCurrentParty()
-      
+
         if (partyResult.success && partyResult.party) {
           const party = partyResult.party
           const partyDataWithPayment = {
@@ -119,16 +176,21 @@ useEffect(() => {
           setAddons(party.party_plan?.addons || [])
 
           // Cache it
-          setCachedData({
-            user,
-            currentParty: party,
-            partyData: partyDataWithPayment,
-            partyId: party.id,
-            totalCost: party.estimated_cost || 0,
-            addons: party.party_plan?.addons || [],
-            dataSource: 'database',
-            isSignedIn: true
-          })
+          setCachedData(
+            {
+              user,
+              currentParty: party,
+              partyData: partyDataWithPayment,
+              partyId: party.id,
+              totalCost: party.estimated_cost || 0,
+              addons: party.party_plan?.addons || [],
+              dataSource: 'database',
+              isSignedIn: true
+            },
+            party, // partyDetails
+            party.theme || 'superhero', // partyTheme
+            party.id // partyId
+          )
         } else {
           setCurrentParty(null)
           setDataSource('localStorage')
@@ -138,10 +200,8 @@ useEffect(() => {
           setTotalCost(calculateLocalStorageCost(localPartyData))
           setAddons(localPartyData.addons || [])
         }
-        
-        if (!hasCache) {
-          consolidatedLoading.finishLoading('database-party')
-        }
+
+        consolidatedLoading.finishLoading('database-party')
       } else {
         setIsSignedIn(false)
         setCurrentParty(null)
@@ -162,14 +222,13 @@ useEffect(() => {
       setDataSource('localStorage')
       setInitialized(true)
     } finally {
-      if (!hasCache) {
-        consolidatedLoading.finishLoading('party-data')
-      }
+      consolidatedLoading.finishLoading('party-data')
+      setSimpleLoading(false)
     }
   }
 
   loadPartyData()
-}, [])
+}, [urlPartyId]) // ✅ FIX: Re-run when URL party_id changes
 
 
   // Helper to calculate localStorage cost
@@ -202,18 +261,18 @@ useEffect(() => {
     handleNameSubmit,
     handlePartyDetailsUpdate: originalHandlePartyDetailsUpdate
   } = usePartyDetails(
-    initialized ? user : undefined, 
+    initialized ? user : undefined,
     initialized ? currentParty : undefined,
-    cachedData?.partyDetails, // ✅ Pass cached details
-    cachedData?.partyTheme     // ✅ Pass cached theme
+    undefined, // Party details will be loaded from currentParty
+    undefined  // Theme will be loaded from currentParty
   )
   
 
   // Register party details loading
   useEffect(() => {
-    if (partyDetailsLoading && initialized && !hasCache) {
+    if (partyDetailsLoading && initialized) {
       consolidatedLoading.startLoading('party-details', 'Loading party details...')
-    } else if (!partyDetailsLoading && !hasCache) {
+    } else if (!partyDetailsLoading) {
       consolidatedLoading.finishLoading('party-details')
     }
   }, [partyDetailsLoading, initialized])
@@ -250,7 +309,8 @@ const refreshPartyData = async () => {
             isSignedIn
           },
           partyDetails, // ✅ Include party details
-          partyTheme    // ✅ Include theme
+          partyTheme,   // ✅ Include theme
+          party.id      // ✅ Include party ID
         )
       }
     } else {

@@ -298,6 +298,66 @@ async getUserPlannedParties() {
     return { success: false, error: error.message }
   }
 }
+
+/**
+ * Get ALL user's active parties (draft, planned, confirmed)
+ * Excludes cancelled and completed parties
+ */
+async getAllUserParties() {
+  try {
+    const userResult = await this.getCurrentUser()
+    if (!userResult.success) {
+      return { success: false, error: 'User not authenticated', parties: [] }
+    }
+
+    const { data: parties, error } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('user_id', userResult.user.id)
+      .not('status', 'in', '(cancelled,completed)')  // Exclude cancelled/completed
+      .order('party_date', { ascending: true })  // Order by party date (soonest first)
+
+    if (error) throw error
+
+    return { success: true, parties: parties || [] }
+
+  } catch (error) {
+    console.error('❌ Error getting all user parties:', error)
+    return { success: false, error: error.message, parties: [] }
+  }
+}
+
+/**
+ * Get a specific party by ID
+ * Verifies that the party belongs to the current user
+ */
+async getPartyById(partyId) {
+  try {
+    const userResult = await this.getCurrentUser()
+    if (!userResult.success) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data: party, error } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('id', partyId)
+      .eq('user_id', userResult.user.id) // Security: ensure party belongs to user
+      .single()
+
+    if (error) {
+      console.error('❌ Error getting party by ID:', error)
+      return { success: false, error: error.message }
+    }
+
+    console.log('✅ Loaded party:', party.id, '-', party.child_name)
+    return { success: true, party }
+
+  } catch (error) {
+    console.error('❌ Error getting party by ID:', error)
+    return { success: false, error: error.message }
+  }
+}
 // Add this new function to partyDatabaseBackend.js
 async getActivePlannedParty() {
   try {
@@ -3545,6 +3605,114 @@ async getPublicInvite(inviteIdOrSlug) {
     };
   }
 }
+/**
+ * Look up guest by RSVP code and return invite + guest details
+ */
+async getInviteByRSVPCode(rsvpCode) {
+  try {
+    console.log('🔍 Looking up invite by RSVP code:', rsvpCode);
+
+    // Get all active parties (not just confirmed - could be draft, planning, etc.)
+    const { data: parties, error: partiesError } = await supabase
+      .from('parties')
+      .select('id, child_name, party_date, party_time, location, theme, party_plan, status')
+      .neq('status', 'cancelled'); // Get all parties except cancelled ones
+
+    if (partiesError) {
+      console.error('❌ Error fetching parties:', partiesError);
+      return { success: false, error: partiesError.message };
+    }
+
+    console.log(`📊 Found ${parties?.length || 0} confirmed parties to search`);
+
+    // Search for the RSVP code in party_plan.einvites.guestList
+    let matchedGuest = null;
+    let matchedParty = null;
+
+    for (const party of parties) {
+      const guestList = party.party_plan?.einvites?.guestList || [];
+      console.log(`🔍 Party "${party.child_name}" has ${guestList.length} guests`);
+
+      // Log RSVP codes for debugging
+      const codes = guestList.map(g => g.rsvpCode).filter(Boolean);
+      if (codes.length > 0) {
+        console.log(`  RSVP codes: ${codes.join(', ')}`);
+      }
+
+      const guest = guestList.find(g => g.rsvpCode === rsvpCode);
+
+      if (guest) {
+        matchedGuest = guest;
+        matchedParty = party;
+        break;
+      }
+    }
+
+    if (!matchedGuest || !matchedParty) {
+      console.log('❌ No guest found with RSVP code:', rsvpCode);
+      console.log('💡 Make sure you\'ve added a guest through the RSVP management page');
+      return {
+        success: false,
+        error: 'Invalid or expired RSVP link',
+        guest: null,
+        party: null
+      };
+    }
+
+    console.log('✅ Found guest:', matchedGuest.childName, 'for party:', matchedParty.child_name);
+
+    // Get the public invite for this party (if it exists)
+    // Note: We need to check if invite_data is a JSONB column
+    const { data: allInvites, error: inviteError } = await supabase
+      .from('public_invites')
+      .select('*')
+      .eq('is_active', true);
+
+    if (inviteError) {
+      console.error('⚠️ Error fetching public invites:', inviteError);
+    }
+
+    // Find the invite that matches this party ID
+    let publicInvite = null;
+    if (allInvites && allInvites.length > 0) {
+      publicInvite = allInvites.find(invite => {
+        const inviteData = typeof invite.invite_data === 'string'
+          ? JSON.parse(invite.invite_data)
+          : invite.invite_data;
+        return inviteData?.partyId === matchedParty.id;
+      });
+    }
+
+    return {
+      success: true,
+      guest: matchedGuest,
+      party: matchedParty,
+      invite: publicInvite,
+      inviteDetails: {
+        id: publicInvite?.id,
+        theme: publicInvite?.theme || matchedParty.theme,
+        generatedImage: publicInvite?.generated_image,
+        partyId: matchedParty.id,
+        inviteData: {
+          childName: matchedParty.child_name,
+          age: matchedParty.party_plan?.child_age || '',
+          date: matchedParty.party_date,
+          time: matchedParty.party_time,
+          venue: matchedParty.location
+        }
+      }
+    };
+
+  } catch (error) {
+    console.error('❌ Error in getInviteByRSVPCode:', error);
+    return {
+      success: false,
+      error: error.message,
+      guest: null,
+      party: null
+    };
+  }
+}
 async findGiftRegistryForParty(partyId) {
   try {
     // Find existing registry by party ID
@@ -4039,8 +4207,8 @@ async getRSVPAnalytics(partyId) {
  */
 async submitRSVP(inviteId, rsvpData) {
   try {
-  
-    
+
+
     const rsvp = {
       invite_id: inviteId,
       guest_name: rsvpData.guestName,
@@ -4057,22 +4225,75 @@ async submitRSVP(inviteId, rsvpData) {
 
 
 
+    // Use insert instead of upsert - each child's RSVP should be separate
+    // If they RSVP again, it creates a new entry (we can track changes over time)
     const { data, error } = await supabase
       .from('rsvps')
-      .upsert(rsvp, { 
-        onConflict: 'invite_id,guest_email',
-        ignoreDuplicates: false 
-      })
+      .insert(rsvp)
       .select()
       .single();
 
-   
+
 
     if (error) {
       console.error('❌ Database error:', error);
       return { success: false, error: error.message };
     }
 
+    // If rsvpCode is provided, update the guest's status in party_plan
+    if (rsvpData.rsvpCode && rsvpData.partyId) {
+      try {
+        const { data: party, error: fetchError } = await supabase
+          .from('parties')
+          .select('party_plan')
+          .eq('id', rsvpData.partyId)
+          .single();
+
+        if (!fetchError && party) {
+          const currentPlan = party.party_plan || {};
+          const einvites = currentPlan.einvites || {};
+          const guestList = einvites.guestList || [];
+
+          // Update the guest's status
+          const updatedGuestList = guestList.map(guest => {
+            if (guest.rsvpCode === rsvpData.rsvpCode) {
+              return {
+                ...guest,
+                status: rsvpData.attendance,
+                rsvpSubmittedAt: new Date().toISOString(),
+                guestName: rsvpData.guestName,
+                guestEmail: rsvpData.guestEmail,
+                adultsCount: rsvpData.adultsCount || 1,
+                childrenCount: rsvpData.childrenCount || 0,
+                dietaryRequirements: rsvpData.dietaryRequirements || '',
+                message: rsvpData.message || ''
+              };
+            }
+            return guest;
+          });
+
+          // Save updated guest list
+          const updatedPlan = {
+            ...currentPlan,
+            einvites: {
+              ...einvites,
+              guestList: updatedGuestList,
+              updatedAt: new Date().toISOString()
+            }
+          };
+
+          await supabase
+            .from('parties')
+            .update({ party_plan: updatedPlan })
+            .eq('id', rsvpData.partyId);
+
+          console.log('✅ Updated guest status in party_plan for RSVP code:', rsvpData.rsvpCode);
+        }
+      } catch (updateError) {
+        console.error('⚠️ Error updating guest status in party_plan:', updateError);
+        // Don't fail the whole operation if this update fails
+      }
+    }
 
     return { success: true, rsvp: data };
   } catch (error) {
@@ -4239,8 +4460,9 @@ async getUserParties(userId) {
  */
 async addPartyGuest(partyId, guestData) {
   try {
+    // Import the code generator
+    const { generateRSVPCode } = await import('./generateRSVPCode.js')
 
-    
     // Get current party data
     const { data: party, error: fetchError } = await supabase
       .from('parties')
@@ -4257,12 +4479,23 @@ async addPartyGuest(partyId, guestData) {
     const einvites = currentPlan.einvites || {};
     const guestList = einvites.guestList || [];
 
-    // Create new guest object (simple - just child name)
+    // Generate unique RSVP code
+    let rsvpCode = generateRSVPCode()
+
+    // Ensure uniqueness within this party
+    while (guestList.some(g => g.rsvpCode === rsvpCode)) {
+      rsvpCode = generateRSVPCode()
+    }
+
+    // Create new guest object with RSVP code and sent status
     const newGuest = {
       id: `guest_${Date.now()}`, // Simple unique ID
       childName: guestData.childName.trim(),
       added_at: new Date().toISOString(),
-      status: 'pending'
+      status: 'pending',
+      rsvpCode: rsvpCode, // ✅ NEW: Unique RSVP code
+      inviteSent: false, // ✅ NEW: Track if invite has been sent
+      sentAt: null // ✅ NEW: When invite was sent
     };
 
     // Add to guest list
@@ -4308,8 +4541,8 @@ async addPartyGuest(partyId, guestData) {
  */
 async getPartyGuests(partyId) {
   try {
-  
-    
+
+
     // Get the party data
     const { data: party, error: fetchError } = await supabase
       .from('parties')
@@ -4327,13 +4560,81 @@ async getPartyGuests(partyId) {
     const guestList = einvites.guestList || [];
 
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       guests: guestList
     };
-    
+
   } catch (error) {
     console.error('❌ Error in getPartyGuests:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Mark a guest invite as sent
+ */
+async markGuestInviteSent(partyId, guestId, platform) {
+  try {
+    // Get current party data
+    const { data: party, error: fetchError } = await supabase
+      .from('parties')
+      .select('party_plan')
+      .eq('id', partyId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ Error fetching party:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentPlan = party.party_plan || {};
+    const einvites = currentPlan.einvites || {};
+    const guestList = einvites.guestList || [];
+
+    // Find and update the guest
+    const updatedGuestList = guestList.map(guest => {
+      if (guest.id === guestId) {
+        return {
+          ...guest,
+          inviteSent: true,
+          sentAt: new Date().toISOString(),
+          sentVia: platform
+        };
+      }
+      return guest;
+    });
+
+    // Update party plan
+    const updatedPlan = {
+      ...currentPlan,
+      einvites: {
+        ...einvites,
+        guestList: updatedGuestList,
+        updatedAt: new Date().toISOString(),
+      }
+    };
+
+    // Save to database
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ party_plan: updatedPlan })
+      .eq('id', partyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Error marking invite as sent:', error);
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      guest: updatedGuestList.find(g => g.id === guestId)
+    };
+
+  } catch (error) {
+    console.error('❌ Error in markGuestInviteSent:', error);
     return { success: false, error: error.message };
   }
 }

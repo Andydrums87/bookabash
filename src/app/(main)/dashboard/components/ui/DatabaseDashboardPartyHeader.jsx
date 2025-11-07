@@ -1,9 +1,12 @@
 // DatabasePartyHeader.jsx - COMPACT VERSION WITH KEY INFO
 "use client"
 
+import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Camera, MapPin, Sparkles } from "lucide-react"
+import { Calendar, Clock, Camera, MapPin, Sparkles, ChevronDown, X, Users } from "lucide-react"
 import ChatNotificationIcon from "../../DatabaseDashboard/components/ChatNotificationIcon";
+import { format } from "date-fns"
 
 export default function DatabasePartyHeader({
   theme,
@@ -24,7 +27,22 @@ export default function DatabasePartyHeader({
   venue = null, // Venue from party plan
   // ✅ Loading state
   loading = false,
+  // ✅ NEW: Party selector props
+  allParties = [],
+  selectedPartyId = null,
+  onSelectParty = null,
+  onCreateNewParty = null,
 }) {
+  const [isPartySelectorOpen, setIsPartySelectorOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
+  const buttonRef = useRef(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // No need for position calculation - we'll center it on screen
   
   const currentTheme = theme;
   const hasEnquiries = enquiries && enquiries.length > 0;
@@ -417,7 +435,8 @@ export default function DatabasePartyHeader({
             </div>
 
             {/* Text Content */}
-            <div>
+            <div className="relative">
+              {/* Party Name */}
               <h1
                 className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl leading-[1.1] tracking-tight capitalize"
                 style={{
@@ -426,6 +445,86 @@ export default function DatabasePartyHeader({
               >
                 {firstName}'s Party
               </h1>
+
+              {/* Party Selector Modal - Rendered via Portal */}
+              {mounted && isPartySelectorOpen && allParties.length > 1 && createPortal(
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
+                    onClick={() => setIsPartySelectorOpen(false)}
+                  />
+
+                  {/* Modal */}
+                  <div className="fixed z-[9999] bg-white rounded-xl shadow-2xl w-[90vw] max-w-[450px] max-h-[85vh] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col">
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Select Party</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Choose which party to view</p>
+                      </div>
+                      <button
+                        onClick={() => setIsPartySelectorOpen(false)}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <X className="w-5 h-5 text-gray-500" />
+                      </button>
+                    </div>
+
+                    {/* Party List */}
+                    <div className="overflow-y-auto flex-1">
+                      {allParties.map((party) => (
+                        <button
+                          key={party.id}
+                          onClick={() => {
+                            onSelectParty?.(party.id)
+                            setIsPartySelectorOpen(false)
+                          }}
+                          className={`w-full p-4 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
+                            party.id === (selectedPartyId || currentParty?.id) ? 'bg-primary-50 border-primary-100' : ''
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-gray-900 text-base mb-1">
+                                {party.child_name || "Your Child"}
+                              </h4>
+                              <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                                {party.party_date ? format(new Date(party.party_date), "MMM d, yyyy") : "Date TBD"}
+                              </div>
+                            </div>
+                            {party.id === (selectedPartyId || currentParty?.id) && (
+                              <span className="text-xs bg-primary-500 text-white px-2.5 py-1 rounded-full font-semibold flex-shrink-0">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Create New Button */}
+                    {onCreateNewParty && (
+                      <div className="p-4 border-t border-gray-200">
+                        <button
+                          onClick={() => {
+                            onCreateNewParty()
+                            setIsPartySelectorOpen(false)
+                          }}
+                          className="w-full py-3 px-4 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          <span className="text-lg">+</span>
+                          Create New Party
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>,
+                document.body
+              )}
+
+
               {/* ✅ Party Info Row with all details */}
               {(formattedDate || formattedTime || formattedTheme || venueLocation) && (
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-white/95 font-medium flex-wrap">
@@ -463,13 +562,20 @@ export default function DatabasePartyHeader({
             </div>
           </div>
 
-          {/* Countdown Badge */}
-          {daysUntil && (
-            <div className="hidden md:absolute top-4 right-4">
-              <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm text-sm md:text-base px-3 py-1.5 font-semibold whitespace-nowrap">
-                <Clock className="w-4 h-4 mr-1.5" />
-                {daysUntil}
-              </Badge>
+          {/* Top Right - Party Selector */}
+          {allParties.length > 1 && (
+            <div className="absolute top-3 right-3">
+              <button
+                ref={buttonRef}
+                onClick={() => setIsPartySelectorOpen(true)}
+                className="flex items-center gap-1 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full px-2 py-1 transition-all border border-white/30"
+              >
+                <Users className="w-3 h-3 text-white" />
+                <span className="text-[10px] font-semibold text-white whitespace-nowrap">
+                  {allParties.findIndex(p => p.id === (selectedPartyId || currentParty?.id)) + 1}/{allParties.length}
+                </span>
+                <ChevronDown className="w-3 h-3 text-white" />
+              </button>
             </div>
           )}
         </div>

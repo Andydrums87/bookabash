@@ -45,6 +45,8 @@ export default function AnimatedRSVPPage() {
   const [error, setError] = useState(null)
   const [hasSeenAnimation, setHasSeenAnimation] = useState(false)
   const { navigateWithContext } = useContextualNavigation()
+  const [matchedGuest, setMatchedGuest] = useState(null) // NEW: Store matched guest from RSVP code
+  const [partyId, setPartyId] = useState(null) // NEW: Store party ID for RSVP code flow
   const [rsvpData, setRsvpData] = useState({
     guestName: '',
     childName: '', // Add this line
@@ -102,9 +104,47 @@ export default function AnimatedRSVPPage() {
       setLoading(true)
       setError(null)
 
-      // Get the public invite from database
+      // Check if this looks like an RSVP code (8-char alphanumeric, no dashes or date)
+      const looksLikeRSVPCode = inviteId &&
+        inviteId.length === 8 &&
+        /^[A-Z0-9]{8}$/.test(inviteId) &&
+        !inviteId.includes('-')
+
+      if (looksLikeRSVPCode) {
+        console.log('🎟️ Detected RSVP code format, looking up guest...')
+
+        // Try to find guest by RSVP code
+        const rsvpResult = await partyDatabaseBackend.getInviteByRSVPCode(inviteId)
+
+        if (rsvpResult.success && rsvpResult.guest) {
+          console.log('✅ Found guest via RSVP code:', rsvpResult.guest.childName)
+
+          // Store matched guest and party info
+          setMatchedGuest(rsvpResult.guest)
+          setPartyId(rsvpResult.party.id)
+
+          // Pre-fill child's name in RSVP form
+          setRsvpData(prev => ({
+            ...prev,
+            childName: rsvpResult.guest.childName
+          }))
+
+          // Use the invite details from the result
+          setInviteDetails(rsvpResult.inviteDetails)
+          setLoading(false)
+          return
+        } else {
+          // RSVP code not found - show error instead of falling back
+          console.error('❌ RSVP code not found:', inviteId)
+          setError('Invalid or expired RSVP link. Please check the link and try again.')
+          setLoading(false)
+          return
+        }
+      }
+
+      // Regular invite lookup (by slug or ID)
       const result = await partyDatabaseBackend.getPublicInvite(inviteId)
-      
+
       console.log('📡 Backend result:', result)
 
       if (!result.success) {
@@ -115,7 +155,7 @@ export default function AnimatedRSVPPage() {
       }
 
       const invite = result.invite
-   
+
 
       // Structure the invite details for the component
       const structuredInviteDetails = {
@@ -213,7 +253,10 @@ export default function AnimatedRSVPPage() {
         adultsCount: rsvpData.guestCount,
         childrenCount: rsvpData.childrenCount,
         dietaryRequirements: rsvpData.dietaryRequirements,
-        message: rsvpData.message
+        message: rsvpData.message,
+        // Include RSVP code and party ID if this is a personalized link
+        rsvpCode: matchedGuest?.rsvpCode,
+        partyId: partyId
       })
   
       console.log('🔍 Backend result:', result)
@@ -651,13 +694,14 @@ export default function AnimatedRSVPPage() {
         </div>
         <div>
   <label className="block text-sm font-medium text-gray-700 mb-2">
-    Child's Name *
+    Child's Name * {matchedGuest && <span className="text-primary-600 text-xs">(pre-filled for you)</span>}
   </label>
   <Input
     value={rsvpData.childName}
     onChange={(e) => setRsvpData(prev => ({ ...prev, childName: e.target.value }))}
     placeholder="Which child is invited?"
     className="rounded-xl border-2 border-gray-200 bg-white focus:border-[hsl(var(--primary-400))]"
+    disabled={!!matchedGuest}
   />
 </div>
 

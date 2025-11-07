@@ -25,7 +25,7 @@ export async function POST(request) {
         // 'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/userinfo.email'
       ],
-      prompt: 'consent',
+      prompt: 'consent select_account',  // Force consent screen for video demo
       state: userId  // Pass user ID through OAuth flow
     })
 

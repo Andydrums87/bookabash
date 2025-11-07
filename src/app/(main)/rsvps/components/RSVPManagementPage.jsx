@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Users, CheckCircle, XCircle, Clock3, Edit, Trash2, Mail, MessageSquare, UtensilsCrossed, ChevronRight, ChevronDown, Plus, UserPlus, BarChart3, TrendingUp, UserCheck, ArrowLeft } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { Users, CheckCircle, XCircle, Clock3, Edit, Trash2, Mail, MessageSquare, MessageCircle, UtensilsCrossed, ChevronRight, ChevronDown, Plus, UserPlus, BarChart3, TrendingUp, UserCheck, ArrowLeft } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import SnappyLoader from "@/components/ui/SnappyLoader"
 import { useRouter } from "next/navigation"
+import { ShareGuestInviteModal } from "./ShareGuestInviteModal"
 
 // Hero Header Component
 const RSVPHeroSection = ({ stats }) => {
@@ -134,7 +135,9 @@ const AddGuestModal = ({ isOpen, onClose, onAdd, partyId }) => {
 }
 
 // Guest List Item Component
-const GuestListItem = ({ guest, rsvpStatus, onRemove }) => {
+const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false)
+
   const getStatusInfo = () => {
     if (!rsvpStatus) {
       return {
@@ -144,7 +147,7 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove }) => {
         color: "text-gray-600"
       }
     }
-    
+
     switch (rsvpStatus.attendance) {
       case "yes":
         return {
@@ -181,72 +184,100 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove }) => {
   const StatusIcon = statusInfo.icon
 
   return (
-    <Card className="border border-gray-200 hover:shadow-md transition-all bg-white">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 text-base">{guest.childName}</h3>
-            {rsvpStatus && (
-              <div className="text-sm text-gray-600 mt-1 space-y-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-500">RSVP by:</span>
-                  <span className="font-medium">{rsvpStatus.guest_name}</span>
-                </div>
-                {rsvpStatus.guest_email && (
-                  <div className="flex items-center gap-1 text-gray-500">
-                    <Mail className="w-3 h-3" />
-                    <span>{rsvpStatus.guest_email}</span>
-                  </div>
-                )}
-              </div>
-            )}
-            {!rsvpStatus && (
-              <div className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                <Clock3 className="w-3 h-3" />
-                <span>Waiting for RSVP response</span>
-              </div>
-            )}
+    <Card className="border border-gray-200 hover:border-primary-300 transition-all bg-white">
+      <CardContent className="p-3">
+        {/* Collapsed view - super compact */}
+        <div className="flex items-center gap-3">
+          {/* Expand button */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-gray-400 hover:text-gray-600 transition-transform"
+            style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Name */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 text-sm truncate">{guest.childName}</h3>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Badge className={`${statusInfo.badge} font-medium px-3 py-1.5 rounded-lg border`}>
-              <StatusIcon className="w-3 h-3 mr-1.5" />
-              {statusInfo.label}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onRemove(guest)}
-              className="text-gray-400 hover:text-red-600 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+          {/* Status icon - visual only */}
+          <div className={`flex items-center justify-center w-7 h-7 rounded-full ${statusInfo.badge}`}>
+            <StatusIcon className="w-4 h-4" />
           </div>
+
+          {/* Send button */}
+          <Button
+            onClick={() => onSendInvite(guest)}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white h-7 px-2.5 text-xs"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+          </Button>
+
+          {/* Delete button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(guest)}
+            className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
         </div>
-        
-        {rsvpStatus && rsvpStatus.attendance === 'yes' && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Adults:</span>
-                <span className="ml-2 font-medium">{rsvpStatus.adults_count || 1}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Children:</span>
-                <span className="ml-2 font-medium">{rsvpStatus.children_count || 0}</span>
-              </div>
+
+        {/* Expanded details */}
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+            {/* Invite status */}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500">Invite Status:</span>
+              {guest.inviteSent ? (
+                <span className="text-green-600 font-medium">
+                  Sent {new Date(guest.sentAt).toLocaleDateString()}
+                </span>
+              ) : (
+                <span className="text-gray-400">Not sent yet</span>
+              )}
             </div>
-            {rsvpStatus.dietary_requirements && (
-              <div className="mt-2">
-                <span className="text-gray-500 text-sm">Dietary needs:</span>
-                <p className="text-sm text-gray-900 mt-1">{rsvpStatus.dietary_requirements}</p>
-              </div>
-            )}
-            {rsvpStatus.message && (
-              <div className="mt-2">
-                <span className="text-gray-500 text-sm">Message:</span>
-                <p className="text-sm text-gray-900 mt-1">"{rsvpStatus.message}"</p>
-              </div>
+
+            {/* RSVP details */}
+            {rsvpStatus && (
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500">RSVP by:</span>
+                  <span className="font-medium text-gray-900">{rsvpStatus.guest_name}</span>
+                </div>
+                {rsvpStatus.guest_email && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Email:</span>
+                    <span className="text-gray-600">{rsvpStatus.guest_email}</span>
+                  </div>
+                )}
+
+                {/* Additional details for confirmed guests */}
+                {rsvpStatus.attendance === 'yes' && (
+                  <>
+                    <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-100">
+                      <span className="text-gray-500">Party size:</span>
+                      <span className="text-gray-900">{rsvpStatus.adults_count || 1} adults, {rsvpStatus.children_count || 0} children</span>
+                    </div>
+                    {rsvpStatus.dietary_requirements && (
+                      <div className="flex items-start justify-between text-xs">
+                        <span className="text-gray-500">Dietary:</span>
+                        <span className="text-gray-900 text-right max-w-[200px]">{rsvpStatus.dietary_requirements}</span>
+                      </div>
+                    )}
+                    {rsvpStatus.message && (
+                      <div className="flex items-start justify-between text-xs">
+                        <span className="text-gray-500">Message:</span>
+                        <span className="text-gray-900 text-right max-w-[200px] italic">"{rsvpStatus.message}"</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </div>
         )}
@@ -416,6 +447,10 @@ export default function RSVPManagementPage({ partyId, onBack }) {
   const [activeTab, setActiveTab] = useState('guests')
   const [showStats, setShowStats] = useState(false)
 
+  // ✅ NEW: Share modal state
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [selectedGuest, setSelectedGuest] = useState(null)
+
   // Load RSVP data, party details, and guest list
   useEffect(() => {
     const loadData = async () => {
@@ -479,6 +514,29 @@ export default function RSVPManagementPage({ partyId, onBack }) {
   const handleRemove = (rsvp) => {
     console.log("Remove RSVP:", rsvp)
     // TODO: Implement remove functionality
+  }
+
+  // ✅ NEW: Handle send invite
+  const handleSendInvite = (guest) => {
+    setSelectedGuest(guest)
+    setShowShareModal(true)
+  }
+
+  // ✅ NEW: Mark invite as sent
+  const handleMarkAsSent = async (guestId, platform) => {
+    try {
+      const result = await partyDatabaseBackend.markGuestInviteSent(partyId, guestId, platform)
+      if (result.success) {
+        setGuests(prev => prev.map(g =>
+          g.id === guestId
+            ? { ...g, inviteSent: true, sentAt: new Date().toISOString(), sentVia: platform }
+            : g
+        ))
+        setShowShareModal(false)
+      }
+    } catch (error) {
+      console.error('Error marking invite as sent:', error)
+    }
   }
 
   // Match guests with their RSVP responses
@@ -671,11 +729,12 @@ export default function RSVPManagementPage({ partyId, onBack }) {
             {guests.length > 0 ? (
               <div className="space-y-4">
                 {guestsWithRSVPs.map((guest) => (
-                  <GuestListItem 
-                    key={guest.id} 
+                  <GuestListItem
+                    key={guest.id}
                     guest={guest}
                     rsvpStatus={guest.rsvpStatus}
                     onRemove={handleRemoveGuest}
+                    onSendInvite={handleSendInvite}
                   />
                 ))}
               </div>
@@ -756,6 +815,15 @@ export default function RSVPManagementPage({ partyId, onBack }) {
         onClose={() => setShowAddGuestModal(false)}
         onAdd={handleAddGuest}
         partyId={partyId}
+      />
+
+      {/* Share Invite Modal */}
+      <ShareGuestInviteModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        guest={selectedGuest}
+        inviteData={partyData?.party_plan?.einvites}
+        onMarkAsSent={handleMarkAsSent}
       />
     </div>
   )

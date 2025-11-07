@@ -30,7 +30,7 @@ export default function HomePage() {
   // Form state
   const [formData, setFormData] = useState({
     date: "",
-    theme: "princess", 
+    theme: "princess",
     guestCount: "",
     postcode: "",
     childName: "",
@@ -71,21 +71,24 @@ export default function HomePage() {
   const checkForExistingPartyPlan = async () => {
     try {
       const dbParty = await partyDatabaseBackend.getActivePlannedParty()
-      
+
       // ✅ FIX: Handle unauthenticated users gracefully
-      if (!dbParty.success) {
-        if (dbParty.reason === 'unauthenticated') {
+      if (!dbParty || !dbParty.success) {
+        if (dbParty?.reason === 'unauthenticated') {
           console.log('👤 User not authenticated - using local storage only')
           return null
         }
-        throw new Error(dbParty.error)
+        if (dbParty?.error) {
+          console.warn('⚠️ Error getting active party:', dbParty.error)
+        }
+        return null
       }
-  
+
       if (dbParty.data) {
         console.log('Found existing party in database:', dbParty.data)
         return dbParty.data
       }
-  
+
       return null
     } catch (error) {
       console.error('Error checking for existing party:', error)
@@ -157,32 +160,20 @@ export default function HomePage() {
     return { isValid, formatted }
   }
   
-  // Main form submission handler with database + localStorage override check
+  // Main form submission handler - Allow multiple parties
   const handleSearch = async (e) => {
     e.preventDefault()
     if (isSubmitting) return
-  
+
     setHasAttemptedSubmit(true)
-  
+
     if (!isFormValid()) {
       console.log('Form validation failed')
       return;
     }
-  
-    // Check for existing party plan (database + localStorage)
-    const existingDetails = await checkForExistingPartyPlan()
-    
-    if (existingDetails) {
-      console.log('🚨 Existing party detected from:', existingDetails.source)
-      
-      // Store the form data and show confirmation dialog
-      setPendingFormData(formData)
-      setExistingPartyDetails(existingDetails)
-      setShowOverrideDialog(true)
-      return
-    }
-  
-    // No existing plan, proceed normally
+
+    // ✅ NEW: Allow users to create multiple parties without warnings
+    // Just proceed directly with party creation
     proceedWithPartyCreation(formData)
   }
 
@@ -212,7 +203,7 @@ export default function HomePage() {
         setShowPartyLoader(true)
         setBuildingProgress(0)
       }, 200)
-  
+
       const partyDetails = {
         date: data.date,
         theme: mapThemeValue(data.theme),
@@ -239,7 +230,7 @@ export default function HomePage() {
           specificTime: null
         }
       }
-  
+
       console.log('🎉 Building party with hasOwnVenue:', partyDetails.hasOwnVenue); // Debug
 
       // ✅ Build party immediately without artificial delays

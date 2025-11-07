@@ -132,22 +132,44 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
 
   // Special handling for party bags
   if (supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')) {
+    console.log('🎁 [UnifiedPricing] Party Bags Detected:', {
+      supplierName: supplier.name,
+      hasMetadata: !!supplier.partyBagsMetadata,
+      metadataTotal: supplier.partyBagsMetadata?.totalPrice,
+      hasPackageData: !!supplier.packageData,
+      packageDataTotal: supplier.packageData?.totalPrice,
+      packageDataPrice: supplier.packageData?.price,
+      packageDataQuantity: supplier.packageData?.partyBagsQuantity,
+      supplierQuantity: supplier.partyBagsQuantity,
+      originalPrice: supplier.originalPrice,
+      price: supplier.price,
+      priceFrom: supplier.priceFrom,
+      partyDetailsGuestCount: partyDetails?.guestCount
+    });
+
+    // ✅ CRITICAL FIX: Check supplier.price first if it's already the total
+    // When party bags come from database, supplier.price is already the total
+    if (supplier.price && supplier.partyBagsMetadata?.totalPrice && supplier.price === supplier.partyBagsMetadata.totalPrice) {
+      console.log('🔍 UNIFIED DEBUG: Using supplier.price (already calculated total):', supplier.price);
+      return supplier.price;
+    }
+
     // Check if we have partyBagsMetadata with totalPrice (from customization modal)
     if (supplier.partyBagsMetadata?.totalPrice) {
-      // console.log('🔍 UNIFIED DEBUG: Using party bags metadata total:', supplier.partyBagsMetadata.totalPrice);
+      console.log('🔍 UNIFIED DEBUG: Using party bags metadata total:', supplier.partyBagsMetadata.totalPrice);
       return supplier.partyBagsMetadata.totalPrice;
     }
 
     // Check if packageData has totalPrice (for existing party bags)
     if (supplier.packageData?.totalPrice) {
-      // console.log('🔍 UNIFIED DEBUG: Using packageData total:', supplier.packageData.totalPrice);
+      console.log('🔍 UNIFIED DEBUG: Using packageData total:', supplier.packageData.totalPrice);
       return supplier.packageData.totalPrice;
     }
 
     // Calculate from packageData if available
     if (supplier.packageData?.price && supplier.packageData?.partyBagsQuantity) {
       const total = supplier.packageData.price * supplier.packageData.partyBagsQuantity;
-      // console.log('🔍 UNIFIED DEBUG: Calculated from packageData:', total);
+      console.log('🔍 UNIFIED DEBUG: Calculated from packageData:', total);
       return total;
     }
 
@@ -158,6 +180,12 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
                     supplier.packageData?.partyBagsQuantity ||
                     getGuestCount(partyDetails);
     const total = pricePerBag * quantity;
+
+    console.log('🔍 UNIFIED DEBUG: Calculated fallback:', {
+      pricePerBag,
+      quantity,
+      total
+    });
 
     return total;
   }
