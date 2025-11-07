@@ -462,6 +462,20 @@ export function Nav() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
         console.log('🔐 User signed in:', session?.user?.email)
+
+        // Check if user is in the middle of booking flow
+        const currentPath = window.location.pathname
+        const isInBookingFlow = currentPath.includes('/review-book') ||
+                                currentPath.includes('/payment') ||
+                                currentPath.includes('/party-builder')
+
+        if (isInBookingFlow) {
+          console.log('🛡️ User is in booking flow - preserving party data')
+          setUser(session?.user || null)
+          // Don't clear anything, let the booking flow complete
+          return
+        }
+
         console.log('🧹 Clearing ALL cached party data...')
 
         // AGGRESSIVE: Clear ALL sessionStorage except Supabase auth
@@ -490,11 +504,9 @@ export function Nav() {
 
         // Only force reload if already on dashboard/party pages
         // This prevents interrupting the sign-in redirect flow
-        const currentPath = window.location.pathname
         if (currentPath.includes('/dashboard') ||
             currentPath.includes('/e-invites') ||
-            currentPath.includes('/rsvps') ||
-            currentPath.includes('/party-builder')) {
+            currentPath.includes('/rsvps')) {
           console.log('🔄 On party page - forcing reload to clear cached state')
           setTimeout(() => {
             window.location.reload()

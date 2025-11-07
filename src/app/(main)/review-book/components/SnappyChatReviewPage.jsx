@@ -847,16 +847,26 @@ export default function SnappyChatReviewPage() {
 
       // Use the passed authenticatedUser if available, otherwise use state
       const userToUse = authenticatedUser || user;
+
+      if (!userToUse) {
+        throw new Error('No authenticated user found');
+      }
+
       const migratedParty = await migratePartyToDatabase(userToUse);
-      
+
+      if (!migratedParty || !migratedParty.id) {
+        throw new Error('Failed to migrate party - no party ID returned');
+      }
+
       await supabase.from('parties').update({ status: 'draft' }).eq('id', migratedParty.id);
-      
+
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const paymentUrl = `/payment/secure-party?party_id=${migratedParty.id}&suppliers=${supplierCount}`;
+      console.log('🔄 Redirecting to payment:', paymentUrl);
       router.push(paymentUrl);
     } catch (error) {
-      console.error("Migration failed:", error);
+      console.error("❌ Migration failed:", error);
       setLoadingError(error.message);
       setIsSubmitting(false);
     }
