@@ -47,6 +47,8 @@ export default function AnimatedRSVPPage() {
   const { navigateWithContext } = useContextualNavigation()
   const [matchedGuest, setMatchedGuest] = useState(null) // NEW: Store matched guest from RSVP code
   const [partyId, setPartyId] = useState(null) // NEW: Store party ID for RSVP code flow
+  const [guestLimit, setGuestLimit] = useState(null) // Party guest limit
+  const [totalConfirmedGuests, setTotalConfirmedGuests] = useState(0) // Already confirmed guests
   const [rsvpData, setRsvpData] = useState({
     guestName: '',
     childName: '', // Add this line
@@ -54,7 +56,7 @@ export default function AnimatedRSVPPage() {
     phone: '',
     status: '',
     guestCount: 2,
-    childrenCount: 1,
+    childrenCount: 0, // Default to 0 (just the invited child)
     dietaryRequirements: '',
     message: ''
   })
@@ -111,10 +113,11 @@ export default function AnimatedRSVPPage() {
         !inviteId.includes('-')
 
       if (looksLikeRSVPCode) {
-        console.log('🎟️ Detected RSVP code format, looking up guest...')
+        console.log('🎟️ Detected RSVP code format, looking up guest via API...')
 
-        // Try to find guest by RSVP code
-        const rsvpResult = await partyDatabaseBackend.getInviteByRSVPCode(inviteId)
+        // Call API route to look up RSVP code (uses admin client on server)
+        const response = await fetch(`/api/invites/lookup-rsvp?code=${inviteId}`)
+        const rsvpResult = await response.json()
 
         if (rsvpResult.success && rsvpResult.guest) {
           console.log('✅ Found guest via RSVP code:', rsvpResult.guest.childName)
@@ -122,6 +125,15 @@ export default function AnimatedRSVPPage() {
           // Store matched guest and party info
           setMatchedGuest(rsvpResult.guest)
           setPartyId(rsvpResult.party.id)
+
+          // Store guest limit info
+          const partyGuestLimit = rsvpResult.party.guest_count || 10
+          setGuestLimit(partyGuestLimit)
+
+          // Calculate confirmed guests from guest list
+          const guestList = rsvpResult.party.party_plan?.einvites?.guestList || []
+          const confirmed = guestList.filter(g => g.rsvpStatus === 'yes').length
+          setTotalConfirmedGuests(confirmed)
 
           // Pre-fill child's name in RSVP form
           setRsvpData(prev => ({
@@ -348,7 +360,7 @@ export default function AnimatedRSVPPage() {
         <div className="absolute bottom-40 right-10 w-4 h-4 bg-primary-400 rounded-full animate-bounce opacity-60" style={{ animationDelay: '2.5s' }}></div>
       </div>
 
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6 -mb-16">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
         
         {/* Envelope and Invitation Animation Container */}
         {(animationPhase === 'envelope' || animationPhase === 'opening' || animationPhase === 'invite-out' || animationPhase === 'transitioning') && (
@@ -736,51 +748,41 @@ export default function AnimatedRSVPPage() {
 
         {rsvpData.status === 'yes' && (
           <>
-            {/* Updated dropdowns for better mobile experience */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Users className="w-4 h-4 inline mr-1" />
-                  Total Guests
-                </label>
-                <select
-                  value={rsvpData.guestCount}
-                  onChange={(e) => setRsvpData(prev => ({ 
-                    ...prev, 
-                    guestCount: parseInt(e.target.value) 
-                  }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white text-center font-medium"
-                >
-                  {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
+            {/* Guest count section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Baby className="w-4 h-4 inline mr-1" />
+                Additional Children/Siblings
+              </label>
+              <select
+                value={rsvpData.childrenCount}
+                onChange={(e) => setRsvpData(prev => ({
+                  ...prev,
+                  childrenCount: parseInt(e.target.value)
+                }))}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white text-center font-medium"
+              >
+                {(() => {
+                  // Calculate available spots (party limit - confirmed guests)
+                  const availableSpots = guestLimit ? Math.max(0, guestLimit - totalConfirmedGuests) : 10
+                  // Max siblings is available spots minus 1 (for the invited child)
+                  const maxSiblings = Math.max(0, availableSpots - 1)
+                  const maxOptions = Math.min(maxSiblings, 10) // Cap at 10 for reasonable dropdown
+
+                  return Array.from({ length: maxOptions + 1 }, (_, i) => i).map(num => (
                     <option key={num} value={num}>
-                      {num} {num === 1 ? 'guest' : 'guests'}
+                      {num === 0 ? 'Just the invited child' :
+                       num === 1 ? '+1 sibling' :
+                       `+${num} siblings`}
                     </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Baby className="w-4 h-4 inline mr-1" />
-                  Children
-                </label>
-                <select
-                  value={rsvpData.childrenCount}
-                  onChange={(e) => setRsvpData(prev => ({ 
-                    ...prev, 
-                    childrenCount: parseInt(e.target.value) 
-                  }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white text-center font-medium"
-                >
-                  {Array.from({ length: 11 }, (_, i) => i).map(num => (
-                    <option key={num} value={num}>
-                      {num === 0 ? 'No children' : 
-                       num === 1 ? '1 child' : 
-                       `${num} children`}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  ))
+                })()}
+              </select>
+              {guestLimit && totalConfirmedGuests >= guestLimit && (
+                <p className="text-xs text-amber-600 mt-2">
+                  ⚠️ Party is at capacity - no additional siblings can attend
+                </p>
+              )}
             </div>
 
             <div>
@@ -834,7 +836,7 @@ export default function AnimatedRSVPPage() {
       {/* Discount Offer Modal */}
       {showDiscountOffer && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <Card className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative">
+          <Card className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto relative">
             
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-4 left-4 text-primary-500 animate-spin">
@@ -863,41 +865,23 @@ export default function AnimatedRSVPPage() {
               </Button>
 
               <div className="space-y-6">
-                
+
                 <div className="space-y-2">
-                  <div className="text-6xl animate-bounce">🎉</div>
-                  <h2 className="text-3xl font-bold text-gray-900">
-                    Thanks for RSVPing!
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Thanks for RSVPing! 🎉
                   </h2>
                   <p className="text-gray-600">
-                    Love what you see? Create your own magical party invitations!
+                    Love what you see? Get 10% off your first party!
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))] border-2 border-[hsl(var(--primary-200))] rounded-2xl p-6">
-                  <div className="space-y-3">
-                    <div className="text-primary-600 font-semibold text-sm uppercase tracking-wide">
-                      Exclusive RSVP Offer
-                    </div>
-                    <div className="text-4xl font-bold text-primary-700">
-                      10% OFF
-                    </div>
-                    <div className="text-gray-700 font-medium">
-                      Your first party with PartySnap
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Create stunning invitations, manage RSVPs, and more!
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-4">
-                  <div className="text-sm text-gray-600 mb-2">Use code:</div>
-                  <div className="text-2xl font-bold text-gray-900 font-mono bg-white px-4 py-2 rounded-lg border">
+                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6">
+                  <div className="text-sm text-gray-600 mb-3 font-medium">Your Discount Code:</div>
+                  <div className="text-3xl font-bold text-gray-900 font-mono bg-white px-6 py-4 rounded-lg border-2 border-primary-300 mb-3">
                     RSVP10
                   </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    Valid for 30 days • One-time use
+                  <div className="text-xs text-gray-500">
+                    Valid for 30 days • 10% off your first party
                   </div>
                 </div>
 

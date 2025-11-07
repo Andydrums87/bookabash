@@ -1,8 +1,30 @@
 // utils/partyDatabaseBackend.js
 // Database backend to replace localStorage party management
 
-import { supabase } from '@/lib/supabase'
+// Import client supabase (always available)
+import { supabase as supabaseClient } from '@/lib/supabase'
 import { getEnhancedGiftSuggestions } from './rapidAPIProducts'
+
+// Dynamic function to get the appropriate Supabase client
+// Server-side: Use admin client (service role) for full access
+// Client-side: Use regular client (anon key) with RLS
+function getSupabase() {
+  if (typeof window === 'undefined') {
+    // Server-side: dynamically import admin client
+    try {
+      const { supabaseAdmin } = require('@/lib/supabase-admin')
+      return supabaseAdmin
+    } catch (error) {
+      console.warn('⚠️ Admin client not available, falling back to regular client:', error.message)
+      return supabaseClient
+    }
+  }
+  // Client-side: use regular client
+  return supabaseClient
+}
+
+// Get the appropriate client
+const supabase = getSupabase()
 
 class PartyDatabaseBackend {
 
@@ -3627,50 +3649,43 @@ async getInviteByRSVPCode(rsvpCode) {
   try {
     console.log('🔍 Looking up invite by RSVP code:', rsvpCode);
 
-    // Get all active parties (not just confirmed - could be draft, planning, etc.)
+    // Use PostgreSQL JSONB query to search directly in the database
+    // This is MUCH faster than fetching all parties and iterating through them
     const { data: parties, error: partiesError } = await supabase
       .from('parties')
       .select('id, child_name, party_date, party_time, location, theme, party_plan, status')
-      .neq('status', 'cancelled'); // Get all parties except cancelled ones
+      .not('status', 'eq', 'cancelled')
+      .contains('party_plan', {
+        einvites: {
+          guestList: [{ rsvpCode }]
+        }
+      })
+      .limit(1);
 
     if (partiesError) {
       console.error('❌ Error fetching parties:', partiesError);
       return { success: false, error: partiesError.message };
     }
 
-    console.log(`📊 Found ${parties?.length || 0} parties to search`);
-    console.log(`🔍 Looking for RSVP code: "${rsvpCode}" (length: ${rsvpCode.length})`);
+    console.log(`📊 Query returned ${parties?.length || 0} matching parties`);
 
-    // Search for the RSVP code in party_plan.einvites.guestList
-    let matchedGuest = null;
-    let matchedParty = null;
-
-    for (const party of parties) {
-      const guestList = party.party_plan?.einvites?.guestList || [];
-      console.log(`🔍 Party "${party.child_name}" (status: ${party.status}) has ${guestList.length} guests`);
-
-      // Log RSVP codes for debugging
-      const codes = guestList.map(g => g.rsvpCode).filter(Boolean);
-      if (codes.length > 0) {
-        console.log(`  RSVP codes: ${codes.join(', ')}`);
-        // Log exact comparison for debugging
-        codes.forEach(code => {
-          console.log(`    Comparing "${code}" === "${rsvpCode}": ${code === rsvpCode}`);
-        });
-      }
-
-      const guest = guestList.find(g => g.rsvpCode === rsvpCode);
-
-      if (guest) {
-        matchedGuest = guest;
-        matchedParty = party;
-        break;
-      }
+    if (!parties || parties.length === 0) {
+      console.log('❌ No party found with RSVP code:', rsvpCode);
+      return {
+        success: false,
+        error: 'Invalid or expired RSVP link',
+        guest: null,
+        party: null
+      };
     }
 
-    if (!matchedGuest || !matchedParty) {
-      console.log('❌ No guest found with RSVP code:', rsvpCode);
-      console.log('💡 Make sure you\'ve added a guest through the RSVP management page');
+    // Found the party, now extract the specific guest
+    const matchedParty = parties[0];
+    const guestList = matchedParty.party_plan?.einvites?.guestList || [];
+    const matchedGuest = guestList.find(g => g.rsvpCode === rsvpCode);
+
+    if (!matchedGuest) {
+      console.log('❌ Party found but guest not in list (shouldn\'t happen)');
       return {
         success: false,
         error: 'Invalid or expired RSVP link',

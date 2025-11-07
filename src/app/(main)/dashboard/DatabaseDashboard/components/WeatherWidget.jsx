@@ -129,59 +129,44 @@ export default function WeatherWidget({ partyDate, venueLocation }) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 p-6 shadow-sm">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-sm font-semibold text-gray-900 mb-1">{formatPartyDate()}</p>
-          <p className="text-xs text-gray-600">{weather.location}</p>
+    <div className="bg-primary-400 rounded-2xl p-8 shadow-lg relative overflow-hidden">
+      {/* Large Weather Illustration */}
+      <div className="flex items-start justify-between mb-8">
+        <div className="relative">
+          {/* Weather icon with larger size */}
+          <div className="scale-[2.5] origin-top-left">
+            {getWeatherIcon(weather.condition)}
+          </div>
         </div>
-        {getWeatherIcon(weather.condition)}
+
+        {/* Temperature Display */}
+        <div className="text-right">
+          <p className="text-7xl font-light text-white mb-1">{Math.round(weather.temp)}°C</p>
+          <div className="flex items-center gap-2 text-white/80 text-sm justify-end">
+            <Droplets className="w-4 h-4" />
+            <span>{weather.rainChance}%</span>
+            <span className="mx-1">|</span>
+            <span className="capitalize">{weather.condition}</span>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-3xl font-bold text-gray-900">{Math.round(weather.temp)}°C</p>
-            <p className="text-sm text-gray-600 capitalize">{weather.condition}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-blue-200">
-          <div className="flex items-center gap-2">
-            <Droplets className="w-4 h-4 text-blue-500" />
-            <div>
-              <p className="text-xs text-gray-500">Rain</p>
-              <p className="text-sm font-semibold text-gray-900">{weather.rainChance}%</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Wind className="w-4 h-4 text-gray-500" />
-            <div>
-              <p className="text-xs text-gray-500">Wind</p>
-              <p className="text-sm font-semibold text-gray-900">{weather.windSpeed}mph</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThermometerSun className="w-4 h-4 text-orange-500" />
-            <div>
-              <p className="text-xs text-gray-500">Feels</p>
-              <p className="text-sm font-semibold text-gray-900">{Math.round(weather.feelsLike)}°C</p>
-            </div>
-          </div>
-        </div>
-
-        {weather.rainChance > 50 && (
-          <div className="mt-3 bg-blue-100 border border-blue-300 rounded-lg p-3">
-            <p className="text-sm text-blue-900 font-medium">☂️ High chance of rain - consider having umbrellas or indoor backup plan!</p>
-          </div>
-        )}
-
-        {weather.isForecast && (
-          <p className="text-xs text-gray-500 mt-2">
-            {weather.daysUntil <= 5 ? 'Forecast' : 'Long-range forecast (less accurate)'}
-          </p>
-        )}
+      {/* Location */}
+      <div className="mb-6">
+        <p className="text-white/90 text-lg">{weather.location}</p>
       </div>
+
+      {/* See Full Forecast Button */}
+      <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-2 rounded-full text-sm font-medium transition-all">
+        See Full Forecast
+      </button>
+
+      {/* Rain Warning - if needed */}
+      {weather.rainChance > 50 && (
+        <div className="mt-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+          <p className="text-sm text-white/90">☂️ High chance of rain - consider having umbrellas ready!</p>
+        </div>
+      )}
     </div>
   )
 }
