@@ -459,10 +459,51 @@ export function Nav() {
     checkAuth()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
+        console.log('🔐 User signed in:', session?.user?.email)
+        console.log('🧹 Clearing ALL cached party data...')
+
+        // AGGRESSIVE: Clear ALL sessionStorage except Supabase auth
+        const sessionKeys = Object.keys(sessionStorage)
+        console.log('📦 SessionStorage keys before clear:', sessionKeys)
+        sessionKeys.forEach(key => {
+          if (!key.startsWith('sb-')) {
+            sessionStorage.removeItem(key)
+            console.log('🗑️ Removed sessionStorage key:', key)
+          }
+        })
+
+        // Clear any cached party data from previous user (localStorage)
+        const partyKeys = ['selectedPartyId', 'currentPartyId', 'party_details', 'user_party_plan', 'party_plan']
+        partyKeys.forEach(key => {
+          if (localStorage.getItem(key)) {
+            console.log('🗑️ Removing localStorage key:', key)
+            localStorage.removeItem(key)
+          }
+        })
+
+        // Store a flag to indicate fresh sign-in
+        sessionStorage.setItem('justSignedIn', 'true')
+
         setUser(session?.user || null)
+
+        // Only force reload if already on dashboard/party pages
+        // This prevents interrupting the sign-in redirect flow
+        const currentPath = window.location.pathname
+        if (currentPath.includes('/dashboard') ||
+            currentPath.includes('/e-invites') ||
+            currentPath.includes('/rsvps') ||
+            currentPath.includes('/party-builder')) {
+          console.log('🔄 On party page - forcing reload to clear cached state')
+          setTimeout(() => {
+            window.location.reload()
+          }, 100)
+        } else {
+          console.log('✅ Not on party page - no reload needed, redirect will handle it')
+        }
       } else if (event === 'SIGNED_OUT') {
+        console.log('🔓 User signed out')
         setUser(null)
       }
     })
@@ -473,18 +514,33 @@ export function Nav() {
 // Handle sign out
 const handleSignOut = async () => {
   try {
-    await supabase.auth.signOut()
-    
-    // Clear party-related localStorage data
+    // Sign out with scope: 'local' to clear only this browser tab
+    await supabase.auth.signOut({ scope: 'local' })
+
+    // Clear ALL party-related localStorage data
     localStorage.removeItem("party_details")
     localStorage.removeItem("user_party_plan")
-    localStorage.removeItem("party_plan") // Add this one too
+    localStorage.removeItem("party_plan")
+    localStorage.removeItem("selectedPartyId") // Critical: clear selected party
+    localStorage.removeItem("currentPartyId")
+
+    // Clear session storage
     sessionStorage.removeItem('replacementContext')
     sessionStorage.removeItem('shouldRestoreReplacementModal')
     sessionStorage.removeItem('modalShowUpgrade')
-    
+    sessionStorage.removeItem('party_data_cache')  // Clear party cache (correct key!)
+    sessionStorage.removeItem('party_plan_cache') // Clear party plan cache
+
+    // Clear all Supabase auth storage keys
+    const authKeys = Object.keys(localStorage).filter(key =>
+      key.startsWith('sb-') || key.includes('supabase')
+    )
+    authKeys.forEach(key => localStorage.removeItem(key))
+
     setUser(null)
-    router.push('/')
+
+    // Force a hard reload to clear any cached state
+    window.location.href = '/'
   } catch (error) {
     console.error('Error signing out:', error)
   }

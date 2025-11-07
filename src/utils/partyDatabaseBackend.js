@@ -250,10 +250,14 @@ class PartyDatabaseBackend {
    */
   async getCurrentParty() {
     try {
+      console.log('🔍 getCurrentParty: Getting current user...')
       const userResult = await this.getCurrentUser()
       if (!userResult.success) {
         throw new Error('User not found')
       }
+
+      console.log('👤 getCurrentParty: Current user ID:', userResult.user.id)
+      console.log('📧 getCurrentParty: Current user email:', userResult.user.email)
 
       const { data: party, error } = await supabase
         .from('parties')
@@ -265,6 +269,17 @@ class PartyDatabaseBackend {
         .maybeSingle()
 
       if (error) throw error
+
+      if (party) {
+        console.log('🎉 getCurrentParty: Found party:', {
+          id: party.id,
+          child_name: party.child_name,
+          user_id: party.user_id,
+          status: party.status
+        })
+      } else {
+        console.log('⚠️ getCurrentParty: No party found for this user')
+      }
 
       return { success: true, party }
 

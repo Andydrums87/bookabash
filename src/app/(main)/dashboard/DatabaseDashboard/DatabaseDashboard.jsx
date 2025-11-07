@@ -180,6 +180,16 @@ const childPhotoRef = useRef(null)
   // Scroll to top when component mounts/navigates to this page
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Check if user just signed in
+    const justSignedIn = sessionStorage.getItem('justSignedIn')
+    if (justSignedIn === 'true') {
+      console.log('🔄 Fresh sign-in detected, forcing data reload')
+      sessionStorage.removeItem('justSignedIn')
+      // The useEffect with user?.id dependency will handle the reload
+      // Force re-render by updating a key
+      setPartyToolsKey(prev => prev + 1)
+    }
   }, []);
 
   // ✅ NEW: IMMEDIATELY clear and set loading when party changes
@@ -204,21 +214,28 @@ const childPhotoRef = useRef(null)
   useEffect(() => {
     const loadAllParties = async () => {
       if (!user?.id) {
+        console.log('⚠️ No user ID, skipping party load')
         setLoadingParties(false)
         return
       }
 
-      console.log('🔄 Loading all user parties...')
+      console.log('🔄 Loading all user parties for user:', user.id, user.email)
+      console.log('📍 Current partyId prop:', partyId)
+      console.log('📍 localStorage selectedPartyId:', localStorage.getItem('selectedPartyId'))
+
       const result = await partyDatabaseBackend.getAllUserParties()
 
       if (result.success && result.parties) {
-        console.log('✅ Loaded', result.parties.length, 'parties')
+        console.log('✅ Loaded', result.parties.length, 'parties for user:', user.email)
+        console.log('📋 Party IDs:', result.parties.map(p => ({ id: p.id, name: p.child_name })))
         setAllParties(result.parties)
 
         // Set initial selected party to the current one or the first one
         if (partyId) {
+          console.log('✅ Using partyId from prop:', partyId)
           setSelectedPartyId(partyId)
         } else if (result.parties.length > 0) {
+          console.log('✅ Using first party:', result.parties[0].id, result.parties[0].child_name)
           setSelectedPartyId(result.parties[0].id)
         }
       } else {

@@ -198,9 +198,9 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite, hasInvite })
             <ChevronRight className="w-4 h-4" />
           </button>
 
-          {/* Name */}
+          {/* Child Name */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-sm truncate">{guest.childName}</h3>
+            <h3 className="font-semibold text-gray-900 text-base truncate">{guest.childName}</h3>
           </div>
 
           {/* Status icon - visual only */}
@@ -210,34 +210,48 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite, hasInvite })
 
           {/* Send button */}
           <div className="relative">
-            <Button
-              onClick={() => {
-                if (!hasInvite) {
-                  setShowTooltip(true)
-                  setTimeout(() => setShowTooltip(false), 3000)
-                } else {
-                  onSendInvite(guest)
-                }
-              }}
-              size="sm"
-              className={`h-7 px-3 text-xs ${
-                !hasInvite
-                  ? 'bg-green-400 cursor-not-allowed opacity-60'
-                  : 'bg-green-600 hover:bg-green-700'
-              } text-white`}
-            >
-              Send
-            </Button>
+            {rsvpStatus ? (
+              // Show "Responded" for guests who have already RSVP'd
+              <Button
+                size="sm"
+                className="h-7 px-3 text-xs bg-gray-400 cursor-not-allowed opacity-60 text-white"
+                disabled
+              >
+                Responded
+              </Button>
+            ) : (
+              // Show "Send" button for pending guests
+              <>
+                <Button
+                  onClick={() => {
+                    if (!hasInvite) {
+                      setShowTooltip(true)
+                      setTimeout(() => setShowTooltip(false), 3000)
+                    } else {
+                      onSendInvite(guest)
+                    }
+                  }}
+                  size="sm"
+                  className={`h-7 px-3 text-xs ${
+                    !hasInvite
+                      ? 'bg-green-400 cursor-not-allowed opacity-60'
+                      : 'bg-green-600 hover:bg-green-700'
+                  } text-white`}
+                >
+                  Send
+                </Button>
 
-            {/* Tooltip */}
-            {showTooltip && !hasInvite && (
-              <div className="absolute bottom-full right-0 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-10">
-                <p className="font-medium">Can't send invite yet</p>
-                <p className="text-gray-300 mt-0.5">Create your e-invite first or wait for venue confirmation</p>
-                <div className="absolute top-full right-3 -mt-1">
-                  <div className="border-4 border-transparent border-t-gray-900"></div>
-                </div>
-              </div>
+                {/* Tooltip */}
+                {showTooltip && !hasInvite && (
+                  <div className="absolute bottom-full right-0 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-10">
+                    <p className="font-medium">Can't send invite yet</p>
+                    <p className="text-gray-300 mt-0.5">Create your e-invite first or wait for venue confirmation</p>
+                    <div className="absolute top-full right-3 -mt-1">
+                      <div className="border-4 border-transparent border-t-gray-900"></div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -311,24 +325,24 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite, hasInvite })
   )
 }
 
-// Mobile RSVP Card Component (existing)
-const RSVPCard = ({ rsvp, onEdit, onRemove }) => {
-  const [expanded, setExpanded] = useState(false)
-  
+// Simple RSVP Card Component
+const RSVPCard = ({ rsvp }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false)
+
   const getStatusInfo = (status) => {
     switch (status) {
       case "yes":
         return {
           badge: "bg-green-100 text-green-800 border-green-200",
           icon: CheckCircle,
-          label: "✓ Confirmed",
+          label: "Confirmed",
           color: "text-green-600"
         }
       case "no":
         return {
           badge: "bg-red-100 text-red-800 border-red-200",
           icon: XCircle,
-          label: "✗ Declined",
+          label: "Declined",
           color: "text-red-600"
         }
       case "maybe":
@@ -341,7 +355,7 @@ const RSVPCard = ({ rsvp, onEdit, onRemove }) => {
       default:
         return {
           badge: "bg-gray-100 text-gray-800 border-gray-200",
-          icon: Users,
+          icon: Clock3,
           label: "Pending",
           color: "text-gray-600"
         }
@@ -353,108 +367,68 @@ const RSVPCard = ({ rsvp, onEdit, onRemove }) => {
   const totalGuests = (rsvp.adults_count || 1) + (rsvp.children_count || 0)
 
   return (
-    <Card className="border border-gray-200 hover:shadow-md transition-all bg-white">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 text-base mb-1">{rsvp.guest_name}</h3>
+    <Card className="border border-gray-200 hover:border-primary-300 transition-all bg-white">
+      <CardContent className="p-3">
+        {/* Collapsed view - super compact */}
+        <div className="flex items-center gap-3">
+          {/* Expand button */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-gray-400 hover:text-gray-600 transition-transform"
+            style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Child Name */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 text-base truncate">{rsvp.child_name || rsvp.guest_name}</h3>
             {rsvp.child_name && (
-              <p className="text-sm text-gray-600 mb-1">For: {rsvp.child_name}</p>
+              <p className="text-xs text-gray-500 truncate">Parent: {rsvp.guest_name}</p>
             )}
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Users className="w-4 h-4" />
-              <span>{totalGuests} guest{totalGuests !== 1 ? 's' : ''}</span>
-              {rsvp.guest_email && (
-                <>
-                  <span>•</span>
-                  <Mail className="w-4 h-4" />
-                </>
-              )}
-            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Badge className={`${statusInfo.badge} font-medium px-3 py-1.5 rounded-lg border`}>
-              {statusInfo.label}
-            </Badge>
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${expanded ? 'rotate-90' : ''}`} />
-            </button>
+          {/* Status icon - visual only */}
+          <div className={`flex items-center justify-center w-7 h-7 rounded-full ${statusInfo.badge}`}>
+            <StatusIcon className="w-4 h-4" />
+          </div>
+
+          {/* Guest count */}
+          <div className="text-xs text-gray-600 min-w-[50px] text-center">
+            {totalGuests} {totalGuests === 1 ? 'guest' : 'guests'}
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-3 text-sm">
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Adults:</span>
-            <span className="font-medium">{rsvp.adults_count || 1}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Children:</span>
-            <span className="font-medium">{rsvp.children_count || 0}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {rsvp.dietary_requirements?.trim() && (
-            <div className="flex items-center gap-1 text-sm text-orange-600">
-              <UtensilsCrossed className="w-4 h-4" />
-              <span>Dietary needs</span>
-            </div>
-          )}
-          {rsvp.message?.trim() && (
-            <div className="flex items-center gap-1 text-sm text-blue-600">
-              <MessageSquare className="w-4 h-4" />
-              <span>Has message</span>
-            </div>
-          )}
-        </div>
-
-        {expanded && (
-          <div className="border-t border-gray-100 pt-3 mt-3 space-y-3">
+        {/* Expanded details */}
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
             {rsvp.guest_email && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Email</label>
-                <p className="text-sm text-gray-900 mt-1">{rsvp.guest_email}</p>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-500">Email:</span>
+                <span className="text-gray-600">{rsvp.guest_email}</span>
               </div>
             )}
-            
-            {rsvp.dietary_requirements?.trim() && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Dietary Requirements</label>
-                <p className="text-sm text-gray-900 mt-1">{rsvp.dietary_requirements}</p>
-              </div>
+
+            {rsvp.attendance === 'yes' && (
+              <>
+                <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-100">
+                  <span className="text-gray-500">Party size:</span>
+                  <span className="text-gray-900">{rsvp.adults_count || 1} adults, {rsvp.children_count || 0} children</span>
+                </div>
+                {rsvp.dietary_requirements && (
+                  <div className="flex items-start justify-between text-xs">
+                    <span className="text-gray-500">Dietary:</span>
+                    <span className="text-gray-900 text-right max-w-[200px]">{rsvp.dietary_requirements}</span>
+                  </div>
+                )}
+                {rsvp.message && (
+                  <div className="flex items-start justify-between text-xs">
+                    <span className="text-gray-500">Message:</span>
+                    <span className="text-gray-900 text-right max-w-[200px] italic">"{rsvp.message}"</span>
+                  </div>
+                )}
+              </>
             )}
-            
-            {rsvp.message?.trim() && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Message</label>
-                <p className="text-sm text-gray-900 mt-1">{rsvp.message}</p>
-              </div>
-            )}
-            
-            <div className="flex gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(rsvp)}
-                className="flex-1 border-gray-200 hover:bg-gray-50"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onRemove(rsvp)}
-                className="flex-1 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Remove
-              </Button>
-            </div>
           </div>
         )}
       </CardContent>
@@ -812,13 +786,11 @@ export default function RSVPManagementPage({ partyId, onBack }) {
         {activeTab === 'rsvps' && (
           <div>
             {rsvps.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {rsvps.map((rsvp) => (
-                  <RSVPCard 
-                    key={rsvp.id} 
-                    rsvp={rsvp} 
-                    onEdit={handleEdit}
-                    onRemove={handleRemove}
+                  <RSVPCard
+                    key={rsvp.id}
+                    rsvp={rsvp}
                   />
                 ))}
               </div>
