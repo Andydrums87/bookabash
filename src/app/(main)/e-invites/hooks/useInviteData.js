@@ -8,6 +8,7 @@ export const useInviteData = () => {
   const [inviteData, setInviteData] = useState(DEFAULT_INVITE_DATA)
   const [generatedImage, setGeneratedImage] = useState(null)
   const [savedGuestList, setSavedGuestList] = useState([])
+  const [currentPartyId, setCurrentPartyId] = useState(null)
 
   const getVenueName = (partyPlan, fallbackLocation) => {
     try {
@@ -245,12 +246,17 @@ export const useInviteData = () => {
     }
   }
 
-  // Load existing invite data on component mount
+  // Load existing invite data on component mount AND when party changes
   useEffect(() => {
     const loadExistingData = async () => {
       try {
         console.log("🔍 Loading existing e-invite data...")
         const { partyDatabaseBackend } = await import("@/utils/partyDatabaseBackend")
+
+        // Listen for party changes from localStorage
+        const selectedPartyId = localStorage.getItem('selectedPartyId')
+        console.log("📌 Selected party ID from localStorage:", selectedPartyId)
+
         const partyResult = await partyDatabaseBackend.getCurrentParty()
 
         console.log("📊 Party result:", partyResult)
@@ -366,6 +372,28 @@ export const useInviteData = () => {
     }
 
     loadExistingData()
+
+    // Listen for storage events (party changes from other tabs/components)
+    const handleStorageChange = (e) => {
+      if (e.key === 'selectedPartyId') {
+        console.log('🔄 Party changed in localStorage, reloading...')
+        loadExistingData()
+      }
+    }
+
+    // Listen for custom party change events
+    const handlePartyChange = () => {
+      console.log('🔄 Party change event detected, reloading...')
+      loadExistingData()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('partyChanged', handlePartyChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('partyChanged', handlePartyChange)
+    }
   }, [])
 
   const handleInputChange = (field, value) => {

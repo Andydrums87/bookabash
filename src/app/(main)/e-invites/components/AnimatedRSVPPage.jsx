@@ -136,6 +136,8 @@ export default function AnimatedRSVPPage() {
         } else {
           // RSVP code not found - show error instead of falling back
           console.error('❌ RSVP code not found:', inviteId)
+          console.error('📱 User agent:', navigator.userAgent)
+          console.error('🌐 URL:', window.location.href)
           setError('Invalid or expired RSVP link. Please check the link and try again.')
           setLoading(false)
           return

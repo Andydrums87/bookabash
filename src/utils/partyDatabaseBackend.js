@@ -3623,7 +3623,8 @@ async getInviteByRSVPCode(rsvpCode) {
       return { success: false, error: partiesError.message };
     }
 
-    console.log(`📊 Found ${parties?.length || 0} confirmed parties to search`);
+    console.log(`📊 Found ${parties?.length || 0} parties to search`);
+    console.log(`🔍 Looking for RSVP code: "${rsvpCode}" (length: ${rsvpCode.length})`);
 
     // Search for the RSVP code in party_plan.einvites.guestList
     let matchedGuest = null;
@@ -3631,12 +3632,16 @@ async getInviteByRSVPCode(rsvpCode) {
 
     for (const party of parties) {
       const guestList = party.party_plan?.einvites?.guestList || [];
-      console.log(`🔍 Party "${party.child_name}" has ${guestList.length} guests`);
+      console.log(`🔍 Party "${party.child_name}" (status: ${party.status}) has ${guestList.length} guests`);
 
       // Log RSVP codes for debugging
       const codes = guestList.map(g => g.rsvpCode).filter(Boolean);
       if (codes.length > 0) {
         console.log(`  RSVP codes: ${codes.join(', ')}`);
+        // Log exact comparison for debugging
+        codes.forEach(code => {
+          console.log(`    Comparing "${code}" === "${rsvpCode}": ${code === rsvpCode}`);
+        });
       }
 
       const guest = guestList.find(g => g.rsvpCode === rsvpCode);

@@ -135,8 +135,9 @@ const AddGuestModal = ({ isOpen, onClose, onAdd, partyId }) => {
 }
 
 // Guest List Item Component
-const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite }) => {
+const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite, hasInvite }) => {
   const [isExpanded, setIsExpanded] = React.useState(false)
+  const [showTooltip, setShowTooltip] = React.useState(false)
 
   const getStatusInfo = () => {
     if (!rsvpStatus) {
@@ -208,13 +209,37 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite }) => {
           </div>
 
           {/* Send button */}
-          <Button
-            onClick={() => onSendInvite(guest)}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white h-7 px-2.5 text-xs"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-          </Button>
+          <div className="relative">
+            <Button
+              onClick={() => {
+                if (!hasInvite) {
+                  setShowTooltip(true)
+                  setTimeout(() => setShowTooltip(false), 3000)
+                } else {
+                  onSendInvite(guest)
+                }
+              }}
+              size="sm"
+              className={`h-7 px-3 text-xs ${
+                !hasInvite
+                  ? 'bg-green-400 cursor-not-allowed opacity-60'
+                  : 'bg-green-600 hover:bg-green-700'
+              } text-white`}
+            >
+              Send
+            </Button>
+
+            {/* Tooltip */}
+            {showTooltip && !hasInvite && (
+              <div className="absolute bottom-full right-0 mb-2 w-56 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-10">
+                <p className="font-medium">Can't send invite yet</p>
+                <p className="text-gray-300 mt-0.5">Create your e-invite first or wait for venue confirmation</p>
+                <div className="absolute top-full right-3 -mt-1">
+                  <div className="border-4 border-transparent border-t-gray-900"></div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Delete button */}
           <Button
@@ -450,6 +475,7 @@ export default function RSVPManagementPage({ partyId, onBack }) {
   // ✅ NEW: Share modal state
   const [showShareModal, setShowShareModal] = useState(false)
   const [selectedGuest, setSelectedGuest] = useState(null)
+  const [hasInvite, setHasInvite] = useState(false)
 
   // Load RSVP data, party details, and guest list
   useEffect(() => {
@@ -467,6 +493,27 @@ export default function RSVPManagementPage({ partyId, onBack }) {
         const partyResult = await partyDatabaseBackend.getPartyById(partyId)
         if (partyResult.success && partyResult.party) {
           setPartyData(partyResult.party)
+
+          // Check if party has created an e-invite
+          const einvites = partyResult.party.party_plan?.einvites
+          console.log('📧 Party einvites data:', einvites)
+          console.log('📧 Full einvites object:', JSON.stringify(einvites, null, 2))
+
+          // Check multiple possible fields that indicate invite is created
+          const inviteExists = einvites?.generatedImage ||
+                               einvites?.image ||
+                               einvites?.inviteId ||
+                               einvites?.inviteSlug ||
+                               einvites?.shareableLink
+
+          console.log('✅ Has invite:', !!inviteExists, {
+            generatedImage: !!einvites?.generatedImage,
+            image: !!einvites?.image,
+            inviteId: !!einvites?.inviteId,
+            inviteSlug: !!einvites?.inviteSlug,
+            shareableLink: !!einvites?.shareableLink
+          })
+          setHasInvite(!!inviteExists)
         }
 
         // Load guest list
@@ -735,6 +782,7 @@ export default function RSVPManagementPage({ partyId, onBack }) {
                     rsvpStatus={guest.rsvpStatus}
                     onRemove={handleRemoveGuest}
                     onSendInvite={handleSendInvite}
+                    hasInvite={hasInvite}
                   />
                 ))}
               </div>

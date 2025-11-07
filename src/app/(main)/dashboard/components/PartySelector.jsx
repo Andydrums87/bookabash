@@ -81,6 +81,8 @@ export default function PartySelector({ parties, selectedPartyId, onSelectParty,
                 onClick={() => {
                   onSelectParty(party.id)
                   setIsOpen(false)
+                  // Dispatch custom event to notify other components
+                  window.dispatchEvent(new CustomEvent('partyChanged', { detail: { partyId: party.id } }))
                 }}
                 className={`w-full p-4 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
                   party.id === selectedPartyId ? 'bg-primary-50' : ''
