@@ -606,6 +606,7 @@ useEffect(() => {
 
         const { suppliersAPI } = await import('@/utils/mockBackend')
         const { scoreSupplierWithTheme } = await import('@/utils/partyBuilderBackend')
+        const { checkSupplierAvailability } = await import('@/utils/availabilityChecker')
         const allSuppliers = await suppliersAPI.getAllSuppliers()
 
         const partyTheme = partyDetails?.theme || 'no-theme'
@@ -636,18 +637,50 @@ useEffect(() => {
             const categorySuppliers = allSuppliers.filter(s => s.category === categoryName)
 
             if (categorySuppliers.length > 0) {
-              // ✅ Sort by theme score and pick the best match
-              const sortedByTheme = categorySuppliers
-                .map(supplier => ({
-                  supplier,
-                  themeScore: scoreSupplierWithTheme(supplier, partyTheme)
-                }))
-                .sort((a, b) => b.themeScore - a.themeScore)
+              // ✅ Filter by availability if party date is set
+              let availableSuppliers = categorySuppliers
+              let allUnavailable = false
 
-              const bestMatch = sortedByTheme[0].supplier
-              newRecommendations[categoryKey] = bestMatch
+              if (partyDetails?.date) {
+                availableSuppliers = categorySuppliers.filter(supplier => {
+                  const availabilityCheck = checkSupplierAvailability(
+                    supplier,
+                    partyDetails.date,
+                    partyDetails.time || partyDetails.startTime,
+                    partyDetails.duration || 2
+                  )
+                  return availabilityCheck.available
+                })
 
-              console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
+                // Check if all suppliers are unavailable
+                if (availableSuppliers.length === 0 && categorySuppliers.length > 0) {
+                  allUnavailable = true
+                }
+              }
+
+              if (availableSuppliers.length > 0) {
+                // ✅ Sort by theme score and pick the best match
+                const sortedByTheme = availableSuppliers
+                  .map(supplier => ({
+                    supplier,
+                    themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+                  }))
+                  .sort((a, b) => b.themeScore - a.themeScore)
+
+                const bestMatch = sortedByTheme[0].supplier
+                newRecommendations[categoryKey] = bestMatch
+
+                console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
+              } else if (allUnavailable) {
+                // ✅ Mark category as having no available suppliers
+                newRecommendations[categoryKey] = {
+                  unavailable: true,
+                  category: categoryName,
+                  categoryKey: categoryKey,
+                  totalSuppliers: categorySuppliers.length
+                }
+                console.log(`⚠️ ${categoryKey}: No available suppliers for party date`)
+              }
             }
           } else {
             console.log(`⏭️ Skipping ${categoryKey} - already has supplier`)
@@ -1286,96 +1319,97 @@ const handleNameSubmit = (nameData) => {
     return recommendedSuppliers[categoryType] || null
   }
 
- // In your dashboard's handleAddRecommendedSupplier:
+  // In your dashboard's handleAddRecommendedSupplier:
 
-const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
-  try {
-    // Save scroll position AND document height BEFORE any state changes
-    const savedScrollY = !shouldNavigate ? window.scrollY : null
-    const savedDocHeight = !shouldNavigate ? document.documentElement.scrollHeight : null
+  const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
+    try {
+      // Save scroll position AND document height BEFORE any state changes
+      const savedScrollY = !shouldNavigate ? window.scrollY : null
+      const savedDocHeight = !shouldNavigate ? document.documentElement.scrollHeight : null
 
-    // Set prevent scroll flag and save position in ref
-    if (!shouldNavigate && savedScrollY !== null) {
-      scrollLockPositionRef.current = savedScrollY
-      setPreventScrollFlag(true)
-      document.body.classList.add('prevent-auto-scroll')
-    }
-
-    setLoadingCards(prev => [...prev, categoryType])
-
-    const result = await addSupplier(supplier, supplier.packageData || null)
-
-    if (result.success) {
-      // Toast notification removed - confetti animation provides visual feedback
-      // when adding suppliers from the missing suppliers section
-
-      // CRITICAL FIX: Compensate for document height change
-      if (!shouldNavigate && savedScrollY !== null && savedDocHeight !== null) {
-        // Wait for DOM to update fully
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            const newDocHeight = document.documentElement.scrollHeight
-            const heightDelta = newDocHeight - savedDocHeight
-
-            if (heightDelta > 10) {
-              // Document got taller - adjust scroll to compensate
-              const compensatedPosition = savedScrollY + heightDelta
-              window.scrollTo({ top: compensatedPosition, behavior: 'instant' })
-            }
-          })
-        })
+      // Set prevent scroll flag and save position in ref
+      if (!shouldNavigate && savedScrollY !== null) {
+        scrollLockPositionRef.current = savedScrollY
+        setPreventScrollFlag(true)
+        document.body.classList.add('prevent-auto-scroll')
       }
 
-      // ✅ Only update URL and trigger navigation if shouldNavigate is true
-      if (shouldNavigate) {
-        // ✅ Create a unique timestamp for this addition
-        const addTimestamp = Date.now()
+      setLoadingCards(prev => [...prev, categoryType])
 
-        // Update URL with timestamp
-        const currentUrl = new URL(window.location.href)
-        currentUrl.searchParams.set('scrollTo', categoryType)
-        currentUrl.searchParams.set('action', 'supplier-added')
-        currentUrl.searchParams.set('ts', addTimestamp.toString())
-        window.history.replaceState({}, '', currentUrl)
+      const result = await addSupplier(supplier, supplier.packageData || null)
 
-        // Clean up URL after animation
-        setTimeout(() => {
-          const cleanUrl = new URL(window.location.href)
-          if (cleanUrl.searchParams.get('ts') === addTimestamp.toString()) {
-            cleanUrl.searchParams.delete('scrollTo')
-            cleanUrl.searchParams.delete('action')
-            cleanUrl.searchParams.delete('ts')
-            window.history.replaceState({}, '', cleanUrl)
-          }
-        }, 2500)
+      if (result.success) {
+        // Toast notification removed - confetti animation provides visual feedback
+        // when adding suppliers from the missing suppliers section
+
+        // CRITICAL FIX: Compensate for document height change
+        if (!shouldNavigate && savedScrollY !== null && savedDocHeight !== null) {
+          // Wait for DOM to update fully
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const newDocHeight = document.documentElement.scrollHeight
+              const heightDelta = newDocHeight - savedDocHeight
+
+              if (heightDelta > 10) {
+                // Document got taller - adjust scroll to compensate
+                const compensatedPosition = savedScrollY + heightDelta
+                window.scrollTo({ top: compensatedPosition, behavior: 'instant' })
+              }
+            })
+          })
+        }
+
+        // ✅ Only update URL and trigger navigation if shouldNavigate is true
+        if (shouldNavigate) {
+          // ✅ Create a unique timestamp for this addition
+          const addTimestamp = Date.now()
+
+          // Update URL with timestamp
+          const currentUrl = new URL(window.location.href)
+          currentUrl.searchParams.set('scrollTo', categoryType)
+          currentUrl.searchParams.set('action', 'supplier-added')
+          currentUrl.searchParams.set('ts', addTimestamp.toString())
+          window.history.replaceState({}, '', currentUrl)
+
+          // Clean up URL after animation
+          setTimeout(() => {
+            const cleanUrl = new URL(window.location.href)
+            if (cleanUrl.searchParams.get('ts') === addTimestamp.toString()) {
+              cleanUrl.searchParams.delete('scrollTo')
+              cleanUrl.searchParams.delete('action')
+              cleanUrl.searchParams.delete('ts')
+              window.history.replaceState({}, '', cleanUrl)
+            }
+          }, 2500)
+        } else {
+          // Clear prevent scroll flag after card disappears (3 seconds)
+          setTimeout(() => {
+            scrollLockPositionRef.current = null
+            setPreventScrollFlag(false)
+            document.body.classList.remove('prevent-auto-scroll')
+          }, 3500)
+        }
       } else {
-        // Clear prevent scroll flag after card disappears (3 seconds)
-        setTimeout(() => {
+        // Clear everything if operation failed (error is now shown on button)
+        if (!shouldNavigate) {
           scrollLockPositionRef.current = null
           setPreventScrollFlag(false)
           document.body.classList.remove('prevent-auto-scroll')
-        }, 3500)
+        }
       }
-    } else {
-      // Clear everything if operation failed
+    } catch (error) {
+      console.error('Error adding supplier:', error)
+
+      // Clear flag on error (error is now shown on button)
       if (!shouldNavigate) {
         scrollLockPositionRef.current = null
         setPreventScrollFlag(false)
         document.body.classList.remove('prevent-auto-scroll')
       }
+    } finally {
+      setLoadingCards(prev => prev.filter(c => c !== categoryType))
     }
-  } catch (error) {
-    console.error('Error adding supplier:', error)
-    // Clear flag on error
-    if (!shouldNavigate) {
-      scrollLockPositionRef.current = null
-      setPreventScrollFlag(false)
-      document.body.classList.remove('prevent-auto-scroll')
-    }
-  } finally {
-    setLoadingCards(prev => prev.filter(c => c !== categoryType))
   }
-}
 
 
 

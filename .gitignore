@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Database dumps and migration files (contain secrets)
+*.sql
+production-schema.sql
+all-production-data.sql
+all-production-data-clean.sql
+auth-users-export.sql
+suppliers-data.sql
+users-data.sql
+import-ready.sql

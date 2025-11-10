@@ -2485,7 +2485,7 @@ async getPartyGiftRegistry(partyId) {
   async claimRegistryItem(registryItemId, guestName) {
     try {
 
-      
+
       const { data: updatedItem, error } = await supabase
         .from('registry_items') // ✅ CORRECT TABLE NAME
         .update({
@@ -2496,7 +2496,7 @@ async getPartyGiftRegistry(partyId) {
         .eq('id', registryItemId)
         .select()
         .single();
-      
+
       if (error) {
         console.error('❌ [Backend] Error claiming item:', error);
         return {
@@ -2504,20 +2504,58 @@ async getPartyGiftRegistry(partyId) {
           error: `Failed to claim item: ${error.message}`
         };
       }
-      
-  
-      
+
+
+
       return {
         success: true,
         registryItem: updatedItem,
         message: 'Item claimed successfully'
       };
-      
+
     } catch (error) {
       console.error('❌ [Backend] Exception in claimRegistryItem:', error);
       return {
         success: false,
         error: `Failed to claim item: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Update registry header image
+   */
+  async updateRegistryHeaderImage(registryId, imageUrl) {
+    try {
+      const { data: updatedRegistry, error } = await supabase
+        .from('party_gift_registries')
+        .update({
+          header_image: imageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registryId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ [Backend] Error updating header image:', error);
+        return {
+          success: false,
+          error: `Failed to update header image: ${error.message}`
+        };
+      }
+
+      return {
+        success: true,
+        registry: updatedRegistry,
+        message: 'Header image updated successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ [Backend] Exception in updateRegistryHeaderImage:', error);
+      return {
+        success: false,
+        error: `Failed to update header image: ${error.message}`
       };
     }
   }

@@ -6,9 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle } from "lucide-react"
+import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import SupplierQuickViewModal from '@/components/SupplierQuickViewModal'
+import { checkSupplierAvailability } from '@/utils/availabilityChecker'
 
 // Generic category images mapping
 const CATEGORY_IMAGES = {
@@ -237,6 +238,12 @@ export default function EmptySupplierCard({
     e.stopPropagation()
     if (!recommendedSupplier || isAdding) return
 
+    // ✅ Don't allow adding unavailable categories
+    if (isUnavailable || isUnavailableCategory) {
+      console.log('❌ Cannot add unavailable supplier/category')
+      return
+    }
+
     // If onCustomize is provided, open customization modal instead
     if (onCustomize) {
       onCustomize(recommendedSupplier, type)
@@ -295,16 +302,53 @@ export default function EmptySupplierCard({
 
   // Calculate pricing for the recommended supplier
   const pricing = useMemo(() => {
-    if (!recommendedSupplier) return { finalPrice: 0 }
+    if (!recommendedSupplier || recommendedSupplier.unavailable) return { finalPrice: 0 }
     return calculateFinalPrice(recommendedSupplier, partyDetails, [])
   }, [recommendedSupplier, partyDetails])
+
+  // ✅ Check if this is an unavailable category marker
+  const isUnavailableCategory = recommendedSupplier?.unavailable === true
 
   // Get generic image for this category
   const genericImage = CATEGORY_IMAGES[type] || `/placeholder.svg`
   const categoryDisplayName = getDisplayName(type)
 
-  // Compact skeleton
-  if (!isMounted || !recommendedSupplier) {
+  // ✅ Check supplier availability
+  const availabilityCheck = useMemo(() => {
+    if (isUnavailableCategory) {
+      return { available: false, reason: 'No suppliers available on your party date' }
+    }
+    if (!recommendedSupplier || !partyDetails?.date) {
+      return { available: true, reason: null }
+    }
+    return checkSupplierAvailability(
+      recommendedSupplier,
+      partyDetails.date,
+      partyDetails.time || partyDetails.startTime,
+      partyDetails.duration || 2
+    )
+  }, [recommendedSupplier, partyDetails, isUnavailableCategory])
+
+  const isUnavailable = !availabilityCheck.available || isUnavailableCategory
+
+  // Debug logging
+  useEffect(() => {
+    console.log(`🔍 EmptySupplierCard [${type}]:`, {
+      hasSupplier: !!recommendedSupplier,
+      isUnavailableCategory,
+      isUnavailable,
+      availabilityCheck,
+      isCompact,
+      supplierData: recommendedSupplier
+    })
+  }, [recommendedSupplier, type, isUnavailableCategory, isUnavailable, availabilityCheck, isCompact])
+
+  // Compact skeleton (but not for unavailable categories - they should render)
+  if (!isMounted) {
+    return null
+  }
+
+  if (!recommendedSupplier) {
     return (
       <Card className={`overflow-hidden rounded-2xl border-2 border-white shadow-xl ${
         deliverooStyle ? 'h-32' : isCompact ? 'h-48' : 'h-80'
@@ -394,14 +438,22 @@ export default function EmptySupplierCard({
               {/* Button at bottom */}
               <Button
                 className={`w-full text-white text-xs py-2 h-8 shadow-sm transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed mt-auto ${
-                  isAddedToParty
+                  isUnavailable
+                    ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                    : isAddedToParty
                     ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
                     : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
                 }`}
                 onClick={handleAddToParty}
-                disabled={isAdding || isAddedToParty}
+                disabled={isAdding || isAddedToParty || isUnavailable}
+                title={isUnavailable ? availabilityCheck.reason : ''}
               >
-                {isAdding ? (
+                {isUnavailable ? (
+                  <>
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    <span className="font-semibold">Unavailable</span>
+                  </>
+                ) : isAdding ? (
                   <>
                     <div className="relative w-3 h-3 mr-1.5">
                       <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
@@ -477,8 +529,9 @@ export default function EmptySupplierCard({
           <div className="relative h-100 w-full">
             {/* Generic Category Image */}
             <div
-              className="absolute inset-0 cursor-pointer"
+              className={isUnavailableCategory ? "absolute inset-0" : "absolute inset-0 cursor-pointer"}
               onClick={(e) => {
+                if (isUnavailableCategory) return
                 e.stopPropagation()
                 setShowQuickView(true)
               }}
@@ -495,17 +548,19 @@ export default function EmptySupplierCard({
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
 
-                        {/* Info icon for quick view */}
-                        <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowQuickView(true)
-              }}
-              className="absolute top-2 right-2 z-10 w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-              title="View supplier details"
-            >
-              <Info className="w-4 h-4 text-white" />
-            </button>
+            {/* Info icon for quick view - hide for unavailable categories */}
+            {!isUnavailableCategory && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowQuickView(true)
+                }}
+                className="absolute top-2 right-2 z-10 w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+                title="View supplier details"
+              >
+                <Info className="w-4 h-4 text-white" />
+              </button>
+            )}
 
 
             {/* Category badge */}
@@ -532,14 +587,22 @@ export default function EmptySupplierCard({
           <div className="p-3">
             <Button
               className={`w-full text-white text-sm py-2 shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
-                isAddedToParty
+                isUnavailable
+                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                  : isAddedToParty
                   ? 'bg-gradient-to-r from-green-500 to-green-600'
                   : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
               }`}
               onClick={handleAddToParty}
-              disabled={isAdding || isAddedToParty}
+              disabled={isAdding || isAddedToParty || isUnavailable}
+              title={isUnavailable ? availabilityCheck.reason : ''}
             >
-              {isAdding ? (
+              {isUnavailable ? (
+                <>
+                  <X className="w-4 h-4 mr-1" />
+                  <span className="text-xs font-semibold">Unavailable on this date</span>
+                </>
+              ) : isAdding ? (
                 <>
                   <div className="relative w-4 h-4 mr-2">
                     <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>
@@ -679,15 +742,23 @@ export default function EmptySupplierCard({
         <div className="p-6">
           <Button
             className={`w-full text-white shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none ${
-              isAddedToParty
+              isUnavailable
+                ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                : isAddedToParty
                 ? 'bg-gradient-to-r from-green-500 to-green-600'
                 : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
             }`}
             size="lg"
             onClick={handleAddToParty}
-            disabled={isAdding || isAddedToParty}
+            disabled={isAdding || isAddedToParty || isUnavailable}
+            title={isUnavailable ? availabilityCheck.reason : ''}
           >
-            {isAdding ? (
+            {isUnavailable ? (
+              <>
+                <X className="w-5 h-5 mr-2" />
+                Unavailable on this date
+              </>
+            ) : isAdding ? (
               <>
                 <div className="relative w-5 h-5 mr-2">
                   <div className="absolute inset-0 border-2 border-white/30 rounded-full"></div>

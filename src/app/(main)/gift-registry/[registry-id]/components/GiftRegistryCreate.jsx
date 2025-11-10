@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import { useEnhancedGiftProducts } from "../hooks/useEnhancedGiftProducts"
-import { Gift, Plus, Check, Search, ArrowLeft, Grid3X3, List, Star, ShoppingCart, Loader2, Sparkles, Filter, X } from 'lucide-react'
+import { Gift, Plus, Check, Search, ArrowLeft, Grid3X3, List, Star, ShoppingCart, Loader2, Sparkles, Filter, X, Upload, Image as ImageIcon } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -37,6 +37,8 @@ export default function GiftRegistryShop() {
   const [registryItems, setRegistryItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [addingItem, setAddingItem] = useState(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [headerImage, setHeaderImage] = useState(null)
 
   // Modal state
   const [selectedItem, setSelectedItem] = useState(null)
@@ -185,6 +187,7 @@ const isProductInRegistry = (productId) => {
         if (result.success && result.registry) {
           setRegistryData(result.registry)
           setRegistryItems(result.items || [])
+          setHeaderImage(result.registry.header_image || null)
           console.log("Registry loaded:", result.registry)
         } else {
           console.error("Failed to load registry:", result.error)
@@ -200,6 +203,60 @@ const isProductInRegistry = (productId) => {
       loadRegistryData()
     }
   }, [registryId])
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be less than 5MB")
+      return
+    }
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please upload an image file")
+      return
+    }
+
+    setUploadingImage(true)
+
+    try {
+      // Create FormData and upload to Cloudinary using API route
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'gift_registry_headers')
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
+      }
+
+      const data = await response.json()
+      const imageUrl = data.url
+
+      // Update registry with new header image
+      const updateResult = await partyDatabaseBackend.updateRegistryHeaderImage(registryId, imageUrl)
+
+      if (updateResult.success) {
+        setHeaderImage(imageUrl)
+        alert('Header image updated successfully!')
+      } else {
+        throw new Error(updateResult.error)
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Failed to upload image. Please try again.')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
 
   useEffect(() => {
     if (registryData?.parties?.child_age && activeMode === "trending") {
@@ -344,50 +401,287 @@ const isProductInRegistry = (productId) => {
     <div className="min-h-screen bg-gray-50">
       <ContextualBreadcrumb currentPage="Browse Gifts" />
 
-      {/* Header */}
-      <div
-        style={{
-          backgroundImage: `url('https://res.cloudinary.com/dghzq6xtd/image/upload/v1762167081/iStock-2240680866_lacbrh.jpg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-        className="relative rounded-2xl shadow-lg overflow-hidden mb-4 mx-3 mt-6 sm:mx-4"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/40"></div>
+      {/* Header - Magical Personal Style */}
+      <div className="relative rounded-2xl shadow-lg overflow-hidden mb-4 mx-3 mt-6 sm:mx-4">
+        {/* Mobile: Full width with overlay */}
+        <div className="md:hidden">
+          {headerImage ? (
+            <div className="relative h-[280px] bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
+              <img
+                src={headerImage}
+                alt={partyDetails?.child_name || 'Child'}
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none"></div>
 
-        <div className="relative z-10 px-4 py-8 sm:px-6 sm:py-10 text-white">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl font-black mb-3 drop-shadow-2xl">
-              {partyDetails?.child_name ? `${partyDetails.child_name.split(' ')[0]}'s Gift Shop` : 'Gift Shop'}
-            </h1>
+              {/* Content overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                <h1 className="text-2xl font-black mb-3 drop-shadow-lg">
+                  ✨ {partyDetails?.child_name ? `${partyDetails.child_name.split(' ')[0]}'s Dream Gifts` : 'Dream Gifts'} ✨
+                </h1>
 
-            <p className="text-base sm:text-lg mb-5 max-w-2xl mx-auto drop-shadow-lg font-medium">
-              Build your perfect gift registry
-            </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white">
+                    <ShoppingCart className="w-3 h-3 text-[hsl(var(--primary-600))]" />
+                    <span className="text-xs font-bold text-[hsl(var(--primary-600))]">
+                      {registryItems.length} gifts
+                    </span>
+                  </div>
 
-            {/* Registry Stats */}
-            <div className="flex items-center justify-center gap-3">
-              <div className="flex items-center gap-2 bg-white/25 backdrop-blur-md rounded-full px-4 py-2 border border-white/30">
-                <ShoppingCart className="w-4 h-4 text-white" />
-                <span className="text-sm font-semibold text-white">
-                  {registryItems.length} items
-                </span>
+                  <div>
+                    <input
+                      type="file"
+                      id="header-image-upload-mobile"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                    <label htmlFor="header-image-upload-mobile">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={uploadingImage}
+                        className="bg-white/90 hover:bg-white text-[hsl(var(--primary-600))] text-xs rounded-full h-auto px-3 py-1.5 cursor-pointer font-semibold"
+                        onClick={() => document.getElementById('header-image-upload-mobile').click()}
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-[hsl(var(--primary-600))] border-t-transparent" />
+                            Uploading
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3 mr-1" />
+                            Change
+                          </>
+                        )}
+                      </Button>
+                    </label>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    className="bg-white/90 hover:bg-white text-[hsl(var(--primary-600))] text-xs rounded-full h-auto px-3 py-1.5 font-semibold"
+                    asChild
+                  >
+                    <Link
+                      href={`/gift-registry/${registryId}/preview`}
+                      onClick={() => {
+                        // Mark that owner is viewing
+                        if (typeof window !== 'undefined') {
+                          sessionStorage.setItem(`registry_${registryId}_owner`, 'true')
+                        }
+                      }}
+                    >
+                      View
+                    </Link>
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-white/30 text-white hover:bg-white/20 bg-white/10 backdrop-blur-md text-sm rounded-full font-semibold"
-                asChild
-              >
-                <Link href={`/gift-registry/${registryId}/preview`}>
-                  View Registry
-                </Link>
-              </Button>
+            </div>
+          ) : (
+            <div className="relative h-[280px] bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))]">
+              <div
+                style={{
+                  backgroundImage: `url('/party-pattern.svg')`,
+                  backgroundRepeat: 'repeat',
+                  backgroundSize: '100px',
+                  opacity: 0.15
+                }}
+                className="absolute inset-0"
+              ></div>
+
+              <div className="relative h-full flex flex-col items-center justify-center text-white p-6">
+                <h1 className="text-2xl font-black mb-3 text-center drop-shadow-lg">
+                  ✨ {partyDetails?.child_name ? `${partyDetails.child_name.split(' ')[0]}'s Dream Gifts` : 'Dream Gifts'} ✨
+                </h1>
+                <p className="text-sm text-center opacity-90 mb-4">Add a magical photo!</p>
+
+                <input
+                  type="file"
+                  id="header-image-upload-mobile-empty"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <label htmlFor="header-image-upload-mobile-empty">
+                  <Button
+                    type="button"
+                    size="lg"
+                    disabled={uploadingImage}
+                    className="bg-white hover:bg-white/90 text-[hsl(var(--primary-600))] rounded-full cursor-pointer font-bold shadow-lg"
+                    onClick={() => document.getElementById('header-image-upload-mobile-empty').click()}
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-[hsl(var(--primary-600))] border-t-transparent" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Add Photo
+                      </>
+                    )}
+                  </Button>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Side by side split */}
+        <div className="hidden md:grid md:grid-cols-5 gap-0 bg-white">
+          {/* Left Side - Child's Photo */}
+          <div className="md:col-span-2 relative bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-600))] h-[220px]">
+            {headerImage ? (
+              <img
+                src={headerImage}
+                alt={partyDetails?.child_name || 'Child'}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white">
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  <ImageIcon className="w-12 h-12 text-white" />
+                </div>
+                <p className="text-sm font-medium text-center">Upload your child's photo</p>
+              </div>
+            )}
+          </div>
+
+          {/* Right Side - Registry Info */}
+          <div className="md:col-span-3 bg-gradient-to-br from-[hsl(var(--primary-400))] via-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] p-6 flex flex-col justify-center relative">
+            <div
+              style={{
+                backgroundImage: `url('/party-pattern.svg')`,
+                backgroundRepeat: 'repeat',
+                backgroundSize: '100px',
+                opacity: 0.1
+              }}
+              className="absolute inset-0"
+            ></div>
+
+            <div className="relative z-10 text-white">
+              <h1 className="text-2xl lg:text-3xl font-black mb-3 drop-shadow-lg">
+                ✨ {partyDetails?.child_name ? `${partyDetails.child_name.split(' ')[0]}'s Dream Gifts` : 'Dream Gifts'} ✨
+              </h1>
+
+              <p className="text-sm mb-4 drop-shadow-lg font-medium opacity-90">
+                Build the perfect gift registry
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/90 backdrop-blur-md rounded-full px-4 py-2 border border-white">
+                  <ShoppingCart className="w-4 h-4 text-[hsl(var(--primary-600))]" />
+                  <span className="text-sm font-bold text-[hsl(var(--primary-600))]">
+                    {registryItems.length} items
+                  </span>
+                </div>
+
+                <div>
+                  <input
+                    type="file"
+                    id="header-image-upload-desktop"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                  <label htmlFor="header-image-upload-desktop">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={uploadingImage}
+                      className="bg-white/90 hover:bg-white text-[hsl(var(--primary-600))] rounded-full font-semibold cursor-pointer"
+                      onClick={() => document.getElementById('header-image-upload-desktop').click()}
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-[hsl(var(--primary-600))] border-t-transparent" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {headerImage ? 'Change Photo' : 'Add Photo'}
+                        </>
+                      )}
+                    </Button>
+                  </label>
+                </div>
+
+                <Button
+                  size="sm"
+                  className="bg-white/90 hover:bg-white text-[hsl(var(--primary-600))] rounded-full font-semibold"
+                  asChild
+                >
+                  <Link
+                    href={`/gift-registry/${registryId}/preview`}
+                    onClick={() => {
+                      // Mark that owner is viewing
+                      if (typeof window !== 'undefined') {
+                        sessionStorage.setItem(`registry_${registryId}_owner`, 'true')
+                      }
+                    }}
+                  >
+                    View Registry
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Friendly photo upload prompt - Only show if no photo */}
+      {!headerImage && (
+        <div className="mx-3 sm:mx-4 mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+              <span className="text-xl">✨</span>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 mb-1">Make it magical with a photo!</h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Add a special photo of {partyDetails?.child_name ? partyDetails.child_name.split(' ')[0] : 'your child'} to make this registry feel extra personal for gift givers. It helps them connect with who they're shopping for! 🎁
+              </p>
+              <div>
+                <input
+                  type="file"
+                  id="prompt-image-upload"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <label htmlFor="prompt-image-upload">
+                  <Button
+                    type="button"
+                    disabled={uploadingImage}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full cursor-pointer shadow-md"
+                    onClick={() => document.getElementById('prompt-image-upload').click()}
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Add Photo Now
+                      </>
+                    )}
+                  </Button>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Bar - Outside Header */}
       <div className="px-3 sm:px-4 mb-4">

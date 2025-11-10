@@ -31,9 +31,13 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
 
   const handleCreateOrNavigate = async () => {
     if (hasRegistry && registry) {
-      // Registry exists - navigate to it
+      // Registry exists - navigate to owner dashboard if it has items, create page if empty
       console.log('✅ [GiftRegistryCard] Navigating to existing registry:', registry.id)
-      router.push(`/gift-registry/${registry.id}/create`)
+      if (hasItems) {
+        router.push(`/gift-registry/${registry.id}/owner`)
+      } else {
+        router.push(`/gift-registry/${registry.id}/create`)
+      }
       return
     }
 
@@ -41,16 +45,16 @@ const GiftRegistryCard = ({ partyTheme, childAge, partyId, partyDetails, loading
     setIsCreating(true)
     try {
       console.log('🎯 [GiftRegistryCard] Creating registry for party:', partyId)
-      
+
       const result = await createRegistry({
         title: `${partyDetails?.childName || partyDetails?.child_name || 'Birthday'} Party Gift Registry`,
         description: `Gift registry for ${partyDetails?.childName || partyDetails?.child_name}'s ${partyTheme || 'themed'} party`,
         theme: partyTheme?.toLowerCase(),
         child_age: childAge || 6
       })
-      
+
       console.log('📝 [GiftRegistryCard] Create registry result:', result)
-      
+
       if (result.success && result.registry) {
         console.log('✅ [GiftRegistryCard] Navigating to new registry:', result.registry.id)
         router.push(`/gift-registry/${result.registry.id}/create`)

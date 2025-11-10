@@ -933,9 +933,17 @@ export default function MyPartyTabContent({
                           })
                         }
                       } else {
-                        displayPrice = supplier.packageData?.price || supplier.price || 0
+                        // ✅ FIX: For party bags, use supplier.price (total) not packageData.price (per bag)
                         if (isPartyBags) {
-                          console.log('🎁 [Summary] NO PRICING FUNCTION - Fallback:', displayPrice)
+                          displayPrice = supplier.partyBagsMetadata?.totalPrice || supplier.price || supplier.packageData?.price || 0
+                          console.log('🎁 [Summary] NO PRICING FUNCTION - Fallback:', {
+                            usingTotalPrice: displayPrice,
+                            metadata: supplier.partyBagsMetadata?.totalPrice,
+                            supplierPrice: supplier.price,
+                            packagePrice: supplier.packageData?.price
+                          })
+                        } else {
+                          displayPrice = supplier.packageData?.price || supplier.price || 0
                         }
                       }
 
@@ -980,6 +988,13 @@ export default function MyPartyTabContent({
                     const pricing = getSupplierDisplayPricing(supplier, partyDetails, supplierAddons)
                     return sum + (pricing?.basePrice || 0)
                   }
+
+                  // ✅ FIX: For party bags, use supplier.price (total) not packageData.price (per bag)
+                  const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
+                  if (isPartyBags) {
+                    return sum + (supplier.partyBagsMetadata?.totalPrice || supplier.price || 0)
+                  }
+
                   return sum + (supplier.packageData?.price || supplier.price || 0)
                 }, 0)
 

@@ -1,6 +1,8 @@
 // utils/partyPlanBackend.js
 // Backend for managing user's party plan (selected suppliers + add-ons)
 
+import { checkSupplierAvailability } from './availabilityChecker';
+
 
 
 
@@ -215,6 +217,39 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       weekendPremium: supplier.weekendPremium,
       supplierKeys: Object.keys(supplier)
     });
+
+    // ✅ CHECK AVAILABILITY: Get party details and validate supplier availability
+    let partyDate = null;
+    let partyTime = null;
+    let partyDuration = 2;
+
+    try {
+      const partyDetailsStr = localStorage.getItem('party_details');
+      if (partyDetailsStr && partyDetailsStr !== 'null') {
+        const partyDetails = JSON.parse(partyDetailsStr);
+        partyDate = partyDetails.date;
+        partyTime = partyDetails.time || partyDetails.startTime;
+        partyDuration = partyDetails.duration || 2;
+      }
+    } catch (error) {
+      console.warn('Could not load party details for availability check:', error);
+    }
+
+    // Check if supplier is available on the party date
+    if (partyDate) {
+      const availabilityCheck = checkSupplierAvailability(supplier, partyDate, partyTime, partyDuration);
+
+      if (!availabilityCheck.available) {
+        console.warn('❌ Supplier not available:', availabilityCheck.reason);
+        return {
+          success: false,
+          error: availabilityCheck.reason,
+          errorType: 'availability'
+        };
+      }
+
+      console.log('✅ Supplier is available on', partyDate);
+    }
 
     const plan = this.getPartyPlan();
     

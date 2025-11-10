@@ -880,13 +880,29 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
       const isPartyBags = supplier.category === 'Party Bags' ||
                          supplier.category?.toLowerCase().includes('party bag');
 
+      // ✅ FIX: Calculate the correct price for party bags
+      const priceToStore = isPartyBags
+        ? (supplier.partyBagsMetadata?.totalPrice || supplier.enhancedPrice || supplier.priceFrom || 0)
+        : (supplier.enhancedPrice || supplier.priceFrom || 0);
+
+      if (isPartyBags) {
+        console.log('🎁 [PartyBuilder] Storing Party Bags with price:', {
+          name: supplier.name,
+          metadataTotalPrice: supplier.partyBagsMetadata?.totalPrice,
+          enhancedPrice: supplier.enhancedPrice,
+          priceFrom: supplier.priceFrom,
+          finalPriceToStore: priceToStore,
+          quantity: supplier.partyBagsQuantity,
+          pricePerBag: supplier.partyBagsMetadata?.pricePerBag
+        });
+      }
+
       partyPlan[category] = {
         id: supplier.id,
         name: supplier.name,
         description: supplier.description || '',
 
-        // Store enhanced price for display
-        price: supplier.enhancedPrice || supplier.priceFrom || 0,
+        price: priceToStore,
         originalPrice: supplier.originalPrice || supplier.priceFrom || 0,
 
         status: supplier.isFallbackSelection ? "needs_confirmation" : "pending",
@@ -922,7 +938,10 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
         isFallbackSelection: supplier.isFallbackSelection || false
       };
 
-      console.log(`✅ Stored ${supplier.name} with weekend premium:`, {
+      console.log(`✅ Stored ${supplier.name}:`, {
+        isPartyBags,
+        price: partyPlan[category].price,
+        partyBagsMetadata: isPartyBags ? partyPlan[category].partyBagsMetadata : undefined,
         storedWeekendPremium: partyPlan[category].weekendPremium,
         originalSupplierWeekendPremium: partyPlan[category].originalSupplier.weekendPremium
       });

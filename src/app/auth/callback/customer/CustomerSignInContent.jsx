@@ -138,15 +138,15 @@ export default function CustomerAuthCallback() {
         }
   
         console.log("✅ Customer profile ready:", userResult.user.id)
-  
+
         setProgress(100)
         await new Promise((resolve) => setTimeout(resolve, 300))
-  
+
         // Determine where to redirect
         const currentOrigin = window.location.origin
         let redirectUrl = `${currentOrigin}/`
         let successMessage = 'Welcome to PartySnap!'
-  
+
         if (preserveParty === 'true' || context === 'review_book' || (returnTo && returnTo.includes('/review-book'))) {
           console.log("🎉 Redirecting to review book")
           redirectUrl = `${currentOrigin}/review-book`
@@ -154,6 +154,31 @@ export default function CustomerAuthCallback() {
         } else if (returnTo) {
           redirectUrl = returnTo.startsWith('http') ? returnTo : `${currentOrigin}${returnTo}`
           successMessage = `Welcome back ${user.user_metadata?.given_name || ''}!`
+        } else {
+          // ✅ FIX: Check if user has a party in database OR localStorage
+          try {
+            // First check database for existing parties
+            const currentPartyResult = await partyDatabaseBackend.getCurrentParty()
+            const hasPartyInDatabase = currentPartyResult.success && currentPartyResult.party
+
+            // Then check localStorage
+            const partyPlan = localStorage.getItem('user_party_plan')
+            const partyDetails = localStorage.getItem('party_details')
+            const hasPartyInLocalStorage = partyPlan && partyPlan !== 'null' && partyDetails && partyDetails !== 'null'
+
+            if (hasPartyInDatabase || hasPartyInLocalStorage) {
+              console.log("🎉 User has a party (database:", hasPartyInDatabase, ", localStorage:", hasPartyInLocalStorage, "), redirecting to dashboard")
+              redirectUrl = `${currentOrigin}/dashboard`
+              successMessage = `Welcome back ${user.user_metadata?.given_name || ''}! Let's continue planning your party.`
+            } else {
+              console.log("📍 No party found, redirecting to home")
+              redirectUrl = `${currentOrigin}/`
+              successMessage = `Welcome to PartySnap, ${user.user_metadata?.given_name || ''}!`
+            }
+          } catch (error) {
+            console.error("Error checking party:", error)
+            redirectUrl = `${currentOrigin}/`
+          }
         }
   
         // Store success message

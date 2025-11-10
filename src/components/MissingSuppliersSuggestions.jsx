@@ -6,6 +6,7 @@ import { useSuppliers } from "@/utils/mockBackend"
 import EmptySupplierCard from "@/app/(main)/dashboard/components/SupplierCard/EmptySupplierCard"
 import confetti from 'canvas-confetti'
 import { scoreSupplierWithTheme } from "@/utils/partyBuilderBackend"
+import { checkSupplierAvailability } from "@/utils/availabilityChecker"
 
 export default function MissingSuppliersSuggestions({
   partyPlan,
@@ -169,8 +170,23 @@ export default function MissingSuppliersSuggestions({
           config.categories.includes(supplier.category)
         )
 
+        // ✅ Filter by availability - only show categories with available suppliers
+        let availableSuppliers = matchingSuppliers
+
+        if (partyDetails?.date) {
+          availableSuppliers = matchingSuppliers.filter(supplier => {
+            const availabilityCheck = checkSupplierAvailability(
+              supplier,
+              partyDetails.date,
+              partyDetails.time || partyDetails.startTime,
+              partyDetails.duration || 2
+            )
+            return availabilityCheck.available
+          })
+        }
+
         // Sort by theme-based scoring (same as party builder)
-        const sortedSuppliers = matchingSuppliers
+        const sortedSuppliers = availableSuppliers
           .map(supplier => ({
             supplier,
             themeScore: scoreSupplierWithTheme(supplier, partyTheme)
@@ -196,6 +212,7 @@ export default function MissingSuppliersSuggestions({
           .map(item => item.supplier) // Extract just the supplier
           .slice(0, 4) // Take top 4 suppliers
 
+        // Return if there are suppliers (availability is handled by EmptySupplierCard)
         if (sortedSuppliers.length > 0) {
           return {
             type,

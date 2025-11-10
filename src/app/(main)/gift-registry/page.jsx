@@ -27,52 +27,106 @@ export default function GiftRegistryOverviewPage() {
   const [creating, setCreating] = useState(false)
   const router = useRouter()
 
-  // Use the same hook as GiftRegistryCard
-  const { 
-    registry, 
-    registryItems, 
-    loading: registryLoading, 
+  // Use the same hook as GiftRegistryCard - will load when activeParty changes
+  const {
+    registry,
+    registryItems,
+    loading: registryLoading,
     hasRegistry,
     createRegistry,
-    refreshRegistry 
+    refreshRegistry
   } = useGiftRegistry(activeParty?.id)
 
   useEffect(() => {
     loadUserAndParty()
   }, [])
 
-  // Auto-redirect if registry exists (same logic as GiftRegistryCard)
+  // Listen for localStorage changes to selectedPartyId
   useEffect(() => {
-    if (!loading && !registryLoading && hasRegistry && registry) {
-      console.log('Registry exists, redirecting to:', registry.id)
-      router.replace(`/gift-registry/${registry.id}/create`)
+    const handleStorageChange = () => {
+      console.log('🔄 selectedPartyId changed, reloading party...')
+      loadUserAndParty()
     }
-  }, [loading, registryLoading, hasRegistry, registry, router])
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
+  // Auto-redirect if registry exists FOR THIS SPECIFIC PARTY
+  useEffect(() => {
+    console.log('🔍 Redirect check:', {
+      loading,
+      registryLoading,
+      hasRegistry,
+      registryId: registry?.id,
+      registryPartyId: registry?.party_id,
+      activePartyId: activeParty?.id
+    })
+
+    if (!loading && !registryLoading && hasRegistry && registry && activeParty) {
+      // Only redirect if the registry belongs to the current active party
+      if (registry.party_id === activeParty.id) {
+        console.log('✅ Registry exists for this party, redirecting to:', registry.id)
+        router.replace(`/gift-registry/${registry.id}/create`)
+      } else {
+        console.log('⚠️ Registry mismatch! Active party:', activeParty.id, 'Registry party:', registry.party_id)
+      }
+    }
+  }, [loading, registryLoading, hasRegistry, registry, activeParty, router])
 
   const loadUserAndParty = async () => {
     try {
       setLoading(true)
-      
+
       // Get user
       const { data: { user }, error } = await supabase.auth.getUser()
       if (error) {
         console.error('Auth error:', error)
         return
       }
-      
+
       setUser(user)
-      
+
       if (!user) {
         setLoading(false)
         return
       }
 
-      // Get current party
-      const partyResult = await partyDatabaseBackend.getCurrentParty()
-      if (partyResult.success && partyResult.party) {
-        setActiveParty(partyResult.party)
+      // Get selected party ID from localStorage (same as dashboard)
+      const selectedPartyId = localStorage.getItem('selectedPartyId')
+      console.log('📍 localStorage selectedPartyId:', selectedPartyId)
+
+      if (selectedPartyId) {
+        // Fetch the specific selected party
+        const { data: party, error: partyError } = await supabase
+          .from('parties')
+          .select('*')
+          .eq('id', selectedPartyId)
+          .eq('status', 'planned')
+          .single()
+
+        if (!partyError && party) {
+          console.log('✅ Using selected party from localStorage:', party.id, party.child_name)
+          setActiveParty(party)
+        } else {
+          // Fallback to current party if selected party not found
+          console.log('⚠️ Selected party not found, falling back to current party')
+          const partyResult = await partyDatabaseBackend.getCurrentParty()
+          if (partyResult.success && partyResult.party) {
+            console.log('📌 Using fallback party:', partyResult.party.id, partyResult.party.child_name)
+            setActiveParty(partyResult.party)
+          }
+        }
+      } else {
+        // No selected party, get current party
+        console.log('⚠️ No selectedPartyId in localStorage, using getCurrentParty')
+        const partyResult = await partyDatabaseBackend.getCurrentParty()
+        if (partyResult.success && partyResult.party) {
+          console.log('📌 Using current party:', partyResult.party.id, partyResult.party.child_name)
+          setActiveParty(partyResult.party)
+        }
       }
-      
+
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {

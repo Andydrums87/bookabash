@@ -234,9 +234,11 @@ const childPhotoRef = useRef(null)
         if (partyId) {
           console.log('✅ Using partyId from prop:', partyId)
           setSelectedPartyId(partyId)
+          localStorage.setItem('selectedPartyId', partyId)
         } else if (result.parties.length > 0) {
           console.log('✅ Using first party:', result.parties[0].id, result.parties[0].child_name)
           setSelectedPartyId(result.parties[0].id)
+          localStorage.setItem('selectedPartyId', result.parties[0].id)
         }
       } else {
         console.error('❌ Failed to load parties:', result.error)
@@ -1117,6 +1119,9 @@ useEffect(() => {
   const handleSelectParty = (newPartyId) => {
     console.log('🔄 Switching to party:', newPartyId)
     setSelectedPartyId(newPartyId)
+    // Persist to localStorage so gift registry page knows which party is selected
+    localStorage.setItem('selectedPartyId', newPartyId)
+    console.log('💾 Saved selectedPartyId to localStorage:', newPartyId)
 
     // Navigate to the new party (this will cause usePartyData to reload with the new partyId)
     router.push(`/dashboard?party_id=${newPartyId}`)
