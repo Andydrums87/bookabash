@@ -2559,7 +2559,44 @@ async getPartyGiftRegistry(partyId) {
       };
     }
   }
-  
+
+  /**
+   * Update registry personalization data (child's preferences)
+   */
+  async updateRegistryPersonalization(registryId, personalizationData) {
+    try {
+      const { data: updatedRegistry, error } = await supabase
+        .from('party_gift_registries')
+        .update({
+          personalization_data: personalizationData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registryId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ [Backend] Error updating personalization data:', error);
+        return {
+          success: false,
+          error: `Failed to update personalization data: ${error.message}`
+        };
+      }
+
+      return {
+        success: true,
+        registry: updatedRegistry,
+        message: 'Personalization data updated successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ [Backend] Exception in updateRegistryPersonalization:', error);
+      return {
+        success: false,
+        error: `Failed to update personalization data: ${error.message}`
+      };
+    }
+  }
 
   /**
    * Unclaim item (for guests who change their mind)

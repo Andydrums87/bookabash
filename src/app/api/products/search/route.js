@@ -364,23 +364,24 @@ export async function POST(request) {
   }
 
   try {
-    const { 
-      theme, 
-      age, 
-      category, 
+    const {
+      theme,
+      age,
+      category,
       limit = 20,        // CHANGED: Increased from 10 to 20
       page = 1,          // NEW: Added pagination support
-      searchTerm, 
-      mode = 'trending'  // NEW: Added mode parameter
+      searchTerm,
+      mode = 'trending',  // NEW: Added mode parameter
+      keywords           // NEW: Personalization keywords
     } = await request.json();
-    
+
     const productService = new RapidAPIProductService();
     let result;
     let usingFallback = false;
-    
+
     // Rate limit check
     const shouldUseAPI = requestCount < REQUEST_LIMIT;
-    
+
     // NEW: Handle different modes
     switch (mode) {
       case 'search':
@@ -392,7 +393,7 @@ export async function POST(request) {
             hasMore: false
           });
         }
-        
+
         if (shouldUseAPI) {
           requestCount++;
           const logEntry = {
@@ -406,7 +407,7 @@ export async function POST(request) {
           requestLog.push(logEntry);
           console.log(`📊 Search Request ${requestCount}/${REQUEST_LIMIT}: "${searchTerm}" (age: ${age}, page: ${page})`);
         }
-        
+
         result = await productService.searchAmazonProducts(searchTerm, limit, page);
         break;
         
@@ -446,22 +447,43 @@ export async function POST(request) {
             hasMore: false
           });
         }
-        
-        if (shouldUseAPI) {
-          requestCount++;
-          const logEntry = {
-            timestamp,
-            query: `trending:age${age}`,
-            age,
-            page,
-            requestNumber: requestCount,
-            type: 'trending'
-          };
-          requestLog.push(logEntry);
-          console.log(`🔥 Trending Request ${requestCount}/${REQUEST_LIMIT}: age ${age}, page ${page}`);
+
+        // If keywords provided (from personalization), search with those instead
+        if (keywords && keywords.trim()) {
+          console.log('🎯 Using personalized keywords for trending:', keywords);
+
+          if (shouldUseAPI) {
+            requestCount++;
+            const logEntry = {
+              timestamp,
+              query: `personalized:${keywords}`,
+              age,
+              page,
+              requestNumber: requestCount,
+              type: 'personalized-trending'
+            };
+            requestLog.push(logEntry);
+            console.log(`🎯 Personalized Request ${requestCount}/${REQUEST_LIMIT}: "${keywords}" (age: ${age}, page: ${page})`);
+          }
+
+          result = await productService.searchAmazonProducts(keywords, limit, page);
+        } else {
+          if (shouldUseAPI) {
+            requestCount++;
+            const logEntry = {
+              timestamp,
+              query: `trending:age${age}`,
+              age,
+              page,
+              requestNumber: requestCount,
+              type: 'trending'
+            };
+            requestLog.push(logEntry);
+            console.log(`🔥 Trending Request ${requestCount}/${REQUEST_LIMIT}: age ${age}, page ${page}`);
+          }
+
+          result = await productService.getTrendingProducts(age, limit, page);
         }
-        
-        result = await productService.getTrendingProducts(age, limit, page);
         break;
     }
     

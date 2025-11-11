@@ -11,19 +11,20 @@ export const useEnhancedGiftProducts = () => {
   const [totalResults, setTotalResults] = useState(0)
   
   const loadProducts = useCallback(async (mode, options = {}) => {
-    const { 
-      searchTerm, 
-      category, 
-      theme, 
-      age, 
-      limit = 20, 
-      page = 1, 
-      append = false 
+    const {
+      searchTerm,
+      category,
+      theme,
+      age,
+      limit = 20,
+      page = 1,
+      append = false,
+      keywords
     } = options;
-    
+
     setLoading(true)
     setError(null)
-    
+
     try {
       const response = await fetch('/api/products/search', {  // CORRECTED ENDPOINT
         method: 'POST',
@@ -35,7 +36,8 @@ export const useEnhancedGiftProducts = () => {
           theme,
           age,
           limit,
-          page
+          page,
+          keywords
         })
       })
       

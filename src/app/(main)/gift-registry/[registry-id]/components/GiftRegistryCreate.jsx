@@ -45,6 +45,16 @@ export default function GiftRegistryShop() {
   const [showModal, setShowModal] = useState(false)
   const [guestName, setGuestName] = useState("")
 
+  // Personalization modal state
+  const [showPersonalizationModal, setShowPersonalizationModal] = useState(false)
+  const [personalizationData, setPersonalizationData] = useState({
+    favoriteThing: '',  // Just one favorite thing
+    childPhoto: null
+  })
+  const [uploadingChildPhoto, setUploadingChildPhoto] = useState(false)
+  const [hasCompletedPersonalization, setHasCompletedPersonalization] = useState(false)
+  const [hasLoadedProducts, setHasLoadedProducts] = useState(false)
+
   // Hooks for search with enhanced debouncing
   const { 
     searchResults, 
@@ -178,31 +188,129 @@ const isProductInRegistry = (productId) => {
     handleCloseModal()
   }
 
-  // Load registry and party details
-  useEffect(() => {
-    const loadRegistryData = async () => {
-      try {
-        console.log("Loading registry:", registryId)
-        const result = await partyDatabaseBackend.getRegistryById(registryId)
-        if (result.success && result.registry) {
-          setRegistryData(result.registry)
-          setRegistryItems(result.items || [])
-          setHeaderImage(result.registry.header_image || null)
-          console.log("Registry loaded:", result.registry)
-        } else {
-          console.error("Failed to load registry:", result.error)
-        }
-      } catch (error) {
-        console.error("Error loading registry:", error)
-      } finally {
-        setLoading(false)
-      }
+  // Personalization handlers
+  const handlePersonalizationSubmit = async () => {
+    // Validate that favorite thing is filled
+    if (!personalizationData.favoriteThing.trim()) {
+      alert('Please enter their favorite thing')
+      return
     }
 
+    try {
+      // Save personalization data to registry
+      const result = await partyDatabaseBackend.updateRegistryPersonalization(
+        registryId,
+        personalizationData
+      )
+
+      if (result.success) {
+        // If child photo was uploaded, also set it as the header image
+        if (personalizationData.childPhoto) {
+          const headerResult = await partyDatabaseBackend.updateRegistryHeaderImage(
+            registryId,
+            personalizationData.childPhoto
+          )
+          if (headerResult.success) {
+            setHeaderImage(personalizationData.childPhoto)
+          }
+        }
+
+        setShowPersonalizationModal(false)
+        setHasCompletedPersonalization(true)
+        // Mark as completed in localStorage
+        localStorage.setItem(`registry_${registryId}_personalized`, 'true')
+        // Reload registry to get updated data
+        loadRegistryData()
+      }
+    } catch (error) {
+      console.error('Error saving personalization:', error)
+    }
+  }
+
+  const handleChildPhotoUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be less than 5MB")
+      return
+    }
+
+    setUploadingChildPhoto(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'gift_registry_child_photos')
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        setPersonalizationData(prev => ({
+          ...prev,
+          childPhoto: data.url
+        }))
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      alert('Failed to upload photo')
+    } finally {
+      setUploadingChildPhoto(false)
+    }
+  }
+
+  // Load registry and party details
+  const loadRegistryData = async () => {
+    try {
+      console.log("Loading registry:", registryId)
+      const result = await partyDatabaseBackend.getRegistryById(registryId)
+      if (result.success && result.registry) {
+        setRegistryData(result.registry)
+        setRegistryItems(result.items || [])
+        setHeaderImage(result.registry.header_image || null)
+
+        // Load personalization data if exists
+        if (result.registry.personalization_data) {
+          setPersonalizationData(result.registry.personalization_data)
+        }
+
+        console.log("Registry loaded:", result.registry)
+      } else {
+        console.error("Failed to load registry:", result.error)
+      }
+    } catch (error) {
+      console.error("Error loading registry:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     if (registryId) {
       loadRegistryData()
     }
   }, [registryId])
+
+  // Check if personalization is needed on first load
+  useEffect(() => {
+    if (!loading && registryData) {
+      const hasPersonalized = localStorage.getItem(`registry_${registryId}_personalized`)
+      const hasPersonalizationData = registryData.personalization_data
+
+      // If already personalized, mark as completed so products can load
+      if (hasPersonalized || hasPersonalizationData) {
+        setHasCompletedPersonalization(true)
+      }
+
+      // Show modal if never personalized OR if no personalization data exists
+      if (!hasPersonalized && !hasPersonalizationData) {
+        setShowPersonalizationModal(true)
+      }
+    }
+  }, [loading, registryData, registryId])
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0]
@@ -258,15 +366,34 @@ const isProductInRegistry = (productId) => {
     }
   }
 
+  // Load products only when personalization is completed
   useEffect(() => {
-    if (registryData?.parties?.child_age && activeMode === "trending") {
-      console.log("Loading trending products for age:", registryData.parties.child_age)
-      loadProducts('trending', {
-        age: registryData.parties.child_age,
-        limit: 20
-      })
+    // Only load once after personalization
+    if (hasLoadedProducts) {
+      return
     }
-  }, [registryData, activeMode, loadProducts])
+
+    if (hasCompletedPersonalization && registryData?.personalization_data && registryData?.parties?.child_age) {
+      const { favoriteThing } = registryData.personalization_data
+
+      if (favoriteThing && favoriteThing.trim()) {
+        console.log("🎯 Searching for personalized products:", favoriteThing)
+
+        // Use search mode with the one favorite thing
+        setActiveMode("search")
+        setSearchTerm(favoriteThing)
+        reset()
+
+        loadProducts('search', {
+          searchTerm: favoriteThing,
+          age: registryData.parties.child_age,
+          limit: 20
+        })
+
+        setHasLoadedProducts(true)
+      }
+    }
+  }, [hasCompletedPersonalization, registryData, loadProducts, hasLoadedProducts, reset])
 
   // Get theme-based suggestions
   const partyDetails = registryData?.parties
@@ -319,6 +446,16 @@ const isProductInRegistry = (productId) => {
   const handleLoadMore = useCallback(() => {
     if (hasMore && !productsLoading) {
       const options = { age: childAge, limit: 20 }
+
+      // Add personalization keywords for trending mode
+      if (activeMode === 'trending' && registryData?.personalization_data) {
+        const { favoriteThings } = registryData.personalization_data
+        const allPreferences = (favoriteThings || []).filter(item => item && item.trim() !== '')
+        if (allPreferences.length > 0) {
+          options.keywords = allPreferences.join(' ')
+        }
+      }
+
       switch (activeMode) {
         case 'search':
           options.searchTerm = searchTerm
@@ -328,12 +465,12 @@ const isProductInRegistry = (productId) => {
           break
         case 'trending':
         default:
-          // Just age is enough for trending
+          // Keywords already added above if personalization exists
           break
       }
       loadMore(activeMode, options)
     }
-  }, [hasMore, productsLoading, activeMode, childAge, searchTerm, activeCategory, loadMore])
+  }, [hasMore, productsLoading, activeMode, childAge, searchTerm, activeCategory, loadMore, registryData])
 
   // Categories for filtering
   const categories = [
@@ -400,6 +537,104 @@ const isProductInRegistry = (productId) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <ContextualBreadcrumb currentPage="Browse Gifts" />
+
+      {/* Personalization Modal */}
+      {showPersonalizationModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="bg-[hsl(var(--primary-500))] rounded-t-3xl p-8 text-white">
+              <h2 className="text-2xl font-bold mb-2">
+                Make {partyDetails?.child_name?.split(' ')[0]}'s wish list extra special
+              </h2>
+              <p className="text-white/90">
+                Tell us what they love so we can suggest the perfect gifts
+              </p>
+            </div>
+
+            <div className="p-8">
+
+              <div className="space-y-6">
+                {/* Child Photo Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">
+                    Add their photo so guests see their smiling face
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {personalizationData.childPhoto ? (
+                      <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200">
+                        <img
+                          src={personalizationData.childPhoto}
+                          alt="Child"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                        <span className="text-3xl">📸</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      id="child-photo-upload"
+                      accept="image/*"
+                      onChange={handleChildPhotoUpload}
+                      className="hidden"
+                    />
+                    <label htmlFor="child-photo-upload">
+                      <Button
+                        type="button"
+                        disabled={uploadingChildPhoto}
+                        className="cursor-pointer bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white"
+                        onClick={() => document.getElementById('child-photo-upload').click()}
+                      >
+                        {uploadingChildPhoto ? (
+                          'Uploading...'
+                        ) : (
+                          personalizationData.childPhoto ? 'Change photo' : 'Upload photo'
+                        )}
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Favorite Thing */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-3">
+                    What's {partyDetails?.child_name?.split(' ')[0]}'s favorite thing?
+                  </label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    TV show, book, character, hobby - anything they love!
+                  </p>
+                  <Input
+                    placeholder="e.g., Bluey, LEGO, Harry Potter"
+                    value={personalizationData.favoriteThing}
+                    onChange={(e) => {
+                      setPersonalizationData(prev => ({
+                        ...prev,
+                        favoriteThing: e.target.value
+                      }))
+                    }}
+                    className="mb-3"
+                  />
+                  <p className="text-xs text-gray-400 mt-2">
+                    You can search for more gifts after this
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="mt-8">
+                <Button
+                  onClick={handlePersonalizationSubmit}
+                  className="w-full bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white"
+                >
+                  Create wish list
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header - Magical Personal Style */}
       <div className="relative rounded-2xl shadow-lg overflow-hidden mb-4 mx-3 mt-6 sm:mx-4">
@@ -635,53 +870,6 @@ const isProductInRegistry = (productId) => {
           </div>
         </div>
       </div>
-
-      {/* Friendly photo upload prompt - Only show if no photo */}
-      {!headerImage && (
-        <div className="mx-3 sm:mx-4 mb-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-              <span className="text-xl">✨</span>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900 mb-1">Make it magical with a photo!</h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Add a special photo of {partyDetails?.child_name ? partyDetails.child_name.split(' ')[0] : 'your child'} to make this registry feel extra personal for gift givers. It helps them connect with who they're shopping for! 🎁
-              </p>
-              <div>
-                <input
-                  type="file"
-                  id="prompt-image-upload"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={uploadingImage}
-                />
-                <label htmlFor="prompt-image-upload">
-                  <Button
-                    type="button"
-                    disabled={uploadingImage}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full cursor-pointer shadow-md"
-                    onClick={() => document.getElementById('prompt-image-upload').click()}
-                  >
-                    {uploadingImage ? (
-                      <>
-                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Add Photo Now
-                      </>
-                    )}
-                  </Button>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Search Bar - Outside Header */}
       <div className="px-3 sm:px-4 mb-4">
