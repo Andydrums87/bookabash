@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "analyze": "ANALYZE=true npm run build",
-    "build:analyze": "cross-env ANALYZE=true next build"
+    "build:analyze": "cross-env ANALYZE=true next build",
+    "seed-suppliers": "node copy-suppliers.js"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
