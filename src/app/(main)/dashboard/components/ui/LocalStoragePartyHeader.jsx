@@ -1112,7 +1112,7 @@ export default function LocalStoragePartyHeader({
                 </div>
 
                 {/* Edit button - positioned absolutely on mobile */}
-                <div className="md:relative absolute top-4 right-4 flex-shrink-0">
+                <div className="md:hidden absolute top-4 right-4 flex-shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()

@@ -49,6 +49,7 @@ export default function AnimatedRSVPPage() {
   const [partyId, setPartyId] = useState(null) // NEW: Store party ID for RSVP code flow
   const [guestLimit, setGuestLimit] = useState(null) // Party guest limit
   const [totalConfirmedGuests, setTotalConfirmedGuests] = useState(0) // Already confirmed guests
+  const [showMoreDetails, setShowMoreDetails] = useState(false) // Toggle for optional fields
   const [rsvpData, setRsvpData] = useState({
     guestName: '',
     childName: '', // Add this line
@@ -250,8 +251,11 @@ export default function AnimatedRSVPPage() {
 
   const submitRSVP = async () => {
     try {
+      // Use child name from matchedGuest (personalized link) or from rsvpData (fallback)
+      const childName = matchedGuest?.childName || rsvpData.childName
+
       console.log('📝 Submitting RSVP:', rsvpData)
-      console.log('📝 Child name being sent:', rsvpData.childName)
+      console.log('📝 Child name being sent:', childName)
 
       // ✅ FIX: Use the actual invite ID from loaded data, not the URL param (which might be a slug)
       const actualInviteId = inviteDetails?.id || inviteId
@@ -261,7 +265,7 @@ export default function AnimatedRSVPPage() {
       const result = await partyDatabaseBackend.submitRSVP(actualInviteId, {
         guestName: rsvpData.guestName,
         guestEmail: rsvpData.email,
-        childName: rsvpData.childName,
+        childName: childName,
         guestPhone: rsvpData.phone,
         attendance: rsvpData.status,
         adultsCount: rsvpData.guestCount,
@@ -377,55 +381,72 @@ export default function AnimatedRSVPPage() {
               
               {/* Envelope SVG */}
               <div className="relative">
-                <svg 
-                  width="400" 
-                  height="280" 
-                  viewBox="0 0 400 280" 
+                <svg
+                  width="400"
+                  height="280"
+                  viewBox="0 0 400 280"
                   className="drop-shadow-2xl"
                 >
-                  <rect 
-                    x="20" 
-                    y="80" 
-                    width="360" 
-                    height="180" 
-                    rx="8" 
-                    fill="#f8f9fa" 
-                    stroke="#e9ecef" 
+                  <rect
+                    x="20"
+                    y="80"
+                    width="360"
+                    height="180"
+                    rx="8"
+                    fill="#f8f9fa"
+                    stroke="#e9ecef"
                     strokeWidth="2"
                   />
-                  
-                  <path 
+
+                  {/* Child's name on envelope */}
+                  {matchedGuest?.childName && (
+                    <text
+                      x="200"
+                      y="200"
+                      textAnchor="middle"
+                      className="font-handwriting fill-gray-800"
+                      style={{
+                        fontFamily: "'Brush Script MT', 'Lucida Handwriting', cursive",
+                        fontSize: '32px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {matchedGuest.childName}
+                    </text>
+                  )}
+
+                  <path
                     d="M20 80 L200 180 L380 80 L380 40 L200 20 L20 40 Z"
                     fill="hsl(var(--primary-400))"
                     stroke="hsl(var(--primary-500))"
                     strokeWidth="2"
                     className={`transform-origin-center transition-all duration-1500 ease-out ${
                       animationPhase === 'opening' || animationPhase === 'invite-out' || animationPhase === 'transitioning'
-                        ? 'rotate-[-25deg] translate-y-[-10px]' 
+                        ? 'rotate-[-25deg] translate-y-[-10px]'
                         : 'rotate-0'
                     }`}
                     style={{ transformOrigin: '200px 80px' }}
                   />
-                  
-                  <circle 
-                    cx="200" 
-                    cy="60" 
-                    r="15" 
-                    fill="hsl(var(--primary-600))" 
+
+                  <circle
+                    cx="200"
+                    cy="60"
+                    r="15"
+                    fill="hsl(var(--primary-600))"
                     className={`transition-all duration-500 ${
                       animationPhase === 'opening' ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
                     }`}
                   />
-                  <path 
-                    d="M200 55 L195 60 L200 65 L205 60 Z" 
-                    fill="white" 
+                  <path
+                    d="M200 55 L195 60 L200 65 L205 60 Z"
+                    fill="white"
                     className={`transition-all duration-500 ${
                       animationPhase === 'opening' ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
                     }`}
                   />
                 </svg>
 
-           
+
               </div>
             </div>
 
@@ -683,47 +704,40 @@ export default function AnimatedRSVPPage() {
     theme="fun"
   >
     <ModalHeader
-      title={rsvpData.status === 'yes' ? '🎉 Awesome!' : '😢 Sorry to miss you'}
-      subtitle={rsvpData.status === 'yes' ? "Let's get you signed up!" : "Thanks for letting us know"}
-      theme="fun"
-      icon={rsvpData.status === 'yes' ? 
-        <CheckCircle className="w-6 h-6" /> : 
-        <XCircle className="w-6 h-6" />
+      title={
+        matchedGuest?.childName
+          ? `${matchedGuest.childName}'s RSVP`
+          : rsvpData.status === 'yes' ? '🎉 Awesome!' : '😢 Sorry to miss you'
       }
+      subtitle={matchedGuest?.childName ? '' : (rsvpData.status === 'yes' ? "Let's get you signed up!" : "Thanks for letting us know")}
+      theme="fun"
     />
 
     <ModalContent>
       <div className="space-y-4">
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your Name *
-          </label>
-          <Input
-            value={rsvpData.guestName}
-            onChange={(e) => setRsvpData(prev => ({ ...prev, guestName: e.target.value }))}
-            placeholder="Enter your name"
-            className="rounded-xl border-2 border-gray-200 bg-white focus:border-[hsl(var(--primary-400))]"
-          />
-        </div>
-        <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Child's Name * {matchedGuest && <span className="text-primary-600 text-xs">(pre-filled for you)</span>}
-  </label>
-  <Input
-    value={rsvpData.childName}
-    onChange={(e) => setRsvpData(prev => ({ ...prev, childName: e.target.value }))}
-    placeholder="Which child is invited?"
-    className="rounded-xl border-2 border-gray-200 bg-white focus:border-[hsl(var(--primary-400))]"
-    disabled={!!matchedGuest}
-  />
-</div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Essential Fields */}
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
+              Your Name *
             </label>
+            <Input
+              value={rsvpData.guestName}
+              onChange={(e) => setRsvpData(prev => ({ ...prev, guestName: e.target.value }))}
+              placeholder="Enter your name"
+              className="rounded-xl border-2 border-gray-200 bg-white focus:border-[hsl(var(--primary-400))]"
+            />
+          </div>
+
+          {/* Email - prominently positioned with incentive */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Stay updated about party changes & future events
+            </p>
             <Input
               type="email"
               value={rsvpData.email}
@@ -732,27 +746,15 @@ export default function AnimatedRSVPPage() {
               className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone
-            </label>
-            <Input
-              type="tel"
-              value={rsvpData.phone}
-              onChange={(e) => setRsvpData(prev => ({ ...prev, phone: e.target.value }))}
-              placeholder="Phone number"
-              className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
-            />
-          </div>
         </div>
 
         {rsvpData.status === 'yes' && (
           <>
-            {/* Guest count section */}
-            <div>
+            {/* Siblings Dropdown - Always visible */}
+            <div className="border-t border-gray-200 pt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Baby className="w-4 h-4 inline mr-1" />
-                Additional Children/Siblings
+                Bringing siblings?
               </label>
               <select
                 value={rsvpData.childrenCount}
@@ -760,7 +762,7 @@ export default function AnimatedRSVPPage() {
                   ...prev,
                   childrenCount: parseInt(e.target.value)
                 }))}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white text-center font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[hsl(var(--primary-400))] focus:outline-none focus:ring-0 bg-white font-medium"
               >
                 {(() => {
                   // Calculate available spots (party limit - confirmed guests)
@@ -779,39 +781,96 @@ export default function AnimatedRSVPPage() {
                 })()}
               </select>
               {guestLimit && totalConfirmedGuests >= guestLimit && (
-                <p className="text-xs text-amber-600 mt-2">
-                  ⚠️ Party is at capacity - no additional siblings can attend
+                <p className="text-xs text-amber-600 mt-2 flex items-center">
+                  <AlertCircle className="w-3 h-3 mr-1" />
+                  Party is at capacity - no additional siblings can attend
                 </p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Utensils className="w-4 h-4 inline mr-1" />
-                Dietary Requirements
-              </label>
-              <Input
-                value={rsvpData.dietaryRequirements}
-                onChange={(e) => setRsvpData(prev => ({ ...prev, dietaryRequirements: e.target.value }))}
-                placeholder="Any allergies or dietary needs?"
-                className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
-              />
+            {/* Expandable Optional Details */}
+            <div className="border-t border-gray-200 pt-3">
+              <button
+                type="button"
+                onClick={() => setShowMoreDetails(!showMoreDetails)}
+                className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-2"
+              >
+                {showMoreDetails ? '− Hide additional details' : '+ Add dietary needs, phone, or message'}
+              </button>
+
+              {showMoreDetails && (
+                <div className="space-y-4 mt-4">
+                  {/* Dietary Requirements */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Utensils className="w-4 h-4 inline mr-1" />
+                      Any allergies or dietary needs?
+                    </label>
+                    <Input
+                      value={rsvpData.dietaryRequirements}
+                      onChange={(e) => setRsvpData(prev => ({ ...prev, dietaryRequirements: e.target.value }))}
+                      placeholder="e.g., Nut allergy, vegetarian..."
+                      className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone
+                    </label>
+                    <Input
+                      type="tel"
+                      value={rsvpData.phone}
+                      onChange={(e) => setRsvpData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Phone number"
+                      className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
+                    />
+                  </div>
+
+                  {/* Message */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Add a message
+                    </label>
+                    <Textarea
+                      value={rsvpData.message}
+                      onChange={(e) => setRsvpData(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Can't wait to celebrate! 🎉"
+                      rows={2}
+                      className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Message (Optional)
-          </label>
-          <Textarea
-            value={rsvpData.message}
-            onChange={(e) => setRsvpData(prev => ({ ...prev, message: e.target.value }))}
-            placeholder={rsvpData.status === 'yes' ? "Can't wait to celebrate! 🎉" : "Sorry I'll miss the fun!"}
-            rows={3}
-            className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
-          />
-        </div>
+        {/* Message for decline - Simple */}
+        {rsvpData.status === 'no' && (
+          <div className="border-t border-gray-200 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowMoreDetails(!showMoreDetails)}
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+            >
+              {showMoreDetails ? '− Hide message' : '+ Add a message (optional)'}
+            </button>
+
+            {showMoreDetails && (
+              <div className="mt-4">
+                <Textarea
+                  value={rsvpData.message}
+                  onChange={(e) => setRsvpData(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Sorry I'll miss the fun!"
+                  rows={2}
+                  className="rounded-xl border-2 bg-white border-gray-200 focus:border-[hsl(var(--primary-400))]"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </ModalContent>

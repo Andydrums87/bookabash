@@ -24,20 +24,32 @@ const RSVPHeader = ({ totalGuests, confirmedCount }) => {
   )
 }
 
+// Helper function to capitalize first letter of each word
+const capitalizeWords = (str) => {
+  return str
+    .trim()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
+
 // Add Guest Modal Component
 const AddGuestModal = ({ isOpen, onClose, onAdd, partyId }) => {
   const [childName, setChildName] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   const handleSubmit = async (e = null) => {
     if (e) e.preventDefault()
     if (!childName.trim()) return
-    
+
     setLoading(true)
     try {
+      // Capitalize the child's name before submitting
+      const capitalizedName = capitalizeWords(childName)
+
       // Add guest to the party's invite list
       const result = await partyDatabaseBackend.addPartyGuest(partyId, {
-        childName: childName.trim()
+        childName: capitalizedName
       })
       
       if (result.success) {
@@ -124,6 +136,7 @@ const AddGuestModal = ({ isOpen, onClose, onAdd, partyId }) => {
 // Simple Guest List Item - inspired by iOS contacts style
 const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite, hasInvite }) => {
   const [showTooltip, setShowTooltip] = React.useState(false)
+  const [showDetails, setShowDetails] = React.useState(false)
 
   const getStatusIcon = () => {
     if (!rsvpStatus) {
@@ -153,87 +166,142 @@ const GuestListItem = ({ guest, rsvpStatus, onRemove, onSendInvite, hasInvite })
     )
   }
 
+  const hasDietaryReqs = rsvpStatus?.dietary_requirements && rsvpStatus.dietary_requirements.trim()
+  const hasMessage = rsvpStatus?.message && rsvpStatus.message.trim()
+  const hasDetails = hasDietaryReqs || hasMessage
+
   return (
-    <div className="flex items-center justify-between py-4 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors gap-4">
-      {/* Guest name */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-col">
-          <span className="font-semibold text-gray-900 text-base truncate">{guest.childName}</span>
-          {/* Show sent status */}
-          {guest.inviteSent && !rsvpStatus && (
-            <span className="text-xs text-gray-400 mt-0.5">
-              Sent {new Date(guest.sentAt).toLocaleDateString()}
-            </span>
+    <div className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center justify-between py-4 px-4 gap-4">
+        {/* Guest name */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900 text-base truncate">{guest.childName}</span>
+              {/* Show badge if there are details to expand */}
+              {hasDetails && rsvpStatus.attendance === 'yes' && (
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full hover:bg-primary-200 transition-colors"
+                  style={{
+                    backgroundColor: showDetails ? 'hsl(var(--primary-100))' : 'hsl(var(--primary-100))',
+                    color: 'hsl(var(--primary-700))'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--primary-200))'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--primary-100))'}
+                >
+                  {showDetails ? 'Hide' : 'Details'}
+                </button>
+              )}
+            </div>
+            {/* Show sent status */}
+            {guest.inviteSent && !rsvpStatus && (
+              <span className="text-xs text-gray-400 mt-0.5">
+                Sent {new Date(guest.sentAt).toLocaleDateString()}
+              </span>
+            )}
+            {/* Show attending count */}
+            {rsvpStatus?.attendance === 'yes' && (
+              <span className="text-xs text-gray-500 mt-0.5">
+                {rsvpStatus.children_count > 0 ? `+${rsvpStatus.children_count} sibling${rsvpStatus.children_count > 1 ? 's' : ''}` : 'Just this child'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          {/* Send Invite button - only show if not RSVP'd yet and not already sent */}
+          {!rsvpStatus && !guest.inviteSent && (
+            <>
+              <Button
+                onClick={(e) => {
+                  console.log('Button clicked, hasInvite:', hasInvite)
+                  if (hasInvite) {
+                    onSendInvite(guest)
+                  } else {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('Setting tooltip to true')
+                    setShowTooltip(true)
+                    setTimeout(() => {
+                      console.log('Hiding tooltip')
+                      setShowTooltip(false)
+                    }, 3000)
+                  }
+                }}
+                size="sm"
+                className={`text-xs px-4 py-2 min-w-[70px] ${
+                  hasInvite
+                    ? 'bg-primary-500 hover:bg-primary-600 text-white'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Send
+              </Button>
+
+              {/* Tooltip - Fixed position overlay */}
+              {showTooltip && (
+                <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/30">
+                  <div className="bg-gray-800 text-white text-xs rounded-lg px-4 py-3 shadow-2xl max-w-[240px] mx-4">
+                    <p className="font-semibold mb-1">Can't send invite yet</p>
+                    <p className="text-gray-300">Create your e-invite first or wait for venue confirmation</p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
+
+          {/* Resend button - show if invite was sent but no RSVP yet */}
+          {!rsvpStatus && guest.inviteSent && (
+            <Button
+              onClick={() => onSendInvite(guest)}
+              size="sm"
+              variant="outline"
+              className="text-primary-500 border-primary-300 hover:bg-primary-50 text-xs px-4 py-2 min-w-[80px]"
+            >
+              Resend
+            </Button>
+          )}
+
+          {/* Delete button */}
+          <button
+            onClick={() => onRemove(guest)}
+            className="text-gray-400 hover:text-red-600 p-1.5"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+
+          {/* Status check */}
+          {getStatusIcon()}
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-3">
-        {/* Send Invite button - only show if not RSVP'd yet and not already sent */}
-        {!rsvpStatus && !guest.inviteSent && (
-          <>
-            <Button
-              onClick={(e) => {
-                console.log('Button clicked, hasInvite:', hasInvite)
-                if (hasInvite) {
-                  onSendInvite(guest)
-                } else {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  console.log('Setting tooltip to true')
-                  setShowTooltip(true)
-                  setTimeout(() => {
-                    console.log('Hiding tooltip')
-                    setShowTooltip(false)
-                  }, 3000)
-                }
-              }}
-              size="sm"
-              className={`text-xs px-4 py-2 min-w-[70px] ${
-                hasInvite
-                  ? 'bg-primary-500 hover:bg-primary-600 text-white'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Send
-            </Button>
-
-            {/* Tooltip - Fixed position overlay */}
-            {showTooltip && (
-              <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/30">
-                <div className="bg-gray-800 text-white text-xs rounded-lg px-4 py-3 shadow-2xl max-w-[240px] mx-4">
-                  <p className="font-semibold mb-1">Can't send invite yet</p>
-                  <p className="text-gray-300">Create your e-invite first or wait for venue confirmation</p>
-                </div>
+      {/* Expandable details section */}
+      {showDetails && hasDetails && (
+        <div className="px-4 pb-4 space-y-3 bg-gray-50 border-t border-gray-100">
+          {hasDietaryReqs && (
+            <div className="pt-3">
+              <div className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                <span>🍽️</span> Dietary Requirements
               </div>
-            )}
-          </>
-        )}
-
-        {/* Resend button - show if invite was sent but no RSVP yet */}
-        {!rsvpStatus && guest.inviteSent && (
-          <Button
-            onClick={() => onSendInvite(guest)}
-            size="sm"
-            variant="outline"
-            className="text-primary-500 border-primary-300 hover:bg-primary-50 text-xs px-4 py-2 min-w-[80px]"
-          >
-            Resend
-          </Button>
-        )}
-
-        {/* Delete button */}
-        <button
-          onClick={() => onRemove(guest)}
-          className="text-gray-400 hover:text-red-600 p-1.5"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-
-        {/* Status check */}
-        {getStatusIcon()}
-      </div>
+              <div className="text-sm text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                {rsvpStatus.dietary_requirements}
+              </div>
+            </div>
+          )}
+          {hasMessage && (
+            <div>
+              <div className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                <span>💬</span> Message
+              </div>
+              <div className="text-sm text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200 italic">
+                "{rsvpStatus.message}"
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
