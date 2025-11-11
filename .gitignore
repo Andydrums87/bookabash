@@ -49,3 +49,10 @@ auth-users-export.sql
 suppliers-data.sql
 users-data.sql
 import-ready.sql
+
+# Database setup scripts with credentials
+check-*.js
+copy-*.js
+fetch-*.js
+migrate-*.js
+replace-*.js
