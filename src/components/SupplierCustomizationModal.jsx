@@ -400,8 +400,11 @@ export default function SupplierCustomizationModal({
   const packages = useMemo(() => {
     if (!supplier) return []
 
-    if (supplier.packages && supplier.packages.length > 0) {
-      return supplier.packages.slice(0, 3).map((pkg, index) => {
+    // Check both supplier.packages and supplier.data.packages (for database suppliers)
+    const supplierPackages = supplier.packages || supplier.data?.packages || []
+
+    if (supplierPackages.length > 0) {
+      return supplierPackages.slice(0, 3).map((pkg, index) => {
         const enhancedPrice = calculatePackageEnhancedPrice(pkg.price)
         return {
           id: pkg.id || `real-${index}`,

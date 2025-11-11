@@ -3,16 +3,17 @@
 import { useSearchParams, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { 
-  CheckCircle, 
-  Home, 
-  Calendar, 
-  MapPin, 
-  Users, 
+import {
+  CheckCircle,
+  Home,
+  Calendar,
+  MapPin,
+  Users,
   Cake,
   Clock,
   Mail
 } from "lucide-react"
+import { markPaid } from '@/utils/partyTracking';
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
@@ -26,7 +27,7 @@ export default function PaymentSuccessPage() {
   const supplierCategory = searchParams.get("supplier_category")
 
   useEffect(() => {
-    const loadBookingDetails = () => {
+    const loadBookingDetails = async () => {
       const childName = searchParams.get("child_name") || "Your child"
       const theme = searchParams.get("theme") || "Awesome"
       const date = searchParams.get("date") || new Date().toLocaleDateString('en-GB')
@@ -47,6 +48,9 @@ export default function PaymentSuccessPage() {
         childAge
       })
       setLoading(false)
+
+      // Mark payment as completed in tracking
+      await markPaid()
     }
 
     loadBookingDetails()

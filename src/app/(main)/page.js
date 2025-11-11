@@ -16,6 +16,7 @@ import PartyOverrideConfirmation from '@/components/party-override-confirmation'
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import FeaturesGrid from "@/components/Home/FeaturesGrid"
+import { initTracking, trackStep } from '@/utils/partyTracking'
 
 export default function HomePage() {
   const router = useRouter()
@@ -46,6 +47,11 @@ export default function HomePage() {
   const [builtPartyPlan, setBuiltPartyPlan] = useState(null)
   const [postcodeValid, setPostcodeValid] = useState(true)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  // Initialize tracking on mount
+  useEffect(() => {
+    initTracking();
+  }, []);
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
@@ -199,6 +205,17 @@ export default function HomePage() {
   const proceedWithPartyCreation = async (data) => {
     try {
       setIsSubmitting(true)
+
+      // Track party planning started
+      await trackStep('party_planning_started', {
+        theme: data.theme,
+        guestCount: data.guestCount,
+        childAge: data.childAge,
+        hasOwnVenue: data.hasOwnVenue,
+        timeSlot: data.timeSlot,
+        postcode: data.postcode
+      });
+
       setTimeout(() => {
         setShowPartyLoader(true)
         setBuildingProgress(0)

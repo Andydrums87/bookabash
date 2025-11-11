@@ -2,6 +2,7 @@
 // Backend for managing user's party plan (selected suppliers + add-ons)
 
 import { checkSupplierAvailability } from './availabilityChecker';
+import { trackSupplierAdded, trackSupplierRemoved } from './partyTracking';
 
 
 
@@ -988,11 +989,14 @@ const addSupplier = async (supplier, selectedPackage = null) => {
 
   try {
     setError(null);
-    
+
     // ✅ This will create localStorage when first supplier is added
     const result = partyPlanBackend.addSupplierToPlan(supplier, selectedPackage);
-    
+
     if (result.success) {
+      // Track supplier addition
+      const currentPlan = partyPlanBackend.getPartyPlan();
+      await trackSupplierAdded(supplier, currentPlan);
 
       return { success: true, supplierType: result.supplierType };
     } else {
@@ -1080,8 +1084,11 @@ const removeAddonFromSupplier = async (supplierType, addonId) => {
     try {
       setError(null);
       const result = partyPlanBackend.removeSupplierFromPlan(supplierType);
-      
+
       if (result.success) {
+        // Track supplier removal
+        const currentPlan = partyPlanBackend.getPartyPlan();
+        await trackSupplierRemoved(supplierType, currentPlan);
 
         return { success: true };
       } else {

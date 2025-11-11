@@ -64,6 +64,7 @@ import {
   getDisplayPrice,
   getPriceBreakdownText
 } from '@/utils/unifiedPricing'
+import { trackCheckoutStarted, linkEmail } from '@/utils/partyTracking';
 
 import DeleteConfirmDialog from '../../dashboard/components/Dialogs/DeleteConfirmDialog';
 import { BookingTermsModal } from '@/components/booking-terms-modal';
@@ -221,7 +222,7 @@ export default function SnappyChatReviewPage() {
     }
   }, [selectedSuppliers, currentStep, initialSupplierCount]);
 
-  const loadPartyDataFromLocalStorage = () => {
+  const loadPartyDataFromLocalStorage = async () => {
     try {
       const details = JSON.parse(localStorage.getItem("party_details") || "{}");
       console.log('party_details from localStorage:', details);
@@ -365,6 +366,9 @@ export default function SnappyChatReviewPage() {
       setSelectedAddons(addons);
       setSelectedSuppliers(suppliers);
       setFullSupplierData(fullSupplierData);
+
+      // Track checkout started
+      await trackCheckoutStarted(partyPlan);
     } catch (error) {
       console.error("Error loading party data:", error);
     }
@@ -390,6 +394,12 @@ export default function SnappyChatReviewPage() {
         }
   
         setUser(user);
+
+        // Link email to tracking session when user authenticates
+        if (user.email) {
+          await linkEmail(user.email);
+        }
+
         const result = await partyDatabaseBackend.getCurrentUser();
         if (result.success) {
           setCustomerProfile(result.user);
@@ -402,7 +412,7 @@ export default function SnappyChatReviewPage() {
             addressLine2: result.user.address_line_2 || prev.addressLine2,
             city: result.user.city || prev.city,
             postcode: result.user.postcode || prev.postcode,
-           
+
           }));
         } else {
           setFormData((prev) => ({
