@@ -154,7 +154,7 @@ export default function PartyPhaseContent({
   const getOutstandingPayments = () => {
     const unpaidEnquiries = enquiries.filter(enquiry => {
       const isAccepted = enquiry.status === 'accepted'
-      const isUnpaid = !enquiry.payment_status || enquiry.payment_status === 'unpaid'
+      const isUnpaid = !['paid', 'fully_paid', 'partial_paid'].includes(enquiry.payment_status)
       return isAccepted && isUnpaid
     })
     
@@ -244,7 +244,7 @@ export default function PartyPhaseContent({
                   const pendingSuppliers = Object.entries(suppliers).filter(([type, supplier]) => {
                     if (!supplier || type === "einvites") return false
                     const enquiry = enquiries.find((e) => e.supplier_category === type)
-                    const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                    const isPaid = ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                     return !isPaid && supplier
                   })
 
@@ -367,7 +367,7 @@ export default function PartyPhaseContent({
                         const paidCount = Object.entries(suppliers).filter(([type, supplier]) => {
                           if (!supplier || type === "einvites") return false
                           const enquiry = enquiries.find((e) => e.supplier_category === type)
-                          return enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                          return ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                         }).length
                         return `${paidCount}/${totalPossibleSuppliers}`
                       })()}
@@ -378,7 +378,7 @@ export default function PartyPhaseContent({
                     const paidSuppliers = Object.entries(suppliers).filter(([type, supplier]) => {
                       if (!supplier || type === "einvites") return false
                       const enquiry = enquiries.find((e) => e.supplier_category === type)
-                      return enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                      return ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                     })
 
                     if (paidSuppliers.length === 0) {

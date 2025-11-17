@@ -72,8 +72,8 @@ const MobileBottomTabBar = ({
   const venueAwaitingConfirmation = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
 
   // ✅ SMART: Check if suppliers are confirmed (at least one paid supplier)
-  const hasPaidSuppliers = enquiries.some(e => 
-    e.payment_status === 'paid' || e.is_paid === true
+  const hasPaidSuppliers = enquiries.some(e =>
+    ['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status) || e.is_paid === true
   )
 
   // ✅ DEBUG: Log received data
@@ -412,7 +412,7 @@ const MobileBottomTabBar = ({
               const pendingSuppliers = Object.entries(suppliers).filter(([type, supplier]) => {
                 if (!supplier || type === "einvites") return false
                 const enquiry = enquiries.find((e) => e.supplier_category === type)
-                const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                const isPaid = ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                 return !isPaid && supplier
               })
 
@@ -532,7 +532,7 @@ const MobileBottomTabBar = ({
                     const paidCount = Object.entries(suppliers).filter(([type, supplier]) => {
                       if (!supplier || type === "einvites") return false
                       const enquiry = enquiries.find((e) => e.supplier_category === type)
-                      return enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                      return ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                     }).length
                     return `${paidCount}/${totalSlots}`
                   })()}
@@ -543,7 +543,7 @@ const MobileBottomTabBar = ({
                 const paidSuppliers = Object.entries(suppliers).filter(([type, supplier]) => {
                   if (!supplier || type === "einvites") return false
                   const enquiry = enquiries.find((e) => e.supplier_category === type)
-                  return enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                  return ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                 })
 
                 if (paidSuppliers.length === 0) {

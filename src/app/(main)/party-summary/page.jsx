@@ -686,8 +686,8 @@ export default function PartyPlanSummary() {
         const totalPrice = (supplier.price || 0) + addonsCost
   
         const isAccepted = enquiry?.status === "accepted"
-        const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
-        
+        const isPaid = ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
+
         const amountPaid = (isAccepted && isPaid) ? totalPrice : 0
   
         return {

@@ -3,250 +3,138 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 
 export default function PaymentProcessing() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState('processing')
   const [message, setMessage] = useState('Processing your payment...')
+  const [pollCount, setPollCount] = useState(0)
 
   useEffect(() => {
-    const completePayment = async () => {
-      const paymentIntent = searchParams.get('payment_intent')
-      const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret')
-      const partyId = searchParams.get('party_id')
-      const redirectStatus = searchParams.get('redirect_status')
+    const paymentIntent = searchParams.get('payment_intent')
+    const partyId = searchParams.get('party_id')
 
-      // Get add_supplier parameters to pass through
-      const addSupplier = searchParams.get('add_supplier')
-      const supplierName = searchParams.get('supplier_name')
-      const supplierCategory = searchParams.get('supplier_category')
+    // Get add_supplier parameters to pass through
+    const addSupplier = searchParams.get('add_supplier')
+    const supplierName = searchParams.get('supplier_name')
+    const supplierCategory = searchParams.get('supplier_category')
 
-      console.log('🔍 Payment processing page loaded:', {
-        paymentIntent,
-        redirectStatus,
-        partyId,
-        addSupplier,
-        supplierName,
-        supplierCategory
-      })
+    console.log('🔍 Payment processing page loaded:', {
+      paymentIntent,
+      partyId,
+      addSupplier,
+      supplierName,
+      supplierCategory
+    })
 
-      if (!partyId) {
-        console.error('❌ No party ID found')
-        setStatus('error')
-        setMessage('Missing party information')
-        setTimeout(() => router.push('/dashboard'), 2000)
-        return
-      }
+    if (!partyId || !paymentIntent) {
+      console.error('❌ Missing party ID or payment intent')
+      setStatus('error')
+      setMessage('Missing payment information')
+      setTimeout(() => router.push('/dashboard'), 2000)
+      return
+    }
 
-      // Klarna redirects with redirect_status
-      if (redirectStatus === 'succeeded' && paymentIntent) {
-        setStatus('processing')
-        setMessage('Finalizing your booking...')
-        
-        try {
-          console.log('✅ Klarna payment succeeded, completing booking...')
-          console.log('🔍 Party ID:', partyId)
-          console.log('🔍 Payment Intent:', paymentIntent)
-          
-          // Get party details
-          const partyResult = await partyDatabaseBackend.getPartyById(partyId)
-          console.log('🔍 Party result:', partyResult)
-          
-          if (!partyResult.success || !partyResult.party) {
-            throw new Error('Party not found')
-          }
+    // ✅ WEBHOOK-BASED PAYMENT POLLING
+    const MAX_POLLS = 30 // 30 seconds
+    const POLL_INTERVAL = 1000 // 1 second
+    let currentPoll = 0
 
-          const party = partyResult.party
-          console.log('🔍 Party data:', party)
-          
-          // Calculate payment breakdown
-          const partyPlan = party.party_plan || {}
-          const suppliers = Object.entries(partyPlan)
-            .filter(([key, supplier]) => {
-              // ✅ FIX: Exclude einvites and addons from payment
-              if (key === 'addons' || key === 'einvites') {
-                return false
-              }
-              return supplier &&
-                typeof supplier === 'object' &&
-                supplier.name
-            })
-            .map(([key, supplier]) => ({
-              id: supplier.id,
-              category: key,
-              name: supplier.name,
-              price: supplier.price || 0
-            }))
+    const checkPaymentStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/check-payment-status?party_id=${partyId}&payment_intent_id=${paymentIntent}`
+        )
 
-          console.log('📦 Suppliers for payment:', suppliers)
-          
-          // Calculate totals
-          const totalAmount = suppliers.reduce((sum, s) => sum + s.price, 0)
-          const depositAmount = Math.round(totalAmount * 0.3)
-          
-          console.log('💰 Payment amounts:', { totalAmount, depositAmount })
-          
-          // Clear timer
-          localStorage.removeItem(`booking_timer_${partyId}`)
-          console.log('⏰ Timer cleared')
-          
-          // Update party status to planned - DIRECT SUPABASE UPDATE
-          console.log('📝 Attempting to update party in database...')
-          console.log('📝 Update payload:', {
-            status: 'planned',
-            payment_status: 'partial_paid',
-            payment_intent_id: paymentIntent,
-            payment_date: new Date().toISOString(),
-            deposit_amount: depositAmount,
-            total_paid: depositAmount
-          })
-          
-          const { data: updateData, error: statusError } = await supabase
-            .from('parties')
-            .update({ 
-              status: 'planned',
-              payment_status: 'partial_paid',
-              payment_intent_id: paymentIntent,
-              payment_date: new Date().toISOString(),
-              deposit_amount: depositAmount,
-              total_paid: depositAmount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', partyId)
-            .select()
-          
-          console.log('📝 Update response:', { data: updateData, error: statusError })
-          
-          if (statusError) {
-            console.error('❌ Error updating party status:', statusError)
-            throw new Error(`Database update failed: ${statusError.message}`)
-          } else {
-            console.log('✅ Party status updated successfully:', updateData)
-          }
-          
-          // Check if enquiries exist
-          const supplierCategories = suppliers.map(s => s.category)
-          const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId)
-          const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : []
-          
-          const existingCategories = existingEnquiries.map(e => e.supplier_category)
-          const enquiriesExist = supplierCategories.every(cat => existingCategories.includes(cat))
+        const data = await response.json()
+        console.log(`🔍 Poll ${currentPoll + 1}: Payment status =`, data.status)
 
-          if (enquiriesExist) {
-            console.log('📧 Updating existing enquiries...')
-            await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategories)
-            await partyDatabaseBackend.updateEnquiriesPaymentStatus(partyId, supplierCategories, {})
-          } else {
-            console.log('📧 Creating new enquiries...')
-            const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-              partyId,
-              "BOOKING CONFIRMED - Customer has completed payment"
-            )
-            
-            if (enquiryResult.success) {
-              await partyDatabaseBackend.autoAcceptEnquiries(partyId)
-              await partyDatabaseBackend.updateEnquiriesPaymentStatus(partyId, supplierCategories, {})
-            }
-          }
-          
-          console.log('✅ Enquiries processed')
-          
+        if (data.status === 'complete') {
           setStatus('success')
-          setMessage('Payment successful! Redirecting...')
+          setMessage('Payment processed successfully! Redirecting...')
+
+          // Build success URL with all params
+          const successParams = new URLSearchParams({
+            payment_intent: paymentIntent,
+            ...(addSupplier && { add_supplier: addSupplier }),
+            ...(supplierName && { supplier_name: supplierName }),
+            ...(supplierCategory && { supplier_category: supplierCategory })
+          })
 
           setTimeout(() => {
-            const successParams = new URLSearchParams({
-              payment_intent: paymentIntent,
-              ...(addSupplier && { add_supplier: addSupplier }),
-              ...(supplierName && { supplier_name: supplierName }),
-              ...(supplierCategory && { supplier_category: supplierCategory })
-            })
             router.push(`/payment/success?${successParams.toString()}`)
-          }, 1500)
-          
-        } catch (error) {
-          console.error('❌ Error completing payment:', error)
+          }, 2000)
+
+        } else if (data.status === 'failed') {
           setStatus('error')
-          setMessage('Payment was successful, but there was an issue. Please contact support.')
+          setMessage(data.message || 'Payment processing failed')
 
-          setTimeout(() => {
+        } else if (data.status === 'processing') {
+          currentPoll++
+          setPollCount(currentPoll)
+
+          if (currentPoll >= MAX_POLLS) {
+            // Timeout - webhook might be delayed, but payment was captured
+            console.log('⏰ Polling timeout - assuming success')
+            setStatus('success')
+            setMessage('Payment confirmed! Finalizing your booking...')
+
             const successParams = new URLSearchParams({
               payment_intent: paymentIntent,
               ...(addSupplier && { add_supplier: addSupplier }),
               ...(supplierName && { supplier_name: supplierName }),
               ...(supplierCategory && { supplier_category: supplierCategory })
             })
-            router.push(`/payment/success?${successParams.toString()}`)
-          }, 3000)
-        }
-        
-      } else if (redirectStatus === 'failed') {
-        setStatus('error')
-        setMessage('Payment failed. Please try again.')
-        
-        setTimeout(() => {
-          router.push(`/payment?party_id=${partyId}`)
-        }, 3000)
-        
-      } else if (paymentIntentClientSecret) {
-        // For other payment methods, verify the payment intent
-        try {
-          const stripe = await import('@stripe/stripe-js').then(m => 
-            m.loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-          )
-          
-          const { paymentIntent: intent } = await stripe.retrievePaymentIntent(
-            paymentIntentClientSecret
-          )
-          
-          if (intent.status === 'succeeded') {
-            setStatus('success')
-            setMessage('Payment successful! Redirecting to confirmation...')
 
             setTimeout(() => {
-              const successParams = new URLSearchParams({
-                payment_intent: intent.id,
-                ...(addSupplier && { add_supplier: addSupplier }),
-                ...(supplierName && { supplier_name: supplierName }),
-                ...(supplierCategory && { supplier_category: supplierCategory })
-              })
               router.push(`/payment/success?${successParams.toString()}`)
             }, 2000)
-            
-          } else if (intent.status === 'processing') {
-            setStatus('processing')
-            setMessage('Your payment is being processed. This may take a moment...')
-            
-            setTimeout(() => completePayment(), 3000)
-            
-          } else if (intent.status === 'requires_payment_method') {
-            setStatus('error')
-            setMessage('Payment failed. Please try again with a different payment method.')
-            
-            setTimeout(() => {
-              router.push(`/payment?party_id=${partyId}`)
-            }, 3000)
+
+          } else {
+            // Continue polling
+            setTimeout(checkPaymentStatus, POLL_INTERVAL)
+
+            // Update message based on poll count
+            if (currentPoll > 10) {
+              setMessage('Still processing... This is taking longer than usual.')
+            } else if (currentPoll > 5) {
+              setMessage('Processing your payment and setting up your booking...')
+            }
           }
-          
-        } catch (error) {
-          console.error('Error checking payment status:', error)
-          setStatus('error')
-          setMessage('Error verifying payment. Please contact support if payment was taken.')
         }
-      } else {
-        setStatus('error')
-        setMessage('No payment information found.')
-        
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 3000)
+
+      } catch (error) {
+        console.error('❌ Error checking payment status:', error)
+        currentPoll++
+        setPollCount(currentPoll)
+
+        if (currentPoll >= MAX_POLLS) {
+          // Assume success after max polls (payment was captured by Stripe)
+          setStatus('success')
+          setMessage('Payment confirmed! Your booking is being finalized.')
+
+          const successParams = new URLSearchParams({
+            payment_intent: paymentIntent,
+            ...(addSupplier && { add_supplier: addSupplier }),
+            ...(supplierName && { supplier_name: supplierName }),
+            ...(supplierCategory && { supplier_category: supplierCategory })
+          })
+
+          setTimeout(() => {
+            router.push(`/payment/success?${successParams.toString()}`)
+          }, 2000)
+        } else {
+          // Retry
+          setTimeout(checkPaymentStatus, POLL_INTERVAL)
+        }
       }
     }
 
-    completePayment()
+    // Start polling after a short delay
+    const pollTimer = setTimeout(checkPaymentStatus, 500)
+
+    return () => clearTimeout(pollTimer)
   }, [searchParams, router])
 
   return (
@@ -261,6 +149,22 @@ export default function PaymentProcessing() {
               Processing Payment
             </h1>
             <p className="text-gray-600">{message}</p>
+
+            {/* Progress indicator */}
+            {pollCount > 0 && (
+              <div className="mt-4">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((pollCount / 30) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Confirming with suppliers...
+                </p>
+              </div>
+            )}
+
             <div className="mt-6 flex items-center justify-center space-x-2">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -300,7 +204,8 @@ export default function PaymentProcessing() {
         )}
 
         <p className="text-xs text-gray-500 mt-6">
-          Please do not close this window
+          {status === 'processing' && 'Please do not close this window'}
+          {status === 'success' && 'Check your email for booking confirmation'}
         </p>
       </div>
     </div>

@@ -278,8 +278,8 @@ export function useAllSupplierEnquiries(refreshKey = 0) {
   }, [enquiries])
 
   const getUrgentEnquiries = useCallback(() => {
-    return enquiries.filter(enquiry => 
-      enquiry.auto_accepted === true && enquiry.payment_status === 'paid'
+    return enquiries.filter(enquiry =>
+      enquiry.auto_accepted === true && ['paid', 'fully_paid', 'partial_paid'].includes(enquiry.payment_status)
     )
   }, [enquiries])
 
@@ -303,8 +303,8 @@ export function useAllSupplierEnquiries(refreshKey = 0) {
       businessId: business.id,
       businessName: business.name,
       count: getEnquiriesByBusiness(business.id).length,
-      urgent: getEnquiriesByBusiness(business.id).filter(e => 
-        e.auto_accepted === true && e.payment_status === 'paid'
+      urgent: getEnquiriesByBusiness(business.id).filter(e =>
+        e.auto_accepted === true && ['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status)
       ).length
     })) || []
 

@@ -132,10 +132,10 @@ function formatDate(dateString) {
 
 function mapEnquiryStatus(enquiry) {
   // ✅ Handle urgent deposit-paid enquiries first
-  if (enquiry.auto_accepted && enquiry.status === 'accepted' && enquiry.payment_status === 'paid') {
+  if (enquiry.auto_accepted && enquiry.status === 'accepted' && ['paid', 'fully_paid', 'partial_paid'].includes(enquiry.payment_status)) {
     return 'URGENT'
   }
-  
+
   // ✅ Handle auto-accepted but unpaid
   if (enquiry.auto_accepted && enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid') {
     return 'DEPOSIT DUE'

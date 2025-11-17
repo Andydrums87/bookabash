@@ -75,21 +75,32 @@ export async function POST(request) {
 
     // Calculate payment breakdown for metadata
     const paymentBreakdown = calculatePaymentBreakdown(suppliers);
-    
+
     // Verify the amount matches our calculation
     const expectedAmount = paymentBreakdown.totalDueToday * 100; // Convert to pence
     if (Math.abs(amount - expectedAmount) > 1) { // Allow for 1p rounding difference
       console.warn(`Payment amount mismatch: received ${amount}, expected ${expectedAmount}`);
     }
 
-    // MINIMAL metadata - only essential tracking info
+    // Enhanced metadata for webhook processing
+    // Note: Stripe metadata values are limited to 500 characters each
+
+    // Calculate total amount for all suppliers
+    const totalSupplierCost = suppliers.reduce((sum, s) => sum + (s.price || 0), 0)
+
+    // Since we're taking FULL PAYMENT now (not deposits), remaining balance should always be 0
+    const remainingBalance = '0.00'
+
     const metadata = {
       party_id: partyDetails.id?.toString() || 'unknown',
-      payment_type: paymentType || 'mixed',
+      payment_type: paymentType || 'full_payment', // Changed from 'mixed'
       supplier_count: suppliers.length.toString(),
-      total_suppliers: suppliers.length.toString(),
-      // Keep categories short and truncated if needed
-      categories: suppliers.map(s => s.category.substring(0, 3)).join(',').substring(0, 100)
+      deposit_amount: '0.00', // No longer taking deposits
+      full_payment_amount: totalSupplierCost.toFixed(2),
+      remaining_balance: remainingBalance,
+      total_amount: totalSupplierCost.toFixed(2),
+      // Keep categories short and truncated if needed (for reference)
+      categories: suppliers.map(s => s.category.substring(0, 15)).join(',').substring(0, 490)
     };
 
     // Determine which payment methods to enable

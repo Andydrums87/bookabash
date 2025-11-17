@@ -383,7 +383,7 @@ export default function MobileSupplierNavigation({
     const outstandingSuppliers = Object.entries(suppliers).filter(([type, supplier]) => {
       if (!supplier || type === "einvites") return false
       const enquiry = enquiries.find((e) => e.supplier_category === type)
-      const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+      const isPaid = ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
       return !isPaid && supplier
     })
 

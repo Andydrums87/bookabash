@@ -913,14 +913,32 @@ export default function PaymentPageContent() {
 
         const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyResult.party.id)
         const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : []
-        
+
+        console.log('🔍 ALL ENQUIRIES:', existingEnquiries.map(e => ({
+          category: e.supplier_category,
+          status: e.status,
+          payment_status: e.payment_status
+        })))
+
         const paidCategories = new Set(
           existingEnquiries
-            .filter(enquiry => enquiry.payment_status === 'paid')
+            .filter(enquiry => ['paid', 'fully_paid', 'partial_paid'].includes(enquiry.payment_status))
             .map(enquiry => enquiry.supplier_category)
         )
-  
+
+        console.log('💰 PAID CATEGORIES:', Array.from(paidCategories))
+
         const partyPlan = partyResult.party.party_plan || {}
+
+        console.log('📋 PARTY PLAN KEYS:', Object.keys(partyPlan))
+        console.log('📋 PARTY PLAN SUPPLIERS:', Object.entries(partyPlan)
+          .filter(([key]) => key !== 'addons' && key !== 'einvites')
+          .map(([key, supplier]) => ({
+            category: key,
+            name: supplier?.name,
+            hasSupplier: !!supplier
+          }))
+        )
 
         // ✅ Extract add-ons from party_plan
         const addonsList = partyPlan.addons || []
@@ -990,6 +1008,11 @@ export default function PaymentPageContent() {
         })))
 
         if (supplierList.length === 0) {
+          console.log('❌ NO UNPAID SUPPLIERS FOUND - REDIRECTING TO DASHBOARD')
+          console.log('🔍 Debug Info:')
+          console.log('  - Party Plan had categories:', Object.keys(partyPlan))
+          console.log('  - Paid categories:', Array.from(paidCategories))
+          console.log('  - Enquiries:', existingEnquiries.length)
           router.push('/dashboard?message=no-pending-payments')
           return
         }
@@ -1053,94 +1076,42 @@ export default function PaymentPageContent() {
     loadPaymentData()
   }, [router])
 
+  // ✅ WEBHOOK-BASED PAYMENT SUCCESS HANDLER
+  // This function now just redirects to a processing page
+  // The webhook will handle all database updates and emails
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
-      localStorage.removeItem(`booking_timer_${partyId}`)
-  
-      await supabase
-        .from('parties')
-        .update({ status: 'planned' })
-        .eq('id', partyId)
-  
-      await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
-        payment_status: 'fully_paid',
-        payment_intent_id: paymentIntent.id,
-        total_paid_today: paymentBreakdown.totalPaymentToday,
-        remaining_balance: 0,
-        payment_date: new Date().toISOString()
-      })
-  
-      const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category)
-      const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId)
-      const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : []
-      
-      const existingEnquiryCategories = existingEnquiries.map(e => e.supplier_category)
-      const enquiriesAlreadyExist = supplierCategoriesToPay.every(category => 
-        existingEnquiryCategories.includes(category)
-      )
+      console.log('✅ Payment confirmed by Stripe:', paymentIntent.id)
+      console.log('🔄 Redirecting to processing page - webhook will complete the booking')
 
-      if (enquiriesAlreadyExist) {
-        await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay)
-        await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-          partyId,
-          supplierCategoriesToPay,
-          {
-            payment_breakdown: paymentBreakdown.paymentDetails
-          }
-        )
-      } else {
-        const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-          partyId,
-          "BOOKING CONFIRMED - Customer has completed payment"
-        )
-        
-        if (enquiryResult.success) {
-          await partyDatabaseBackend.autoAcceptEnquiries(partyId)
-          await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-            partyId, 
-            supplierCategoriesToPay,
-            { payment_breakdown: paymentBreakdown.paymentDetails }
-          )
-          
-          localStorage.removeItem('party_details')
-          localStorage.removeItem('user_party_plan')
-        }
-      }
-      
-      // Check if this is adding a supplier from current URL
+      // Clear timers and localStorage
+      localStorage.removeItem(`booking_timer_${partyId}`)
+      localStorage.removeItem('party_details')
+      localStorage.removeItem('user_party_plan')
+
+      // Check if this is adding a supplier (preserve these params)
       const currentParams = new URLSearchParams(window.location.search)
       const addSupplier = currentParams.get('add_supplier')
       const supplierName = currentParams.get('supplier_name')
       const supplierCategory = currentParams.get('supplier_category')
 
-      console.log('🔍 Payment Page - Redirect to Success:', {
-        addSupplier,
-        supplierName,
-        supplierCategory
-      })
-
-      const successParams = new URLSearchParams({
+      // Build processing page URL with all necessary params
+      const processingParams = new URLSearchParams({
+        party_id: partyId,
         payment_intent: paymentIntent.id,
-        child_name: partyDetails.childName,
-        theme: partyDetails.theme,
-        date: partyDetails.date,
-        time: partyDetails.startTime || partyDetails.time || '14:00',
-        location: partyDetails.location,
-        guests: partyDetails.guestCount,
-        email: partyDetails.email,
-        age: partyDetails.childAge,
         ...(addSupplier && { add_supplier: addSupplier }),
         ...(supplierName && { supplier_name: supplierName }),
         ...(supplierCategory && { supplier_category: supplierCategory })
       })
 
-      console.log('✅ Success URL:', `/payment/success?${successParams.toString()}`)
-      router.push(`/payment/success?${successParams.toString()}`)
-      
+      // Redirect to processing page which will poll for webhook completion
+      router.push(`/payment/processing?${processingParams.toString()}`)
+
     } catch (error) {
-      console.error('Error handling payment success:', error)
+      console.error('Error in payment success handler:', error)
+      // Even if redirect fails, payment is captured - webhook will process it
       setIsRedirecting(false)
-      alert('Payment was successful, but there was an issue setting up your booking. Please contact support.')
+      alert('Payment captured successfully. Please wait while we finalize your booking.')
     }
   }
 

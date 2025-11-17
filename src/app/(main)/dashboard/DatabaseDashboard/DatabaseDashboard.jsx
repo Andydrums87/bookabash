@@ -1086,7 +1086,7 @@ useEffect(() => {
   const handlePaymentReady = () => {
     // DatabaseDashboard payment flow is ALWAYS adding a supplier (initial booking happened elsewhere)
     const unpaidEnquiry = enquiries.find(e =>
-      e.payment_status !== 'paid' && e.is_paid !== true
+      !['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status) && e.is_paid !== true
     )
 
     if (unpaidEnquiry) {
@@ -1502,8 +1502,8 @@ const addSuppliersSection = (
                 const sortedSuppliers = allPlanSuppliers.sort(([typeA, supplierA], [typeB, supplierB]) => {
                   const enquiryA = enquiries.find((e) => e.supplier_category === typeA)
                   const enquiryB = enquiries.find((e) => e.supplier_category === typeB)
-                  const isPaidA = enquiryA?.payment_status === "paid" || enquiryA?.is_paid === true
-                  const isPaidB = enquiryB?.payment_status === "paid" || enquiryB?.is_paid === true
+                  const isPaidA = ['paid', 'fully_paid', 'partial_paid'].includes(enquiryA?.payment_status) || enquiryA?.is_paid === true
+                  const isPaidB = ['paid', 'fully_paid', 'partial_paid'].includes(enquiryB?.payment_status) || enquiryB?.is_paid === true
 
                   // Pending (not paid) comes first
                   if (!isPaidA && isPaidB) return -1
@@ -1586,7 +1586,7 @@ const addSuppliersSection = (
 
                       // Check if supplier is paid
                       const enquiry = enquiries.find((e) => e.supplier_category === type)
-                      const isPaid = enquiry?.payment_status === "paid" || enquiry?.is_paid === true
+                      const isPaid = ['paid', 'fully_paid', 'partial_paid'].includes(enquiry?.payment_status) || enquiry?.is_paid === true
                       const canRemove = !isPaid // Can only remove if not paid
 
                       return (
@@ -1747,7 +1747,7 @@ const addSuppliersSection = (
                   const venueExists = !!visibleSuppliers.venue
                   const isVenueConfirmed = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === false
                   const venueAwaitingConfirmation = venueEnquiry?.status === 'accepted' && venueEnquiry?.auto_accepted === true
-                  const hasPaidSuppliers = enquiries.some(e => e.payment_status === 'paid' || e.is_paid === true)
+                  const hasPaidSuppliers = enquiries.some(e => ['paid', 'fully_paid', 'partial_paid'].includes(e.payment_status) || e.is_paid === true)
 
                   const einvitesData = partyToolsData?.einvites
                   const einvitesCreated = !!einvitesData && (einvitesData.inviteId || einvitesData.shareableLink || einvitesData.friendlySlug)

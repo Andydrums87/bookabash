@@ -580,14 +580,14 @@ const loadPaymentData = async () => {
             return false
           }
 
-          // Old flow: accepted + unpaid
-          if (enquiry.status === 'accepted' && enquiry.payment_status === 'unpaid') {
-            return true
+          // ✅ Exclude already paid suppliers
+          if (['paid', 'fully_paid', 'partial_paid'].includes(enquiry.payment_status)) {
+            console.log(`⏭️ Skipping ${enquiry.supplier_category} - already paid (${enquiry.payment_status})`)
+            return false
           }
 
-          // ✅ NEW FLOW: auto-accepted (pending payment)
-          // These are enquiries that were just auto-accepted for immediate booking
-          if (enquiry.status === 'accepted' && !enquiry.payment_status) {
+          // Only show accepted enquiries that need payment
+          if (enquiry.status === 'accepted') {
             return true
           }
 
@@ -712,209 +712,25 @@ loadPaymentData()
   //   }
   // }
 
+  // ✅ WEBHOOK-BASED PAYMENT SUCCESS HANDLER
+  // This function now just redirects to a processing page
+  // The webhook will handle all database updates and emails
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
-      console.log('Processing payment success for payment intent:', paymentIntent.id);
-  
-      // Step 1: Update party status from 'draft' to 'planned'
-      const { error: partyUpdateError } = await supabase
-        .from('parties')
-        .update({ status: 'planned' })
-        .eq('id', partyId);
-  
-      if (partyUpdateError) {
-        console.error('Error updating party status:', partyUpdateError);
-        throw new Error('Failed to update party status');
-      }
-  
-      // Step 2: Record payment details
-      const updateResult = await partyDatabaseBackend.updatePartyPaymentStatus(partyId, {
-        payment_status: paymentBreakdown.remainingBalance > 0 ? 'partial_paid' : 'fully_paid',
-        payment_intent_id: paymentIntent.id,
-        deposit_amount: paymentBreakdown.depositAmount,
-        full_payment_amount: paymentBreakdown.fullPaymentAmount,
-        total_paid_today: paymentBreakdown.totalPaymentToday,
-        remaining_balance: paymentBreakdown.remainingBalance,
-        payment_date: new Date().toISOString()
-      });
-  
-      if (!updateResult.success) {
-        console.error('Error updating payment status:', updateResult.error);
-        throw new Error('Failed to record payment');
-      }
-  
-      const supplierCategoriesToPay = confirmedSuppliers.map(s => s.category);
-      
-      // Step 3: Check if enquiries already exist for these suppliers
-      const enquiriesResult = await partyDatabaseBackend.getEnquiriesForParty(partyId);
-      const existingEnquiries = enquiriesResult.success ? enquiriesResult.enquiries : [];
-      
-      const existingEnquiryCategories = existingEnquiries.map(e => e.supplier_category);
-      const enquiriesAlreadyExist = supplierCategoriesToPay.every(category => 
-        existingEnquiryCategories.includes(category)
-      );
-  
-      if (enquiriesAlreadyExist) {
-        // Step 4a: Individual supplier payment - mark existing enquiries as auto-accepted
-        console.log('Individual supplier payment - updating existing enquiries');
-        
-        const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId, supplierCategoriesToPay);
-        
-        if (!autoAcceptResult.success) {
-          console.warn('Error auto-accepting enquiries:', autoAcceptResult.error);
-        }
-  
-        const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-          partyId, 
-          supplierCategoriesToPay,
-          {
-            payment_breakdown: paymentBreakdown.paymentDetails,
-            lead_time_suppliers: supplierCategoriesToPay.filter(cat => 
-              paymentBreakdown.paymentDetails.find(p => p.category === cat)?.paymentType === 'full_payment'
-            )
-          }
-        );
-  
-        if (!paymentUpdateResult.success) {
-          console.warn('Error updating enquiry payment status:', paymentUpdateResult.error);
-        }
-  
-      } else {
-        // Step 4b: Initial party payment - create new enquiries
-        console.log('Creating new enquiries for initial party payment');
-        
-        const enquiryResult = await partyDatabaseBackend.sendEnquiriesToSuppliers(
-          partyId,
-          "BOOKING CONFIRMED - Customer has completed payment"
-        );
-        
-        if (enquiryResult.success) {
-          const autoAcceptResult = await partyDatabaseBackend.autoAcceptEnquiries(partyId);
-          const paymentUpdateResult = await partyDatabaseBackend.updateEnquiriesPaymentStatus(
-            partyId, 
-            supplierCategoriesToPay,
-            {
-              payment_breakdown: paymentBreakdown.paymentDetails
-            }
-          );
-  
-          // Step 4c: Clear localStorage only after successful enquiry creation
-          localStorage.removeItem('party_details');
-          localStorage.removeItem('user_party_plan');
-          console.log('Cleared localStorage after successful enquiry creation');
-        } else {
-          console.error('Error creating enquiries:', enquiryResult.error);
-          throw new Error('Failed to create supplier enquiries');
-        }
-      }
-  
-      // Step 5: Send urgent notification emails to suppliers
-      try {
-        console.log('Sending urgent notifications to suppliers...');
-        
-        // Get supplier details for email notifications
-        const supplierEmailPromises = confirmedSuppliers.map(async (supplier) => {
-          // You'll need to get supplier contact details from your database
-          // This is a placeholder - replace with your actual supplier lookup
-          const supplierDetails = await getSupplierContactDetails(supplier.id);
-          
-          if (!supplierDetails || !supplierDetails.email) {
-            console.warn(`No email found for supplier ${supplier.name}`);
-            return null;
-          }
-  
-          const supplierPaymentDetail = paymentBreakdown.paymentDetails.find(p => p.category === supplier.category);
-          
-          const emailPayload = {
-            supplierEmail: supplierDetails.email,
-            supplierName: supplierDetails.name || supplier.name,
-            customerName: partyDetails.parentName,
-            customerEmail: partyDetails.email,
-            customerPhone: user?.phone, // if available in user object
-            childName: partyDetails.childName,
-            theme: partyDetails.theme,
-            partyDate: partyDetails.date,
-            partyTime: partyDetails.time, // if available
-            partyLocation: partyDetails.location,
-            guestCount: partyDetails.guestCount,
-            serviceType: supplier.category,
-            depositAmount: supplierPaymentDetail?.amountToday || supplier.price,
-            supplierEarning: calculateSupplierPrice(supplier.price), // Use your pricing helper
-            paymentType: supplierPaymentDetail?.paymentType || (isLeadTimeSupplier(supplier.category) ? 'full_payment' : 'deposit'),
-            dashboardLink: 'http://localhost:3000/suppliers/dashboard'
-          };
-  
-          const emailResponse = await fetch('/api/email/supplier-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailPayload)
-          });
-  
-          if (!emailResponse.ok) {
-            const errorText = await emailResponse.text();
-            console.warn(`Failed to send notification to ${supplier.name}:`, errorText);
-            return { success: false, supplier: supplier.name, error: errorText };
-          } else {
-            console.log(`Urgent notification sent to ${supplier.name}`);
-            return { success: true, supplier: supplier.name };
-          }
-        });
-  
-        const emailResults = await Promise.allSettled(supplierEmailPromises);
-        
-        // Log email results
-        emailResults.forEach((result, index) => {
-          if (result.status === 'fulfilled' && result.value) {
-            if (result.value.success) {
-              console.log(`✅ Email sent to ${result.value.supplier}`);
-            } else {
-              console.warn(`❌ Email failed for ${result.value.supplier}:`, result.value.error);
-            }
-          } else if (result.status === 'rejected') {
-            console.error(`❌ Email promise rejected for supplier ${index}:`, result.reason);
-          }
-        });
-  
-      } catch (emailError) {
-        console.warn('Error sending supplier notification emails:', emailError);
-        // Don't fail the payment flow if emails fail
-      }
-  
-      // Step 6: Redirect to success page
-      console.log('Payment processing complete - redirecting to success page');
-      router.push(`/payment/success?payment_intent=${paymentIntent.id}`);
-      
+      console.log('✅ Payment confirmed by Stripe:', paymentIntent.id)
+      console.log('🔄 Redirecting to processing page - webhook will complete the booking')
+
+      // Clear localStorage (party is now in database)
+      localStorage.removeItem('party_details')
+      localStorage.removeItem('user_party_plan')
+
+      // Redirect to processing page which will poll for webhook completion
+      router.push(`/payment/processing?party_id=${partyId}&payment_intent=${paymentIntent.id}`)
+
     } catch (error) {
-      console.error('Error handling payment success:', error);
-      setIsRedirecting(false);
-      
-      // Show user-friendly error message
-      alert('Payment was successful, but there was an issue setting up your booking. Please contact support at 0800 123 4567.');
-    }
-  };
-  
-  // Helper function to get supplier contact details
-  // You'll need to implement this based on your database structure
-  const getSupplierContactDetails = async (supplierId) => {
-    try {
-      const { data, error } = await supabase
-        .from('suppliers_secure') // or whatever your suppliers table is called
-        .select('id, email, name, contact_name')
-        .eq('id', supplierId)
-        .single();
-  
-      if (error) {
-        console.error('Error fetching supplier details:', error);
-        return null;
-      }
-  
-      return {
-        email: data.email,
-        name: data.contact_name || data.name
-      };
-    } catch (error) {
-      console.error('Error in getSupplierContactDetails:', error);
-      return null;
+      console.error('Error in payment success handler:', error)
+      // Even if redirect fails, payment is captured - webhook will process it
+      onPaymentError(error)
     }
   };
 
