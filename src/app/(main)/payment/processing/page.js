@@ -232,7 +232,7 @@ export default function PaymentProcessingPage() {
               <p className="text-xs text-gray-500">
                 {status === 'processing' && (
                   <>
-                    Please don't close this window. We're confirming your booking with suppliers.
+                    Please do not close this window. We are confirming your booking with suppliers.
                   </>
                 )}
                 {status === 'complete' && (
