@@ -16,6 +16,8 @@ export async function GET(request) {
       )
     }
 
+    console.log('🔍 Polling payment status for party:', partyId)
+
     // Fetch party payment status
     const { data: party, error } = await supabaseAdmin
       .from('parties')
@@ -24,7 +26,7 @@ export async function GET(request) {
       .single()
 
     if (error) {
-      console.error('Error fetching party:', error)
+      console.error('❌ Error fetching party:', error)
       return NextResponse.json(
         { error: 'Failed to fetch party status' },
         { status: 500 }
@@ -32,11 +34,18 @@ export async function GET(request) {
     }
 
     if (!party) {
+      console.error('❌ Party not found:', partyId)
       return NextResponse.json(
         { error: 'Party not found' },
         { status: 404 }
       )
     }
+
+    console.log('📊 Party data:', {
+      payment_status: party.payment_status,
+      payment_intent_id: party.payment_intent_id,
+      status: party.status
+    })
 
     // Check if the payment intent matches (optional verification)
     if (paymentIntentId && party.payment_intent_id !== paymentIntentId) {
@@ -52,8 +61,17 @@ export async function GET(request) {
     const isFailed = ['failed', 'canceled'].includes(party.payment_status)
     const isProcessing = ['pending', 'processing'].includes(party.payment_status)
 
-    return NextResponse.json({
-      status: isComplete ? 'complete' : isFailed ? 'failed' : 'processing',
+    const responseStatus = isComplete ? 'complete' : isFailed ? 'failed' : 'processing'
+
+    console.log('✅ Returning status:', responseStatus, {
+      isComplete,
+      isFailed,
+      isProcessing,
+      payment_status: party.payment_status
+    })
+
+    const response = NextResponse.json({
+      status: responseStatus,
       payment_status: party.payment_status,
       party_status: party.status,
       payment_intent_id: party.payment_intent_id,
@@ -63,6 +81,13 @@ export async function GET(request) {
           ? 'Payment failed'
           : 'Payment is being processed'
     })
+
+    // ✅ CRITICAL: Prevent caching - this endpoint must always check fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+
+    return response
 
   } catch (error) {
     console.error('Error checking payment status:', error)
