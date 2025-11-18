@@ -173,6 +173,12 @@ async function processPaymentSuccess(paymentIntent) {
         continue
       }
 
+      // ✅ Skip if supplier has no valid ID
+      if (!supplier.id || supplier.id === 'null' || supplier.id === null) {
+        console.warn(`⚠️  Skipping ${category} - no valid supplier ID`)
+        continue
+      }
+
       enquiriesToCreate.push({
         party_id: partyId,
         supplier_id: supplier.id,
@@ -226,7 +232,21 @@ async function processPaymentSuccess(paymentIntent) {
     console.log(`✅ Updated payment status for all enquiries`)
   }
 
-  // Step 7: Send supplier notification emails
+  // Step 7: Send emails asynchronously (don't block webhook response)
+  console.log('📧 Queueing emails to send...')
+
+  // Send emails in background without blocking
+  sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntent.id).catch(error => {
+    console.error('Error in async email sending:', error)
+  })
+
+  console.log(`✅ Payment processing complete for party ${partyId}`)
+  return { success: true, duplicate: false }
+}
+
+// Send emails asynchronously without blocking webhook response
+async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntentId) {
+  // Step 1: Send supplier notification emails
   console.log('📧 Sending supplier notification emails...')
 
   for (const enquiry of enquiries) {
@@ -263,14 +283,18 @@ async function processPaymentSuccess(paymentIntent) {
         dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`
       }
 
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/supplier-notification`, {
+      const emailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/email/supplier-notification`
+      console.log(`📧 Sending email to ${supplierDetails.name} via ${emailUrl}`)
+
+      const emailResponse = await fetch(emailUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailPayload)
       })
 
       if (!emailResponse.ok) {
-        console.warn(`Failed to send email to ${supplierDetails.name}`)
+        const errorText = await emailResponse.text()
+        console.warn(`Failed to send email to ${supplierDetails.name}: ${emailResponse.status} ${errorText}`)
       } else {
         console.log(`✅ Email sent to ${supplierDetails.name}`)
       }
@@ -279,39 +303,63 @@ async function processPaymentSuccess(paymentIntent) {
     }
   }
 
-  // Step 8: Send customer confirmation email
+  // Step 2: Send customer confirmation email
   try {
     if (user?.email) {
+      // Parse party plan to get service details
+      const partyPlan = party.party_plan || {}
+      const services = []
+      const addons = []
+
+      for (const [category, supplier] of Object.entries(partyPlan)) {
+        if (!supplier || typeof supplier !== 'object') continue
+
+        if (category === 'addons' && Array.isArray(supplier)) {
+          addons.push(...supplier)
+        } else if (category !== 'einvites' && supplier.id) {
+          services.push({
+            name: supplier.name || category,
+            price: supplier.price || 0,
+            category: category
+          })
+        }
+      }
+
       const customerEmailPayload = {
         customerEmail: user.email,
         customerName: `${user.first_name} ${user.last_name}`.trim(),
         childName: party.child_name,
+        childAge: party.child_age || '5',
         theme: party.theme,
         partyDate: party.party_date,
-        totalPaid: totalAmount,
-        remainingBalance: 0, // Always 0 now (full payment)
-        paymentIntentId: paymentIntent.id, // Add payment intent ID for receipt
-        suppliers: enquiries.filter(e => e.supplier_category !== 'einvites').map(e => ({
-          category: e.supplier_category,
-          price: e.quoted_price
-        })),
+        partyTime: party.party_time || '14:00',
+        location: party.location,
+        guestCount: party.guest_count,
+        totalPaidToday: totalAmount.toFixed(2),
+        remainingBalance: 0,
+        paymentIntentId: paymentIntentId,
+        paymentMethod: 'Card',
+        services: services,
+        addons: addons,
         dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/dashboard`
       }
 
-      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/payment-confirmation`, {
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/email/payment-confirmation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(customerEmailPayload)
       })
 
-      console.log('✅ Customer confirmation email sent')
+      if (!emailResponse.ok) {
+        const errorText = await emailResponse.text()
+        console.warn(`Failed to send customer confirmation email: ${emailResponse.status} ${errorText}`)
+      } else {
+        console.log('✅ Customer confirmation email sent')
+      }
     }
   } catch (emailError) {
     console.warn('Error sending customer confirmation:', emailError.message)
   }
-
-  console.log(`✅ Payment processing complete for party ${partyId}`)
-  return { success: true, duplicate: false }
 }
 
 export async function POST(request) {

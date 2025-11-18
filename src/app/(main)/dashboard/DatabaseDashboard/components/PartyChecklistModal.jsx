@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { UniversalModal, ModalHeader, ModalContent } from '@/components/ui/UniversalModal.jsx'
-import { ChevronDown, ChevronRight, MapPin, Sparkles, Cake, Mail, Users, Gift, Balloon, UtensilsCrossed, Music, Coffee, Candle, CheckCircle, ShoppingBag, Camera, Cloud, Trash2, Package, Speaker } from 'lucide-react'
+import { ChevronDown, ChevronRight, MapPin, Sparkles, Cake, Mail, Users, Gift, PartyPopper, UtensilsCrossed, Music, Coffee, Flame, CheckCircle, ShoppingBag, Camera, Cloud, Trash2, Package, Speaker } from 'lucide-react'
 
 // Import Google Font for handwritten style
 if (typeof document !== 'undefined') {
@@ -23,11 +23,11 @@ const getDefaultChecklist = () => ({
       { id: 'invitations', label: 'Send invitations', completed: false, icon: Mail },
       { id: 'rsvps', label: 'Confirm RSVPs', completed: false, icon: Users },
       { id: 'partyBags', label: 'Buy party bags', completed: false, icon: Gift },
-      { id: 'decorations', label: 'Get decorations/balloons', completed: false, icon: Balloon },
+      { id: 'decorations', label: 'Get decorations/balloons', completed: false, icon: PartyPopper },
       { id: 'menu', label: 'Plan menu (kids + adults)', completed: false, icon: UtensilsCrossed },
       { id: 'playlist', label: 'Create playlist', completed: false, icon: Music },
       { id: 'tableware', label: 'Buy tableware/napkins', completed: false, icon: Coffee },
-      { id: 'candles', label: 'Get candles & matches', completed: false, icon: Candle },
+      { id: 'candles', label: 'Get candles & matches', completed: false, icon: Flame },
     ]
   },
   dayBefore: {
@@ -45,7 +45,7 @@ const getDefaultChecklist = () => ({
       { id: 'weather', label: 'Check weather & pack accordingly', completed: false, icon: Cloud },
       { id: 'binBags', label: 'Bring bin bags', completed: false, icon: Trash2 },
       { id: 'presentBag', label: 'Bring bag for presents', completed: false, icon: Gift },
-      { id: 'decorationsSetup', label: 'Set up decorations', completed: false, icon: Balloon },
+      { id: 'decorationsSetup', label: 'Set up decorations', completed: false, icon: PartyPopper },
       { id: 'speaker', label: 'Test speaker/music', completed: false, icon: Speaker },
     ]
   }

@@ -1,8 +1,11 @@
 import { ServerClient } from "postmark";
+import { render } from '@react-email/render';
+import CustomerResponseAccepted from '../../../../../emails/customer-response-accepted';
+import CustomerResponseDeclined from '../../../../../emails/customer-response-declined';
 
 const client = new ServerClient(process.env.POSTMARK_API_TOKEN);
 
-const acceptedEmailTemplate = `<!DOCTYPE html>
+const acceptedEmailTemplate_OLD = `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="utf-8">
@@ -362,20 +365,22 @@ const declinedEmailTemplate = `<!DOCTYPE html>
 
 export async function POST(req) {
   try {
-    const { 
-      customerEmail, 
-      customerName, 
-      childName, 
-      theme, 
-      partyDate, 
-      supplierName, 
-      serviceType, 
-      supplierMessage, 
+    const {
+      customerEmail,
+      customerName,
+      childName,
+      theme,
+      partyDate,
+      supplierName,
+      supplierEmail,
+      supplierPhone,
+      serviceType,
+      supplierMessage,
       responseType, // 'accepted' or 'declined'
       finalPrice,
       originalPrice,
       isPaid, // whether customer has already paid
-      dashboardLink 
+      dashboardLink
     } = await req.json();
 
     if (!customerEmail || !customerEmail.includes('@')) {
@@ -404,49 +409,45 @@ export async function POST(req) {
     }
 
     // Choose template and subject based on response type
-    let template, subject;
+    let emailHtml, subject;
     if (responseType === 'accepted') {
-      template = acceptedEmailTemplate;
+      emailHtml = await render(
+        <CustomerResponseAccepted
+          customerName={customerName || 'there'}
+          supplierName={supplierName || 'your supplier'}
+          supplierEmail={supplierEmail || 'supplier@example.com'}
+          supplierPhone={supplierPhone || '01234567890'}
+          childName={childName || 'your child'}
+          theme={theme || 'themed'}
+          partyDate={formatDate(partyDate)}
+          serviceType={serviceType || 'party services'}
+          supplierMessage={supplierMessage || 'Thank you for choosing our services!'}
+          dashboardLink={dashboardLink || 'https://partysnap.co.uk/dashboard'}
+        />
+      );
       subject = `🎭 ${supplierName || 'Your supplier'} can't wait to meet you!`;
     } else {
-      template = declinedEmailTemplate;
+      emailHtml = await render(
+        <CustomerResponseDeclined
+          customerName={customerName || 'there'}
+          supplierName={supplierName || 'your supplier'}
+          childName={childName || 'your child'}
+          theme={theme || 'themed'}
+          partyDate={formatDate(partyDate)}
+          serviceType={serviceType || 'party services'}
+          supplierMessage={supplierMessage || 'Thank you for your interest in our services.'}
+          dashboardLink={dashboardLink || 'https://partysnap.co.uk/dashboard'}
+        />
+      );
       subject = `📅 Booking Update for ${childName || 'Your Child'}'s Party`;
     }
-
-    // Replace placeholders in template
-    const populatedTemplate = template
-      .replace(/{{CUSTOMER_NAME}}/g, customerName || 'there')
-      .replace(/{{CHILD_NAME}}/g, childName || 'your child')
-      .replace(/{{THEME}}/g, theme || 'themed')
-      .replace(/{{PARTY_DATE}}/g, formatDate(partyDate))
-      .replace(/{{SUPPLIER_NAME}}/g, supplierName || 'your supplier')
-      .replace(/{{SERVICE_TYPE}}/g, serviceType || 'party services')
-      .replace(/{{SUPPLIER_MESSAGE}}/g, supplierMessage || 'Thank you for choosing our services!')
-      .replace(/{{FINAL_PRICE}}/g, finalPrice || originalPrice || '0')
-      .replace(/{{PRICE_STATUS}}/g, 
-        finalPrice && finalPrice !== originalPrice 
-          ? `Updated from original quote of £${originalPrice}`
-          : 'As originally quoted'
-      )
-      .replace(/{{PAYMENT_INFO}}/g, 
-        isPaid 
-          ? 'Your payment has been processed. No further payment required.'
-          : `We'll send you payment details once everything is confirmed.`
-      )
-      .replace(/{{DASHBOARD_LINK}}/g, dashboardLink || 'https://partysnap.co.uk/dashboard');
-
-    // Create plain text version
-    const textBody = responseType === 'accepted' 
-      ? `Hi ${customerName || 'there'}!\n\nGreat news! ${supplierName || 'Your supplier'} has confirmed they can provide ${serviceType || 'party services'} for ${childName || 'your child'}'s ${theme || 'themed'} party on ${formatDate(partyDate)}.\n\nFinal Price: £${finalPrice || originalPrice || '0'}\n\nMessage from ${supplierName}: "${supplierMessage}"\n\nWe'll be in touch with final details closer to your party date.\n\nBest regards,\nThe BookABash Team`
-      : `Hi ${customerName || 'there'},\n\nWe have an update about your ${serviceType || 'party services'} booking for ${childName || 'your child'}'s ${theme || 'themed'} party on ${formatDate(partyDate)}.\n\nUnfortunately, ${supplierName || 'the supplier'} is not available for your requested date. Don't worry - we're finding you an excellent alternative!\n\nMessage from ${supplierName}: "${supplierMessage}"\n\nWe'll email you within 24 hours with your new supplier details.\n\nBest regards,\nThe BookABash Team`;
 
     // // Send email via Postmark
     // await client.sendEmail({
     //   From: "hello@partysnap.co.uk",
     //   To: customerEmail,
     //   Subject: subject,
-    //   HtmlBody: populatedTemplate,
-    //   TextBody: textBody,
+    //   HtmlBody: emailHtml,
     // });
 
     return new Response(JSON.stringify({ 

@@ -718,14 +718,14 @@ loadPaymentData()
   const handlePaymentSuccess = async (paymentIntent) => {
     try {
       console.log('✅ Payment confirmed by Stripe:', paymentIntent.id)
-      console.log('🔄 Redirecting to processing page - webhook will complete the booking')
+      console.log('🔄 Redirecting to success page - webhook will complete the booking')
 
       // Clear localStorage (party is now in database)
       localStorage.removeItem('party_details')
       localStorage.removeItem('user_party_plan')
 
-      // Redirect to processing page which will poll for webhook completion
-      router.push(`/payment/processing?party_id=${partyId}&payment_intent=${paymentIntent.id}`)
+      // Redirect directly to success page
+      router.push(`/payment/success?payment_intent=${paymentIntent.id}`)
 
     } catch (error) {
       console.error('Error in payment success handler:', error)

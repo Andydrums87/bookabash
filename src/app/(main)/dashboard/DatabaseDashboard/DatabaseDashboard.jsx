@@ -1521,7 +1521,9 @@ const addSuppliersSection = (
                   activities: 'Activities',
                   partyBags: 'Party Bags',
                   decorations: 'Decorations',
-                  balloons: 'Balloons'
+                  balloons: 'Balloons',
+                  photography: 'Photography',
+                  bouncyCastle: 'Bouncy Castle'
                 }
 
                 if (sortedSuppliers.length === 0) {

@@ -1,8 +1,10 @@
 import { ServerClient } from "postmark";
+import { render } from '@react-email/render';
+import SupplierOnboarding from '../../../../../emails/supplier-onboarding';
 
 const client = new ServerClient(process.env.POSTMARK_API_TOKEN);
 
-const supplierOnboardingTemplate = `<!DOCTYPE html>
+const supplierOnboardingTemplate_OLD = `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="utf-8">
@@ -279,72 +281,27 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: 'Missing required fields: supplierName, businessName' }), { status: 400 });
     }
 
-    // Create verification section based on needsVerification flag
-    const verificationSection = needsVerification ? `
-      <div class="verification-notice">
-        <div style="display: flex; align-items: start; gap: 15px;">
-          <div style="width: 40px; height: 40px; background: #eab308; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <span style="color: white; font-size: 20px; font-weight: bold;">✉️</span>
-          </div>
-          <div>
-            <h3 style="color: #ca8a04; margin: 0 0 10px 0; font-size: 18px; font-weight: bold;">Email Verification Required</h3>
-            <p style="color: #a16207; margin: 0; font-size: 14px; line-height: 1.5;">
-              We've sent a separate verification email to <strong>${supplierEmail}</strong>. Please click the link in that email to verify your account before signing in.
-            </p>
-          </div>
-        </div>
-      </div>
-    ` : '';
-
-    // Replace placeholders in template
-    const populatedTemplate = supplierOnboardingTemplate
-      .replace(/{{SUPPLIER_NAME}}/g, supplierName)
-      .replace(/{{BUSINESS_NAME}}/g, businessName)
-      .replace(/{{SERVICE_TYPE}}/g, serviceType.toLowerCase())
-      .replace(/{{VERIFICATION_SECTION}}/g, verificationSection)
-      .replace(/{{DASHBOARD_LINK}}/g, dashboardLink);
+    // Render the email using React Email
+    const emailHtml = await render(
+      <SupplierOnboarding
+        supplierName={supplierName}
+        businessName={businessName}
+        serviceType={serviceType.toLowerCase()}
+        needsVerification={needsVerification}
+        supplierEmail={supplierEmail}
+        dashboardLink={dashboardLink}
+      />
+    );
 
     // Create subject line
     const subject = `Welcome to PartySnap Business, ${supplierName}! Let's get ${businessName} started 🎉`;
 
-    // Create plain text version
-    const textBody = `Welcome to PartySnap Business!
-
-Hi ${supplierName},
-
-Congratulations! Your ${businessName} account has been successfully created. You're now ready to start connecting with families looking for amazing ${serviceType.toLowerCase()} services across the UK.
-
-${needsVerification ? `IMPORTANT: Please check your email for a verification link and click it to activate your account.` : ''}
-
-WHAT HAPPENS NEXT:
-We'll review your profile within 24 hours and get you live on our platform. In the meantime, complete your setup to start receiving bookings as soon as we approve you.
-
-YOUR NEXT STEPS:
-1. Complete Your Profile - Add photos, detailed descriptions, and set your pricing
-2. Set Your Availability - Configure your calendar so customers can only book when you're free  
-3. Create Your Packages - Set up different service packages with clear pricing
-
-Access your dashboard: ${dashboardLink}
-
-NEED HELP?
-Our support team is here to help you succeed:
-- Email: support@partysnap.uk
-- Phone: 01234 567890  
-- Help Centre: help.partysnap.uk
-
-Ready to create magical moments for families?
-
-Best regards,
-The PartySnap Team
-Let's make parties unforgettable!`;
-
     // Send email via Postmark
     await client.sendEmail({
-      From: "hello@partysnap.co.uk", 
+      From: "hello@partysnap.co.uk",
       To: supplierEmail,
       Subject: subject,
-      HtmlBody: populatedTemplate,
-      TextBody: textBody,
+      HtmlBody: emailHtml,
       // Tag for tracking
       Tag: "supplier-onboarding"
     });

@@ -1,9 +1,11 @@
 // api/emails/verification-complete/route.js
 import { ServerClient } from "postmark";
+import { render } from '@react-email/render';
+import VerificationComplete from '../../../../../emails/verification-complete';
 
 const client = new ServerClient(process.env.POSTMARK_API_TOKEN);
 
-const verificationCompleteTemplate = `<!DOCTYPE html>
+const verificationCompleteTemplate_OLD = `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="utf-8">
@@ -330,66 +332,25 @@ export async function POST(req) {
 
     console.log('Sending verification complete email to:', supplierEmail);
 
-    // Replace placeholders in template
-    const populatedTemplate = verificationCompleteTemplate
-      .replace(/{{SUPPLIER_NAME}}/g, supplierName)
-      .replace(/{{BUSINESS_NAME}}/g, businessName)
-      .replace(/{{SERVICE_TYPE}}/g, serviceType.toLowerCase())
-      .replace(/{{DASHBOARD_LINK}}/g, dashboardLink);
+    // Render the email using React Email
+    const emailHtml = await render(
+      <VerificationComplete
+        supplierName={supplierName}
+        businessName={businessName}
+        serviceType={serviceType.toLowerCase()}
+        dashboardLink={dashboardLink}
+      />
+    );
 
     // Create subject line
     const subject = `🎉 Verification Complete! ${businessName} is now live on PartySnap`;
 
-    // Create plain text version
-    const textBody = `VERIFICATION COMPLETE!
-
-Hi ${supplierName},
-
-Fantastic news! All your verification documents have been approved and ${businessName} is now officially verified and live on the PartySnap platform.
-
-WHAT THIS MEANS FOR YOU:
-✓ Higher search rankings - Verified suppliers appear first
-✓ Trust badge - Customers see your verified status  
-✓ Premium features - Access to advanced booking tools
-✓ More bookings - Verified suppliers get 3x more enquiries
-
-NOW LET'S GET YOU BOOKED:
-
-1. Complete Your Profile
-   Add high-quality photos and detailed service descriptions
-
-2. Set Your Availability  
-   Update your calendar so customers can see when you're free
-
-3. Create Service Packages
-   Offer different packages at various price points
-
-PRO TIPS:
-- Respond to enquiries within 1 hour for best results
-- Keep prices competitive with similar suppliers in your area
-- Show your personality - parents love to know who they're booking
-- Ask for reviews - great reviews lead to more bookings
-
-Access your dashboard: ${dashboardLink}
-
-NEED HELP?
-- Email: success@partysnap.uk
-- Phone: 01234 567890
-- Help Centre: help.partysnap.uk
-
-Welcome to the PartySnap family!
-
-Best regards,
-The PartySnap Team
-Let's create magical moments together!`;
-
     // Send email via Postmark
     await client.sendEmail({
-      From: "hello@partysnap.co.uk", 
+      From: "hello@partysnap.co.uk",
       To: supplierEmail,
       Subject: subject,
-      HtmlBody: populatedTemplate,
-      TextBody: textBody,
+      HtmlBody: emailHtml,
       Tag: "verification-complete"
     });
 

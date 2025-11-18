@@ -1800,7 +1800,7 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
       // Standard supplier categories
       'Entertainment': 'entertainment',
       'Venues': 'venue',
-      'Catering': 'catering', 
+      'Catering': 'catering',
       'Decorations': 'decorations',
       'Party Bags': 'partyBags',
       'Photography': 'photography',
@@ -1808,7 +1808,8 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
       'Face Painting': 'facePainting',
       'Balloons': 'balloons',
       'Cakes' : 'cakes',
-      
+      'Bouncy Castle': 'activities',
+
       // Handle lowercase versions too
       'entertainment': 'entertainment',
       'venues': 'venue',
@@ -1822,7 +1823,9 @@ async markReplacementAsProcessed(partyId, supplierCategory, replacementSupplierI
       'face painting': 'facePainting',
       'facepainting': 'facePainting',
       'balloons': 'balloons',
-      'cakes' : 'cakes'
+      'cakes' : 'cakes',
+      'bouncy castle': 'activities',
+      'bouncycastle': 'activities'
     }
     
     const result = mapping[category] || mapping[category?.toLowerCase()] || null
@@ -3250,7 +3253,7 @@ mapCategoryToSupplierType(category) {
   const mapping = {
     // Enquiry categories (lowercase from database)
     'entertainment': 'entertainment',
-    'venue': 'venue', 
+    'venue': 'venue',
     'venues': 'venue',
     'catering': 'catering',
     'decorations': 'decorations',
@@ -3262,8 +3265,10 @@ mapCategoryToSupplierType(category) {
     'facepainting': 'facePainting',
     'balloons': 'balloons',
     'cakes': 'cakes',
-    
-    // Supplier categories (title case from suppliers table) 
+    'bouncy castle': 'activities',
+    'bouncycastle': 'activities',
+
+    // Supplier categories (title case from suppliers table)
     'Entertainment': 'entertainment',
     'Venues': 'venue',
     'Catering': 'catering',
@@ -3273,7 +3278,8 @@ mapCategoryToSupplierType(category) {
     'Photography': 'photography',
     'Activities': 'activities',
     'Face Painting': 'facePainting',
-    'Balloons': 'balloons'
+    'Balloons': 'balloons',
+    'Bouncy Castle': 'activities'
   }
   
   const result = mapping[category] || mapping[category?.toLowerCase()] || null

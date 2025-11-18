@@ -39,9 +39,6 @@ export default function PaymentProcessingPage() {
         const data = await response.json()
 
         if (data.status === 'complete') {
-          setStatus('complete')
-          setMessage('Payment processed successfully! Redirecting...')
-
           // Build success URL with all params from current URL
           const currentParams = new URLSearchParams(window.location.search)
           const successParams = new URLSearchParams({
@@ -56,10 +53,8 @@ export default function PaymentProcessingPage() {
           if (supplierName) successParams.set('supplier_name', supplierName)
           if (supplierCategory) successParams.set('supplier_category', supplierCategory)
 
-          // Redirect to success page after short delay
-          setTimeout(() => {
-            router.push(`/payment/success?${successParams.toString()}`)
-          }, 2000)
+          // Redirect immediately to success page
+          router.push(`/payment/success?${successParams.toString()}`)
 
         } else if (data.status === 'failed') {
           setStatus('failed')
@@ -72,10 +67,7 @@ export default function PaymentProcessingPage() {
             const newCount = prev + 1
 
             if (newCount >= MAX_POLLS) {
-              // Timeout - webhook might be delayed
-              setStatus('complete')
-              setMessage('Payment confirmed! Finalizing your booking...')
-
+              // Timeout - webhook might be delayed but payment was captured
               // Build success URL with params
               const currentParams = new URLSearchParams(window.location.search)
               const successParams = new URLSearchParams({ payment_intent: paymentIntentId })
@@ -86,11 +78,8 @@ export default function PaymentProcessingPage() {
               if (supplierName) successParams.set('supplier_name', supplierName)
               if (supplierCategory) successParams.set('supplier_category', supplierCategory)
 
-              // Still redirect to success as payment was captured
-              setTimeout(() => {
-                router.push(`/payment/success?${successParams.toString()}`)
-              }, 2000)
-
+              // Redirect immediately to success
+              router.push(`/payment/success?${successParams.toString()}`)
               return newCount
             }
 
@@ -112,8 +101,6 @@ export default function PaymentProcessingPage() {
 
         // After MAX_POLLS, assume success (webhook will eventually process)
         if (pollCount >= MAX_POLLS) {
-          setStatus('complete')
-          setMessage('Payment confirmed! Your booking is being finalized.')
           // Build success URL
           const currentParams = new URLSearchParams(window.location.search)
           const successParams = new URLSearchParams({ payment_intent: paymentIntentId })
@@ -124,9 +111,8 @@ export default function PaymentProcessingPage() {
           if (supplierName) successParams.set('supplier_name', supplierName)
           if (supplierCategory) successParams.set('supplier_category', supplierCategory)
 
-          setTimeout(() => {
-            router.push(`/payment/success?${successParams.toString()}`)
-          }, 2000)
+          // Redirect immediately to success
+          router.push(`/payment/success?${successParams.toString()}`)
         } else {
           // Continue polling
           pollTimer = setTimeout(checkPaymentStatus, POLL_INTERVAL)

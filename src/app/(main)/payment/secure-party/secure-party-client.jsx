@@ -630,7 +630,7 @@ function PaymentForm({
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/payment/processing?${returnParams.toString()}`,
+          return_url: `${window.location.origin}/payment/success?${returnParams.toString()}`,
           payment_method_data: {
             billing_details: {
               name: partyDetails.parentName,
@@ -654,7 +654,7 @@ function PaymentForm({
         setIsRedirecting(true)
         onPaymentSuccess(paymentIntent)
       } else if (paymentIntent && paymentIntent.status === 'requires_action') {
-        window.location.href = `${window.location.origin}/payment/processing?party_id=${partyDetails.id}&payment_intent=${paymentIntent.id}`
+        window.location.href = `${window.location.origin}/payment/success?payment_intent=${paymentIntent.id}`
       }
 
     } catch (error) {
@@ -1095,17 +1095,16 @@ export default function PaymentPageContent() {
       const supplierName = currentParams.get('supplier_name')
       const supplierCategory = currentParams.get('supplier_category')
 
-      // Build processing page URL with all necessary params
-      const processingParams = new URLSearchParams({
-        party_id: partyId,
+      // Build success page URL with all necessary params
+      const successParams = new URLSearchParams({
         payment_intent: paymentIntent.id,
         ...(addSupplier && { add_supplier: addSupplier }),
         ...(supplierName && { supplier_name: supplierName }),
         ...(supplierCategory && { supplier_category: supplierCategory })
       })
 
-      // Redirect to processing page which will poll for webhook completion
-      router.push(`/payment/processing?${processingParams.toString()}`)
+      // Redirect directly to success page
+      router.push(`/payment/success?${successParams.toString()}`)
 
     } catch (error) {
       console.error('Error in payment success handler:', error)

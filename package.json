@@ -9,7 +9,8 @@
     "lint": "next lint",
     "analyze": "ANALYZE=true npm run build",
     "build:analyze": "cross-env ANALYZE=true next build",
-    "seed-suppliers": "node copy-suppliers.js"
+    "seed-suppliers": "node copy-suppliers.js",
+    "email": "email dev --dir emails --port 3001"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -29,6 +30,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@react-email/components": "^1.0.1",
     "@sendgrid/mail": "^8.1.5",
     "@stripe/react-stripe-js": "^3.8.0",
     "@stripe/stripe-js": "^7.6.1",
@@ -68,6 +70,7 @@
     "react-day-picker": "^9.7.0",
     "react-dom": "^19.0.0",
     "react-draggable": "^4.5.0",
+    "react-email": "^5.0.4",
     "react-qr-code": "^2.0.18",
     "replicate": "^1.0.1",
     "stripe": "^18.3.0",
@@ -77,6 +80,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@react-email/preview-server": "^5.0.4",
     "@tailwindcss/postcss": "^4.1.8",
     "cross-env": "^7.0.3",
     "eslint": "^9",
