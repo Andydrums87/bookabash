@@ -118,8 +118,15 @@ export default function MyPartyTabContent({
   }
 
   // Get all suppliers (both paid and unpaid)
+  // ✅ FIX: Filter out empty suppliers, non-supplier fields, and those without valid IDs
+  const nonSupplierFields = ['payment_status', 'estimated_cost', 'deposit_amount', 'addons', 'einvites', 'venueCarouselOptions']
   const allSuppliers = Object.entries(suppliers).filter(([type, supplier]) =>
-    supplier && type !== "einvites"
+    supplier &&
+    !nonSupplierFields.includes(type) &&
+    typeof supplier === 'object' &&
+    supplier.id &&
+    supplier.id !== 'null' &&
+    supplier.id !== null
   )
 
   const fullChildName = partyDetails?.childName || partyDetails?.child_name || 'your child'
@@ -908,7 +915,12 @@ export default function MyPartyTabContent({
                 <h4 className="font-semibold text-gray-900 mb-3 text-sm">Selected Suppliers</h4>
                 <div className="space-y-2">
                   {Object.entries(suppliers)
-                    .filter(([type, supplier]) => supplier)
+                    .filter(([type, supplier]) =>
+                      supplier &&
+                      !nonSupplierFields.includes(type) &&
+                      typeof supplier === 'object' &&
+                      supplier.id
+                    )
                     .map(([type, supplier]) => {
                       // ✅ FIX: Use unified pricing for party bags
                       const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')

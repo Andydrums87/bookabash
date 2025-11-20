@@ -442,13 +442,13 @@ export async function POST(req) {
       subject = `📅 Booking Update for ${childName || 'Your Child'}'s Party`;
     }
 
-    // // Send email via Postmark
-    // await client.sendEmail({
-    //   From: "hello@partysnap.co.uk",
-    //   To: customerEmail,
-    //   Subject: subject,
-    //   HtmlBody: emailHtml,
-    // });
+    // Send email via Postmark
+    await client.sendEmail({
+      From: "hello@partysnap.co.uk",
+      To: customerEmail,
+      Subject: subject,
+      HtmlBody: emailHtml,
+    });
 
     return new Response(JSON.stringify({ 
       message: `Customer notification email sent successfully`,

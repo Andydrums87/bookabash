@@ -161,15 +161,21 @@ async function processPaymentSuccess(paymentIntent) {
   // Step 6: Get or create enquiries for this party
   let enquiries = party.enquiries || []
 
+  console.log(`🔍 Found ${enquiries.length} existing enquiries for party ${partyId}`)
+
   if (enquiries.length === 0) {
     console.log('📝 No enquiries found, creating them from party plan')
 
     // Parse party_plan to create enquiries
     const partyPlan = party.party_plan || {}
+    console.log('📦 Party plan categories:', Object.keys(partyPlan))
     const enquiriesToCreate = []
 
     for (const [category, supplier] of Object.entries(partyPlan)) {
+      console.log(`🔍 Processing category: ${category}, supplier:`, supplier?.id || 'no id')
+
       if (!supplier || typeof supplier !== 'object' || ['addons', 'einvites'].includes(category)) {
+        console.log(`⏭️  Skipping ${category} - addons/einvites or invalid`)
         continue
       }
 
@@ -179,6 +185,7 @@ async function processPaymentSuccess(paymentIntent) {
         continue
       }
 
+      console.log(`✅ Adding enquiry for ${category} - supplier ${supplier.id}`)
       enquiriesToCreate.push({
         party_id: partyId,
         supplier_id: supplier.id,
@@ -191,6 +198,8 @@ async function processPaymentSuccess(paymentIntent) {
         created_at: new Date().toISOString()
       })
     }
+
+    console.log(`📝 Prepared ${enquiriesToCreate.length} enquiries to create`)
 
     if (enquiriesToCreate.length > 0) {
       const { data: newEnquiries, error: enquiryError } = await supabaseAdmin

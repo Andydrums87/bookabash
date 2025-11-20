@@ -726,7 +726,9 @@ useEffect(() => {
           activities: 'Activities',
           partyBags: 'Party Bags',
           decorations: 'Decorations',
-          balloons: 'Balloons'
+          balloons: 'Balloons',
+          photography: 'Photography',
+          bouncyCastle: 'Bouncy Castle'
         }
         
         const newRecommendations = {}

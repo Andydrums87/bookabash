@@ -28,33 +28,73 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const loadBookingDetails = async () => {
-      const childName = searchParams.get("child_name") || "Your child"
-      const theme = searchParams.get("theme") || "Awesome"
-      const date = searchParams.get("date") || new Date().toLocaleDateString('en-GB')
-      const time = searchParams.get("time") || "14:00"
-      const location = searchParams.get("location") || "Your venue"
-      const guestCount = searchParams.get("guests") || "15"
-      const email = searchParams.get("email") || "your email"
-      const childAge = searchParams.get("age") || "8"
+      try {
+        // ✅ NEW: Fetch party details from database using payment intent
+        if (paymentIntentId) {
+          const response = await fetch(`/api/get-party-by-payment-intent?payment_intent_id=${paymentIntentId}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.party) {
+              setBookingDetails({
+                childName: data.party.child_name,
+                theme: data.party.theme,
+                date: data.party.party_date,
+                time: data.party.party_time,
+                location: data.party.location,
+                guestCount: data.party.guest_count,
+                email: data.party.email,
+                childAge: data.party.child_age
+              })
+              setLoading(false)
+              await markPaid()
+              return
+            }
+          }
+        }
 
-      setBookingDetails({
-        childName,
-        theme,
-        date,
-        time,
-        location,
-        guestCount,
-        email,
-        childAge
-      })
-      setLoading(false)
+        // Fallback to URL params if payment intent lookup fails
+        const childName = searchParams.get("child_name") || "Your child"
+        const theme = searchParams.get("theme") || "Awesome"
+        const date = searchParams.get("date") || new Date().toLocaleDateString('en-GB')
+        const time = searchParams.get("time") || "14:00"
+        const location = searchParams.get("location") || "Your venue"
+        const guestCount = searchParams.get("guests") || "15"
+        const email = searchParams.get("email") || "your email"
+        const childAge = searchParams.get("age") || "8"
 
-      // Mark payment as completed in tracking
-      await markPaid()
+        setBookingDetails({
+          childName,
+          theme,
+          date,
+          time,
+          location,
+          guestCount,
+          email,
+          childAge
+        })
+        setLoading(false)
+
+        // Mark payment as completed in tracking
+        await markPaid()
+      } catch (error) {
+        console.error('Error loading booking details:', error)
+        // Use fallback data
+        setBookingDetails({
+          childName: "Your child",
+          theme: "Awesome",
+          date: new Date().toLocaleDateString('en-GB'),
+          time: "14:00",
+          location: "Your venue",
+          guestCount: "15",
+          email: "your email",
+          childAge: "8"
+        })
+        setLoading(false)
+      }
     }
 
     loadBookingDetails()
-  }, [searchParams])
+  }, [searchParams, paymentIntentId])
 
   const handleAddToCalendar = () => {
     if (!bookingDetails) return

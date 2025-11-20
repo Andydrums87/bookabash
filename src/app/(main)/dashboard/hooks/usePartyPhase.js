@@ -70,26 +70,24 @@ export function usePartyPhase(partyData, partyId) {
     determinePhase()
   }, [partyId, partyData])
 
-  // Effect to set visible suppliers
+  // Effect to set visible suppliers from party_plan JSONB field
   useEffect(() => {
     if (!partyData) {
       return
     }
 
-    const allSuppliers = {
-      venue: partyData.venue || null,
-      entertainment: partyData.entertainment || null,
-      catering: partyData.catering || null,
-      facePainting: partyData.facePainting || null,
-      activities: partyData.activities || null,
-      partyBags: partyData.partyBags || null,
-      decorations: partyData.decorations || null,
-      balloons: partyData.balloons || null,
-      cakes: partyData.cakes || null
-    }
+    // ✅ FIX: Filter out non-supplier fields (payment_status, estimated_cost, etc.)
+    // These fields are added by usePartyData but aren't actual suppliers
+    const nonSupplierFields = ['payment_status', 'estimated_cost', 'deposit_amount', 'addons', 'einvites', 'venueCarouselOptions']
 
-    // Return all suppliers - let components decide what to show
-    setVisibleSuppliers(allSuppliers)
+    const filteredSuppliers = Object.keys(partyData)
+      .filter(key => !nonSupplierFields.includes(key))
+      .reduce((acc, key) => {
+        acc[key] = partyData[key]
+        return acc
+      }, {})
+
+    setVisibleSuppliers(filteredSuppliers)
   }, [partyData, currentPhase, enquiries])
 
   return {

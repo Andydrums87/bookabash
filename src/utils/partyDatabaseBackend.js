@@ -760,16 +760,40 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
        
     // Save updated plan
     const result = await this.updatePartyPlan(partyId, currentPlan)
-           
+
     if (result.success) {
-   
-         
+      // ✅ CRITICAL: Also create an enquiry so dashboard shows the supplier
+      const enquiryData = {
+        party_id: partyId,
+        supplier_id: supplier.id,
+        supplier_category: supplierType,
+        status: 'accepted',
+        auto_accepted: true,
+        payment_status: 'unpaid', // Will be updated when payment is made
+        quoted_price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
+        package_id: selectedPackage?.id || null,
+        message: 'Added to party',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { data: enquiry, error: enquiryError } = await supabase
+        .from('enquiries')
+        .insert(enquiryData)
+        .select()
+        .single()
+
+      if (enquiryError) {
+        console.error('❌ Failed to create enquiry:', enquiryError)
+        // Don't fail the whole operation, just log it
+      }
+
       return {
         success: true,
         supplierType,
         supplier: supplierData,
         party: result.party,
-        enquiry: null,
+        enquiry: enquiry || null,
         cakeCustomization: cakeCustomization // Return cake data for confirmation
       }
     } else {
