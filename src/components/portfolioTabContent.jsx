@@ -25,35 +25,32 @@ const PortfolioGalleryTabContent = ({
   onSaveGallery = () => {},
   isLoading = false 
 }) => {
-  // State for managing images
-  const [images, setImages] = useState([
-    { 
-      id: 1, 
-      src: "/placeholder.svg?height=300&width=300&text=Portfolio+1", 
-      alt: "Portfolio Image 1",
-      title: "Birthday Party Setup",
-      description: "Colorful birthday party decoration for 8-year-old"
-    },
-    { 
-      id: 2, 
-      src: "/placeholder.svg?height=300&width=300&text=Portfolio+2", 
-      alt: "Portfolio Image 2",
-      title: "Magic Show Performance",
-      description: "Entertaining children with magic tricks"
-    },
-    { 
-      id: 3, 
-      src: "/placeholder.svg?height=300&width=300&text=Portfolio+3", 
-      alt: "Portfolio Image 3",
-      title: "Face Painting Session",
-      description: "Professional face painting at outdoor event"
-    },
-  ]);
+  // State for managing images - use initialImages prop or empty array
+  const [images, setImages] = useState(() => {
+    // Convert initialImages (array of URLs) to image objects
+    if (initialImages && initialImages.length > 0) {
+      return initialImages.map((url, index) => ({
+        id: `img-${index}-${Date.now()}`,
+        src: url,
+        alt: `Portfolio Image ${index + 1}`,
+        title: `Image ${index + 1}`,
+        description: ""
+      }))
+    }
+    return []
+  });
 
-  // State for managing videos
-  const [videoLinks, setVideoLinks] = useState([
-    { id: 1, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", title: "Birthday Party Entertainment" }
-  ]);
+  // State for managing videos - use initialVideos prop or empty array
+  const [videoLinks, setVideoLinks] = useState(() => {
+    if (initialVideos && initialVideos.length > 0) {
+      return initialVideos.map((video, index) => ({
+        id: `video-${index}-${Date.now()}`,
+        url: typeof video === 'string' ? video : video.url,
+        title: typeof video === 'string' ? `Video ${index + 1}` : (video.title || `Video ${index + 1}`)
+      }))
+    }
+    return []
+  });
 
   // State for UI
   const [uploadingImage, setUploadingImage] = useState(false);

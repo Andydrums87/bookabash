@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,6 +25,20 @@ export default function SupplierDashboard() {
     const now = new Date()
     return now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
   })
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false)
+
+  // Check if user just completed onboarding
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const justCompleted = localStorage.getItem('justCompletedOnboarding')
+      if (justCompleted === 'true') {
+        setShowSuccessBanner(true)
+        localStorage.removeItem('justCompletedOnboarding')
+        // Auto-hide after 10 seconds
+        setTimeout(() => setShowSuccessBanner(false), 10000)
+      }
+    }
+  }, [])
 
   // Calculate real stats from enquiries
   const stats = useMemo(() => {
@@ -139,16 +153,82 @@ export default function SupplierDashboard() {
         <div className="max-w-7xl mx-auto">
           <EnquiryNotificationBanner />
 
+          {/* Success Banner - Profile Submitted */}
+          {showSuccessBanner && (
+            <div className="mx-3 sm:mx-4 lg:mx-6 mt-4 bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-semibold text-lg mb-2">
+                      Profile Submitted Successfully!
+                    </h3>
+                    <p className="text-green-50 text-sm">
+                      Thank you for completing your profile. Our team will review your venue within 24 hours and you'll receive an email once it goes live.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowSuccessBanner(false)}
+                    className="flex-shrink-0 text-white hover:text-green-100 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Incomplete Onboarding Banner */}
+          {!supplierData?.onboardingCompleted && !supplierData?.isComplete && (
+            <div className="mx-3 sm:mx-4 lg:mx-6 mt-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-white font-semibold text-lg mb-2">
+                      Complete Your Profile
+                    </h3>
+                    <p className="text-blue-50 text-sm">
+                      Finish setting up your profile to start receiving bookings. You're almost there!
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => window.location.href = '/suppliers/onboarding/new-supplier'}
+                    className="bg-white text-blue-600 hover:bg-blue-50 font-semibold shadow-md whitespace-nowrap"
+                  >
+                    Continue Setup
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Welcome Header */}
           <div className="p-3 sm:p-4 lg:p-6">
             <HeaderEnquiryBadge />
-            <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
-                Welcome back, {name}
-              </h1>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                See new requests, update your profile, and manage availability—all in one place
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-2 sm:space-y-3">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
+                  Welcome back, {name}
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  See new requests, update your profile, and manage availability—all in one place
+                </p>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/suppliers/onboarding/new-supplier'}
+                variant="outline"
+                className="bg-white hover:bg-gray-50 border-2 border-primary-400 text-primary-600 font-semibold whitespace-nowrap self-start sm:self-auto"
+              >
+                Edit Profile
+              </Button>
             </div>
           </div>
 

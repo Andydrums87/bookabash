@@ -12,33 +12,14 @@ import { UserMenu } from "./UserMenu"
 import { BusinessProvider } from "../../contexts/BusinessContext"
 import BusinessPageWrapper from "./dashboard/components/BusinessPageWrapper"
 import { DashboardSkeleton } from "./dashboard/components/DashboardSkeletons"
-import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner'
 import { useSupplier } from '@/hooks/useSupplier'
 import CompactBusinessSwitcher from "./dashboard/components/MutliBusinessDashboard"
 import { supabase } from "@/lib/supabase"
-import { useSupplierDashboard } from '@/utils/mockBackend' // Add this import
-import { useBusiness } from '@/contexts/BusinessContext'
-import { GoLiveTermsModal } from "./GoLiveTermsModal"
 
 // CREATE THIS INNER COMPONENT THAT HAS ACCESS TO BUSINESS CONTEXT
 function SupplierLayoutContent({ children }) {
-  const { supplier, supplierData, currentBusiness } = useSupplier() // Now this has access to BusinessProvider
-  const { currentSupplier } = useSupplierDashboard() // ADD THIS LINE
+  const { supplier, supplierData, currentBusiness } = useSupplier()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const [showGoLiveModal, setShowGoLiveModal] = useState(false) // Add this line
-  const { currentBusiness: businessContextBusiness } = useBusiness()
-
-
-
-  // Replace the onGoLive function in your ProfileCompletionBanner with:
-  const handleGoLiveClick = () => {
-    setShowGoLiveModal(true)
-  }
-
-  const handleGoLiveSuccess = () => {
-    alert('Congratulations! Your profile is now live!')
-    window.location.reload()
-  }
 
   const navItems = [
     { href: "/suppliers/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -170,38 +151,12 @@ function SupplierLayoutContent({ children }) {
           </div>
         </header>
 
-        {/* Main Content - ADD PROFILE COMPLETION BANNER HERE */}
+        {/* Main Content */}
         <main className="flex flex-1 flex-col gap-4 lg:gap-6 lg:p-6 bg-muted/20 min-w-0 overflow-x-hidden">
           <div className="w-[95%] sm:w-full max-w-7xl mx-auto">
-            
-          {currentSupplier && currentBusiness && (
-              <ProfileCompletionBanner
-                supplierData={{
-                  ...currentSupplier,
-                  profile_status: currentSupplier.profile_status || currentSupplier.profileStatus,
-                  can_go_live: currentSupplier.can_go_live || currentSupplier.canGoLive,
-                  profile_completion_percentage: currentSupplier.profile_completion_percentage || currentSupplier.profileCompletionPercentage
-                }}
-                businessType={currentBusiness?.serviceType || currentBusiness?.business_type || currentSupplier?.serviceType}
-                isPrimary={currentBusiness?.isPrimary || currentBusiness?.is_primary || false}
-                businessName={currentBusiness?.name || currentSupplier?.name}
-                onNavigate={(path) => window.location.href = path}
-                onGoLive={handleGoLiveClick} // Updated to show modal instead
- 
-              />
-            )}
             <BusinessPageWrapper requiresBusiness={true}>{children}</BusinessPageWrapper>
           </div>
         </main>
-
-        {/* Add the Go Live Terms Modal */}
-        <GoLiveTermsModal
-          isOpen={showGoLiveModal}
-          onClose={() => setShowGoLiveModal(false)}
-          onSuccess={handleGoLiveSuccess}
-          supplierData={currentSupplier}
-          businessId={businessContextBusiness?.id}
-        />
       </div>
     </div>
   )

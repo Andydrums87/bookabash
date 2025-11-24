@@ -4,25 +4,28 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin' // ✅ CHANGE THIS
 
 export async function GET(request) {
-  console.log('Google Calendar OAuth callback started')
-  
+  console.log('🔵 Google Calendar OAuth callback started')
+  console.log('🔵 Request URL:', request.url)
+
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   const state = searchParams.get('state')
   const error = searchParams.get('error')
 
+  console.log('🔵 OAuth params:', { code: code?.substring(0, 20) + '...', state, error })
+
   if (error) {
-    console.log('OAuth error:', error)
+    console.log('❌ OAuth error:', error)
     return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=' + error, request.url))
   }
 
   if (!code) {
-    console.log('No authorization code received')
+    console.log('❌ No authorization code received')
     return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=no_code', request.url))
   }
 
   if (!state) {
-    console.log('No user ID in state parameter')
+    console.log('❌ No user ID in state parameter')
     return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=invalid_state', request.url))
   }
 
@@ -66,8 +69,153 @@ export async function GET(request) {
       console.error('Failed to get user info:', userInfoError.message)
     }
 
+    // Check if this is a wizard flow (state starts with 'wizard-')
+    const isWizardFlow = state?.startsWith('wizard-')
+    const actualUserId = isWizardFlow ? state.replace('wizard-', '') : state
+
+    if (isWizardFlow) {
+      console.log('🔵 Wizard flow detected - fetching calendar data and updating supplier', actualUserId)
+
+      // Sync calendar immediately to get initial blocked dates
+      let initialBlockedDates = []
+      try {
+        const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+        const timeMin = new Date().toISOString()
+        const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+
+        console.log('🔵 Fetching calendar events for onboarding...')
+        const response = await calendar.events.list({
+          calendarId: 'primary',
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime'
+        })
+
+        const events = response.data.items || []
+        console.log(`🔵 Found ${events.length} calendar events`)
+
+        // Convert events to blocked dates
+        events.forEach((event) => {
+          if (!event.start) return
+
+          if (event.start.date) {
+            initialBlockedDates.push({
+              date: event.start.date,
+              timeSlots: ['morning', 'afternoon'],
+              source: 'google-calendar',
+              eventTitle: event.summary || 'Calendar Event'
+            })
+          } else if (event.start.dateTime) {
+            const startTime = new Date(event.start.dateTime)
+            const date = startTime.toISOString().split('T')[0]
+            const hour = startTime.getHours()
+
+            let timeSlots = []
+            if (hour < 13) timeSlots.push('morning')
+            if (hour >= 13) timeSlots.push('afternoon')
+
+            if (timeSlots.length > 0) {
+              initialBlockedDates.push({
+                date,
+                timeSlots,
+                source: 'google-calendar',
+                eventTitle: event.summary || 'Calendar Event'
+              })
+            }
+          }
+        })
+
+        console.log(`🔵 Converted to ${initialBlockedDates.length} blocked dates`)
+      } catch (syncError) {
+        console.error('🔵 Calendar sync failed for onboarding:', syncError)
+      }
+
+      // Update supplier record directly in database
+      try {
+        console.log('🔵 Finding supplier for user ID:', actualUserId)
+
+        const { data: suppliers, error: fetchError } = await supabaseAdmin
+          .from('suppliers')
+          .select('*')
+          .eq('auth_user_id', actualUserId)
+
+        if (fetchError || !suppliers || suppliers.length === 0) {
+          console.error('❌ No supplier found for user:', actualUserId, fetchError)
+          throw new Error('Supplier not found')
+        }
+
+        const supplier = suppliers[0]
+        console.log('✅ Found supplier:', supplier.id)
+
+        // Update supplier with calendar data
+        const updatedData = {
+          ...supplier.data,
+          unavailableDates: initialBlockedDates,
+          busyDates: initialBlockedDates,
+          googleCalendarSync: {
+            enabled: true,
+            connected: true,
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+            tokenExpiry: Date.now() + (tokens.expires_in * 1000),
+            calendarId: 'primary',
+            syncFrequency: 'realtime',
+            lastSync: new Date().toISOString(),
+            syncedEvents: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isWorkspaceAccount: isWorkspaceAccount,
+            workspaceDomain: workspaceDomain,
+            userEmail: userEmail,
+            userName: userName,
+            automaticSync: true,
+            webhooksEnabled: false
+          },
+          calendarIntegration: {
+            enabled: true,
+            provider: 'google',
+            connectedAt: new Date().toISOString(),
+            eventsSynced: initialBlockedDates.length
+          },
+          updatedAt: new Date().toISOString()
+        }
+
+        const { error: updateError } = await supabaseAdmin
+          .from('suppliers')
+          .update({
+            data: updatedData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', supplier.id)
+
+        if (updateError) {
+          console.error('❌ Failed to update supplier:', updateError)
+          throw updateError
+        }
+
+        console.log('✅ Supplier updated with calendar data')
+      } catch (dbError) {
+        console.error('❌ Database error:', dbError)
+        // Continue with redirect even if DB update fails
+      }
+
+      const params = new URLSearchParams({
+        calendar_connected: 'true',
+        provider: 'google',
+        events_synced: initialBlockedDates.length.toString()
+      })
+
+      const redirectUrl = `/suppliers/onboarding/new-supplier?${params.toString()}`
+      console.log('🔵 Redirecting back to wizard')
+
+      return NextResponse.redirect(
+        new URL(redirectUrl, request.url)
+      )
+    }
+
     console.log('Finding all suppliers for user ID:', state)
-    
+
     // ✅ CHANGE: Use supabaseAdmin instead of supabase
     const { data: allSuppliers, error: queryError } = await supabaseAdmin
       .from('suppliers')
@@ -289,21 +437,31 @@ export async function GET(request) {
     
     const params = new URLSearchParams({
       calendar_connected: 'true',
+      provider: 'google',
       webhooks_enabled: webhookCreated ? '1' : '0',
       total_updated: updateCount.toString(),
       events_synced: initialBlockedDates.length.toString()
     })
 
+    // Dashboard flow - redirect to availability page
     const redirectUrl = `/suppliers/availability?${params.toString()}`
     console.log('Redirecting to:', redirectUrl)
     
     return NextResponse.redirect(new URL(redirectUrl, request.url))
 
   } catch (error) {
-    console.error('OAuth callback failed:', error.message)
-    
+    console.error('❌ OAuth callback failed:', error)
+    console.error('❌ Error message:', error.message)
+    console.error('❌ Error stack:', error.stack)
+
+    // If onboarding, redirect back to wizard with error
+    const isOnboarding = state === 'onboarding'
+    const errorRedirect = isOnboarding
+      ? `/suppliers/onboarding/new-supplier?calendar_error=callback_failed&details=${encodeURIComponent(error.message)}`
+      : `/suppliers/availability?calendar_error=callback_failed&details=${encodeURIComponent(error.message)}`
+
     return NextResponse.redirect(
-      new URL('/suppliers/availability?calendar_error=callback_failed&details=' + encodeURIComponent(error.message), request.url)
+      new URL(errorRedirect, request.url)
     )
   }
 }

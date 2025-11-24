@@ -75,6 +75,21 @@ export async function GET(request) {
     const calendar = await calendarResponse.json()
     console.log("Calendar info retrieved:", calendar.id)
 
+    // Check if this is an onboarding flow (no suppliers created yet)
+    if (userId === 'onboarding') {
+      console.log('Onboarding flow detected - redirecting back to wizard')
+
+      const params = new URLSearchParams({
+        calendar_connected: 'true',
+        provider: 'outlook',
+        onboarding: 'true'
+      })
+
+      return NextResponse.redirect(
+        new URL(`/suppliers/onboarding/new-supplier?${params.toString()}`, request.url)
+      )
+    }
+
     // Get ALL suppliers for this user (primary + themed)
     const { data: allSuppliers, error: fetchError } = await supabase
       .from("suppliers")
@@ -280,14 +295,22 @@ export async function GET(request) {
     })
 
     const params = new URLSearchParams({
-      outlook_connected: 'true',
+      calendar_connected: 'true',
+      provider: 'outlook',
       webhooks_enabled: subscriptionId ? '1' : '0',
       total_updated: updateCount.toString(),
       events_synced: initialBlockedDates.length.toString()
     })
 
+    // Check if this OAuth flow was initiated from the wizard
+    const isWizardFlow = request.headers.get('referer')?.includes('/suppliers/onboarding/new-supplier')
+
+    const redirectUrl = isWizardFlow
+      ? `/suppliers/onboarding/new-supplier?${params.toString()}`
+      : `/suppliers/availability?${params.toString()}`
+
     return NextResponse.redirect(
-      new URL(`/suppliers/availability?${params.toString()}`, request.url)
+      new URL(redirectUrl, request.url)
     )
 
   } catch (error) {

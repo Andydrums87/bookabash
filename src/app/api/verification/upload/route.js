@@ -25,19 +25,36 @@ export async function POST(request) {
     }
 
     const token = authHeader.substring(7);
-    const supabase = createClient(
+
+    // Use ANON key for authentication
+    const supabaseAuth = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+
     if (authError || !user) {
       console.log('Auth failed:', authError);
       return Response.json({ error: 'Authentication failed' }, { status: 401 });
     }
 
     console.log('Authenticated user:', user.id);
+
+    // Use SERVICE ROLE key for database mutations (bypasses RLS)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    // Get form data first to check if supplierId is provided
+    const formData = await request.formData();
+    const file = formData.get('file');
+    const documentType = formData.get('documentType');
+    const requestedSupplierId = formData.get('supplierId');
+    const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata')) : {};
+
+    console.log('Requested supplierId:', requestedSupplierId);
 
     // Get suppliers for this user
     const { data: suppliers, error: suppliersError } = await supabase
@@ -51,15 +68,22 @@ export async function POST(request) {
       return Response.json({ error: 'Supplier profile not found' }, { status: 404 });
     }
 
-    // Use first supplier (primary first if exists)
-    const supplier = suppliers[0];
-    console.log('Using supplier:', supplier.business_name);
+    console.log('All supplier IDs for this user:', suppliers.map(s => ({ id: s.id, name: s.business_name })));
 
-    // Get form data
-    const formData = await request.formData();
-    const file = formData.get('file');
-    const documentType = formData.get('documentType');
-    const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata')) : {};
+    // Use specific supplier if requested, otherwise use first (primary first if exists)
+    let supplier;
+    if (requestedSupplierId) {
+      supplier = suppliers.find(s => s.id === requestedSupplierId);
+      if (!supplier) {
+        console.error('Requested supplier not found:', requestedSupplierId);
+        return Response.json({ error: 'Requested supplier not found' }, { status: 404 });
+      }
+      console.log('Using requested supplier:', supplier.id);
+    } else {
+      supplier = suppliers[0];
+      console.log('Using first supplier (no supplierId provided):', supplier.id);
+    }
+    console.log('Using supplier:', supplier.business_name || supplier.id);
 
     // Validation
     if (!file || !documentType) {
@@ -155,12 +179,19 @@ export async function POST(request) {
     }
 
     console.log('Updating supplier database...');
+    console.log('Supplier ID being updated:', supplier.id);
+    console.log('Verification data structure:', JSON.stringify({
+      status: updatedData.verification.status,
+      documents: Object.keys(updatedData.verification.documents),
+      [documentType]: updatedData.verification.documents[documentType].status
+    }));
 
     // Save to database
-    const { error: updateError } = await supabase
+    const { data: updateResult, error: updateError } = await supabase
       .from('suppliers')
       .update({ data: updatedData })
-      .eq('id', supplier.id);
+      .eq('id', supplier.id)
+      .select();
 
     if (updateError) {
       console.error('Database update failed:', updateError);
@@ -170,6 +201,17 @@ export async function POST(request) {
     }
 
     console.log('Database updated successfully');
+    console.log('Update result:', updateResult ? `${updateResult.length} row(s) updated` : 'No result');
+
+    // Verify the data was saved by reading it back
+    const { data: verifyData } = await supabase
+      .from('suppliers')
+      .select('data')
+      .eq('id', supplier.id)
+      .single();
+
+    console.log('Verification check - has verification in DB?', !!verifyData?.data?.verification);
+    console.log('Verification check - documents:', verifyData?.data?.verification?.documents ? Object.keys(verifyData.data.verification.documents) : []);
 
     // Send admin notification
     try {
