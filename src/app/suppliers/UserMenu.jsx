@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { UserCircle, Settings, HelpCircle, LogOut, Loader2, ChevronDown } from "lucide-react"
+import { UserCircle, Settings, HelpCircle, LogOut, Loader2, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSupplier } from "@/hooks/useSupplier"
 import {
@@ -15,14 +15,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function UserMenu() {
+export function UserMenu({ secondaryNavItems = [] }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [user, setUser] = useState(null)
-  const { supplierData } = useSupplier() // Use your existing hook
+  const { supplierData } = useSupplier()
   const router = useRouter()
   const supabase = createClientComponentClient()
 
-  // Get just the auth user
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -31,86 +30,61 @@ export function UserMenu() {
     getUser()
   }, [supabase])
 
-  // Get owner name from supplier data
-  const ownerName = supplierData?.owner?.name || 
-                   user?.user_metadata?.full_name || 
-                   user?.user_metadata?.name || 
-                   user?.email?.split('@')[0] || 
+  const ownerName = supplierData?.owner?.name ||
+                   user?.user_metadata?.full_name ||
+                   user?.user_metadata?.name ||
+                   user?.email?.split('@')[0] ||
                    'User'
 
-  
-                   const handleLogout = async () => {
-                    setIsLoggingOut(true)
-                    
-                    try {
-                      console.log("🚪 Starting complete logout process...")
-                      
-                      // 1. Sign out from Supabase completely
-                      const { error } = await supabase.auth.signOut({ scope: 'global' })
-                      
-                      if (error) {
-                        console.error('❌ Supabase logout error:', error)
-                        throw error
-                      }
-                  
-                      console.log("✅ Supabase session cleared")
-                  
-                      // 2. Clear any local storage items
-                      if (typeof window !== 'undefined') {
-                        // Clear Supabase session from localStorage
-                        const keys = Object.keys(localStorage)
-                        keys.forEach(key => {
-                          if (key.startsWith('sb-') || key.includes('supabase')) {
-                            localStorage.removeItem(key)
-                          }
-                        })
-                        
-                        // Clear any app-specific data
-                        localStorage.removeItem('supplier-data')
-                        localStorage.removeItem('user-data')
-                        localStorage.removeItem('auth-token')
-                        
-                        // Clear tour-related data
-                        localStorage.removeItem('tourProgress')
-                        localStorage.removeItem('hasSeenProfileTour')
-                        localStorage.removeItem('tourCompleted')
-                        localStorage.removeItem('tourSkipped')
-                        localStorage.removeItem('justCompletedOnboarding')
-                        
-                        console.log("🧹 Local storage cleared (including tour data)")
-                      }
-                  
-                      // 3. Clear session storage too
-                      if (typeof window !== 'undefined' && window.sessionStorage) {
-                        const sessionKeys = Object.keys(sessionStorage)
-                        sessionKeys.forEach(key => {
-                          if (key.startsWith('sb-') || key.includes('supabase')) {
-                            sessionStorage.removeItem(key)
-                          }
-                        })
-                        console.log("🧹 Session storage cleared")
-                      }
-                  
-                      // 4. Force reload the page to ensure all state is cleared
-                      console.log("🔄 Forcing page reload to clear all state...")
-                      window.location.href = '/suppliers/onboarding'
-                      
-                    } catch (error) {
-                      console.error('❌ Complete logout error:', error)
-                      
-                      // If there's an error, still try to clear everything and redirect
-                      if (typeof window !== 'undefined') {
-                        // Force clear everything
-                        localStorage.clear()
-                        sessionStorage.clear()
-                        
-                        // Force redirect
-                        window.location.href = '/suppliers/onboarding'
-                      }
-                    } finally {
-                      setIsLoggingOut(false)
-                    }
-                  }
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'global' })
+
+      if (error) throw error
+
+      if (typeof window !== 'undefined') {
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            localStorage.removeItem(key)
+          }
+        })
+
+        localStorage.removeItem('supplier-data')
+        localStorage.removeItem('user-data')
+        localStorage.removeItem('auth-token')
+        localStorage.removeItem('tourProgress')
+        localStorage.removeItem('hasSeenProfileTour')
+        localStorage.removeItem('tourCompleted')
+        localStorage.removeItem('tourSkipped')
+        localStorage.removeItem('justCompletedOnboarding')
+      }
+
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        const sessionKeys = Object.keys(sessionStorage)
+        sessionKeys.forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            sessionStorage.removeItem(key)
+          }
+        })
+      }
+
+      window.location.href = '/suppliers/onboarding'
+
+    } catch (error) {
+      console.error('Logout error:', error)
+
+      if (typeof window !== 'undefined') {
+        localStorage.clear()
+        sessionStorage.clear()
+        window.location.href = '/suppliers/onboarding'
+      }
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   const handleLogoutClick = () => {
     const confirmed = window.confirm('Are you sure you want to logout?')
@@ -122,67 +96,80 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          className="h-auto p-2 gap-2 rounded-full hover:bg-gray-100 focus:bg-gray-100"
+        <Button
+          variant="ghost"
+          className="h-10 md:h-12 px-3 gap-2 rounded-full border border-gray-200 hover:shadow-md transition-shadow bg-white"
         >
-          <div className="flex items-center gap-0">
-            {/* User Avatar */}
-            <div className="h-8 w-8 rounded-full bg-primary-500 mr-1 flex items-center justify-center">
-              <UserCircle className="h-5 w-5 text-white" />
-            </div>
-            
-            {/* User Name - Hidden on mobile */}
-            <div className="hidden sm:flex flex-col items-start min-w-0">
-              <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
-                {ownerName || 'Loading...'}
-              </span>
-              <span className="text-xs text-gray-500">Supplier</span>
-            </div>
-            
-            {/* Dropdown Arrow */}
-            <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <Menu className="h-4 w-4 text-gray-600" />
+          <div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center">
+            <UserCircle className="h-5 w-5 text-white" />
           </div>
           <span className="sr-only">Toggle user menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>
-          <div className="flex flex-col">
-            <span>{ownerName || 'User'}</span>
-            <span className="text-xs text-gray-500 font-normal">
-              {user?.email}
-            </span>
+      <DropdownMenuContent align="end" className="w-64 p-2">
+        {/* User Info */}
+        <DropdownMenuLabel className="p-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-gray-500 flex items-center justify-center">
+              <UserCircle className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium">{ownerName || 'User'}</span>
+              <span className="text-xs text-gray-500 font-normal">
+                {user?.email}
+              </span>
+            </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem onClick={() => router.push('/suppliers/settings')}>
-          <Settings className="mr-2 h-4 w-4" />
-          Settings
+
+        {/* Secondary Nav Items - Profile, Media, etc. */}
+        {secondaryNavItems.length > 0 && (
+          <>
+            <div className="py-1">
+              <p className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">Manage Listing</p>
+              {secondaryNavItems.map((item) => (
+                <DropdownMenuItem
+                  key={item.label}
+                  onClick={() => router.push(item.href)}
+                  className="cursor-pointer py-2.5"
+                >
+                  <item.icon className="mr-3 h-4 w-4 text-gray-500" />
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </div>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
+        {/* Support */}
+        <DropdownMenuItem
+          onClick={() => router.push('/support')}
+          className="cursor-pointer py-2.5"
+        >
+          <HelpCircle className="mr-3 h-4 w-4 text-gray-500" />
+          Help & Support
         </DropdownMenuItem>
-        
-        <DropdownMenuItem onClick={() => router.push('/support')}>
-          <HelpCircle className="mr-2 h-4 w-4" />
-          Support
-        </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem 
+
+        {/* Logout */}
+        <DropdownMenuItem
           onClick={handleLogoutClick}
           disabled={isLoggingOut}
-          className="text-red-600 focus:text-red-600 focus:bg-red-50"
+          className="cursor-pointer py-2.5 text-gray-700"
         >
           {isLoggingOut ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-3 h-4 w-4 animate-spin" />
               Logging out...
             </>
           ) : (
             <>
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <LogOut className="mr-3 h-4 w-4" />
+              Log out
             </>
           )}
         </DropdownMenuItem>

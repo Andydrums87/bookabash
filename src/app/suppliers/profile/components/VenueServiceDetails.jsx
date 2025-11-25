@@ -22,13 +22,14 @@ import {
   Edit3,
   Trash2,
   Ban,
-  CheckCircle
+  CheckCircle,
+  Users
 } from "lucide-react"
 import { generateVenuePackages } from "@/utils/mockBackend"
 import { SectionSave } from '@/components/ui/SectionSave';
 import { useSectionManager } from '../../hooks/useSectionManager';
 
-const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier }) => {
+const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier, selectedSection, onSectionChange }) => {
 
   const { getSectionState, checkChanges, saveSection } = useSectionManager(
     supplierData, 
@@ -37,14 +38,15 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
   );
   const [loading, setLoading] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
-    facilities: false,
-    policies: false,
-    setupOptions: false,
-    cateringOptions: false,
+    aboutUs: true, // Start expanded
+    venueAddress: false,
+    venueType: false,
     pricing: false,
     addons: false,
-    restrictions: false,
     allowedItems: false,
+    restrictions: false,
+    facilities: false,
+    policies: false,
   })
 
   const toggleSection = (section) => {
@@ -52,6 +54,84 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
       ...prev,
       [section]: !prev[section],
     }))
+    // Update parent when section is toggled
+    if (onSectionChange) {
+      onSectionChange(section)
+    }
+  }
+
+  // Map selectedSection prop to internal section names
+  const sectionMap = {
+    'photos': 'photos',
+    'about': 'aboutUs',
+    'address': 'venueAddress',
+    'type': 'venueType',
+    'capacity': 'capacity',
+    'pricing': 'pricing',
+    'packages': 'packages',
+    'addons': 'addons',
+    'restricted': 'allowedItems',
+    'rules': 'restrictions',
+    'facilities': 'facilities',
+    'verification': 'verification',
+  }
+
+  // Auto-expand selected section from sidebar
+  useEffect(() => {
+    if (selectedSection && sectionMap[selectedSection]) {
+      const internalSection = sectionMap[selectedSection]
+      setExpandedSections((prev) => {
+        // Collapse all, expand only selected
+        const newState = Object.keys(prev).reduce((acc, key) => {
+          acc[key] = key === internalSection
+          return acc
+        }, {})
+        return newState
+      })
+      // Scroll to section after a brief delay
+      setTimeout(() => {
+        const element = document.getElementById(`section-${internalSection}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [selectedSection])
+
+  // Helper to get summary text for collapsed sections
+  const getSectionSummary = (section) => {
+    switch (section) {
+      case 'aboutUs':
+        const wordCount = details.aboutUs?.trim().split(/\s+/).filter(w => w).length || 0
+        return wordCount > 0 ? `${wordCount} words written` : 'Not started'
+      case 'venueAddress':
+        const hasAddress = details.venueAddress?.addressLine1 && details.venueAddress?.postcode
+        return hasAddress ? '✓ Address complete' : 'Address needed'
+      case 'venueType':
+        const hasType = details.venueType
+        const hasCapacity = details.capacity?.max > 0
+        return hasType && hasCapacity ? `${details.venueType}, max ${details.capacity.max}` : 'Needs setup'
+      case 'pricing':
+        const hasRate = details.pricing?.hourlyRate > 0
+        return hasRate ? `£${details.pricing.hourlyRate}/hour` : 'Set your rates'
+      case 'addons':
+        const addonCount = details.addOnServices?.length || 0
+        return addonCount > 0 ? `${addonCount} add-on${addonCount !== 1 ? 's' : ''} configured` : 'None added'
+      case 'allowedItems':
+        const allowedCount = details.allowedItems?.length || 0
+        const restrictedCount = details.restrictedItems?.length || 0
+        return `${allowedCount} allowed, ${restrictedCount} restricted`
+      case 'restrictions':
+        const rulesCount = details.houseRules?.length || 0
+        return rulesCount > 0 ? `${rulesCount} rule${rulesCount !== 1 ? 's' : ''} set` : 'No rules set'
+      case 'facilities':
+        const facilityCount = details.facilities?.length || 0
+        return facilityCount > 0 ? `${facilityCount} facilit${facilityCount !== 1 ? 'ies' : 'y'} listed` : 'None selected'
+      case 'policies':
+        return details.policies?.endTime ? `End time: ${details.policies.endTime}` : 'Set policies'
+      default:
+        return ''
+    }
   }
 
   useEffect(() => {
@@ -152,6 +232,11 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
   // House rules management state
   const [isAddingRule, setIsAddingRule] = useState(false)
   const [customRule, setCustomRule] = useState("")
+
+  // Add-on modal state
+  const [showAddOnModal, setShowAddOnModal] = useState(false)
+  const [editingAddOn, setEditingAddOn] = useState(null)
+  const [newAddOn, setNewAddOn] = useState({ name: '', price: 0, description: '' })
 
 // Update the useEffect in VenueServiceDetails that loads supplier data
 useEffect(() => {
@@ -854,9 +939,47 @@ const handleVenueDetailsSave = () => {
     checkChanges('venueAddOns', newDetails.addOnServices);
   }
 
+  // Modal-based add-on handlers
+  const handleAddAddOn = () => {
+    if (!newAddOn.name) return
+    const addOn = {
+      id: `addon-${Date.now()}`,
+      ...newAddOn
+    }
+    const newDetails = {
+      ...details,
+      addOnServices: [...(details.addOnServices || []), addOn],
+    }
+    setDetails(newDetails)
+    onUpdate(newDetails)
+    checkChanges('venueAddOns', newDetails.addOnServices)
+  }
+
+  const handleUpdateAddOn = (index, updatedAddOn) => {
+    const newAddOns = [...details.addOnServices]
+    newAddOns[index] = { ...newAddOns[index], ...updatedAddOn }
+    const newDetails = {
+      ...details,
+      addOnServices: newAddOns,
+    }
+    setDetails(newDetails)
+    onUpdate(newDetails)
+    checkChanges('venueAddOns', newDetails.addOnServices)
+  }
+
+  const handleDeleteAddOn = (index) => {
+    const newDetails = {
+      ...details,
+      addOnServices: details.addOnServices.filter((_, i) => i !== index),
+    }
+    setDetails(newDetails)
+    onUpdate(newDetails)
+    checkChanges('venueAddOns', newDetails.addOnServices)
+  }
+
   const handleAddRestriction = (item) => {
     if (details.restrictedItems.includes(item)) return
-    
+
     const newDetails = {
       ...details,
       restrictedItems: [...details.restrictedItems, item],
@@ -995,711 +1118,307 @@ const handleVenueDetailsSave = () => {
     )
   }
 
-  return (
-    <div className="space-y-4 sm:space-y-8">
-      {/* About Us Section */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="py-4 sm:py-8 px-4 sm:px-8 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
-          <h2 className="flex items-center gap-3 text-lg sm:text-xl font-bold text-gray-900">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            About Your Venue
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Tell customers about your venue and what makes it special (max 60 words)
-          </p>
-        </div>
-        <div className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-          <div className="space-y-2 sm:space-y-3">
-            <label htmlFor="aboutUs" className="text-sm sm:text-base font-semibold text-gray-700 block">
-              Venue Description *
-            </label>
-            <div className="relative">
-              <textarea
-                id="aboutUs"
-                value={details.aboutUs || ""}
-                onChange={(e) => {
-                  const text = e.target.value
-                  const words =
-                    text.trim() === ""
-                      ? []
-                      : text
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0)
-                  if (words.length <= 60) {
+  // Section titles mapping
+  const sectionTitles = {
+    photos: 'Photos',
+    aboutUs: 'About your venue',
+    venueAddress: 'Location',
+    venueType: 'Venue type',
+    capacity: 'Capacity',
+    pricing: 'Pricing',
+    packages: 'Packages',
+    addons: 'Add-on services',
+    allowedItems: 'Items not permitted',
+    restrictions: 'House rules',
+    facilities: 'Facilities & equipment',
+    verification: 'Verification',
+  }
+
+  // Get the current internal section name
+  const currentInternalSection = sectionMap[selectedSection] || 'aboutUs'
+
+  // Render content for each section
+  const renderSectionContent = () => {
+    switch (currentInternalSection) {
+      case 'aboutUs':
+        return (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="aboutUs" className="text-sm font-medium text-gray-700 block">
+                Venue Description *
+              </label>
+              <p className="text-sm text-gray-500">
+                Describe your venue, its atmosphere, what makes it perfect for children's parties, and why families love choosing it for their special celebrations.
+              </p>
+              <div className="relative">
+                <textarea
+                  id="aboutUs"
+                  name="aboutUs"
+                  value={details.aboutUs || ""}
+                  onChange={(e) => {
                     handleFieldChange("aboutUs", e.target.value)
-                  }
-                }}
-                placeholder="Describe your venue, its atmosphere, what makes it perfect for children's parties, and why families love choosing it for their special celebrations..."
-                rows={8}
-                className="w-full bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none focus:border-orange-500 focus:outline-none"
-              />
-              <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-                {(() => {
-                  const text = details.aboutUs || ""
-                  const words =
-                    text.trim() === ""
-                      ? []
-                      : text
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0)
-                  return words.length
-                })()}/60 words
+                    checkChanges('aboutVenue', { aboutUs: e.target.value }, { aboutUs: supplierData?.description || '' })
+                  }}
+                  placeholder="Describe your venue, its atmosphere, what makes it perfect for children's parties..."
+                  rows={8}
+                  maxLength={3000}
+                  className="w-full bg-white border border-gray-300 rounded-xl text-base p-4 resize-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                />
+                <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                  {(details.aboutUs || "").split(/\s+/).filter((w) => w).length}/60 words
+                </div>
               </div>
             </div>
+            <SectionSave
+              sectionName="About Your Venue"
+              hasChanges={aboutUsState.hasChanges}
+              onSave={handleAboutUsSave}
+              saving={aboutUsState.saving}
+              lastSaved={aboutUsState.lastSaved}
+              error={aboutUsState.error}
+            />
           </div>
-          <SectionSave
-    sectionName="About Venue"
-    hasChanges={aboutUsState.hasChanges}
-    onSave={handleAboutUsSave}
-    saving={aboutUsState.saving}
-    lastSaved={aboutUsState.lastSaved}
-    error={aboutUsState.error}
-  />
-        </div>
+        )
 
-      </div>
-
-        {/* Venue Address - Replace existing location section */}
-<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-  <div className="p-8 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg">
-    <h2 className="flex items-center gap-3 text-xl font-bold text-gray-900">
-      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-        <MapPin className="w-5 h-5 text-white" />
-      </div>
-      Venue Address & Location
-    </h2>
-    <p className="text-base text-gray-600 mt-2">
-      The actual venue location where parties take place
-    </p>
-  </div>
-  <div className="p-8 space-y-6">
-    
-
-
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <label className="text-base font-semibold text-gray-700 block">
-          Address Line 1 *
-        </label>
-        <input
-          value={details.venueAddress?.addressLine1 || ""}
-          onChange={(e) => handleNestedFieldChange("venueAddress", "addressLine1", e.target.value)}
-          placeholder="123 Church Street"
-          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-        />
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-base font-semibold text-gray-700 block">
-          Address Line 2
-        </label>
-        <input
-          value={details.venueAddress?.addressLine2 || ""}
-          onChange={(e) => handleNestedFieldChange("venueAddress", "addressLine2", e.target.value)}
-          placeholder="Optional"
-          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-        />
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="space-y-3">
-        <label className="text-base font-semibold text-gray-700 block">
-          City *
-        </label>
-        <input
-          value={details.venueAddress?.city || ""}
-          onChange={(e) => handleNestedFieldChange("venueAddress", "city", e.target.value)}
-          placeholder="London"
-          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-        />
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-base font-semibold text-gray-700 block">
-          Postcode *
-        </label>
-        <input
-          value={details.venueAddress?.postcode || ""}
-          onChange={(e) => handleNestedFieldChange("venueAddress", "postcode", e.target.value.toUpperCase())}
-          placeholder="SW1A 1AA"
-          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-        />
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-base font-semibold text-gray-700 block">
-          Country *
-        </label>
-        <select
-          value={details.venueAddress?.country || "United Kingdom"}
-          onChange={(e) => handleNestedFieldChange("venueAddress", "country", e.target.value)}
-          className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-        >
-          <option value="United Kingdom">United Kingdom</option>
-          <option value="Ireland">Ireland</option>
-        </select>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <label className="text-base font-semibold text-gray-700 block">Parking Information *</label>
-              <textarea
-            value={details.venueDetails?.parkingInfo || ""}
-                onChange={(e) => handleNestedFieldChange("venueDetails", "parkingInfo", e.target.value)}
-                placeholder="Free parking available in car park. Street parking also available. Disabled parking spaces at entrance."
-                rows={4}
-                className="w-full bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-base font-semibold text-gray-700 block">Access Instructions *</label>
-              <textarea
-                value={details.venueDetails?.accessInstructions || ""}
-                onChange={(e) => handleNestedFieldChange("venueDetails", "accessInstructions", e.target.value)}
-                placeholder="Main entrance through the front doors. Ring bell if locked. Wheelchair accessible via ramp. Loading area available at side entrance."
-                rows={4}
-                className="w-full bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <label className="text-base font-semibold text-gray-700 block">Nearest Train/Tube Station</label>
-              <input
-                value={details.venueDetails?.nearestStation || ""}
-                onChange={(e) => handleNestedFieldChange("venueDetails", "nearestStation", e.target.value)}
-                className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-                placeholder="e.g. Westminster Station (5 min walk)"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-base font-semibold text-gray-700 block">Local Landmarks</label>
-              <input
-                value={details.venueDetails?.landmarks || ""}
-                onChange={(e) => handleNestedFieldChange("venueDetails", "landmarks", e.target.value)}
-                className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-blue-500 focus:outline-none"
-                placeholder="e.g. Opposite Tesco, next to the Post Office"
-              />
-            </div>
-          </div>
-          <SectionSave
-  sectionName="Venue Details"
-  hasChanges={venueDetailsState.hasChanges}
-  onSave={handleVenueDetailsSave}
-  saving={venueDetailsState.saving}
-  lastSaved={venueDetailsState.lastSaved}
-  error={venueDetailsState.error}
-/>
-        <SectionSave
-    sectionName="Venue Address"
-    hasChanges={venueAddressState.hasChanges}
-    onSave={handleVenueAddressSave}
-    saving={venueAddressState.saving}
-    lastSaved={venueAddressState.lastSaved}
-    error={venueAddressState.error}
-  />
-        </div>
-  
-
-</div>
-
-      {/* Venue Type & Capacity */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-4 sm:p-8 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg">
-          <h2 className="flex items-center gap-3 text-lg sm:text-xl font-bold text-gray-900">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Building className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            Venue Type & Capacity
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Tell customers about your venue type and how many people it can accommodate
-          </p>
-        </div>
-        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <div className="space-y-2 sm:space-y-3">
-              <label htmlFor="venueType" className="text-sm sm:text-base font-semibold text-gray-700 block">
-                What type of venue is this? *
-              </label>
-              <select 
-                value={details.venueType} 
-                onChange={(e) => handleFieldChange("venueType", e.target.value)}
-                className="w-full py-4 px-3 sm:py-5 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base focus:border-blue-500 focus:outline-none"
-              >
-                <option value="">Choose your venue type</option>
-                {venueTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">
-                Minimum Booking Hours *
-              </label>
-              <select 
-                value={details.availability?.minimumBookingHours?.toString() || "4"} 
-                onChange={(e) => handleNestedFieldChange("availability", "minimumBookingHours", parseInt(e.target.value))}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base focus:border-blue-500 focus:outline-none px-3"
-              >
-                <option value="2">2 hours</option>
-                <option value="3">3 hours</option>
-                <option value="4">4 hours</option>
-                <option value="5">5 hours</option>
-                <option value="6">6 hours</option>
-                <option value="8">8 hours (full day)</option>
-              </select>
-              <p className="text-xs text-gray-600">
-                Most venues require 3-4 hours to allow for setup and cleanup
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">Min Capacity</label>
-              <input
-                type="number"
-                min="1"
-                value={details.capacity?.min || ""}
-                onChange={(e) => handleNestedFieldChange("capacity", "min", parseInt(e.target.value))}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-blue-500 focus:outline-none"
-                placeholder="10"
-              />
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">Max Capacity *</label>
-              <input
-                type="number"
-                min="1"
-                value={details.capacity?.max || ""}
-                onChange={(e) => handleNestedFieldChange("capacity", "max", parseInt(e.target.value))}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-blue-500 focus:outline-none"
-                placeholder="100"
-              />
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">Seated Capacity</label>
-              <input
-                type="number"
-                min="1"
-                value={details.capacity?.seated || ""}
-                onChange={(e) => handleNestedFieldChange("capacity", "seated", parseInt(e.target.value))}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-blue-500 focus:outline-none"
-                placeholder="50"
-              />
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">Standing Capacity</label>
-              <input
-                type="number"
-                min="1"
-                value={details.capacity?.standing || ""}
-                onChange={(e) => handleNestedFieldChange("capacity", "standing", parseInt(e.target.value))}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-blue-500 focus:outline-none"
-                placeholder="80"
-              />
-            </div>
-          </div>
-          <SectionSave
-    sectionName="Venue Basic Info"
-    hasChanges={venueBasicInfoState.hasChanges}
-    onSave={handleVenueBasicInfoSave}
-    saving={venueBasicInfoState.saving}
-    lastSaved={venueBasicInfoState.lastSaved}
-    error={venueBasicInfoState.error}
-  />
-        </div>
-
-      </div>
-
-      {/* Enhanced Pricing Structure */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("pricing")}
-        >
-          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      case 'venueAddress':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-gray-700 block">Business Name</label>
+                <input
+                  type="text"
+                  value={details.venueAddress?.businessName || ""}
+                  onChange={(e) => handleNestedFieldChange("venueAddress", "businessName", e.target.value)}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="Your venue's name"
+                />
               </div>
-              Pricing Structure
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.pricing ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Set your hourly rates and any additional fees
-          </p>
-        </div>
-        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.pricing ? "hidden sm:block" : ""}`}>
-          
-          {/* Main Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <label className="text-base font-semibold text-gray-700 block">Hourly Rate (£) *</label>
-              <input
-                type="number"
-                min="0"
-                value={details.pricing?.hourlyRate || ""}
-                onChange={(e) => handleNestedFieldChange("pricing", "hourlyRate", parseInt(e.target.value))}
-                className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-orange-500 focus:outline-none"
-                placeholder="50"
-              />
-              <p className="text-xs text-gray-600">
-                Your base rate per hour for venue hire
-              </p>
-            </div>
 
-            <div className="space-y-3">
-              <label className="text-base font-semibold text-gray-700 block">Minimum Spend (£)</label>
-              <input
-                type="number"
-                min="0"
-                value={details.pricing?.minimumSpend || ""}
-                onChange={(e) => handleNestedFieldChange("pricing", "minimumSpend", parseInt(e.target.value))}
-                className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-orange-500 focus:outline-none"
-                placeholder="150"
-              />
-              <p className="text-xs text-gray-600">
-                Minimum total booking amount (optional)
-              </p>
-            </div>
-
-          </div>
-
-          {/* Setup and Cleanup Times */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-2">Setup & Cleanup Time</h4>
-            <p className="text-blue-800">Standard 1 hour setup and 1 hour cleanup included with all bookings.</p>
-            <p className="text-sm text-blue-600 mt-1">This ensures adequate time for proper party preparation and venue restoration.</p>
-          </div>
-          <SectionSave
-    sectionName="Venue Pricing"
-    hasChanges={venuePricingState.hasChanges}
-    onSave={handleVenuePricingSave}
-    saving={venuePricingState.saving}
-    lastSaved={venuePricingState.lastSaved}
-    error={venuePricingState.error}
-  />
-        </div>
-
-      </div>
-
-      {/* Add-on Services Management */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("addons")}
-        >
-          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500 rounded-xl flex items-center justify-center">
-                <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-gray-700 block">Street Address *</label>
+                <input
+                  type="text"
+                  value={details.venueAddress?.addressLine1 || ""}
+                  onChange={(e) => handleNestedFieldChange("venueAddress", "addressLine1", e.target.value)}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="123 Main Street"
+                />
               </div>
-              Add-on Services
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.addons ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Optional extras that customers can add to their bookings
-          </p>
-        </div>
-        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.addons ? "hidden sm:block" : ""}`}>
-          
-          {/* Quick Templates */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Star className="w-5 h-5" />
-              Quick Add Templates
-            </h4>
-            <p className="text-sm text-gray-600 mb-4">Popular add-ons you can add with one click</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {addonTemplates.map((template, index) => {
-                const categoryInfo = addonCategories.find((cat) => cat.value === template.category)
-                const alreadyExists = details.addOnServices.some((addon) => addon.name === template.name)
 
-                return (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                      alreadyExists
-                        ? "border-gray-200 bg-gray-50 opacity-50"
-                        : "border-gray-200 bg-white hover:border-purple-400 hover:shadow-md cursor-pointer"
-                    }`}
-                    onClick={alreadyExists ? undefined : () => handleAddTemplate(template)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-gray-900 text-sm">{template.name}</h5>
-                      <div className="text-purple-600 font-bold text-sm">£{template.price}</div>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-3">{template.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                        {categoryInfo?.emoji} {categoryInfo?.label}
-                      </span>
-                      {alreadyExists ? (
-                        <span className="text-xs text-gray-500">✓ Added</span>
-                      ) : (
-                        <PlusCircle className="w-4 h-4 text-purple-600" />
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 block">City *</label>
+                <input
+                  type="text"
+                  value={details.venueAddress?.city || ""}
+                  onChange={(e) => handleNestedFieldChange("venueAddress", "city", e.target.value)}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="London"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 block">Postcode *</label>
+                <input
+                  type="text"
+                  value={details.venueAddress?.postcode || ""}
+                  onChange={(e) => handleNestedFieldChange("venueAddress", "postcode", e.target.value)}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="SW1A 1AA"
+                />
+              </div>
             </div>
+            <SectionSave
+              sectionName="Venue Address"
+              hasChanges={venueAddressState.hasChanges}
+              onSave={handleVenueAddressSave}
+              saving={venueAddressState.saving}
+              lastSaved={venueAddressState.lastSaved}
+              error={venueAddressState.error}
+            />
           </div>
+        )
 
-          {/* Current Add-ons */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Gift className="w-5 h-5" />
-                Your Add-on Services ({details.addOnServices.length})
-              </h4>
-              <button
-                onClick={() => setIsAddingAddon(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Add Custom
-              </button>
-            </div>
-
-            {details.addOnServices.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                <Gift className="mx-auto h-8 w-8 text-gray-400 mb-3" />
-                <h5 className="text-base font-medium text-gray-900 mb-2">No add-ons yet</h5>
-                <p className="text-gray-500 text-sm mb-4">Add some popular templates or create custom add-ons</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {details.addOnServices.map((addon, index) => {
-                  const categoryInfo = addonCategories.find((cat) => cat.value === addon.category)
-
-                  return (
-                    <div
-                      key={index}
-                      className="p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h5 className="font-semibold text-gray-900">{addon.name}</h5>
-                            <span className="font-bold text-purple-600">£{addon.price}</span>
-                            {categoryInfo && (
-                              <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                                {categoryInfo.emoji} {categoryInfo.label}
-                              </span>
-                            )}
-                          </div>
-                          {addon.description && <p className="text-gray-600 text-sm">{addon.description}</p>}
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => handleEditAddon(addon)}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAddon(addon.id)}
-                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-          <SectionSave
-    sectionName="Venue Add-ons"
-    hasChanges={venueAddOnsState.hasChanges}
-    onSave={handleVenueAddOnsSave}
-    saving={venueAddOnsState.saving}
-    lastSaved={venueAddOnsState.lastSaved}
-    error={venueAddOnsState.error}
-  />
-        </div>
-
-      </div>
-
-      {/* NEW: Items Allowed & Items Not Permitted Section */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-green-50 to-green-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("allowedItems")}
-        >
-          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              Items Allowed & Not Permitted
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.allowedItems ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Set clear expectations about what is welcome and what is not allowed
-          </p>
-        </div>
-        <div className={`p-4 sm:p-8 space-y-8 ${!expandedSections.allowedItems ? "hidden sm:block" : ""}`}>
-          
-          {/* Items Allowed Section */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              Items We Welcome
-            </h4>
-            <p className="text-sm text-gray-600 mb-4">Highlight special items or equipment that your venue welcomes and supports</p>
-            
-            {/* Common allowed items */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              {commonAllowedItems.map((item) => (
+      case 'venueType':
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+            <h2 className="text-2xl font-medium text-gray-700 mb-8">What type of venue is this?</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-2xl">
+              {venueTypes.map((type) => (
                 <div
-                  key={item}
-                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                    details.allowedItems.includes(item)
-                      ? "border-green-200 bg-green-50"
-                      : "border-gray-200 bg-white hover:border-gray-300"
+                  key={type}
+                  onClick={() => handleFieldChange("venueType", type)}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all text-center ${
+                    details.venueType === type
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
-                  onClick={() => details.allowedItems.includes(item) ? handleRemoveAllowedItem(item) : handleAddAllowedItem(item)}
                 >
-                  <span className="text-sm font-medium">{item}</span>
-                  {details.allowedItems.includes(item) && (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  )}
+                  <span className="text-sm font-medium">{type}</span>
                 </div>
               ))}
             </div>
-
-            {/* Custom allowed item */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customAllowedItem}
-                onChange={(e) => setCustomAllowedItem(e.target.value)}
-                placeholder="Add custom allowed item..."
-                className="flex-1 h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-green-500 focus:outline-none"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddCustomAllowedItem()}
+            <div className="mt-8">
+              <SectionSave
+                sectionName="Venue Type"
+                hasChanges={venueBasicInfoState.hasChanges}
+                onSave={handleVenueBasicInfoSave}
+                saving={venueBasicInfoState.saving}
+                lastSaved={venueBasicInfoState.lastSaved}
+                error={venueBasicInfoState.error}
               />
+            </div>
+          </div>
+        )
+
+      case 'capacity':
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+            <div className="mb-8">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            </div>
+            <h2 className="text-2xl font-medium text-gray-700 mb-12">How many guests can fit comfortably?</h2>
+
+            {/* Big number with +/- buttons */}
+            <div className="flex items-center justify-center gap-8 mb-12">
               <button
-                onClick={handleAddCustomAllowedItem}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
+                onClick={() => handleNestedFieldChange("capacity", "max", Math.max(1, (details.capacity?.max || 0) - 5))}
+                className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
               >
-                Add
+                <span className="text-2xl text-gray-600">−</span>
+              </button>
+              <span className="text-8xl font-semibold text-gray-900 w-40 text-center">
+                {details.capacity?.max || 0}
+              </span>
+              <button
+                onClick={() => handleNestedFieldChange("capacity", "max", (details.capacity?.max || 0) + 5)}
+                className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+              >
+                <span className="text-2xl text-gray-600">+</span>
               </button>
             </div>
 
-            {/* Current allowed items */}
-            {details.allowedItems.length > 0 && (
-              <div className="mt-4">
-                <h5 className="font-medium text-gray-900 mb-2">Items We Welcome:</h5>
-                <div className="flex flex-wrap gap-2">
-                  {details.allowedItems.map((item, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-                    >
-                      {item}
-                      <button
-                        onClick={() => handleRemoveAllowedItem(item)}
-                        className="ml-1 text-green-600 hover:text-green-800"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="mt-8">
+              <SectionSave
+                sectionName="Capacity"
+                hasChanges={venueBasicInfoState.hasChanges}
+                onSave={handleVenueBasicInfoSave}
+                saving={venueBasicInfoState.saving}
+                lastSaved={venueBasicInfoState.lastSaved}
+                error={venueBasicInfoState.error}
+              />
+            </div>
           </div>
+        )
 
-          {/* Restricted Items Section */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Ban className="w-5 h-5 text-red-600" />
-              Items Not Permitted
-            </h4>
-            <p className="text-sm text-gray-600 mb-4">Select items that are not allowed at your venue</p>
-            
-            {/* Common restrictions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+      case 'pricing':
+        return (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">Set your pricing structure for venue hire</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 block">Hourly Rate (£) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={details.pricing?.hourlyRate || ""}
+                  onChange={(e) => handleNestedFieldChange("pricing", "hourlyRate", parseFloat(e.target.value))}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="50"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 block">Minimum Booking (hours)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={details.pricing?.minimumBookingHours || ""}
+                  onChange={(e) => handleNestedFieldChange("pricing", "minimumBookingHours", parseInt(e.target.value))}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="2"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 block">Security Deposit (£)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={details.pricing?.securityDeposit || ""}
+                  onChange={(e) => handleNestedFieldChange("pricing", "securityDeposit", parseFloat(e.target.value))}
+                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  placeholder="100"
+                />
+              </div>
+            </div>
+            <SectionSave
+              sectionName="Pricing"
+              hasChanges={venuePricingState.hasChanges}
+              onSave={handleVenuePricingSave}
+              saving={venuePricingState.saving}
+              lastSaved={venuePricingState.lastSaved}
+              error={venuePricingState.error}
+            />
+          </div>
+        )
+
+      case 'allowedItems':
+        return (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">Select items that are not allowed at your venue</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {commonRestrictedItems.map((item) => (
                 <div
                   key={item}
-                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                    details.restrictedItems.includes(item)
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    details.restrictedItems?.includes(item)
                       ? "border-red-200 bg-red-50"
                       : "border-gray-200 bg-white hover:border-gray-300"
                   }`}
-                  onClick={() => details.restrictedItems.includes(item) ? handleRemoveRestriction(item) : handleAddRestriction(item)}
+                  onClick={() => details.restrictedItems?.includes(item) ? handleRemoveRestriction(item) : handleAddRestriction(item)}
                 >
                   <span className="text-sm font-medium">{item}</span>
-                  {details.restrictedItems.includes(item) && (
+                  {details.restrictedItems?.includes(item) && (
                     <Ban className="w-4 h-4 text-red-600" />
                   )}
                 </div>
               ))}
             </div>
 
-            {/* Custom restriction */}
-            <div className="flex gap-2">
+            {/* Custom restricted item input */}
+            <div className="flex gap-2 pt-4">
               <input
                 type="text"
                 value={customRestriction}
                 onChange={(e) => setCustomRestriction(e.target.value)}
                 placeholder="Add custom restriction..."
-                className="flex-1 h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-red-500 focus:outline-none"
+                className="flex-1 h-12 px-4 border border-gray-300 rounded-xl text-sm focus:border-gray-900 focus:outline-none"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddCustomRestriction()}
               />
               <button
                 onClick={handleAddCustomRestriction}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                className="px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 Add
               </button>
             </div>
 
             {/* Current restrictions */}
-            {details.restrictedItems.length > 0 && (
-              <div className="mt-4">
-                <h5 className="font-medium text-gray-900 mb-2">Currently Restricted:</h5>
+            {details.restrictedItems?.length > 0 && (
+              <div className="pt-4">
+                <h5 className="text-sm font-medium text-gray-700 mb-3">Currently Restricted:</h5>
                 <div className="flex flex-wrap gap-2">
                   {details.restrictedItems.map((item, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-800 rounded-full text-sm"
                     >
                       {item}
                       <button
                         onClick={() => handleRemoveRestriction(item)}
-                        className="ml-1 text-red-600 hover:text-red-800"
+                        className="text-red-600 hover:text-red-800"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1708,437 +1427,301 @@ const handleVenueDetailsSave = () => {
                 </div>
               </div>
             )}
+            <SectionSave
+              sectionName="Restricted Items"
+              hasChanges={venueItemsPolicyState.hasChanges}
+              onSave={handleVenueItemsPolicySave}
+              saving={venueItemsPolicyState.saving}
+              lastSaved={venueItemsPolicyState.lastSaved}
+              error={venueItemsPolicyState.error}
+            />
           </div>
-          <SectionSave
-    sectionName="Items Policy"
-    hasChanges={venueItemsPolicyState.hasChanges}
-    onSave={handleVenueItemsPolicySave}
-    saving={venueItemsPolicyState.saving}
-    lastSaved={venueItemsPolicyState.lastSaved}
-    error={venueItemsPolicyState.error}
-  />
-        </div>
+        )
 
-      </div>
-
-      {/* House Rules */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("restrictions")}
-        >
-          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              House Rules
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.restrictions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            Set important venue guidelines for all bookings
-          </p>
-        </div>
-        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.restrictions ? "hidden sm:block" : ""}`}>
-          
-          {/* House Rules */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4">House Rules</h4>
-            <p className="text-sm text-gray-600 mb-4">Select rules that apply to your venue</p>
-            
-            {/* Common rules */}
-            <div className="space-y-2 mb-4">
-              {commonHouseRules.map((rule) => (
-                <div
-                  key={rule}
-                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                    details.houseRules.includes(rule)
-                      ? "border-blue-200 bg-blue-50"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
-                  onClick={() => details.houseRules.includes(rule) ? handleRemoveRule(rule) : handleAddRule(rule)}
-                >
-                  <span className="text-sm">{rule}</span>
-                  {details.houseRules.includes(rule) && (
-                    <AlertTriangle className="w-4 h-4 text-blue-600" />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Custom rule */}
+      case 'restrictions':
+        return (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">Set important venue guidelines for all bookings</p>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={customRule}
                 onChange={(e) => setCustomRule(e.target.value)}
-                placeholder="Add custom house rule..."
-                className="flex-1 h-10 px-3 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddCustomRule()}
+                placeholder="Add a house rule (e.g., No shoes on the dance floor)"
+                className="flex-1 h-12 px-4 border border-gray-300 rounded-xl text-sm focus:border-gray-900 focus:outline-none"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddRule()}
               />
               <button
-                onClick={handleAddCustomRule}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                onClick={handleAddRule}
+                className="px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
               >
-                Add
+                Add Rule
               </button>
             </div>
 
             {/* Current rules */}
-            {details.houseRules.length > 0 && (
-              <div className="mt-4">
-                <h5 className="font-medium text-gray-900 mb-2">Active House Rules:</h5>
-                <div className="space-y-2">
-                  {details.houseRules.map((rule, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 bg-blue-50 rounded-lg"
+            {details.houseRules?.length > 0 && (
+              <div className="space-y-2">
+                {details.houseRules.map((rule, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                  >
+                    <span className="text-sm">{rule}</span>
+                    <button
+                      onClick={() => handleRemoveRule(rule)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
                     >
-                      <span className="text-sm text-blue-900">{rule}</span>
-                      <button
-                        onClick={() => handleRemoveRule(rule)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
+            <SectionSave
+              sectionName="House Rules"
+              hasChanges={venueHouseRulesState.hasChanges}
+              onSave={handleVenueHouseRulesSave}
+              saving={venueHouseRulesState.saving}
+              lastSaved={venueHouseRulesState.lastSaved}
+              error={venueHouseRulesState.error}
+            />
           </div>
-          <SectionSave
-    sectionName="House Rules"
-    hasChanges={venueHouseRulesState.hasChanges}
-    onSave={handleVenueHouseRulesSave}
-    saving={venueHouseRulesState.saving}
-    lastSaved={venueHouseRulesState.lastSaved}
-    error={venueHouseRulesState.error}
-  />
-        </div>
+        )
 
-      </div>
-
-      {/* Facilities & Equipment */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-green-50 to-green-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("facilities")}
-        >
-          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              Facilities & Equipment
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.facilities ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">
-            What facilities and equipment are available at your venue?
-          </p>
-        </div>
-        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.facilities ? "hidden sm:block" : ""}`}>
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Available Facilities</h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+      case 'facilities':
+        return (
+          <div className="space-y-6">
+            <p className="text-sm text-gray-500">Select facilities available at your venue</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {facilityOptions.map((facility) => (
                 <div
                   key={facility}
-                  className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors"
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    details.facilities?.includes(facility)
+                      ? "border-gray-900 bg-gray-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                  onClick={() => handleArrayToggle(details.facilities, facility, "facilities")}
                 >
-                  <input
-                    type="checkbox"
-                    id={`facility-${facility}`}
-                    checked={details.facilities.includes(facility)}
-                    onChange={() => handleArrayToggle(details.facilities, facility, "facilities")}
-                    className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                  />
-                  <label
-                    htmlFor={`facility-${facility}`}
-                    className="text-sm sm:text-base font-medium cursor-pointer flex-1"
-                  >
-                    {facility}
-                  </label>
+                  <span className="text-sm font-medium">{facility}</span>
+                  {details.facilities?.includes(facility) && (
+                    <CheckCircle className="w-4 h-4 text-gray-900" />
+                  )}
                 </div>
               ))}
             </div>
-          </div>
 
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Equipment Quantities</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <div className="space-y-2 sm:space-y-3">
-                <label className="text-sm sm:text-base font-semibold text-gray-700 block">Tables Available</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={details.equipment?.tables || ""}
-                  onChange={(e) => handleNestedFieldChange("equipment", "tables", parseInt(e.target.value))}
-                  className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-green-500 focus:outline-none"
-                  placeholder="10"
-                />
-              </div>
-
-              <div className="space-y-2 sm:space-y-3">
-                <label className="text-sm sm:text-base font-semibold text-gray-700 block">Chairs Available</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={details.equipment?.chairs || ""}
-                  onChange={(e) => handleNestedFieldChange("equipment", "chairs", parseInt(e.target.value))}
-                  className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-green-500 focus:outline-none"
-                  placeholder="80"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mt-6">
-              {[
-                { key: "soundSystem", label: "Sound System Available" },
-                { key: "projector", label: "Projector/Screen Available" },
-                { key: "kitchen", label: "Kitchen Access" },
-                { key: "bar", label: "Bar Facilities" },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-green-50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    id={`equipment-${item.key}`}
-                    checked={details.equipment?.[item.key] || false}
-                    onChange={(e) => handleNestedFieldChange("equipment", item.key, e.target.checked)}
-                    className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                  />
-                  <label
-                    htmlFor={`equipment-${item.key}`}
-                    className="text-sm sm:text-base font-medium cursor-pointer flex-1"
-                  >
-                    {item.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-          <SectionSave
-    sectionName="Facilities & Equipment"
-    hasChanges={venueFacilitiesState.hasChanges}
-    onSave={handleVenueFacilitiesSave}
-    saving={venueFacilitiesState.saving}
-    lastSaved={venueFacilitiesState.lastSaved}
-    error={venueFacilitiesState.error}
-  />
-        </div>
-
-      </div>
-
-      {/* Enhanced Venue Policies */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div 
-          className="p-4 sm:p-8 bg-gradient-to-r from-red-50 to-red-100 rounded-t-lg cursor-pointer"
-          onClick={() => toggleSection("policies")}
-        >
-          <h2 className="flex items-center justify-between text-lg sm:text-xl font-bold text-gray-900">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500 rounded-xl flex items-center justify-center">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              Basic Venue Policies
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.policies ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 mt-2">Set basic venue policies</p>
-        </div>
-        <div className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.policies ? "hidden sm:block" : ""}`}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            {[
-              { key: "ownFood", label: "External food & catering allowed" },
-              { key: "ownDecorations", label: "Own decorations allowed" },
-              { key: "alcohol", label: "Alcohol permitted" },
-              { key: "smoking", label: "Smoking allowed" },
-              { key: "music", label: "Music/Entertainment allowed" },
-              { key: "childSupervision", label: "Adult supervision required for children" },
-              { key: "depositRequired", label: "Security deposit required" },
-            ].map((policy) => (
-              <div
-                key={policy.key}
-                className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-red-50 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  id={`policy-${policy.key}`}
-                  checked={details.policies?.[policy.key] || false}
-                  onChange={(e) => handleNestedFieldChange("policies", policy.key, e.target.checked)}
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                />
-                <label
-                  htmlFor={`policy-${policy.key}`}
-                  className="text-sm sm:text-base font-medium cursor-pointer flex-1"
-                >
-                  {policy.label}
-                </label>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">Latest End Time</label>
-              <select
-                value={details.policies?.endTime || "22:00"}
-                onChange={(e) => handleNestedFieldChange("policies", "endTime", e.target.value)}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-red-500 focus:outline-none"
-              >
-                <option value="20:00">8:00 PM</option>
-                <option value="21:00">9:00 PM</option>
-                <option value="22:00">10:00 PM</option>
-                <option value="23:00">11:00 PM</option>
-                <option value="00:00">Midnight</option>
-                <option value="flexible">Flexible</option>
-              </select>
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-sm sm:text-base font-semibold text-gray-700 block">Cancellation Policy</label>
-              <select
-                value={details.policies?.cancellationPolicy || "48_hours"}
-                onChange={(e) => handleNestedFieldChange("policies", "cancellationPolicy", e.target.value)}
-                className="w-full h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base px-3 focus:border-red-500 focus:outline-none"
-              >
-                {cancellationPolicies.map((policy) => (
-                  <option key={policy.value} value={policy.value}>
-                    {policy.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <SectionSave
-    sectionName="Venue Policies"
-    hasChanges={venuePoliciesState.hasChanges}
-    onSave={handleVenuePoliciesSave}
-    saving={venuePoliciesState.saving}
-    lastSaved={venuePoliciesState.lastSaved}
-    error={venuePoliciesState.error}
-  />
-          </div>
-
-          {/* Booking Terms */}
-          <div className="space-y-3">
-            <label className="text-base font-semibold text-gray-700 block">Booking Terms & Conditions</label>
-            <textarea
-              value={details.bookingTerms || ""}
-              onChange={(e) => handleFieldChange("bookingTerms", e.target.value)}
-              placeholder="Detail any specific booking terms, deposit requirements, payment schedules, or important conditions customers should know about..."
-              rows={4}
-              className="w-full bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none focus:border-red-500 focus:outline-none"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Add/Edit Add-on Modal */}
-      {isAddingAddon && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {editingAddon ? "Edit Add-on Service" : "Create New Add-on Service"}
-                </h3>
-                <button onClick={resetAddonForm} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-4">Equipment</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div className="space-y-2">
-                  <label htmlFor="addonName" className="text-sm font-medium">
-                    Service Name *
-                  </label>
+                  <label className="text-xs text-gray-500 block">Tables</label>
                   <input
-                    id="addonName"
-                    value={addonForm.name}
-                    onChange={(e) => handleAddonFormChange("name", e.target.value)}
-                    placeholder="e.g., Professional Cleaning Service"
-                    className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-purple-500 focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="addonPrice" className="text-sm font-medium">
-                    Price (£) *
-                  </label>
-                  <input
-                    id="addonPrice"
                     type="number"
                     min="0"
-                    value={addonForm.price}
-                    onChange={(e) => handleAddonFormChange("price", e.target.value)}
-                    placeholder="75"
-                    className="w-full h-12 bg-white border-2 border-gray-200 rounded-xl text-base px-3 focus:border-purple-500 focus:outline-none"
+                    value={details.equipment?.tables || ""}
+                    onChange={(e) => handleNestedFieldChange("equipment", "tables", parseInt(e.target.value))}
+                    className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:outline-none"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-500 block">Chairs</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={details.equipment?.chairs || ""}
+                    onChange={(e) => handleNestedFieldChange("equipment", "chairs", parseInt(e.target.value))}
+                    className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:outline-none"
+                    placeholder="0"
                   />
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Category</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {addonCategories.map((category) => (
-                    <div
-                      key={category.value}
-                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        addonForm.category === category.value
-                          ? "border-purple-300 bg-purple-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                      onClick={() => handleAddonFormChange("category", category.value)}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{category.emoji}</span>
-                        <span className="font-medium text-gray-900 text-sm">{category.label}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{category.description}</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  { key: "soundSystem", label: "Sound System" },
+                  { key: "projector", label: "Projector/Screen" },
+                  { key: "kitchen", label: "Kitchen Access" },
+                  { key: "bar", label: "Bar Facilities" },
+                ].map((item) => (
+                  <div
+                    key={item.key}
+                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      details.equipment?.[item.key]
+                        ? "border-gray-900 bg-gray-50"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
+                    onClick={() => handleNestedFieldChange("equipment", item.key, !details.equipment?.[item.key])}
+                  >
+                    <span className="text-sm font-medium">{item.label}</span>
+                    {details.equipment?.[item.key] && (
+                      <CheckCircle className="w-4 h-4 text-gray-900" />
+                    )}
+                  </div>
+                ))}
               </div>
+            </div>
+            <SectionSave
+              sectionName="Facilities"
+              hasChanges={venueFacilitiesState.hasChanges}
+              onSave={handleVenueFacilitiesSave}
+              saving={venueFacilitiesState.saving}
+              lastSaved={venueFacilitiesState.lastSaved}
+              error={venueFacilitiesState.error}
+            />
+          </div>
+        )
 
-              <div className="space-y-2">
-                <label htmlFor="addonDescription" className="text-sm font-medium">
-                  Description
-                </label>
+      case 'addons':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">Add optional services that customers can book</p>
+              <button
+                onClick={() => setShowAddOnModal(true)}
+                className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Add Service
+              </button>
+            </div>
+
+            {details.addOnServices?.length > 0 ? (
+              <div className="space-y-3">
+                {details.addOnServices.map((addon, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{addon.name}</h4>
+                      <p className="text-sm text-gray-500">£{addon.price}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingAddOn({ ...addon, index })
+                          setShowAddOnModal(true)
+                        }}
+                        className="p-2 text-gray-500 hover:text-gray-700"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAddOn(index)}
+                        className="p-2 text-gray-500 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                <Gift className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No add-on services yet</p>
+              </div>
+            )}
+            <SectionSave
+              sectionName="Add-on Services"
+              hasChanges={venueAddOnsState.hasChanges}
+              onSave={handleVenueAddOnsSave}
+              saving={venueAddOnsState.saving}
+              lastSaved={venueAddOnsState.lastSaved}
+              error={venueAddOnsState.error}
+            />
+          </div>
+        )
+
+      default:
+        return <div>Select a section from the sidebar</div>
+    }
+  }
+
+  return (
+    <div className="w-full">
+      {/* Section Title - Airbnb style */}
+      <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+        {sectionTitles[currentInternalSection] || 'Details'}
+      </h1>
+
+      {/* Section Content */}
+      {renderSectionContent()}
+
+      {/* Add-on Modal */}
+      {showAddOnModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingAddOn ? 'Edit Add-on Service' : 'Add New Service'}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Service Name</label>
+                <input
+                  type="text"
+                  value={editingAddOn?.name || newAddOn.name}
+                  onChange={(e) => editingAddOn
+                    ? setEditingAddOn({...editingAddOn, name: e.target.value})
+                    : setNewAddOn({...newAddOn, name: e.target.value})
+                  }
+                  className="w-full h-12 px-4 border border-gray-300 rounded-xl focus:border-gray-900 focus:outline-none"
+                  placeholder="e.g., Projector Hire"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Price (£)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingAddOn?.price || newAddOn.price}
+                  onChange={(e) => editingAddOn
+                    ? setEditingAddOn({...editingAddOn, price: parseFloat(e.target.value)})
+                    : setNewAddOn({...newAddOn, price: parseFloat(e.target.value)})
+                  }
+                  className="w-full h-12 px-4 border border-gray-300 rounded-xl focus:border-gray-900 focus:outline-none"
+                  placeholder="25"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
                 <textarea
-                  id="addonDescription"
-                  value={addonForm.description}
-                  onChange={(e) => handleAddonFormChange("description", e.target.value)}
-                  placeholder="Describe what this add-on includes and why customers would want it..."
+                  value={editingAddOn?.description || newAddOn.description}
+                  onChange={(e) => editingAddOn
+                    ? setEditingAddOn({...editingAddOn, description: e.target.value})
+                    : setNewAddOn({...newAddOn, description: e.target.value})
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:border-gray-900 focus:outline-none resize-none"
                   rows={3}
-                  className="w-full bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none focus:border-purple-500 focus:outline-none"
+                  placeholder="Brief description of the service"
                 />
               </div>
             </div>
-
-            <div className="p-6 border-t border-gray-200 flex gap-3">
-              <button 
-                onClick={resetAddonForm}
-                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddOnModal(false)
+                  setEditingAddOn(null)
+                  setNewAddOn({ name: '', price: 0, description: '' })
+                }}
+                className="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50"
               >
                 Cancel
               </button>
-              <button 
-                onClick={handleAddAddon}
-                className="flex-1 px-4 py-3 bg-purple-500 text-white rounded-xl font-medium hover:bg-purple-600 transition-colors"
+              <button
+                onClick={() => {
+                  if (editingAddOn) {
+                    handleUpdateAddOn(editingAddOn.index, editingAddOn)
+                  } else {
+                    handleAddAddOn()
+                  }
+                  setShowAddOnModal(false)
+                  setEditingAddOn(null)
+                  setNewAddOn({ name: '', price: 0, description: '' })
+                }}
+                className="flex-1 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800"
               >
-                {editingAddon ? "Update Add-on" : "Create Add-on"}
+                {editingAddOn ? 'Save Changes' : 'Add Service'}
               </button>
             </div>
           </div>

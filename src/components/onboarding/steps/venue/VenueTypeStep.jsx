@@ -86,6 +86,7 @@ export default function VenueTypeStep({ selectedType, onSelect }) {
               onClick={() => onSelect(type.id)}
               className={`
                 p-6 rounded-xl border-2 transition-all duration-200 text-left
+                flex flex-col items-start
                 hover:border-gray-900 hover:shadow-md
                 ${isSelected
                   ? 'border-gray-900 bg-gray-50'
@@ -93,8 +94,8 @@ export default function VenueTypeStep({ selectedType, onSelect }) {
                 }
               `}
             >
-              <Icon className="w-8 h-8 mb-3 text-gray-900" />
-              <div className="font-medium text-base text-gray-900">
+              <Icon className="w-8 h-8 mb-4 text-gray-900" />
+              <div className="font-medium text-base text-gray-900 leading-snug">
                 {type.label}
               </div>
             </button>

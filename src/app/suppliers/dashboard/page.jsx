@@ -1,140 +1,229 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { useSupplier } from "@/hooks/useSupplier"
-import { TrendingUp, Calendar, Settings, Users } from "lucide-react"
-import EnquiryNotificationBanner from "@/components/EnquiryNotificationBanner"
-import { HeaderEnquiryBadge } from "@/components/EnquiryNotificationBanner"
-import { BusinessProvider } from "../../../contexts/BusinessContext"
-import EnquiryOverviewSection from "./components/EnquiryOverviewSection"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
-import { 
-  DashboardSkeleton, 
-  CalendarSkeleton, 
-  ActionButtonsSkeleton, 
-  StatsCardsSkeleton 
-} from "./components/DashboardSkeletons"
+import { BusinessProvider } from "../../../contexts/BusinessContext"
+import Link from "next/link"
+import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2 } from "lucide-react"
+
+// Empty state illustration component (Airbnb style)
+function EmptyStateIllustration() {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      className="w-48 h-48 mx-auto"
+      fill="none"
+    >
+      {/* Book/notebook illustration */}
+      <rect x="40" y="60" width="120" height="100" rx="4" fill="#F3F4F6" stroke="#E5E7EB" strokeWidth="2"/>
+      <rect x="50" y="70" width="100" height="80" rx="2" fill="white" stroke="#E5E7EB" strokeWidth="1"/>
+      {/* Pages */}
+      <line x1="100" y1="70" x2="100" y2="150" stroke="#E5E7EB" strokeWidth="1"/>
+      {/* Bookmark */}
+      <path d="M130 60 L130 85 L140 75 L150 85 L150 60" fill="#F472B6" />
+      {/* Lines on page */}
+      <line x1="60" y1="90" x2="90" y2="90" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="60" y1="105" x2="85" y2="105" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="60" y1="120" x2="88" y2="120" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="110" y1="90" x2="140" y2="90" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="110" y1="105" x2="135" y2="105" stroke="#E5E7EB" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+// Booking card component (Airbnb style)
+function BookingCard({ booking }) {
+  const partyDate = new Date(booking.parties?.party_date)
+  const isToday = new Date().toDateString() === partyDate.toDateString()
+  const businessName = booking.supplier?.businessName
+
+  return (
+    <Link
+      href={`/suppliers/enquiries/${booking.id}`}
+      className="block bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
+    >
+      <div className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="font-semibold text-gray-900">
+              {booking.parties?.party_name || `${booking.parties?.child_name}'s Party`}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {booking.lead_name || booking.parties?.parent_name || 'Guest'}
+            </p>
+          </div>
+          {isToday && (
+            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+              Today
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-2 text-sm text-gray-600">
+          {/* Business name indicator */}
+          {businessName && (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary-500" />
+              <span className="font-medium text-primary-600">{businessName}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <span>
+              {partyDate.toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+              })}
+            </span>
+          </div>
+          {booking.parties?.party_time && (
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-gray-400" />
+              <span>{booking.parties.party_time}</span>
+            </div>
+          )}
+          {booking.parties?.venue_location && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <span className="truncate">{booking.parties.venue_location}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <span className="text-sm text-gray-600">
+          {booking.service_type || 'Service booked'}
+        </span>
+        <ChevronRight className="h-4 w-4 text-gray-400" />
+      </div>
+    </Link>
+  )
+}
+
+// Pending enquiry card (needs response)
+function EnquiryCard({ enquiry }) {
+  const partyDate = new Date(enquiry.parties?.party_date)
+  const businessName = enquiry.supplier?.businessName
+
+  return (
+    <Link
+      href={`/suppliers/enquiries/${enquiry.id}`}
+      className="block bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
+    >
+      <div className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="font-semibold text-gray-900">
+              {enquiry.parties?.party_name || `${enquiry.parties?.child_name}'s Party`}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {enquiry.lead_name || enquiry.parties?.parent_name || 'New enquiry'}
+            </p>
+          </div>
+          <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-full">
+            Needs response
+          </span>
+        </div>
+
+        <div className="space-y-2 text-sm text-gray-600">
+          {/* Business name indicator */}
+          {businessName && (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary-500" />
+              <span className="font-medium text-primary-600">{businessName}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <span>
+              {partyDate.toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-5 py-3 bg-orange-50 border-t border-orange-100 flex items-center justify-between">
+        <span className="text-sm font-medium text-orange-700">
+          Respond to enquiry
+        </span>
+        <ChevronRight className="h-4 w-4 text-orange-500" />
+      </div>
+    </Link>
+  )
+}
+
+// Loading skeleton
+function DashboardSkeleton() {
+  return (
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="animate-pulse">
+        <div className="h-10 w-48 bg-gray-200 rounded mb-8" />
+        <div className="flex gap-2 mb-8">
+          <div className="h-10 w-24 bg-gray-200 rounded-full" />
+          <div className="h-10 w-24 bg-gray-200 rounded-full" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-48 bg-gray-200 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function SupplierDashboard() {
-  const { supplier, supplierData, loading, currentBusiness } = useSupplier()
-  const { enquiries, loading: enquiriesLoading } = useSupplierEnquiries(null, currentBusiness?.id)
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date()
-    return now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-  })
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false)
+  const { supplier, supplierData, loading } = useSupplier()
+  // Fetch enquiries for ALL businesses (pass null for specificBusinessId)
+  const { enquiries, loading: enquiriesLoading } = useSupplierEnquiries(null, null)
+  const [activeTab, setActiveTab] = useState("enquiries")
 
-  // Check if user just completed onboarding
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const justCompleted = localStorage.getItem('justCompletedOnboarding')
-      if (justCompleted === 'true') {
-        setShowSuccessBanner(true)
-        localStorage.removeItem('justCompletedOnboarding')
-        // Auto-hide after 10 seconds
-        setTimeout(() => setShowSuccessBanner(false), 10000)
-      }
-    }
-  }, [])
-
-  // Calculate real stats from enquiries
-  const stats = useMemo(() => {
+  // Filter and categorize enquiries
+  const { confirmedBookings, pendingEnquiries } = useMemo(() => {
     if (!enquiries || enquiries.length === 0) {
-      return {
-        newEnquiries: 0,
-        monthlyEarnings: 0,
-        bookingsCount: 0,
-        rating: supplierData?.rating || 0
-      }
+      return { confirmedBookings: [], pendingEnquiries: [] }
     }
 
-    const now = new Date()
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    
-    // Filter enquiries for current month
-    const thisMonthEnquiries = enquiries.filter(e => {
-      const createdDate = new Date(e.created_at)
-      return createdDate >= currentMonthStart
-    })
-
-    // Count new enquiries (pending + viewed)
-    const newEnquiries = thisMonthEnquiries.filter(
-      e => e.status === 'pending' || e.status === 'viewed'
-    ).length
-
-    // Calculate monthly earnings from accepted bookings
-    const monthlyEarnings = thisMonthEnquiries
-      .filter(e => e.status === 'accepted' && e.final_price)
-      .reduce((sum, e) => sum + (parseFloat(e.final_price) || 0), 0)
-
-    // Count total bookings (accepted enquiries)
-    const bookingsCount = enquiries.filter(e => e.status === 'accepted').length
-
-    return {
-      newEnquiries,
-      monthlyEarnings,
-      bookingsCount,
-      rating: supplierData?.rating || 0
-    }
-  }, [enquiries, supplierData])
-
-  // Get upcoming events from accepted enquiries
-  const upcomingEvents = useMemo(() => {
-    if (!enquiries || enquiries.length === 0) return []
-
-    const now = new Date()
-    const nextWeek = new Date(now)
-    nextWeek.setDate(nextWeek.getDate() + 7)
-
-    // Get accepted bookings for the next week
-    const acceptedBookings = enquiries.filter(e => {
-      if (e.status !== 'accepted' || !e.parties) return false
-      
-      const partyDate = new Date(e.parties.party_date)
-      return partyDate >= now && partyDate <= nextWeek
-    })
-
-    // Group by date
-    const eventsByDate = {}
-    acceptedBookings.forEach(booking => {
-      const partyDate = new Date(booking.parties.party_date)
-      const dateKey = partyDate.toLocaleDateString('en-GB', { 
-        month: 'long', 
-        day: 'numeric' 
-      })
-
-      if (!eventsByDate[dateKey]) {
-        eventsByDate[dateKey] = []
-      }
-
-      eventsByDate[dateKey].push({
-        name: booking.parties.party_name || `${booking.parties.child_name}'s Party`,
-        location: booking.parties.venue_location || 'Location TBD',
-        time: booking.parties.party_time || ''
-      })
-    })
-
-    // Convert to array format
-    const dates = []
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(now)
-      date.setDate(date.getDate() + i)
-      const dateKey = date.toLocaleDateString('en-GB', { 
-        month: 'long', 
-        day: 'numeric' 
-      })
-
-      dates.push({
-        date: dateKey,
-        events: eventsByDate[dateKey] || [],
-        free: !eventsByDate[dateKey] || eventsByDate[dateKey].length === 0
-      })
+    // Helper to check if supplier has responded
+    const hasSupplierResponded = (e) => {
+      // Supplier has responded if:
+      // 1. There's a supplier_response message, OR
+      // 2. It's accepted but NOT auto_accepted (manual acceptance)
+      return e.supplier_response || (e.status === 'accepted' && !e.auto_accepted)
     }
 
-    return dates
+    // Confirmed bookings = Supplier has manually accepted/confirmed
+    // - status === 'accepted' AND supplier has responded
+    const confirmedBookings = enquiries
+      .filter(e => e.status === 'accepted' && hasSupplierResponded(e))
+      .sort((a, b) => {
+        const dateA = a.parties?.party_date ? new Date(a.parties.party_date) : new Date(0)
+        const dateB = b.parties?.party_date ? new Date(b.parties.party_date) : new Date(0)
+        return dateA - dateB
+      })
+
+    // Pending enquiries = Awaiting supplier response
+    // - status === 'pending' OR 'viewed'
+    // - OR auto_accepted but supplier hasn't confirmed yet
+    const pendingEnquiries = enquiries
+      .filter(e => {
+        // Standard pending/viewed status
+        if (e.status === 'pending' || e.status === 'viewed') return true
+        // Auto-accepted but supplier hasn't responded yet
+        if (e.status === 'accepted' && e.auto_accepted && !e.supplier_response) return true
+        return false
+      })
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    return { confirmedBookings, pendingEnquiries }
   }, [enquiries])
 
   if (loading || enquiriesLoading) {
@@ -145,261 +234,132 @@ export default function SupplierDashboard() {
     )
   }
 
-  const name = supplierData?.owner?.name || supplierData?.owner?.firstName || "there"
+  const hasEnquiries = pendingEnquiries.length > 0
+  const hasBookings = confirmedBookings.length > 0
 
   return (
     <BusinessProvider>
-      <div className="min-h-screen bg-primary-50">
-        <div className="max-w-7xl mx-auto">
-          <EnquiryNotificationBanner />
-
-          {/* Success Banner - Profile Submitted */}
-          {showSuccessBanner && (
-            <div className="mx-3 sm:mx-4 lg:mx-6 mt-4 bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg overflow-hidden">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold text-lg mb-2">
-                      Profile Submitted Successfully!
-                    </h3>
-                    <p className="text-green-50 text-sm">
-                      Thank you for completing your profile. Our team will review your venue within 24 hours and you'll receive an email once it goes live.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowSuccessBanner(false)}
-                    className="flex-shrink-0 text-white hover:text-green-100 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+      <div className="min-h-screen bg-white">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+          {/* Enquiries/Bookings Toggle - Airbnb style */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex bg-gray-100 rounded-full p-1">
+              <button
+                onClick={() => setActiveTab("enquiries")}
+                className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
+                  activeTab === "enquiries"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Enquiries
+                {hasEnquiries && (
+                  <span className="bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                    {pendingEnquiries.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("bookings")}
+                className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
+                  activeTab === "bookings"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Bookings
+                {hasBookings && (
+                  <span className="bg-gray-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                    {confirmedBookings.length}
+                  </span>
+                )}
+              </button>
             </div>
+          </div>
+
+          {/* Enquiries Tab Content */}
+          {activeTab === "enquiries" && (
+            <>
+              {!hasEnquiries ? (
+                <div className="max-w-md mx-auto text-center py-12">
+                  <EmptyStateIllustration />
+                  <h2 className="mt-6 text-2xl font-semibold text-gray-900">
+                    No pending enquiries
+                  </h2>
+                  <p className="mt-2 text-gray-500">
+                    When customers send you enquiries, they'll appear here for you to respond to.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    {pendingEnquiries.length} enquir{pendingEnquiries.length === 1 ? 'y' : 'ies'} to respond to
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {pendingEnquiries.map((enquiry) => (
+                      <EnquiryCard key={enquiry.id} enquiry={enquiry} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Incomplete Onboarding Banner */}
+          {/* Bookings Tab Content */}
+          {activeTab === "bookings" && (
+            <>
+              {!hasBookings ? (
+                <div className="max-w-md mx-auto text-center py-12">
+                  <EmptyStateIllustration />
+                  <h2 className="mt-6 text-2xl font-semibold text-gray-900">
+                    No confirmed bookings yet
+                  </h2>
+                  <p className="mt-2 text-gray-500">
+                    {hasEnquiries
+                      ? `You have ${pendingEnquiries.length} enquir${pendingEnquiries.length === 1 ? 'y' : 'ies'} waiting for a response.`
+                      : "When you accept an enquiry, the booking will appear here."
+                    }
+                  </p>
+                  {hasEnquiries && (
+                    <Button
+                      onClick={() => setActiveTab("enquiries")}
+                      className="mt-6 bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-6"
+                    >
+                      View enquiries
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    {confirmedBookings.length} confirmed booking{confirmedBookings.length === 1 ? '' : 's'}
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {confirmedBookings.map((booking) => (
+                      <BookingCard key={booking.id} booking={booking} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Incomplete Profile Banner */}
           {!supplierData?.onboardingCompleted && !supplierData?.isComplete && (
-            <div className="mx-3 sm:mx-4 lg:mx-6 mt-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg overflow-hidden">
-              <div className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold text-lg mb-2">
-                      Complete Your Profile
-                    </h3>
-                    <p className="text-blue-50 text-sm">
-                      Finish setting up your profile to start receiving bookings. You're almost there!
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => window.location.href = '/suppliers/onboarding/new-supplier'}
-                    className="bg-white text-blue-600 hover:bg-blue-50 font-semibold shadow-md whitespace-nowrap"
-                  >
-                    Continue Setup
-                  </Button>
-                </div>
-              </div>
+            <div className="mt-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+              <h3 className="font-semibold text-lg mb-2">
+                Complete your profile
+              </h3>
+              <p className="text-blue-100 text-sm mb-4">
+                Finish setting up your profile to start receiving bookings.
+              </p>
+              <Link href="/suppliers/onboarding/new-supplier">
+                <Button className="bg-white text-blue-600 hover:bg-blue-50">
+                  Continue setup
+                </Button>
+              </Link>
             </div>
           )}
-
-          {/* Welcome Header */}
-          <div className="p-3 sm:p-4 lg:p-6">
-            <HeaderEnquiryBadge />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="space-y-2 sm:space-y-3">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
-                  Welcome back, {name}
-                </h1>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  See new requests, update your profile, and manage availability—all in one place
-                </p>
-              </div>
-              <Button
-                onClick={() => window.location.href = '/suppliers/onboarding/new-supplier'}
-                variant="outline"
-                className="bg-white hover:bg-gray-50 border-2 border-primary-400 text-primary-600 font-semibold whitespace-nowrap self-start sm:self-auto"
-              >
-                Edit Profile
-              </Button>
-            </div>
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-              {/* Enquiries Table */}
-              <div className="xl:col-span-2">
-                <Card className="shadow-sm">
-                  <CardContent className="p-0">
-                    <EnquiryOverviewSection />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Calendar Section */}
-              <div className="space-y-4">
-                <Card className="shadow-sm">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex justify-between items-center mb-4 sm:mb-6">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 touch-manipulation"
-                        onClick={() => {
-                          const date = new Date(currentMonth)
-                          date.setMonth(date.getMonth() - 1)
-                          setCurrentMonth(date.toLocaleDateString('en-GB', { 
-                            month: 'long', 
-                            year: 'numeric' 
-                          }))
-                        }}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <h2 className="font-semibold text-sm sm:text-base">{currentMonth}</h2>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 touch-manipulation"
-                        onClick={() => {
-                          const date = new Date(currentMonth)
-                          date.setMonth(date.getMonth() + 1)
-                          setCurrentMonth(date.toLocaleDateString('en-GB', { 
-                            month: 'long', 
-                            year: 'numeric' 
-                          }))
-                        }}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3 sm:space-y-4">
-                      <h3 className="font-medium text-sm sm:text-base text-gray-900 mb-3">
-                        Next 7 Days
-                      </h3>
-                      {upcomingEvents.map((day, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <h4 className="font-medium text-xs sm:text-sm text-gray-700">
-                            {day.date}
-                          </h4>
-                          {day.free ? (
-                            <div className="py-2 sm:py-3 text-center text-muted-foreground text-sm bg-gray-50 rounded-lg">
-                              Free
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {day.events.map((event, eventIdx) => (
-                                <div
-                                  key={eventIdx}
-                                  className="border-l-4 border-orange-500 pl-3 py-2 bg-orange-50 rounded-r-lg"
-                                >
-                                  <div className="font-medium text-xs sm:text-sm">
-                                    {event.name}
-                                    {event.time && (
-                                      <span className="text-muted-foreground ml-2">
-                                        {event.time}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1 break-words">
-                                    {event.location}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-              <Button
-                variant="outline"
-                className="h-10 sm:h-12 lg:h-14 bg-transparent text-xs sm:text-sm lg:text-base touch-manipulation"
-              >
-                <TrendingUp className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">View earnings</span>
-                <span className="sm:hidden">Earnings</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-10 sm:h-12 lg:h-14 bg-transparent text-xs sm:text-sm lg:text-base touch-manipulation"
-              >
-                <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Manage availability</span>
-                <span className="sm:hidden">Availability</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-10 sm:h-12 lg:h-14 bg-transparent text-xs sm:text-sm lg:text-base touch-manipulation"
-              >
-                <Settings className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Manage upsells</span>
-                <span className="sm:hidden">Upsells</span>
-              </Button>
-              <Button 
-                className="h-10 sm:h-12 lg:h-14 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white text-xs sm:text-sm lg:text-base touch-manipulation col-span-2 lg:col-span-1"
-              >
-                <Users className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Edit profile</span>
-                <span className="sm:hidden">Profile</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Quick Stats Cards */}
-          <div className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-              <Card className="shadow-sm">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary-600">
-                    {stats.newEnquiries}
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">New Enquiries</div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-sm">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
-                    £{stats.monthlyEarnings.toLocaleString()}
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">This Month</div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-sm">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">
-                    {stats.bookingsCount}
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Total Bookings</div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-sm">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-600">
-                    {stats.rating > 0 ? stats.rating.toFixed(1) : 'New'}
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Rating</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
         </div>
       </div>
     </BusinessProvider>

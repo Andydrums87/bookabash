@@ -270,7 +270,63 @@ const createNewBusiness = useCallback(async (businessData) => {
   }
 }, [businesses, loadBusinesses, switchBusiness]);
 
+// Delete a business
+const deleteBusiness = useCallback(async (businessId) => {
+  try {
+    console.log('🗑️ Deleting business:', businessId);
 
+    const { data: userResult, error: userErr } = await supabase.auth.getUser();
+    if (userErr) throw userErr;
+
+    const userId = userResult?.user?.id;
+    if (!userId) throw new Error("No logged-in user");
+
+    // Find the business to delete
+    const businessToDelete = businesses.find(b => b.id === businessId);
+    if (!businessToDelete) {
+      throw new Error("Business not found");
+    }
+
+    // Prevent deleting the primary business if there are themed businesses
+    if (businessToDelete.isPrimary) {
+      const themedBusinesses = businesses.filter(b => !b.isPrimary);
+      if (themedBusinesses.length > 0) {
+        throw new Error("Cannot delete primary business while themed businesses exist. Delete themed businesses first.");
+      }
+    }
+
+    // Delete from Supabase
+    const { error: deleteError } = await supabase
+      .from('suppliers')
+      .delete()
+      .eq('id', businessId)
+      .eq('auth_user_id', userId);
+
+    if (deleteError) throw deleteError;
+
+    console.log('✅ Business deleted successfully');
+
+    // Reload businesses
+    const updatedBusinesses = await loadBusinesses(false);
+
+    // If we deleted the current business, switch to another
+    if (currentBusiness?.id === businessId) {
+      const newCurrent = updatedBusinesses.find(b => b.isPrimary) || updatedBusinesses[0];
+      if (newCurrent) {
+        await switchBusiness(newCurrent.id);
+      } else {
+        setCurrentBusiness(null);
+        storeBusinessId(null);
+      }
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ Error deleting business:', error);
+    throw error;
+  }
+}, [businesses, currentBusiness, loadBusinesses, switchBusiness, storeBusinessId]);
 
 
 
@@ -319,15 +375,16 @@ const createNewBusiness = useCallback(async (businessData) => {
     loading,
     switching,
     initialized, // ADD: Expose initialized state
-    
+
     // Actions
     switchBusiness,
     createNewBusiness,
+    deleteBusiness,
     refreshBusinesses: () => loadBusinesses(false),
-    
+
     // Utilities
     getBusinessHierarchy: () => businessHierarchy,
-    
+
     // Business queries
     getPrimaryBusiness: () => businesses.find(b => b.isPrimary),
     getThemedBusinesses: () => businesses.filter(b => !b.isPrimary),
@@ -341,6 +398,7 @@ const createNewBusiness = useCallback(async (businessData) => {
     initialized,
     switchBusiness,
     createNewBusiness,
+    deleteBusiness,
     loadBusinesses,
     businessHierarchy
   ]);

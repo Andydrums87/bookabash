@@ -20,7 +20,8 @@ import {
   ChevronDown,
   ChevronUp,
   AlertCircle,
-  UserPlus
+  UserPlus,
+  CheckCircle
 } from "lucide-react"
 import EnhancedThemesSection from "../../dashboard/EnchancedThemesSection"
 import { Button } from "@/components/ui/button"
@@ -28,20 +29,47 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { SectionSave, useSectionSave } from '@/components/ui/SectionSave';
 import { useSectionManager } from '../../hooks/useSectionManager';
 
+// Section mapping for sidebar navigation
+const sectionMap = {
+  'about': 'aboutUs',
+  'basicInfo': 'basicInfo',
+  'ageGroups': 'ageGroups',
+  'performanceStyles': 'performanceStyles',
+  'themes': 'themes',
+  'equipment': 'equipment',
+  'personalBio': 'personalBio',
+  'addOns': 'addOns',
+}
+
+const sectionTitles = {
+  'about': 'About Your Service',
+  'basicInfo': 'Performance Info',
+  'ageGroups': 'Age Groups',
+  'performanceStyles': 'Performance Styles',
+  'themes': 'Themes',
+  'equipment': 'Equipment & Skills',
+  'personalBio': 'Meet the Entertainer',
+  'addOns': 'Add-on Services',
+}
+
 // Business-Aware Entertainer Service Details Form
-const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier, setSupplierData }) => {
+const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier, setSupplierData, selectedSection, onSectionChange }) => {
   // Use data passed from parent instead of calling useSupplier again
   const [loading, setLoading] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
+    aboutUs: true, // Start expanded
+    basicInfo: false,
     ageGroups: false,
     performanceStyles: false,
     themes: false,
+    equipment: false,
+    personalBio: false,
+    addOns: false,
   })
   const [details, setDetails] = useState({
     performerType: "",
@@ -84,6 +112,43 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       ...prev,
       [section]: !prev[section],
     }))
+  }
+
+  // Helper to get summary text for collapsed sections
+  const getSectionSummary = (section) => {
+    switch (section) {
+      case 'aboutUs':
+        const wordCount = details.aboutUs?.trim().split(/\s+/).filter(w => w).length || 0
+        return wordCount > 0 ? `${wordCount} words written` : 'Not started'
+      case 'basicInfo':
+        const hasRadius = details.travelRadius > 0
+        const hasHourRate = details.extraHourRate > 0
+        return hasRadius && hasHourRate ? '✓ Complete' : 'Needs attention'
+      case 'ageGroups':
+        const ageCount = details.ageGroups?.length || 0
+        return ageCount > 0 ? `${ageCount} age group${ageCount !== 1 ? 's' : ''} selected` : 'None selected'
+      case 'performanceStyles':
+        const styleCount = details.performanceStyle?.length || 0
+        return styleCount > 0 ? `${styleCount} style${styleCount !== 1 ? 's' : ''} selected` : 'None selected'
+      case 'themes':
+        const themeCount = details.themes?.length || 0
+        return themeCount > 0 ? `${themeCount} theme${themeCount !== 1 ? 's' : ''} selected` : 'None selected'
+      case 'equipment':
+        const hasEquip = details.equipment?.trim().length > 0
+        const hasSkills = details.specialSkills?.trim().length > 0
+        if (hasEquip && hasSkills) return '✓ Complete'
+        if (hasEquip || hasSkills) return 'Partially complete'
+        return 'Not started'
+      case 'personalBio':
+        const bioFields = ['yearsExperience', 'inspiration', 'favoriteEvent', 'dreamClient', 'personalStory']
+        const filledBio = bioFields.filter(f => details.personalBio?.[f]?.toString().trim()).length
+        return `${filledBio} of ${bioFields.length} fields complete`
+      case 'addOns':
+        const addonCount = details.addOnServices?.length || 0
+        return addonCount > 0 ? `${addonCount} add-on${addonCount !== 1 ? 's' : ''} configured` : 'None added'
+      default:
+        return ''
+    }
   }
 
   // Update form when business data changes from parent
@@ -507,355 +572,295 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     )
   }
 
-  return (
-    <div className="space-y-4 sm:space-y-8">
-      {/* About Us Section */}
-      <Card className="" id="about">
-        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-orange-50 to-orange-100">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+  // Determine which section to render based on selectedSection
+  const activeSection = sectionMap[selectedSection] || selectedSection
+
+  // About Us Section Content
+  const renderAboutUs = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">About Your Service</h2>
+        <p className="text-gray-600">Tell customers about your business and what makes you special (max 120 words)</p>
+      </div>
+
+      <div className="space-y-4">
+        <Label htmlFor="aboutUs" className="text-base font-medium text-gray-700">
+          Your Business Story *
+        </Label>
+        <div className="relative">
+          <Textarea
+            id="aboutUs"
+            value={details.aboutUs || ""}
+            onChange={(e) => {
+              const text = e.target.value
+              const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
+              if (words.length <= 120) {
+                handleFieldChange("aboutUs", e.target.value)
+              }
+            }}
+            placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
+            className="bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none min-h-[200px]"
+          />
+          <div className="absolute bottom-3 right-3 text-xs text-gray-500 bg-white px-2 py-1 rounded">
+            {(() => {
+              const text = details.aboutUs || ""
+              const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
+              return words.length
+            })()}/120 words
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          Share your story, highlight what makes you different, and mention any awards or recognition.
+        </p>
+      </div>
+
+      <SectionSave
+        sectionName="About Us"
+        hasChanges={aboutUsState.hasChanges}
+        onSave={handleAboutUsSave}
+        saving={aboutUsState.saving}
+        lastSaved={aboutUsState.lastSaved}
+        error={aboutUsState.error}
+      />
+    </div>
+  )
+
+  // Basic Info Section Content
+  const renderBasicInfo = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Performance Info</h2>
+        <p className="text-gray-600">Tell customers about your core entertainment offering and pricing</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="travelRadius" className="text-base font-medium text-gray-700">
+            How far will you travel? (miles) *
+          </Label>
+          <div className="relative">
+            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              id="travelRadius"
+              type="number"
+              min="1"
+              max="100"
+              value={details.travelRadius}
+              onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
+              className="h-12 pl-12 bg-white border-2 border-gray-200 rounded-xl"
+              placeholder="e.g., 25"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="setupTime" className="text-base font-medium text-gray-700">
+            Setup Time (minutes)
+          </Label>
+          <div className="relative">
+            <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              id="setupTime"
+              type="number"
+              min="0"
+              max="120"
+              value={details.setupTime}
+              onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
+              className="h-12 pl-12 bg-white border-2 border-gray-200 rounded-xl"
+              placeholder="e.g., 30"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="groupSizeMin" className="text-base font-medium text-gray-700">Minimum Group Size</Label>
+          <Input
+            id="groupSizeMin"
+            type="number"
+            min="1"
+            value={details.groupSizeMin}
+            onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl"
+            placeholder="e.g., 5"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="groupSizeMax" className="text-base font-medium text-gray-700">Maximum Group Size</Label>
+          <Input
+            id="groupSizeMax"
+            type="number"
+            min="1"
+            value={details.groupSizeMax}
+            onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl"
+            placeholder="e.g., 30"
+          />
+          <p className="text-xs text-gray-500">For a single entertainer</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="additionalEntertainerPrice" className="text-base font-medium text-gray-700">Additional Entertainer (£)</Label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
+            <Input
+              id="additionalEntertainerPrice"
+              type="number"
+              min="50"
+              max="500"
+              value={details.additionalEntertainerPrice || ''}
+              onChange={(e) => handleFieldChange("additionalEntertainerPrice", Number.parseInt(e.target.value))}
+              className="h-12 pl-10 bg-white border-2 border-gray-200 rounded-xl"
+              placeholder="150"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Duration Pricing */}
+      <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+        <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-orange-600" />
+          Party Duration Pricing *
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Standard Duration</Label>
+            <div className="h-12 px-4 bg-gray-100 border-2 border-gray-200 rounded-xl flex items-center text-gray-600">
+              2 hours (included in all packages)
             </div>
-            About Us
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Tell customers about your business and what makes you special (max 120 words)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="aboutUs" className="text-sm sm:text-base font-semibold text-gray-700">
-              Your Business Story *
-            </Label>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">Extra Hour Rate (£) *</Label>
             <div className="relative">
-            <Textarea
-  id="aboutUs"
-  value={details.aboutUs || ""}
-  onChange={(e) => {
-    const text = e.target.value
-    const words =
-      text.trim() === ""
-        ? []
-        : text
-            .trim()
-            .split(/\s+/)
-            .filter((word) => word.length > 0)
-    if (words.length <= 120) {
-      handleFieldChange("aboutUs", e.target.value)
-    }
-  }}
-  placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
-  className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-4 resize-none h-70 sm:h-40 md:h-48 lg:h-56"
-/>
-              <div className="absolute bottom-2 right-2 text-xs text-gray-500">
-                {(() => {
-                  const text = details.aboutUs || ""
-                  const words =
-                    text.trim() === ""
-                      ? []
-                      : text
-                          .trim()
-                          .split(/\s+/)
-                          .filter((word) => word.length > 0)
-                  return words.length
-                })()}/120 words
-              </div>
+              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
+              <Input
+                id="extraHourRate"
+                type="number"
+                min="10"
+                max="200"
+                value={details.extraHourRate || ''}
+                onChange={(e) => handleFieldChange("extraHourRate", Number.parseInt(e.target.value))}
+                className="h-12 pl-10 bg-white border-2 border-orange-200 rounded-xl"
+                placeholder="45"
+              />
             </div>
-            <p className="text-xs sm:text-sm mt-8 text-gray-600">
-              💡 <strong>Tip:</strong> Share your story, highlight what makes you different, and mention any awards or
-              recognition. Keep it friendly and engaging - no more than 2-3 paragraphs.
+          </div>
+        </div>
+        {!details.extraHourRate && (
+          <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+            <p className="text-sm text-red-700 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Please set your extra hour rate to complete your profile
             </p>
           </div>
-          <SectionSave
-            sectionName="About Us"
-            hasChanges={aboutUsState.hasChanges}
-            onSave={handleAboutUsSave}
-            saving={aboutUsState.saving}
-            lastSaved={aboutUsState.lastSaved}
-            error={aboutUsState.error}
-          />
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      {/* Basic Performance Info */}
-      <Card className="">
-        <CardHeader className="p-4 sm:p-8 bg-gradient-to-r from-[hsl(var(-primary-50))] to-[hsl(var(--primary-100))]">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            Basic Performance Info
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Tell customers about your core entertainment offering and pricing
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="travelRadius" className="text-sm sm:text-base font-semibold text-gray-700">
-                How far will you travel? (miles) *
-              </Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <Input
-                  id="travelRadius"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={details.travelRadius}
-                  onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
-                  className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                  placeholder="e.g., 25"
-                />
-              </div>
-            </div>
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="setupTime" className="text-sm sm:text-base font-semibold text-gray-700">
-                Setup Time (minutes)
-              </Label>
-              <div className="relative">
-                <Clock className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <Input
-                  id="setupTime"
-                  type="number"
-                  min="0"
-                  max="120"
-                  value={details.setupTime}
-                  onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
-                  className="h-10 sm:h-12 pl-10 sm:pl-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                  placeholder="e.g., 30"
-                />
-              </div>
-            </div>
-          </div>
+      <SectionSave
+        sectionName="Performance Info"
+        hasChanges={basicInfoState.hasChanges}
+        onSave={handleBasicInfoSave}
+        saving={basicInfoState.saving}
+        lastSaved={basicInfoState.lastSaved}
+        error={basicInfoState.error}
+      />
+    </div>
+  )
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="groupSizeMin" className="text-sm sm:text-base font-semibold text-gray-700">
-                Minimum Group Size
-              </Label>
-              <Input
-                id="groupSizeMin"
-                type="number"
-                min="1"
-                value={details.groupSizeMin}
-                onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
-                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                placeholder="e.g., 5"
-              />
-            </div>
+  // Age Groups Section Content
+  const renderAgeGroups = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Age Groups</h2>
+        <p className="text-gray-600">Select all age groups that would enjoy your performances</p>
+      </div>
 
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="groupSizeMax" className="text-sm sm:text-base font-semibold text-gray-700">
-                Maximum Group Size (Single Entertainer)
-              </Label>
-              <Input
-                id="groupSizeMax"
-                type="number"
-                min="1"
-                value={details.groupSizeMax}
-                onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
-                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                placeholder="e.g., 30"
-              />
-              <p className="text-xs text-gray-600">
-                If a party has more guests than this, additional entertainers will be required
-              </p>
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="additionalEntertainerPrice" className="text-sm sm:text-base font-semibold text-gray-700">
-                Additional Entertainer Price (£)
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
-                <Input
-                  id="additionalEntertainerPrice"
-                  type="number"
-                  min="50"
-                  max="500"
-                  value={details.additionalEntertainerPrice || ''}
-                  onChange={(e) => handleFieldChange("additionalEntertainerPrice", Number.parseInt(e.target.value))}
-                  className="h-10 sm:h-12 pl-8 sm:pl-10 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                  placeholder="150"
-                />
-              </div>
-              <p className="text-xs text-gray-600">
-                Price charged for each additional entertainer needed for larger groups
-              </p>
-            </div>
-          </div>
-
-          {/* Duration Pricing Section */}
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-200 rounded-xl p-6">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-600" />
-              Party Duration Pricing *
-            </h4>
-          
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Standard Duration</Label>
-                <div className="h-10 sm:h-12 px-3 sm:px-4 bg-gray-100 border-2 border-gray-200 rounded-xl flex items-center text-sm sm:text-base text-gray-600">
-                  2 hours (included in all packages)
-                </div>
-              </div>
-              
-              <div className="space-y-2" id="pricing">
-                <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">
-                  Extra Hour Rate (£) *
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
-                  <Input
-                    id="extraHourRate"
-                    type="number"
-                    min="10"
-                    max="200"
-                    value={details.extraHourRate || ''}
-                    onChange={(e) => handleFieldChange("extraHourRate", Number.parseInt(e.target.value))}
-                    className="h-10 sm:h-12 pl-8 sm:pl-10 bg-white border-2 border-orange-200 rounded-xl text-sm sm:text-base"
-                    placeholder="45"
-                    required
-                  />
-                </div>
-                <p className="text-xs text-gray-600">
-                  Typical range: £30-80 per hour
-                </p>
-              </div>
-            </div>
-            
-            {!details.extraHourRate && (
-              <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-                <p className="text-sm text-red-700 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <strong>Required:</strong> Please set your extra hour rate to complete your profile
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <SectionSave
-            sectionName="Basic Performance Info"
-            hasChanges={basicInfoState.hasChanges}
-            onSave={handleBasicInfoSave}
-            saving={basicInfoState.saving}
-            lastSaved={basicInfoState.lastSaved}
-            error={basicInfoState.error}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Age Groups - Mobile Optimized */}
-      <Card className="">
-        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-blue-50 to-blue-100">
-          <CardTitle
-            className="flex items-center justify-between text-lg sm:text-xl cursor-pointer"
-            onClick={() => toggleSection("ageGroups")}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              Age Groups You Cater For
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.ageGroups ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Select all age groups that would enjoy your performances
-          </CardDescription>
-        </CardHeader>
-        <CardContent className={`p-4 sm:p-8 space-y-6 ${!expandedSections.ageGroups ? "hidden sm:block" : ""}`}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {ageGroupOptions.map((age) => (
-              <div
-                key={age}
-                className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors"
-              >
-                <Checkbox
-                  id={`age-${age}`}
-                  checked={details.ageGroups.includes(age)}
-                  onCheckedChange={() => handleArrayToggle(details.ageGroups, age, "ageGroups")}
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                />
-                <Label htmlFor={`age-${age}`} className="text-sm sm:text-base font-medium cursor-pointer flex-1">
-                  {age}
-                </Label>
-              </div>
-            ))}
-          </div>
-          
-          <SectionSave
-            sectionName="Age Groups"
-            hasChanges={ageGroupsState.hasChanges}
-            onSave={handleAgeGroupsSave}
-            saving={ageGroupsState.saving}
-            lastSaved={ageGroupsState.lastSaved}
-            error={ageGroupsState.error}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Performance Styles - Mobile Optimized */}
-      <Card className="">
-        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-purple-50 to-purple-100">
-          <CardTitle
-            className="flex items-center justify-between text-lg sm:text-xl cursor-pointer"
-            onClick={() => toggleSection("performanceStyles")}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500 rounded-xl flex items-center justify-center">
-                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              Performance Styles
-            </div>
-            <div className="sm:hidden">
-              {expandedSections.performanceStyles ? (
-                <ChevronUp className="w-5 h-5" />
-              ) : (
-                <ChevronDown className="w-5 h-5" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {ageGroupOptions.map((age) => {
+          const isSelected = details.ageGroups.includes(age)
+          return (
+            <div
+              key={age}
+              onClick={() => handleArrayToggle(details.ageGroups, age, "ageGroups")}
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                isSelected
+                  ? "border-blue-300 bg-blue-50"
+                  : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <span className="text-sm font-medium text-gray-900">{age}</span>
+              {isSelected && (
+                <CheckCircle className="w-5 h-5 text-blue-600" />
               )}
             </div>
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">What types of entertainment do you offer?</CardDescription>
-        </CardHeader>
-        <CardContent className={`p-4 sm:p-8 space-y-6 ${!expandedSections.performanceStyles ? "hidden sm:block" : ""}`}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            {performanceStyles.map((style) => (
-              <div
-                key={style}
-                className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-purple-50 transition-colors"
-              >
-                <Checkbox
-                  id={`style-${style}`}
-                  checked={details.performanceStyle.includes(style)}
-                  onCheckedChange={() => handleArrayToggle(details.performanceStyle, style, "performanceStyle")}
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                />
-                <Label htmlFor={`style-${style}`} className="text-sm sm:text-base font-medium cursor-pointer flex-1">
-                  {style}
-                </Label>
-              </div>
-            ))}
-          </div>
-          
-          <SectionSave
-            sectionName="Performance Styles"
-            hasChanges={performanceStylesState.hasChanges}
-            onSave={handlePerformanceStylesSave}
-            saving={performanceStylesState.saving}
-            lastSaved={performanceStylesState.lastSaved}
-            error={performanceStylesState.error}
-          />
-        </CardContent>
-      </Card>
+          )
+        })}
+      </div>
 
-      {/* Themes */}
-      <EnhancedThemesSection 
-        details={details} 
+      <SectionSave
+        sectionName="Age Groups"
+        hasChanges={ageGroupsState.hasChanges}
+        onSave={handleAgeGroupsSave}
+        saving={ageGroupsState.saving}
+        lastSaved={ageGroupsState.lastSaved}
+        error={ageGroupsState.error}
+      />
+    </div>
+  )
+
+  // Performance Styles Section Content
+  const renderPerformanceStyles = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Performance Styles</h2>
+        <p className="text-gray-600">What types of entertainment do you offer?</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {performanceStyles.map((style) => {
+          const isSelected = details.performanceStyle.includes(style)
+          return (
+            <div
+              key={style}
+              onClick={() => handleArrayToggle(details.performanceStyle, style, "performanceStyle")}
+              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                isSelected
+                  ? "border-purple-300 bg-purple-50"
+                  : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <span className="text-sm font-medium text-gray-900">{style}</span>
+              {isSelected && (
+                <CheckCircle className="w-5 h-5 text-purple-600" />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <SectionSave
+        sectionName="Performance Styles"
+        hasChanges={performanceStylesState.hasChanges}
+        onSave={handlePerformanceStylesSave}
+        saving={performanceStylesState.saving}
+        lastSaved={performanceStylesState.lastSaved}
+        error={performanceStylesState.error}
+      />
+    </div>
+  )
+
+  // Themes Section Content
+  const renderThemes = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Themes</h2>
+        <p className="text-gray-600">Select party themes you can perform for</p>
+      </div>
+
+      <EnhancedThemesSection
+        details={details}
         setDetails={setDetails}
         onThemesChange={(themes) => {
           const newDetails = { ...details, themes };
@@ -865,291 +870,269 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
         }}
         onSave={handleThemesSave}
         sectionState={themesState}
+        isExpanded={true}
+        onToggle={() => {}}
+        hideHeader={true}
       />
+    </div>
+  )
 
-      {/* Equipment & Skills */}
-      <Card className="">
-        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-green-50 to-green-100">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-xl flex items-center justify-center">
-              <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            Equipment & Skills
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Tell customers about your equipment and special abilities
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="equipment" className="text-sm sm:text-base font-semibold text-gray-700">
-              Equipment & Props You Provide
-            </Label>
-            <Textarea
-              id="equipment"
-              value={details.equipment}
-              onChange={(e) => handleFieldChange("equipment", e.target.value)}
-              placeholder="e.g., Professional sound system, wireless microphone, balloon pump, face paints, magic props, costumes..."
-              rows={4}
-              className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-            />
-          </div>
+  // Equipment Section Content
+  const renderEquipment = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Equipment & Skills</h2>
+        <p className="text-gray-600">Tell customers about your equipment and special abilities</p>
+      </div>
 
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="specialSkills" className="text-sm sm:text-base font-semibold text-gray-700">
-              Special Skills & Qualifications
-            </Label>
-            <Textarea
-              id="specialSkills"
-              value={details.specialSkills}
-              onChange={(e) => handleFieldChange("specialSkills", e.target.value)}
-              placeholder="e.g., Advanced balloon modelling, stage magic certification, children's psychology degree, first aid trained..."
-              rows={4}
-              className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-            />
-          </div>
-          
-          <SectionSave
-            sectionName="Equipment & Skills"
-            hasChanges={equipmentState.hasChanges}
-            onSave={handleEquipmentSave}
-            saving={equipmentState.saving}
-            lastSaved={equipmentState.lastSaved}
-            error={equipmentState.error}
+      <div className="space-y-4">
+        <Label htmlFor="equipment" className="text-base font-medium text-gray-700">
+          Equipment & Props You Provide
+        </Label>
+        <Textarea
+          id="equipment"
+          value={details.equipment}
+          onChange={(e) => handleFieldChange("equipment", e.target.value)}
+          placeholder="e.g., Professional sound system, wireless microphone, balloon pump, face paints, magic props, costumes..."
+          rows={4}
+          className="bg-white border-2 border-gray-200 rounded-xl p-4 resize-none"
+        />
+      </div>
+
+      <div className="space-y-4">
+        <Label htmlFor="specialSkills" className="text-base font-medium text-gray-700">
+          Special Skills & Qualifications
+        </Label>
+        <Textarea
+          id="specialSkills"
+          value={details.specialSkills}
+          onChange={(e) => handleFieldChange("specialSkills", e.target.value)}
+          placeholder="e.g., Advanced balloon modelling, stage magic certification, children's psychology degree, first aid trained..."
+          rows={4}
+          className="bg-white border-2 border-gray-200 rounded-xl p-4 resize-none"
+        />
+      </div>
+
+      <SectionSave
+        sectionName="Equipment & Skills"
+        hasChanges={equipmentState.hasChanges}
+        onSave={handleEquipmentSave}
+        saving={equipmentState.saving}
+        lastSaved={equipmentState.lastSaved}
+        error={equipmentState.error}
+      />
+    </div>
+  )
+
+  // Personal Bio Section Content
+  const renderPersonalBio = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Meet the Entertainer</h2>
+        <p className="text-gray-600">Let customers get to know the amazing person behind the performance</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="yearsExperience" className="text-base font-medium text-gray-700">Years of experience *</Label>
+          <Input
+            id="yearsExperience"
+            type="number"
+            min="0"
+            max="50"
+            value={details.personalBio?.yearsExperience || ""}
+            onChange={(e) => handleNestedFieldChange("personalBio", "yearsExperience", e.target.value)}
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl"
+            placeholder="e.g., 5"
           />
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Meet the Entertainer - Personal Bio */}
-      <Card className="">
-        <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-indigo-50 to-indigo-100">
-          <CardTitle className="flex items-center gap-3 text-lg sm:text-xl">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
-              <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-            </div>
-            Meet the Entertainer
-          </CardTitle>
-          <CardDescription className="text-sm sm:text-base">
-            Let customers get to know the amazing person behind the performance
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-8 space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="yearsExperience" className="text-sm sm:text-base font-semibold text-gray-700">
-                Years of experience *
-              </Label>
-              <Input
-                id="yearsExperience"
-                type="number"
-                min="0"
-                max="50"
-                value={details.personalBio?.yearsExperience || ""}
-                onChange={(e) => handleNestedFieldChange("personalBio", "yearsExperience", e.target.value)}
-                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                placeholder="e.g., 5"
-              />
-            </div>
-
-            <div className="space-y-2 sm:space-y-3">
-              <Label htmlFor="inspiration" className="text-sm sm:text-base font-semibold text-gray-700">
-                What inspires you? *
-              </Label>
-              <Input
-                id="inspiration"
-                value={details.personalBio?.inspiration || ""}
-                onChange={(e) => handleNestedFieldChange("personalBio", "inspiration", e.target.value)}
-                className="h-10 sm:h-12 bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base"
-                placeholder="e.g., Seeing children's faces light up with wonder"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="favoriteEvent" className="text-sm sm:text-base font-semibold text-gray-700">
-              Describe your favorite event you've performed at
-            </Label>
-            <Textarea
-              id="favoriteEvent"
-              value={details.personalBio?.favoriteEvent || ""}
-              onChange={(e) => handleNestedFieldChange("personalBio", "favoriteEvent", e.target.value)}
-              placeholder="e.g., Corporate Event for Accenture at Chelsea FC - magic, business and football!"
-              rows={3}
-              className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-            />
-          </div>
-
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="dreamClient" className="text-sm sm:text-base font-semibold text-gray-700">
-              Dream celebrity client
-            </Label>
-            <Textarea
-              id="dreamClient"
-              value={details.personalBio?.dreamClient || ""}
-              onChange={(e) => handleNestedFieldChange("personalBio", "dreamClient", e.target.value)}
-              placeholder="e.g., It would be fun to amaze the very cool Keanu Reeves and hear him say, 'Whoa!'"
-              rows={2}
-              className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-            />
-          </div>
-
-          <div className="space-y-2 sm:space-y-3">
-            <Label htmlFor="personalStory" className="text-sm sm:text-base font-semibold text-gray-700">
-              Your personal story & what makes you special
-            </Label>
-            <Textarea
-              id="personalStory"
-              value={details.personalBio?.personalStory || ""}
-              onChange={(e) => handleNestedFieldChange("personalBio", "personalStory", e.target.value)}
-              placeholder="Share your journey into entertainment, what makes you unique, and why you love what you do..."
-              rows={5}
-              className="bg-white border-2 border-gray-200 rounded-xl text-sm sm:text-base p-3 sm:p-4 resize-none"
-            />
-          </div>
-          
-          <SectionSave
-            sectionName="Personal Bio"
-            hasChanges={personalBioState.hasChanges}
-            onSave={handlePersonalBioSave}
-            saving={personalBioState.saving}
-            lastSaved={personalBioState.lastSaved}
-            error={personalBioState.error}
+        <div className="space-y-2">
+          <Label htmlFor="inspiration" className="text-base font-medium text-gray-700">What inspires you? *</Label>
+          <Input
+            id="inspiration"
+            value={details.personalBio?.inspiration || ""}
+            onChange={(e) => handleNestedFieldChange("personalBio", "inspiration", e.target.value)}
+            className="h-12 bg-white border-2 border-gray-200 rounded-xl"
+            placeholder="e.g., Seeing children's faces light up with wonder"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Add-on Services Management */}
-      <Card className="">
-        <CardHeader className="py-8 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-              <Gift className="w-5 h-5 text-white" />
-            </div>
-            Add-on Services Management
-          </CardTitle>
-          <CardDescription className="text-base">
-            Create optional extras that customers can add to their bookings for additional revenue
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-8 space-y-8">
-          {/* Quick Templates */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Star className="w-5 h-5" />🌟 Quick Add Templates
-            </h4>
-            <p className="text-sm text-gray-600 mb-4">Popular add-ons you can add with one click</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {addonTemplates.map((template, index) => {
-                const categoryInfo = addonCategories.find((cat) => cat.value === template.category)
-                const alreadyExists = details.addOnServices.some((addon) => addon.name === template.name)
+      <div className="space-y-2">
+        <Label htmlFor="favoriteEvent" className="text-base font-medium text-gray-700">Describe your favorite event</Label>
+        <Textarea
+          id="favoriteEvent"
+          value={details.personalBio?.favoriteEvent || ""}
+          onChange={(e) => handleNestedFieldChange("personalBio", "favoriteEvent", e.target.value)}
+          placeholder="e.g., Corporate Event for Accenture at Chelsea FC - magic, business and football!"
+          rows={3}
+          className="bg-white border-2 border-gray-200 rounded-xl p-4 resize-none"
+        />
+      </div>
 
-                return (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                      alreadyExists
-                        ? "border-gray-200 bg-gray-50 opacity-50"
-                        : "border-gray-200 bg-white hover:border-[hsl(var(--primary-400))] hover:shadow-md cursor-pointer"
-                    }`}
-                    onClick={alreadyExists ? undefined : () => handleAddTemplate(template)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="font-semibold text-gray-900 text-sm">{template.name}</h5>
-                      <div className="text-primary-400 font-bold text-sm">£{template.price}</div>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-3">{template.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs px-2 py-1 bg-primary-400 text-white rounded-full">
-                        {categoryInfo?.emoji} {categoryInfo?.label}
-                      </span>
-                      {alreadyExists ? (
-                        <span className="text-xs text-gray-500">✓ Added</span>
-                      ) : (
-                        <PlusCircle className="w-4 h-4 text-primary-600" />
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="dreamClient" className="text-base font-medium text-gray-700">Dream celebrity client</Label>
+        <Textarea
+          id="dreamClient"
+          value={details.personalBio?.dreamClient || ""}
+          onChange={(e) => handleNestedFieldChange("personalBio", "dreamClient", e.target.value)}
+          placeholder="e.g., It would be fun to amaze the very cool Keanu Reeves and hear him say, 'Whoa!'"
+          rows={2}
+          className="bg-white border-2 border-gray-200 rounded-xl p-4 resize-none"
+        />
+      </div>
 
-          {/* Current Add-ons */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Gift className="w-5 h-5" />Your Add-on Services ({details.addOnServices.length})
-              </h4>
-              <Button
-                onClick={() => setIsAddingAddon(true)}
-                size="sm"
-                className="bg-primary-500 hover:bg-[hsl(var(--primary-600))] text-white"
+      <div className="space-y-2">
+        <Label htmlFor="personalStory" className="text-base font-medium text-gray-700">Your personal story</Label>
+        <Textarea
+          id="personalStory"
+          value={details.personalBio?.personalStory || ""}
+          onChange={(e) => handleNestedFieldChange("personalBio", "personalStory", e.target.value)}
+          placeholder="Share your journey into entertainment, what makes you unique, and why you love what you do..."
+          rows={5}
+          className="bg-white border-2 border-gray-200 rounded-xl p-4 resize-none"
+        />
+      </div>
+
+      <SectionSave
+        sectionName="Personal Bio"
+        hasChanges={personalBioState.hasChanges}
+        onSave={handlePersonalBioSave}
+        saving={personalBioState.saving}
+        lastSaved={personalBioState.lastSaved}
+        error={personalBioState.error}
+      />
+    </div>
+  )
+
+  // Add-ons Section Content
+  const renderAddOns = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Add-on Services</h2>
+        <p className="text-gray-600">Create optional extras that customers can add to their bookings</p>
+      </div>
+
+      {/* Quick Templates */}
+      <div>
+        <h4 className="font-semibold text-gray-900 mb-4">Quick Add Templates</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {addonTemplates.map((template, index) => {
+            const categoryInfo = addonCategories.find((cat) => cat.value === template.category)
+            const alreadyExists = details.addOnServices.some((addon) => addon.name === template.name)
+
+            return (
+              <div
+                key={index}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  alreadyExists
+                    ? "border-gray-200 bg-gray-50 opacity-50"
+                    : "border-gray-200 bg-white hover:border-primary-400 hover:shadow-md cursor-pointer"
+                }`}
+                onClick={alreadyExists ? undefined : () => handleAddTemplate(template)}
               >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Custom
-              </Button>
-            </div>
-
-            {details.addOnServices.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                <Gift className="mx-auto h-8 w-8 text-gray-400 mb-3" />
-                <h5 className="text-base font-medium text-gray-900 mb-2">No add-ons yet</h5>
-                <p className="text-gray-500 text-sm mb-4">Add some popular templates or create custom add-ons</p>
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-semibold text-gray-900 text-sm">{template.name}</h5>
+                  <div className="text-primary-600 font-bold text-sm">£{template.price}</div>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">{template.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs px-2 py-1 bg-primary-100 text-primary-700 rounded-full">
+                    {categoryInfo?.emoji} {categoryInfo?.label}
+                  </span>
+                  {alreadyExists ? (
+                    <span className="text-xs text-gray-500">Added</span>
+                  ) : (
+                    <PlusCircle className="w-4 h-4 text-primary-600" />
+                  )}
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {details.addOnServices.map((addon, index) => {
-                  const categoryInfo = addonCategories.find((cat) => cat.value === addon.category)
+            )
+          })}
+        </div>
+      </div>
 
-                  return (
-                    <div
-                      key={index}
-                      className="p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h5 className="font-semibold text-gray-900">{addon.name}</h5>
-                            <span className="font-bold text-primary-400">£{addon.price}</span>
-                          </div>
-                          {addon.description && <p className="text-gray-600 text-sm">{addon.description}</p>}
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditAddon(addon)}
-                            className="bg-transparent h-8 w-8 p-0"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteAddon(addon.id)}
-                            className="text-red-600 hover:text-red-700 bg-transparent h-8 w-8 p-0"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+      {/* Current Add-ons */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-semibold text-gray-900">Your Add-ons ({details.addOnServices.length})</h4>
+          <Button onClick={() => setIsAddingAddon(true)} size="sm" className="bg-primary-600 hover:bg-primary-700 text-white">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Custom
+          </Button>
+        </div>
+
+        {details.addOnServices.length === 0 ? (
+          <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-xl">
+            <Gift className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+            <p className="text-gray-500">No add-ons yet. Add some templates or create custom ones.</p>
           </div>
-          
-          <SectionSave
-            sectionName="Add-on Services"
-            hasChanges={addOnServicesState.hasChanges}
-            onSave={handleAddOnServicesSave}
-            saving={addOnServicesState.saving}
-            lastSaved={addOnServicesState.lastSaved}
-            error={addOnServicesState.error}
-          />
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="space-y-3">
+            {details.addOnServices.map((addon, index) => (
+              <div key={index} className="p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h5 className="font-semibold text-gray-900">{addon.name}</h5>
+                      <span className="font-bold text-primary-600">£{addon.price}</span>
+                    </div>
+                    {addon.description && <p className="text-gray-600 text-sm">{addon.description}</p>}
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <Button variant="outline" size="sm" onClick={() => handleEditAddon(addon)} className="h-8 w-8 p-0">
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDeleteAddon(addon.id)} className="text-red-600 hover:text-red-700 h-8 w-8 p-0">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <SectionSave
+        sectionName="Add-on Services"
+        hasChanges={addOnServicesState.hasChanges}
+        onSave={handleAddOnServicesSave}
+        saving={addOnServicesState.saving}
+        lastSaved={addOnServicesState.lastSaved}
+        error={addOnServicesState.error}
+      />
+    </div>
+  )
+
+  // Render the appropriate section based on selectedSection
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'aboutUs':
+        return renderAboutUs()
+      case 'basicInfo':
+        return renderBasicInfo()
+      case 'ageGroups':
+        return renderAgeGroups()
+      case 'performanceStyles':
+        return renderPerformanceStyles()
+      case 'themes':
+        return renderThemes()
+      case 'equipment':
+        return renderEquipment()
+      case 'personalBio':
+        return renderPersonalBio()
+      case 'addOns':
+        return renderAddOns()
+      default:
+        return renderAboutUs()
+    }
+  }
+
+  return (
+    <div className="max-w-3xl">
+      {renderSection()}
 
       {/* Add/Edit Add-on Modal */}
       {isAddingAddon && (
@@ -1169,21 +1152,17 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="addonName" className="text-sm font-medium">
-                    Service Name *
-                  </Label>
+                  <Label htmlFor="addonName" className="text-sm font-medium">Service Name *</Label>
                   <Input
                     id="addonName"
                     value={addonForm.name}
                     onChange={(e) => handleAddonFormChange("name", e.target.value)}
                     placeholder="e.g., Face Painting"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                    className="h-12 bg-white border-2 border-gray-200 rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="addonPrice" className="text-sm font-medium">
-                    Price (£) *
-                  </Label>
+                  <Label htmlFor="addonPrice" className="text-sm font-medium">Price (£) *</Label>
                   <Input
                     id="addonPrice"
                     type="number"
@@ -1191,7 +1170,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
                     value={addonForm.price}
                     onChange={(e) => handleAddonFormChange("price", e.target.value)}
                     placeholder="30"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                    className="h-12 bg-white border-2 border-gray-200 rounded-xl"
                   />
                 </div>
               </div>
@@ -1204,7 +1183,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
                       key={category.value}
                       className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
                         addonForm.category === category.value
-                          ? "border-[hsl(var(--primary-200))] bg-primary-50"
+                          ? "border-primary-300 bg-primary-50"
                           : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                       onClick={() => handleAddonFormChange("category", category.value)}
@@ -1220,25 +1199,21 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="addonDescription" className="text-sm font-medium">
-                  Description
-                </Label>
+                <Label htmlFor="addonDescription" className="text-sm font-medium">Description</Label>
                 <Textarea
                   id="addonDescription"
                   value={addonForm.description}
                   onChange={(e) => handleAddonFormChange("description", e.target.value)}
-                  placeholder="Describe what this add-on includes and why customers would want it..."
+                  placeholder="Describe what this add-on includes..."
                   rows={3}
-                  className="bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none"
+                  className="bg-white border-2 border-gray-200 rounded-xl p-4 resize-none"
                 />
               </div>
             </div>
 
             <div className="p-6 border-t border-gray-200 flex gap-3">
-              <Button variant="outline" onClick={resetAddonForm} className="flex-1 bg-transparent">
-                Cancel
-              </Button>
-              <Button onClick={handleAddAddon} className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-600))]">
+              <Button variant="outline" onClick={resetAddonForm} className="flex-1">Cancel</Button>
+              <Button onClick={handleAddAddon} className="flex-1 bg-primary-600 hover:bg-primary-700">
                 {editingAddon ? "Update Add-on" : "Create Add-on"}
               </Button>
             </div>

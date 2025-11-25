@@ -287,10 +287,10 @@ const PortfolioGalleryTabContent = () => {
   const currentSupplier = logoSource?.data || supplierData
 
   // Auto-save function that handles all gallery updates
+  // First image in portfolioImages is automatically used as cover photo
   const autoSaveGallery = async (
     updatedImages = portfolioImages,
     updatedVideos = portfolioVideos,
-    updatedCover = coverPhoto,
   ) => {
     if (!updateProfile || !supplierData || !supplier) {
       console.warn("Required functions or data not available for auto-save")
@@ -301,11 +301,14 @@ const PortfolioGalleryTabContent = () => {
     try {
       console.log("Auto-saving portfolio for business:", currentBusiness?.name)
 
+      // Use first image as cover photo automatically
+      const firstImageUrl = updatedImages.length > 0 ? updatedImages[0].src : null
+
       const updatedSupplierData = {
         ...supplierData,
         portfolioImages: updatedImages,
         portfolioVideos: updatedVideos,
-        coverPhoto: updatedCover,
+        coverPhoto: firstImageUrl,
       }
 
       const result = await updateProfile(updatedSupplierData, null, supplier.id)
@@ -318,7 +321,7 @@ const PortfolioGalleryTabContent = () => {
             ...prev,
             portfolioImages: updatedImages,
             portfolioVideos: updatedVideos,
-            coverPhoto: updatedCover,
+            coverPhoto: firstImageUrl,
           }))
         }
 
@@ -400,8 +403,8 @@ const PortfolioGalleryTabContent = () => {
     setPortfolioImages(newImages)
     setDraggedImage(null)
 
-    // Auto-save the reordered images
-    await autoSaveGallery(newImages, portfolioVideos, coverPhoto)
+    // Auto-save the reordered images (first image becomes cover photo)
+    await autoSaveGallery(newImages, portfolioVideos)
   }
 
   // Logo upload - already auto-saves, keep as is
@@ -570,8 +573,8 @@ const PortfolioGalleryTabContent = () => {
       const updatedImages = [...portfolioImages, ...newImages]
       setPortfolioImages(updatedImages)
 
-      // Auto-save the new images
-      await autoSaveGallery(updatedImages, portfolioVideos, coverPhoto)
+      // Auto-save the new images (first image becomes cover photo)
+      await autoSaveGallery(updatedImages, portfolioVideos)
     } catch (error) {
       console.error("Upload failed:", error)
       alert(`Failed to upload image: ${error.message}`)
@@ -589,8 +592,8 @@ const PortfolioGalleryTabContent = () => {
       const updatedImages = portfolioImages.filter((img) => img.id !== imageId)
       setPortfolioImages(updatedImages)
 
-      // Auto-save after deletion
-      await autoSaveGallery(updatedImages, portfolioVideos, coverPhoto)
+      // Auto-save after deletion (first remaining image becomes cover photo)
+      await autoSaveGallery(updatedImages, portfolioVideos)
     }
   }
 
@@ -601,7 +604,7 @@ const PortfolioGalleryTabContent = () => {
     setEditingImage(null)
 
     // Auto-save the updated image
-    await autoSaveGallery(updatedImages, portfolioVideos, coverPhoto)
+    await autoSaveGallery(updatedImages, portfolioVideos)
   }
 
   // Add video with auto-save
@@ -625,7 +628,7 @@ const PortfolioGalleryTabContent = () => {
     setNewVideoUrl("")
 
     // Auto-save the new video
-    await autoSaveGallery(portfolioImages, updatedVideos, coverPhoto)
+    await autoSaveGallery(portfolioImages, updatedVideos)
   }
 
   // Delete video with auto-save
@@ -634,7 +637,7 @@ const PortfolioGalleryTabContent = () => {
     setPortfolioVideos(updatedVideos)
 
     // Auto-save after deletion
-    await autoSaveGallery(portfolioImages, updatedVideos, coverPhoto)
+    await autoSaveGallery(portfolioImages, updatedVideos)
   }
 
   // Update video with debounced auto-save
@@ -643,7 +646,7 @@ const PortfolioGalleryTabContent = () => {
     setPortfolioVideos(updatedVideos)
 
     // Auto-save the updated video (could add debouncing here for better UX)
-    await autoSaveGallery(portfolioImages, updatedVideos, coverPhoto)
+    await autoSaveGallery(portfolioImages, updatedVideos)
   }
 
   if (loading) {
@@ -651,20 +654,8 @@ const PortfolioGalleryTabContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-primary-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Success Alert */}
-        {saveSuccess && (
-          <div className="p-4 sm:p-6">
-            <Alert className="border-green-200 bg-green-50 shadow-lg animate-in slide-in-from-top-2 duration-300">
-              <Check className="h-5 w-5 text-green-600" />
-              <AlertDescription className="text-green-800 font-medium">
-                Saved automatically! Your changes are now visible to customers.
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
+    <div className="min-h-screen bg-white">
+      <div className="w-full">
         {/* Auto-saving indicator */}
         {autoSaving && (
           <div className="fixed top-4 right-4 z-50">
@@ -675,398 +666,214 @@ const PortfolioGalleryTabContent = () => {
           </div>
         )}
 
-        {/* Header */}
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">Upload Media</h2>
-            <p className="text-sm sm:text-base text-gray-600">
-              Upload Images and Videos to make your profile stand out! Changes save automatically.
-            </p>
+        {/* All Photos Header - Airbnb Style */}
+        <div className="px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">All photos</h2>
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="photo-upload-header"
+                className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors ${
+                  uploadingImage ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {uploadingImage ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>Add photos</>
+                )}
+                <input
+                  id="photo-upload-header"
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                />
+              </label>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="p-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+              >
+                <ImagePlus className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Logo Section - Clean and Balanced */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6 bg-primary-400 rounded-t-lg">
-              <div className="flex flex-col gap-3">
-                <CardTitle className="text-xl sm:text-3xl text-white font-black">Business Logo</CardTitle>
-                <CardDescription className="text-sm sm:text-base text-white">
-                  Upload your business logo. This will be displayed as your profile avatar.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6">
-              <div className="space-y-6">
-                {/* Logo Display and Actions - Centered layout */}
-                <div className="flex flex-col items-center space-y-6">
-                  {/* Logo Display */}
-                  <div className="relative w-48 h-48 sm:w-56 sm:h-56">
-                    <Avatar
-                      key={`avatar-${logoTimestamp}`}
-                      className="w-full h-full border-4 border-gray-200 shadow-lg"
-                    >
-                      <AvatarImage
-                        src={logoUrl ? `${logoUrl}?v=${logoTimestamp}` : "/placeholder.png"}
-                        alt="Business Logo"
-                        className="object-cover"
-                      />
-                      <AvatarFallback className="w-full h-full text-gray-400 bg-gray-50 flex items-center justify-center">
-                        <div className="text-center">
-                          <User className="w-16 h-16 mx-auto mb-3 text-gray-300" />
-                          <p className="text-lg font-medium text-gray-500">No Logo</p>
-                          <p className="text-sm text-gray-400">Upload your logo</p>
-                        </div>
-                      </AvatarFallback>
-                    </Avatar>
+        {/* Photo Grid - Airbnb Style */}
+        <div className="px-6 lg:px-8 pb-8">
 
-                    {/* Upload indicator */}
-                    {uploadingLogo && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
-                        <div className="text-center text-white">
-                          <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
-                          <p className="text-sm font-medium">Uploading...</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons - Centered below logo */}
-                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-                    <Button
-                      size="default"
-                      disabled={uploadingLogo}
-                      onClick={() => logoInputRef.current?.click()}
-                      className="flex-1"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {logoUrl ? "Change Logo" : "Upload Logo"}
-                    </Button>
-
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      disabled={uploadingLogo}
+          {portfolioImages.length === 0 ? (
+            /* Empty State */
+            <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-2xl">
+              <ImagePlus className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No photos yet</h3>
+              <p className="text-gray-500 mb-6">Add photos to showcase your services</p>
+              <label htmlFor="photo-upload-empty" className="cursor-pointer">
+                <Button className="rounded-lg">
+                  <ImagePlus className="mr-2 h-4 w-4" />
+                  Add your first photo
+                </Button>
+                <input
+                  id="photo-upload-empty"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                />
+              </label>
+            </div>
+          ) : (
+            /* Photo Grid - Airbnb Style */
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {portfolioImages.map((img, index) => (
+                <div
+                  key={img.id}
+                  className="relative group cursor-move"
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, img.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, img.id)}
+                >
+                  {/* Photo */}
+                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100">
+                    <img
+                      src={img.src || "/placeholder.svg"}
+                      alt={img.alt}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                  </div>
 
-                    {logoUrl && (
-                      <Button
-                        variant="outline"
-                        size="default"
-                        onClick={handleDeleteLogo}
-                        className="flex-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50 bg-transparent"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Remove
-                      </Button>
-                    )}
+                  {/* Cover Photo Badge - Only on first image */}
+                  {index === 0 && (
+                    <div className="absolute top-3 left-3">
+                      <span className="inline-flex items-center px-3 py-1.5 bg-white rounded-full text-sm font-medium text-gray-900 shadow-sm">
+                        Cover photo
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Delete Button - Shows on hover */}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDeleteImage(img.id)
+                      }}
+                      className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors"
+                      title="Delete photo"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-600" />
+                    </button>
                   </div>
                 </div>
-
-                {/* Guidelines - Full width below logo and actions */}
-                <div className="w-full">
-                  <Collapsible open={logoTipsOpen} onOpenChange={setLogoTipsOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-900"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Info className="h-5 w-5 text-blue-600" />
-                          <span className="font-semibold">Logo Guidelines</span>
-                        </div>
-                        {logoTipsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-3">
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                        <ul className="space-y-3 text-sm text-blue-800">
-                          <li className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>
-                              Use a <strong>square aspect ratio (1:1)</strong> for best results
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>
-                              Minimum size: <strong>400×400 pixels</strong>
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>
-                              PNG or JPG format with <strong>transparent background</strong> preferred
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>
-                              Keep it <strong>simple and recognizable</strong> at small sizes
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>Avoid text-heavy logos as they may be hard to read</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Photo Gallery Section */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6 bg-primary-400 rounded-t-lg">
-              <div className="flex flex-col gap-3">
-                <CardTitle className="text-xl sm:text-3xl text-white font-black">Photo Gallery</CardTitle>
-                <CardDescription className="text-sm sm:text-base text-white">
-                  Upload high-quality photos of your services. Drag and drop to reorder them. Changes save
-                  automatically.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              {portfolioImages.length === 0 ? (
-                /* Empty State - Only shown when no photos */
-                <div className="text-center py-8 sm:py-12 border-2 border-dashed border-gray-200 rounded-lg">
-                  <ImagePlus className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mb-4" />
-                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No photos yet</h3>
-                  <p className="text-sm sm:text-base text-gray-500 mb-4 px-4">
-                    Upload photos to showcase your services to potential customers
-                  </p>
-                  <label htmlFor="photo-upload-empty" className="cursor-pointer">
-                    <Button asChild>
-                      <span>
-                        <ImagePlus className="mr-2 h-4 w-4" />
-                        Upload Your First Photo
-                      </span>
-                    </Button>
-                    <input
-                      id="photo-upload-empty"
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                </div>
-              ) : (
-                /* Photo Grid - Only shown when photos exist */
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 mb-6">
-                  {portfolioImages.map((img, index) => (
-                    <div
-                      key={img.id}
-                      className="relative group cursor-move"
-                      draggable={true}
-                      onDragStart={(e) => handleDragStart(e, img.id)}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, img.id)}
-                    >
-                      <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-transparent hover:border-blue-300 transition-colors">
-                        <img src={img.src || "/placeholder.svg"} alt={img.alt} className="w-full h-full object-cover" />
-                      </div>
-
-                      {/* Drag handle */}
-                      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-white bg-opacity-90 rounded p-1">
-                          <GripVertical className="w-4 h-4 text-gray-600" />
-                        </div>
-                      </div>
-
-                      {/* Control Buttons */}
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setEditingImage(img)
-                          }}
-                          className="bg-blue-500 hover:bg-blue-600 text-white p-1.5 sm:p-1 rounded text-xs touch-manipulation"
-                          title="Edit image details"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleDeleteImage(img.id)
-                          }}
-                          className="bg-red-500 hover:bg-red-600 text-white p-1.5 sm:p-1 rounded text-xs touch-manipulation"
-                          title="Delete image"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-
-                      {/* Image Info */}
-                      <div className="absolute bottom-2 left-2 right-2 z-10">
-                        <div className="bg-black bg-opacity-70 text-white text-xs rounded px-2 py-1">
-                          {index === 0 && (
-                            <div className="flex items-center gap-1 mb-1">
-                              <span className="text-yellow-400">⭐</span>
-                              <span className="font-medium">Main Photo</span>
-                            </div>
-                          )}
-                          <div className="truncate">{img.title || `Image ${index + 1}`}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Add Photo Button - Only shown when photos exist */}
-                  <div className="aspect-square">
-                    <label
-                      htmlFor="photo-upload"
-                      className={`flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg w-full h-full cursor-pointer hover:border-blue-500 transition-colors touch-manipulation ${
-                        uploadingImage ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      {uploadingImage ? (
-                        <>
-                          <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-gray-400 mb-2" />
-                          <span className="text-xs sm:text-sm text-gray-500">Uploading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <ImagePlus className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mb-2" />
-                          <span className="text-xs sm:text-sm text-gray-500 text-center px-2">Add Photo</span>
-                        </>
-                      )}
-                      <input
-                        id="photo-upload"
-                        ref={fileInputRef}
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        disabled={uploadingImage}
-                      />
-                    </label>
-                  </div>
+        {/* Business Logo Section - Clean Style */}
+        <div className="px-6 lg:px-8 py-8 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">Business logo</h2>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="relative w-20 h-20 flex-shrink-0">
+              <Avatar
+                key={`avatar-${logoTimestamp}`}
+                className="w-full h-full border-2 border-gray-200"
+              >
+                <AvatarImage
+                  src={logoUrl ? `${logoUrl}?v=${logoTimestamp}` : "/placeholder.png"}
+                  alt="Business Logo"
+                  className="object-cover"
+                />
+                <AvatarFallback className="w-full h-full text-gray-400 bg-gray-50 flex items-center justify-center">
+                  <User className="w-8 h-8 text-gray-300" />
+                </AvatarFallback>
+              </Avatar>
+              {uploadingLogo && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
                 </div>
               )}
-
-              {/* Enhanced Tips - Made collapsible to save space */}
-              <div className="mt-6">
-                <Collapsible open={photoTipsOpen} onOpenChange={setPhotoTipsOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-900"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Camera className="h-5 w-5 text-blue-600" />
-                        <span className="font-semibold">Photo Tips</span>
-                      </div>
-                      {photoTipsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <ul className="text-blue-700 space-y-2 text-xs sm:text-sm">
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          <span>Upload high-quality images (1200x800px or larger)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          <span>Show your services in action with happy customers</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          <span>First image will be your main photo - make it count!</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          <span>Drag and drop images to change their order</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          <span>Include setup photos, action shots, and results</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-      {/* Video Links Section */}
-<div className="p-4 sm:p-6 pt-0">
-  <Card className="shadow-sm">
-    <CardHeader className="p-4 sm:p-6 bg-primary-400 rounded-t-lg">
-      <CardTitle className="text-xl sm:text-3xl text-white font-black">Video Gallery</CardTitle>
-      <CardDescription className="text-sm sm:text-base text-white">
-        Add YouTube or Vimeo videos showcasing your services. Click thumbnails to play videos inline. Changes save automatically.
-      </CardDescription>
-    </CardHeader>
-    <CardContent className="p-4 sm:p-6">
-      {portfolioVideos.length === 0 ? (
-        <div className="text-center py-8 sm:py-12 border-2 border-dashed border-gray-200 rounded-lg">
-          <Video className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mb-4" />
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No videos yet</h3>
-          <p className="text-sm sm:text-base text-gray-500 mb-4 px-4">
-            Add YouTube or Vimeo videos to showcase your services in action
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          {portfolioVideos.map((video) => (
-            <VideoEmbed
-              key={video.id}
-              video={video}
-              onUpdate={(updates) => handleUpdateVideo(video.id, updates)}
-              onDelete={() => handleDeleteVideo(video.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="space-y-4 pt-4 border-t border-gray-200">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Add video link (YouTube or Vimeo)"
-              value={newVideoUrl}
-              onChange={(e) => setNewVideoUrl(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
-              className="w-full"
-            />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+                className="px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                {logoUrl ? "Change logo" : "Upload logo"}
+              </button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploadingLogo}
+              />
+              {logoUrl && (
+                <button
+                  onClick={handleDeleteLogo}
+                  className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleAddVideo}
-            disabled={!newVideoUrl.trim()}
-            className="w-full sm:w-auto bg-transparent"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Video
-          </Button>
         </div>
-        
-        <div className="text-xs text-gray-500">
-          <p>Supported formats: YouTube (youtube.com, youtu.be) and Vimeo (vimeo.com)</p>
+
+        {/* Video Links Section - Clean Style */}
+        <div className="px-6 lg:px-8 py-8 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900">Videos</h2>
+          </div>
+
+          {portfolioVideos.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {portfolioVideos.map((video) => (
+                <VideoEmbed
+                  key={video.id}
+                  video={video}
+                  onUpdate={(updates) => handleUpdateVideo(video.id, updates)}
+                  onDelete={() => handleDeleteVideo(video.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                placeholder="Paste YouTube or Vimeo link..."
+                value={newVideoUrl}
+                onChange={(e) => setNewVideoUrl(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
+                className="w-full rounded-full px-4"
+              />
+            </div>
+            <button
+              onClick={handleAddVideo}
+              disabled={!newVideoUrl.trim()}
+              className="px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add video
+            </button>
+          </div>
         </div>
-      </div>
-    </CardContent>
-  </Card>
-</div>
 
         {/* Image Edit Modal */}
         {editingImage && (

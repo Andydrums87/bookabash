@@ -1,9 +1,26 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import ServiceSpecificDetails from "./components/EntertainerServiceDetails"
 import ServiceDetailsRouter from "../ServiceDetailsRouter"
+
+// Dynamic imports for photos, packages, and verification
+const MediaPageContent = dynamic(
+  () => import("@/app/suppliers/media/page"),
+  { ssr: false, loading: () => <div className="p-6 text-gray-500">Loading photos...</div> }
+)
+
+const PackagesPageContent = dynamic(
+  () => import("@/app/suppliers/packages/page"),
+  { ssr: false, loading: () => <div className="p-6 text-gray-500">Loading packages...</div> }
+)
+
+const VerificationPageContent = dynamic(
+  () => import("@/app/suppliers/verification/page"),
+  { ssr: false, loading: () => <div className="p-6 text-gray-500">Loading verification...</div> }
+)
 import {
   AlertCircle,
   Eye,
@@ -17,7 +34,20 @@ import {
   Loader2,
   Badge,
   Info,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  DollarSign,
+  Users,
+  Ban,
+  Settings,
+  Building2,
+  FileText,
+  Camera,
+  Package,
+  Shield,
+  X
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -389,6 +419,8 @@ export default function SupplierProfilePage() {
   const [saveError, setSaveError] = useState("")
   const [packages, setPackages] = useState(initialPackages)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [selectedSection, setSelectedSection] = useState('photos');
+const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 const [websiteUrl, setWebsiteUrl] = useState('');
 const [isAnalyzing, setIsAnalyzing] = useState(false);
 const [analysisComplete, setAnalysisComplete] = useState(false);
@@ -631,198 +663,214 @@ if (loading) {
   }
 
   const isNewSupplier = supplierData && !supplierData.isComplete
+  const isVenue = supplierData?.business_type === 'venues' || supplierData?.serviceType === 'venues'
+
+  // Sidebar sections based on service type
+  const venueSections = [
+    { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'about', label: 'About your venue', icon: FileText },
+    { id: 'address', label: 'Venue address', icon: MapPin },
+    { id: 'type', label: 'Venue type', icon: Building2 },
+    { id: 'capacity', label: 'Capacity', icon: Users },
+    { id: 'pricing', label: 'Pricing', icon: DollarSign },
+    { id: 'packages', label: 'Packages', icon: Package },
+    { id: 'addons', label: 'Add-on services', icon: Settings },
+    { id: 'restricted', label: 'Items not permitted', icon: Ban },
+    { id: 'rules', label: 'House rules', icon: FileText },
+    { id: 'verification', label: 'Verification', icon: Shield },
+  ]
+
+  const entertainerSections = [
+    { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'about', label: 'About your service', icon: FileText },
+    { id: 'basicInfo', label: 'Performance info', icon: Users },
+    { id: 'ageGroups', label: 'Age groups', icon: Users },
+    { id: 'performanceStyles', label: 'Performance styles', icon: Settings },
+    { id: 'themes', label: 'Themes', icon: Sparkles },
+    { id: 'equipment', label: 'Equipment & skills', icon: Settings },
+    { id: 'personalBio', label: 'Meet the entertainer', icon: Users },
+    { id: 'addOns', label: 'Add-on services', icon: Package },
+    { id: 'packages', label: 'Packages', icon: Package },
+    { id: 'verification', label: 'Verification', icon: Shield },
+  ]
+
+  const sections = isVenue ? venueSections : entertainerSections
 
   return (
-    <div className="min-h-screen bg-primary-50 ">
+    <div className="min-h-screen bg-white">
+      {/* Success/Error alerts - Fixed at top */}
+      {(saveSuccess || saveError) && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+          {saveSuccess && (
+            <Alert className="border-green-200 bg-green-50 shadow-lg">
+              <Check className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800 text-sm">
+                Profile updated successfully!
+              </AlertDescription>
+            </Alert>
+          )}
+          {saveError && (
+            <Alert className="border-red-200 bg-red-50 shadow-lg">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800 text-sm">{saveError}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
 
-    
-      <div className="max-w-7xl mx-auto">
-        {/* Header with status - Mobile Optimized */}
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col gap-4 lg:gap-6">
-            
-           
-{/* Add debug modal here */}
-
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-              <div className="flex-1 space-y-3 sm:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                  <h1 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">
-                    {isNewSupplier ? "Complete Your Profile" : "Build Trust With Parents"}
-                  </h1>
-                  {supplierData && (
-                    <Badge variant={supplierData.isComplete ? "default" : "secondary"} className="text-xs w-fit">
-                      {supplierData.isComplete ? "Live" : "Draft"}
-                    </Badge>
-                  )}
+      {/* Mobile Section List - visible on mobile only */}
+      <div className="lg:hidden">
+        <div className="divide-y divide-gray-100">
+          {sections.map((section) => {
+            const Icon = section.icon
+            return (
+              <button
+                key={section.id}
+                onClick={() => {
+                  setSelectedSection(section.id)
+                  setMobileSheetOpen(true)
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className="w-5 h-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">{section.label}</span>
                 </div>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
-                {/* <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                  {isNewSupplier
-                    ? "Welcome! Complete your profile to go live on the marketplace and start receiving bookings."
-                    : "Keep your public information and service details up to date."}
-                </p> */}
+      {/* Mobile Bottom Sheet */}
+      {mobileSheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => setMobileSheetOpen(false)}
+          />
 
-                {/* Welcome message for new suppliers */}
-                {/* {isNewSupplier && (
-                  <Alert className="border-blue-200 bg-blue-50">
-                    <CheckCircle className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-800 text-sm">
-                      <strong>Welcome to PartySnap!</strong> Your account has been created. Add some details and service
-                      packages below, then click "Save Changes" to go live on the marketplace.
-                    </AlertDescription>
-                  </Alert>
-                )} */}
+          {/* Sheet */}
+          <div className="absolute inset-x-0 bottom-0 top-8 bg-white rounded-t-2xl overflow-hidden flex flex-col animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <button
+                onClick={() => setMobileSheetOpen(false)}
+                className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+              <h2 className="font-semibold text-gray-900">
+                {sections.find(s => s.id === selectedSection)?.label || 'Details'}
+              </h2>
+              <div className="w-9" /> {/* Spacer for centering */}
+            </div>
 
-                {/* Success/Error alerts */}
-                {saveSuccess && (
-                  <Alert className="border-green-200 bg-green-50">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800 text-sm">
-                      🎉 Profile updated successfully! Your changes are now live on the marketplace.
-                      {supplierData?.isComplete && (
-                        <span className="block mt-2">
-                          Your profile is complete and customers can now find and book you.
-                        </span>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                )}
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {selectedSection === 'photos' ? (
+                <MediaPageContent />
+              ) : selectedSection === 'packages' ? (
+                <div className="p-4">
+                  <PackagesPageContent />
+                </div>
+              ) : selectedSection === 'verification' ? (
+                <div className="p-4">
+                  <VerificationPageContent />
+                </div>
+              ) : (
+                <div className="p-4">
+                  <ServiceDetailsRouter
+                    serviceType={supplierData?.business_type || supplierData?.serviceType}
+                    serviceDetails={supplierData?.serviceDetails || {}}
+                    supplierData={supplierData}
+                    currentBusiness={currentBusiness}
+                    onUpdate={handleServiceDetailsUpdate}
+                    saving={saving}
+                    setSupplierData={setSupplierData}
+                    updateProfile={updateProfile}
+                    supplier={supplier}
+                    selectedSection={selectedSection}
+                    onSectionChange={setSelectedSection}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
-                {saveError && (
-                  <Alert className="border-red-200 bg-red-50">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                    <AlertDescription className="text-red-800 text-sm">{saveError}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-
-              {/* Action buttons - Mobile Optimized */}
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto lg:items-start">
-                {/* Global Save Button */}
-                {/* <div className="absolute top-1 right-10">
-                  <GlobalSaveButton position="responsive" onSave={handleSaveChanges} isLoading={saving} />
-                </div> */}
-
-                {/* Preview Profile Button */}
-                {/* <div className="order-2 sm:order-1">
-                  {supplierData?.isComplete && (
-                    <Button
-                      variant="outline"
-                      onClick={() => alert(`Your public profile: /suppliers/${supplier?.id}`)}
-                      className="w-full sm:w-auto bg-transparent"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview Profile
-                    </Button>
-                  )}
-                </div> */}
-              </div>
+      {/* Desktop Two-column Airbnb-style layout */}
+      <div className="hidden lg:flex min-h-screen">
+        {/* Left Sidebar - Section Navigation */}
+        <div className="w-[400px] border-r border-gray-200 bg-white sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
+          <div className="p-6">
+            {/* Section List */}
+            <div className="space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon
+                const isSelected = selectedSection === section.id
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setSelectedSection(section.id)}
+                    className={`w-full text-left p-4 rounded-xl transition-all ${
+                      isSelected
+                        ? 'border-2 border-gray-900 bg-white'
+                        : 'border-2 border-transparent hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">{section.label}</div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        {/* Main Profile Card - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
-          <div className="bg-white w-full rounded-xl p-4 sm:p-6 shadow-sm">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Cover Photo Section - Mobile Optimized */}
-              <div className="w-full lg:w-2/5 mr-19">
-              <CoverPhotoContent
-  currentSupplier={supplierData}
-  supplierData={supplierData}
-  supplier={supplier}
-  updateProfile={updateProfile}
-  saving={saving}
-  packages={packages}  // ✅ Add this line
-/>
-              </div>
-
-              {/* Form Section - Mobile Optimized */}
-              <div className="w-full lg:w-3/5 space-y-4 sm:space-y-6">
-                {/* Business Name */}
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold text-gray-700" htmlFor="businessName">
-                    Business Name
-                  </Label>
-                  <Input
-                    id="businessName"
-                    name="businessName"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-sm"
-                    value={supplierData?.name || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter your business name"
-                  />
-                </div>
-
-                {/* Contact Person */}
-                <div className="space-y-2">
-                  <Label className="text-base font-semibold text-gray-700" htmlFor="contactName">
-                    Contact Person
-                  </Label>
-                  <Input
-                    id="contactName"
-                    name="contactName"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-sm"
-                    value={supplierData?.owner?.name || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter contact person name"
-                  />
-                </div>
-
-                {/* Business Description */}
-                {/* <div className="space-y-2">
-                  <Label className="text-base font-semibold text-gray-700" htmlFor="businessDescription">
-                    Business Description
-                  </Label>
-                  <p className="text-xs text-gray-500">
-                    Tell customers about your business and what makes you special
-                  </p>
-                  <Textarea
-                    id="businessDescription"
-                    name="businessDescription"
-                    className="bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none h-40"
-                    value={supplierData?.description || ""}
-                    onChange={handleInputChange}
-                    placeholder="Describe your business, services, and what makes you unique..."
-                  />
-                </div> */}
-              </div>
+        {/* Right Content Area */}
+        <div className="flex-1 bg-gray-50">
+          {/* Content - conditionally render based on selectedSection */}
+          {selectedSection === 'photos' ? (
+            <MediaPageContent />
+          ) : selectedSection === 'packages' ? (
+            <div className="p-6 lg:p-12">
+              <PackagesPageContent />
             </div>
-          </div>
+          ) : selectedSection === 'verification' ? (
+            <div className="p-6 lg:p-12">
+              <VerificationPageContent />
+            </div>
+          ) : (
+            <div className="p-6 lg:p-12">
+              <ServiceDetailsRouter
+                serviceType={supplierData?.business_type || supplierData?.serviceType}
+                serviceDetails={supplierData?.serviceDetails || {}}
+                supplierData={supplierData}
+                currentBusiness={currentBusiness}
+                onUpdate={handleServiceDetailsUpdate}
+                saving={saving}
+                setSupplierData={setSupplierData}
+                updateProfile={updateProfile}
+                supplier={supplier}
+                selectedSection={selectedSection}
+                onSectionChange={setSelectedSection}
+              />
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* TabsContent sections - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
-          {/* Service Specific Details - Mobile Optimized */}
-          <div className="mt-6">
-          <ServiceDetailsRouter
-  serviceType={supplierData?.business_type || supplierData?.serviceType}
-  serviceDetails={supplierData?.serviceDetails || {}}
-  supplierData={supplierData}
-  currentBusiness={currentBusiness}
-  onUpdate={handleServiceDetailsUpdate}
-  saving={saving}
-  setSupplierData={setSupplierData}  // Pass the state setter
-  updateProfile={updateProfile}      // Pass the update function
-  supplier={supplier}                // Pass the supplier object
-/>
+      {/* AI Assistant Modal */}
+      {showAIAssistant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal content */}
           </div>
- 
-    {/* AI Assistant Modal */}
-    {showAIAssistant && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Modal content - see the previous artifact for full implementation */}
         </div>
-      </div>
-    )}
-          {/* Verification Documents - Mobile Optimized */}
-          {/* <div className="mt-6">
-            <VerificationDocumentsTabContent />
-          </div> */}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

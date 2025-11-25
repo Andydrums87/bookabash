@@ -9,23 +9,25 @@ import DecorationsServiceDetails from './profile/components/DecorationsServiceDe
 import PartyBagsServiceDetails from './profile/components/PartyBagServiceDetails';
 
 
-const ServiceDetailsRouter = ({ 
-  serviceType, 
-  serviceDetails, 
-  supplierData, 
-  currentBusiness, 
-  onUpdate, 
+const ServiceDetailsRouter = ({
+  serviceType,
+  serviceDetails,
+  supplierData,
+  currentBusiness,
+  onUpdate,
   saving,
   // Add these new props:
   setSupplierData,
   updateProfile,
-  supplier
+  supplier,
+  selectedSection,
+  onSectionChange
 }) => {
   const getServiceComponent = () => {
     const type = (serviceType || supplierData?.category || supplierData?.serviceType)?.toLowerCase();
-    
+
     console.log('🔍 ServiceRouter detecting type:', type, 'for business:', currentBusiness?.name);
-    
+
     // Common props that all components need
     const commonProps = {
       serviceDetails,
@@ -33,9 +35,11 @@ const ServiceDetailsRouter = ({
       saving,
       supplierData,
       currentBusiness,
-      setSupplierData,    // Add these to all components
+      setSupplierData,
       updateProfile,
-      supplier
+      supplier,
+      selectedSection,
+      onSectionChange
     };
     
     switch (type) {

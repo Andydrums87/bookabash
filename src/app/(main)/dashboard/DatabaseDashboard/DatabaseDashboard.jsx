@@ -118,8 +118,8 @@ export default function DatabaseDashboard() {
   const [isCancelling, setIsCancelling] = useState(false)
   const [showWelcomePopup, setShowWelcomePopup] = useState(false)
   const [showChecklistModal, setShowChecklistModal] = useState(false)
-const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
-const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
+  const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
+  const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
 
   // Toast notifications
   const { toast } = useToast()

@@ -556,6 +556,9 @@ const packagesWithSmartPricing = useMemo(() => {
       
       const enhancedSupplierData = {
         ...backendSupplier,
+        id: supplier.id,
+        name: supplier.name,
+        category: supplier.category, // Explicitly include category for correct slot assignment
         weekendPremium: supplier.weekendPremium || backendSupplier?.weekendPremium,
         extraHourRate: supplier.extraHourRate || backendSupplier?.extraHourRate,
         price: finalPrice,
@@ -583,23 +586,34 @@ const packagesWithSmartPricing = useMemo(() => {
             return await addSupplier(enhancedSupplierData, enhancedPackage)
           }
         } else {
-          const mainCategories = ["Venues", "Catering", "Cakes", "Party Bags", "Face Painting", "Activities", "Entertainment"]
-          if (mainCategories.includes(supplier.category || "")) {
+          // Check if this is a main category (case-insensitive, handles singular/plural)
+          const categoryLower = supplier.category?.toLowerCase() || ""
+          const isMainCategory = [
+            "venue", "venues",
+            "catering",
+            "cake", "cakes",
+            "party bag", "party bags",
+            "face painting",
+            "activities", "activity",
+            "entertainment"
+          ].includes(categoryLower)
+
+          if (isMainCategory) {
             return await addSupplier(enhancedSupplierData, enhancedPackage)
           } else {
             const addonDataToAdd = {
               ...supplier,
-              price: finalPrice,
-              originalPrice: selectedPkg.price,
-              weekendAdjustedPrice: weekendAdjustedBasePrice,
+              price: enhancedSupplierData.price,
+              originalPrice: enhancedSupplierData.originalPrice,
+              weekendAdjustedPrice: enhancedSupplierData.weekendAdjustedPrice,
               packageId: enhancedPackage.id,
               selectedAddons: enhancedPackage.addons,
               packageData: enhancedPackage,
-              selectedTimeSlot: bookingTimeSlot,
-              bookingTimeSlot: bookingTimeSlot,
+              selectedTimeSlot: enhancedPackage.selectedTimeSlot,
+              bookingTimeSlot: enhancedPackage.bookingTimeSlot,
               weekendPremium: supplier.weekendPremium,
-              weekendPremiumApplied: pricingResult.breakdown.weekend > 0,
-              weekendPremiumAmount: pricingResult.breakdown.weekend,
+              weekendPremiumApplied: enhancedPackage.weekendPremiumApplied,
+              weekendPremiumAmount: enhancedPackage.weekendPremiumAmount,
               supplierId: supplier.id,
               supplierName: supplier.name,
               supplierType: supplier.category?.toLowerCase() === 'venues' || supplier.category?.toLowerCase() === 'venue' ? 'venue' : supplier.category?.toLowerCase(),

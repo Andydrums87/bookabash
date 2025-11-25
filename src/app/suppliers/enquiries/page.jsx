@@ -23,6 +23,7 @@ import {
   Package,
   Gift,
   Loader2,
+  Building2,
 } from "lucide-react"
 import Link from "next/link"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
@@ -36,12 +37,21 @@ export default function SupplierEnquiriesPage() {
   const statusFilter = activeTab === "all" ? null : activeTab
   const { enquiries, loading, error, refetch } = useSupplierEnquiries(statusFilter)
 
+  // Helper to check if supplier has responded
+  const hasSupplierResponded = (e) => {
+    return e.supplier_response || (e.status === 'accepted' && !e.auto_accepted)
+  }
+
   // Group enquiries by status for tabs
+  // Auto-accepted enquiries without supplier response go to "pending"
   const enquiriesByStatus = {
     all: enquiries,
-    pending: enquiries.filter((e) => e.status === "pending"),
+    pending: enquiries.filter((e) =>
+      e.status === "pending" ||
+      (e.status === "accepted" && e.auto_accepted && !e.supplier_response)
+    ),
     viewed: enquiries.filter((e) => e.status === "viewed"),
-    accepted: enquiries.filter((e) => e.status === "accepted"),
+    accepted: enquiries.filter((e) => e.status === "accepted" && hasSupplierResponded(e)),
     declined: enquiries.filter((e) => e.status === "declined"),
   }
 
@@ -90,11 +100,20 @@ export default function SupplierEnquiriesPage() {
     const customer = party?.users
     const isAutoAccepted = enquiry?.auto_accepted || false
     const isDepositPaid = isAutoAccepted && enquiry?.status === "accepted"
+    const businessName = enquiry.supplier?.businessName
 
     return (
       <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
         <CardContent className="p-4 sm:p-6">
           <div className="space-y-3 sm:space-y-4">
+            {/* Business indicator */}
+            {businessName && (
+              <div className="flex items-center gap-2 text-sm">
+                <Building2 className="w-4 h-4 text-primary-500" />
+                <span className="font-medium text-primary-600">{businessName}</span>
+              </div>
+            )}
+
             {/* Header - Mobile Optimized */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
               <div className="min-w-0 flex-1">

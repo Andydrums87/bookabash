@@ -176,130 +176,92 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-4">
-        <Calendar className="w-5 h-5 text-gray-600" />
-        <h3 className="text-sm font-semibold text-gray-900">Calendar Integrations</h3>
-        {/* <Badge variant="outline" className="text-xs">
-          {connectedProviders.length} connected
-        </Badge> */}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {CALENDAR_PROVIDERS.map((provider) => {
-          const Icon = provider.icon
-          const isConnected = connectedProviders.includes(provider.id)
-          const isExpanded = expandedProvider === provider.id
-          const isSyncing = syncing === provider.id
-          const inherited = isInherited(provider.id)
-
-          return (
-            <div key={provider.id} className="relative">
-              <button
-                onClick={() => {
-                  if (isConnected) {
-                    setExpandedProvider(isExpanded ? null : provider.id)
-                  } else {
-                    handleProviderConnect(provider.id)
-                  }
-                }}
-                disabled={isSyncing}
-                className={`w-full p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                  isConnected
-                    ? 'border-green-300 bg-green-50 hover:border-green-400'
-                    : 'border-gray-200 bg-white hover:border-blue-300'
-                } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="relative">
-                    <Icon className="w-10 h-10" />
-                    {isConnected && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs font-medium text-gray-900">{provider.name}</div>
-                    <div className="text-xs text-gray-500">{provider.description}</div>
-                  </div>
-                  {isConnected && (
-                    <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
-                      {inherited ? 'Connected via Primary' : 'Connected'}
-                    </Badge>
-                  )}
-                </div>
-              </button>
-
-             {isExpanded && isConnected && (
-  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[200px]">
     <div className="space-y-2">
-      {/* ADD THIS EMAIL DISPLAY */}
-      <div className="text-xs text-gray-700 mb-2 pb-2 border-b">
-        <div className="font-medium">Connected account:</div>
-        <div className="text-gray-600 mt-1">
-          <div>
-          {provider.id === 'google' 
-      ? currentSupplier?.googleCalendarSync?.userName 
-      : currentSupplier?.outlookCalendarSync?.name}
-          </div>
-<div>
-{provider.id === 'google' 
-            ? currentSupplier?.googleCalendarSync?.userEmail 
-            : currentSupplier?.outlookCalendarSync?.email}
-</div>
+      {CALENDAR_PROVIDERS.map((provider) => {
+        const Icon = provider.icon
+        const isConnected = connectedProviders.includes(provider.id)
+        const isExpanded = expandedProvider === provider.id
+        const isSyncing = syncing === provider.id
+        const inherited = isInherited(provider.id)
 
-        </div>
-      </div>
-      
-      {inherited && (
-        <div className="text-xs text-blue-600 mb-2 p-2 bg-blue-50 rounded">
-          Synced via primary business
-        </div>
-      )}
-      <div className="text-xs text-gray-600 mb-2">
-        Last synced: {getLastSync(provider.id)}
-      </div>
+        return (
+          <div key={provider.id}>
+            <button
+              onClick={() => {
+                if (isConnected) {
+                  setExpandedProvider(isExpanded ? null : provider.id)
+                } else {
+                  handleProviderConnect(provider.id)
+                }
+              }}
+              disabled={isSyncing}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                isConnected
+                  ? 'bg-green-50 hover:bg-green-100'
+                  : 'bg-gray-50 hover:bg-gray-100'
+              } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Icon className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1 text-left">
+                <div className="text-sm font-medium text-gray-900">{provider.name}</div>
+                {isConnected ? (
+                  <div className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    {inherited ? 'Connected via primary' : 'Connected'}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500">Click to connect</div>
+                )}
+              </div>
+            </button>
+
+            {isExpanded && isConnected && (
+              <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg space-y-2">
+                <div className="text-xs text-gray-600">
+                  {provider.id === 'google'
+                    ? currentSupplier?.googleCalendarSync?.userEmail
+                    : currentSupplier?.outlookCalendarSync?.email}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Last synced: {getLastSync(provider.id)}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 text-xs h-8"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleSync(provider.id)
+                    }}
+                    disabled={isSyncing}
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync'}
+                  </Button>
+                  {!inherited && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="w-full text-xs h-8"
+                      variant="ghost"
+                      className="text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleSync(provider.id)
+                        handleProviderDisconnect(provider.id)
                       }}
-                      disabled={isSyncing}
                     >
-                      <RefreshCw className={`w-3 h-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
-                      {isSyncing ? 'Syncing...' : 'Sync Now'}
+                      <X className="w-3 h-3" />
                     </Button>
-                    {!inherited && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="w-full text-xs h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleProviderDisconnect(provider.id)
-                        }}
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        Disconnect
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
 
-      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-xs text-blue-800">
-          Connect your calendars to automatically block unavailable dates. Events marked as "busy" or "all-day" will sync to your availability.
-        </p>
-      </div>
+      <p className="text-xs text-gray-500 pt-2">
+        Events marked as "busy" will block your availability.
+      </p>
     </div>
   )
 }

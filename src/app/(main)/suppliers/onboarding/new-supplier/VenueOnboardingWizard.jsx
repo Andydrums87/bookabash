@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import WizardLayout from "@/components/onboarding/WizardLayout"
 import SupplierTypeStep from "@/components/onboarding/steps/SupplierTypeStep"
@@ -24,9 +24,16 @@ const STORAGE_KEY = 'supplierOnboardingData'
 
 export default function VenueOnboardingWizard() {
   const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(1)
+  const searchParams = useSearchParams()
+  const isEditMode = searchParams.get('edit') === 'true'
+  const isNewBusinessMode = searchParams.get('newBusiness') === 'true' // Creating new business as existing user
+  const resumeBusinessId = searchParams.get('businessId') // Resume incomplete business by ID
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 3 : 1) // Start at step 3 in edit mode
   const [userId, setUserId] = useState(null) // Auth user ID after account creation
   const [supplierId, setSupplierId] = useState(null) // Supplier record ID
+  const [editModeLoaded, setEditModeLoaded] = useState(false)
+  const [newBusinessModeLoaded, setNewBusinessModeLoaded] = useState(false)
+  const [resumeBusinessLoaded, setResumeBusinessLoaded] = useState(false)
   const [wizardData, setWizardData] = useState({
     supplierType: "",
     account: {
@@ -112,22 +119,271 @@ export default function VenueOnboardingWizard() {
   // Venues: 11 steps
   const TOTAL_STEPS = wizardData.supplierType === 'entertainment' ? 10 : 11
 
-  // Load saved data on mount
+  // Load saved data on mount OR load current business data in edit mode
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsedData = JSON.parse(saved)
-        console.log('📋 Loading saved wizard data:', parsedData)
-        setWizardData(parsedData.data)
-        setCurrentStep(parsedData.currentStep || parsedData.step || 1)
-        setUserId(parsedData.userId || null)
-        setSupplierId(parsedData.supplierId || null)
-      } catch (e) {
-        console.error('Failed to load saved data:', e)
+    const loadData = async () => {
+      // If resuming an incomplete business by ID
+      if (resumeBusinessId && !resumeBusinessLoaded) {
+        try {
+          console.log('🔄 Resuming incomplete business:', resumeBusinessId)
+
+          // Get current user
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            console.error('No authenticated user found')
+            router.push('/suppliers/onboarding')
+            return
+          }
+
+          setUserId(user.id)
+
+          // Load the specific business by ID
+          const { data: supplier, error } = await supabase
+            .from('suppliers')
+            .select('*')
+            .eq('id', resumeBusinessId)
+            .eq('auth_user_id', user.id) // Security: only allow user's own businesses
+            .single()
+
+          if (error || !supplier) {
+            console.error('Business not found:', error)
+            router.push('/suppliers/listings')
+            return
+          }
+
+          setSupplierId(supplier.id)
+          console.log('✅ Loaded incomplete business:', supplier.id, supplier.data?.businessName)
+
+          // Map supplier data to wizard format
+          const supplierData = supplier.data || {}
+          const isVenue = supplierData.serviceType === 'venues' || supplierData.category === 'venues'
+
+          setWizardData(prev => ({
+            ...prev,
+            supplierType: supplierData.serviceType || supplierData.category || '',
+            account: {
+              fullName: supplierData.owner?.name || '',
+              email: supplierData.owner?.email || user.email || '',
+              phone: supplierData.owner?.phone || supplierData.contactInfo?.phone || '',
+              agreedToTerms: true,
+            },
+            // Venue fields
+            venueType: supplierData.venueType || supplierData.serviceDetails?.venueType || '',
+            venueAddress: supplierData.venueAddress || supplierData.serviceDetails?.venueAddress || {
+              businessName: supplierData.businessName || '',
+              addressLine1: '',
+              addressLine2: '',
+              city: '',
+              postcode: supplierData.contactInfo?.postcode || '',
+              country: 'United Kingdom'
+            },
+            capacity: supplierData.serviceDetails?.capacity || { max: 50, seated: 30, standing: 60, min: 10 },
+            facilities: supplierData.serviceDetails?.facilities || [],
+            restrictedItems: supplierData.serviceDetails?.restrictedItems || [],
+            pricing: supplierData.serviceDetails?.pricing || { hourlyRate: supplierData.priceFrom || 0, minimumBookingHours: 4, securityDeposit: 0 },
+            // Entertainer fields
+            entertainerType: supplierData.entertainerType || supplierData.serviceDetails?.entertainerType || '',
+            serviceDetails: {
+              businessName: supplierData.businessName || supplierData.serviceDetails?.businessName || '',
+              description: supplierData.description || supplierData.serviceDetails?.description || '',
+              ageGroups: supplierData.serviceDetails?.ageGroups || [],
+              specialRequirements: supplierData.serviceDetails?.specialRequirements || ''
+            },
+            serviceArea: supplierData.serviceDetails?.serviceArea || {
+              baseLocation: '',
+              postcode: supplierData.contactInfo?.postcode || '',
+              travelRadius: 10,
+              travelFee: 0
+            },
+            entertainerPricing: supplierData.serviceDetails?.pricing || {
+              basePrice: supplierData.priceFrom || 0,
+              pricingType: 'per_hour',
+              minimumDuration: 1,
+              additionalInfo: ''
+            },
+            // Shared fields
+            photos: supplierData.portfolioImages || [],
+            calendar: supplierData.calendarIntegration || { connected: false, provider: null }
+          }))
+
+          // Determine which step to resume from based on completed data
+          let resumeStep = 3 // Default to step 3 (after account creation)
+          if (!supplierData.serviceType && !supplierData.category) resumeStep = 1
+          else if (isVenue && !supplierData.venueType) resumeStep = 3
+          else if (isVenue && !supplierData.venueAddress?.addressLine1) resumeStep = 4
+
+          setCurrentStep(resumeStep)
+          setResumeBusinessLoaded(true)
+          // Clear any saved onboarding data
+          localStorage.removeItem(STORAGE_KEY)
+
+        } catch (e) {
+          console.error('Error loading business to resume:', e)
+          router.push('/suppliers/listings')
+        }
+        return
+      }
+
+      // If creating new business as existing user
+      if (isNewBusinessMode && !newBusinessModeLoaded) {
+        try {
+          console.log('🆕 New business mode - checking for existing user...')
+
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            console.log('No authenticated user found, redirecting to login')
+            router.push('/suppliers/onboarding')
+            return
+          }
+
+          console.log('✅ Found existing user:', user.id)
+          setUserId(user.id)
+
+          // Pre-fill account data from existing user
+          const { data: existingSupplier } = await supabase
+            .from('suppliers')
+            .select('data')
+            .eq('auth_user_id', user.id)
+            .limit(1)
+            .single()
+
+          if (existingSupplier?.data?.owner) {
+            setWizardData(prev => ({
+              ...prev,
+              account: {
+                ...prev.account,
+                fullName: existingSupplier.data.owner.name || '',
+                email: existingSupplier.data.owner.email || user.email || '',
+                phone: existingSupplier.data.owner.phone || '',
+                agreedToTerms: true
+              }
+            }))
+          }
+
+          setNewBusinessModeLoaded(true)
+          // Clear any saved onboarding data for fresh start
+          localStorage.removeItem(STORAGE_KEY)
+
+        } catch (e) {
+          console.error('Error in new business mode:', e)
+        }
+        return
+      }
+
+      // If in edit mode, load current business data from Supabase
+      if (isEditMode && !editModeLoaded) {
+        try {
+          console.log('📝 Edit mode detected - loading current business data...')
+
+          // Get current user
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            console.error('No authenticated user found')
+            router.push('/suppliers/onboarding')
+            return
+          }
+
+          setUserId(user.id)
+
+          // Get current supplier (the one they selected from listings)
+          const { data: suppliers, error } = await supabase
+            .from('suppliers')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+
+          if (error || !suppliers?.length) {
+            console.error('No supplier found:', error)
+            router.push('/suppliers/listings')
+            return
+          }
+
+          const supplier = suppliers[0]
+          setSupplierId(supplier.id)
+
+          console.log('✅ Loaded supplier for editing:', supplier.id, supplier.data?.businessName)
+
+          // Map supplier data to wizard format
+          const supplierData = supplier.data || {}
+          const isVenue = supplierData.serviceType === 'venues' || supplierData.category === 'venues'
+          const isEntertainer = supplierData.serviceType === 'entertainment' || supplierData.category === 'entertainment'
+
+          setWizardData(prev => ({
+            ...prev,
+            supplierType: supplierData.serviceType || supplierData.category || '',
+            account: {
+              fullName: supplierData.owner?.name || '',
+              email: supplierData.owner?.email || user.email || '',
+              phone: supplierData.owner?.phone || supplierData.contactInfo?.phone || '',
+              agreedToTerms: true,
+            },
+            // Venue fields
+            venueType: supplierData.venueType || supplierData.serviceDetails?.venueType || '',
+            venueAddress: supplierData.venueAddress || supplierData.serviceDetails?.venueAddress || {
+              businessName: supplierData.businessName || '',
+              addressLine1: '',
+              addressLine2: '',
+              city: '',
+              postcode: supplierData.contactInfo?.postcode || '',
+              country: 'United Kingdom'
+            },
+            capacity: supplierData.serviceDetails?.capacity || { max: 50, seated: 30, standing: 60, min: 10 },
+            facilities: supplierData.serviceDetails?.facilities || [],
+            restrictedItems: supplierData.serviceDetails?.restrictedItems || [],
+            pricing: supplierData.serviceDetails?.pricing || { hourlyRate: supplierData.priceFrom || 0, minimumBookingHours: 4, securityDeposit: 0 },
+            // Entertainer fields
+            entertainerType: supplierData.entertainerType || supplierData.serviceDetails?.entertainerType || '',
+            serviceDetails: {
+              businessName: supplierData.businessName || supplierData.serviceDetails?.businessName || '',
+              description: supplierData.description || supplierData.serviceDetails?.description || '',
+              ageGroups: supplierData.serviceDetails?.ageGroups || [],
+              specialRequirements: supplierData.serviceDetails?.specialRequirements || ''
+            },
+            serviceArea: supplierData.serviceDetails?.serviceArea || {
+              baseLocation: '',
+              postcode: supplierData.contactInfo?.postcode || '',
+              travelRadius: 10,
+              travelFee: 0
+            },
+            entertainerPricing: supplierData.serviceDetails?.pricing || {
+              basePrice: supplierData.priceFrom || 0,
+              pricingType: 'per_hour',
+              minimumDuration: 1,
+              additionalInfo: ''
+            },
+            // Shared fields
+            photos: supplierData.portfolioImages || [],
+            calendar: supplierData.calendarIntegration || { connected: false, provider: null }
+          }))
+
+          setEditModeLoaded(true)
+          setCurrentStep(3) // Start at step 3 for edit mode
+
+        } catch (e) {
+          console.error('Error loading edit mode data:', e)
+        }
+        return
+      }
+
+      // Normal mode - load from localStorage
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        try {
+          const parsedData = JSON.parse(saved)
+          console.log('📋 Loading saved wizard data:', parsedData)
+          setWizardData(parsedData.data)
+          setCurrentStep(parsedData.currentStep || parsedData.step || 1)
+          setUserId(parsedData.userId || null)
+          setSupplierId(parsedData.supplierId || null)
+        } catch (e) {
+          console.error('Failed to load saved data:', e)
+        }
       }
     }
-  }, [])
+
+    loadData()
+  }, [isEditMode, editModeLoaded, isNewBusinessMode, newBusinessModeLoaded, resumeBusinessId, resumeBusinessLoaded, router])
 
   // Check for OAuth calendar callback and restore wizard state
   useEffect(() => {
@@ -274,11 +530,20 @@ export default function VenueOnboardingWizard() {
       photos: wizardData.photos?.length,
       entertainerType: wizardData.entertainerType,
       businessName: wizardData.serviceDetails?.businessName,
-      supplierId: supplierId
+      supplierId: supplierId,
+      isNewBusinessMode,
+      userId
     })
 
-    // Step 2: Create account and supplier record
-    if (currentStep === 2) {
+    // NEW BUSINESS MODE: After step 1 (supplier type), create supplier and skip to step 3
+    if (currentStep === 1 && isNewBusinessMode && userId && !supplierId) {
+      console.log('🆕 New business mode - creating supplier record for existing user...')
+      await createSupplierForExistingUser()
+      return
+    }
+
+    // Step 2: Create account and supplier record (only for new users)
+    if (currentStep === 2 && !isNewBusinessMode) {
       await handleAccountCreation()
       return
     }
@@ -354,7 +619,14 @@ export default function VenueOnboardingWizard() {
 
   const handleBack = () => {
     if (currentStep > 1) {
-      const targetStep = currentStep - 1
+      let targetStep = currentStep - 1
+
+      // In edit mode, don't go back past step 3
+      if (isEditMode && targetStep < 3) {
+        // Go back to listings instead
+        router.push('/suppliers/listings')
+        return
+      }
 
       // Prevent going back to account creation step (step 2) if account already created
       if (targetStep === 2 && userId) {
@@ -367,7 +639,23 @@ export default function VenueOnboardingWizard() {
     }
   }
 
-  const handleSaveExit = () => {
+  const handleSaveExit = async () => {
+    // In edit mode or if we have a supplierId, save and go to listings
+    if (isEditMode || supplierId) {
+      // Save current data before exiting
+      if (supplierId) {
+        try {
+          await updateSupplierRecord()
+          console.log('💾 Changes saved successfully')
+        } catch (error) {
+          console.error('Error saving:', error)
+        }
+      }
+      console.log('💾 Progress saved. Redirecting to listings...')
+      router.push('/suppliers/listings')
+      return
+    }
+
     // Data is already auto-saved to database
     if (userId) {
       console.log('💾 Progress saved. Redirecting to dashboard...')
@@ -375,6 +663,102 @@ export default function VenueOnboardingWizard() {
     } else {
       // No account yet, just saved to localStorage
       alert('Your progress has been saved locally. Create an account in step 2 to continue!')
+    }
+  }
+
+  // Create supplier for existing user (new business mode)
+  const createSupplierForExistingUser = async () => {
+    try {
+      console.log('🆕 Creating new supplier for existing user...')
+
+      const supplierData = {
+        name: wizardData.account.fullName || 'New Business',
+        businessName: wizardData.account.fullName || 'New Business',
+        serviceType: wizardData.supplierType,
+        category: wizardData.supplierType,
+        location: "",
+        owner: {
+          name: wizardData.account.fullName,
+          email: wizardData.account.email,
+          phone: wizardData.account.phone || "",
+        },
+        contactInfo: {
+          email: wizardData.account.email,
+          phone: wizardData.account.phone || "",
+          postcode: "",
+        },
+        description: "Profile setup in progress...",
+        businessDescription: "Profile setup in progress...",
+        packages: [],
+        portfolioImages: [],
+        portfolioVideos: [],
+        image: "",
+        coverPhoto: "",
+        workingHours: {
+          Monday: { start: "09:00", end: "17:00", active: true },
+          Tuesday: { start: "09:00", end: "17:00", active: true },
+          Wednesday: { start: "09:00", end: "17:00", active: true },
+          Thursday: { start: "09:00", end: "17:00", active: true },
+          Friday: { start: "09:00", end: "17:00", active: true },
+          Saturday: { start: "10:00", end: "16:00", active: true },
+          Sunday: { start: "10:00", end: "16:00", active: false },
+        },
+        unavailableDates: [],
+        busyDates: [],
+        rating: 0,
+        reviewCount: 0,
+        bookingCount: 0,
+        priceFrom: 0,
+        priceUnit: "per hour",
+        badges: ["New Provider"],
+        themes: ["general"],
+        availability: "Contact for availability",
+        isComplete: false,
+        advanceBookingDays: 7,
+        maxBookingDays: 365,
+        availabilityNotes: "",
+        notifications: {
+          smsBookings: true,
+          smsReminders: false,
+          emailBookings: true,
+          emailMessages: true
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        onboardingCompleted: false,
+        createdFrom: "wizard_new_business",
+      }
+
+      const supplierRecord = {
+        auth_user_id: userId,
+        data: supplierData,
+        is_primary: false, // Not primary since user already has a business
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data: newSupplier, error: supplierError } = await supabase
+        .from("suppliers")
+        .insert(supplierRecord)
+        .select()
+        .single()
+
+      if (supplierError) {
+        console.error('❌ Failed to create supplier profile:', supplierError)
+        throw new Error('Failed to create new business. Please try again.')
+      }
+
+      console.log('✅ New supplier profile created:', newSupplier.id)
+      setSupplierId(newSupplier.id)
+
+      // Skip step 2 and go directly to step 3
+      console.log('⏭️ Skipping account creation, moving to step 3...')
+      setCurrentStep(3)
+      window.scrollTo(0, 0)
+
+    } catch (error) {
+      console.error('💥 Error creating supplier for existing user:', error)
+      alert(error.message || 'An unexpected error occurred. Please try again.')
     }
   }
 
@@ -1262,16 +1646,33 @@ export default function VenueOnboardingWizard() {
     return null
   }
 
+  // Adjust step numbers for display
+  // Edit mode: step 3 becomes step 1 (skip steps 1-2)
+  // New business mode: step 1 stays as 1, step 3+ becomes step 2+ (skip step 2)
+  const getDisplayStep = () => {
+    if (isEditMode) return currentStep - 2
+    if (isNewBusinessMode && currentStep >= 3) return currentStep - 1
+    return currentStep
+  }
+  const getDisplayTotalSteps = () => {
+    if (isEditMode) return TOTAL_STEPS - 2
+    if (isNewBusinessMode) return TOTAL_STEPS - 1 // One less step since we skip account creation
+    return TOTAL_STEPS
+  }
+  const displayStep = getDisplayStep()
+  const displayTotalSteps = getDisplayTotalSteps()
+
   return (
     <WizardLayout
-      currentStep={currentStep}
-      totalSteps={TOTAL_STEPS}
+      currentStep={displayStep}
+      totalSteps={displayTotalSteps}
       onBack={handleBack}
       onNext={handleNext}
       onSaveExit={handleSaveExit}
       nextDisabled={!isStepValid()}
-      showBack={currentStep > 1}
-      nextLabel={currentStep === TOTAL_STEPS ? "Complete Profile" : "Next"}
+      showBack={isEditMode ? true : (isNewBusinessMode ? currentStep > 1 : currentStep > 1)}
+      nextLabel={currentStep === TOTAL_STEPS ? (isNewBusinessMode ? "Complete Setup" : "Save Changes") : "Next"}
+      isEditMode={isEditMode}
     >
       {renderStep()}
     </WizardLayout>

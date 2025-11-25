@@ -31,7 +31,7 @@ export function useAllSupplierEnquiries(refreshKey = 0) {
         .from('enquiries')
         .select('*') // All fields: id, party_id, supplier_id, supplier_category, package_id, addon_details, status, auto_accepted, payment_status, etc.
         .in('supplier_id', supplierIds)
-        .eq('payment_status', 'paid') // Only show paid enquiries to suppliers (same as existing)
+        .in('payment_status', ['paid', 'fully_paid', 'deposit_paid']) // Show all paid enquiries to suppliers
         .order('created_at', { ascending: false })
 
       if (enquiriesError) {

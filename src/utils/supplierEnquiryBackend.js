@@ -71,7 +71,7 @@ let enquiriesQuery = supabase
 .from('enquiries')
 .select('*')
 .in('supplier_id', supplierIds)
-.eq('payment_status', 'paid') // Only show paid enquiries to suppliers
+.in('payment_status', ['paid', 'fully_paid', 'deposit_paid']) // Show all paid enquiries to suppliers
 .order('created_at', { ascending: false })
 
       if (status) {
@@ -145,21 +145,49 @@ let enquiriesQuery = supabase
         }
       }
 
-      // Step 5: Create lookup maps
+      // Step 5: Get unique supplier IDs and fetch supplier data
+      const uniqueSupplierIds = [...new Set(enquiries.map(e => e.supplier_id).filter(Boolean))]
+      let suppliers = []
+      if (uniqueSupplierIds.length > 0) {
+        const { data: suppliersData, error: suppliersError } = await supabase
+          .from('suppliers')
+          .select('id, data, business_name')
+          .in('id', uniqueSupplierIds)
+
+        if (!suppliersError) {
+          suppliers = suppliersData || []
+        }
+      }
+
+      // Step 6: Create lookup maps
       const partiesMap = new Map(parties?.map(p => [p.id, p]) || [])
       const usersMap = new Map(users.map(u => [u.id, u]))
+      const suppliersMap = new Map(suppliers.map(s => [s.id, s]))
 
-      // Step 6: Join the data manually
+      // Step 7: Join the data manually
       const joinedEnquiries = enquiries.map(enquiry => {
         const party = partiesMap.get(enquiry.party_id)
         const user = party ? usersMap.get(party.user_id) : null
+        const supplier = suppliersMap.get(enquiry.supplier_id)
 
-     
+        // Parse supplier data to get business name
+        let businessName = 'Unknown Business'
+        if (supplier) {
+          const supplierData = typeof supplier.data === 'string'
+            ? JSON.parse(supplier.data)
+            : supplier.data
+          businessName = supplierData?.businessName || supplierData?.name || supplier.business_name || 'Unknown Business'
+        }
+
         return {
           ...enquiry,
           parties: party ? {
             ...party,
             users: user || null
+          } : null,
+          supplier: supplier ? {
+            id: supplier.id,
+            businessName: businessName
           } : null
         }
       })

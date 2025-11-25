@@ -1,9 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect } from "react"
 import { Suspense, useState } from "react"
-import { LayoutDashboard, UserCircle, Settings, Calendar, Camera, Package, Shield } from "lucide-react"
+import { Calendar, Building2, Inbox, Settings, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
@@ -13,151 +12,206 @@ import { BusinessProvider } from "../../contexts/BusinessContext"
 import BusinessPageWrapper from "./dashboard/components/BusinessPageWrapper"
 import { DashboardSkeleton } from "./dashboard/components/DashboardSkeletons"
 import { useSupplier } from '@/hooks/useSupplier'
-import CompactBusinessSwitcher from "./dashboard/components/MutliBusinessDashboard"
-import { supabase } from "@/lib/supabase"
 
-// CREATE THIS INNER COMPONENT THAT HAS ACCESS TO BUSINESS CONTEXT
+// Airbnb-style horizontal navigation layout
 function SupplierLayoutContent({ children }) {
   const { supplier, supplierData, currentBusiness } = useSupplier()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const pathname = usePathname()
 
-  const navItems = [
-    { href: "/suppliers/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/suppliers/profile", icon: UserCircle, label: "Profile" },
-    { href: "/suppliers/availability", icon: Calendar, label: "Availability" },
-    { href: "/suppliers/media", icon: Camera, label: "Media" },
-    { href: "/suppliers/packages", icon: Package, label: "Packages" },
-    { href: "/suppliers/verification", icon: Shield, label: "Verification" },
-    { href: "/suppliers/settings", icon: Settings, label: "Settings" },
+  // Main navigation items (Airbnb-style - horizontal)
+  const mainNavItems = [
+    { href: "/suppliers/dashboard", label: "Bookings" },
+    { href: "/suppliers/availability", label: "Calendar" },
+    { href: "/suppliers/listings", label: "Listings" },
   ]
 
-  const pathname = usePathname()
+  // Secondary items for user dropdown (account-level settings only)
+  const secondaryNavItems = [
+    { href: "/suppliers/settings", icon: Settings, label: "Settings" },
+  ]
 
   const handleNavClick = () => {
     setIsSheetOpen(false)
   }
 
-  const NavItems = ({ isMobile = false, onNavClick }) => (
-    <>
-      {navItems.map((item) => {
-        const isActive = pathname === item.href
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            onClick={onNavClick}
-            className={`flex flex-col gap-2 ${isMobile ? "mb-4" : "mb-5"} rounded-2xl px-4 py-6 transition-all ${
-              isActive
-                ? "bg-primary-400 text-white"
-                : "bg-[#fef7f7] text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-          >
-            <div className="rounded-lg">
-              <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-400"}`} />
-            </div>
-            <span className="text-sm font-medium">{item.label}</span>
-          </Link>
-        )
-      })}
-    </>
-  )
-
   return (
-    <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] md:p-2 bg-primary-50 overflow-hidden">
-    {/* Desktop Sidebar */}
-<div className="hidden bg-muted/40 md:block">
-  <div className="flex h-full max-h-screen flex-col gap-2">
-    <div className="flex h-14 items-center px-4 lg:h-[60px] lg:px-6 flex-shrink-0">
-      <Image
-        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-        alt="PartySnap"
-        width={150}
-        height={32}
-        className="md:h-10 h-8 w-auto"
-      />
-    </div>
-    <div className="flex-1 overflow-y-auto overflow-x-hidden pb-4">
-      <nav className="grid items-start px-2 text-xs md:text-sm font-medium lg:px-4 pt-5">
-        <NavItems />
-      </nav>
-    </div>
-  </div>
-</div>
+    <div className="min-h-screen bg-white">
+      {/* Airbnb-style Header */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            {/* Logo */}
+            <Link href="/suppliers/dashboard" className="flex-shrink-0">
+              <Image
+                src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                alt="PartySnap"
+                width={120}
+                height={28}
+                className="h-7 md:h-8 w-auto"
+              />
+            </Link>
 
-      <div className="flex flex-col min-w-0 flex-1">
-        <header className="flex h-14 items-center bg-muted/40 lg:h-[60px] py-10 px-4 lg:px-6 gap-4">
-          {/* Mobile Menu */}
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 md:hidden relative h-12 w-12 rounded-2xl bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] hover:from-[hsl(var(--primary-500))] hover:to-[hsl(var(-primary-600))] shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+            {/* Desktop Navigation - Centered */}
+            <nav className="hidden md:flex items-center justify-center flex-1 px-8">
+              <div className="flex items-center gap-1">
+                {mainNavItems.map((item) => {
+                  const isActive = pathname === item.href ||
+                    (item.href === "/suppliers/dashboard" && pathname === "/suppliers/dashboard")
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                        isActive
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </nav>
+
+            {/* Right side - Mode switch and User Menu */}
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* Switch to travelling (like Airbnb) - could be "View as customer" */}
+              <Link
+                href="/"
+                className="hidden md:block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
               >
-                <div className="flex flex-col gap-1">
-                  <div
-                    className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? "rotate-45 translate-y-1.5" : ""}`}
-                  />
-                  <div
-                    className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? "opacity-0" : ""}`}
-                  />
-                  <div
-                    className={`h-0.5 w-5 bg-white rounded-full transition-all duration-300 ${isSheetOpen ? "-rotate-45 -translate-y-1.5" : ""}`}
-                  />
-                </div>
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-primary-50 border-r-0">
-              {/* Logo */}
-              <div className="flex items-center mb-6 pt-2">
-                <Image
-                  src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-                  alt="PartySnap"
-                  width={140}
-                  height={30}
-                  className="h-8 w-auto"
-                />
-              </div>
+                Switch to browsing
+              </Link>
 
-              {/* Navigation Items */}
-              <nav className="flex-1 px-2 max-w-screen overflow-scroll">
-                <NavItems isMobile onNavClick={handleNavClick} />
-              </nav>
+              {/* User Menu */}
+              <UserMenu secondaryNavItems={secondaryNavItems} />
 
-              {/* User Info */}
-              <div className="mt-auto p-4 border-t border-gray-200">
-                <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
-                  <div className="h-10 w-10 rounded-full bg-primary-400 flex items-center justify-center">
-                    <UserCircle className="h-6 w-6 text-white" />
+              {/* Mobile Menu Button */}
+              <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden h-10 w-10 rounded-full border border-gray-200"
+                  >
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle navigation menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:w-80 bg-white p-0">
+                  <div className="flex flex-col h-full">
+                    {/* Mobile Nav Header */}
+                    <div className="p-4 border-b">
+                      <Image
+                        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
+                        alt="PartySnap"
+                        width={100}
+                        height={24}
+                        className="h-6 w-auto"
+                      />
+                    </div>
+
+                    {/* Main Navigation */}
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="p-4 space-y-1">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Main</p>
+                        {mainNavItems.map((item) => {
+                          const isActive = pathname === item.href
+                          return (
+                            <Link
+                              key={item.label}
+                              href={item.href}
+                              onClick={handleNavClick}
+                              className={`block px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                                isActive
+                                  ? "bg-gray-100 text-gray-900"
+                                  : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                            >
+                              {item.label}
+                            </Link>
+                          )
+                        })}
+                      </div>
+
+                      <div className="p-4 space-y-1 border-t">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Manage</p>
+                        {secondaryNavItems.map((item) => {
+                          const isActive = pathname === item.href
+                          return (
+                            <Link
+                              key={item.label}
+                              href={item.href}
+                              onClick={handleNavClick}
+                              className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-lg transition-colors ${
+                                isActive
+                                  ? "bg-gray-100 text-gray-900"
+                                  : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                            >
+                              <item.icon className="h-5 w-5 text-gray-500" />
+                              {item.label}
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Mobile Nav Footer */}
+                    <div className="p-4 border-t bg-gray-50">
+                      <Link
+                        href="/"
+                        onClick={handleNavClick}
+                        className="block w-full text-center py-3 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                      >
+                        Switch to browsing
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">Andrew Joseph</p>
-                    <p className="text-xs text-gray-500 truncate">Supplier Account</p>
-                  </div>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          <div className="flex-1 flex items-center justify-center md:justify-start min-w-0">
-            <div className="w-[80%]">
-              <CompactBusinessSwitcher />
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
+        </div>
 
-          <div className="flex-shrink-0">
-            <UserMenu />
+        {/* Mobile Bottom Navigation - Like Airbnb app */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+          <div className="flex items-center justify-around h-16 px-2">
+            {mainNavItems.map((item) => {
+              const isActive = pathname === item.href
+              const icons = {
+                "Bookings": Inbox,
+                "Calendar": Calendar,
+                "Listings": Building2,
+              }
+              const Icon = icons[item.label] || Inbox
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`flex flex-col items-center justify-center flex-1 py-2 ${
+                    isActive ? "text-primary-500" : "text-gray-500"
+                  }`}
+                >
+                  <Icon className={`h-6 w-6 ${isActive ? "text-primary-500" : "text-gray-400"}`} />
+                  <span className={`text-xs mt-1 ${isActive ? "font-medium" : ""}`}>
+                    {item.label}
+                  </span>
+                </Link>
+              )
+            })}
           </div>
-        </header>
+        </nav>
+      </header>
 
-        {/* Main Content */}
-        <main className="flex flex-1 flex-col gap-4 lg:gap-6 lg:p-6 bg-muted/20 min-w-0 overflow-x-hidden">
-          <div className="w-[95%] sm:w-full max-w-7xl mx-auto">
-            <BusinessPageWrapper requiresBusiness={true}>{children}</BusinessPageWrapper>
-          </div>
-        </main>
-      </div>
+      {/* Main Content */}
+      <main className="pb-20 md:pb-0">
+        <div className="max-w-7xl mx-auto">
+          <BusinessPageWrapper requiresBusiness={true}>{children}</BusinessPageWrapper>
+        </div>
+      </main>
     </div>
   )
 }

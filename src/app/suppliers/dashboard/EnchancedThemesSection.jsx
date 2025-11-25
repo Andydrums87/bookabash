@@ -1,26 +1,20 @@
 "use client"
 
 import { useState } from "react"
-import { Sparkles, ChevronDown, ChevronUp, Plus, X } from "lucide-react"
+import { Sparkles, ChevronDown, ChevronUp, Plus, X, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { SectionSave } from '@/components/ui/SectionSave';
 
-const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, sectionState }) => {
-  const [expandedSections, setExpandedSections] = useState({
-    themes: false,
-    customThemes: false,
-  })
+const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, sectionState, isExpanded, onToggle }) => {
+  const [showCustomForm, setShowCustomForm] = useState(false)
   const [newCustomTheme, setNewCustomTheme] = useState("")
 
-  const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }))
+  // Get summary text for collapsed state
+  const getSummary = () => {
+    const themeCount = details.themes?.length || 0
+    return themeCount > 0 ? `${themeCount} theme${themeCount !== 1 ? 's' : ''} selected` : 'None selected'
   }
 
   const popularThemes = [
@@ -103,46 +97,52 @@ const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, se
 
   return (
     <Card>
-      <CardHeader className="py-4 sm:py-8 bg-gradient-to-r from-pink-50 to-pink-100">
-        <CardTitle
-          className="flex items-center justify-between text-lg sm:text-xl cursor-pointer"
-          onClick={() => toggleSection("themes")}
-        >
+      <CardHeader
+        className="py-4 sm:py-6 bg-gradient-to-r from-pink-50 to-pink-100 cursor-pointer hover:from-pink-100 hover:to-pink-150 transition-colors"
+        onClick={onToggle}
+      >
+        <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-pink-500 rounded-xl flex items-center justify-center">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             Party Themes You Offer
           </div>
-          <div className="sm:hidden">
-            {expandedSections.themes ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          <div className="flex items-center gap-3">
+            {!isExpanded && (
+              <span className="text-sm font-normal text-gray-500">{getSummary()}</span>
+            )}
+            {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
           </div>
         </CardTitle>
-        <CardDescription className="text-sm sm:text-base">
-          Select popular themes and add your own custom themes
-        </CardDescription>
+        {isExpanded && (
+          <CardDescription className="text-sm sm:text-base">
+            Select popular themes and add your own custom themes
+          </CardDescription>
+        )}
       </CardHeader>
-      <CardContent className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!expandedSections.themes ? "hidden sm:block" : ""}`}>
+      <CardContent className={`p-4 sm:p-8 space-y-6 sm:space-y-8 ${!isExpanded ? "hidden" : ""}`}>
         {/* Popular Themes */}
         <div>
           <h4 className="font-semibold text-gray-900 mb-4 text-sm sm:text-base">Popular Themes</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {popularThemes.map((theme) => (
-              <div
-                key={theme}
-                className="flex items-center space-x-3 p-3 sm:p-4 bg-gray-50 rounded-xl hover:bg-pink-50 transition-colors"
-              >
-                <Checkbox
-                  id={`theme-${theme}`}
-                  checked={details.themes?.includes(theme) || false}
-                  onCheckedChange={() => handleThemeToggle(theme)}
-                  className="w-4 h-4 sm:w-5 sm:h-5"
-                />
-                <Label htmlFor={`theme-${theme}`} className="text-sm sm:text-base font-medium cursor-pointer flex-1">
-                  {theme}
-                </Label>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {popularThemes.map((theme) => {
+              const isSelected = details.themes?.includes(theme) || false
+              return (
+                <div
+                  key={theme}
+                  onClick={() => handleThemeToggle(theme)}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    isSelected
+                      ? "border-pink-300 bg-pink-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <span className="text-sm font-medium text-gray-900">{theme}</span>
+                  {isSelected && <CheckCircle className="w-5 h-5 text-pink-600" />}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -154,7 +154,7 @@ const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, se
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => toggleSection("customThemes")}
+              onClick={() => setShowCustomForm(!showCustomForm)}
               className="text-xs sm:text-sm"
             >
               <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
@@ -163,7 +163,7 @@ const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, se
           </div>
 
           {/* Add Custom Theme Form */}
-          {expandedSections.customThemes && (
+          {showCustomForm && (
             <div className="flex gap-2 mb-4 p-3 sm:p-4 bg-pink-50 rounded-xl">
               <Input
                 value={newCustomTheme}
@@ -204,7 +204,7 @@ const EnhancedThemesSection = ({ details, setDetails, onThemesChange, onSave, se
             </div>
           )}
 
-          {customThemes.length === 0 && !expandedSections.customThemes && (
+          {customThemes.length === 0 && !showCustomForm && (
             <p className="text-xs sm:text-sm text-gray-500 italic">No custom themes added yet</p>
           )}
         </div>
