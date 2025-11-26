@@ -1128,14 +1128,14 @@ if (loading) {
                     )
 
                   case 'ageGroups':
-                    const ageGroups = serviceDetails.ageGroups || []
+                    const ageGroups = (Array.isArray(serviceDetails.ageGroups) ? serviceDetails.ageGroups : []).filter(a => typeof a === 'string')
                     return (
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-2">Age groups</h3>
                         {ageGroups.length > 0 ? (
                           <div className="space-y-1">
                             {ageGroups.slice(0, 4).map((age, i) => (
-                              <p key={i} className="text-sm text-gray-500">{age}</p>
+                              <p key={i} className="text-sm text-gray-500">{String(age)}</p>
                             ))}
                             {ageGroups.length > 4 && (
                               <p className="text-sm text-gray-400">+{ageGroups.length - 4} more</p>
@@ -1148,14 +1148,14 @@ if (loading) {
                     )
 
                   case 'performanceStyles':
-                    const styles = serviceDetails.performanceStyle || []
+                    const styles = (Array.isArray(serviceDetails.performanceStyle) ? serviceDetails.performanceStyle : []).filter(s => typeof s === 'string')
                     return (
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-2">Performance styles</h3>
                         {styles.length > 0 ? (
                           <div className="space-y-1">
                             {styles.slice(0, 4).map((style, i) => (
-                              <p key={i} className="text-sm text-gray-500">{style}</p>
+                              <p key={i} className="text-sm text-gray-500">{String(style)}</p>
                             ))}
                             {styles.length > 4 && (
                               <p className="text-sm text-gray-400">+{styles.length - 4} more</p>
@@ -1168,14 +1168,14 @@ if (loading) {
                     )
 
                   case 'themes':
-                    const themes = serviceDetails.themes || []
+                    const themes = (Array.isArray(serviceDetails.themes) ? serviceDetails.themes : []).filter(t => typeof t === 'string')
                     return (
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-2">Themes</h3>
                         {themes.length > 0 ? (
                           <div className="space-y-1">
                             {themes.slice(0, 4).map((theme, i) => (
-                              <p key={i} className="text-sm text-gray-500">{theme.charAt(0).toUpperCase() + theme.slice(1)}</p>
+                              <p key={i} className="text-sm text-gray-500">{String(theme).charAt(0).toUpperCase() + String(theme).slice(1)}</p>
                             ))}
                             {themes.length > 4 && (
                               <p className="text-sm text-gray-400">+{themes.length - 4} more</p>
@@ -1188,21 +1188,21 @@ if (loading) {
                     )
 
                   case 'equipment':
-                    const equipmentText = serviceDetails.equipment?.trim() || ''
-                    const skillsText = serviceDetails.specialSkills?.trim() || ''
+                    const equipmentText = typeof serviceDetails.equipment === 'string' ? serviceDetails.equipment.trim() : ''
+                    const skillsText = typeof serviceDetails.specialSkills === 'string' ? serviceDetails.specialSkills.trim() : ''
                     const equipmentPreview = equipmentText ? equipmentText.substring(0, 50) + (equipmentText.length > 50 ? '...' : '') : ''
                     return (
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-1">Equipment & skills</h3>
                         <p className="text-sm text-gray-500">
-                          {equipmentPreview || skillsText.substring(0, 50) || 'Add details'}
+                          {equipmentPreview || (skillsText ? skillsText.substring(0, 50) : '') || 'Add details'}
                         </p>
                       </div>
                     )
 
                   case 'personalBio':
                     const yearsExp = serviceDetails.personalBio?.yearsExperience
-                    const bioStory = serviceDetails.personalBio?.personalStory?.trim()
+                    const bioStory = typeof serviceDetails.personalBio?.personalStory === 'string' ? serviceDetails.personalBio.personalStory.trim() : ''
                     const bioPreview = yearsExp ? `${yearsExp} years experience` : bioStory ? bioStory.substring(0, 50) + '...' : ''
                     return (
                       <div>
