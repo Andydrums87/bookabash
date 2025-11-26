@@ -99,10 +99,46 @@ export async function GET(request) {
     if (isPerBusinessFlow && targetSupplierId) {
       console.log('🔵 Processing per-business calendar connection for supplier:', targetSupplierId)
 
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+
+      // Set up webhook for real-time updates
+      let webhookData = {
+        webhooksEnabled: false
+      }
+
+      try {
+        console.log('🔵 Setting up webhook for per-business connection...')
+        const channelId = `supplier-${targetSupplierId}-${Date.now()}`
+        const webhookUrl = `${process.env.NEXTAUTH_URL}/api/calendar/webhook`
+
+        const watchResponse = await calendar.events.watch({
+          calendarId: 'primary',
+          requestBody: {
+            id: channelId,
+            type: 'web_hook',
+            address: webhookUrl,
+            expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
+          }
+        })
+
+        console.log('🔵 Webhook created successfully for per-business')
+        webhookData = {
+          webhooksEnabled: true,
+          webhookChannelId: channelId,
+          webhookResourceId: watchResponse.data.resourceId,
+          webhookExpiration: watchResponse.data.expiration,
+          webhookCreatedAt: new Date().toISOString(),
+          webhookExpiresAt: new Date(parseInt(watchResponse.data.expiration)).toISOString()
+        }
+      } catch (webhookError) {
+        console.error('🔵 Webhook setup failed for per-business:', webhookError.message)
+        webhookData.webhookError = webhookError.message
+        webhookData.webhookErrorAt = new Date().toISOString()
+      }
+
       // Sync calendar immediately to get initial blocked dates
       let initialBlockedDates = []
       try {
-        const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
         const timeMin = new Date().toISOString()
         const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -188,7 +224,7 @@ export async function GET(request) {
           userEmail,
           userName,
           automaticSync: true,
-          webhooksEnabled: false
+          ...webhookData
         },
         unavailableDates: allBlocked,
         busyDates: initialBlockedDates,
@@ -223,10 +259,11 @@ export async function GET(request) {
         console.log('🔵 Target supplier ID from wizard:', targetSupplierId)
       }
 
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+
       // Sync calendar immediately to get initial blocked dates
       let initialBlockedDates = []
       try {
-        const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
         const timeMin = new Date().toISOString()
         const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -313,6 +350,41 @@ export async function GET(request) {
 
         console.log('✅ Found supplier:', supplier.id, supplier.data?.name || supplier.business_name)
 
+        // Set up webhook for real-time updates
+        let webhookData = {
+          webhooksEnabled: false
+        }
+
+        try {
+          console.log('🔵 Setting up webhook for wizard flow...')
+          const channelId = `supplier-${supplier.id}-${Date.now()}`
+          const webhookUrl = `${process.env.NEXTAUTH_URL}/api/calendar/webhook`
+
+          const watchResponse = await calendar.events.watch({
+            calendarId: 'primary',
+            requestBody: {
+              id: channelId,
+              type: 'web_hook',
+              address: webhookUrl,
+              expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
+            }
+          })
+
+          console.log('🔵 Webhook created successfully for wizard flow')
+          webhookData = {
+            webhooksEnabled: true,
+            webhookChannelId: channelId,
+            webhookResourceId: watchResponse.data.resourceId,
+            webhookExpiration: watchResponse.data.expiration,
+            webhookCreatedAt: new Date().toISOString(),
+            webhookExpiresAt: new Date(parseInt(watchResponse.data.expiration)).toISOString()
+          }
+        } catch (webhookError) {
+          console.error('🔵 Webhook setup failed for wizard flow:', webhookError.message)
+          webhookData.webhookError = webhookError.message
+          webhookData.webhookErrorAt = new Date().toISOString()
+        }
+
         // Update supplier with calendar data
         const updatedData = {
           ...supplier.data,
@@ -335,7 +407,7 @@ export async function GET(request) {
             userEmail: userEmail,
             userName: userName,
             automaticSync: true,
-            webhooksEnabled: false
+            ...webhookData
           },
           calendarIntegration: {
             enabled: true,
