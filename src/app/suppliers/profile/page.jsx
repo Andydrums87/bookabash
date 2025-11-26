@@ -663,10 +663,11 @@ if (loading) {
   }
 
   const isNewSupplier = supplierData && !supplierData.isComplete
-  const isVenue = supplierData?.business_type === 'venues' || supplierData?.serviceType === 'venues'
+  const isVenue = supplierData?.category === 'venues' || supplierData?.serviceType === 'venues'
 
   // Sidebar sections based on service type
   const venueSections = [
+    { id: 'listingName', label: 'Listing name', icon: FileText },
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'about', label: 'About your venue', icon: FileText },
     { id: 'address', label: 'Venue address', icon: MapPin },
@@ -681,9 +682,12 @@ if (loading) {
   ]
 
   const entertainerSections = [
+    { id: 'listingName', label: 'Listing name', icon: FileText },
     { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'verification', label: 'Verification', icon: Shield },
     { id: 'about', label: 'About your service', icon: FileText },
-    { id: 'basicInfo', label: 'Performance info', icon: Users },
+    { id: 'basicInfo', label: 'Travel & location', icon: MapPin },
+    { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'ageGroups', label: 'Age groups', icon: Users },
     { id: 'performanceStyles', label: 'Performance styles', icon: Settings },
     { id: 'themes', label: 'Themes', icon: Sparkles },
@@ -691,7 +695,6 @@ if (loading) {
     { id: 'personalBio', label: 'Meet the entertainer', icon: Users },
     { id: 'addOns', label: 'Add-on services', icon: Package },
     { id: 'packages', label: 'Packages', icon: Package },
-    { id: 'verification', label: 'Verification', icon: Shield },
   ]
 
   const sections = isVenue ? venueSections : entertainerSections
@@ -783,7 +786,7 @@ if (loading) {
               ) : (
                 <div className="p-4">
                   <ServiceDetailsRouter
-                    serviceType={supplierData?.business_type || supplierData?.serviceType}
+                    serviceType={supplierData?.category || supplierData?.serviceType}
                     serviceDetails={supplierData?.serviceDetails || {}}
                     supplierData={supplierData}
                     currentBusiness={currentBusiness}
@@ -804,29 +807,435 @@ if (loading) {
 
       {/* Desktop Two-column Airbnb-style layout */}
       <div className="hidden lg:flex min-h-screen">
-        {/* Left Sidebar - Section Navigation */}
-        <div className="w-[400px] border-r border-gray-200 bg-white sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
-          <div className="p-6">
-            {/* Section List */}
-            <div className="space-y-1">
-              {sections.map((section) => {
-                const Icon = section.icon
-                const isSelected = selectedSection === section.id
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setSelectedSection(section.id)}
-                    className={`w-full text-left p-4 rounded-xl transition-all ${
-                      isSelected
-                        ? 'border-2 border-gray-900 bg-white'
-                        : 'border-2 border-transparent hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="font-medium text-gray-900">{section.label}</div>
-                  </button>
-                )
-              })}
-            </div>
+        {/* Left Sidebar - Section Navigation with Rich Previews */}
+        <div className="w-[380px] border-r border-gray-200 bg-gray-50 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
+          <div className="p-4 space-y-3">
+            {sections.map((section) => {
+              const isSelected = selectedSection === section.id
+              const serviceDetails = supplierData?.serviceDetails || {}
+              const photos = supplierData?.portfolioImages || []
+
+              // Render different card content based on section type
+              const renderCardContent = () => {
+                switch (section.id) {
+                  case 'photos':
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-4">Media</h3>
+                        {photos.length > 0 ? (
+                          <div className="relative flex justify-center items-center h-36">
+                            {/* Left photo - behind, rotated left */}
+                            {photos[2] && (
+                              <div
+                                className="absolute rounded-2xl overflow-hidden shadow-md border-4 border-white"
+                                style={{
+                                  width: '120px',
+                                  height: '100px',
+                                  transform: 'rotate(-8deg) translateX(-50px)',
+                                  zIndex: 1
+                                }}
+                              >
+                                <img
+                                  src={photos[2].src || photos[2].url || photos[2]}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            {/* Right photo - behind, rotated right */}
+                            {photos[1] && (
+                              <div
+                                className="absolute rounded-2xl overflow-hidden shadow-md border-4 border-white"
+                                style={{
+                                  width: '120px',
+                                  height: '100px',
+                                  transform: 'rotate(8deg) translateX(50px)',
+                                  zIndex: 1
+                                }}
+                              >
+                                <img
+                                  src={photos[1].src || photos[1].url || photos[1]}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            {/* Center photo - front, no rotation */}
+                            <div
+                              className="absolute rounded-2xl overflow-hidden shadow-lg border-4 border-white"
+                              style={{
+                                width: '140px',
+                                height: '110px',
+                                zIndex: 3
+                              }}
+                            >
+                              <img
+                                src={photos[0].src || photos[0].url || photos[0]}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="h-28 bg-gray-100 rounded-xl flex items-center justify-start px-4">
+                            <Camera className="w-6 h-6 text-gray-300 mr-3" />
+                            <p className="text-sm text-gray-400">Add photos</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+
+                  case 'address':
+                    const venueAddress = serviceDetails.venueAddress || {}
+                    const addressText = [venueAddress.addressLine1, venueAddress.city, venueAddress.postcode].filter(Boolean).join(', ')
+                    const encodedAddr = encodeURIComponent(addressText + ', UK')
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Location</h3>
+                        {addressText ? (
+                          <>
+                            <p className="text-sm text-gray-500 mb-3">{addressText}</p>
+                            <div className="rounded-xl overflow-hidden h-32">
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                loading="lazy"
+                                src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddr}&zoom=14`}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add your venue address</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'type':
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Venue type</h3>
+                        <p className="text-sm text-gray-500">
+                          {serviceDetails.venueType || 'Select venue type'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'capacity':
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Capacity</h3>
+                        <p className="text-sm text-gray-500">
+                          {serviceDetails.capacity?.max ? `Up to ${serviceDetails.capacity.max} guests` : 'Set capacity'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'pricing':
+                    // Handle both venue pricing (nested in pricing object) and entertainer pricing (flat)
+                    const venuePricing = serviceDetails.pricing || {}
+                    const venueHourlyRate = venuePricing.hourlyRate || 0
+                    const entertainerHourlyRate = serviceDetails.hourlyRate || 0
+                    const entertainerExtraRate = serviceDetails.extraHourRate || 0
+                    const entertainerAdditional = serviceDetails.additionalEntertainerPrice || 0
+
+                    // Check if it's venue or entertainer based on data structure
+                    const isVenuePricing = venueHourlyRate > 0
+                    const isEntertainerPricing = entertainerHourlyRate > 0 || entertainerExtraRate > 0
+
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Pricing</h3>
+                        {isVenuePricing ? (
+                          <div className="text-sm text-gray-500 space-y-0.5">
+                            <p>£{venueHourlyRate} per hour</p>
+                            {venuePricing.minimumBookingHours && <p>{venuePricing.minimumBookingHours}hr minimum</p>}
+                            {venuePricing.securityDeposit > 0 && <p>£{venuePricing.securityDeposit} deposit</p>}
+                          </div>
+                        ) : isEntertainerPricing ? (
+                          <div className="text-sm text-gray-500 space-y-0.5">
+                            {entertainerHourlyRate > 0 && <p>£{entertainerHourlyRate} per hour</p>}
+                            {entertainerExtraRate > 0 && <p>£{entertainerExtraRate} extra hour</p>}
+                            {entertainerAdditional > 0 && <p>£{entertainerAdditional} additional entertainer</p>}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Set your rates</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'restricted':
+                    const restrictedCount = serviceDetails.restrictedItems?.length || 0
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Items not permitted</h3>
+                        <p className="text-sm text-gray-500">
+                          {restrictedCount > 0 ? `${restrictedCount} item${restrictedCount !== 1 ? 's' : ''} restricted` : 'No restrictions set'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'rules':
+                    const rulesCount = serviceDetails.houseRules?.length || 0
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">House rules</h3>
+                        <p className="text-sm text-gray-500">
+                          {rulesCount > 0 ? `${rulesCount} rule${rulesCount !== 1 ? 's' : ''} set` : 'Add rules'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'addons':
+                  case 'addOns':
+                    const addonsCount = serviceDetails.addOnServices?.length || 0
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Add-on services</h3>
+                        <p className="text-sm text-gray-500">
+                          {addonsCount > 0 ? `${addonsCount} service${addonsCount !== 1 ? 's' : ''} available` : 'Add extras'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'about':
+                    const aboutText = serviceDetails.aboutUs || supplierData?.description || ''
+                    const truncatedAbout = aboutText.trim().slice(0, 60)
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">About</h3>
+                        <p className="text-sm text-gray-500">
+                          {truncatedAbout ? `${truncatedAbout}${aboutText.length > 60 ? '...' : ''}` : 'Tell your story'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'packages':
+                    const packagesCount = supplierData?.packages?.length || 0
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Packages</h3>
+                        <p className="text-sm text-gray-500">
+                          {packagesCount > 0 ? `${packagesCount} package${packagesCount !== 1 ? 's' : ''} created` : 'Create packages'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'verification':
+                    // Check multiple possible locations for verification documents
+                    const verificationDocs = supplierData?.data?.verification?.documents ||
+                                            supplierData?.verification?.documents ||
+                                            supplierData?.serviceDetails?.verification?.documents ||
+                                            {}
+                    const docTypes = ['dbs', 'id', 'address']
+                    // Note: 'submitted' status means under review/pending
+                    const approvedDocs = docTypes.filter(d => verificationDocs[d]?.status === 'approved')
+                    const pendingDocs = docTypes.filter(d => verificationDocs[d]?.status === 'submitted')
+                    const rejectedDocs = docTypes.filter(d => verificationDocs[d]?.status === 'rejected')
+                    const notSubmittedDocs = docTypes.filter(d => !verificationDocs[d]?.status || verificationDocs[d]?.status === 'not_submitted')
+
+                    const allApproved = approvedDocs.length === 3
+                    const hasPending = pendingDocs.length > 0
+                    const hasRejected = rejectedDocs.length > 0
+
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900">Verification</h3>
+                          {allApproved ? (
+                            <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                              <CheckCircle className="w-3 h-3" />
+                              Verified
+                            </span>
+                          ) : hasPending ? (
+                            <span className="flex items-center gap-1 text-xs font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
+                              <Clock className="w-3 h-3" />
+                              Under review
+                            </span>
+                          ) : hasRejected ? (
+                            <span className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                              <XCircle className="w-3 h-3" />
+                              Action needed
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {docTypes.map(docType => {
+                            const doc = verificationDocs[docType]
+                            const status = doc?.status || 'not_submitted'
+                            const labels = { dbs: 'DBS Check', id: 'Photo ID', address: 'Proof of Address' }
+
+                            return (
+                              <div key={docType} className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">{labels[docType]}</span>
+                                {status === 'approved' ? (
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                ) : status === 'submitted' ? (
+                                  <Clock className="w-4 h-4 text-yellow-500" />
+                                ) : status === 'rejected' ? (
+                                  <XCircle className="w-4 h-4 text-red-500" />
+                                ) : (
+                                  <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+
+                  // Listing name section (shared between entertainers and venues)
+                  case 'listingName':
+                    const displayName = supplierData?.data?.name || supplierData?.name || ''
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Listing name</h3>
+                        <p className="text-sm text-gray-500">
+                          {displayName || 'Add your business name'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'basicInfo':
+                    const baseLocation = serviceDetails.serviceArea?.baseLocation || ''
+                    const basicPostcode = serviceDetails.serviceArea?.postcode || supplierData?.location || ''
+                    const hasCoords = serviceDetails.serviceArea?.latitude && serviceDetails.serviceArea?.longitude
+                    const locationText = [baseLocation, basicPostcode].filter(Boolean).join(', ')
+                    const encodedLocation = encodeURIComponent(locationText ? locationText + ', UK' : 'London, UK')
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Travel & location</h3>
+                        {basicPostcode ? (
+                          <>
+                            <p className="text-sm text-gray-500 mb-3">
+                              {basicPostcode}{serviceDetails.travelRadius ? ` · ${serviceDetails.travelRadius} miles` : ''}
+                            </p>
+                            <div className="rounded-xl overflow-hidden h-28">
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                loading="lazy"
+                                src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedLocation}&zoom=12`}
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500">Set your location</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'ageGroups':
+                    const ageGroups = serviceDetails.ageGroups || []
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Age groups</h3>
+                        {ageGroups.length > 0 ? (
+                          <div className="space-y-1">
+                            {ageGroups.slice(0, 4).map((age, i) => (
+                              <p key={i} className="text-sm text-gray-500">{age}</p>
+                            ))}
+                            {ageGroups.length > 4 && (
+                              <p className="text-sm text-gray-400">+{ageGroups.length - 4} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Select age groups</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'performanceStyles':
+                    const styles = serviceDetails.performanceStyle || []
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Performance styles</h3>
+                        {styles.length > 0 ? (
+                          <div className="space-y-1">
+                            {styles.slice(0, 4).map((style, i) => (
+                              <p key={i} className="text-sm text-gray-500">{style}</p>
+                            ))}
+                            {styles.length > 4 && (
+                              <p className="text-sm text-gray-400">+{styles.length - 4} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Select styles</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'themes':
+                    const themes = serviceDetails.themes || []
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Themes</h3>
+                        {themes.length > 0 ? (
+                          <div className="space-y-1">
+                            {themes.slice(0, 4).map((theme, i) => (
+                              <p key={i} className="text-sm text-gray-500">{theme.charAt(0).toUpperCase() + theme.slice(1)}</p>
+                            ))}
+                            {themes.length > 4 && (
+                              <p className="text-sm text-gray-400">+{themes.length - 4} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add themes</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'equipment':
+                    const equipmentText = serviceDetails.equipment?.trim() || ''
+                    const skillsText = serviceDetails.specialSkills?.trim() || ''
+                    const equipmentPreview = equipmentText ? equipmentText.substring(0, 50) + (equipmentText.length > 50 ? '...' : '') : ''
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Equipment & skills</h3>
+                        <p className="text-sm text-gray-500">
+                          {equipmentPreview || skillsText.substring(0, 50) || 'Add details'}
+                        </p>
+                      </div>
+                    )
+
+                  case 'personalBio':
+                    const yearsExp = serviceDetails.personalBio?.yearsExperience
+                    const bioStory = serviceDetails.personalBio?.personalStory?.trim()
+                    const bioPreview = yearsExp ? `${yearsExp} years experience` : bioStory ? bioStory.substring(0, 50) + '...' : ''
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Meet the entertainer</h3>
+                        <p className="text-sm text-gray-500">
+                          {bioPreview || 'Tell your story'}
+                        </p>
+                      </div>
+                    )
+
+                  default:
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{section.label}</h3>
+                      </div>
+                    )
+                }
+              }
+
+              return (
+                <div
+                  key={section.id}
+                  onClick={() => setSelectedSection(section.id)}
+                  className={`w-full p-5 rounded-2xl transition-all bg-white cursor-pointer ${
+                    isSelected
+                      ? 'ring-2 ring-gray-900 shadow-sm'
+                      : 'hover:shadow-md border border-gray-100'
+                  }`}
+                >
+                  {renderCardContent()}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -846,7 +1255,7 @@ if (loading) {
           ) : (
             <div className="p-6 lg:p-12">
               <ServiceDetailsRouter
-                serviceType={supplierData?.business_type || supplierData?.serviceType}
+                serviceType={supplierData?.category || supplierData?.serviceType}
                 serviceDetails={supplierData?.serviceDetails || {}}
                 supplierData={supplierData}
                 currentBusiness={currentBusiness}

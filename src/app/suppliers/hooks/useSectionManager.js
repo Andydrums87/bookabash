@@ -19,12 +19,20 @@ export const useSectionManager = (supplierData, updateProfile, supplier) => {
           basicInfo: {
             originalValue: {
               travelRadius: serviceDetails.travelRadius || 20,
-              setupTime: serviceDetails.setupTime || 30,
+              serviceArea: serviceDetails.serviceArea || {},
+            }
+          },
+          pricing: {
+            originalValue: {
               groupSizeMin: serviceDetails.groupSizeMin || 1,
               groupSizeMax: serviceDetails.groupSizeMax || 30,
               additionalEntertainerPrice: serviceDetails.additionalEntertainerPrice || 150,
-              extraHourRate: serviceDetails.extraHourRate || null,
+              extraHourRate: serviceDetails.extraHourRate || 0,
+              hourlyRate: serviceDetails.hourlyRate || 0,
             }
+          },
+          listingName: {
+            originalValue: supplierData?.data?.name || '',
           },
           ageGroups: {
             originalValue: serviceDetails.ageGroups || [],

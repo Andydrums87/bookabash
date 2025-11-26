@@ -29,11 +29,9 @@ export default function AvailabilityPage() {
 
   console.log('🔍 Primary business data for availability:', {
     id: primaryBusiness?.id,
-    auth_user_id: primaryBusiness?.auth_user_id,  // ← Log this
     name: primaryBusiness?.data?.name,
-    hasWorkingHours: !!primaryBusiness?.data?.workingHours,
-    workingHours: primaryBusiness?.data?.workingHours,
-    unavailableDates: primaryBusiness?.data?.unavailableDates
+    unavailableDatesCount: primaryBusiness?.data?.unavailableDates?.length || 0,
+    googleCalendarConnected: primaryBusiness?.data?.googleCalendarSync?.connected
   })
 
   return (

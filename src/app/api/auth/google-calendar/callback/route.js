@@ -71,10 +71,157 @@ export async function GET(request) {
 
     // Check if this is a wizard flow (state starts with 'wizard-')
     const isWizardFlow = state?.startsWith('wizard-')
-    const actualUserId = isWizardFlow ? state.replace('wizard-', '') : state
+    // Check if this is a per-business connection (state contains ':business:')
+    const isPerBusinessFlow = state?.includes(':business:')
+    // Check if wizard flow includes supplier ID (format: wizard-{userId}:supplier:{supplierId})
+    const isWizardWithSupplier = isWizardFlow && state?.includes(':supplier:')
+
+    let actualUserId = state
+    let targetSupplierId = null
+
+    if (isWizardWithSupplier) {
+      // Format: wizard-{userId}:supplier:{supplierId}
+      const withoutPrefix = state.replace('wizard-', '')
+      const [userId, , supplierId] = withoutPrefix.split(':supplier:')
+      actualUserId = userId
+      targetSupplierId = withoutPrefix.split(':supplier:')[1]
+      console.log('🔵 Wizard flow with specific supplier:', { userId: actualUserId, supplierId: targetSupplierId })
+    } else if (isWizardFlow) {
+      actualUserId = state.replace('wizard-', '')
+    } else if (isPerBusinessFlow) {
+      const [userId, , supplierId] = state.split(':business:')
+      actualUserId = userId
+      targetSupplierId = state.split(':business:')[1]
+      console.log('🔵 Per-business calendar connection detected:', { userId: actualUserId, supplierId: targetSupplierId })
+    }
+
+    // Handle per-business calendar connection (connect to a specific business only)
+    if (isPerBusinessFlow && targetSupplierId) {
+      console.log('🔵 Processing per-business calendar connection for supplier:', targetSupplierId)
+
+      // Sync calendar immediately to get initial blocked dates
+      let initialBlockedDates = []
+      try {
+        const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+        const timeMin = new Date().toISOString()
+        const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+
+        const response = await calendar.events.list({
+          calendarId: 'primary',
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime'
+        })
+
+        const events = response.data.items || []
+        console.log(`🔵 Found ${events.length} calendar events for per-business sync`)
+
+        events.forEach((event) => {
+          if (!event.start) return
+
+          if (event.start.date) {
+            initialBlockedDates.push({
+              date: event.start.date,
+              timeSlots: ['morning', 'afternoon'],
+              source: 'google-calendar',
+              eventTitle: event.summary || 'Calendar Event'
+            })
+          } else if (event.start.dateTime) {
+            const startTime = new Date(event.start.dateTime)
+            const date = startTime.toISOString().split('T')[0]
+            const hour = startTime.getHours()
+
+            let timeSlots = []
+            if (hour < 13) timeSlots.push('morning')
+            if (hour >= 13) timeSlots.push('afternoon')
+
+            if (timeSlots.length > 0) {
+              initialBlockedDates.push({
+                date,
+                timeSlots,
+                source: 'google-calendar',
+                eventTitle: event.summary || 'Calendar Event'
+              })
+            }
+          }
+        })
+      } catch (syncError) {
+        console.error('Calendar sync failed for per-business:', syncError)
+      }
+
+      // Update only the specific supplier
+      const { data: supplier, error: fetchError } = await supabaseAdmin
+        .from('suppliers')
+        .select('*')
+        .eq('id', targetSupplierId)
+        .single()
+
+      if (fetchError || !supplier) {
+        console.error('Failed to fetch target supplier:', fetchError)
+        return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=supplier_not_found', request.url))
+      }
+
+      // Merge existing manual blocks with new calendar blocks
+      const existingUnavailable = supplier.data?.unavailableDates || []
+      const manualBlocks = existingUnavailable.filter(item => item.source !== 'google-calendar')
+      const allBlocked = [...manualBlocks, ...initialBlockedDates]
+
+      const updatedData = {
+        ...supplier.data,
+        googleCalendarSync: {
+          enabled: true,
+          connected: true,
+          inherited: false,  // This is its own connection
+          ownConnection: true,
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          tokenExpiry: Date.now() + (tokens.expires_in * 1000),
+          calendarId: 'primary',
+          syncFrequency: 'realtime',
+          lastSync: initialBlockedDates.length > 0 ? new Date().toISOString() : null,
+          syncedEvents: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isWorkspaceAccount,
+          workspaceDomain,
+          userEmail,
+          userName,
+          automaticSync: true,
+          webhooksEnabled: false
+        },
+        unavailableDates: allBlocked,
+        busyDates: initialBlockedDates,
+        updatedAt: new Date().toISOString()
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('suppliers')
+        .update({ data: updatedData })
+        .eq('id', targetSupplierId)
+
+      if (updateError) {
+        console.error('Failed to update supplier with calendar:', updateError)
+        return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=update_failed', request.url))
+      }
+
+      console.log('✅ Per-business calendar connected successfully')
+
+      const params = new URLSearchParams({
+        calendar_connected: 'true',
+        provider: 'google',
+        per_business: 'true',
+        events_synced: initialBlockedDates.length.toString()
+      })
+
+      return NextResponse.redirect(new URL(`/suppliers/availability?${params.toString()}`, request.url))
+    }
 
     if (isWizardFlow) {
       console.log('🔵 Wizard flow detected - fetching calendar data and updating supplier', actualUserId)
+      if (targetSupplierId) {
+        console.log('🔵 Target supplier ID from wizard:', targetSupplierId)
+      }
 
       // Sync calendar immediately to get initial blocked dates
       let initialBlockedDates = []
@@ -133,20 +280,38 @@ export async function GET(request) {
 
       // Update supplier record directly in database
       try {
-        console.log('🔵 Finding supplier for user ID:', actualUserId)
+        let supplier
 
-        const { data: suppliers, error: fetchError } = await supabaseAdmin
-          .from('suppliers')
-          .select('*')
-          .eq('auth_user_id', actualUserId)
+        // If we have a specific supplier ID from the wizard, use that
+        if (targetSupplierId) {
+          console.log('🔵 Finding specific supplier by ID:', targetSupplierId)
+          const { data: supplierData, error: fetchError } = await supabaseAdmin
+            .from('suppliers')
+            .select('*')
+            .eq('id', targetSupplierId)
+            .single()
 
-        if (fetchError || !suppliers || suppliers.length === 0) {
-          console.error('❌ No supplier found for user:', actualUserId, fetchError)
-          throw new Error('Supplier not found')
+          if (fetchError || !supplierData) {
+            console.error('❌ Supplier not found by ID:', targetSupplierId, fetchError)
+            throw new Error('Supplier not found')
+          }
+          supplier = supplierData
+        } else {
+          // Fallback: find by user ID (old behavior)
+          console.log('🔵 Finding supplier for user ID:', actualUserId)
+          const { data: suppliers, error: fetchError } = await supabaseAdmin
+            .from('suppliers')
+            .select('*')
+            .eq('auth_user_id', actualUserId)
+
+          if (fetchError || !suppliers || suppliers.length === 0) {
+            console.error('❌ No supplier found for user:', actualUserId, fetchError)
+            throw new Error('Supplier not found')
+          }
+          supplier = suppliers[0]
         }
 
-        const supplier = suppliers[0]
-        console.log('✅ Found supplier:', supplier.id)
+        console.log('✅ Found supplier:', supplier.id, supplier.data?.name || supplier.business_name)
 
         // Update supplier with calendar data
         const updatedData = {

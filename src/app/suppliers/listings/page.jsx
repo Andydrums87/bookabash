@@ -108,15 +108,28 @@ function BusinessCard({ business, onSelect, onClick }) {
   const imageUrl = getBusinessImage(business)
   const hasImage = !!imageUrl
 
-  // Determine status
+  // Determine status based on profile_status column from database
   const getStatus = () => {
-    // Check if onboarding is complete first
+    const profileStatus = business.profile_status
+    const canGoLive = business.can_go_live
     const hasCompletedOnboarding = business.data?.onboardingCompleted || business.data?.isComplete
-    if (!hasCompletedOnboarding) return { label: "Setup incomplete", color: "bg-amber-500" }
-    if (!business.data?.name) return { label: "In progress", color: "bg-amber-500" }
-    if (!business.data?.description) return { label: "In progress", color: "bg-amber-500" }
-    if (!hasImage) return { label: "In progress", color: "bg-amber-500" }
-    return { label: "Listed", color: "bg-green-500" }
+
+    // If onboarding not complete, show setup incomplete
+    if (!hasCompletedOnboarding) {
+      return { label: "Setup incomplete", color: "bg-amber-500" }
+    }
+
+    // Check profile_status from database - live when profile_status is 'live' AND can_go_live is true
+    if (profileStatus === 'live' && canGoLive) {
+      return { label: "Listed", color: "bg-green-500" }
+    }
+
+    if (profileStatus === 'under_review' || profileStatus === 'pending_review') {
+      return { label: "Under review", color: "bg-yellow-500" }
+    }
+
+    // Draft or any other status
+    return { label: "Draft", color: "bg-gray-400" }
   }
 
   const status = getStatus()

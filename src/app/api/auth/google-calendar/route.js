@@ -40,22 +40,31 @@ export async function GET(request) {
   }
 }
 
-// POST handler for wizard onboarding (no user session yet)
+// POST handler for wizard onboarding (no user session yet) and per-business connections
 export async function POST(request) {
   try {
-    const { userId } = await request.json()
+    const { userId, supplierId, perBusinessConnection } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }
 
     console.log('Generating Google Calendar auth URL for user:', userId)
+    if (perBusinessConnection && supplierId) {
+      console.log('Per-business connection requested for supplier:', supplierId)
+    }
 
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       `${process.env.NEXTAUTH_URL}/api/auth/google-calendar/callback`
     )
+
+    // Encode supplierId in state if this is a per-business connection
+    // Format: userId or userId:supplierId for per-business
+    const state = perBusinessConnection && supplierId
+      ? `${userId}:business:${supplierId}`
+      : userId
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
@@ -65,7 +74,7 @@ export async function POST(request) {
         'https://www.googleapis.com/auth/userinfo.email'
       ],
       prompt: 'consent select_account',  // Force consent screen for video demo
-      state: userId  // Pass user ID through OAuth flow
+      state: state  // Pass user ID (and optionally supplierId) through OAuth flow
     })
 
     return NextResponse.json({ authUrl })

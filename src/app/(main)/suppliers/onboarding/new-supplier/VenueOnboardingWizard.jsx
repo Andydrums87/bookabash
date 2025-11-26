@@ -13,7 +13,8 @@ import VenueRestrictionsStep from "@/components/onboarding/steps/venue/VenueRest
 import VenuePhotosStep from "@/components/onboarding/steps/venue/VenuePhotosStep"
 import VenuePricingStep from "@/components/onboarding/steps/venue/VenuePricingStep"
 import EntertainerTypeStep from "@/components/onboarding/steps/entertainer/EntertainerTypeStep"
-import ServiceDetailsStep from "@/components/onboarding/steps/entertainer/ServiceDetailsStep"
+import CompanyNameStep from "@/components/onboarding/steps/entertainer/CompanyNameStep"
+import AboutServiceStep from "@/components/onboarding/steps/entertainer/AboutServiceStep"
 import ServiceAreaStep from "@/components/onboarding/steps/entertainer/ServiceAreaStep"
 import PricingPackagesStep from "@/components/onboarding/steps/entertainer/PricingPackagesStep"
 import VerificationDocumentsStep from "@/components/onboarding/steps/entertainer/VerificationDocumentsStep"
@@ -115,9 +116,9 @@ export default function VenueOnboardingWizard() {
   })
 
   // Calculate total steps based on supplier type (use useMemo to recalculate when supplier type changes)
-  // Entertainment: 10 steps (Type, Account, Entertainer Type, Service Details, Service Area, Photos, Pricing, Verification, Calendar, Review)
+  // Entertainment: 11 steps (Type, Account, Entertainer Type, Company Name, About Service, Service Area, Photos, Pricing, Verification, Calendar, Review)
   // Venues: 11 steps
-  const TOTAL_STEPS = wizardData.supplierType === 'entertainment' ? 10 : 11
+  const TOTAL_STEPS = wizardData.supplierType === 'entertainment' ? 11 : 11
 
   // Load saved data on mount OR load current business data in edit mode
   useEffect(() => {
@@ -577,8 +578,8 @@ export default function VenueOnboardingWizard() {
         return
       }
 
-      // For step 8 (verification documents), wait a moment to ensure uploads have completed
-      if (currentStep === 8 && wizardData.supplierType === 'entertainment') {
+      // For step 9 (verification documents), wait a moment to ensure uploads have completed
+      if (currentStep === 9 && wizardData.supplierType === 'entertainment') {
         console.log('⏳ Waiting for verification documents to finish uploading...')
         await new Promise(resolve => setTimeout(resolve, 1000))
       }
@@ -1043,18 +1044,36 @@ export default function VenueOnboardingWizard() {
             entertainerType: wizardData.entertainerType || currentSupplier.data.serviceDetails?.entertainerType,
             businessName: wizardData.serviceDetails?.businessName || currentSupplier.data.serviceDetails?.businessName,
             description: wizardData.serviceDetails?.description || currentSupplier.data.serviceDetails?.description,
+            // Dashboard reads aboutUs field for the "About Your Service" section
+            aboutUs: wizardData.serviceDetails?.description || currentSupplier.data.serviceDetails?.aboutUs || currentSupplier.data.serviceDetails?.description,
             ageGroups: wizardData.serviceDetails?.ageGroups || currentSupplier.data.serviceDetails?.ageGroups || [],
             specialRequirements: wizardData.serviceDetails?.specialRequirements || currentSupplier.data.serviceDetails?.specialRequirements,
             serviceArea: {
               baseLocation: wizardData.serviceArea?.baseLocation || currentSupplier.data.serviceDetails?.serviceArea?.baseLocation,
               postcode: wizardData.serviceArea?.postcode || currentSupplier.data.serviceDetails?.serviceArea?.postcode,
+              addressLine1: wizardData.serviceArea?.addressLine1 || currentSupplier.data.serviceDetails?.serviceArea?.addressLine1,
+              fullAddress: wizardData.serviceArea?.fullAddress || currentSupplier.data.serviceDetails?.serviceArea?.fullAddress,
+              latitude: wizardData.serviceArea?.latitude || currentSupplier.data.serviceDetails?.serviceArea?.latitude,
+              longitude: wizardData.serviceArea?.longitude || currentSupplier.data.serviceDetails?.serviceArea?.longitude,
+              country: wizardData.serviceArea?.country || currentSupplier.data.serviceDetails?.serviceArea?.country,
               travelRadius: wizardData.serviceArea?.travelRadius || currentSupplier.data.serviceDetails?.serviceArea?.travelRadius || 10,
               travelFee: wizardData.serviceArea?.travelFee || currentSupplier.data.serviceDetails?.serviceArea?.travelFee || 0
             },
+            // Dashboard reads these flat fields for pricing section
+            hourlyRate: wizardData.entertainerPricing?.basePrice || currentSupplier.data.serviceDetails?.hourlyRate || currentSupplier.data.serviceDetails?.pricing?.basePrice || 0,
+            extraHourRate: wizardData.entertainerPricing?.extraHourRate || currentSupplier.data.serviceDetails?.extraHourRate || 0,
+            groupSizeMin: wizardData.entertainerPricing?.groupSizeMin || currentSupplier.data.serviceDetails?.groupSizeMin || 1,
+            groupSizeMax: wizardData.entertainerPricing?.groupSizeMax || currentSupplier.data.serviceDetails?.groupSizeMax || 30,
+            additionalEntertainerPrice: wizardData.entertainerPricing?.additionalEntertainerPrice || currentSupplier.data.serviceDetails?.additionalEntertainerPrice || 150,
+            // Also keep the nested pricing object for backwards compatibility
             pricing: {
               basePrice: wizardData.entertainerPricing?.basePrice || currentSupplier.data.serviceDetails?.pricing?.basePrice || 0,
               pricingType: wizardData.entertainerPricing?.pricingType || currentSupplier.data.serviceDetails?.pricing?.pricingType || 'per_hour',
               minimumDuration: wizardData.entertainerPricing?.minimumDuration || currentSupplier.data.serviceDetails?.pricing?.minimumDuration || 1,
+              extraHourRate: wizardData.entertainerPricing?.extraHourRate || currentSupplier.data.serviceDetails?.pricing?.extraHourRate || 0,
+              groupSizeMin: wizardData.entertainerPricing?.groupSizeMin || currentSupplier.data.serviceDetails?.pricing?.groupSizeMin || 1,
+              groupSizeMax: wizardData.entertainerPricing?.groupSizeMax || currentSupplier.data.serviceDetails?.pricing?.groupSizeMax || 30,
+              additionalEntertainerPrice: wizardData.entertainerPricing?.additionalEntertainerPrice || currentSupplier.data.serviceDetails?.pricing?.additionalEntertainerPrice || 150,
               additionalInfo: wizardData.entertainerPricing?.additionalInfo || currentSupplier.data.serviceDetails?.pricing?.additionalInfo || ''
             },
             photos: wizardData.photos?.length > 0 ? wizardData.photos : currentSupplier.data.serviceDetails?.photos || []
@@ -1208,15 +1227,20 @@ export default function VenueOnboardingWizard() {
         return
       }
 
+      if (!supplierId) {
+        alert('Please complete earlier steps first before connecting calendar.')
+        return
+      }
+
       if (provider === 'google') {
-        // Trigger Google OAuth flow
+        // Trigger Google OAuth flow - include supplierId so callback knows which business to update
         const response = await fetch('/api/auth/google-calendar', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: `wizard-${userId}`, // Prefix to indicate wizard flow
+            userId: `wizard-${userId}:supplier:${supplierId}`, // Include supplierId in state
             isOnboarding: true,
             email: wizardData.account.email
           })
@@ -1237,6 +1261,8 @@ export default function VenueOnboardingWizard() {
         localStorage.setItem('wizardBeforeOAuth', JSON.stringify({
           data: wizardData,
           step: currentStep,
+          userId: userId,
+          supplierId: supplierId,
           timestamp: Date.now()
         }))
 
@@ -1244,14 +1270,14 @@ export default function VenueOnboardingWizard() {
         window.location.href = data.authUrl
 
       } else if (provider === 'outlook') {
-        // Trigger Outlook OAuth flow
+        // Trigger Outlook OAuth flow - include supplierId so callback knows which business to update
         const response = await fetch('/api/auth/outlook-calendar', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: `wizard-${userId}`, // Prefix to indicate wizard flow
+            userId: `wizard-${userId}:supplier:${supplierId}`, // Include supplierId in state
             isOnboarding: true,
             email: wizardData.account.email
           })
@@ -1271,6 +1297,8 @@ export default function VenueOnboardingWizard() {
         localStorage.setItem('wizardBeforeOAuth', JSON.stringify({
           data: wizardData,
           step: currentStep,
+          userId: userId,
+          supplierId: supplierId,
           timestamp: Date.now()
         }))
 
@@ -1354,34 +1382,35 @@ export default function VenueOnboardingWizard() {
       switch (currentStep) {
         case 3: // Entertainer Type
           return wizardData.entertainerType !== ""
-        case 4: // Service Details
+        case 4: // Company Name
           return (
             wizardData.serviceDetails.businessName &&
-            wizardData.serviceDetails.businessName.trim().length > 0 &&
-            wizardData.serviceDetails.description &&
-            wizardData.serviceDetails.description.length >= 50 &&
-            wizardData.serviceDetails.ageGroups &&
-            wizardData.serviceDetails.ageGroups.length > 0
+            wizardData.serviceDetails.businessName.trim().length > 0
           )
-        case 5: // Service Area
+        case 5: // About Service (description)
+          return (
+            wizardData.serviceDetails.description &&
+            wizardData.serviceDetails.description.length >= 50
+          )
+        case 6: // Service Area
           return (
             wizardData.serviceArea.baseLocation &&
             wizardData.serviceArea.postcode &&
             wizardData.serviceArea.travelRadius > 0
           )
-        case 6: // Photos
+        case 7: // Photos
           return wizardData.photos.length >= 3 // Minimum 3 photos for entertainers
-        case 7: // Pricing
+        case 8: // Pricing
           return wizardData.entertainerPricing.basePrice > 0
-        case 8: // Verification Documents
+        case 9: // Verification Documents
           return (
             wizardData.verificationDocuments.dbs?.uploaded &&
             wizardData.verificationDocuments.id?.uploaded &&
             wizardData.verificationDocuments.address?.uploaded
           )
-        case 9: // Calendar
+        case 10: // Calendar
           return true // Optional
-        case 10: // Review & Complete
+        case 11: // Review & Complete
           return true
         default:
           return true
@@ -1532,7 +1561,7 @@ export default function VenueOnboardingWizard() {
       }
     }
 
-    // ENTERTAINER FLOW (10 steps total)
+    // ENTERTAINER FLOW (11 steps total)
     if (isEntertainer) {
       switch (currentStep) {
         case 3: // Entertainer Type
@@ -1542,35 +1571,42 @@ export default function VenueOnboardingWizard() {
               onSelect={(type) => setWizardData({ ...wizardData, entertainerType: type })}
             />
           )
-        case 4: // Service Details
+        case 4: // Company Name
           return (
-            <ServiceDetailsStep
+            <CompanyNameStep
               serviceDetails={wizardData.serviceDetails}
               onChange={(details) => setWizardData({ ...wizardData, serviceDetails: details })}
             />
           )
-        case 5: // Service Area
+        case 5: // About Service (description + age groups)
+          return (
+            <AboutServiceStep
+              serviceDetails={wizardData.serviceDetails}
+              onChange={(details) => setWizardData({ ...wizardData, serviceDetails: details })}
+            />
+          )
+        case 6: // Service Area
           return (
             <ServiceAreaStep
               serviceArea={wizardData.serviceArea}
               onChange={(area) => setWizardData({ ...wizardData, serviceArea: area })}
             />
           )
-        case 6: // Photos
+        case 7: // Photos
           return (
             <VenuePhotosStep
               photos={wizardData.photos}
               onChange={(photos) => setWizardData({ ...wizardData, photos })}
             />
           )
-        case 7: // Pricing
+        case 8: // Pricing
           return (
             <PricingPackagesStep
               pricing={wizardData.entertainerPricing}
               onChange={(pricing) => setWizardData({ ...wizardData, entertainerPricing: pricing })}
             />
           )
-        case 8: // Verification Documents
+        case 9: // Verification Documents
           return (
             <VerificationDocumentsStep
               documents={wizardData.verificationDocuments}
@@ -1579,7 +1615,7 @@ export default function VenueOnboardingWizard() {
               supplierId={supplierId}
             />
           )
-        case 9: // Calendar
+        case 10: // Calendar
           return (
             <CalendarConnectionStep
               connectedCalendar={wizardData.calendar.provider}
@@ -1588,7 +1624,7 @@ export default function VenueOnboardingWizard() {
               eventsSynced={wizardData.calendar.eventsSynced || 0}
             />
           )
-        case 10: // Review & Complete
+        case 11: // Review & Complete
           return (
             <div className="py-12 text-center max-w-2xl mx-auto">
               <div className="mb-8">

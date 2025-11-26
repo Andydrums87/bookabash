@@ -68,7 +68,10 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
       business_slug,
       data,
       created_at,
-      updated_at
+      updated_at,
+      is_active,
+      profile_status,
+      can_go_live
     `)
     .eq("auth_user_id", userId)
     .order('is_primary', { ascending: false })
@@ -91,10 +94,10 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
 
     const businessList = businessRows.map((business) => {
       const businessData = business.data || {};
-      
+
       return {
         id: business.id,
-        auth_user_id: business.auth_user_id,  // ← Add this line
+        auth_user_id: business.auth_user_id,
         name: business.business_name || businessData.name || 'Unnamed Business',
         supplierData: business,
         serviceType: businessData.serviceType || 'entertainer',
@@ -103,12 +106,17 @@ const loadBusinesses = useCallback(async (isInitialLoad = false) => {
         location: businessData.location || '',
         priceFrom: businessData.priceFrom || 0,
         status: businessData.isComplete ? 'active' : 'draft',
-        
+
         isPrimary: business.is_primary,
         businessType: business.business_type,
         parentBusinessId: business.parent_business_id,
         businessSlug: business.business_slug,
-        
+
+        // Status fields from database
+        is_active: business.is_active,
+        profile_status: business.profile_status,
+        can_go_live: business.can_go_live,
+
         data: businessData,
         owner: businessData.owner || {}
       };

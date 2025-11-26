@@ -1,16 +1,24 @@
 // api/admin/verification/review/route.js - COMPLETE VERSION
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { verifyAdminAuth } from '@/utils/adminAuth';
+
+// Create service role client for admin operations (bypasses RLS)
+const getServiceClient = () => {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+};
 
 export async function POST(request) {
   try {
     console.log('🔍 Starting document review...');
-    
+
     const authResult = await verifyAdminAuth(request);
     if (authResult.error) {
       console.log('❌ Auth failed:', authResult.error);
       return Response.json(
-        { error: authResult.error }, 
+        { error: authResult.error },
         { status: authResult.status }
       );
     }
@@ -24,6 +32,9 @@ export async function POST(request) {
     }
 
     console.log('📋 Reviewing document:', { supplierId, documentType, decision });
+
+    // Use service role client to bypass RLS
+    const supabase = getServiceClient();
 
     // Get current supplier data
     const { data: supplier, error: fetchError } = await supabase

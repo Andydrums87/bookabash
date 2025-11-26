@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, RefreshCw, CheckCircle, X } from "lucide-react"
+import { Calendar, RefreshCw, CheckCircle, X, Link2, Link2Off } from "lucide-react"
 
 // Calendar Provider Icons
 const GoogleCalendarIcon = ({ className }) => (
@@ -40,67 +40,144 @@ const CALENDAR_PROVIDERS = [
   },
 ]
 
-const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
+// Props:
+// - targetBusiness: Optional. If provided, shows connection for this specific business
+// - isUnifiedView: If true, shows the shared/unified calendar connection for all businesses
+const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId, targetBusiness, isUnifiedView = true }) => {
   const [connectedProviders, setConnectedProviders] = useState([])
   const [expandedProvider, setExpandedProvider] = useState(null)
   const [syncing, setSyncing] = useState(null)
+  const [unlinking, setUnlinking] = useState(false)
 
-  // ✅ FIXED: Check for BOTH direct and inherited connections
+  // Determine which supplier data to use
+  const supplierData = targetBusiness?.data || currentSupplier
+
+  // Check for BOTH direct and inherited connections
   useEffect(() => {
     const connected = []
-    
+    const data = supplierData
+
     // Check Google Calendar (direct OR inherited)
-    if (currentSupplier?.googleCalendarSync?.connected || 
-        currentSupplier?.googleCalendarSync?.inherited) {
+    if (data?.googleCalendarSync?.connected ||
+        data?.googleCalendarSync?.inherited) {
       connected.push('google')
     }
-    
+
     // Check Outlook Calendar (direct OR inherited)
-    if (currentSupplier?.outlookCalendarSync?.connected ||
-        currentSupplier?.outlookCalendarSync?.inherited) {
+    if (data?.outlookCalendarSync?.connected ||
+        data?.outlookCalendarSync?.inherited) {
       connected.push('outlook')
     }
-    
-    setConnectedProviders(connected)
-  }, [currentSupplier])
 
-  // ✅ NEW: Check if connection is inherited
+    setConnectedProviders(connected)
+  }, [supplierData])
+
+  // Check if connection is inherited from primary
   const isInherited = (providerId) => {
-    const syncData = providerId === 'google' 
-      ? currentSupplier?.googleCalendarSync
-      : currentSupplier?.outlookCalendarSync
+    const data = supplierData
+    const syncData = providerId === 'google'
+      ? data?.googleCalendarSync
+      : data?.outlookCalendarSync
     return syncData?.inherited === true
+  }
+
+  // Check if this business has its own direct connection (not inherited)
+  const hasOwnConnection = (providerId) => {
+    const data = supplierData
+    const syncData = providerId === 'google'
+      ? data?.googleCalendarSync
+      : data?.outlookCalendarSync
+    return syncData?.connected === true && !syncData?.inherited
   }
 
   const handleProviderConnect = async (providerId) => {
     console.log(`Connecting to ${providerId}...`)
-    
+
     const userId = authUserId || currentSupplier?.auth_user_id
-    
+
     if (!userId) {
       console.error('No auth_user_id available')
       return
     }
 
     try {
-      const endpoint = providerId === 'google' 
+      const endpoint = providerId === 'google'
         ? '/api/auth/google-calendar'
         : '/api/auth/outlook-calendar'
+
+      // If connecting for a specific business, pass the supplierId
+      const body = { userId }
+      if (targetBusiness?.id && !isUnifiedView) {
+        body.supplierId = targetBusiness.id
+        body.perBusinessConnection = true
+      }
 
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify(body)
       })
 
       if (!response.ok) throw new Error('Connection failed')
-      
+
       const data = await response.json()
       if (data.authUrl) {
         window.location.href = data.authUrl
       }
     } catch (error) {
       console.error("Connect failed:", error)
+    }
+  }
+
+  // Unlink this business from the shared calendar (use its own or none)
+  const handleUnlinkFromShared = async (providerId) => {
+    if (!targetBusiness?.id) return
+
+    setUnlinking(true)
+    try {
+      const response = await fetch('/api/calendar/unlink-business', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplierId: targetBusiness.id,
+          provider: providerId
+        })
+      })
+
+      if (response.ok) {
+        setConnectedProviders(prev => prev.filter(id => id !== providerId))
+        setExpandedProvider(null)
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error("Unlink failed:", error)
+    } finally {
+      setUnlinking(false)
+    }
+  }
+
+  // Re-link this business to the shared calendar
+  const handleRelinkToShared = async (providerId) => {
+    if (!targetBusiness?.id) return
+
+    setUnlinking(true)
+    try {
+      const response = await fetch('/api/calendar/relink-business', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplierId: targetBusiness.id,
+          provider: providerId
+        })
+      })
+
+      if (response.ok) {
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error("Relink failed:", error)
+    } finally {
+      setUnlinking(false)
     }
   }
 
@@ -131,28 +208,29 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
   const handleSync = async (providerId) => {
     setSyncing(providerId)
     try {
-      // ✅ FIXED: Use primary supplier ID for inherited connections
+      const data = supplierData
+      // Use primary supplier ID for inherited connections, otherwise use target business or current
       const supplierIdToSync = isInherited(providerId)
-        ? currentSupplier?.googleCalendarSync?.primarySupplierId || currentSupplier?.outlookCalendarSync?.primarySupplierId
-        : currentSupplier?.id
+        ? data?.googleCalendarSync?.primarySupplierId || data?.outlookCalendarSync?.primarySupplierId
+        : targetBusiness?.id || currentSupplier?.id
 
       const response = await fetch("/api/calendar/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           supplierId: supplierIdToSync,
-          provider: providerId 
+          provider: providerId
         })
       })
 
       if (response.ok) {
-        const data = await response.json()
+        const responseData = await response.json()
         if (onSyncToggle) {
           onSyncToggle({
             type: "sync_completed",
-            blockedDates: data.blockedDates,
-            eventsFound: data.eventsFound,
-            lastSync: data.lastSync,
+            blockedDates: responseData.blockedDates,
+            eventsFound: responseData.eventsFound,
+            lastSync: responseData.lastSync,
             provider: providerId
           })
         }
@@ -166,14 +244,19 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
   }
 
   const getLastSync = (providerId) => {
-    const syncData = providerId === 'google' 
-      ? currentSupplier?.googleCalendarSync
-      : currentSupplier?.outlookCalendarSync
-    
-    return syncData?.lastSync 
+    const data = supplierData
+    const syncData = providerId === 'google'
+      ? data?.googleCalendarSync
+      : data?.outlookCalendarSync
+
+    return syncData?.lastSync
       ? new Date(syncData.lastSync).toLocaleDateString()
       : 'Never'
   }
+
+  // Check if we're showing for a specific non-primary business
+  const isPerBusinessView = targetBusiness && !isUnifiedView
+  const businessHasNoCalendar = isPerBusinessView && !connectedProviders.length
 
   return (
     <div className="space-y-2">
@@ -183,6 +266,7 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
         const isExpanded = expandedProvider === provider.id
         const isSyncing = syncing === provider.id
         const inherited = isInherited(provider.id)
+        const ownConnection = hasOwnConnection(provider.id)
 
         return (
           <div key={provider.id}>
@@ -194,12 +278,12 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                   handleProviderConnect(provider.id)
                 }
               }}
-              disabled={isSyncing}
+              disabled={isSyncing || unlinking}
               className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
                 isConnected
                   ? 'bg-green-50 hover:bg-green-100'
                   : 'bg-gray-50 hover:bg-gray-100'
-              } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${(isSyncing || unlinking) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Icon className="w-8 h-8 flex-shrink-0" />
               <div className="flex-1 text-left">
@@ -207,7 +291,16 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                 {isConnected ? (
                   <div className="text-xs text-green-600 flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    {inherited ? 'Connected via primary' : 'Connected'}
+                    {inherited ? (
+                      <span className="flex items-center gap-1">
+                        <Link2 className="w-3 h-3" />
+                        Shared calendar
+                      </span>
+                    ) : ownConnection ? (
+                      'Own calendar'
+                    ) : (
+                      'Connected'
+                    )}
                   </div>
                 ) : (
                   <div className="text-xs text-gray-500">Click to connect</div>
@@ -216,15 +309,17 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
             </button>
 
             {isExpanded && isConnected && (
-              <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg space-y-2">
+              <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg space-y-3">
                 <div className="text-xs text-gray-600">
                   {provider.id === 'google'
-                    ? currentSupplier?.googleCalendarSync?.userEmail
-                    : currentSupplier?.outlookCalendarSync?.email}
+                    ? supplierData?.googleCalendarSync?.userEmail
+                    : supplierData?.outlookCalendarSync?.email}
                 </div>
                 <div className="text-xs text-gray-500">
                   Last synced: {getLastSync(provider.id)}
                 </div>
+
+                {/* Sync button */}
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -237,7 +332,7 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                     disabled={isSyncing}
                   >
                     <RefreshCw className={`w-3 h-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Syncing...' : 'Sync'}
+                    {isSyncing ? 'Syncing...' : 'Sync now'}
                   </Button>
                   {!inherited && (
                     <Button
@@ -253,6 +348,49 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId }) => {
                     </Button>
                   )}
                 </div>
+
+                {/* Per-business calendar options */}
+                {isPerBusinessView && inherited && (
+                  <div className="pt-2 border-t border-gray-100 space-y-2">
+                    <p className="text-xs text-gray-500">
+                      This business uses the shared calendar from your primary listing.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs h-8"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleUnlinkFromShared(provider.id)
+                      }}
+                      disabled={unlinking}
+                    >
+                      <Link2Off className="w-3 h-3 mr-1" />
+                      {unlinking ? 'Unlinking...' : 'Use separate calendar'}
+                    </Button>
+                  </div>
+                )}
+
+                {isPerBusinessView && ownConnection && (
+                  <div className="pt-2 border-t border-gray-100 space-y-2">
+                    <p className="text-xs text-gray-500">
+                      This business has its own calendar connection.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs h-8"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRelinkToShared(provider.id)
+                      }}
+                      disabled={unlinking}
+                    >
+                      <Link2 className="w-3 h-3 mr-1" />
+                      {unlinking ? 'Linking...' : 'Use shared calendar instead'}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>

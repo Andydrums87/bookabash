@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { supabase } from "@/lib/supabase"
 import {
   MapPin,
   Settings,
@@ -23,19 +24,113 @@ import {
   Trash2,
   Ban,
   CheckCircle,
-  Users
+  Users,
+  Zap
 } from "lucide-react"
 import { generateVenuePackages } from "@/utils/mockBackend"
 import { SectionSave } from '@/components/ui/SectionSave';
 import { useSectionManager } from '../../hooks/useSectionManager';
 
-const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier, selectedSection, onSectionChange }) => {
+const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, setSupplierData, currentBusiness, updateProfile, supplier, selectedSection, onSectionChange }) => {
 
   const { getSectionState, checkChanges, saveSection } = useSectionManager(
-    supplierData, 
-    updateProfile, 
+    supplierData,
+    updateProfile,
     supplier
   );
+
+  // Listing Name state and constants
+  const MAX_NAME_LENGTH = 50
+  const [listingName, setListingName] = useState(
+    supplierData?.data?.name || currentBusiness?.name || ''
+  )
+  const [listingNameSaving, setListingNameSaving] = useState(false)
+
+  // Sync listing name when business changes
+  useEffect(() => {
+    if (supplierData?.data?.name) {
+      setListingName(supplierData.data.name)
+    } else if (currentBusiness?.name) {
+      setListingName(currentBusiness.name)
+    }
+  }, [supplierData?.data?.name, currentBusiness?.name])
+
+  // Listing name handlers
+  const handleListingNameChange = (value) => {
+    if (value.length <= MAX_NAME_LENGTH) {
+      setListingName(value)
+      checkChanges('listingName', value)
+    }
+  }
+
+  // Save listing name
+  const handleListingNameSave = async () => {
+    if (!supplier?.id || !listingName.trim()) return
+
+    setListingNameSaving(true)
+    try {
+      const { data: currentData, error: fetchError } = await supabase
+        .from('suppliers')
+        .select('data')
+        .eq('id', supplier.id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      const updatedData = {
+        ...(currentData?.data || {}),
+        name: listingName.trim()
+      }
+
+      const { error } = await supabase
+        .from('suppliers')
+        .update({
+          business_name: listingName.trim(),
+          data: updatedData
+        })
+        .eq('id', supplier.id)
+
+      if (error) throw error
+
+      // Update local state immediately for instant feedback
+      if (setSupplierData) {
+        setSupplierData(prev => ({
+          ...prev,
+          name: listingName.trim(),
+          data: {
+            ...prev.data,
+            name: listingName.trim()
+          }
+        }))
+      }
+
+      // Trigger refresh of business context
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('business-name-updated', { detail: { name: listingName.trim() } }))
+      }
+
+      // Reset the change tracking so save button hides
+      checkChanges('listingName', listingName.trim())
+    } catch (err) {
+      console.error('Failed to save listing name:', err)
+    } finally {
+      setListingNameSaving(false)
+    }
+  }
+
+  // Ref for the editable div and tracking internal state
+  const listingNameRef = useRef(null)
+  const isInternalUpdate = useRef(false)
+
+  // Sync ref content when listingName changes externally (e.g., on load)
+  useEffect(() => {
+    if (listingNameRef.current && !isInternalUpdate.current) {
+      if (listingNameRef.current.textContent !== listingName) {
+        listingNameRef.current.textContent = listingName
+      }
+    }
+    isInternalUpdate.current = false
+  }, [listingName])
   const [loading, setLoading] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     aboutUs: true, // Start expanded
@@ -62,6 +157,7 @@ const VenueServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, c
 
   // Map selectedSection prop to internal section names
   const sectionMap = {
+    'listingName': 'listingName',
     'photos': 'photos',
     'about': 'aboutUs',
     'address': 'venueAddress',
@@ -1120,6 +1216,7 @@ const handleVenueDetailsSave = () => {
 
   // Section titles mapping
   const sectionTitles = {
+    listingName: 'Listing name',
     photos: 'Photos',
     aboutUs: 'About your venue',
     venueAddress: 'Location',
@@ -1140,6 +1237,74 @@ const handleVenueDetailsSave = () => {
   // Render content for each section
   const renderSectionContent = () => {
     switch (currentInternalSection) {
+      case 'listingName':
+        return (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+            {/* Character count */}
+            <p className="text-gray-500 text-base mb-4">
+              <span className="font-medium text-gray-900">{listingName.length}</span>/{MAX_NAME_LENGTH} available
+            </p>
+
+            {/* Big editable title - using contentEditable for large text like Airbnb */}
+            <div
+              ref={listingNameRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => {
+                const text = e.currentTarget.textContent || ''
+                isInternalUpdate.current = true
+                if (text.length <= MAX_NAME_LENGTH) {
+                  setListingName(text)
+                  checkChanges('listingName', text)
+                } else {
+                  const truncated = text.slice(0, MAX_NAME_LENGTH)
+                  const sel = window.getSelection()
+                  const cursorPos = Math.min(sel?.anchorOffset || 0, MAX_NAME_LENGTH)
+                  e.currentTarget.textContent = truncated
+                  setListingName(truncated)
+                  checkChanges('listingName', truncated)
+                  if (e.currentTarget.firstChild) {
+                    const range = document.createRange()
+                    range.setStart(e.currentTarget.firstChild, cursorPos)
+                    range.collapse(true)
+                    sel?.removeAllRanges()
+                    sel?.addRange(range)
+                  }
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                }
+              }}
+              style={{
+                fontSize: 'clamp(2rem, 10vw, 4.5rem)',
+                lineHeight: 1.1,
+                minHeight: '80px'
+              }}
+              className="font-semibold text-center text-gray-900 border-none outline-none bg-transparent w-full max-w-3xl focus:ring-0"
+            />
+
+            {/* Tip icon and save */}
+            <div className="mt-16 flex flex-col items-center gap-6">
+              <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center">
+                <Zap className="w-7 h-7 text-orange-400" />
+              </div>
+
+              {listingName !== (supplierData?.data?.name || currentBusiness?.name || '') && listingName.trim() && (
+                <button
+                  onClick={handleListingNameSave}
+                  disabled={listingNameSaving}
+                  className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-xl flex items-center gap-2"
+                >
+                  {listingNameSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save name
+                </button>
+              )}
+            </div>
+          </div>
+        )
+
       case 'aboutUs':
         return (
           <div className="space-y-6">
@@ -1181,6 +1346,15 @@ const handleVenueDetailsSave = () => {
         )
 
       case 'venueAddress':
+        const fullAddress = [
+          details.venueAddress?.addressLine1,
+          details.venueAddress?.city,
+          details.venueAddress?.postcode,
+          'UK'
+        ].filter(Boolean).join(', ')
+        const encodedAddress = encodeURIComponent(fullAddress)
+        const hasAddress = details.venueAddress?.postcode || details.venueAddress?.addressLine1
+
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1228,6 +1402,33 @@ const handleVenueDetailsSave = () => {
                 />
               </div>
             </div>
+
+            {/* Map Preview */}
+            <div className="pt-4">
+              <label className="text-sm font-medium text-gray-700 block mb-3">Location Preview</label>
+              {hasAddress ? (
+                <div className="rounded-xl overflow-hidden border border-gray-200">
+                  <iframe
+                    width="100%"
+                    height="300"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddress}`}
+                  />
+                </div>
+              ) : (
+                <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 h-[200px] flex flex-col items-center justify-center">
+                  <MapPin className="w-8 h-8 text-gray-300 mb-2" />
+                  <p className="text-sm text-gray-400">Enter an address to see location preview</p>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                This map helps customers find your venue. Make sure your address is accurate.
+              </p>
+            </div>
+
             <SectionSave
               sectionName="Venue Address"
               hasChanges={venueAddressState.hasChanges}
@@ -1273,32 +1474,64 @@ const handleVenueDetailsSave = () => {
 
       case 'capacity':
         return (
-          <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-            <div className="mb-8">
+          <div className="py-8 max-w-2xl mx-auto">
+            <div className="text-center mb-12">
               <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            </div>
-            <h2 className="text-2xl font-medium text-gray-700 mb-12">How many guests can fit comfortably?</h2>
-
-            {/* Big number with +/- buttons */}
-            <div className="flex items-center justify-center gap-8 mb-12">
-              <button
-                onClick={() => handleNestedFieldChange("capacity", "max", Math.max(1, (details.capacity?.max || 0) - 5))}
-                className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
-              >
-                <span className="text-2xl text-gray-600">−</span>
-              </button>
-              <span className="text-8xl font-semibold text-gray-900 w-40 text-center">
-                {details.capacity?.max || 0}
-              </span>
-              <button
-                onClick={() => handleNestedFieldChange("capacity", "max", (details.capacity?.max || 0) + 5)}
-                className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
-              >
-                <span className="text-2xl text-gray-600">+</span>
-              </button>
+              <h2 className="text-2xl font-medium text-gray-700">How many guests can you accommodate?</h2>
+              <p className="text-gray-500 mt-2">Help families find the right size space for their party</p>
             </div>
 
-            <div className="mt-8">
+            <div className="space-y-8">
+              {/* Seated Capacity */}
+              <div className="flex items-center justify-between py-6 border-b border-gray-200">
+                <div>
+                  <div className="text-lg font-medium text-gray-900">Seated Capacity</div>
+                  <div className="text-sm text-gray-600">Maximum guests when seated</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleNestedFieldChange("capacity", "seated", Math.max(1, (details.capacity?.seated || 30) - 5))}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={(details.capacity?.seated || 30) <= 5}
+                  >
+                    <span className="text-xl text-gray-600">−</span>
+                  </button>
+                  <div className="w-16 text-center text-xl font-medium">{details.capacity?.seated || 30}</div>
+                  <button
+                    onClick={() => handleNestedFieldChange("capacity", "seated", (details.capacity?.seated || 30) + 5)}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors"
+                  >
+                    <span className="text-xl text-gray-600">+</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Standing Capacity */}
+              <div className="flex items-center justify-between py-6 border-b border-gray-200">
+                <div>
+                  <div className="text-lg font-medium text-gray-900">Standing Capacity</div>
+                  <div className="text-sm text-gray-600">Maximum guests when standing</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleNestedFieldChange("capacity", "standing", Math.max(1, (details.capacity?.standing || 60) - 10))}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    disabled={(details.capacity?.standing || 60) <= 10}
+                  >
+                    <span className="text-xl text-gray-600">−</span>
+                  </button>
+                  <div className="w-16 text-center text-xl font-medium">{details.capacity?.standing || 60}</div>
+                  <button
+                    onClick={() => handleNestedFieldChange("capacity", "standing", (details.capacity?.standing || 60) + 10)}
+                    className="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors"
+                  >
+                    <span className="text-xl text-gray-600">+</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12">
               <SectionSave
                 sectionName="Capacity"
                 hasChanges={venueBasicInfoState.hasChanges}
@@ -1313,54 +1546,104 @@ const handleVenueDetailsSave = () => {
 
       case 'pricing':
         return (
-          <div className="space-y-6">
-            <p className="text-sm text-gray-500">Set your pricing structure for venue hire</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 block">Hourly Rate (£) *</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={details.pricing?.hourlyRate || ""}
-                  onChange={(e) => handleNestedFieldChange("pricing", "hourlyRate", parseFloat(e.target.value))}
-                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
-                  placeholder="50"
-                />
+          <div className="space-y-12">
+            {/* Hourly Rate - Big incrementor style */}
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="mb-4">
+                <DollarSign className="w-12 h-12 text-gray-400 mx-auto" />
               </div>
+              <h2 className="text-xl font-medium text-gray-700 mb-8">What's your hourly rate?</h2>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 block">Minimum Booking (hours)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={details.pricing?.minimumBookingHours || ""}
-                  onChange={(e) => handleNestedFieldChange("pricing", "minimumBookingHours", parseInt(e.target.value))}
-                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
-                  placeholder="2"
-                />
+              <div className="flex items-center justify-center gap-6 mb-4">
+                <button
+                  onClick={() => handleNestedFieldChange("pricing", "hourlyRate", Math.max(0, (details.pricing?.hourlyRate || 0) - 5))}
+                  className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-2xl text-gray-600">−</span>
+                </button>
+                <div className="flex items-baseline">
+                  <span className="text-4xl font-medium text-gray-400 mr-1">£</span>
+                  <span className="text-7xl font-semibold text-gray-900 w-32 text-center">
+                    {details.pricing?.hourlyRate || 0}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleNestedFieldChange("pricing", "hourlyRate", (details.pricing?.hourlyRate || 0) + 5)}
+                  className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-2xl text-gray-600">+</span>
+                </button>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 block">Security Deposit (£)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={details.pricing?.securityDeposit || ""}
-                  onChange={(e) => handleNestedFieldChange("pricing", "securityDeposit", parseFloat(e.target.value))}
-                  className="w-full h-12 bg-white border border-gray-300 rounded-xl text-base px-4 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
-                  placeholder="100"
-                />
-              </div>
+              <p className="text-sm text-gray-500">per hour</p>
             </div>
-            <SectionSave
-              sectionName="Pricing"
-              hasChanges={venuePricingState.hasChanges}
-              onSave={handleVenuePricingSave}
-              saving={venuePricingState.saving}
-              lastSaved={venuePricingState.lastSaved}
-              error={venuePricingState.error}
-            />
+
+            {/* Minimum Booking Hours */}
+            <div className="flex flex-col items-center justify-center text-center pt-8 border-t border-gray-200">
+              <div className="mb-4">
+                <Clock className="w-10 h-10 text-gray-400 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-700 mb-6">Minimum booking duration</h3>
+
+              <div className="flex items-center justify-center gap-6 mb-2">
+                <button
+                  onClick={() => handleNestedFieldChange("pricing", "minimumBookingHours", Math.max(1, (details.pricing?.minimumBookingHours || 2) - 1))}
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-xl text-gray-600">−</span>
+                </button>
+                <span className="text-5xl font-semibold text-gray-900 w-20 text-center">
+                  {details.pricing?.minimumBookingHours || 2}
+                </span>
+                <button
+                  onClick={() => handleNestedFieldChange("pricing", "minimumBookingHours", (details.pricing?.minimumBookingHours || 2) + 1)}
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-xl text-gray-600">+</span>
+                </button>
+              </div>
+              <p className="text-sm text-gray-500">hours minimum</p>
+            </div>
+
+            {/* Security Deposit */}
+            <div className="flex flex-col items-center justify-center text-center pt-8 border-t border-gray-200">
+              <div className="mb-4">
+                <Shield className="w-10 h-10 text-gray-400 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-700 mb-6">Security deposit</h3>
+
+              <div className="flex items-center justify-center gap-6 mb-2">
+                <button
+                  onClick={() => handleNestedFieldChange("pricing", "securityDeposit", Math.max(0, (details.pricing?.securityDeposit || 0) - 25))}
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-xl text-gray-600">−</span>
+                </button>
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-medium text-gray-400 mr-1">£</span>
+                  <span className="text-5xl font-semibold text-gray-900 w-28 text-center">
+                    {details.pricing?.securityDeposit || 0}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleNestedFieldChange("pricing", "securityDeposit", (details.pricing?.securityDeposit || 0) + 25)}
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-gray-400 transition-colors"
+                >
+                  <span className="text-xl text-gray-600">+</span>
+                </button>
+              </div>
+              <p className="text-sm text-gray-500">refundable deposit</p>
+            </div>
+
+            <div className="pt-8">
+              <SectionSave
+                sectionName="Pricing"
+                hasChanges={venuePricingState.hasChanges}
+                onSave={handleVenuePricingSave}
+                saving={venuePricingState.saving}
+                lastSaved={venuePricingState.lastSaved}
+                error={venuePricingState.error}
+              />
+            </div>
           </div>
         )
 

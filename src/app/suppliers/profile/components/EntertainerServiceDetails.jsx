@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { supabase } from "@/lib/supabase"
 import {
   Users,
   MapPin,
@@ -21,8 +22,12 @@ import {
   ChevronUp,
   AlertCircle,
   UserPlus,
-  CheckCircle
+  CheckCircle,
+  Search,
+  Minus,
+  Plus
 } from "lucide-react"
+import { LoadScript, Autocomplete, GoogleMap, Marker } from "@react-google-maps/api"
 import EnhancedThemesSection from "../../dashboard/EnchancedThemesSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,8 +41,10 @@ import { useSectionManager } from '../../hooks/useSectionManager';
 
 // Section mapping for sidebar navigation
 const sectionMap = {
+  'listingName': 'listingName',
   'about': 'aboutUs',
   'basicInfo': 'basicInfo',
+  'pricing': 'pricing',
   'ageGroups': 'ageGroups',
   'performanceStyles': 'performanceStyles',
   'themes': 'themes',
@@ -47,8 +54,10 @@ const sectionMap = {
 }
 
 const sectionTitles = {
+  'listingName': 'Listing Name',
   'about': 'About Your Service',
-  'basicInfo': 'Performance Info',
+  'basicInfo': 'Travel & Location',
+  'pricing': 'Pricing',
   'ageGroups': 'Age Groups',
   'performanceStyles': 'Performance Styles',
   'themes': 'Themes',
@@ -61,6 +70,7 @@ const sectionTitles = {
 const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierData, currentBusiness, updateProfile, supplier, setSupplierData, selectedSection, onSectionChange }) => {
   // Use data passed from parent instead of calling useSupplier again
   const [loading, setLoading] = useState(false)
+  const [businessName, setBusinessName] = useState(currentBusiness?.name || '')
   const [expandedSections, setExpandedSections] = useState({
     aboutUs: true, // Start expanded
     basicInfo: false,
@@ -97,15 +107,36 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       maxGroupSize: 30,
       supervisionRequired: true,
     },
+    serviceArea: {
+      baseLocation: "",
+      postcode: "",
+      travelRadius: 10,
+      travelFee: 0,
+    },
+    hourlyRate: 0,
     ...serviceDetails,
   })
 
   // Replace all your individual section state with this one hook
   const { getSectionState, checkChanges, saveSection } = useSectionManager(
-    supplierData, 
-    updateProfile, 
+    supplierData,
+    updateProfile,
     supplier
   );
+
+  // Sync business name when currentBusiness changes
+  useEffect(() => {
+    if (currentBusiness?.name) {
+      setBusinessName(currentBusiness.name)
+    }
+  }, [currentBusiness?.name])
+
+  // Handler for business name changes - triggers aboutUs section dirty state
+  const handleBusinessNameChange = (value) => {
+    setBusinessName(value)
+    // Mark aboutUs as having changes when business name changes
+    checkChanges('aboutUs', { aboutUs: details.aboutUs, businessName: value })
+  }
 
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
@@ -201,6 +232,13 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           maxGroupSize: 30,
           supervisionRequired: true,
           ...businessServiceDetails.performanceSpecs,
+        },
+        serviceArea: {
+          baseLocation: "",
+          postcode: "",
+          travelRadius: 10,
+          travelFee: 0,
+          ...businessServiceDetails.serviceArea,
         },
       })
     }
@@ -307,20 +345,25 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     const newDetails = { ...details, [field]: value }
     setDetails(newDetails)
     onUpdate(newDetails)
-    
+
     // Check for changes based on field
     if (field === 'aboutUs') {
-      checkChanges('aboutUs', value);
-    } else if (['travelRadius', 'setupTime', 'groupSizeMin', 'groupSizeMax', 'additionalEntertainerPrice', 'extraHourRate'].includes(field)) {
+      checkChanges('aboutUs', { aboutUs: value, businessName });
+    } else if (['travelRadius', 'serviceArea'].includes(field)) {
       const basicInfoData = {
         travelRadius: field === 'travelRadius' ? value : details.travelRadius,
-        setupTime: field === 'setupTime' ? value : details.setupTime,
+        serviceArea: field === 'serviceArea' ? value : details.serviceArea,
+      };
+      checkChanges('basicInfo', basicInfoData);
+    } else if (['groupSizeMin', 'groupSizeMax', 'additionalEntertainerPrice', 'extraHourRate', 'hourlyRate'].includes(field)) {
+      const pricingData = {
         groupSizeMin: field === 'groupSizeMin' ? value : details.groupSizeMin,
         groupSizeMax: field === 'groupSizeMax' ? value : details.groupSizeMax,
         additionalEntertainerPrice: field === 'additionalEntertainerPrice' ? value : details.additionalEntertainerPrice,
         extraHourRate: field === 'extraHourRate' ? value : details.extraHourRate,
+        hourlyRate: field === 'hourlyRate' ? value : details.hourlyRate,
       };
-      checkChanges('basicInfo', basicInfoData);
+      checkChanges('pricing', pricingData);
     } else if (field === 'equipment' || field === 'specialSkills') {
       const equipmentData = {
         equipment: field === 'equipment' ? value : details.equipment,
@@ -372,8 +415,28 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   }
 
   // Create save handlers for each section
-  const handleAboutUsSave = () => {
-    saveSection('aboutUs', details.aboutUs, {
+  const handleAboutUsSave = async () => {
+    // Save business name directly to suppliers table if changed
+    if (businessName.trim() && businessName !== currentBusiness?.name) {
+      try {
+        const { error } = await supabase
+          .from('suppliers')
+          .update({ business_name: businessName.trim() })
+          .eq('id', supplier.id)
+
+        if (error) throw error
+
+        // Trigger refresh of business context
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('business-name-updated', { detail: { name: businessName.trim() } }))
+        }
+      } catch (err) {
+        console.error('Failed to save business name:', err)
+      }
+    }
+
+    // Save aboutUs to serviceDetails
+    saveSection('aboutUs', { aboutUs: details.aboutUs, businessName }, {
       serviceDetails: {
         ...supplierData.serviceDetails,
         aboutUs: details.aboutUs
@@ -384,19 +447,43 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   const handleBasicInfoSave = () => {
     const basicInfoData = {
       travelRadius: details.travelRadius,
-      setupTime: details.setupTime,
-      groupSizeMin: details.groupSizeMin,
-      groupSizeMax: details.groupSizeMax,
-      additionalEntertainerPrice: details.additionalEntertainerPrice,
-      extraHourRate: details.extraHourRate,
+      serviceArea: details.serviceArea,
     };
-    
+
     saveSection('basicInfo', basicInfoData, {
       serviceDetails: {
         ...supplierData.serviceDetails,
         ...basicInfoData
       }
     });
+  };
+
+  const handlePricingSave = async () => {
+    const pricingData = {
+      groupSizeMin: details.groupSizeMin,
+      groupSizeMax: details.groupSizeMax,
+      additionalEntertainerPrice: details.additionalEntertainerPrice,
+      extraHourRate: details.extraHourRate,
+      hourlyRate: details.hourlyRate,
+    };
+
+    await saveSection('pricing', pricingData, {
+      serviceDetails: {
+        ...supplierData.serviceDetails,
+        ...pricingData
+      }
+    });
+
+    // Update local state for instant sidebar feedback
+    if (setSupplierData) {
+      setSupplierData(prev => ({
+        ...prev,
+        serviceDetails: {
+          ...prev.serviceDetails,
+          ...pricingData
+        }
+      }));
+    }
   };
 
   const handleAgeGroupsSave = () => {
@@ -461,6 +548,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Get section states
   const aboutUsState = getSectionState('aboutUs');
   const basicInfoState = getSectionState('basicInfo');
+  const pricingState = getSectionState('pricing');
   const ageGroupsState = getSectionState('ageGroups');
   const performanceStylesState = getSectionState('performanceStyles');
   const themesState = getSectionState('themes');
@@ -575,17 +663,193 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Determine which section to render based on selectedSection
   const activeSection = sectionMap[selectedSection] || selectedSection
 
+  // Max characters for listing name
+  const MAX_NAME_LENGTH = 50
+
+  // Listing Name state and handler - reads from data.name JSONB field
+  const [listingName, setListingName] = useState(
+    supplierData?.data?.name || currentBusiness?.name || ''
+  )
+  const [listingNameSaving, setListingNameSaving] = useState(false)
+
+  // Sync listing name when business changes
+  useEffect(() => {
+    if (supplierData?.data?.name) {
+      setListingName(supplierData.data.name)
+    } else if (currentBusiness?.name) {
+      setListingName(currentBusiness.name)
+    }
+  }, [supplierData?.data?.name, currentBusiness?.name])
+
+  // Handle listing name change with character limit
+  const handleListingNameChange = (value) => {
+    if (value.length <= MAX_NAME_LENGTH) {
+      setListingName(value)
+      checkChanges('listingName', value)
+    }
+  }
+
+  // Save listing name
+  const handleListingNameSave = async () => {
+    if (!supplier?.id || !listingName.trim()) return
+
+    setListingNameSaving(true)
+    try {
+      // Get current data first to preserve other fields
+      const { data: currentData, error: fetchError } = await supabase
+        .from('suppliers')
+        .select('data')
+        .eq('id', supplier.id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      // Update data.name in the JSONB field
+      const updatedData = {
+        ...(currentData?.data || {}),
+        name: listingName.trim()
+      }
+
+      const { error } = await supabase
+        .from('suppliers')
+        .update({
+          business_name: listingName.trim(),
+          data: updatedData
+        })
+        .eq('id', supplier.id)
+
+      if (error) throw error
+
+      // Update local state immediately for instant feedback
+      if (setSupplierData) {
+        setSupplierData(prev => ({
+          ...prev,
+          name: listingName.trim(),
+          data: {
+            ...prev.data,
+            name: listingName.trim()
+          }
+        }))
+      }
+
+      // Trigger refresh of business context
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('business-name-updated', { detail: { name: listingName.trim() } }))
+      }
+
+      // Reset the change tracking so save button hides
+      checkChanges('listingName', listingName.trim())
+    } catch (err) {
+      console.error('Failed to save listing name:', err)
+    } finally {
+      setListingNameSaving(false)
+    }
+  }
+
+  // Get listing name section state
+  const listingNameState = getSectionState('listingName')
+
+  // Ref for the editable div and tracking internal state
+  const listingNameRef = useRef(null)
+  const isInternalUpdate = useRef(false)
+
+  // Sync ref content when listingName changes externally (e.g., on load)
+  useEffect(() => {
+    if (listingNameRef.current && !isInternalUpdate.current) {
+      if (listingNameRef.current.textContent !== listingName) {
+        listingNameRef.current.textContent = listingName
+      }
+    }
+    isInternalUpdate.current = false
+  }, [listingName])
+
+  // Listing Name Section Content - Airbnb style
+  const renderListingName = () => (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+      {/* Character count */}
+      <p className="text-gray-500 text-base mb-4">
+        <span className="font-medium text-gray-900">{listingName.length}</span>/{MAX_NAME_LENGTH} available
+      </p>
+
+      {/* Big editable title - using contentEditable for large text like Airbnb */}
+      <div
+        ref={listingNameRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={(e) => {
+          const text = e.currentTarget.textContent || ''
+          isInternalUpdate.current = true
+          if (text.length <= MAX_NAME_LENGTH) {
+            setListingName(text)
+            checkChanges('listingName', text)
+          } else {
+            // Truncate if over limit - need to fix DOM and cursor
+            const truncated = text.slice(0, MAX_NAME_LENGTH)
+
+            // Save cursor position
+            const sel = window.getSelection()
+            const cursorPos = Math.min(sel?.anchorOffset || 0, MAX_NAME_LENGTH)
+
+            e.currentTarget.textContent = truncated
+            setListingName(truncated)
+            checkChanges('listingName', truncated)
+
+            // Restore cursor
+            if (e.currentTarget.firstChild) {
+              const range = document.createRange()
+              range.setStart(e.currentTarget.firstChild, cursorPos)
+              range.collapse(true)
+              sel?.removeAllRanges()
+              sel?.addRange(range)
+            }
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+          }
+        }}
+        style={{
+          fontSize: 'clamp(2rem, 10vw, 4.5rem)',
+          lineHeight: 1.1,
+          minHeight: '80px'
+        }}
+        className="font-semibold text-center text-gray-900 border-none outline-none bg-transparent w-full max-w-3xl focus:ring-0"
+      />
+
+      {/* Tip icon and save */}
+      <div className="mt-16 flex flex-col items-center gap-6">
+        <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center">
+          <Zap className="w-7 h-7 text-orange-400" />
+        </div>
+
+        {listingName !== (supplierData?.data?.name || currentBusiness?.name || '') && listingName.trim() && (
+          <Button
+            onClick={handleListingNameSave}
+            disabled={listingNameSaving}
+            className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-xl"
+          >
+            {listingNameSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : null}
+            Save name
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
   // About Us Section Content
   const renderAboutUs = () => (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">About Your Service</h2>
-        <p className="text-gray-600">Tell customers about your business and what makes you special (max 120 words)</p>
+        <p className="text-gray-600">Tell customers about your business and what makes you special</p>
       </div>
 
       <div className="space-y-4">
         <Label htmlFor="aboutUs" className="text-base font-medium text-gray-700">
-          Your Business Story *
+          Your Business Story * <span className="text-gray-400 font-normal">(max 120 words)</span>
         </Label>
         <div className="relative">
           <Textarea
@@ -625,146 +889,416 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     </div>
   )
 
-  // Basic Info Section Content
-  const renderBasicInfo = () => (
-    <div className="space-y-6">
+  // Radius options for visual selection
+  const radiusOptions = [
+    { value: 5, label: "5 miles" },
+    { value: 10, label: "10 miles" },
+    { value: 20, label: "20 miles" },
+    { value: 30, label: "30 miles" },
+    { value: 50, label: "50 miles" },
+    { value: 100, label: "100+ miles" }
+  ]
+
+  // Google Maps libraries
+  const libraries = ["places"]
+
+  // State for address autocomplete
+  const [autocomplete, setAutocomplete] = useState(null)
+  const [mapsLoaded, setMapsLoaded] = useState(false)
+
+  const onAutocompleteLoad = (autocompleteInstance) => {
+    setAutocomplete(autocompleteInstance)
+  }
+
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace()
+
+      if (!place.geometry) {
+        console.log("No details available for input: '" + place.name + "'")
+        return
+      }
+
+      // Extract address components
+      const addressComponents = place.address_components || []
+      let streetNumber = ""
+      let route = ""
+      let city = ""
+      let postcode = ""
+      let country = ""
+
+      addressComponents.forEach((component) => {
+        const types = component.types
+        if (types.includes("street_number")) {
+          streetNumber = component.long_name
+        }
+        if (types.includes("route")) {
+          route = component.long_name
+        }
+        if (types.includes("postal_town") || types.includes("locality")) {
+          city = component.long_name
+        }
+        if (types.includes("postal_code")) {
+          postcode = component.long_name
+        }
+        if (types.includes("country")) {
+          country = component.long_name
+        }
+      })
+
+      // Combine street number and route
+      const addressLine1 = `${streetNumber} ${route}`.trim()
+
+      // Update serviceArea with parsed address
+      const newServiceArea = {
+        ...details.serviceArea,
+        addressLine1: addressLine1,
+        baseLocation: city,
+        postcode: postcode,
+        country: country,
+        latitude: place.geometry.location.lat(),
+        longitude: place.geometry.location.lng(),
+        fullAddress: place.formatted_address
+      }
+      handleFieldChange("serviceArea", newServiceArea)
+    }
+  }
+
+  // Map container style
+  const mapContainerStyle = {
+    width: '100%',
+    height: '200px',
+    borderRadius: '12px'
+  }
+
+  // Basic Info Section Content - Airbnb style
+  const renderBasicInfo = () => {
+    const serviceArea = details.serviceArea || supplierData?.serviceDetails?.serviceArea || {}
+    const baseLocation = serviceArea.baseLocation || ''
+    const postcode = serviceArea.postcode || supplierData?.location || ''
+    const hasCoordinates = serviceArea.latitude && serviceArea.longitude
+    const mapCenter = hasCoordinates
+      ? { lat: serviceArea.latitude, lng: serviceArea.longitude }
+      : { lat: 51.5074, lng: -0.1278 } // Default to London
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Travel & Location</h2>
+          <p className="text-gray-600">Where you're based and how far you'll travel</p>
+        </div>
+
+        {/* Your Location Card with Address Search */}
+        <div className="border-b border-gray-200 pb-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-1">Your base location</h3>
+          <p className="text-gray-500 text-sm mb-4">This won't be shown publicly - only your general area will be visible</p>
+
+          <LoadScript
+            googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            libraries={libraries}
+            onLoad={() => setMapsLoaded(true)}
+          >
+            {/* Address Search */}
+            <div className="mb-4">
+              <Autocomplete
+                onLoad={onAutocompleteLoad}
+                onPlaceChanged={onPlaceChanged}
+                options={{
+                  componentRestrictions: { country: ["gb", "ie"] },
+                  fields: ["address_components", "geometry", "formatted_address", "name"],
+                  types: ["address"]
+                }}
+              >
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search for your address..."
+                    defaultValue={serviceArea.fullAddress || ''}
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl text-base focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                  />
+                </div>
+              </Autocomplete>
+            </div>
+
+            {/* Map */}
+            {hasCoordinates && (
+              <div className="mb-4 overflow-hidden rounded-xl border border-gray-200">
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={mapCenter}
+                  zoom={14}
+                  options={{
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                    styles: [
+                      {
+                        featureType: "poi",
+                        elementType: "labels",
+                        stylers: [{ visibility: "off" }]
+                      }
+                    ]
+                  }}
+                >
+                  <Marker position={mapCenter} />
+                </GoogleMap>
+              </div>
+            )}
+          </LoadScript>
+
+          {/* Address Fields */}
+          {(serviceArea.addressLine1 || serviceArea.fullAddress) && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label htmlFor="addressLine1" className="text-sm font-medium text-gray-700 mb-1.5 block">
+                  Street Address
+                </Label>
+                <Input
+                  id="addressLine1"
+                  value={details.serviceArea?.addressLine1 || ''}
+                  onChange={(e) => {
+                    const newServiceArea = { ...details.serviceArea, addressLine1: e.target.value }
+                    handleFieldChange("serviceArea", newServiceArea)
+                  }}
+                  placeholder="123 High Street"
+                  className="h-11 bg-white border border-gray-300 rounded-lg"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="baseLocation" className="text-sm font-medium text-gray-700 mb-1.5 block">
+                    City / Town
+                  </Label>
+                  <Input
+                    id="baseLocation"
+                    value={details.serviceArea?.baseLocation || baseLocation}
+                    onChange={(e) => {
+                      const newServiceArea = { ...details.serviceArea, baseLocation: e.target.value }
+                      handleFieldChange("serviceArea", newServiceArea)
+                    }}
+                    placeholder="e.g., Manchester"
+                    className="h-11 bg-white border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="postcode" className="text-sm font-medium text-gray-700 mb-1.5 block">
+                    Postcode
+                  </Label>
+                  <Input
+                    id="postcode"
+                    value={details.serviceArea?.postcode || postcode}
+                    onChange={(e) => {
+                      const newServiceArea = { ...details.serviceArea, postcode: e.target.value.toUpperCase() }
+                      handleFieldChange("serviceArea", newServiceArea)
+                    }}
+                    placeholder="M1 1AA"
+                    className="h-11 bg-white border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show hint if no address yet */}
+          {!serviceArea.addressLine1 && !serviceArea.fullAddress && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-gray-400" />
+                Start typing your address above to search and auto-fill your location
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Travel Distance */}
+        <div className="border-b border-gray-200 pb-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">How far will you travel?</h3>
+          <p className="text-gray-500 text-sm mb-4">A larger radius means more booking opportunities</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {radiusOptions.map((option) => {
+              const isSelected = details.travelRadius === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleFieldChange("travelRadius", option.value)}
+                  className={`
+                    py-3 px-4 rounded-lg border-2 transition-all text-center font-medium
+                    ${isSelected
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-200 bg-white hover:border-gray-400 text-gray-700'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <SectionSave
+          sectionName="Travel & Location"
+          hasChanges={basicInfoState.hasChanges}
+          onSave={handleBasicInfoSave}
+          saving={basicInfoState.saving}
+          lastSaved={basicInfoState.lastSaved}
+          error={basicInfoState.error}
+        />
+      </div>
+    )
+  }
+
+  // Airbnb-style number stepper component
+  const NumberStepper = ({ value, onChange, min = 0, max = 999, step = 1, prefix = '', suffix = '' }) => {
+    const currentValue = value || 0
+    const canDecrement = currentValue > min
+    const canIncrement = currentValue < max
+
+    const handleIncrement = () => {
+      onChange(Math.min(max, currentValue + step))
+    }
+
+    const handleDecrement = () => {
+      onChange(Math.max(min, currentValue - step))
+    }
+
+    return (
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleDecrement}
+          disabled={!canDecrement}
+          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+            canDecrement
+              ? 'border-gray-400 text-gray-600 hover:border-gray-900 hover:text-gray-900'
+              : 'border-gray-200 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        <span className="min-w-[80px] text-center text-lg font-medium text-gray-900">
+          {prefix}{currentValue}{suffix}
+        </span>
+        <button
+          type="button"
+          onClick={handleIncrement}
+          disabled={!canIncrement}
+          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
+            canIncrement
+              ? 'border-gray-400 text-gray-600 hover:border-gray-900 hover:text-gray-900'
+              : 'border-gray-200 text-gray-300 cursor-not-allowed'
+          }`}
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+    )
+  }
+
+  // Pricing Section Content - Airbnb style
+  const renderPricing = () => (
+    <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Performance Info</h2>
-        <p className="text-gray-600">Tell customers about your core entertainment offering and pricing</p>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Pricing</h2>
+        <p className="text-gray-600">Set your rates and capacity</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="travelRadius" className="text-base font-medium text-gray-700">
-            How far will you travel? (miles) *
-          </Label>
-          <div className="relative">
-            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              id="travelRadius"
-              type="number"
-              min="1"
-              max="100"
-              value={details.travelRadius}
-              onChange={(e) => handleFieldChange("travelRadius", Number.parseInt(e.target.value))}
-              className="h-12 pl-12 bg-white border-2 border-gray-200 rounded-xl"
-              placeholder="e.g., 25"
-            />
+      {/* Group Size */}
+      <div className="border-b border-gray-200 pb-8">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Minimum group size</h3>
+            <p className="text-gray-500 text-sm">Smallest group you'll entertain</p>
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="setupTime" className="text-base font-medium text-gray-700">
-            Setup Time (minutes)
-          </Label>
-          <div className="relative">
-            <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              id="setupTime"
-              type="number"
-              min="0"
-              max="120"
-              value={details.setupTime}
-              onChange={(e) => handleFieldChange("setupTime", Number.parseInt(e.target.value))}
-              className="h-12 pl-12 bg-white border-2 border-gray-200 rounded-xl"
-              placeholder="e.g., 30"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="groupSizeMin" className="text-base font-medium text-gray-700">Minimum Group Size</Label>
-          <Input
-            id="groupSizeMin"
-            type="number"
-            min="1"
+          <NumberStepper
             value={details.groupSizeMin}
-            onChange={(e) => handleFieldChange("groupSizeMin", Number.parseInt(e.target.value))}
-            className="h-12 bg-white border-2 border-gray-200 rounded-xl"
-            placeholder="e.g., 5"
+            onChange={(val) => handleFieldChange("groupSizeMin", val)}
+            min={1}
+            max={details.groupSizeMax || 100}
+            step={1}
           />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="groupSizeMax" className="text-base font-medium text-gray-700">Maximum Group Size</Label>
-          <Input
-            id="groupSizeMax"
-            type="number"
-            min="1"
-            value={details.groupSizeMax}
-            onChange={(e) => handleFieldChange("groupSizeMax", Number.parseInt(e.target.value))}
-            className="h-12 bg-white border-2 border-gray-200 rounded-xl"
-            placeholder="e.g., 30"
-          />
-          <p className="text-xs text-gray-500">For a single entertainer</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="additionalEntertainerPrice" className="text-base font-medium text-gray-700">Additional Entertainer (£)</Label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
-            <Input
-              id="additionalEntertainerPrice"
-              type="number"
-              min="50"
-              max="500"
-              value={details.additionalEntertainerPrice || ''}
-              onChange={(e) => handleFieldChange("additionalEntertainerPrice", Number.parseInt(e.target.value))}
-              className="h-12 pl-10 bg-white border-2 border-gray-200 rounded-xl"
-              placeholder="150"
-            />
-          </div>
         </div>
       </div>
 
-      {/* Duration Pricing */}
-      <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
-        <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-orange-600" />
-          Party Duration Pricing *
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">Standard Duration</Label>
-            <div className="h-12 px-4 bg-gray-100 border-2 border-gray-200 rounded-xl flex items-center text-gray-600">
-              2 hours (included in all packages)
-            </div>
+      <div className="border-b border-gray-200 pb-8">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Maximum group size</h3>
+            <p className="text-gray-500 text-sm">Largest group you can handle</p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="extraHourRate" className="text-sm font-medium text-gray-700">Extra Hour Rate (£) *</Label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
-              <Input
-                id="extraHourRate"
-                type="number"
-                min="10"
-                max="200"
-                value={details.extraHourRate || ''}
-                onChange={(e) => handleFieldChange("extraHourRate", Number.parseInt(e.target.value))}
-                className="h-12 pl-10 bg-white border-2 border-orange-200 rounded-xl"
-                placeholder="45"
-              />
-            </div>
-          </div>
+          <NumberStepper
+            value={details.groupSizeMax}
+            onChange={(val) => handleFieldChange("groupSizeMax", val)}
+            min={details.groupSizeMin || 1}
+            max={200}
+            step={5}
+          />
         </div>
-        {!details.extraHourRate && (
-          <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-            <p className="text-sm text-red-700 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              Please set your extra hour rate to complete your profile
-            </p>
+      </div>
+
+      {/* Hourly Rate */}
+      <div className="border-b border-gray-200 pb-8">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Hourly rate</h3>
+            <p className="text-gray-500 text-sm">Your standard rate per hour</p>
           </div>
-        )}
+          <NumberStepper
+            value={details.hourlyRate}
+            onChange={(val) => handleFieldChange("hourlyRate", val)}
+            min={10}
+            max={500}
+            step={5}
+            prefix="£"
+          />
+        </div>
+      </div>
+
+      {/* Extra Hour Rate */}
+      <div className="border-b border-gray-200 pb-8">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Extra hour rate</h3>
+            <p className="text-gray-500 text-sm">Rate for additional time beyond standard booking</p>
+          </div>
+          <NumberStepper
+            value={details.extraHourRate}
+            onChange={(val) => handleFieldChange("extraHourRate", val)}
+            min={10}
+            max={300}
+            step={5}
+            prefix="£"
+          />
+        </div>
+      </div>
+
+      {/* Additional Entertainer */}
+      <div className="border-b border-gray-200 pb-8">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Additional entertainer</h3>
+            <p className="text-gray-500 text-sm">Cost for a second entertainer for larger groups</p>
+          </div>
+          <NumberStepper
+            value={details.additionalEntertainerPrice}
+            onChange={(val) => handleFieldChange("additionalEntertainerPrice", val)}
+            min={50}
+            max={500}
+            step={10}
+            prefix="£"
+          />
+        </div>
       </div>
 
       <SectionSave
-        sectionName="Performance Info"
-        hasChanges={basicInfoState.hasChanges}
-        onSave={handleBasicInfoSave}
-        saving={basicInfoState.saving}
-        lastSaved={basicInfoState.lastSaved}
-        error={basicInfoState.error}
+        sectionName="Pricing"
+        hasChanges={pricingState.hasChanges}
+        onSave={handlePricingSave}
+        saving={pricingState.saving}
+        lastSaved={pricingState.lastSaved}
+        error={pricingState.error}
       />
     </div>
   )
@@ -1109,10 +1643,14 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Render the appropriate section based on selectedSection
   const renderSection = () => {
     switch (activeSection) {
+      case 'listingName':
+        return renderListingName()
       case 'aboutUs':
         return renderAboutUs()
       case 'basicInfo':
         return renderBasicInfo()
+      case 'pricing':
+        return renderPricing()
       case 'ageGroups':
         return renderAgeGroups()
       case 'performanceStyles':
@@ -1126,7 +1664,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
       case 'addOns':
         return renderAddOns()
       default:
-        return renderAboutUs()
+        return renderListingName()
     }
   }
 

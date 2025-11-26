@@ -6,7 +6,7 @@ import { Building, LogIn, Star, Users, TrendingUp } from "lucide-react"
 
 export default function SuppliersLandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-[hsl(var(--primary-100))] to-[hsl(var(--primary-200))] text-gray-900 dark:text-white overflow-hidden">
+    <div className="min-h-screen text-gray-900 dark:text-white overflow-hidden">
       
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-6 sm:py-10">
