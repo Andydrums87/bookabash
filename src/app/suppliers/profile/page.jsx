@@ -663,7 +663,8 @@ if (loading) {
   }
 
   const isNewSupplier = supplierData && !supplierData.isComplete
-  const isVenue = supplierData?.category === 'venues' || supplierData?.serviceType === 'venues'
+  const categoryLower = (supplierData?.category || supplierData?.serviceType || '')?.toLowerCase()
+  const isVenue = categoryLower === 'venues' || categoryLower === 'venue'
 
   // Sidebar sections based on service type
   const venueSections = [

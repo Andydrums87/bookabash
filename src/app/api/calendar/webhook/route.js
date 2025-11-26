@@ -82,16 +82,27 @@ export async function POST(request) {
       return new NextResponse(null, { status: 200 })
     }
     
-    console.log('✅ Found primary supplier:', primarySupplier.data.name)
-    
-    const userSuppliers = allSuppliers.filter(s => 
-      s.auth_user_id === primarySupplier.auth_user_id
-    )
-    
-    console.log(`📋 Found ${userSuppliers.length} suppliers for user`)
+    console.log('✅ Found supplier:', primarySupplier.data.name)
+
+    // Check if this is a per-business calendar connection
+    const isPerBusinessCalendar = primarySupplier.data.googleCalendarSync?.ownConnection === true
+
+    let suppliersToSync
+    if (isPerBusinessCalendar) {
+      // Per-business calendar: only sync this specific supplier
+      console.log('📋 Per-business calendar - syncing only this supplier')
+      suppliersToSync = [primarySupplier]
+    } else {
+      // Shared calendar: sync all suppliers for this user (inherited model)
+      suppliersToSync = allSuppliers.filter(s =>
+        s.auth_user_id === primarySupplier.auth_user_id
+      )
+      console.log(`📋 Shared calendar - found ${suppliersToSync.length} suppliers for user`)
+    }
+
     console.log('🔄 Starting automatic sync...')
-    
-    await triggerAutomaticSync(primarySupplier, userSuppliers, supabaseAdmin)
+
+    await triggerAutomaticSync(primarySupplier, suppliersToSync, supabaseAdmin)
     
     console.log('✅ Webhook processing complete')
     console.log(`🔔 === WEBHOOK ${requestId} END (success) ===\n`)
