@@ -1,112 +1,130 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Edit, Trash2, DollarSign, ClockIcon, CheckCircle, ImageIcon } from "lucide-react"
-import Image from "next/image" // Using Next.js Image component
+import { Edit, Trash2, Clock, CheckCircle, ImageIcon, MoreHorizontal } from "lucide-react"
+import Image from "next/image"
+import { useState } from "react"
 
 export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
+  const [showMenu, setShowMenu] = useState(false)
+
   if (!packageData) {
     return null
   }
 
-  
-
   const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
 
   return (
-    <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-      {image ? (
-        <div className="relative w-full ">
-         
-          <div
-                          className="relative w-[90%] h-[280px] mask-image mx-auto mt-2"
-                          style={{
-                            WebkitMaskImage: 'url("/image.svg")',
-                            WebkitMaskRepeat: 'no-repeat',
-                            WebkitMaskSize: 'contain',
-                            WebkitMaskPosition: 'center',
-                            maskImage: 'url("/image.svg")',
-                            maskRepeat: 'no-repeat',
-                            maskSize: 'contain',
-                            maskPosition: 'center',
-                          }}
-                        >
-                          <Image
-                            src={
-                              image.src || "/placeholder.png"
-                            }
-                            alt={name || "Package image"}
-                            fill
-                            className="object-cover group-hover:brightness-110 transition-all duration-300 "
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          />
-                        </div>
-        </div>
-      ) : (
-        <div className="w-full h-48 bg-muted flex items-center justify-center">
-          <ImageIcon className="h-16 w-16 text-gray-400" />
-        </div>
-      )}
-      <CardHeader className="">
-        <CardTitle className="text-2xl">{name || "Unnamed Package"}</CardTitle>
-        {description && <CardDescription className="text-sm line-clamp-2 h-auto">{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className="flex-growspace-y-3">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <DollarSign className="h-4 w-4 mr-2 text-primary flex-shrink-0" />
-          <span>
-            Price: £{price || "N/A"} {priceType && `(${priceType})`}
-          </span>
-        </div>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <ClockIcon className="h-4 w-4 mr-2 text-primary flex-shrink-0" />
-          <span>Duration: {duration || "N/A"}</span>
-        </div>
-        {whatsIncluded && whatsIncluded.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-muted-foreground mb-1 mt-2">What's Included:</h4>
-            <ul className="space-y-1 text-xs">
-              {whatsIncluded.slice(0, 3).map(
-                (
-                  item,
-                  index, // Show max 3 items for brevity
-                ) => (
-                  <li key={index} className="flex items-start">
-                    <CheckCircle className="h-3 w-3 mr-1.5 mt-0.5 text-green-500 flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ),
-              )}
-              {whatsIncluded.length > 3 && <li className="text-xs text-muted-foreground italic ml-4">...and more</li>}
-            </ul>
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+      {/* Compact image - smaller height */}
+      <div className="relative h-32 bg-gray-100">
+        {image ? (
+          <Image
+            src={image.src || image}
+            alt={name || "Package image"}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon className="h-8 w-8 text-gray-300" />
           </div>
         )}
-      </CardContent>
-      <CardFooter className="flex justify-end gap-2 text-white pt-4 mt-4 mb-4">
-        <Button className="bg-primary-500 hover:bg-[hsl(var(--primary-600))]" variant="outline" size="sm" onClick={onEdit}>
-          <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
-        </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete}>
-          <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
-        </Button>
-      </CardFooter>
-    </Card>
+        {/* Menu button overlay */}
+        <div className="absolute top-2 right-2">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-sm transition-colors"
+          >
+            <MoreHorizontal className="h-4 w-4 text-gray-600" />
+          </button>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden min-w-[120px]">
+                <button
+                  onClick={() => {
+                    setShowMenu(false)
+                    onEdit()
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false)
+                    onDelete()
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Content - more compact */}
+      <div className="p-4">
+        {/* Title and price on same line */}
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-semibold text-gray-900 line-clamp-1">{name || "Unnamed Package"}</h3>
+          <span className="font-semibold text-gray-900 whitespace-nowrap">£{price || "0"}</span>
+        </div>
+
+        {/* Duration */}
+        <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
+          <Clock className="h-3.5 w-3.5" />
+          <span>{duration || "Duration TBC"}</span>
+          {priceType && <span className="text-gray-400">• {priceType}</span>}
+        </div>
+
+        {/* Description - truncated */}
+        {description && (
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3">{description}</p>
+        )}
+
+        {/* Features - inline chips style */}
+        {whatsIncluded && whatsIncluded.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {whatsIncluded.slice(0, 3).map((item, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs"
+              >
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span className="truncate max-w-[100px]">{item}</span>
+              </span>
+            ))}
+            {whatsIncluded.length > 3 && (
+              <span className="px-2 py-0.5 text-xs text-gray-500">
+                +{whatsIncluded.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
-// Minimal placeholder for AddPackageCard
+// Add Package Card - cleaner style
 export function AddPackageCard({ onAdd }) {
   return (
-    <Card
-      className="flex flex-col items-center justify-center h-full border-2 border-dashed hover:border-[hsl(var(--primary-500))] transition-colors cursor-pointer min-h-[200px]"
+    <button
       onClick={onAdd}
+      className="w-full h-full min-h-[200px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
     >
-      <CardContent className="text-center p-6">
-        <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-        <p className="font-medium text-foreground">Add New Package</p>
-        <p className="text-sm text-muted-foreground">Click to create a new service package.</p>
-      </CardContent>
-    </Card>
+      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+        <ImageIcon className="h-5 w-5 text-gray-400" />
+      </div>
+      <p className="font-medium text-gray-900">Add New Package</p>
+      <p className="text-sm text-gray-500 mt-1">Click to create a new service package.</p>
+    </button>
   )
 }

@@ -1147,7 +1147,9 @@ if (loading) {
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
               {selectedSection === 'photos' ? (
-                <MediaPageContent />
+                <div className="p-4">
+                  <MediaPageContent />
+                </div>
               ) : selectedSection === 'packages' ? (
                 <div className="p-4">
                   <PackagesPageContent />
@@ -1654,7 +1656,9 @@ if (loading) {
         <div className="flex-1 bg-gray-50">
           {/* Content - conditionally render based on selectedSection */}
           {selectedSection === 'photos' ? (
-            <MediaPageContent />
+            <div className="p-6 lg:p-12">
+              <MediaPageContent />
+            </div>
           ) : selectedSection === 'packages' ? (
             <div className="p-6 lg:p-12">
               <PackagesPageContent />

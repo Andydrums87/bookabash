@@ -163,32 +163,44 @@ export const VerificationDocumentsSkeleton = () => (
 
 // Complete Profile Page Skeleton
 export const ProfilePageSkeleton = () => (
-  <div className="min-h-screen bg-primary-50">
-    <div className="max-w-7xl mx-auto">
+  <div className="min-h-screen bg-white">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <ProfileHeaderSkeleton />
+      <div className="mb-6">
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-72" />
+      </div>
 
-      {/* Main Profile Card */}
-      <div className="p-4 sm:p-6 pt-0">
-        <div className="bg-white w-full rounded-xl p-4 sm:p-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Cover Photo Section */}
-            <CoverPhotoSkeleton />
+      {/* Main Content - Two Column Layout */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Column - Main Form */}
+        <div className="flex-1 space-y-6">
+          {/* Cover Photo */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
 
-            {/* Form Section */}
-            <ProfileFormSkeleton />
+          {/* Basic Info */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <Skeleton className="h-6 w-40 mb-4" />
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Service Details Section */}
-      <div className="p-4 sm:p-6 pt-0">
-        <ServiceDetailsSkeleton />
-      </div>
-
-      {/* Verification Documents Section */}
-      <div className="p-4 sm:p-6 pt-0">
-        <VerificationDocumentsSkeleton />
+        {/* Right Column - Sidebar */}
+        <div className="lg:w-80 space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
+              <Skeleton className="h-5 w-32 mb-2" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   </div>

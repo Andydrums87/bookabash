@@ -3,15 +3,12 @@
 import { PackageIcon, PlusCircle, Loader2, Camera, Upload, X } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { SupplierPackageCard, AddPackageCard } from "@/components/supplier-package-card"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard } from "@/utils/mockBackend"
-import { cn } from "@/lib/utils"
 
 const Packages = () => {
   const [editingPackage, setEditingPackage] = useState(null)
@@ -240,62 +237,50 @@ const Packages = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="w-full">
-        {/* Header */}
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">
-              Packages
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600">
-              Create and manage service packages to offer customers different options
-            </p>
-          </div>
-        </div>
+    <div className="w-full">
+      {/* Header - matching other tabs */}
+      <h1 className="text-2xl font-semibold text-gray-900 mb-2">Packages</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Create and manage service packages to offer customers different options
+      </p>
 
-        {/* Main Content */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardContent className="md:p-4 p-6">
-              {packages.length === 0 ? (
-                <div className="text-center py-8 sm:py-12 border-2 border-dashed rounded-lg">
-                  <PackageIcon className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-base sm:text-lg font-medium text-foreground">
-                    No packages yet
-                  </h3>
-                  <p className="mt-1 text-sm sm:text-base text-muted-foreground px-4">
-                    Get started by adding your first service package.
-                  </p>
-                  <div className="mt-6">
-                    <Button onClick={() => handleOpenPackageForm(null)}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add New Package
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 md:gap-4 gap-6">
-                 {Array.isArray(packages) && packages.map((pkg) => (
-                    <div key={pkg.id} className="relative">
-                      <SupplierPackageCard
-                        packageData={pkg}
-                        onEdit={() => handleOpenPackageForm(pkg)}
-                        onDelete={() => handleDeletePackage(pkg.id)}
-                      />
-                      {savingPackageId === pkg.id && (
-                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <AddPackageCard onAdd={() => handleOpenPackageForm(null)} />
+      {/* Content */}
+      {packages.length === 0 ? (
+        <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
+          <PackageIcon className="mx-auto h-10 w-10 text-gray-300 mb-3" />
+          <h3 className="text-base font-medium text-gray-900 mb-1">
+            No packages yet
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Get started by adding your first service package.
+          </p>
+          <button
+            onClick={() => handleOpenPackageForm(null)}
+            className="inline-flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New Package
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {Array.isArray(packages) && packages.map((pkg) => (
+            <div key={pkg.id} className="relative">
+              <SupplierPackageCard
+                packageData={pkg}
+                onEdit={() => handleOpenPackageForm(pkg)}
+                onDelete={() => handleDeletePackage(pkg.id)}
+              />
+              {savingPackageId === pkg.id && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          ))}
+          <AddPackageCard onAdd={() => handleOpenPackageForm(null)} />
         </div>
+      )}
 
         {/* Package Form Modal */}
         {isPackageFormOpen && (
@@ -488,7 +473,6 @@ const Packages = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   )
 }

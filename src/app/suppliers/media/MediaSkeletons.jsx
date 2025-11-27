@@ -171,34 +171,46 @@ export const VideoLinksSkeleton = () => (
 
 // Complete Media Page Skeleton
 export const MediaPageSkeleton = () => (
-  <div className="min-h-screen bg-primary-50">
-    <div className="max-w-7xl mx-auto">
-      {/* Success Alert Skeleton */}
-      <div className="p-4 sm:p-6">
-        <div className="border border-green-200 bg-green-50 rounded-lg p-4 animate-pulse">
-          <div className="flex items-start gap-3">
-            <Skeleton className="h-5 w-5 rounded-full" />
-            <Skeleton className="h-4 w-80" />
+  <div className="min-h-screen bg-white">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Title */}
+      <Skeleton className="h-8 w-48 mb-2" />
+      <Skeleton className="h-4 w-72 mb-8" />
+
+      {/* Logo Section */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+        <Skeleton className="h-6 w-32 mb-4" />
+        <div className="flex items-start gap-6">
+          <Skeleton className="w-24 h-24 rounded-2xl" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-full max-w-md" />
+            <Skeleton className="h-4 w-full max-w-sm" />
           </div>
         </div>
       </div>
 
-      {/* Global Save Button */}
-      <div className="absolute right-10">
-        <Skeleton className="h-10 w-32 rounded-lg" />
+      {/* Photo Gallery Section */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+        <Skeleton className="h-6 w-40 mb-4" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <Skeleton key={i} className="aspect-square rounded-lg" />
+          ))}
+        </div>
       </div>
 
-      {/* Header */}
-      <MediaHeaderSkeleton />
-
-      {/* Logo Section */}
-      <LogoSectionSkeleton />
-
-      {/* Photo Gallery Section */}
-      <PhotoGallerySkeleton />
-
       {/* Video Links Section */}
-      <VideoLinksSkeleton />
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <Skeleton className="h-6 w-32 mb-4" />
+        <div className="space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <Skeleton className="h-5 w-5" />
+              <Skeleton className="h-4 flex-1" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   </div>
 );

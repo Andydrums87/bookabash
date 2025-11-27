@@ -654,61 +654,57 @@ const PortfolioGalleryTabContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="w-full">
-        {/* Auto-saving indicator */}
-        {autoSaving && (
-          <div className="fixed top-4 right-4 z-50">
-            <div className="bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Saving...</span>
-            </div>
-          </div>
-        )}
-
-        {/* All Photos Header - Airbnb Style */}
-        <div className="px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900">All photos</h2>
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="photo-upload-header"
-                className={`inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors ${
-                  uploadingImage ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                {uploadingImage ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>Add photos</>
-                )}
-                <input
-                  id="photo-upload-header"
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  disabled={uploadingImage}
-                />
-              </label>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="p-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
-              >
-                <ImagePlus className="h-4 w-4 text-gray-600" />
-              </button>
-            </div>
+    <div className="w-full">
+      {/* Auto-saving indicator */}
+      {autoSaving && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Saving...</span>
           </div>
         </div>
+      )}
 
-        {/* Photo Grid - Airbnb Style */}
-        <div className="px-6 lg:px-8 pb-8">
+      {/* Header - matching other tabs */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Photos</h1>
+          <p className="text-sm text-gray-500 mt-1">Add photos to showcase your services</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="photo-upload-header"
+            className={`inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 cursor-pointer transition-colors ${
+              uploadingImage ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {uploadingImage ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <ImagePlus className="h-4 w-4" />
+                Add photos
+              </>
+            )}
+            <input
+              id="photo-upload-header"
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              disabled={uploadingImage}
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Photo Grid */}
+      <div className="mb-8">
 
           {portfolioImages.length === 0 ? (
             /* Empty State */
@@ -732,8 +728,8 @@ const PortfolioGalleryTabContent = () => {
               </label>
             </div>
           ) : (
-            /* Photo Grid - Airbnb Style */
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            /* Photo Grid */
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {portfolioImages.map((img, index) => (
                 <div
                   key={img.id}
@@ -780,13 +776,12 @@ const PortfolioGalleryTabContent = () => {
               ))}
             </div>
           )}
-        </div>
+      </div>
 
-        {/* Business Logo Section - Clean Style */}
-        <div className="px-6 lg:px-8 py-8 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Business logo</h2>
-          </div>
+      {/* Business Logo Section */}
+      <div className="mb-8 pt-6 border-t border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Business logo</h2>
+        <p className="text-sm text-gray-500 mb-4">Your logo appears on your profile and listings</p>
           <div className="flex items-center gap-6">
             <div className="relative w-20 h-20 flex-shrink-0">
               <Avatar
@@ -834,13 +829,12 @@ const PortfolioGalleryTabContent = () => {
               )}
             </div>
           </div>
-        </div>
+      </div>
 
-        {/* Video Links Section - Clean Style */}
-        <div className="px-6 lg:px-8 py-8 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">Videos</h2>
-          </div>
+      {/* Video Links Section */}
+      <div className="mb-8 pt-6 border-t border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Videos</h2>
+        <p className="text-sm text-gray-500 mb-4">Add YouTube or Vimeo links to showcase your work</p>
 
           {portfolioVideos.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -855,78 +849,80 @@ const PortfolioGalleryTabContent = () => {
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Paste YouTube or Vimeo link..."
-                value={newVideoUrl}
-                onChange={(e) => setNewVideoUrl(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
-                className="w-full rounded-full px-4"
-              />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <Input
+              placeholder="Paste YouTube or Vimeo link..."
+              value={newVideoUrl}
+              onChange={(e) => setNewVideoUrl(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleAddVideo()}
+              className="w-full h-12 px-4 border border-gray-300 rounded-xl text-sm focus:border-gray-900 focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={handleAddVideo}
+            disabled={!newVideoUrl.trim()}
+            className="h-12 px-6 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add video
+          </button>
+        </div>
+      </div>
+
+      {/* Image Edit Modal */}
+      {editingImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Edit Image Details</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="image-title" className="text-sm font-medium">
+                  Title
+                </Label>
+                <Input
+                  id="image-title"
+                  defaultValue={editingImage.title}
+                  placeholder="Image title..."
+                  className="mt-1 h-12 px-4 border border-gray-300 rounded-xl"
+                  onChange={(e) => setEditingImage((prev) => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="image-description" className="text-sm font-medium">
+                  Description
+                </Label>
+                <Textarea
+                  id="image-description"
+                  defaultValue={editingImage.description}
+                  placeholder="Describe what's shown in this image..."
+                  rows={3}
+                  className="mt-1 px-4 py-3 border border-gray-300 rounded-xl resize-none"
+                  onChange={(e) => setEditingImage((prev) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
             </div>
-            <button
-              onClick={handleAddVideo}
-              disabled={!newVideoUrl.trim()}
-              className="px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Add video
-            </button>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingImage(null)}
+                className="flex-1 h-12 px-4 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  handleUpdateImage(editingImage.id, {
+                    title: editingImage.title,
+                    description: editingImage.description,
+                  })
+                }
+                className="flex-1 h-12 px-4 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Image Edit Modal */}
-        {editingImage && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Edit Image Details</h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="image-title" className="text-sm font-medium">
-                    Title
-                  </Label>
-                  <Input
-                    id="image-title"
-                    defaultValue={editingImage.title}
-                    placeholder="Image title..."
-                    className="mt-1"
-                    onChange={(e) => setEditingImage((prev) => ({ ...prev, title: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="image-description" className="text-sm font-medium">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="image-description"
-                    defaultValue={editingImage.description}
-                    placeholder="Describe what's shown in this image..."
-                    rows={3}
-                    className="mt-1 resize-none"
-                    onChange={(e) => setEditingImage((prev) => ({ ...prev, description: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                <Button variant="outline" onClick={() => setEditingImage(null)} className="flex-1">
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() =>
-                    handleUpdateImage(editingImage.id, {
-                      title: editingImage.title,
-                      description: editingImage.description,
-                    })
-                  }
-                  className="flex-1"
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

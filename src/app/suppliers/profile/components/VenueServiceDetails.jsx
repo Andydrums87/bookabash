@@ -1725,18 +1725,18 @@ const handleVenueDetailsSave = () => {
         return (
           <div className="space-y-6">
             <p className="text-sm text-gray-500">Set important venue guidelines for all bookings</p>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={customRule}
                 onChange={(e) => setCustomRule(e.target.value)}
                 placeholder="Add a house rule (e.g., No shoes on the dance floor)"
                 className="flex-1 h-12 px-4 border border-gray-300 rounded-xl text-sm focus:border-gray-900 focus:outline-none"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddRule()}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddCustomRule()}
               />
               <button
-                onClick={handleAddRule}
-                className="px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+                onClick={handleAddCustomRule}
+                className="h-12 px-6 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors whitespace-nowrap"
               >
                 Add Rule
               </button>

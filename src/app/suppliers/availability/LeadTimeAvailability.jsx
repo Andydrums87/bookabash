@@ -355,7 +355,7 @@ const LeadTimeAvailabilityContent = ({
   }
 
   return (
-    <div className="min-h-screen bg-primary-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto">
     
 
