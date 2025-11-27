@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
   PaymentElement,
-  PaymentRequestButtonElement,
   useStripe,
   useElements
 } from '@stripe/react-stripe-js'
@@ -444,14 +443,6 @@ function PaymentForm({
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState(null)
   const [bookingTermsAccepted, setBookingTermsAccepted] = useState(false)
-  const [paymentRequest, setPaymentRequest] = useState(null)
-  const [canMakePayment, setCanMakePayment] = useState(false)
-  const bookingTermsAcceptedRef = useRef(false)
-
-  // Keep ref in sync with state
-  useEffect(() => {
-    bookingTermsAcceptedRef.current = bookingTermsAccepted
-  }, [bookingTermsAccepted])
 
   // ✅ Auto-accept terms if already accepted in review-book page
   useEffect(() => {
@@ -495,90 +486,6 @@ function PaymentForm({
 
     autoAcceptTerms()
   }, [partyDetails, bookingTermsAccepted])
-
-  useEffect(() => {
-    if (stripe && !timerExpired && clientSecret) {
-      const pr = stripe.paymentRequest({
-        country: 'GB',
-        currency: 'gbp',
-        total: {
-          label: `${partyDetails.childName}'s Party Payment`,
-          amount: paymentBreakdown.totalPaymentToday * 100,
-        },
-        requestPayerName: true,
-        requestPayerEmail: true,
-      })
-
-      pr.canMakePayment().then(result => {
-        if (result) {
-          setPaymentRequest(pr)
-          setCanMakePayment(true)
-        }
-      })
-
-      pr.on('paymentmethod', async (ev) => {
-        // ✅ CRITICAL: Check if terms are accepted before processing Apple Pay
-        if (!bookingTermsAcceptedRef.current) {
-          ev.complete('fail')
-          setPaymentError('Please accept the booking terms before completing payment')
-          setIsProcessing(false)
-          return
-        }
-
-        setIsProcessing(true)
-        setPaymentError(null)
-
-        try {
-          const { data: { user } } = await supabase.auth.getUser()
-
-          if (user) {
-            await supabase
-              .from('terms_acceptances')
-              .insert({
-                user_id: user.id,
-                user_email: user.email,
-                booking_id: partyDetails.id,
-                terms_version: "1.0",
-                privacy_version: "1.0",
-                ip_address: await getUserIP(),
-                user_agent: navigator.userAgent,
-                accepted_at: new Date().toISOString(),
-                acceptance_context: 'booking'
-              })
-          }
-
-          const { error, paymentIntent } = await stripe.confirmCardPayment(
-            clientSecret,
-            {
-              payment_method: ev.paymentMethod.id,
-            }
-          )
-
-          if (error) {
-            ev.complete('fail')
-            throw new Error(error.message)
-          }
-
-          ev.complete('success')
-          
-          if (paymentIntent && paymentIntent.status === 'succeeded') {
-            setIsProcessing(false)
-            setIsRedirecting(true)
-            onPaymentSuccess(paymentIntent)
-          } else if (paymentIntent && paymentIntent.status === 'requires_action') {
-            ev.complete('fail')
-            throw new Error('Additional authentication required')
-          }
-
-        } catch (error) {
-          ev.complete('fail')
-          setPaymentError(error.message)
-          onPaymentError(error)
-          setIsProcessing(false)
-        }
-      })
-    }
-  }, [stripe, clientSecret, timerExpired, paymentBreakdown, partyDetails, onPaymentSuccess, onPaymentError])
 
   const handlePayment = async (event) => {
     event.preventDefault()
@@ -678,40 +585,6 @@ function PaymentForm({
 
   return (
     <div className="space-y-6">
-      
-      {canMakePayment && paymentRequest && !isProcessing && !isRedirecting && !timerExpired && (
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Express Checkout
-            </label>
-            <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <PaymentRequestButtonElement
-                options={{
-                  paymentRequest,
-                  style: {
-                    paymentRequestButton: {
-                      type: 'default',
-                      theme: 'dark',
-                      height: '48px',
-                    },
-                  },
-                }}
-              />
-            </div>
-          </div>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-3 text-gray-500">Or choose payment method</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-4">
         {!timerExpired && clientSecret && (
           <div>
@@ -726,10 +599,10 @@ function PaymentForm({
                   radios: true,
                   spacedAccordionItems: true
                 },
-                paymentMethodOrder: ['card', 'klarna'],
+                paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'klarna'],
                 wallets: {
-                  applePay: 'never',
-                  googlePay: 'never'
+                  applePay: 'auto',
+                  googlePay: 'auto'
                 },
                 fields: {
                   billingDetails: {

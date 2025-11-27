@@ -722,29 +722,401 @@ if (loading) {
         </div>
       )}
 
-      {/* Mobile Section List - visible on mobile only */}
-      <div className="lg:hidden">
-        <div className="divide-y divide-gray-100">
-          {sections.map((section) => {
-            const Icon = section.icon
-            return (
-              <button
-                key={section.id}
-                onClick={() => {
-                  setSelectedSection(section.id)
-                  setMobileSheetOpen(true)
-                }}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5 text-gray-400" />
-                  <span className="font-medium text-gray-900">{section.label}</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
-            )
-          })}
-        </div>
+      {/* Mobile Section List - visible on mobile only - Airbnb style with rich previews */}
+      <div className="lg:hidden p-4 space-y-4">
+        {sections.map((section) => {
+          const serviceDetails = supplierData?.serviceDetails || {}
+          const photos = supplierData?.portfolioImages || []
+
+          // Render rich card content based on section type (same as desktop)
+          const renderMobileCardContent = () => {
+            switch (section.id) {
+              case 'photos':
+                return (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-4">Photos</h3>
+                    {photos.length > 0 ? (
+                      <div className="relative flex justify-center items-center h-44">
+                        {/* Stacked photo effect - larger images */}
+                        {photos[2] && (
+                          <div
+                            className="absolute rounded-2xl overflow-hidden shadow-md border-4 border-white"
+                            style={{ width: '140px', height: '110px', transform: 'rotate(-8deg) translateX(-70px)', zIndex: 1 }}
+                          >
+                            <img src={photos[2].src || photos[2].url || photos[2]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        {photos[1] && (
+                          <div
+                            className="absolute rounded-2xl overflow-hidden shadow-md border-4 border-white"
+                            style={{ width: '140px', height: '110px', transform: 'rotate(8deg) translateX(70px)', zIndex: 1 }}
+                          >
+                            <img src={photos[1].src || photos[1].url || photos[1]} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div
+                          className="absolute rounded-2xl overflow-hidden shadow-lg border-4 border-white"
+                          style={{ width: '180px', height: '140px', zIndex: 3 }}
+                        >
+                          <img src={photos[0].src || photos[0].url || photos[0]} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-32 bg-gray-100 rounded-xl flex items-center justify-center">
+                        <Camera className="w-8 h-8 text-gray-300 mr-2" />
+                        <p className="text-sm text-gray-400">Add photos</p>
+                      </div>
+                    )}
+                  </div>
+                )
+
+              case 'listingName':
+                const displayName = supplierData?.data?.name || supplierData?.name || ''
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Title</h3>
+                    <p className="text-xl font-semibold text-gray-900">{displayName || 'Add your business name'}</p>
+                  </div>
+                )
+
+              case 'type':
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Venue type</h3>
+                    <p className="font-medium text-gray-900">{serviceDetails.venueType || 'Select venue type'}</p>
+                  </div>
+                )
+
+              case 'pricing':
+                const venuePricing = serviceDetails.pricing || {}
+                const venueHourlyRate = venuePricing.hourlyRate || 0
+                const entertainerHourlyRate = serviceDetails.hourlyRate || 0
+                const entertainerExtraRate = serviceDetails.extraHourRate || 0
+                const entertainerAdditional = serviceDetails.additionalEntertainerPrice || 0
+                const isVenuePricing = venueHourlyRate > 0
+                const isEntertainerPricing = entertainerHourlyRate > 0 || entertainerExtraRate > 0
+
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Pricing</h3>
+                    {isVenuePricing ? (
+                      <div className="space-y-0.5">
+                        <p className="font-medium text-gray-900">£{venueHourlyRate} per hour</p>
+                        {venuePricing.minimumBookingHours && <p className="text-sm text-gray-500">{venuePricing.minimumBookingHours}hr minimum</p>}
+                        {venuePricing.securityDeposit > 0 && <p className="text-sm text-gray-500">£{venuePricing.securityDeposit} deposit</p>}
+                      </div>
+                    ) : isEntertainerPricing ? (
+                      <div className="space-y-0.5">
+                        {entertainerHourlyRate > 0 && <p className="font-medium text-gray-900">£{entertainerHourlyRate} per hour</p>}
+                        {entertainerExtraRate > 0 && <p className="text-sm text-gray-500">£{entertainerExtraRate} extra hour</p>}
+                        {entertainerAdditional > 0 && <p className="text-sm text-gray-500">£{entertainerAdditional} additional entertainer</p>}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-400">Set your rates</p>
+                    )}
+                  </div>
+                )
+
+              case 'about':
+                const aboutText = serviceDetails.aboutUs || supplierData?.description || ''
+                const truncatedAbout = aboutText.trim().slice(0, 80)
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">About</h3>
+                    <p className="text-gray-900">{truncatedAbout ? `${truncatedAbout}${aboutText.length > 80 ? '...' : ''}` : 'Tell your story'}</p>
+                  </div>
+                )
+
+              case 'address':
+                const venueAddress = serviceDetails.venueAddress || {}
+                const addressText = [venueAddress.addressLine1, venueAddress.city, venueAddress.postcode].filter(Boolean).join(', ')
+                const encodedVenueAddr = encodeURIComponent(addressText ? addressText + ', UK' : 'London, UK')
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Location</h3>
+                    <p className="font-medium text-gray-900 mb-2">{addressText || 'Add your venue address'}</p>
+                    {addressText && (
+                      <div className="rounded-xl overflow-hidden h-28">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedVenueAddr}&zoom=14`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+
+              case 'basicInfo':
+                const basicPostcode = serviceDetails.serviceArea?.postcode || supplierData?.location || ''
+                const encodedBasicLocation = encodeURIComponent(basicPostcode ? basicPostcode + ', UK' : 'London, UK')
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Travel & location</h3>
+                    <p className="font-medium text-gray-900 mb-2">
+                      {basicPostcode}{serviceDetails.travelRadius ? ` · ${serviceDetails.travelRadius} miles` : ''}
+                      {!basicPostcode && 'Set your location'}
+                    </p>
+                    {basicPostcode && (
+                      <div className="rounded-xl overflow-hidden h-28">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedBasicLocation}&zoom=12`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+
+              case 'capacity':
+                const mobileCapacityData = serviceDetails.capacity || {}
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Capacity</h3>
+                    {mobileCapacityData.max ? (
+                      <div className="space-y-0.5">
+                        {mobileCapacityData.max && <p className="font-medium text-gray-900">Maximum: {mobileCapacityData.max} guests</p>}
+                        {mobileCapacityData.seated && <p className="text-sm text-gray-600">Seated: {mobileCapacityData.seated}</p>}
+                        {mobileCapacityData.standing && <p className="text-sm text-gray-600">Standing: {mobileCapacityData.standing}</p>}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Set capacity</p>
+                    )}
+                  </div>
+                )
+
+              case 'verification':
+                const verificationDocs = supplierData?.data?.verification?.documents || supplierData?.verification?.documents || supplierData?.serviceDetails?.verification?.documents || {}
+                const docTypes = ['dbs', 'id', 'address']
+                const approvedDocs = docTypes.filter(d => verificationDocs[d]?.status === 'approved')
+                const pendingDocs = docTypes.filter(d => verificationDocs[d]?.status === 'submitted')
+                const allApproved = approvedDocs.length === 3
+                const hasPending = pendingDocs.length > 0
+
+                return (
+                  <div className="text-left">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-sm text-gray-500">Verification</h3>
+                      {allApproved ? (
+                        <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                          <CheckCircle className="w-3 h-3" /> Verified
+                        </span>
+                      ) : hasPending ? (
+                        <span className="flex items-center gap-1 text-xs font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
+                          <Clock className="w-3 h-3" /> Under review
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex gap-3 justify-start">
+                      {docTypes.map(docType => {
+                        const doc = verificationDocs[docType]
+                        const status = doc?.status || 'not_submitted'
+                        return (
+                          <div key={docType} className="flex items-center gap-1">
+                            {status === 'approved' ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : status === 'submitted' ? (
+                              <Clock className="w-4 h-4 text-yellow-500" />
+                            ) : status === 'rejected' ? (
+                              <XCircle className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-gray-300" />
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+
+              case 'packages':
+                const packagesCount = supplierData?.packages?.length || 0
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Packages</h3>
+                    <p className="font-medium text-gray-900">{packagesCount > 0 ? `${packagesCount} package${packagesCount !== 1 ? 's' : ''} created` : 'Create packages'}</p>
+                  </div>
+                )
+
+              case 'addons':
+              case 'addOns':
+                const mobileAddOnServices = serviceDetails.addOnServices || []
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Add-on services</h3>
+                    {mobileAddOnServices.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileAddOnServices.slice(0, 3).map((addon, i) => (
+                          <p key={i} className="font-medium text-gray-900">
+                            {typeof addon === 'string' ? addon : addon.name || addon.label || 'Service'}
+                            {addon.price ? ` - £${addon.price}` : ''}
+                          </p>
+                        ))}
+                        {mobileAddOnServices.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileAddOnServices.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Add extras</p>
+                    )}
+                  </div>
+                )
+
+              case 'restricted':
+                const mobileRestrictedItems = serviceDetails.restrictedItems || []
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Items not permitted</h3>
+                    {mobileRestrictedItems.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileRestrictedItems.slice(0, 3).map((item, i) => (
+                          <p key={i} className="font-medium text-gray-900">{typeof item === 'string' ? item : item.name || item.label || 'Item'}</p>
+                        ))}
+                        {mobileRestrictedItems.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileRestrictedItems.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">No restrictions set</p>
+                    )}
+                  </div>
+                )
+
+              case 'rules':
+                const mobileHouseRules = serviceDetails.houseRules || []
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">House rules</h3>
+                    {mobileHouseRules.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileHouseRules.slice(0, 3).map((rule, i) => (
+                          <p key={i} className="font-medium text-gray-900">{typeof rule === 'string' ? rule : rule.name || rule.label || 'Rule'}</p>
+                        ))}
+                        {mobileHouseRules.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileHouseRules.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Add rules</p>
+                    )}
+                  </div>
+                )
+
+              // Entertainer-specific mobile sections
+              case 'ageGroups':
+                const mobileAgeGroups = (Array.isArray(serviceDetails.ageGroups) ? serviceDetails.ageGroups : []).filter(a => typeof a === 'string')
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Age groups</h3>
+                    {mobileAgeGroups.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileAgeGroups.slice(0, 3).map((age, i) => (
+                          <p key={i} className="font-medium text-gray-900">{String(age)}</p>
+                        ))}
+                        {mobileAgeGroups.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileAgeGroups.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Select age groups</p>
+                    )}
+                  </div>
+                )
+
+              case 'performanceStyles':
+                const mobileStyles = (Array.isArray(serviceDetails.performanceStyle) ? serviceDetails.performanceStyle : []).filter(s => typeof s === 'string')
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Performance styles</h3>
+                    {mobileStyles.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileStyles.slice(0, 3).map((style, i) => (
+                          <p key={i} className="font-medium text-gray-900">{String(style)}</p>
+                        ))}
+                        {mobileStyles.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileStyles.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Select styles</p>
+                    )}
+                  </div>
+                )
+
+              case 'themes':
+                const mobileThemes = (Array.isArray(serviceDetails.themes) ? serviceDetails.themes : []).filter(t => typeof t === 'string')
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Themes</h3>
+                    {mobileThemes.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileThemes.slice(0, 3).map((theme, i) => (
+                          <p key={i} className="font-medium text-gray-900">{String(theme).charAt(0).toUpperCase() + String(theme).slice(1)}</p>
+                        ))}
+                        {mobileThemes.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileThemes.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Add themes</p>
+                    )}
+                  </div>
+                )
+
+              case 'equipment':
+                const mobileEquipmentText = typeof serviceDetails.equipment === 'string' ? serviceDetails.equipment.trim() : ''
+                const mobileSkillsText = typeof serviceDetails.specialSkills === 'string' ? serviceDetails.specialSkills.trim() : ''
+                const mobileEquipmentPreview = mobileEquipmentText ? mobileEquipmentText.substring(0, 60) + (mobileEquipmentText.length > 60 ? '...' : '') : ''
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Equipment & skills</h3>
+                    <p className="font-medium text-gray-900">
+                      {mobileEquipmentPreview || (mobileSkillsText ? mobileSkillsText.substring(0, 60) : '') || 'Add details'}
+                    </p>
+                  </div>
+                )
+
+              case 'personalBio':
+                const mobileYearsExp = serviceDetails.personalBio?.yearsExperience
+                const mobileBioStory = typeof serviceDetails.personalBio?.personalStory === 'string' ? serviceDetails.personalBio.personalStory.trim() : ''
+                const mobileBioPreview = mobileYearsExp ? `${mobileYearsExp} years experience` : mobileBioStory ? mobileBioStory.substring(0, 60) + '...' : ''
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Meet the entertainer</h3>
+                    <p className="font-medium text-gray-900">
+                      {mobileBioPreview || 'Tell your story'}
+                    </p>
+                  </div>
+                )
+
+              default:
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">{section.label}</h3>
+                    <p className="font-medium text-gray-400">Tap to edit</p>
+                  </div>
+                )
+            }
+          }
+
+          return (
+            <div
+              key={section.id}
+              onClick={() => {
+                setSelectedSection(section.id)
+                setMobileSheetOpen(true)
+              }}
+              className="w-full p-4 bg-white rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+            >
+              {renderMobileCardContent()}
+            </div>
+          )
+        })}
       </div>
 
       {/* Mobile Bottom Sheet */}
@@ -923,12 +1295,20 @@ if (loading) {
                     )
 
                   case 'capacity':
+                    const capacityData = serviceDetails.capacity || {}
                     return (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">Capacity</h3>
-                        <p className="text-sm text-gray-500">
-                          {serviceDetails.capacity?.max ? `Up to ${serviceDetails.capacity.max} guests` : 'Set capacity'}
-                        </p>
+                        <h3 className="font-semibold text-gray-900 mb-2">Capacity</h3>
+                        {capacityData.max ? (
+                          <div className="space-y-1 text-sm text-gray-500">
+                            {capacityData.max && <p>Maximum: {capacityData.max} guests</p>}
+                            {capacityData.seated && <p>Seated: {capacityData.seated} guests</p>}
+                            {capacityData.standing && <p>Standing: {capacityData.standing} guests</p>}
+                            {capacityData.min && <p>Minimum: {capacityData.min} guests</p>}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Set capacity</p>
+                        )}
                       </div>
                     )
 
@@ -966,36 +1346,66 @@ if (loading) {
                     )
 
                   case 'restricted':
-                    const restrictedCount = serviceDetails.restrictedItems?.length || 0
+                    const restrictedItems = serviceDetails.restrictedItems || []
                     return (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">Items not permitted</h3>
-                        <p className="text-sm text-gray-500">
-                          {restrictedCount > 0 ? `${restrictedCount} item${restrictedCount !== 1 ? 's' : ''} restricted` : 'No restrictions set'}
-                        </p>
+                        <h3 className="font-semibold text-gray-900 mb-2">Items not permitted</h3>
+                        {restrictedItems.length > 0 ? (
+                          <div className="space-y-1">
+                            {restrictedItems.slice(0, 5).map((item, i) => (
+                              <p key={i} className="text-sm text-gray-500">{typeof item === 'string' ? item : item.name || item.label || 'Item'}</p>
+                            ))}
+                            {restrictedItems.length > 5 && (
+                              <p className="text-sm text-gray-400">+{restrictedItems.length - 5} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">No restrictions set</p>
+                        )}
                       </div>
                     )
 
                   case 'rules':
-                    const rulesCount = serviceDetails.houseRules?.length || 0
+                    const houseRules = serviceDetails.houseRules || []
                     return (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">House rules</h3>
-                        <p className="text-sm text-gray-500">
-                          {rulesCount > 0 ? `${rulesCount} rule${rulesCount !== 1 ? 's' : ''} set` : 'Add rules'}
-                        </p>
+                        <h3 className="font-semibold text-gray-900 mb-2">House rules</h3>
+                        {houseRules.length > 0 ? (
+                          <div className="space-y-1">
+                            {houseRules.slice(0, 5).map((rule, i) => (
+                              <p key={i} className="text-sm text-gray-500">{typeof rule === 'string' ? rule : rule.name || rule.label || 'Rule'}</p>
+                            ))}
+                            {houseRules.length > 5 && (
+                              <p className="text-sm text-gray-400">+{houseRules.length - 5} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add rules</p>
+                        )}
                       </div>
                     )
 
                   case 'addons':
                   case 'addOns':
-                    const addonsCount = serviceDetails.addOnServices?.length || 0
+                    const addOnServices = serviceDetails.addOnServices || []
                     return (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">Add-on services</h3>
-                        <p className="text-sm text-gray-500">
-                          {addonsCount > 0 ? `${addonsCount} service${addonsCount !== 1 ? 's' : ''} available` : 'Add extras'}
-                        </p>
+                        <h3 className="font-semibold text-gray-900 mb-2">Add-on services</h3>
+                        {addOnServices.length > 0 ? (
+                          <div className="space-y-1">
+                            {addOnServices.slice(0, 5).map((addon, i) => (
+                              <p key={i} className="text-sm text-gray-500">
+                                {typeof addon === 'string' ? addon : addon.name || addon.label || 'Service'}
+                                {addon.price ? ` - £${addon.price}` : ''}
+                              </p>
+                            ))}
+                            {addOnServices.length > 5 && (
+                              <p className="text-sm text-gray-400">+{addOnServices.length - 5} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Add extras</p>
+                        )}
                       </div>
                     )
 

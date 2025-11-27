@@ -449,6 +449,9 @@ const TimeSlotAvailabilityContent = ({
   const [colorPickerBusiness, setColorPickerBusiness] = useState(null) // Track which business's color picker is open
   const [businessColors, setBusinessColors] = useState({}) // Local state for color overrides
   const [isCalendarLoading, setIsCalendarLoading] = useState(false) // Loading state for calendar transitions
+  const [showMobileCalendarSync, setShowMobileCalendarSync] = useState(false) // Mobile calendar sync panel
+  const [showMobileBusinessPicker, setShowMobileBusinessPicker] = useState(false) // Mobile business picker panel
+  const [showDesktopBusinessDropdown, setShowDesktopBusinessDropdown] = useState(false) // Desktop business dropdown
   const saveTimeoutRef = useRef(null)
   const lastSavedDataRef = useRef(null)
   const previousBusinessRef = useRef(selectedCalendarBusiness)
@@ -967,8 +970,307 @@ const TimeSlotAvailabilityContent = ({
     )
   }
 
+  // Generate months for mobile scroll view (12 months from now)
+  const generateMobileMonths = () => {
+    const months = []
+    const today = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(today.getFullYear(), today.getMonth() + i, 1)
+      months.push({ year: date.getFullYear(), month: date.getMonth() })
+    }
+    return months
+  }
+
+  // Mobile month component
+  const MobileMonthView = ({ year, month }) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const firstDay = new Date(year, month, 1).getDay()
+    const startOffset = firstDay === 0 ? 6 : firstDay - 1
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December']
+
+    const days = []
+
+    // Empty cells
+    for (let i = 0; i < startOffset; i++) {
+      days.push(<div key={`empty-${i}`} className="aspect-square" />)
+    }
+
+    // Day cells
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day)
+      const isPast = date < today
+      const isToday = date.toDateString() === today.toDateString()
+      const booking = getBookingForDate(date)
+      const hasBooking = !!booking
+      const blockedSlots = getBlockedSlots(date)
+      const isNonWorkingDay = !isWorkingDay(date)
+      const isFullyBlocked = blockedSlots.length === 2 || isNonWorkingDay
+      const isPartiallyBlocked = blockedSlots.length === 1 && !isNonWorkingDay
+      const isMorningBlocked = blockedSlots.includes("morning")
+
+      // Get business color for booking
+      const bookingColor = booking?.businessColor || BUSINESS_COLORS[0]
+
+      const handleClick = () => {
+        if (isPast) return
+        if (hasBooking) {
+          setSelectedBooking(booking)
+        } else if (!isNonWorkingDay) {
+          setSelectedDate(date)
+        }
+      }
+
+      days.push(
+        <button
+          key={day}
+          onClick={handleClick}
+          disabled={isPast}
+          className={`
+            aspect-square p-1 border-b border-r border-gray-100 flex flex-col items-center justify-center relative overflow-hidden
+            ${isPast ? 'opacity-40' : 'active:bg-gray-100'}
+            ${isToday ? 'ring-2 ring-gray-900 ring-inset' : ''}
+            ${isNonWorkingDay && !hasBooking ? 'bg-gray-50' : ''}
+            ${isFullyBlocked && !hasBooking && !isNonWorkingDay ? 'bg-gray-100' : ''}
+          `}
+          style={hasBooking && !isPast ? {
+            backgroundColor: bookingColor.bg,
+          } : undefined}
+        >
+          {/* Diagonal overlay for partial blocks */}
+          {!isPast && !hasBooking && isPartiallyBlocked && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: isMorningBlocked
+                  ? "linear-gradient(to bottom right, rgb(229 231 235) 50%, transparent 50%)"
+                  : "linear-gradient(to top left, rgb(229 231 235) 50%, transparent 50%)"
+              }}
+            />
+          )}
+
+          {/* Date number */}
+          <span
+            className={`text-base relative z-10 ${
+              isPast ? 'text-gray-300'
+              : hasBooking ? 'font-semibold'
+              : isFullyBlocked || isNonWorkingDay ? 'text-gray-400'
+              : 'text-gray-900'
+            }`}
+            style={hasBooking && !isPast ? { color: bookingColor.text } : undefined}
+          >
+            {day}
+          </span>
+
+          {/* Booking indicator - show child name initial */}
+          {!isPast && hasBooking && (
+            <span
+              className="text-[10px] font-medium truncate max-w-full px-0.5 relative z-10"
+              style={{ color: bookingColor.accent }}
+            >
+              {booking.parties?.child_name?.charAt(0) || '●'}
+            </span>
+          )}
+        </button>
+      )
+    }
+
+    return (
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3 px-1">
+          {monthNames[month]} {year}
+        </h2>
+        <div className="grid grid-cols-7 gap-0 bg-white rounded-xl overflow-hidden border border-gray-200">
+          {days}
+        </div>
+      </div>
+    )
+  }
+
+  // Check if Google Calendar is connected
+  const isCalendarConnected = currentBusiness?.data?.googleCalendarSync?.connected ||
+                               currentBusiness?.data?.calendarIntegration?.enabled
+
+  // Mobile calendar view
+  const MobileCalendarView = () => {
+    const mobileMonths = generateMobileMonths()
+
+    // Get current selected business name for display
+    const selectedBusinessName = selectedCalendarBusiness === 'all'
+      ? 'All businesses'
+      : businesses?.find(b => b.id === selectedCalendarBusiness)?.name || 'Calendar'
+
+    return (
+      <div className="min-h-screen bg-white">
+        {/* Fixed Header - at very top like Airbnb */}
+        <div className="fixed top-0 left-0 right-0 z-20 bg-white">
+          {/* Title row */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h1 className="text-xl font-bold text-gray-900">Calendar</h1>
+            <div className="flex items-center gap-2">
+              {/* Calendar Sync Button */}
+              <button
+                onClick={() => setShowMobileCalendarSync(true)}
+                className="p-2 rounded-full border border-gray-200 hover:bg-gray-50"
+              >
+                <Calendar className="w-5 h-5 text-gray-600" />
+              </button>
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-full border border-gray-200 hover:bg-gray-50"
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Business Picker Bar - only show if multiple businesses */}
+          {businesses?.length > 1 && (
+            <button
+              onClick={() => setShowMobileBusinessPicker(true)}
+              className="w-full flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-white"
+            >
+              <span className="text-sm font-medium text-gray-900">{selectedBusinessName}</span>
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            </button>
+          )}
+
+          {/* Day Headers - solid white background */}
+          <div className="grid grid-cols-7 bg-white border-b border-gray-200">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+              <div key={i} className="text-center text-sm font-medium text-gray-500 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scrollable Content - add padding top to account for fixed header */}
+        <div className={`px-4 pt-4 pb-24 ${businesses?.length > 1 ? 'mt-[136px]' : 'mt-[104px]'}`}>
+          {/* Months */}
+          {mobileMonths.map(({ year, month }) => (
+            <MobileMonthView key={`${year}-${month}`} year={year} month={month} />
+          ))}
+
+          {/* Legend */}
+          <div className="mt-4 p-4 bg-white rounded-xl border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Legend</h3>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border border-gray-200 bg-white" />
+                <span className="text-gray-600">Available</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))]" />
+                <span className="text-gray-600">Booked</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gray-100 border border-gray-200" />
+                <span className="text-gray-600">Blocked</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gray-50 border border-gray-200" />
+                <span className="text-gray-600">Closed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Business Picker Dropdown */}
+        {showMobileBusinessPicker && (
+          <div className="fixed inset-0 z-50" onClick={() => setShowMobileBusinessPicker(false)}>
+            {/* Dropdown positioned below the business picker bar */}
+            <div
+              className="absolute left-4 right-4 top-[100px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* All businesses option */}
+              <button
+                onClick={() => {
+                  setSelectedCalendarBusiness('all')
+                  setShowMobileBusinessPicker(false)
+                }}
+                className={`w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 ${
+                  selectedCalendarBusiness === 'all' ? 'bg-gray-50' : ''
+                }`}
+              >
+                <span className="text-sm font-medium text-gray-900">All businesses</span>
+                {selectedCalendarBusiness === 'all' && (
+                  <Check className="w-4 h-4 text-gray-900" />
+                )}
+              </button>
+
+              {/* Individual businesses */}
+              {businesses?.map((business, index) => (
+                <button
+                  key={business.id}
+                  onClick={() => {
+                    setSelectedCalendarBusiness(business.id)
+                    setShowMobileBusinessPicker(false)
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-b-0 ${
+                    selectedCalendarBusiness === business.id ? 'bg-gray-50' : ''
+                  }`}
+                >
+                  <span className="text-sm font-medium text-gray-900">{business.name}</span>
+                  {selectedCalendarBusiness === business.id && (
+                    <Check className="w-4 h-4 text-gray-900" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Calendar Sync Panel */}
+        {showMobileCalendarSync && (
+          <div className="fixed inset-0 bg-black/50 z-50">
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Calendar sync</h2>
+                <button onClick={() => setShowMobileCalendarSync(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-gray-500 mb-4">Sync with external calendars to automatically block dates when you're busy.</p>
+                <GoogleCalendarSync
+                  onSyncToggle={(enabled) => {
+                    setSupplierData(prev => ({
+                      ...prev,
+                      googleCalendarSync: { ...prev?.googleCalendarSync, enabled }
+                    }))
+                  }}
+                  currentSupplier={currentSupplier}
+                  authUserId={primaryBusiness?.auth_user_id}
+                  targetBusiness={
+                    selectedCalendarBusiness !== 'all'
+                      ? businesses?.find(b => b.id === selectedCalendarBusiness)
+                      : null
+                  }
+                  isUnifiedView={selectedCalendarBusiness === 'all'}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      {/* Mobile View - Airbnb-style scrolling calendar */}
+      <div className="block md:hidden">
+        <MobileCalendarView />
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden md:block min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Calendar Header - Airbnb style */}
         <div className="flex items-center justify-between mb-6">
@@ -1059,158 +1361,128 @@ const TimeSlotAvailabilityContent = ({
 
           {/* Sidebar - Airbnb style */}
           <div className="lg:w-80 flex-shrink-0 space-y-3">
-            {/* Calendar view selector - only show if multiple businesses */}
+            {/* Calendar view dropdown - only show if multiple businesses */}
             {businesses?.length > 1 && (
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="font-semibold text-gray-900">Calendar view</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Choose which bookings to display</p>
-                </div>
-                <div className="p-3 space-y-1">
-                  {/* All businesses option */}
-                  <button
-                    onClick={() => setSelectedCalendarBusiness('all')}
-                    className={`w-full flex items-center gap-2.5 p-3.5 rounded-xl transition-all text-left ${
-                      selectedCalendarBusiness === 'all'
-                        ? 'bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))]'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      selectedCalendarBusiness === 'all'
-                        ? 'bg-[hsl(var(--primary-500))] text-white'
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-gray-900 text-left">All businesses</p>
-                      <p className="text-xs text-gray-500 text-left">Unified calendar view</p>
-                    </div>
-                    {selectedCalendarBusiness === 'all' && (
-                      <Check className="w-4 h-4 text-[hsl(var(--primary-500))] ml-auto" />
-                    )}
-                  </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDesktopBusinessDropdown(!showDesktopBusinessDropdown)}
+                  className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-all bg-white"
+                >
+                  <div className="text-left">
+                    <p className="text-xs text-gray-500 mb-0.5">Calendar view</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedCalendarBusiness === 'all'
+                        ? 'All businesses'
+                        : businesses.find(b => b.id === selectedCalendarBusiness)?.name || 'Select business'
+                      }
+                    </p>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showDesktopBusinessDropdown ? 'rotate-180' : ''}`} />
+                </button>
 
-                  {/* Individual business options */}
-                  {businesses.map((business, index) => {
-                    const businessData = business.data || {}
-                    const businessColor = getBusinessColor(business, index)
-                    const currentColorIndex = businessData.calendarColorIndex ?? index
-
-                    return (
-                      <div key={business.id} className="relative">
-                        <div
-                          className={`w-full flex items-center gap-2.5 p-3.5 rounded-xl transition-all ${
-                            selectedCalendarBusiness === business.id
-                              ? 'border'
-                              : 'hover:bg-gray-50'
+                {/* Dropdown */}
+                {showDesktopBusinessDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowDesktopBusinessDropdown(false)} />
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setSelectedCalendarBusiness('all')
+                          setShowDesktopBusinessDropdown(false)
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 ${
+                          selectedCalendarBusiness === 'all' ? 'bg-gray-50' : ''
+                        }`}
+                      >
+                        <span className="text-sm font-medium text-gray-900">All businesses</span>
+                        {selectedCalendarBusiness === 'all' && <Check className="w-4 h-4 text-gray-900" />}
+                      </button>
+                      {businesses.map((business) => (
+                        <button
+                          key={business.id}
+                          onClick={() => {
+                            setSelectedCalendarBusiness(business.id)
+                            setShowDesktopBusinessDropdown(false)
+                          }}
+                          className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                            selectedCalendarBusiness === business.id ? 'bg-gray-50' : ''
                           }`}
-                          style={selectedCalendarBusiness === business.id ? {
-                            backgroundColor: businessColor.bg,
-                            borderColor: businessColor.border,
-                          } : undefined}
                         >
-                          {/* Color indicator - clickable for color picker */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setColorPickerBusiness(colorPickerBusiness === business.id ? null : business.id)
-                            }}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold hover:scale-105 transition-transform relative group"
-                            style={{
-                              backgroundColor: businessColor.bg,
-                              border: `2px solid ${businessColor.border}`,
-                              color: businessColor.text
-                            }}
-                            title="Click to change color"
-                          >
-                            {business.name?.charAt(0)?.toUpperCase() || 'B'}
-                            <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                              <Palette className="w-3 h-3 opacity-0 group-hover:opacity-70" style={{ color: businessColor.text }} />
-                            </div>
-                          </button>
-                          {/* Business info - clickable to select */}
-                          <button
-                            onClick={() => setSelectedCalendarBusiness(business.id)}
-                            className="flex-1 min-w-0 text-left py-1"
-                          >
-                            <p className="text-sm font-medium text-gray-900 text-left">{business.name}</p>
-                          </button>
-                          {selectedCalendarBusiness === business.id && (
-                            <Check className="w-4 h-4 flex-shrink-0 ml-auto" style={{ color: businessColor.text }} />
-                          )}
-                        </div>
-                        {/* Color picker popover */}
-                        {colorPickerBusiness === business.id && (
-                          <ColorPickerPopover
-                            business={business}
-                            currentColorIndex={currentColorIndex}
-                            onColorSelect={handleColorSelect}
-                            onClose={() => setColorPickerBusiness(null)}
-                          />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                          <span className="text-sm font-medium text-gray-900">{business.name}</span>
+                          {selectedCalendarBusiness === business.id && <Check className="w-4 h-4 text-gray-900" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
             {/* Availability settings card */}
             <button
               onClick={() => setShowSettings(true)}
-              className="w-full p-4 border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all group"
+              className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-all bg-white text-left"
             >
-              <div className="flex items-start justify-between">
-                <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 text-left">Availability settings</h3>
-                  <p className="text-sm text-gray-500 mt-0.5 text-left">
-                    {Object.values(workingHours).filter(d => d.active).length} working days
-                  </p>
-                  <p className="text-sm text-gray-500 text-left">
-                    {advanceBookingDays === 0 ? 'Same-day' : `${advanceBookingDays}-day`} advance notice
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Availability settings</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {Object.values(workingHours).filter(d => d.active).length} working days, {advanceBookingDays === 0 ? 'same-day' : `${advanceBookingDays}-day`} notice
+                </p>
               </div>
+              <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </button>
 
             {/* Calendar sync card - cleaner design */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="font-semibold text-gray-900">Calendar sync</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
+            <div className="border border-gray-200 rounded-xl p-4 bg-white">
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 mb-0.5">Calendar sync</p>
+                <p className="text-sm font-medium text-gray-900">
                   {selectedCalendarBusiness === 'all' || !businesses?.length
                     ? 'Sync with external calendars'
                     : `Sync for ${businesses.find(b => b.id === selectedCalendarBusiness)?.name || 'selected business'}`
                   }
                 </p>
               </div>
-              <div className="p-4">
-                <GoogleCalendarSync
-                  onSyncToggle={(enabled) => {
-                    setSupplierData(prev => ({
-                      ...prev,
-                      googleCalendarSync: { ...prev?.googleCalendarSync, enabled }
-                    }))
-                  }}
-                  currentSupplier={currentSupplier}
-                  authUserId={primaryBusiness?.auth_user_id}
-                  targetBusiness={
-                    selectedCalendarBusiness !== 'all'
-                      ? businesses?.find(b => b.id === selectedCalendarBusiness)
-                      : null
-                  }
-                  isUnifiedView={selectedCalendarBusiness === 'all'}
-                />
-              </div>
+              <GoogleCalendarSync
+                onSyncToggle={(enabled) => {
+                  setSupplierData(prev => ({
+                    ...prev,
+                    googleCalendarSync: { ...prev?.googleCalendarSync, enabled }
+                  }))
+                }}
+                currentSupplier={currentSupplier}
+                authUserId={primaryBusiness?.auth_user_id}
+                targetBusiness={
+                  selectedCalendarBusiness !== 'all'
+                    ? businesses?.find(b => b.id === selectedCalendarBusiness)
+                    : null
+                }
+                isUnifiedView={selectedCalendarBusiness === 'all'}
+              />
             </div>
 
             {/* Quick stats */}
-            <div className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all">
-              <h3 className="font-semibold text-gray-900 mb-3">This month</h3>
-              <div className="space-y-2">
+            <div className="border border-gray-200 rounded-xl p-4 bg-white">
+              <p className="text-xs text-gray-500 mb-0.5">This month</p>
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                {filteredBookings.filter(b => {
+                  const partyDate = b.parties?.party_date ? new Date(b.parties.party_date) : null
+                  return partyDate &&
+                         partyDate.getMonth() === currentMonth.getMonth() &&
+                         partyDate.getFullYear() === currentMonth.getFullYear()
+                }).length} booking{filteredBookings.filter(b => {
+                  const partyDate = b.parties?.party_date ? new Date(b.parties.party_date) : null
+                  return partyDate &&
+                         partyDate.getMonth() === currentMonth.getMonth() &&
+                         partyDate.getFullYear() === currentMonth.getFullYear()
+                }).length === 1 ? '' : 's'}, {unavailableDates.filter(d => {
+                  const date = new Date(d.date)
+                  return date.getMonth() === currentMonth.getMonth() &&
+                         date.getFullYear() === currentMonth.getFullYear() &&
+                         d.timeSlots.length === 2
+                }).length} blocked
+              </p>
+              <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Blocked days</span>
                   <span className="font-medium text-gray-900">
@@ -1249,6 +1521,7 @@ const TimeSlotAvailabilityContent = ({
           </div>
         </div>
       </div>
+      </div>
 
       {/* Time slot modal */}
       {selectedDate && (
@@ -1280,7 +1553,7 @@ const TimeSlotAvailabilityContent = ({
 
       {/* Auto-save indicator */}
       <AutoSaveIndicator status={saveStatus} />
-    </div>
+    </>
   )
 }
 

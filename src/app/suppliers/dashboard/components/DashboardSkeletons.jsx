@@ -96,24 +96,20 @@ export const CalendarSkeleton = () => (
       <Skeleton className="h-5 w-24" />
       <Skeleton className="h-8 w-8 rounded" />
     </div>
-    
-    {/* Upcoming Events Title */}
-    <Skeleton className="h-5 w-32 mb-4" />
-    
-    {/* Event Days */}
-    {[1, 2, 3, 4].map((i) => (
-      <div key={i} className="space-y-2 mb-4">
-        <Skeleton className="h-4 w-16" />
-        <div className="space-y-2">
-          {[1, 2].map((j) => (
-            <div key={j} className="border-l-4 border-orange-200 pl-3 py-2 bg-orange-50 rounded-r-lg">
-              <Skeleton className="h-4 w-32 mb-1" />
-              <Skeleton className="h-3 w-48" />
-            </div>
-          ))}
-        </div>
-      </div>
-    ))}
+
+    {/* Day headers */}
+    <div className="grid grid-cols-7 gap-1 mb-2">
+      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <Skeleton key={i} className="h-4 w-full" />
+      ))}
+    </div>
+
+    {/* Calendar days */}
+    <div className="grid grid-cols-7 gap-1">
+      {[...Array(35)].map((_, i) => (
+        <Skeleton key={i} className="h-10 w-full rounded" />
+      ))}
+    </div>
   </div>
 );
 
@@ -150,38 +146,45 @@ export const BusinessSwitcherSkeleton = () => (
   </div>
 );
 
-// Complete Dashboard Skeleton
+// Complete Dashboard Skeleton - neutral white background
 export const DashboardSkeleton = () => (
-  <div className="min-h-screen bg-primary-50">
-    <div className="max-w-7xl mx-auto">
-      {/* Welcome Header Skeleton */}
-      <DashboardHeaderSkeleton />
-
-      {/* Main Content Grid */}
-      <div className="p-3 sm:p-4 lg:p-6 pt-0">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-          {/* Enquiry Table */}
-          <div className="xl:col-span-2">
-            <div className="bg-white rounded border shadow-sm">
-              <EnquiryTableSkeleton />
-            </div>
+  <div className="min-h-screen bg-white">
+    {/* Header skeleton */}
+    <div className="border-b border-gray-200 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          <Skeleton className="h-7 w-28" />
+          <div className="hidden md:flex items-center gap-2">
+            <Skeleton className="h-9 w-20 rounded-full" />
+            <Skeleton className="h-9 w-20 rounded-full" />
+            <Skeleton className="h-9 w-20 rounded-full" />
           </div>
-
-          {/* Calendar */}
-          <div className="bg-white rounded border shadow-sm">
-            <CalendarSkeleton />
-          </div>
+          <Skeleton className="h-10 w-10 rounded-full" />
         </div>
       </div>
+    </div>
 
-      {/* Action Buttons */}
-      <div className="p-3 sm:p-4 lg:p-6 pt-0">
-        <ActionButtonsSkeleton />
+    {/* Content skeleton */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Title */}
+      <Skeleton className="h-8 w-48 mb-6" />
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-8">
+        <Skeleton className="h-10 w-24 rounded-full" />
+        <Skeleton className="h-10 w-24 rounded-full" />
       </div>
 
-      {/* Stats Cards */}
-      <div className="p-3 sm:p-4 lg:p-6 pt-0">
-        <StatsCardsSkeleton />
+      {/* Cards grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
+            <Skeleton className="h-5 w-32 mb-3" />
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-4 w-40 mb-4" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        ))}
       </div>
     </div>
   </div>

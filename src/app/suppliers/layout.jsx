@@ -1,10 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Suspense, useState } from "react"
-import { Calendar, Building2, Inbox, Settings, Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Suspense } from "react"
+import { Calendar, Building2, Inbox, Settings } from "lucide-react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { UserMenu } from "./UserMenu"
@@ -16,7 +14,6 @@ import { useSupplier } from '@/hooks/useSupplier'
 // Airbnb-style horizontal navigation layout
 function SupplierLayoutContent({ children }) {
   const { supplier, supplierData, currentBusiness } = useSupplier()
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const pathname = usePathname()
 
   // Main navigation items (Airbnb-style - horizontal)
@@ -30,10 +27,6 @@ function SupplierLayoutContent({ children }) {
   const secondaryNavItems = [
     { href: "/suppliers/settings", icon: Settings, label: "Settings" },
   ]
-
-  const handleNavClick = () => {
-    setIsSheetOpen(false)
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -85,93 +78,8 @@ function SupplierLayoutContent({ children }) {
                 Switch to browsing
               </Link>
 
-              {/* User Menu */}
+              {/* User Menu - handles profile/settings on both desktop and mobile */}
               <UserMenu secondaryNavItems={secondaryNavItems} />
-
-              {/* Mobile Menu Button */}
-              <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden h-10 w-10 rounded-full border border-gray-200"
-                  >
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">Toggle navigation menu</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:w-80 bg-white p-0">
-                  <div className="flex flex-col h-full">
-                    {/* Mobile Nav Header */}
-                    <div className="p-4 border-b">
-                      <Image
-                        src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752578876/Transparent_With_Text2_xtq8n5.png"
-                        alt="PartySnap"
-                        width={100}
-                        height={24}
-                        className="h-6 w-auto"
-                      />
-                    </div>
-
-                    {/* Main Navigation */}
-                    <div className="flex-1 overflow-y-auto">
-                      <div className="p-4 space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Main</p>
-                        {mainNavItems.map((item) => {
-                          const isActive = pathname === item.href
-                          return (
-                            <Link
-                              key={item.label}
-                              href={item.href}
-                              onClick={handleNavClick}
-                              className={`block px-4 py-3 text-base font-medium rounded-lg transition-colors ${
-                                isActive
-                                  ? "bg-gray-100 text-gray-900"
-                                  : "text-gray-700 hover:bg-gray-50"
-                              }`}
-                            >
-                              {item.label}
-                            </Link>
-                          )
-                        })}
-                      </div>
-
-                      <div className="p-4 space-y-1 border-t">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Manage</p>
-                        {secondaryNavItems.map((item) => {
-                          const isActive = pathname === item.href
-                          return (
-                            <Link
-                              key={item.label}
-                              href={item.href}
-                              onClick={handleNavClick}
-                              className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-lg transition-colors ${
-                                isActive
-                                  ? "bg-gray-100 text-gray-900"
-                                  : "text-gray-700 hover:bg-gray-50"
-                              }`}
-                            >
-                              <item.icon className="h-5 w-5 text-gray-500" />
-                              {item.label}
-                            </Link>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Mobile Nav Footer */}
-                    <div className="p-4 border-t bg-gray-50">
-                      <Link
-                        href="/"
-                        onClick={handleNavClick}
-                        className="block w-full text-center py-3 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                      >
-                        Switch to browsing
-                      </Link>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
             </div>
           </div>
         </div>
@@ -220,19 +128,7 @@ function SupplierLayoutContent({ children }) {
 export default function SupplierLayout({ children }) {
   return (
     <BusinessProvider>
-      <Suspense fallback={
-        <div className="min-h-screen bg-primary-50">
-          <div className="grid min-h-screen md:grid-cols-[180px_1fr] lg:grid-cols-[200px_1fr] md:p-2 bg-primary-50">
-            <div className="hidden md:block bg-muted/40">
-              {/* Sidebar skeleton */}
-            </div>
-            <div className="flex flex-col">
-              {/* Header skeleton */}
-              <DashboardSkeleton />
-            </div>
-          </div>
-        </div>
-      }>
+      <Suspense fallback={<DashboardSkeleton />}>
         <SupplierLayoutContent>{children}</SupplierLayoutContent>
       </Suspense>
     </BusinessProvider>

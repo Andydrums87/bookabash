@@ -6,7 +6,7 @@ import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import { BusinessProvider } from "../../../contexts/BusinessContext"
 import Link from "next/link"
-import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2 } from "lucide-react"
+import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2, Search, ChevronDown, X, ArrowUpDown, LayoutGrid, LayoutList } from "lucide-react"
 
 // Empty state illustration component (Airbnb style)
 function EmptyStateIllustration() {
@@ -160,6 +160,224 @@ function EnquiryCard({ enquiry }) {
   )
 }
 
+// Compact list view for enquiries
+function EnquiryListItem({ enquiry }) {
+  const partyDate = new Date(enquiry.parties?.party_date)
+  const createdDate = new Date(enquiry.created_at)
+  const businessName = enquiry.supplier?.businessName
+  const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+  const isUrgent = daysUntilEvent <= 7 && daysUntilEvent >= 0
+
+  return (
+    <Link
+      href={`/suppliers/enquiries/${enquiry.id}`}
+      className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-medium text-gray-900 truncate">
+            {enquiry.parties?.party_name || `${enquiry.parties?.child_name}'s Party`}
+          </h3>
+          {isUrgent && (
+            <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+              {daysUntilEvent === 0 ? 'Today' : daysUntilEvent === 1 ? 'Tomorrow' : `${daysUntilEvent} days`}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-sm text-gray-500">
+          <span>{enquiry.lead_name || enquiry.parties?.parent_name}</span>
+          <span className="text-gray-300">•</span>
+          <span>{partyDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+          {businessName && (
+            <>
+              <span className="text-gray-300">•</span>
+              <span className="text-primary-600 truncate">{businessName}</span>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="flex-shrink-0 flex items-center gap-3">
+        <span className="hidden sm:block px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-full">
+          Needs response
+        </span>
+        <ChevronRight className="h-4 w-4 text-gray-400" />
+      </div>
+    </Link>
+  )
+}
+
+// Compact list view for bookings
+function BookingListItem({ booking }) {
+  const partyDate = new Date(booking.parties?.party_date)
+  const isToday = new Date().toDateString() === partyDate.toDateString()
+  const businessName = booking.supplier?.businessName
+  const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+
+  return (
+    <Link
+      href={`/suppliers/enquiries/${booking.id}`}
+      className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-medium text-gray-900 truncate">
+            {booking.parties?.party_name || `${booking.parties?.child_name}'s Party`}
+          </h3>
+          {isToday && (
+            <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+              Today
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-sm text-gray-500">
+          <span>{booking.lead_name || booking.parties?.parent_name}</span>
+          <span className="text-gray-300">•</span>
+          <span>{partyDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+          {booking.parties?.party_time && (
+            <>
+              <span className="text-gray-300">•</span>
+              <span>{booking.parties.party_time}</span>
+            </>
+          )}
+          {businessName && (
+            <>
+              <span className="text-gray-300">•</span>
+              <span className="text-primary-600 truncate">{businessName}</span>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="flex-shrink-0 flex items-center gap-3">
+        <span className="hidden sm:block text-sm text-gray-500">
+          {daysUntilEvent > 0 ? `In ${daysUntilEvent} day${daysUntilEvent === 1 ? '' : 's'}` : daysUntilEvent === 0 ? 'Today' : 'Completed'}
+        </span>
+        <ChevronRight className="h-4 w-4 text-gray-400" />
+      </div>
+    </Link>
+  )
+}
+
+// Filter and sort controls
+function FilterSortControls({
+  searchQuery,
+  setSearchQuery,
+  sortBy,
+  setSortBy,
+  filterBy,
+  setFilterBy,
+  viewMode,
+  setViewMode,
+  sortOptions,
+  filterOptions,
+  itemCount
+}) {
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+
+  return (
+    <div className="mb-6 space-y-4">
+      {/* Search and controls row */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by name or party..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Sort dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            <span className="hidden sm:inline">{sortOptions.find(o => o.value === sortBy)?.label || 'Sort'}</span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+          {showSortDropdown && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortBy(option.value)
+                      setShowSortDropdown(false)
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                      sortBy === option.value ? 'bg-gray-50 font-medium' : ''
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* View toggle */}
+        <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-md transition-colors ${
+              viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+            title="Grid view"
+          >
+            <LayoutGrid className="h-4 w-4 text-gray-600" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-md transition-colors ${
+              viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+            title="List view"
+          >
+            <LayoutList className="h-4 w-4 text-gray-600" />
+          </button>
+        </div>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex flex-wrap gap-2">
+        {filterOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setFilterBy(filterBy === option.value ? 'all' : option.value)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+              filterBy === option.value
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {option.label}
+            {option.count !== undefined && (
+              <span className={`ml-1.5 ${filterBy === option.value ? 'text-gray-300' : 'text-gray-400'}`}>
+                {option.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // Loading skeleton
 function DashboardSkeleton() {
   return (
@@ -186,45 +404,208 @@ export default function SupplierDashboard() {
   const { enquiries, loading: enquiriesLoading } = useSupplierEnquiries(null, null)
   const [activeTab, setActiveTab] = useState("enquiries")
 
-  // Filter and categorize enquiries
-  const { confirmedBookings, pendingEnquiries } = useMemo(() => {
+  // Filter, sort, and view state for enquiries
+  const [enquirySearch, setEnquirySearch] = useState('')
+  const [enquirySortBy, setEnquirySortBy] = useState('newest')
+  const [enquiryFilterBy, setEnquiryFilterBy] = useState('all')
+  const [enquiryViewMode, setEnquiryViewMode] = useState('grid')
+
+  // Filter, sort, and view state for bookings
+  const [bookingSearch, setBookingSearch] = useState('')
+  const [bookingSortBy, setBookingSortBy] = useState('event_date')
+  const [bookingFilterBy, setBookingFilterBy] = useState('all')
+  const [bookingViewMode, setBookingViewMode] = useState('grid')
+
+  // Filter and categorize enquiries (base data)
+  const { allConfirmedBookings, allPendingEnquiries } = useMemo(() => {
     if (!enquiries || enquiries.length === 0) {
-      return { confirmedBookings: [], pendingEnquiries: [] }
+      return { allConfirmedBookings: [], allPendingEnquiries: [] }
     }
 
     // Helper to check if supplier has responded
     const hasSupplierResponded = (e) => {
-      // Supplier has responded if:
-      // 1. There's a supplier_response message, OR
-      // 2. It's accepted but NOT auto_accepted (manual acceptance)
       return e.supplier_response || (e.status === 'accepted' && !e.auto_accepted)
     }
 
     // Confirmed bookings = Supplier has manually accepted/confirmed
-    // - status === 'accepted' AND supplier has responded
-    const confirmedBookings = enquiries
+    const allConfirmedBookings = enquiries
       .filter(e => e.status === 'accepted' && hasSupplierResponded(e))
-      .sort((a, b) => {
-        const dateA = a.parties?.party_date ? new Date(a.parties.party_date) : new Date(0)
-        const dateB = b.parties?.party_date ? new Date(b.parties.party_date) : new Date(0)
-        return dateA - dateB
-      })
 
     // Pending enquiries = Awaiting supplier response
-    // - status === 'pending' OR 'viewed'
-    // - OR auto_accepted but supplier hasn't confirmed yet
-    const pendingEnquiries = enquiries
+    const allPendingEnquiries = enquiries
       .filter(e => {
-        // Standard pending/viewed status
         if (e.status === 'pending' || e.status === 'viewed') return true
-        // Auto-accepted but supplier hasn't responded yet
         if (e.status === 'accepted' && e.auto_accepted && !e.supplier_response) return true
         return false
       })
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
-    return { confirmedBookings, pendingEnquiries }
+    return { allConfirmedBookings, allPendingEnquiries }
   }, [enquiries])
+
+  // Helper functions for filtering
+  const getEventDaysAway = (item) => {
+    const partyDate = new Date(item.parties?.party_date)
+    return Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+  }
+
+  const matchesSearch = (item, query) => {
+    if (!query) return true
+    const searchLower = query.toLowerCase()
+    const partyName = (item.parties?.party_name || '').toLowerCase()
+    const childName = (item.parties?.child_name || '').toLowerCase()
+    const leadName = (item.lead_name || item.parties?.parent_name || '').toLowerCase()
+    const businessName = (item.supplier?.businessName || '').toLowerCase()
+    return partyName.includes(searchLower) ||
+           childName.includes(searchLower) ||
+           leadName.includes(searchLower) ||
+           businessName.includes(searchLower)
+  }
+
+  // Filtered and sorted pending enquiries
+  const pendingEnquiries = useMemo(() => {
+    let filtered = allPendingEnquiries
+
+    // Apply search
+    filtered = filtered.filter(e => matchesSearch(e, enquirySearch))
+
+    // Apply filter
+    if (enquiryFilterBy === 'urgent') {
+      filtered = filtered.filter(e => getEventDaysAway(e) <= 7 && getEventDaysAway(e) >= 0)
+    } else if (enquiryFilterBy === 'this_week') {
+      filtered = filtered.filter(e => {
+        const days = getEventDaysAway(e)
+        return days >= 0 && days <= 7
+      })
+    } else if (enquiryFilterBy === 'this_month') {
+      filtered = filtered.filter(e => {
+        const days = getEventDaysAway(e)
+        return days >= 0 && days <= 30
+      })
+    }
+
+    // Apply sort
+    filtered.sort((a, b) => {
+      switch (enquirySortBy) {
+        case 'newest':
+          return new Date(b.created_at) - new Date(a.created_at)
+        case 'oldest':
+          return new Date(a.created_at) - new Date(b.created_at)
+        case 'event_date':
+          return new Date(a.parties?.party_date || 0) - new Date(b.parties?.party_date || 0)
+        case 'event_date_desc':
+          return new Date(b.parties?.party_date || 0) - new Date(a.parties?.party_date || 0)
+        default:
+          return 0
+      }
+    })
+
+    return filtered
+  }, [allPendingEnquiries, enquirySearch, enquiryFilterBy, enquirySortBy])
+
+  // Filtered and sorted confirmed bookings
+  const confirmedBookings = useMemo(() => {
+    let filtered = allConfirmedBookings
+
+    // Apply search
+    filtered = filtered.filter(b => matchesSearch(b, bookingSearch))
+
+    // Apply filter
+    if (bookingFilterBy === 'upcoming') {
+      filtered = filtered.filter(b => getEventDaysAway(b) >= 0)
+    } else if (bookingFilterBy === 'this_week') {
+      filtered = filtered.filter(b => {
+        const days = getEventDaysAway(b)
+        return days >= 0 && days <= 7
+      })
+    } else if (bookingFilterBy === 'this_month') {
+      filtered = filtered.filter(b => {
+        const days = getEventDaysAway(b)
+        return days >= 0 && days <= 30
+      })
+    } else if (bookingFilterBy === 'past') {
+      filtered = filtered.filter(b => getEventDaysAway(b) < 0)
+    }
+
+    // Apply sort
+    filtered.sort((a, b) => {
+      switch (bookingSortBy) {
+        case 'event_date':
+          return new Date(a.parties?.party_date || 0) - new Date(b.parties?.party_date || 0)
+        case 'event_date_desc':
+          return new Date(b.parties?.party_date || 0) - new Date(a.parties?.party_date || 0)
+        case 'newest':
+          return new Date(b.created_at) - new Date(a.created_at)
+        case 'oldest':
+          return new Date(a.created_at) - new Date(b.created_at)
+        default:
+          return 0
+      }
+    })
+
+    return filtered
+  }, [allConfirmedBookings, bookingSearch, bookingFilterBy, bookingSortBy])
+
+  // Calculate filter counts for chips
+  const enquiryFilterCounts = useMemo(() => {
+    const urgent = allPendingEnquiries.filter(e => {
+      const days = getEventDaysAway(e)
+      return days <= 7 && days >= 0
+    }).length
+    const thisWeek = allPendingEnquiries.filter(e => {
+      const days = getEventDaysAway(e)
+      return days >= 0 && days <= 7
+    }).length
+    const thisMonth = allPendingEnquiries.filter(e => {
+      const days = getEventDaysAway(e)
+      return days >= 0 && days <= 30
+    }).length
+    return { urgent, thisWeek, thisMonth, all: allPendingEnquiries.length }
+  }, [allPendingEnquiries])
+
+  const bookingFilterCounts = useMemo(() => {
+    const upcoming = allConfirmedBookings.filter(b => getEventDaysAway(b) >= 0).length
+    const thisWeek = allConfirmedBookings.filter(b => {
+      const days = getEventDaysAway(b)
+      return days >= 0 && days <= 7
+    }).length
+    const thisMonth = allConfirmedBookings.filter(b => {
+      const days = getEventDaysAway(b)
+      return days >= 0 && days <= 30
+    }).length
+    const past = allConfirmedBookings.filter(b => getEventDaysAway(b) < 0).length
+    return { upcoming, thisWeek, thisMonth, past, all: allConfirmedBookings.length }
+  }, [allConfirmedBookings])
+
+  // Sort options
+  const enquirySortOptions = [
+    { value: 'newest', label: 'Newest first' },
+    { value: 'oldest', label: 'Oldest first' },
+    { value: 'event_date', label: 'Event date (soonest)' },
+    { value: 'event_date_desc', label: 'Event date (latest)' },
+  ]
+
+  const bookingSortOptions = [
+    { value: 'event_date', label: 'Event date (soonest)' },
+    { value: 'event_date_desc', label: 'Event date (latest)' },
+    { value: 'newest', label: 'Newest first' },
+    { value: 'oldest', label: 'Oldest first' },
+  ]
+
+  // Filter options
+  const enquiryFilterOptions = [
+    { value: 'all', label: 'All', count: enquiryFilterCounts.all },
+    { value: 'urgent', label: 'Urgent', count: enquiryFilterCounts.urgent },
+    { value: 'this_week', label: 'This week', count: enquiryFilterCounts.thisWeek },
+    { value: 'this_month', label: 'This month', count: enquiryFilterCounts.thisMonth },
+  ]
+
+  const bookingFilterOptions = [
+    { value: 'all', label: 'All', count: bookingFilterCounts.all },
+    { value: 'upcoming', label: 'Upcoming', count: bookingFilterCounts.upcoming },
+    { value: 'this_week', label: 'This week', count: bookingFilterCounts.thisWeek },
+    { value: 'this_month', label: 'This month', count: bookingFilterCounts.thisMonth },
+    { value: 'past', label: 'Past', count: bookingFilterCounts.past },
+  ]
 
   if (loading || enquiriesLoading) {
     return (
@@ -234,8 +615,8 @@ export default function SupplierDashboard() {
     )
   }
 
-  const hasEnquiries = pendingEnquiries.length > 0
-  const hasBookings = confirmedBookings.length > 0
+  const hasEnquiries = allPendingEnquiries.length > 0
+  const hasBookings = allConfirmedBookings.length > 0
 
   return (
     <BusinessProvider>
@@ -293,13 +674,49 @@ export default function SupplierDashboard() {
               ) : (
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    {pendingEnquiries.length} enquir{pendingEnquiries.length === 1 ? 'y' : 'ies'} to respond to
+                    {allPendingEnquiries.length} enquir{allPendingEnquiries.length === 1 ? 'y' : 'ies'} to respond to
                   </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {pendingEnquiries.map((enquiry) => (
-                      <EnquiryCard key={enquiry.id} enquiry={enquiry} />
-                    ))}
-                  </div>
+
+                  <FilterSortControls
+                    searchQuery={enquirySearch}
+                    setSearchQuery={setEnquirySearch}
+                    sortBy={enquirySortBy}
+                    setSortBy={setEnquirySortBy}
+                    filterBy={enquiryFilterBy}
+                    setFilterBy={setEnquiryFilterBy}
+                    viewMode={enquiryViewMode}
+                    setViewMode={setEnquiryViewMode}
+                    sortOptions={enquirySortOptions}
+                    filterOptions={enquiryFilterOptions}
+                    itemCount={pendingEnquiries.length}
+                  />
+
+                  {pendingEnquiries.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-500">No enquiries match your filters</p>
+                      <button
+                        onClick={() => {
+                          setEnquirySearch('')
+                          setEnquiryFilterBy('all')
+                        }}
+                        className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
+                  ) : enquiryViewMode === 'grid' ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {pendingEnquiries.map((enquiry) => (
+                        <EnquiryCard key={enquiry.id} enquiry={enquiry} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingEnquiries.map((enquiry) => (
+                        <EnquiryListItem key={enquiry.id} enquiry={enquiry} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -316,7 +733,7 @@ export default function SupplierDashboard() {
                   </h2>
                   <p className="mt-2 text-gray-500">
                     {hasEnquiries
-                      ? `You have ${pendingEnquiries.length} enquir${pendingEnquiries.length === 1 ? 'y' : 'ies'} waiting for a response.`
+                      ? `You have ${allPendingEnquiries.length} enquir${allPendingEnquiries.length === 1 ? 'y' : 'ies'} waiting for a response.`
                       : "When you accept an enquiry, the booking will appear here."
                     }
                   </p>
@@ -332,13 +749,49 @@ export default function SupplierDashboard() {
               ) : (
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    {confirmedBookings.length} confirmed booking{confirmedBookings.length === 1 ? '' : 's'}
+                    {allConfirmedBookings.length} confirmed booking{allConfirmedBookings.length === 1 ? '' : 's'}
                   </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {confirmedBookings.map((booking) => (
-                      <BookingCard key={booking.id} booking={booking} />
-                    ))}
-                  </div>
+
+                  <FilterSortControls
+                    searchQuery={bookingSearch}
+                    setSearchQuery={setBookingSearch}
+                    sortBy={bookingSortBy}
+                    setSortBy={setBookingSortBy}
+                    filterBy={bookingFilterBy}
+                    setFilterBy={setBookingFilterBy}
+                    viewMode={bookingViewMode}
+                    setViewMode={setBookingViewMode}
+                    sortOptions={bookingSortOptions}
+                    filterOptions={bookingFilterOptions}
+                    itemCount={confirmedBookings.length}
+                  />
+
+                  {confirmedBookings.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-500">No bookings match your filters</p>
+                      <button
+                        onClick={() => {
+                          setBookingSearch('')
+                          setBookingFilterBy('all')
+                        }}
+                        className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
+                  ) : bookingViewMode === 'grid' ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {confirmedBookings.map((booking) => (
+                        <BookingCard key={booking.id} booking={booking} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {confirmedBookings.map((booking) => (
+                        <BookingListItem key={booking.id} booking={booking} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>
