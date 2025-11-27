@@ -487,9 +487,34 @@ function PaymentForm({
     autoAcceptTerms()
   }, [partyDetails, bookingTermsAccepted])
 
+  // Helper to log terms acceptance (fire-and-forget, doesn't block payment)
+  const logTermsAcceptance = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const ip = await getUserIP()
+        await supabase
+          .from('terms_acceptances')
+          .insert({
+            user_id: user.id,
+            user_email: user.email,
+            booking_id: partyDetails.id,
+            terms_version: "1.0",
+            privacy_version: "1.0",
+            ip_address: ip,
+            user_agent: navigator.userAgent,
+            accepted_at: new Date().toISOString(),
+            acceptance_context: 'booking'
+          })
+      }
+    } catch (error) {
+      console.warn('Failed to log terms acceptance:', error)
+    }
+  }
+
   const handlePayment = async (event) => {
     event.preventDefault()
-    
+
     if (!stripe || !elements || timerExpired) {
       return
     }
@@ -502,38 +527,26 @@ function PaymentForm({
     setIsProcessing(true)
     setPaymentError(null)
 
+    // ✅ CRITICAL: Log terms acceptance in background (fire-and-forget)
+    // This MUST NOT block the payment flow - Apple Pay requires immediate user gesture
+    logTermsAcceptance()
+
+    // Build return_url with add_supplier parameters from current URL
+    const currentParams = new URLSearchParams(window.location.search)
+    const addSupplier = currentParams.get('add_supplier')
+    const supplierName = currentParams.get('supplier_name')
+    const supplierCategory = currentParams.get('supplier_category')
+
+    const returnParams = new URLSearchParams({
+      party_id: partyDetails.id,
+      ...(addSupplier && { add_supplier: addSupplier }),
+      ...(supplierName && { supplier_name: supplierName }),
+      ...(supplierCategory && { supplier_category: supplierCategory })
+    })
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        await supabase
-          .from('terms_acceptances')
-          .insert({
-            user_id: user.id,
-            user_email: user.email,
-            booking_id: partyDetails.id,
-            terms_version: "1.0",
-            privacy_version: "1.0",
-            ip_address: await getUserIP(),
-            user_agent: navigator.userAgent,
-            accepted_at: new Date().toISOString(),
-            acceptance_context: 'booking'
-          })
-      }
-
-      // Build return_url with add_supplier parameters from current URL
-      const currentParams = new URLSearchParams(window.location.search)
-      const addSupplier = currentParams.get('add_supplier')
-      const supplierName = currentParams.get('supplier_name')
-      const supplierCategory = currentParams.get('supplier_category')
-
-      const returnParams = new URLSearchParams({
-        party_id: partyDetails.id,
-        ...(addSupplier && { add_supplier: addSupplier }),
-        ...(supplierName && { supplier_name: supplierName }),
-        ...(supplierCategory && { supplier_category: supplierCategory })
-      })
-
+      // ✅ CRITICAL: confirmPayment must be called immediately after user gesture
+      // No async operations before this call (Apple Pay requirement)
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
