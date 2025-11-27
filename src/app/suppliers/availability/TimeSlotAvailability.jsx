@@ -1,21 +1,21 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
-import { ChevronLeft, ChevronRight, ChevronDown, Settings, Clock, Check, Loader2, AlertCircle, X, Calendar, Palette } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronDown, Settings, Clock, Check, Loader2, AlertCircle, X, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 import GoogleCalendarSync from "./CompactGoogleCalendarSync"
 
-// Default color palette for businesses (visually distinct, party-friendly colors)
+// Muted color palette for business dot indicators (minimal, professional)
 const BUSINESS_COLORS = [
-  { name: 'Primary', bg: 'hsl(var(--primary-50))', border: 'hsl(var(--primary-200))', text: 'hsl(var(--primary-700))', accent: 'hsl(var(--primary-500))' },
-  { name: 'Purple', bg: '#f3e8ff', border: '#d8b4fe', text: '#7c3aed', accent: '#a855f7' },
-  { name: 'Teal', bg: '#ccfbf1', border: '#5eead4', text: '#0f766e', accent: '#14b8a6' },
-  { name: 'Orange', bg: '#ffedd5', border: '#fdba74', text: '#c2410c', accent: '#f97316' },
-  { name: 'Pink', bg: '#fce7f3', border: '#f9a8d4', text: '#be185d', accent: '#ec4899' },
-  { name: 'Blue', bg: '#dbeafe', border: '#93c5fd', text: '#1d4ed8', accent: '#3b82f6' },
-  { name: 'Green', bg: '#dcfce7', border: '#86efac', text: '#15803d', accent: '#22c55e' },
-  { name: 'Amber', bg: '#fef3c7', border: '#fcd34d', text: '#b45309', accent: '#f59e0b' },
+  { name: 'Slate', dot: '#64748b' },      // Muted blue-gray
+  { name: 'Rose', dot: '#e879a0' },       // Muted pink
+  { name: 'Teal', dot: '#5eadb0' },       // Muted teal
+  { name: 'Amber', dot: '#d4a05a' },      // Muted amber
+  { name: 'Violet', dot: '#9c8cd4' },     // Muted purple
+  { name: 'Emerald', dot: '#6bb38a' },    // Muted green
+  { name: 'Sky', dot: '#7aade0' },        // Muted blue
+  { name: 'Coral', dot: '#e08a7a' },      // Muted coral
 ]
 
 // Get color for a business by index or custom setting
@@ -120,36 +120,31 @@ function BookingDetailModal({ booking, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden">
-        {/* Header - uses business color */}
-        <div
-          className="border-b p-6"
-          style={{
-            backgroundColor: bookingColor.bg,
-            borderColor: bookingColor.border
-          }}
-        >
+        {/* Header - minimal white with dot indicator */}
+        <div className="border-b border-gray-100 p-6">
           <div className="flex items-center justify-between mb-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-              <Check className="w-3 h-3" />
-              Confirmed
-            </span>
+            <div className="flex items-center gap-2">
+              {booking.businessName && (
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: bookingColor.dot }}
+                />
+              )}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                <Check className="w-3 h-3" />
+                Confirmed
+              </span>
+            </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full transition-colors"
-              style={{ backgroundColor: `${bookingColor.border}40` }}
+              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
           <h2 className="text-2xl font-bold text-gray-900">{childName}'s Party</h2>
           {booking.businessName && (
-            <div className="flex items-center gap-2 mt-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: bookingColor.accent }}
-              />
-              <p className="text-sm font-medium" style={{ color: bookingColor.text }}>{booking.businessName}</p>
-            </div>
+            <p className="text-sm text-gray-500 mt-1">{booking.businessName}</p>
           )}
         </div>
 
@@ -157,8 +152,8 @@ function BookingDetailModal({ booking, onClose }) {
         <div className="p-6 space-y-5">
           {/* Date & Time */}
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-[hsl(var(--primary-50))] flex items-center justify-center flex-shrink-0">
-              <Clock className="w-5 h-5 text-[hsl(var(--primary-600))]" />
+            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-gray-600" />
             </div>
             <div>
               <p className="font-semibold text-gray-900">{formattedDate}</p>
@@ -883,12 +878,9 @@ const TimeSlotAvailabilityContent = ({
                       ? "bg-white border-gray-200 cursor-pointer hover:border-gray-400 hover:shadow-sm"
                       : "bg-white border-gray-200 cursor-pointer hover:border-gray-400 hover:shadow-sm"
             }
+            ${hasBooking && !isPast ? "bg-gray-50 border-gray-300" : ""}
             ${isToday ? "ring-2 ring-gray-900 ring-offset-2" : ""}
           `}
-          style={hasBooking && !isPast ? {
-            backgroundColor: bookingColor.bg,
-            borderColor: bookingColor.border,
-          } : undefined}
         >
           {/* Diagonal overlay for partial blocks */}
           {!isPast && !hasBooking && isPartiallyBlocked && (
@@ -906,41 +898,26 @@ const TimeSlotAvailabilityContent = ({
           <span
             className={`text-lg font-semibold relative z-10 ${
               isPast ? "text-gray-300"
-              : hasBooking ? ""
+              : hasBooking ? "text-gray-900"
               : isFullyBlocked && !hasBooking ? "text-gray-400"
               : "text-gray-900"
             }`}
-            style={hasBooking && !isPast ? { color: bookingColor.text } : undefined}
           >
             {day}
           </span>
 
-          {/* Content area - more spacious */}
+          {/* Content area - minimal */}
           <div className="flex-1 flex flex-col justify-end mt-1 relative z-10">
             {!isPast && hasBooking && (
-              <div className="space-y-0.5">
-                <p
-                  className="text-sm font-semibold truncate"
-                  style={{ color: bookingColor.text }}
-                >
-                  {booking.parties?.child_name}'s
+              <div className="flex items-center gap-1.5">
+                {/* Colored dot indicator for business */}
+                <div
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: bookingColor.dot }}
+                />
+                <p className="text-xs font-medium text-gray-600 truncate">
+                  {booking.parties?.child_name?.split(' ')[0] || 'Booked'}
                 </p>
-                {formatPartyTime(booking) && (
-                  <p
-                    className="text-xs font-medium"
-                    style={{ color: bookingColor.accent }}
-                  >
-                    {formatPartyTime(booking)}
-                  </p>
-                )}
-                {booking.businessName && businesses?.length > 1 && (
-                  <p
-                    className="text-[10px] truncate"
-                    style={{ color: bookingColor.accent, opacity: 0.8 }}
-                  >
-                    {booking.businessName}
-                  </p>
-                )}
               </div>
             )}
             {!isPast && !hasBooking && isNonWorkingDay && (
@@ -1035,10 +1012,8 @@ const TimeSlotAvailabilityContent = ({
             ${isToday ? 'ring-2 ring-gray-900 ring-inset' : ''}
             ${isNonWorkingDay && !hasBooking ? 'bg-gray-50' : ''}
             ${isFullyBlocked && !hasBooking && !isNonWorkingDay ? 'bg-gray-100' : ''}
+            ${hasBooking && !isPast ? 'bg-gray-50' : ''}
           `}
-          style={hasBooking && !isPast ? {
-            backgroundColor: bookingColor.bg,
-          } : undefined}
         >
           {/* Diagonal overlay for partial blocks */}
           {!isPast && !hasBooking && isPartiallyBlocked && (
@@ -1056,23 +1031,22 @@ const TimeSlotAvailabilityContent = ({
           <span
             className={`text-base relative z-10 ${
               isPast ? 'text-gray-300'
-              : hasBooking ? 'font-semibold'
+              : hasBooking ? 'font-semibold text-gray-900'
               : isFullyBlocked || isNonWorkingDay ? 'text-gray-400'
               : 'text-gray-900'
             }`}
-            style={hasBooking && !isPast ? { color: bookingColor.text } : undefined}
           >
             {day}
           </span>
 
-          {/* Booking indicator - show child name initial */}
+          {/* Booking indicator - colored dot */}
           {!isPast && hasBooking && (
-            <span
-              className="text-[10px] font-medium truncate max-w-full px-0.5 relative z-10"
-              style={{ color: bookingColor.accent }}
-            >
-              {booking.parties?.child_name?.charAt(0) || '●'}
-            </span>
+            <div className="flex items-center gap-0.5 relative z-10">
+              <div
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: bookingColor.dot }}
+              />
+            </div>
           )}
         </button>
       )
@@ -1205,23 +1179,32 @@ const TimeSlotAvailabilityContent = ({
               </button>
 
               {/* Individual businesses */}
-              {businesses?.map((business, index) => (
-                <button
-                  key={business.id}
-                  onClick={() => {
-                    setSelectedCalendarBusiness(business.id)
-                    setShowMobileBusinessPicker(false)
-                  }}
-                  className={`w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-b-0 ${
-                    selectedCalendarBusiness === business.id ? 'bg-gray-50' : ''
-                  }`}
-                >
-                  <span className="text-sm font-medium text-gray-900">{business.name}</span>
-                  {selectedCalendarBusiness === business.id && (
-                    <Check className="w-4 h-4 text-gray-900" />
-                  )}
-                </button>
-              ))}
+              {businesses?.map((business, index) => {
+                const color = getBusinessColor(business, index)
+                return (
+                  <button
+                    key={business.id}
+                    onClick={() => {
+                      setSelectedCalendarBusiness(business.id)
+                      setShowMobileBusinessPicker(false)
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-b-0 ${
+                      selectedCalendarBusiness === business.id ? 'bg-gray-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: color.dot }}
+                      />
+                      <span className="text-sm font-medium text-gray-900">{business.name}</span>
+                    </div>
+                    {selectedCalendarBusiness === business.id && (
+                      <Check className="w-4 h-4 text-gray-900" />
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
         )}
@@ -1334,17 +1317,19 @@ const TimeSlotAvailabilityContent = ({
                   const color = getBusinessColor(business, index)
                   return (
                     <div key={business.id} className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded"
-                        style={{ backgroundColor: color.bg, border: `1px solid ${color.border}` }}
-                      />
+                      <div className="w-3 h-3 rounded border border-gray-300 bg-gray-50 flex items-center justify-center">
+                        <div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: color.dot }}
+                        />
+                      </div>
                       <span className="truncate max-w-[80px]">{business.name}</span>
                     </div>
                   )
                 })
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded border border-primary-200 bg-primary-50" />
+                  <div className="w-3 h-3 rounded border border-gray-300 bg-gray-50" />
                   <span>Booked</span>
                 </div>
               )}
@@ -1397,21 +1382,30 @@ const TimeSlotAvailabilityContent = ({
                         <span className="text-sm font-medium text-gray-900">All businesses</span>
                         {selectedCalendarBusiness === 'all' && <Check className="w-4 h-4 text-gray-900" />}
                       </button>
-                      {businesses.map((business) => (
-                        <button
-                          key={business.id}
-                          onClick={() => {
-                            setSelectedCalendarBusiness(business.id)
-                            setShowDesktopBusinessDropdown(false)
-                          }}
-                          className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
-                            selectedCalendarBusiness === business.id ? 'bg-gray-50' : ''
-                          }`}
-                        >
-                          <span className="text-sm font-medium text-gray-900">{business.name}</span>
-                          {selectedCalendarBusiness === business.id && <Check className="w-4 h-4 text-gray-900" />}
-                        </button>
-                      ))}
+                      {businesses.map((business, index) => {
+                        const color = getBusinessColor(business, index)
+                        return (
+                          <button
+                            key={business.id}
+                            onClick={() => {
+                              setSelectedCalendarBusiness(business.id)
+                              setShowDesktopBusinessDropdown(false)
+                            }}
+                            className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                              selectedCalendarBusiness === business.id ? 'bg-gray-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: color.dot }}
+                              />
+                              <span className="text-sm font-medium text-gray-900">{business.name}</span>
+                            </div>
+                            {selectedCalendarBusiness === business.id && <Check className="w-4 h-4 text-gray-900" />}
+                          </button>
+                        )
+                      })}
                     </div>
                   </>
                 )}

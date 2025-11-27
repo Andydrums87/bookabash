@@ -88,8 +88,8 @@ export default function ListingManagementPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header section */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Header section - hidden on mobile, profile page has its own mobile header */}
+      <div className="hidden lg:block bg-white border-b border-gray-200">
         <div className="px-6 lg:px-8 py-4">
           {/* Back button and listing info row */}
           <div className="flex items-center gap-6">

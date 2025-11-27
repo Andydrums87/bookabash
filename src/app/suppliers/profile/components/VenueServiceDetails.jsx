@@ -1218,7 +1218,7 @@ const handleVenueDetailsSave = () => {
   const sectionTitles = {
     listingName: 'Listing name',
     photos: 'Photos',
-    aboutUs: 'About your venue',
+    aboutUs: 'About',
     venueAddress: 'Location',
     venueType: 'Venue type',
     capacity: 'Capacity',
@@ -1308,34 +1308,26 @@ const handleVenueDetailsSave = () => {
       case 'aboutUs':
         return (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <label htmlFor="aboutUs" className="text-sm font-medium text-gray-700 block">
-                Venue Description *
-              </label>
-              <p className="text-sm text-gray-500">
-                Describe your venue, its atmosphere, what makes it perfect for children's parties, and why families love choosing it for their special celebrations.
-              </p>
-              <div className="relative">
-                <textarea
-                  id="aboutUs"
-                  name="aboutUs"
-                  value={details.aboutUs || ""}
-                  onChange={(e) => {
-                    handleFieldChange("aboutUs", e.target.value)
-                    checkChanges('aboutVenue', { aboutUs: e.target.value }, { aboutUs: supplierData?.description || '' })
-                  }}
-                  placeholder="Describe your venue, its atmosphere, what makes it perfect for children's parties..."
-                  rows={8}
-                  maxLength={3000}
-                  className="w-full bg-white border border-gray-300 rounded-xl text-base p-4 resize-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
-                />
-                <div className="absolute bottom-3 right-3 text-xs text-gray-400">
-                  {(details.aboutUs || "").split(/\s+/).filter((w) => w).length}/60 words
-                </div>
+            <div className="relative">
+              <textarea
+                id="aboutUs"
+                name="aboutUs"
+                value={details.aboutUs || ""}
+                onChange={(e) => {
+                  handleFieldChange("aboutUs", e.target.value)
+                  checkChanges('aboutVenue', { aboutUs: e.target.value }, { aboutUs: supplierData?.description || '' })
+                }}
+                placeholder="Share what makes your venue special..."
+                rows={6}
+                maxLength={3000}
+                className="w-full bg-white border border-gray-300 rounded-xl text-base p-4 resize-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+              />
+              <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                {(details.aboutUs || "").split(/\s+/).filter((w) => w).length}/60
               </div>
             </div>
             <SectionSave
-              sectionName="About Your Venue"
+              sectionName="Description"
               hasChanges={aboutUsState.hasChanges}
               onSave={handleAboutUsSave}
               saving={aboutUsState.saving}
@@ -1923,8 +1915,8 @@ const handleVenueDetailsSave = () => {
 
   return (
     <div className="w-full">
-      {/* Section Title - Airbnb style */}
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+      {/* Section Title - Airbnb style (hidden on mobile as modal has title) */}
+      <h1 className="hidden md:block text-2xl font-semibold text-gray-900 mb-6">
         {sectionTitles[currentInternalSection] || 'Details'}
       </h1>
 

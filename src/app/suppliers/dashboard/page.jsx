@@ -274,23 +274,23 @@ function FilterSortControls({
   const [showSortDropdown, setShowSortDropdown] = useState(false)
 
   return (
-    <div className="mb-6 space-y-4">
-      {/* Search and controls row */}
-      <div className="flex flex-col sm:flex-row gap-3">
+    <div className="mb-4 space-y-3">
+      {/* Search and controls row - all on one line */}
+      <div className="flex items-center gap-2">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by name or party..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -301,11 +301,10 @@ function FilterSortControls({
         <div className="relative">
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowUpDown className="h-4 w-4" />
-            <span className="hidden sm:inline">{sortOptions.find(o => o.value === sortBy)?.label || 'Sort'}</span>
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3 w-3" />
           </button>
           {showSortDropdown && (
             <>
@@ -331,10 +330,10 @@ function FilterSortControls({
         </div>
 
         {/* View toggle */}
-        <div className="flex items-center bg-gray-100 rounded-lg p-1">
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-colors ${
               viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
             }`}
             title="Grid view"
@@ -343,7 +342,7 @@ function FilterSortControls({
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-colors ${
               viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
             }`}
             title="List view"
@@ -353,13 +352,13 @@ function FilterSortControls({
         </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filter chips - horizontal scroll on mobile */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
         {filterOptions.map((option) => (
           <button
             key={option.value}
             onClick={() => setFilterBy(filterBy === option.value ? 'all' : option.value)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
+            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
               filterBy === option.value
                 ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -367,7 +366,7 @@ function FilterSortControls({
           >
             {option.label}
             {option.count !== undefined && (
-              <span className={`ml-1.5 ${filterBy === option.value ? 'text-gray-300' : 'text-gray-400'}`}>
+              <span className={`ml-1 ${filterBy === option.value ? 'text-gray-300' : 'text-gray-400'}`}>
                 {option.count}
               </span>
             )}

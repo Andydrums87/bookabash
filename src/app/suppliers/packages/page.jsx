@@ -238,11 +238,13 @@ const Packages = () => {
 
   return (
     <div className="w-full">
-      {/* Header - matching other tabs */}
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">Packages</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Create and manage service packages to offer customers different options
-      </p>
+      {/* Header - matching other tabs (hidden on mobile as modal has title) */}
+      <div className="hidden md:block mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Packages</h1>
+        <p className="text-sm text-gray-500">
+          Create and manage service packages to offer customers different options
+        </p>
+      </div>
 
       {/* Content */}
       {packages.length === 0 ? (

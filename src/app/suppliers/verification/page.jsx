@@ -223,17 +223,14 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-[32px] font-bold text-gray-900">
-            Verification
-          </h1>
-          <p className="mt-2 text-gray-500">
-            Upload your documents to get verified
-          </p>
-        </div>
+    <div className="w-full">
+      {/* Header - matching other tabs (hidden on mobile as modal has title) */}
+      <div className="hidden md:block mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Verification</h1>
+        <p className="text-sm text-gray-500">
+          Upload your documents to get verified
+        </p>
+      </div>
 
         {/* Document Card */}
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
@@ -313,11 +310,10 @@ export default function VerificationPage() {
           })}
         </div>
 
-        {/* Help text */}
-        <p className="mt-4 text-sm text-gray-400">
-          PDF, JPG, or PNG · Max 10MB
-        </p>
-      </div>
+      {/* Help text */}
+      <p className="mt-4 text-sm text-gray-400">
+        PDF, JPG, or PNG · Max 10MB
+      </p>
     </div>
   )
 }

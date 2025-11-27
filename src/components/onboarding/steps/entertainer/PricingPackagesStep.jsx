@@ -70,12 +70,12 @@ export default function PricingPackagesStep({ pricing, onChange }) {
 
   return (
     <div className="py-12 max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-          Pricing
+      <div className="text-center mb-8">
+        <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
+          Set your pricing
         </h1>
-        <p className="text-gray-600">
-          Set your rates and capacity
+        <p className="text-lg text-gray-600">
+          Configure your rates and group sizes
         </p>
       </div>
 

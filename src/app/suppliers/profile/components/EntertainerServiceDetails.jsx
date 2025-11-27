@@ -55,7 +55,7 @@ const sectionMap = {
 
 const sectionTitles = {
   'listingName': 'Listing Name',
-  'about': 'About Your Service',
+  'about': 'About',
   'basicInfo': 'Travel & Location',
   'pricing': 'Pricing',
   'ageGroups': 'Age Groups',
@@ -842,44 +842,35 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // About Us Section Content
   const renderAboutUs = () => (
     <div className="space-y-6">
+      <div className="relative">
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">About Your Service</h2>
-        <p className="text-gray-600">Tell customers about your business and what makes you special</p>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-2">About Us</h2>
+        <p className="text-gray-600 mb-2">Tell us what makes you special</p>
       </div>
-
-      <div className="space-y-4">
-        <Label htmlFor="aboutUs" className="text-base font-medium text-gray-700">
-          Your Business Story * <span className="text-gray-400 font-normal">(max 120 words)</span>
-        </Label>
-        <div className="relative">
-          <Textarea
-            id="aboutUs"
-            value={details.aboutUs || ""}
-            onChange={(e) => {
-              const text = e.target.value
-              const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
-              if (words.length <= 120) {
-                handleFieldChange("aboutUs", e.target.value)
-              }
-            }}
-            placeholder="Tell customers about your business, your passion for entertainment, what makes you unique, and why families love choosing you for their special occasions..."
-            className="bg-white border-2 border-gray-200 rounded-xl text-base p-4 resize-none min-h-[200px]"
-          />
-          <div className="absolute bottom-3 right-3 text-xs text-gray-500 bg-white px-2 py-1 rounded">
-            {(() => {
-              const text = details.aboutUs || ""
-              const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
-              return words.length
-            })()}/120 words
-          </div>
+        <Textarea
+          id="aboutUs"
+          value={details.aboutUs || ""}
+          onChange={(e) => {
+            const text = e.target.value
+            const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
+            if (words.length <= 120) {
+              handleFieldChange("aboutUs", e.target.value)
+            }
+          }}
+          placeholder="Share what makes your service special..."
+          className="bg-white border border-gray-300 rounded-xl text-base p-4 resize-none min-h-[160px] focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+        />
+        <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+          {(() => {
+            const text = details.aboutUs || ""
+            const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
+            return words.length
+          })()}/120
         </div>
-        <p className="text-sm text-gray-500">
-          Share your story, highlight what makes you different, and mention any awards or recognition.
-        </p>
       </div>
 
       <SectionSave
-        sectionName="About Us"
+        sectionName="Description"
         hasChanges={aboutUsState.hasChanges}
         onSave={handleAboutUsSave}
         saving={aboutUsState.saving}
@@ -983,7 +974,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
 
     return (
       <div className="space-y-8">
-        <div>
+        <div className="hidden md:block">
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">Travel & Location</h2>
           <p className="text-gray-600">Where you're based and how far you'll travel</p>
         </div>
@@ -1200,7 +1191,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Pricing Section Content - Airbnb style
   const renderPricing = () => (
     <div className="space-y-8">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Pricing</h2>
         <p className="text-gray-600">Set your rates and capacity</p>
       </div>
@@ -1306,7 +1297,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Age Groups Section Content
   const renderAgeGroups = () => (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Age Groups</h2>
         <p className="text-gray-600">Select all age groups that would enjoy your performances</p>
       </div>
@@ -1347,7 +1338,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Performance Styles Section Content
   const renderPerformanceStyles = () => (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Performance Styles</h2>
         <p className="text-gray-600">What types of entertainment do you offer?</p>
       </div>
@@ -1388,7 +1379,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Themes Section Content
   const renderThemes = () => (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Themes</h2>
         <p className="text-gray-600">Select party themes you can perform for</p>
       </div>
@@ -1414,7 +1405,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Equipment Section Content
   const renderEquipment = () => (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Equipment & Skills</h2>
         <p className="text-gray-600">Tell customers about your equipment and special abilities</p>
       </div>
@@ -1461,7 +1452,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Personal Bio Section Content
   const renderPersonalBio = () => (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Meet the Entertainer</h2>
         <p className="text-gray-600">Let customers get to know the amazing person behind the performance</p>
       </div>
@@ -1543,7 +1534,7 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Add-ons Section Content
   const renderAddOns = () => (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Add-on Services</h2>
         <p className="text-gray-600">Create optional extras that customers can add to their bookings</p>
       </div>

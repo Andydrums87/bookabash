@@ -665,9 +665,9 @@ const PortfolioGalleryTabContent = () => {
         </div>
       )}
 
-      {/* Header - matching other tabs */}
+      {/* Header - matching other tabs (hidden on mobile as modal has title) */}
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-2xl font-semibold text-gray-900">Photos</h1>
           <p className="text-sm text-gray-500 mt-1">Add photos to showcase your services</p>
         </div>

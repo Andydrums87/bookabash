@@ -110,9 +110,9 @@ export default function ServiceAreaStep({ serviceArea, onChange }) {
   return (
     <div className="py-12 max-w-2xl mx-auto">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        {/* <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <MapPin className="w-8 h-8 text-primary-600" />
-        </div>
+        </div> */}
         <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
           Where are you based?
         </h1>

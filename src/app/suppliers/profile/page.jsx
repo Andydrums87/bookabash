@@ -722,6 +722,30 @@ if (loading) {
         </div>
       )}
 
+      {/* Mobile Header - Airbnb style */}
+      <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <button
+          onClick={() => window.history.back()}
+          className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <h1 className="font-semibold text-gray-900">Listing editor</h1>
+        <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+          {supplierData?.portfolioImages?.[0] ? (
+            <img
+              src={supplierData.portfolioImages[0].src || supplierData.portfolioImages[0].url || supplierData.portfolioImages[0]}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-xs font-medium text-gray-500">
+              {supplierData?.name?.charAt(0) || 'S'}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Mobile Section List - visible on mobile only - Airbnb style with rich previews */}
       <div className="lg:hidden p-4 space-y-4">
         {sections.map((section) => {
@@ -1147,19 +1171,19 @@ if (loading) {
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
               {selectedSection === 'photos' ? (
-                <div className="p-4">
+                <div className="p-6">
                   <MediaPageContent />
                 </div>
               ) : selectedSection === 'packages' ? (
-                <div className="p-4">
+                <div className="p-6">
                   <PackagesPageContent />
                 </div>
               ) : selectedSection === 'verification' ? (
-                <div className="p-4">
+                <div className="p-6">
                   <VerificationPageContent />
                 </div>
               ) : (
-                <div className="p-4">
+                <div className="p-6">
                   <ServiceDetailsRouter
                     serviceType={supplierData?.category || supplierData?.serviceType}
                     serviceDetails={supplierData?.serviceDetails || {}}

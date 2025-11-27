@@ -155,9 +155,9 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
   return (
     <div className="py-12 max-w-3xl mx-auto">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        {/* <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Shield className="w-8 h-8 text-primary-600" />
-        </div>
+        </div> */}
         <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
           Verification Documents
         </h1>
@@ -176,11 +176,11 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
       )}
 
       {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+      {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
         <p className="text-sm text-blue-900">
           <strong>Why verify?</strong> Verified entertainers get more bookings. Your documents are securely stored and only reviewed by our team.
         </p>
-      </div>
+      </div> */}
 
       {/* Document Upload Cards */}
       <div className="space-y-4 mb-8">
