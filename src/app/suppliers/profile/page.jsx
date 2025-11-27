@@ -670,7 +670,7 @@ if (loading) {
   const venueSections = [
     { id: 'listingName', label: 'Listing name', icon: FileText },
     { id: 'photos', label: 'Photos', icon: Camera },
-    { id: 'about', label: 'About your venue', icon: FileText },
+    { id: 'about', label: 'Listing description', icon: FileText },
     { id: 'address', label: 'Venue address', icon: MapPin },
     { id: 'type', label: 'Venue type', icon: Building2 },
     { id: 'capacity', label: 'Capacity', icon: Users },
@@ -686,7 +686,7 @@ if (loading) {
     { id: 'listingName', label: 'Listing name', icon: FileText },
     { id: 'photos', label: 'Photos', icon: Camera },
     { id: 'verification', label: 'Verification', icon: Shield },
-    { id: 'about', label: 'About your service', icon: FileText },
+    { id: 'about', label: 'Listing description', icon: FileText },
     { id: 'basicInfo', label: 'Travel & location', icon: MapPin },
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'ageGroups', label: 'Age groups', icon: Users },
@@ -1155,7 +1155,7 @@ if (loading) {
           {/* Sheet */}
           <div className="absolute inset-x-0 bottom-0 top-8 bg-white rounded-t-2xl overflow-hidden flex flex-col animate-slide-up">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <button
                 onClick={() => setMobileSheetOpen(false)}
                 className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
@@ -1200,6 +1200,30 @@ if (loading) {
                 </div>
               )}
             </div>
+
+            {/* Footer - Airbnb style with Cancel and Save */}
+            <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between bg-white">
+              <button
+                onClick={() => setMobileSheetOpen(false)}
+                className="text-base font-medium text-gray-900 underline"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await handleSaveChanges()
+                  setMobileSheetOpen(false)
+                }}
+                disabled={saving}
+                className={`px-6 py-3 rounded-lg text-base font-medium transition-colors ${
+                  saving
+                    ? 'bg-gray-200 text-gray-400'
+                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                }`}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1207,7 +1231,7 @@ if (loading) {
       {/* Desktop Two-column Airbnb-style layout */}
       <div className="hidden lg:flex min-h-screen">
         {/* Left Sidebar - Section Navigation with Rich Previews */}
-        <div className="w-[380px] border-r border-gray-200 bg-gray-50 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
+        <div className="w-[380px] border-r border-gray-200 bg-white sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
           <div className="p-4 space-y-3">
             {sections.map((section) => {
               const isSelected = selectedSection === section.id
@@ -1677,7 +1701,7 @@ if (loading) {
         </div>
 
         {/* Right Content Area */}
-        <div className="flex-1 bg-gray-50">
+        <div className="flex-1 bg-white">
           {/* Content - conditionally render based on selectedSection */}
           {selectedSection === 'photos' ? (
             <div className="p-6 lg:p-12">

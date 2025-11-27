@@ -1218,7 +1218,7 @@ const handleVenueDetailsSave = () => {
   const sectionTitles = {
     listingName: 'Listing name',
     photos: 'Photos',
-    aboutUs: 'About',
+    aboutUs: 'Listing description',
     venueAddress: 'Location',
     venueType: 'Venue type',
     capacity: 'Capacity',
@@ -1283,7 +1283,9 @@ const handleVenueDetailsSave = () => {
                 minHeight: '80px'
               }}
               className="font-semibold text-center text-gray-900 border-none outline-none bg-transparent w-full max-w-3xl focus:ring-0"
-            />
+            >
+              {listingName}
+            </div>
 
             {/* Tip icon and save */}
             <div className="mt-16 flex flex-col items-center gap-6">
@@ -1306,34 +1308,41 @@ const handleVenueDetailsSave = () => {
         )
 
       case 'aboutUs':
+        const aboutWordCount = (details.aboutUs || "").split(/\s+/).filter((w) => w).length
+        const maxWords = 500
         return (
-          <div className="space-y-6">
-            <div className="relative">
-              <textarea
-                id="aboutUs"
-                name="aboutUs"
-                value={details.aboutUs || ""}
-                onChange={(e) => {
-                  handleFieldChange("aboutUs", e.target.value)
-                  checkChanges('aboutVenue', { aboutUs: e.target.value }, { aboutUs: supplierData?.description || '' })
-                }}
-                placeholder="Share what makes your venue special..."
-                rows={6}
-                maxLength={3000}
-                className="w-full bg-white border border-gray-300 rounded-xl text-base p-4 resize-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
-              />
-              <div className="absolute bottom-3 right-3 text-xs text-gray-400">
-                {(details.aboutUs || "").split(/\s+/).filter((w) => w).length}/60
-              </div>
+          <div className="flex flex-col h-full">
+            {/* Character count - Airbnb style */}
+            <div className="mb-4">
+              <span className="text-sm font-medium text-gray-900">{aboutWordCount}/{maxWords}</span>
+              <span className="text-sm text-gray-500 ml-1">words</span>
             </div>
-            <SectionSave
-              sectionName="Description"
-              hasChanges={aboutUsState.hasChanges}
-              onSave={handleAboutUsSave}
-              saving={aboutUsState.saving}
-              lastSaved={aboutUsState.lastSaved}
-              error={aboutUsState.error}
+
+            {/* Clean textarea without visible border */}
+            <textarea
+              id="aboutUs"
+              name="aboutUs"
+              value={details.aboutUs || ""}
+              onChange={(e) => {
+                handleFieldChange("aboutUs", e.target.value)
+                checkChanges('aboutVenue', { aboutUs: e.target.value }, { aboutUs: supplierData?.description || '' })
+              }}
+              placeholder="Share what makes your venue special..."
+              className="w-full min-h-[200px] flex-1 text-lg text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-0 border-none bg-transparent p-0 shadow-none"
             />
+
+            {/* Save button - hidden on mobile (mobile has footer save) */}
+            <div className="hidden lg:block mt-auto pt-6">
+              <SectionSave
+                sectionName="Description"
+                hasChanges={aboutUsState.hasChanges}
+                onSave={handleAboutUsSave}
+                saving={aboutUsState.saving}
+                lastSaved={aboutUsState.lastSaved}
+                error={aboutUsState.error}
+                variant="airbnb"
+              />
+            </div>
           </div>
         )
 

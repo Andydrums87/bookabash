@@ -55,7 +55,7 @@ const sectionMap = {
 
 const sectionTitles = {
   'listingName': 'Listing Name',
-  'about': 'About',
+  'about': 'Listing description',
   'basicInfo': 'Travel & Location',
   'pricing': 'Pricing',
   'ageGroups': 'Age Groups',
@@ -815,7 +815,9 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
           minHeight: '80px'
         }}
         className="font-semibold text-center text-gray-900 border-none outline-none bg-transparent w-full max-w-3xl focus:ring-0"
-      />
+      >
+        {listingName}
+      </div>
 
       {/* Tip icon and save */}
       <div className="mt-16 flex flex-col items-center gap-6">
@@ -839,46 +841,54 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
     </div>
   )
 
-  // About Us Section Content
-  const renderAboutUs = () => (
-    <div className="space-y-6">
-      <div className="relative">
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">About Us</h2>
-        <p className="text-gray-600 mb-2">Tell us what makes you special</p>
+  // About Us Section Content - Airbnb style
+  const renderAboutUs = () => {
+    const text = details.aboutUs || ""
+    const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).filter((word) => word.length > 0).length
+    const maxWords = 500
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Word count - Airbnb style */}
+        <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-5">Listing Description</h2>
+     
       </div>
-        <Textarea
+        <div className="mb-4">
+          <span className="text-sm font-medium text-gray-900">{wordCount}/{maxWords}</span>
+          <span className="text-sm text-gray-500 ml-1">words</span>
+        </div>
+
+        {/* Clean textarea without visible border */}
+        <textarea
           id="aboutUs"
           value={details.aboutUs || ""}
           onChange={(e) => {
-            const text = e.target.value
-            const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
-            if (words.length <= 120) {
-              handleFieldChange("aboutUs", e.target.value)
+            const newText = e.target.value
+            const words = newText.trim() === "" ? [] : newText.trim().split(/\s+/).filter((word) => word.length > 0)
+            if (words.length <= maxWords) {
+              handleFieldChange("aboutUs", newText)
             }
           }}
           placeholder="Share what makes your service special..."
-          className="bg-white border border-gray-300 rounded-xl text-base p-4 resize-none min-h-[160px] focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
+          className="w-full min-h-[200px] flex-1 text-lg text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-0 border-none bg-transparent p-0 shadow-none"
         />
-        <div className="absolute bottom-3 right-3 text-xs text-gray-400">
-          {(() => {
-            const text = details.aboutUs || ""
-            const words = text.trim() === "" ? [] : text.trim().split(/\s+/).filter((word) => word.length > 0)
-            return words.length
-          })()}/120
+
+        {/* Save button - hidden on mobile (mobile has footer save) */}
+        <div className="hidden lg:block mt-auto pt-6">
+          <SectionSave
+            sectionName="Description"
+            hasChanges={aboutUsState.hasChanges}
+            onSave={handleAboutUsSave}
+            saving={aboutUsState.saving}
+            lastSaved={aboutUsState.lastSaved}
+            error={aboutUsState.error}
+            variant="airbnb"
+          />
         </div>
       </div>
-
-      <SectionSave
-        sectionName="Description"
-        hasChanges={aboutUsState.hasChanges}
-        onSave={handleAboutUsSave}
-        saving={aboutUsState.saving}
-        lastSaved={aboutUsState.lastSaved}
-        error={aboutUsState.error}
-      />
-    </div>
-  )
+    )
+  }
 
   // Radius options for visual selection
   const radiusOptions = [
@@ -981,8 +991,8 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
 
         {/* Your Location Card with Address Search */}
         <div className="border-b border-gray-200 pb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Your base location</h3>
-          <p className="text-gray-500 text-sm mb-4">This won't be shown publicly - only your general area will be visible</p>
+          {/* <h3 className="text-lg font-medium text-gray-900 mb-1">Your base location</h3>
+          <p className="text-gray-500 text-sm mb-4">This won't be shown publicly - only your general area will be visible</p> */}
 
           <LoadScript
             googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}

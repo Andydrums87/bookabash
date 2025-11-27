@@ -14,19 +14,49 @@ const formatLastSaved = (timestamp) => {
   return saved.toLocaleTimeString();
 };
 
-export const SectionSave = ({ 
-  sectionName, 
-  hasChanges, 
-  onSave, 
+export const SectionSave = ({
+  sectionName,
+  hasChanges,
+  onSave,
   saving = false,
   lastSaved = null,
-  error = null 
+  error = null,
+  variant = 'default' // 'default' or 'airbnb'
 }) => {
   // Don't show anything if no changes and never saved
   if (!hasChanges && !lastSaved && !error) return null;
 
+  // Airbnb-style footer variant
+  if (variant === 'airbnb') {
+    return (
+      <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+        <div className="text-sm text-gray-500">
+          {error && <span className="text-red-600">Save failed</span>}
+          {!error && lastSaved && !hasChanges && (
+            <span className="text-gray-500">Saved {formatLastSaved(lastSaved)}</span>
+          )}
+        </div>
+
+        {(hasChanges || error) && (
+          <button
+            onClick={onSave}
+            disabled={saving}
+            className={`px-6 py-3 rounded-lg text-base font-medium transition-colors ${
+              saving
+                ? 'bg-gray-200 text-gray-400'
+                : 'bg-gray-900 text-white hover:bg-gray-800'
+            }`}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Default style - now uses Airbnb black style
   return (
-    <div className="flex items-center justify-between pt-4 mt-6 border-t border-gray-200">
+    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
       <div className="flex items-center gap-2 text-sm">
         {error && (
           <span className="flex items-center gap-1 text-red-600">
@@ -34,42 +64,35 @@ export const SectionSave = ({
             Save failed
           </span>
         )}
-        
+
         {!error && lastSaved && !hasChanges && (
-          <span className="flex items-center gap-1 text-green-600">
+          <span className="flex items-center gap-1 text-gray-500">
             <Check className="w-4 h-4" />
             Saved {formatLastSaved(lastSaved)}
           </span>
         )}
-        
+
         {!error && hasChanges && (
-          <span className="text-orange-600 font-medium">
+          <span className="text-gray-500 font-medium">
             Unsaved changes
           </span>
         )}
       </div>
-      
+
       {(hasChanges || error) && (
-        <Button 
+        <button
           onClick={onSave}
           disabled={saving}
-          size="sm"
-          className={error ? 
-            "bg-red-600 hover:bg-red-700 text-white" : 
-            "bg-orange-600 hover:bg-orange-700 text-white"
-          }
+          className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            saving
+              ? 'bg-gray-200 text-gray-400'
+              : error
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-gray-900 text-white hover:bg-gray-800'
+          }`}
         >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              {error ? 'Retry' : `Save ${sectionName}`}
-            </>
-          )}
-        </Button>
+          {saving ? 'Saving...' : error ? 'Retry' : 'Save'}
+        </button>
       )}
     </div>
   );
