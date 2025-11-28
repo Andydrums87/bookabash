@@ -1,1206 +1,680 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-
 import {
   User,
   Building,
   Bell,
   Shield,
   CreditCard,
-  AlertCircle,
-  Camera,
-  Upload,
   Loader2,
   Check,
-  Save,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  Phone,
-  MapPin,
+  Camera,
   X,
+  ChevronLeft,
+  Upload,
   MessageSquare
 } from "lucide-react"
-import { GlobalSaveButton } from "@/components/GlobalSaveButton"
-import { Button } from "@/components/ui/button"
-import MessageTemplatesManager from "@/components/MessengerTemplateManager"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import MessageTemplatesSection from "../profile/components/MessageTemplatesSection"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard } from "@/utils/mockBackend"
+import { useRouter } from "next/navigation"
 
-const Settings = () => {
-  const [localSaving, setLocalSaving] = useState(false)
+// Airbnb-style settings sections
+const settingsSections = [
+  { id: 'personal', label: 'Personal information', icon: User },
+  { id: 'business', label: 'Business details', icon: Building },
+  { id: 'templates', label: 'Message templates', icon: MessageSquare },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+]
+
+// Editable field row component
+function SettingRow({ label, value, description, onEdit, actionLabel = "Edit" }) {
+  return (
+    <div className="py-6 border-b border-gray-200 last:border-b-0">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0 pr-4">
+          <h3 className="font-medium text-gray-900">{label}</h3>
+          <p className="text-gray-500 mt-1">{value || 'Not provided'}</p>
+          {description && (
+            <p className="text-sm text-gray-400 mt-1">{description}</p>
+          )}
+        </div>
+        {onEdit && (
+          <button
+            onClick={onEdit}
+            className="text-gray-900 font-medium underline hover:text-gray-600 flex-shrink-0"
+          >
+            {value ? actionLabel : 'Add'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Toggle row for notifications
+function ToggleRow({ label, description, checked, onChange }) {
+  return (
+    <div className="py-6 border-b border-gray-200 last:border-b-0">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-gray-900">{label}</h3>
+          {description && (
+            <p className="text-sm text-gray-500 mt-1">{description}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          onClick={() => onChange(!checked)}
+          className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 ${
+            checked ? 'bg-gray-900' : 'bg-gray-300'
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out absolute top-1 ${
+              checked ? 'left-6' : 'left-1'
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Edit modal component
+function EditModal({ isOpen, onClose, title, children, onSave, saving }) {
+  if (!isOpen) return null
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+        <div
+          className="bg-white w-full lg:w-full lg:max-w-lg lg:rounded-2xl rounded-t-2xl max-h-[90vh] lg:max-h-[85vh] overflow-hidden flex flex-col shadow-xl"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <button
+              onClick={onClose}
+              className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+            <h2 className="font-semibold text-gray-900">{title}</h2>
+            <div className="w-9" />
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            {children}
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+            <button
+              onClick={onClose}
+              className="text-base font-medium text-gray-900 underline"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="px-6 py-3 rounded-xl text-base font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+export default function Settings() {
+  const router = useRouter()
+  const [selectedSection, setSelectedSection] = useState('personal')
+  const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
-  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [profilePhoto, setProfilePhoto] = useState(null)
-  const profilePhotoRef = useRef(null)
+  const [editField, setEditField] = useState(null)
+  const [editValue, setEditValue] = useState({})
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const photoInputRef = useRef(null)
 
-  const { supplier, supplierData, setSupplierData, loading, error, refresh } = useSupplier()
-  const { saving, updateProfile } = useSupplierDashboard()
+  const { supplier, supplierData, setSupplierData, loading } = useSupplier()
+  const { updateProfile } = useSupplierDashboard()
 
-  // Personal Information State
+  // Form state
   const [personalInfo, setPersonalInfo] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     profilePhoto: '',
-    bio: '',
-    dateOfBirth: '',
-    address: {
-      street: '',
-      city: '',
-      postcode: '',
-      country: 'United Kingdom'
-    }
   })
 
-  // Business Information State
   const [businessInfo, setBusinessInfo] = useState({
     businessName: '',
     businessType: '',
-    registrationNumber: '',
-    vatNumber: '',
-    businessAddress: {
-      street: '',
-      city: '',
-      postcode: '',
-      country: 'United Kingdom'
-    },
-    operatingPostcode: ''
+    operatingPostcode: '',
   })
 
-  // Notification Preferences State
   const [notifications, setNotifications] = useState({
     emailBookings: true,
     emailMessages: true,
     emailMarketing: false,
     smsBookings: true,
     smsReminders: true,
-    pushNotifications: true
-  })
-
-  // Security Settings State
-  const [security, setSecurity] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    twoFactorEnabled: false
   })
 
   // Load data from supplier
   useEffect(() => {
     if (supplierData) {
-      console.log('⚙️ Loading settings data from supplier:', supplierData);
-      
-      // Load personal info
       setPersonalInfo({
         firstName: supplierData.owner?.firstName || supplierData.owner?.name?.split(' ')[0] || '',
         lastName: supplierData.owner?.lastName || supplierData.owner?.name?.split(' ').slice(1).join(' ') || '',
         email: supplierData.owner?.email || '',
         phone: supplierData.owner?.phone || '',
         profilePhoto: supplierData.owner?.profilePhoto || '',
-        bio: supplierData.owner?.bio || '',
-        dateOfBirth: supplierData.owner?.dateOfBirth || '',
-        address: {
-          street: supplierData.owner?.address?.street || '',
-          city: supplierData.owner?.address?.city || '',
-          postcode: supplierData.owner?.address?.postcode || '',
-          country: supplierData.owner?.address?.country || 'United Kingdom'
-        }
-      });
+      })
 
-      // Load business info
       setBusinessInfo({
         businessName: supplierData.name || '',
         businessType: supplierData.serviceType || '',
-        registrationNumber: supplierData.registrationNumber || '',
-        vatNumber: supplierData.vatNumber || '',
-        businessAddress: {
-          street: supplierData.businessAddress?.street || '',
-          city: supplierData.businessAddress?.city || '',
-          postcode: supplierData.businessAddress?.postcode || '',
-          country: supplierData.businessAddress?.country || 'United Kingdom'
-        },
-        operatingPostcode: supplierData.location || ''
-      });
+        operatingPostcode: supplierData.location || '',
+      })
 
-      // Load notification preferences
       setNotifications({
         emailBookings: supplierData.notifications?.emailBookings ?? true,
         emailMessages: supplierData.notifications?.emailMessages ?? true,
         emailMarketing: supplierData.notifications?.emailMarketing ?? false,
         smsBookings: supplierData.notifications?.smsBookings ?? true,
         smsReminders: supplierData.notifications?.smsReminders ?? true,
-        pushNotifications: supplierData.notifications?.pushNotifications ?? true
-      });
-
-      setProfilePhoto(supplierData.owner?.profilePhoto || null);
+      })
     }
-  }, [supplierData]);
+  }, [supplierData])
 
-  // Handle profile photo upload
-  const handleProfilePhotoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
 
-    console.log('📷 Uploading profile photo...');
-    setUploadingProfilePhoto(true);
-
+    setUploadingPhoto(true)
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'portfolio_images');
-      
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', 'portfolio_images')
+
       const response = await fetch('https://api.cloudinary.com/v1_1/dghzq6xtd/image/upload', {
         method: 'POST',
         body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-      
-      const cloudinaryData = await response.json();
-      console.log('✅ Profile photo uploaded:', cloudinaryData.secure_url);
-      
-      setProfilePhoto(cloudinaryData.secure_url);
-      setPersonalInfo(prev => ({
-        ...prev,
-        profilePhoto: cloudinaryData.secure_url
-      }));
-      
-    } catch (error) {
-      console.error('❌ Profile photo upload failed:', error);
-      alert(`Failed to upload photo: ${error.message}`);
-    } finally {
-      setUploadingProfilePhoto(false);
-      if (profilePhotoRef.current) {
-        profilePhotoRef.current.value = '';
-      }
-    }
-  };
+      })
 
-  const handleSaveSettings = async () => {
-    setLocalSaving(true);
-    
+      if (!response.ok) throw new Error('Upload failed')
+
+      const data = await response.json()
+      setPersonalInfo(prev => ({ ...prev, profilePhoto: data.secure_url }))
+
+      // Auto-save photo
+      await handleSave({ profilePhoto: data.secure_url })
+    } catch (error) {
+      console.error('Photo upload failed:', error)
+      alert('Failed to upload photo')
+    } finally {
+      setUploadingPhoto(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
+
+  const handleSave = async (overrides = {}) => {
+    setSaving(true)
     try {
-      console.log('💾 Saving settings...');
-      
-      if (!updateProfile || !supplierData) {
-        throw new Error('Required functions not available');
-      }
-      
-      // Check if this is a venue business
-      const isVenue = businessInfo.businessType?.toLowerCase() === 'venues';
-      
-      // Merge settings data with existing supplier data
-      const updatedSupplierData = {
+      const updatedData = {
         ...supplierData,
         name: businessInfo.businessName,
         serviceType: businessInfo.businessType,
         location: businessInfo.operatingPostcode,
-        registrationNumber: businessInfo.registrationNumber,
-        vatNumber: businessInfo.vatNumber,
-        businessAddress: businessInfo.businessAddress,
-        
-        // Handle venue address - keep existing venue address data intact
-        ...(isVenue && {
-          venueAddress: {
-            ...supplierData.venueAddress, // Keep existing venue address
-            // Don't override with personal address for venues
-          },
-          serviceDetails: {
-            ...supplierData.serviceDetails,
-            venueAddress: {
-              ...supplierData.serviceDetails?.venueAddress, // Keep existing venue address in serviceDetails
-            }
-          }
-        }),
-        
         owner: {
-          ...supplierData.owner,
+          ...supplierData?.owner,
           name: `${personalInfo.firstName} ${personalInfo.lastName}`.trim(),
           firstName: personalInfo.firstName,
           lastName: personalInfo.lastName,
           email: personalInfo.email,
           phone: personalInfo.phone,
-          profilePhoto: personalInfo.profilePhoto,
-          bio: personalInfo.bio,
-          dateOfBirth: personalInfo.dateOfBirth,
-          // For venues, don't override with personal address
-          address: isVenue ? supplierData.owner?.address : personalInfo.address
+          profilePhoto: overrides.profilePhoto || personalInfo.profilePhoto,
         },
-        notifications: notifications
-      };
-  
-      console.log('💾 Updated supplier data for venue:', {
-        isVenue,
-        hasVenueAddress: !!updatedSupplierData.venueAddress,
-        venueAddressData: updatedSupplierData.venueAddress
-      });
-  
-      const result = await updateProfile(updatedSupplierData, null, updatedSupplierData.id);
-      
+        notifications,
+      }
+
+      const result = await updateProfile(updatedData, null, updatedData.id)
+
       if (result.success) {
-        console.log('✅ Settings saved successfully');
-        
-        // Update local supplier data
-        if (setSupplierData) {
-          setSupplierData(updatedSupplierData);
-        }
-        
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-        
+        if (setSupplierData) setSupplierData(updatedData)
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 2000)
+        setEditField(null)
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error)
       }
     } catch (error) {
-      console.error('❌ Failed to save settings:', error);
-      alert(`Failed to save settings: ${error.message}`);
+      console.error('Save failed:', error)
+      alert('Failed to save settings')
     } finally {
-      setLocalSaving(false);
+      setSaving(false)
     }
-  };
+  }
+
+  const openEditModal = (field, initialValue) => {
+    setEditField(field)
+    setEditValue(initialValue)
+  }
+
+  const handleNotificationSave = async (updatedNotifications) => {
+    try {
+      const updatedData = {
+        ...supplierData,
+        notifications: updatedNotifications,
+      }
+
+      const result = await updateProfile(updatedData, null, updatedData.id)
+
+      if (result.success) {
+        if (setSupplierData) setSupplierData(updatedData)
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 2000)
+      }
+    } catch (error) {
+      console.error('Save failed:', error)
+    }
+  }
+
+  const handleEditSave = async () => {
+    // Update the appropriate state based on field
+    if (editField === 'name') {
+      setPersonalInfo(prev => ({
+        ...prev,
+        firstName: editValue.firstName || '',
+        lastName: editValue.lastName || ''
+      }))
+    } else if (editField === 'email') {
+      setPersonalInfo(prev => ({ ...prev, email: editValue.email || '' }))
+    } else if (editField === 'phone') {
+      setPersonalInfo(prev => ({ ...prev, phone: editValue.phone || '' }))
+    } else if (editField === 'businessName') {
+      setBusinessInfo(prev => ({ ...prev, businessName: editValue.businessName || '' }))
+    } else if (editField === 'postcode') {
+      setBusinessInfo(prev => ({ ...prev, operatingPostcode: editValue.postcode || '' }))
+    }
+
+    await handleSave()
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading settings...</p>
-        </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
       </div>
-    );
+    )
   }
 
+  const currentSection = settingsSections.find(s => s.id === selectedSection)
+
   return (
-    <div className="min-h-screen bg-primary-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Success Alert */}
-        {saveSuccess && (
-          <div className="p-4 sm:p-6">
-            <Alert className="border-green-200 bg-green-50 shadow-lg animate-in slide-in-from-top-2 duration-300">
-              <Check className="h-5 w-5 text-green-600" />
-              <AlertDescription className="text-green-800 font-medium">Settings saved successfully!</AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        {/* Global Save Button - Mobile Optimized */}
-        <div className="absolute right-10 top-1">
-          <GlobalSaveButton position="responsive" onSave={handleSaveSettings} isLoading={saving} />
+    <div className="min-h-screen bg-white">
+      {/* Success toast */}
+      {saveSuccess && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg">
+          <Check className="w-4 h-4" />
+          Saved
         </div>
+      )}
 
-        {/* Header - Mobile Optimized */}
-        <div className="p-4 sm:p-6">
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <h2 className="md:text-2xl text-5xl lg:text-4xl font-black text-gray-900 leading-tight">
-              Account Settings
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600">
-              Manage your personal information, business details, and preferences
-            </p>
-          </div>
-        </div>
-
-        {/* Personal Information - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="sm:p-6 py-8 bg-gradient-to-r from-[hsl(var(--primary-50))] to-[hsl(var(--primary-100))]">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <User className="w-5 h-5" />
-                Personal Information
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                Your personal details and profile information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-4 sm:space-y-6">
-              {/* Profile Photo - Mobile Optimized */}
-              <div>
-                <Label className="text-sm font-medium">Profile Photo</Label>
-                <div className="flex flex-col sm:flex-row items-start gap-4 mt-2">
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 mx-auto sm:mx-0">
-                    {profilePhoto ? (
-                      <>
-                        <img
-                          src={profilePhoto || "/placeholder.svg"}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProfilePhoto(null)
-                            setPersonalInfo((prev) => ({ ...prev, profilePhoto: "" }))
-                          }}
-                          className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full text-xs touch-manipulation"
-                          title="Remove photo"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-400">
-                        <Camera className="h-6 w-6" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="w-full sm:w-auto text-center sm:text-left">
-                    <label
-                      htmlFor="profile-photo-upload"
-                      className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-white bg-primary-400 hover:bg-[hsl(var(--primary-600))] cursor-pointer touch-manipulation ${
-                        uploadingProfilePhoto ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      {uploadingProfilePhoto ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload Photo
-                        </>
-                      )}
-                    </label>
-                    <input
-                      id="profile-photo-upload"
-                      ref={profilePhotoRef}
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleProfilePhotoUpload}
-                      disabled={uploadingProfilePhoto}
-                    />
-                    <p className="text-xs text-gray-500 mt-2">JPG, PNG up to 5MB</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Name Fields - Mobile Optimized */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-sm font-medium">
-                    First Name
-                  </Label>
-                  <Input
-                    id="firstName"
-                    value={personalInfo.firstName}
-                    onChange={(e) => setPersonalInfo((prev) => ({ ...prev, firstName: e.target.value }))}
-                    placeholder="Enter your first name"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-sm font-medium">
-                    Last Name
-                  </Label>
-                  <Input
-                    id="lastName"
-                    value={personalInfo.lastName}
-                    onChange={(e) => setPersonalInfo((prev) => ({ ...prev, lastName: e.target.value }))}
-                    placeholder="Enter your last name"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-              </div>
-
-              {/* Contact Fields - Mobile Optimized */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="personalEmail" className="text-sm font-medium">
-                    Email Address
-                  </Label>
-                  <Input
-                    id="personalEmail"
-                    type="email"
-                    value={personalInfo.email}
-                    onChange={(e) => setPersonalInfo((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="your.email@example.com"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="personalPhone" className="text-sm font-medium">
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="personalPhone"
-                    value={personalInfo.phone}
-                    onChange={(e) => setPersonalInfo((prev) => ({ ...prev, phone: e.target.value }))}
-                    placeholder="07123 456789"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-  {businessInfo.businessType?.toLowerCase() === 'venues' ? (
-    // Venue Address Section
-    <>
-      <Label className="text-base font-medium">Venue Address</Label>
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-center gap-2 mb-3">
-          <Building className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-800">
-            This is where your parties take place
-          </span>
-        </div>
-        
-        {/* Venue Name */}
-        <div className="space-y-2 mb-4">
-          <Label htmlFor="venueName" className="text-sm font-medium">
-            Venue/Hall Name
-          </Label>
-          <Input
-            id="venueName"
-            value={supplierData?.venueAddress?.businessName || supplierData?.serviceDetails?.venueAddress?.businessName || ""}
-            onChange={(e) => {
-              // Update venue address in supplier data
-              if (setSupplierData && supplierData) {
-                const updatedData = {
-                  ...supplierData,
-                  venueAddress: {
-                    ...supplierData.venueAddress,
-                    businessName: e.target.value
-                  },
-                  serviceDetails: {
-                    ...supplierData.serviceDetails,
-                    venueAddress: {
-                      ...supplierData.serviceDetails?.venueAddress,
-                      businessName: e.target.value
-                    }
-                  }
-                }
-                setSupplierData(updatedData)
-              }
-            }}
-            placeholder="e.g. St Peter's Community Hall"
-            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-          />
-        </div>
-
-        {/* Address Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="venueStreet" className="text-sm font-medium">
-              Street Address
-            </Label>
-            <Input
-              id="venueStreet"
-              value={supplierData?.venueAddress?.addressLine1 || supplierData?.serviceDetails?.venueAddress?.addressLine1 || ""}
-              onChange={(e) => {
-                if (setSupplierData && supplierData) {
-                  const updatedData = {
-                    ...supplierData,
-                    venueAddress: {
-                      ...supplierData.venueAddress,
-                      addressLine1: e.target.value
-                    },
-                    serviceDetails: {
-                      ...supplierData.serviceDetails,
-                      venueAddress: {
-                        ...supplierData.serviceDetails?.venueAddress,
-                        addressLine1: e.target.value
-                      }
-                    }
-                  }
-                  setSupplierData(updatedData)
-                }
-              }}
-              placeholder="123 Church Street"
-              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="venueStreet2" className="text-sm font-medium">
-              Address Line 2
-            </Label>
-            <Input
-              id="venueStreet2"
-              value={supplierData?.venueAddress?.addressLine2 || supplierData?.serviceDetails?.venueAddress?.addressLine2 || ""}
-              onChange={(e) => {
-                if (setSupplierData && supplierData) {
-                  const updatedData = {
-                    ...supplierData,
-                    venueAddress: {
-                      ...supplierData.venueAddress,
-                      addressLine2: e.target.value
-                    },
-                    serviceDetails: {
-                      ...supplierData.serviceDetails,
-                      venueAddress: {
-                        ...supplierData.serviceDetails?.venueAddress,
-                        addressLine2: e.target.value
-                      }
-                    }
-                  }
-                  setSupplierData(updatedData)
-                }
-              }}
-              placeholder="Optional"
-              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="venueCity" className="text-sm font-medium">
-              City
-            </Label>
-            <Input
-              id="venueCity"
-              value={supplierData?.venueAddress?.city || supplierData?.serviceDetails?.venueAddress?.city || ""}
-              onChange={(e) => {
-                if (setSupplierData && supplierData) {
-                  const updatedData = {
-                    ...supplierData,
-                    venueAddress: {
-                      ...supplierData.venueAddress,
-                      city: e.target.value
-                    },
-                    serviceDetails: {
-                      ...supplierData.serviceDetails,
-                      venueAddress: {
-                        ...supplierData.serviceDetails?.venueAddress,
-                        city: e.target.value
-                      }
-                    }
-                  }
-                  setSupplierData(updatedData)
-                }
-              }}
-              placeholder="London"
-              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="venuePostcode" className="text-sm font-medium">
-              Postcode
-            </Label>
-            <Input
-              id="venuePostcode"
-              value={supplierData?.venueAddress?.postcode || supplierData?.serviceDetails?.venueAddress?.postcode || ""}
-              onChange={(e) => {
-                if (setSupplierData && supplierData) {
-                  const updatedData = {
-                    ...supplierData,
-                    venueAddress: {
-                      ...supplierData.venueAddress,
-                      postcode: e.target.value.toUpperCase()
-                    },
-                    serviceDetails: {
-                      ...supplierData.serviceDetails,
-                      venueAddress: {
-                        ...supplierData.serviceDetails?.venueAddress,
-                        postcode: e.target.value.toUpperCase()
-                      }
-                    }
-                  }
-                  setSupplierData(updatedData)
-                }
-              }}
-              placeholder="SW1A 1AA"
-              className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="venueCountry" className="text-sm font-medium">
-              Country
-            </Label>
-            <Select
-              value={supplierData?.venueAddress?.country || supplierData?.serviceDetails?.venueAddress?.country || "United Kingdom"}
-              onValueChange={(value) => {
-                if (setSupplierData && supplierData) {
-                  const updatedData = {
-                    ...supplierData,
-                    venueAddress: {
-                      ...supplierData.venueAddress,
-                      country: value
-                    },
-                    serviceDetails: {
-                      ...supplierData.serviceDetails,
-                      venueAddress: {
-                        ...supplierData.serviceDetails?.venueAddress,
-                        country: value
-                      }
-                    }
-                  }
-                  setSupplierData(updatedData)
-                }
-              }}
+      {/* Header - mobile only */}
+      <div className="border-b border-gray-200 lg:hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
+            <button
+              onClick={() => router.back()}
+              className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
             >
-              <SelectTrigger className="py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-base">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                <SelectItem value="Ireland">Ireland</SelectItem>
-              </SelectContent>
-            </Select>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-base font-semibold text-gray-900">Account settings</h1>
+            <div className="w-9" />
           </div>
         </div>
-        
-        <p className="text-xs text-blue-600 mt-2">
-          This address will be shown to customers when they book your venue
-        </p>
       </div>
-    </>
-  ) : (
-    // Personal Address Section (for non-venues)
-    <>
-      <Label className="text-base font-medium">Personal Address</Label>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="personalStreet" className="text-sm font-medium">
-            Street Address
-          </Label>
-          <Input
-            id="personalStreet"
-            value={personalInfo.address.street}
-            onChange={(e) =>
-              setPersonalInfo((prev) => ({
-                ...prev,
-                address: { ...prev.address, street: e.target.value },
-              }))
-            }
-            placeholder="123 Main Street"
-            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="personalCity" className="text-sm font-medium">
-            City
-          </Label>
-          <Input
-            id="personalCity"
-            value={personalInfo.address.city}
-            onChange={(e) =>
-              setPersonalInfo((prev) => ({
-                ...prev,
-                address: { ...prev.address, city: e.target.value },
-              }))
-            }
-            placeholder="London"
-            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-          />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="personalPostcode" className="text-sm font-medium">
-            Postcode
-          </Label>
-          <Input
-            id="personalPostcode"
-            value={personalInfo.address.postcode}
-            onChange={(e) =>
-              setPersonalInfo((prev) => ({
-                ...prev,
-                address: { ...prev.address, postcode: e.target.value },
-              }))
-            }
-            placeholder="SW1A 1AA"
-            className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="personalCountry" className="text-sm font-medium">
-            Country
-          </Label>
-          <Select
-            value={personalInfo.address.country}
-            onValueChange={(value) =>
-              setPersonalInfo((prev) => ({
-                ...prev,
-                address: { ...prev.address, country: value },
-              }))
-            }
-          >
-            <SelectTrigger className="py-5 w-full bg-white border-2 pl-2 border-gray-200 rounded-xl text-base">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-              <SelectItem value="Ireland">Ireland</SelectItem>
-              <SelectItem value="France">France</SelectItem>
-              <SelectItem value="Germany">Germany</SelectItem>
-              <SelectItem value="Spain">Spain</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    </>
-  )}
-</div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Business Information - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-indigo-50 to-indigo-100">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Building className="w-5 h-5" />
-                Business Information
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                Details about your business and operations
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="businessName" className="text-sm font-medium">
-                    Business Name
-                  </Label>
-                  <Input
-                    id="businessName"
-                    value={businessInfo.businessName}
-                    onChange={(e) => setBusinessInfo((prev) => ({ ...prev, businessName: e.target.value }))}
-                    placeholder="Your Business Name"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="businessType" className="text-sm font-medium">
-                    Business Type
-                  </Label>
-                  <Select
-                    value={businessInfo.businessType}
-                    onValueChange={(value) => setBusinessInfo((prev) => ({ ...prev, businessType: value }))}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-12">
+          {/* Sidebar */}
+          <div className="lg:col-span-4">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6 hidden lg:block">
+              Account settings
+            </h2>
+            <nav className="space-y-1">
+              {settingsSections.map((section) => {
+                const Icon = section.icon
+                const isSelected = selectedSection === section.id
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setSelectedSection(section.id)}
+                    className={`w-full flex items-center justify-start gap-4 px-4 py-4 rounded-xl transition-colors ${
+                      isSelected
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
-                    <SelectTrigger className="py-5 w-full bg-white border-2 border-gray-200 rounded-xl text-base">
-                      <SelectValue placeholder="Select business type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="entertainment">Entertainment</SelectItem>
-                      <SelectItem value="venue">Venue</SelectItem>
-                      <SelectItem value="catering">Catering</SelectItem>
-                      <SelectItem value="photography">Photography</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                    <Icon className="w-6 h-6 flex-shrink-0" />
+                    <div className="text-left">
+                      <span className="font-medium block">{section.label}</span>
+                      {section.description && (
+                        <span className="text-sm text-gray-500 block">{section.description}</span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="registrationNumber" className="text-sm font-medium">
-                    Company Registration Number
-                  </Label>
-                  <Input
-                    id="registrationNumber"
-                    value={businessInfo.registrationNumber}
-                    onChange={(e) => setBusinessInfo((prev) => ({ ...prev, registrationNumber: e.target.value }))}
-                    placeholder="12345678"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vatNumber" className="text-sm font-medium">
-                    VAT Number (Optional)
-                  </Label>
-                  <Input
-                    id="vatNumber"
-                    value={businessInfo.vatNumber}
-                    onChange={(e) => setBusinessInfo((prev) => ({ ...prev, vatNumber: e.target.value }))}
-                    placeholder="GB123456789"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-              </div>
+          {/* Content */}
+          <div className="lg:col-span-8 mt-8 lg:mt-0">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              {currentSection?.label}
+            </h2>
 
-              <div className="space-y-2">
-                <Label htmlFor="operatingPostcode" className="text-sm font-medium">
-                  Operating Postcode
-                </Label>
-                <Input
-                  id="operatingPostcode"
+            {/* Personal Information Section */}
+            {selectedSection === 'personal' && (
+              <div>
+                {/* Profile Photo */}
+                <div className="py-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                        {personalInfo.profilePhoto ? (
+                          <img
+                            src={personalInfo.profilePhoto}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Camera className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                        {uploadingPhoto && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 animate-spin text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">Profile photo</h3>
+                        <p className="text-sm text-gray-500">JPG or PNG, max 5MB</p>
+                      </div>
+                    </div>
+                    <label className="text-gray-900 font-medium underline hover:text-gray-600 cursor-pointer">
+                      {personalInfo.profilePhoto ? 'Change' : 'Add'}
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <SettingRow
+                  label="Legal name"
+                  value={`${personalInfo.firstName} ${personalInfo.lastName}`.trim() || null}
+                  onEdit={() => openEditModal('name', {
+                    firstName: personalInfo.firstName,
+                    lastName: personalInfo.lastName
+                  })}
+                />
+
+                <SettingRow
+                  label="Email address"
+                  value={personalInfo.email}
+                  onEdit={() => openEditModal('email', { email: personalInfo.email })}
+                />
+
+                <SettingRow
+                  label="Phone number"
+                  value={personalInfo.phone}
+                  description="Contact number for customers and PartySnap to get in touch"
+                  onEdit={() => openEditModal('phone', { phone: personalInfo.phone })}
+                />
+              </div>
+            )}
+
+            {/* Business Details Section */}
+            {selectedSection === 'business' && (
+              <div>
+                <SettingRow
+                  label="Business name"
+                  value={businessInfo.businessName}
+                  onEdit={() => openEditModal('businessName', { businessName: businessInfo.businessName })}
+                />
+
+                <SettingRow
+                  label="Business type"
+                  value={businessInfo.businessType}
+                />
+
+                <SettingRow
+                  label="Operating postcode"
                   value={businessInfo.operatingPostcode}
-                  onChange={(e) => setBusinessInfo((prev) => ({ ...prev, operatingPostcode: e.target.value }))}
-                  placeholder="W1A 0AX"
-                  className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
+                  description="This helps customers find you in local searches"
+                  onEdit={() => openEditModal('postcode', { postcode: businessInfo.operatingPostcode })}
                 />
-                <p className="text-xs text-gray-500">This helps customers find you in local searches</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-<div className="p-4 sm:p-6 pt-0">
-<MessageTemplatesManager 
-  supplierCategory={businessInfo.businessType}
-  supplierId={supplierData?.id || supplier?.id}
-/>
+            )}
 
-</div>
-
-        {/* Notification Preferences - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-green-50 to-green-100">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Bell className="w-5 h-5" />
-                Notification Preferences
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                Choose how you want to be notified about important updates
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="emailBookings"
-                    checked={notifications.emailBookings}
-                    onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, emailBookings: !!checked }))}
-                    className="mt-1"
-                  />
-                  <Label htmlFor="emailBookings" className="text-sm font-medium leading-relaxed">
-                    Email notifications for new bookings
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="emailMessages"
-                    checked={notifications.emailMessages}
-                    onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, emailMessages: !!checked }))}
-                    className="mt-1"
-                  />
-                  <Label htmlFor="emailMessages" className="text-sm font-medium leading-relaxed">
-                    Email notifications for messages
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="emailMarketing"
-                    checked={notifications.emailMarketing}
-                    onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, emailMarketing: !!checked }))}
-                    className="mt-1"
-                  />
-                  <Label htmlFor="emailMarketing" className="text-sm font-medium leading-relaxed">
-                    Marketing and promotional emails
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="smsBookings"
-                    checked={notifications.smsBookings}
-                    onCheckedChange={(checked) => setNotifications((prev) => ({ ...prev, smsBookings: !!checked }))}
-                    className="mt-1"
-                  />
-                  <Label htmlFor="smsBookings" className="text-sm font-medium leading-relaxed">
-                    SMS notifications for bookings
-                  </Label>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="pushNotifications"
-                    checked={notifications.pushNotifications}
-                    onCheckedChange={(checked) =>
-                      setNotifications((prev) => ({ ...prev, pushNotifications: !!checked }))
-                    }
-                    className="mt-1"
-                  />
-                  <Label htmlFor="pushNotifications" className="text-sm font-medium leading-relaxed">
-                    Push notifications
-                  </Label>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="p-4 sm:p-6 pt-0">
-        <SMSNotificationSettings 
-  supplierId={supplierData?.id || supplier?.id}
-  notifications={notifications}
-  setNotifications={setNotifications}
-  onSave={handleSaveSettings}  // Pass the save function
-  updateProfile={updateProfile}  // Pass from useSupplierDashboard hook
-  supplierData={supplierData}  // Pass supplier data for auto-save
-/>
-</div>
-
-        {/* Security Settings - Mobile Optimized */}
-
-        {/* <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm">
-            <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-purple-50 to-purple-100">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Shield className="w-5 h-5" />
-                Security Settings
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-base">
-                Manage your password and account security
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 space-y-4 sm:space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-sm font-medium">
-                  Current Password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showPassword ? "text" : "password"}
-                    value={security.currentPassword}
-                    onChange={(e) => setSecurity((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                    placeholder="Enter current password"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-sm font-medium">
-                    New Password
-                  </Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={security.newPassword}
-                    onChange={(e) => setSecurity((prev) => ({ ...prev, newPassword: e.target.value }))}
-                    placeholder="Enter new password"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                    Confirm New Password
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={security.confirmPassword}
-                    onChange={(e) => setSecurity((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                    placeholder="Confirm new password"
-                    className="h-12 bg-white border-2 border-gray-200 rounded-xl text-base"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="twoFactor"
-                  checked={security.twoFactorEnabled}
-                  onCheckedChange={(checked) => setSecurity((prev) => ({ ...prev, twoFactorEnabled: !!checked }))}
-                  className="mt-1"
+            {/* Message Templates Section */}
+            {selectedSection === 'templates' && (
+              <div>
+                <p className="text-gray-500 mb-6">
+                  Create message templates to quickly respond to booking enquiries
+                </p>
+                <MessageTemplatesSection
+                  supplier={supplier}
+                  currentBusiness={supplierData}
                 />
-                <Label htmlFor="twoFactor" className="text-sm font-medium leading-relaxed">
-                  Enable two-factor authentication
-                </Label>
               </div>
+            )}
 
-              <Button variant="outline" className="w-full sm:w-auto bg-transparent">
-                <Lock className="mr-2 h-4 w-4" />
-                Change Password
-              </Button>
-            </CardContent>
-          </Card>
-        </div> */}
+            {/* Notifications Section */}
+            {selectedSection === 'notifications' && (
+              <div>
+                <p className="text-gray-500 mb-6">
+                  Choose how you want to be notified about important updates
+                </p>
 
-        {/* Danger Zone - Mobile Optimized */}
-        <div className="p-4 sm:p-6 pt-0">
-          <Card className="shadow-sm border-red-200">
-            <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-red-50 to-red-100">
-              <CardTitle className="text-red-600 text-lg sm:text-xl">Danger Zone</CardTitle>
-              <CardDescription className="text-sm sm:text-base">Irreversible and destructive actions</CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0">
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 p-4 border border-red-200 rounded-lg bg-red-50">
-                <div className="space-y-1">
-                  <h4 className="font-medium text-red-800">Delete Account</h4>
-                  <p className="text-sm text-red-600">Permanently delete your account and all data</p>
-                </div>
-                <Button variant="destructive" className="w-full sm:w-auto">
-                  Delete Account
-                </Button>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+                  Email notifications
+                </h3>
+
+                <ToggleRow
+                  label="New bookings"
+                  description="Get notified when you receive a new booking enquiry"
+                  checked={notifications.emailBookings}
+                  onChange={(checked) => {
+                    const updated = { ...notifications, emailBookings: checked }
+                    setNotifications(updated)
+                    handleNotificationSave(updated)
+                  }}
+                />
+
+                <ToggleRow
+                  label="Messages"
+                  description="Get notified when customers send you messages"
+                  checked={notifications.emailMessages}
+                  onChange={(checked) => {
+                    const updated = { ...notifications, emailMessages: checked }
+                    setNotifications(updated)
+                    handleNotificationSave(updated)
+                  }}
+                />
+
+                <ToggleRow
+                  label="Marketing"
+                  description="Tips, offers, and updates from PartySnap"
+                  checked={notifications.emailMarketing}
+                  onChange={(checked) => {
+                    const updated = { ...notifications, emailMarketing: checked }
+                    setNotifications(updated)
+                    handleNotificationSave(updated)
+                  }}
+                />
+
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4 mt-8">
+                  SMS notifications
+                </h3>
+
+                <ToggleRow
+                  label="Urgent booking alerts"
+                  description="Get instant SMS when customers pay deposits"
+                  checked={notifications.smsBookings}
+                  onChange={(checked) => {
+                    const updated = { ...notifications, smsBookings: checked }
+                    setNotifications(updated)
+                    handleNotificationSave(updated)
+                  }}
+                />
+
+                <ToggleRow
+                  label="Appointment reminders"
+                  description="SMS reminders about upcoming parties"
+                  checked={notifications.smsReminders}
+                  onChange={(checked) => {
+                    const updated = { ...notifications, smsReminders: checked }
+                    setNotifications(updated)
+                    handleNotificationSave(updated)
+                  }}
+                />
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Edit Modals */}
+      <EditModal
+        isOpen={editField === 'name'}
+        onClose={() => setEditField(null)}
+        title="Edit name"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
+            <input
+              type="text"
+              value={editValue.firstName || ''}
+              onChange={(e) => setEditValue(prev => ({ ...prev, firstName: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              placeholder="First name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
+            <input
+              type="text"
+              value={editValue.lastName || ''}
+              onChange={(e) => setEditValue(prev => ({ ...prev, lastName: e.target.value }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              placeholder="Last name"
+            />
+          </div>
+        </div>
+      </EditModal>
+
+      <EditModal
+        isOpen={editField === 'email'}
+        onClose={() => setEditField(null)}
+        title="Edit email"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+          <input
+            type="email"
+            value={editValue.email || ''}
+            onChange={(e) => setEditValue(prev => ({ ...prev, email: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            placeholder="your@email.com"
+          />
+        </div>
+      </EditModal>
+
+      <EditModal
+        isOpen={editField === 'phone'}
+        onClose={() => setEditField(null)}
+        title="Edit phone number"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Phone number</label>
+          <input
+            type="tel"
+            value={editValue.phone || ''}
+            onChange={(e) => setEditValue(prev => ({ ...prev, phone: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            placeholder="07123 456789"
+          />
+          <p className="text-sm text-gray-500 mt-2">
+            This number will be used by customers and PartySnap to contact you about bookings.
+          </p>
+        </div>
+      </EditModal>
+
+      <EditModal
+        isOpen={editField === 'businessName'}
+        onClose={() => setEditField(null)}
+        title="Edit business name"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Business name</label>
+          <input
+            type="text"
+            value={editValue.businessName || ''}
+            onChange={(e) => setEditValue(prev => ({ ...prev, businessName: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            placeholder="Your Business Name"
+          />
+        </div>
+      </EditModal>
+
+      <EditModal
+        isOpen={editField === 'postcode'}
+        onClose={() => setEditField(null)}
+        title="Edit operating postcode"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Postcode</label>
+          <input
+            type="text"
+            value={editValue.postcode || ''}
+            onChange={(e) => setEditValue(prev => ({ ...prev, postcode: e.target.value.toUpperCase() }))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            placeholder="SW1A 1AA"
+          />
+          <p className="text-sm text-gray-500 mt-2">
+            This helps customers find you when searching for services in their area.
+          </p>
+        </div>
+      </EditModal>
     </div>
   )
 }
-
-export default Settings
-
-// Add this new component at the bottom of your Settings.js file, replacing the PushNotificationSettings
-
-const SMSNotificationSettings = ({ supplierId, notifications, setNotifications }) => {
-  const [updatingConsent, setUpdatingConsent] = useState(false);
-
-  const handleSMSConsentChange = async (consentType, enabled) => {
-    setUpdatingConsent(true);
-    try {
-      // Update local state immediately for responsive UI
-      setNotifications(prev => ({ ...prev, [consentType]: enabled }));
-      
-      console.log(`SMS consent updated: ${consentType} = ${enabled}`);
-      
-      // Here you could also make an API call to update the backend immediately
-      // if you want real-time consent updates
-      
-    } catch (error) {
-      console.error('Error updating SMS consent:', error);
-      // Revert on error
-      setNotifications(prev => ({ ...prev, [consentType]: !enabled }));
-    } finally {
-      setUpdatingConsent(false);
-    }
-  };
-
-  const getSMSStatus = () => {
-    if (notifications.smsBookings || notifications.smsReminders) {
-      return { 
-        status: 'enabled', 
-        color: 'green', 
-        icon: '✅', 
-        message: 'SMS notifications are active' 
-      };
-    } else {
-      return { 
-        status: 'disabled', 
-        color: 'gray', 
-        icon: '📱', 
-        message: 'SMS notifications are disabled' 
-      };
-    }
-  };
-
-  const statusInfo = getSMSStatus();
-
-  return (
-    <Card className="shadow-sm border-2 border-blue-200">
-      <CardHeader className="p-4 sm:p-6 py-8 bg-gradient-to-r from-blue-50 to-blue-100">
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-          <MessageSquare className="w-5 h-5" />
-          SMS Notifications
-        </CardTitle>
-        <CardDescription className="text-sm sm:text-base">
-          Get instant SMS alerts for urgent booking updates
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-6 pt-0">
-        
-        {/* Status Display */}
-        <div className={`p-4 rounded-lg mb-6 border-2 ${
-          statusInfo.status === 'enabled' 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-gray-50 border-gray-200'
-        }`}>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{statusInfo.icon}</span>
-            <div>
-              <h4 className={`font-semibold ${
-                statusInfo.status === 'enabled' ? 'text-green-800' : 'text-gray-800'
-              }`}>
-                {statusInfo.message}
-              </h4>
-              {statusInfo.status === 'enabled' && (
-                <p className="text-green-700 text-sm mt-1">
-                  You'll receive urgent SMS notifications for paid bookings
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* SMS Consent Checkboxes */}
-        <div className="space-y-4 mb-6">
-          <h4 className="font-semibold text-gray-900">Choose your SMS preferences:</h4>
-          
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="smsBookings"
-                checked={notifications.smsBookings}
-                onCheckedChange={(checked) => handleSMSConsentChange('smsBookings', !!checked)}
-                disabled={updatingConsent}
-                className="mt-1"
-              />
-              <Label htmlFor="smsBookings" className="text-sm font-medium leading-relaxed">
-                <strong className="text-red-600">🚨 Urgent booking SMS alerts</strong>
-                <br />
-                <span className="text-gray-600">Get instant notifications when customers pay deposits (highly recommended)</span>
-              </Label>
-            </div>
-            
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="smsReminders"
-                checked={notifications.smsReminders}
-                onCheckedChange={(checked) => handleSMSConsentChange('smsReminders', !!checked)}
-                disabled={updatingConsent}
-                className="mt-1"
-              />
-              <Label htmlFor="smsReminders" className="text-sm font-medium leading-relaxed">
-                <strong>📅 Appointment reminders</strong>
-                <br />
-                <span className="text-gray-600">Get SMS reminders about upcoming parties</span>
-              </Label>
-            </div>
-          </div>
-        </div>
-
-        {/* Benefits Section */}
-        {!notifications.smsBookings && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <h4 className="font-semibold text-amber-800 mb-3">Why enable urgent booking SMS?</h4>
-            <div className="space-y-2 text-sm text-amber-700">
-              <div className="flex items-center gap-2">
-                <span className="text-blue-500">⚡</span>
-                <span>Respond within 2-hour window requirement</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">💰</span>
-                <span>Never miss a paid booking opportunity</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-500">📱</span>
-                <span>Get notified even when not checking emails</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Privacy & Legal Notice */}
-        <div className="p-3 bg-gray-50 rounded-lg border">
-          <div className="flex items-start gap-2">
-            <Shield className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-gray-600">
-              <p className="font-medium mb-1">SMS Privacy & Consent</p>
-              <p>By enabling SMS notifications, you consent to receiving automated text messages from PartySnap about your bookings. Message and data rates may apply. Reply STOP to any message to opt out instantly. We only send urgent booking-related messages - no marketing or spam.</p>
-            </div>
-          </div>
-        </div>
-
-      </CardContent>
-    </Card>
-  );
-};

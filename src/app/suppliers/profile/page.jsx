@@ -47,7 +47,8 @@ import {
   Camera,
   Package,
   Shield,
-  X
+  X,
+  MessageSquare
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GlobalSaveButton } from "@/components/GlobalSaveButton"
 import { useSupplier } from "@/hooks/useSupplier"
 import { ProfilePageSkeleton } from './components/ProfileSkeletons'
+import MessageTemplatesSection from './components/MessageTemplatesSection'
 
 
 
@@ -680,6 +682,7 @@ if (loading) {
     { id: 'restricted', label: 'Items not permitted', icon: Ban },
     { id: 'rules', label: 'House rules', icon: FileText },
     { id: 'verification', label: 'Verification', icon: Shield },
+    { id: 'messageTemplates', label: 'Message templates', icon: MessageSquare },
   ]
 
   const entertainerSections = [
@@ -696,6 +699,7 @@ if (loading) {
     { id: 'personalBio', label: 'Meet the entertainer', icon: Users },
     { id: 'addOns', label: 'Add-on services', icon: Package },
     { id: 'packages', label: 'Packages', icon: Package },
+    { id: 'messageTemplates', label: 'Message templates', icon: MessageSquare },
   ]
 
   const sections = isVenue ? venueSections : entertainerSections
@@ -1118,6 +1122,14 @@ if (loading) {
                   </div>
                 )
 
+              case 'messageTemplates':
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Message templates</h3>
+                    <p className="font-medium text-gray-900">Create templates for booking confirmations</p>
+                  </div>
+                )
+
               default:
                 return (
                   <div>
@@ -1181,6 +1193,13 @@ if (loading) {
               ) : selectedSection === 'verification' ? (
                 <div className="p-6">
                   <VerificationPageContent />
+                </div>
+              ) : selectedSection === 'messageTemplates' ? (
+                <div className="p-6">
+                  <MessageTemplatesSection
+                    supplier={supplier}
+                    currentBusiness={currentBusiness}
+                  />
                 </div>
               ) : (
                 <div className="p-6">
@@ -1674,6 +1693,16 @@ if (loading) {
                       </div>
                     )
 
+                  case 'messageTemplates':
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Message templates</h3>
+                        <p className="text-sm text-gray-500">
+                          Create templates for booking confirmations
+                        </p>
+                      </div>
+                    )
+
                   default:
                     return (
                       <div>
@@ -1714,6 +1743,14 @@ if (loading) {
           ) : selectedSection === 'verification' ? (
             <div className="p-6 lg:p-12">
               <VerificationPageContent />
+            </div>
+          ) : selectedSection === 'messageTemplates' ? (
+            <div className="p-6 lg:p-12">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Message templates</h2>
+              <MessageTemplatesSection
+                supplier={supplier}
+                currentBusiness={currentBusiness}
+              />
             </div>
           ) : (
             <div className="p-6 lg:p-12">

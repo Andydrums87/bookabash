@@ -118,6 +118,8 @@ export default function EnquiryDetailsPage() {
   const [responseMessage, setResponseMessage] = useState("")
   const [showResponseForm, setShowResponseForm] = useState(false)
   const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [messageTemplates, setMessageTemplates] = useState([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null)
 
   useEffect(() => {
     if (enquiryId) loadEnquiryDetails()
@@ -171,25 +173,86 @@ export default function EnquiryDetailsPage() {
     if (!template || !enquiry) return template
     const customer = enquiry.parties?.users
     const party = enquiry.parties
+    const supplierData = enquiry.supplier?.data || enquiry.supplier || {}
     return template
       .replace(/{customer_name}/g, customer?.first_name || "there")
       .replace(/{child_name}/g, party?.child_name || "your child")
+      .replace(/{event_date}/g, formatDate(party?.party_date))
       .replace(/{party_date}/g, formatDate(party?.party_date))
+      .replace(/{event_time}/g, formatTime(party))
       .replace(/{party_theme}/g, party?.theme || "themed")
       .replace(/{final_price}/g, finalPrice || enquiry.quoted_price)
+      .replace(/{total_price}/g, finalPrice || enquiry.quoted_price)
       .replace(/{guest_count}/g, party?.guest_count || "the children")
+      .replace(/{business_name}/g, supplierData?.name || enquiry.supplier?.name || "Your supplier")
+      .replace(/{package_name}/g, enquiry.package_id?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "your package")
+  }
+
+  // Load message templates for this supplier/business
+  const loadMessageTemplates = async () => {
+    if (!enquiry?.supplier_id) return []
+    try {
+      // Get supplier's templates - query by supplier_id
+      const { data, error } = await supabase
+        .from('supplier_message_templates')
+        .select('*')
+        .eq('supplier_id', enquiry.supplier_id)
+        .eq('template_type', 'acceptance')
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading templates:', error)
+        throw error
+      }
+
+      console.log('Loaded templates for supplier:', enquiry.supplier_id, data)
+      setMessageTemplates(data || [])
+      return data || []
+    } catch (err) {
+      console.error('Error loading templates:', err)
+      return []
+    }
+  }
+
+  const handleSelectTemplate = (templateId) => {
+    setSelectedTemplateId(templateId)
+    const template = messageTemplates.find(t => t.id === templateId)
+    if (template) {
+      setResponseMessage(processTemplate(template.message_template))
+    }
   }
 
   const handleResponse = async (responseType) => {
     setResponse(responseType)
     setTemplatesLoading(true)
     try {
-      const template = await supplierEnquiryBackend.getSupplierTemplate(
-        enquiry.supplier_id,
-        enquiry.supplier_category,
-        responseType
-      )
-      setResponseMessage(processTemplate(template))
+      // Load saved templates from database
+      const templates = await loadMessageTemplates()
+
+      if (responseType === "accepted" && templates && templates.length > 0) {
+        // Use the default template (first one, as they're sorted by is_default)
+        const defaultTemplate = templates.find(t => t.is_default) || templates[0]
+        if (defaultTemplate) {
+          setSelectedTemplateId(defaultTemplate.id)
+          setResponseMessage(processTemplate(defaultTemplate.message_template))
+        } else {
+          // Fallback to old system
+          const template = await supplierEnquiryBackend.getSupplierTemplate(
+            enquiry.supplier_id,
+            enquiry.supplier_category,
+            responseType
+          )
+          setResponseMessage(processTemplate(template))
+        }
+      } else {
+        // For decline or if no templates, use default message
+        setResponseMessage(
+          responseType === "accepted"
+            ? "Thank you for your enquiry! I'm pleased to confirm I can provide this service for your party."
+            : "Thank you for your enquiry. Unfortunately, I'm not available for this date."
+        )
+      }
     } catch {
       setResponseMessage(
         responseType === "accepted"
@@ -549,15 +612,44 @@ export default function EnquiryDetailsPage() {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Message to Customer
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Message to Customer
+                      </label>
+                      {/* Template selector - only show if templates exist and accepting */}
+                      {response === "accepted" && messageTemplates.length > 0 && (
+                        <div className="relative">
+                          <select
+                            value={selectedTemplateId || ''}
+                            onChange={(e) => handleSelectTemplate(Number(e.target.value))}
+                            className="text-sm text-gray-600 bg-transparent border border-gray-200 rounded-lg px-3 py-1.5 pr-8 appearance-none cursor-pointer hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                          >
+                            <option value="" disabled>Select template</option>
+                            {messageTemplates.map(template => (
+                              <option key={template.id} value={template.id}>
+                                {template.template_name}{template.is_default ? ' (Default)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 rotate-90 pointer-events-none" />
+                        </div>
+                      )}
+                    </div>
                     <Textarea
                       value={responseMessage}
                       onChange={(e) => setResponseMessage(e.target.value)}
-                      rows={4}
-                      placeholder={templatesLoading ? "Loading..." : "Write your message..."}
+                      rows={6}
+                      placeholder={templatesLoading ? "Loading template..." : "Write your message..."}
+                      className="resize-none"
                     />
+                    {response === "accepted" && messageTemplates.length === 0 && !templatesLoading && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        <Link href="/suppliers/profile" className="text-primary-600 hover:underline">
+                          Create message templates
+                        </Link>
+                        {' '}to save time on future responses.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-3 pt-2">

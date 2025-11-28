@@ -7,6 +7,7 @@ import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
 import { BusinessProvider } from "../../../contexts/BusinessContext"
 import Link from "next/link"
 import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2, Search, ChevronDown, X, ArrowUpDown, LayoutGrid, LayoutList } from "lucide-react"
+import EnquiryResponseModal from "./components/EnquiryResponseModal"
 
 // Empty state illustration component (Airbnb style)
 function EmptyStateIllustration() {
@@ -34,15 +35,15 @@ function EmptyStateIllustration() {
 }
 
 // Booking card component (Airbnb style)
-function BookingCard({ booking }) {
+function BookingCard({ booking, onView }) {
   const partyDate = new Date(booking.parties?.party_date)
   const isToday = new Date().toDateString() === partyDate.toDateString()
   const businessName = booking.supplier?.businessName
 
   return (
-    <Link
-      href={`/suppliers/enquiries/${booking.id}`}
-      className="block bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
+    <button
+      onClick={() => onView(booking)}
+      className="block w-full text-left bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
     >
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -100,19 +101,19 @@ function BookingCard({ booking }) {
         </span>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
-    </Link>
+    </button>
   )
 }
 
 // Pending enquiry card (needs response)
-function EnquiryCard({ enquiry }) {
+function EnquiryCard({ enquiry, onRespond }) {
   const partyDate = new Date(enquiry.parties?.party_date)
   const businessName = enquiry.supplier?.businessName
 
   return (
-    <Link
-      href={`/suppliers/enquiries/${enquiry.id}`}
-      className="block bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
+    <button
+      onClick={() => onRespond(enquiry)}
+      className="block w-full text-left bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
     >
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -156,22 +157,21 @@ function EnquiryCard({ enquiry }) {
         </span>
         <ChevronRight className="h-4 w-4 text-orange-500" />
       </div>
-    </Link>
+    </button>
   )
 }
 
 // Compact list view for enquiries
-function EnquiryListItem({ enquiry }) {
+function EnquiryListItem({ enquiry, onRespond }) {
   const partyDate = new Date(enquiry.parties?.party_date)
-  const createdDate = new Date(enquiry.created_at)
   const businessName = enquiry.supplier?.businessName
   const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
   const isUrgent = daysUntilEvent <= 7 && daysUntilEvent >= 0
 
   return (
-    <Link
-      href={`/suppliers/enquiries/${enquiry.id}`}
-      className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all"
+    <button
+      onClick={() => onRespond(enquiry)}
+      className="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all text-left"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
@@ -202,21 +202,21 @@ function EnquiryListItem({ enquiry }) {
         </span>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
-    </Link>
+    </button>
   )
 }
 
 // Compact list view for bookings
-function BookingListItem({ booking }) {
+function BookingListItem({ booking, onView }) {
   const partyDate = new Date(booking.parties?.party_date)
   const isToday = new Date().toDateString() === partyDate.toDateString()
   const businessName = booking.supplier?.businessName
   const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
 
   return (
-    <Link
-      href={`/suppliers/enquiries/${booking.id}`}
-      className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all"
+    <button
+      onClick={() => onView(booking)}
+      className="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all text-left"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
@@ -253,7 +253,7 @@ function BookingListItem({ booking }) {
         </span>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
-    </Link>
+    </button>
   )
 }
 
@@ -400,8 +400,29 @@ function DashboardSkeleton() {
 export default function SupplierDashboard() {
   const { supplier, supplierData, loading } = useSupplier()
   // Fetch enquiries for ALL businesses (pass null for specificBusinessId)
-  const { enquiries, loading: enquiriesLoading } = useSupplierEnquiries(null, null)
+  const { enquiries, loading: enquiriesLoading, refetch } = useSupplierEnquiries(null, null)
   const [activeTab, setActiveTab] = useState("enquiries")
+
+  // Modal state for responding to enquiries
+  const [selectedEnquiry, setSelectedEnquiry] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleOpenResponseModal = (enquiry) => {
+    setSelectedEnquiry(enquiry)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedEnquiry(null)
+  }
+
+  const handleResponseSent = async (enquiryId, responseType) => {
+    // Refresh the enquiries list
+    if (refetch) {
+      await refetch()
+    }
+  }
 
   // Filter, sort, and view state for enquiries
   const [enquirySearch, setEnquirySearch] = useState('')
@@ -706,13 +727,13 @@ export default function SupplierDashboard() {
                   ) : enquiryViewMode === 'grid' ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {pendingEnquiries.map((enquiry) => (
-                        <EnquiryCard key={enquiry.id} enquiry={enquiry} />
+                        <EnquiryCard key={enquiry.id} enquiry={enquiry} onRespond={handleOpenResponseModal} />
                       ))}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {pendingEnquiries.map((enquiry) => (
-                        <EnquiryListItem key={enquiry.id} enquiry={enquiry} />
+                        <EnquiryListItem key={enquiry.id} enquiry={enquiry} onRespond={handleOpenResponseModal} />
                       ))}
                     </div>
                   )}
@@ -781,13 +802,13 @@ export default function SupplierDashboard() {
                   ) : bookingViewMode === 'grid' ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {confirmedBookings.map((booking) => (
-                        <BookingCard key={booking.id} booking={booking} />
+                        <BookingCard key={booking.id} booking={booking} onView={handleOpenResponseModal} />
                       ))}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {confirmedBookings.map((booking) => (
-                        <BookingListItem key={booking.id} booking={booking} />
+                        <BookingListItem key={booking.id} booking={booking} onView={handleOpenResponseModal} />
                       ))}
                     </div>
                   )}
@@ -814,6 +835,14 @@ export default function SupplierDashboard() {
           )}
         </div>
       </div>
+
+      {/* Enquiry Response Modal */}
+      <EnquiryResponseModal
+        enquiry={selectedEnquiry}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onResponseSent={handleResponseSent}
+      />
     </BusinessProvider>
   )
 }
