@@ -21,15 +21,18 @@ export const SectionSave = ({
   saving = false,
   lastSaved = null,
   error = null,
-  variant = 'default' // 'default' or 'airbnb'
+  variant = 'default', // 'default' or 'airbnb'
+  hideOnMobile = true // Hide on mobile by default (mobile modals have their own footer)
 }) => {
   // Don't show anything if no changes and never saved
   if (!hasChanges && !lastSaved && !error) return null;
 
+  const mobileClass = hideOnMobile ? 'hidden md:flex' : 'flex';
+
   // Airbnb-style footer variant
   if (variant === 'airbnb') {
     return (
-      <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+      <div className={`${mobileClass} items-center justify-between pt-6 border-t border-gray-100`}>
         <div className="text-sm text-gray-500">
           {error && <span className="text-red-600">Save failed</span>}
           {!error && lastSaved && !hasChanges && (
@@ -56,7 +59,7 @@ export const SectionSave = ({
 
   // Default style - now uses Airbnb black style
   return (
-    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+    <div className={`${mobileClass} items-center justify-between pt-6 border-t border-gray-100`}>
       <div className="flex items-center gap-2 text-sm">
         {error && (
           <span className="flex items-center gap-1 text-red-600">

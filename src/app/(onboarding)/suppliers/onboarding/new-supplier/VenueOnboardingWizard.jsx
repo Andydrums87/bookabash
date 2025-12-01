@@ -659,8 +659,8 @@ export default function VenueOnboardingWizard() {
 
     // Data is already auto-saved to database
     if (userId) {
-      console.log('💾 Progress saved. Redirecting to dashboard...')
-      router.push('/suppliers/dashboard')
+      console.log('💾 Progress saved. Redirecting to listings...')
+      router.push('/suppliers/listings')
     } else {
       // No account yet, just saved to localStorage
       alert('Your progress has been saved locally. Create an account in step 2 to continue!')
@@ -1208,9 +1208,9 @@ export default function VenueOnboardingWizard() {
       localStorage.removeItem(STORAGE_KEY)
       localStorage.setItem('justCompletedOnboarding', 'true')
 
-      // Redirect to dashboard
-      console.log('🚀 Redirecting to dashboard...')
-      router.push('/suppliers/dashboard')
+      // Redirect to listings
+      console.log('🚀 Redirecting to listings...')
+      router.push('/suppliers/listings')
 
     } catch (error) {
       console.error('❌ Error completing wizard:', error)
@@ -1707,7 +1707,7 @@ export default function VenueOnboardingWizard() {
       onSaveExit={handleSaveExit}
       nextDisabled={!isStepValid()}
       showBack={isEditMode ? true : (isNewBusinessMode ? currentStep > 1 : currentStep > 1)}
-      nextLabel={currentStep === TOTAL_STEPS ? (isNewBusinessMode ? "Complete Setup" : "Save Changes") : "Next"}
+      nextLabel={currentStep === TOTAL_STEPS ? "Complete profile" : "Next"}
       isEditMode={isEditMode}
     >
       {renderStep()}

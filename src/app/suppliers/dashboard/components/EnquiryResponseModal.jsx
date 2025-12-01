@@ -15,7 +15,7 @@ const shortcodes = [
   { code: '{total_price}', label: 'Total price' },
 ]
 
-export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onResponseSent }) {
+export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onResponseSent, initialResponseType }) {
   const [response, setResponse] = useState(null) // 'accepted' | 'declined' | null
   const [responseMessage, setResponseMessage] = useState("")
   const [finalPrice, setFinalPrice] = useState("")
@@ -98,15 +98,23 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
     loadSupplierResponse()
   }, [isOpen, enquiry?.id, isConfirmedBooking])
 
+  // Track if we need to trigger initial response
+  const [shouldTriggerInitialResponse, setShouldTriggerInitialResponse] = useState(false)
+
   // Reset state when modal opens/closes or enquiry changes
   useEffect(() => {
     if (isOpen && enquiry) {
-      setResponse(null)
-      setResponseMessage("")
       setFinalPrice(enquiry.quoted_price?.toString() || "")
       setSelectedTemplateId(null)
+      setResponse(null)
+      setResponseMessage("")
+
+      // If an initial response type is provided, flag to trigger it
+      if (initialResponseType) {
+        setShouldTriggerInitialResponse(true)
+      }
     }
-  }, [isOpen, enquiry?.id])
+  }, [isOpen, enquiry?.id, initialResponseType])
 
   const formatDate = (dateString) => {
     if (!dateString) return "Date TBD"
@@ -207,6 +215,14 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
       setTemplatesLoading(false)
     }
   }
+
+  // Trigger initial response type when flagged
+  useEffect(() => {
+    if (shouldTriggerInitialResponse && initialResponseType && isOpen && enquiry) {
+      handleResponse(initialResponseType)
+      setShouldTriggerInitialResponse(false)
+    }
+  }, [shouldTriggerInitialResponse, initialResponseType, isOpen, enquiry])
 
   const submitResponse = async () => {
     if (!response || !enquiry) return

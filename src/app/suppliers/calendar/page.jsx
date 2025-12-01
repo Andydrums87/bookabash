@@ -353,6 +353,138 @@ function MobileCalendarView({ bookingsByDate, selectedDate, onDayClick, hourlyRa
   )
 }
 
+// Month Picker Dropdown Component (Airbnb style)
+function MonthPickerDropdown({ isOpen, onClose, currentYear, currentMonth, onSelectMonth }) {
+  const [viewYear, setViewYear] = useState(currentYear)
+  const [viewMonth, setViewMonth] = useState(currentMonth)
+  const dropdownRef = useRef(null)
+
+  // Reset view when opening
+  useEffect(() => {
+    if (isOpen) {
+      setViewYear(currentYear)
+      setViewMonth(currentMonth)
+    }
+  }, [isOpen, currentYear, currentMonth])
+
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onClose()
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  // Generate calendar grid for the picker
+  const generateMonthCalendar = (year, month) => {
+    const daysInMonth = getDaysInMonth(year, month)
+    const firstDay = getFirstDayOfMonth(year, month)
+    const days = []
+
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null)
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day)
+    }
+    return days
+  }
+
+  const today = new Date()
+
+  const handleDayClick = (year, month, day) => {
+    if (day) {
+      onSelectMonth(new Date(year, month, day))
+      onClose()
+    }
+  }
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11)
+      setViewYear(viewYear - 1)
+    } else {
+      setViewMonth(viewMonth - 1)
+    }
+  }
+
+  const goToNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0)
+      setViewYear(viewYear + 1)
+    } else {
+      setViewMonth(viewMonth + 1)
+    }
+  }
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 z-50 w-[320px]"
+    >
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={goToPrevMonth}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <span className="font-semibold text-gray-900">{MONTHS[viewMonth]} {viewYear}</span>
+        <button
+          onClick={goToNextMonth}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {DAYS_MONDAY_FIRST.map((day, i) => (
+          <div key={i} className="text-center text-xs font-medium text-gray-500 py-1">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {generateMonthCalendar(viewYear, viewMonth).map((day, index) => {
+          const isToday = day === today.getDate() &&
+                          viewMonth === today.getMonth() &&
+                          viewYear === today.getFullYear()
+
+          if (!day) {
+            return <div key={index} className="h-9" />
+          }
+
+          return (
+            <button
+              key={index}
+              onClick={() => handleDayClick(viewYear, viewMonth, day)}
+              className={`
+                h-9 w-full rounded-full text-sm transition-all
+                hover:bg-gray-100
+                ${isToday ? 'font-bold text-gray-900' : 'text-gray-700'}
+              `}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function SupplierCalendarPage() {
   const { businesses, currentBusiness, loading: businessesLoading } = useBusiness()
   const { enquiries, loading: enquiriesLoading } = useAllSupplierEnquiries()
@@ -360,6 +492,7 @@ export default function SupplierCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedBusiness, setSelectedBusiness] = useState('all')
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
 
   const currentYear = currentDate.getFullYear()
   const currentMonth = currentDate.getMonth()
@@ -558,9 +691,27 @@ export default function SupplierCalendarPage() {
               <div className="bg-white border border-gray-200 rounded-2xl p-6">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {MONTHS[currentMonth]} {currentYear}
-                  </h2>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMonthPicker(!showMonthPicker)}
+                      className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-2 py-1 -ml-2 transition-colors"
+                    >
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        {MONTHS[currentMonth]} {currentYear}
+                      </h2>
+                      <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${showMonthPicker ? 'rotate-180' : ''}`} />
+                    </button>
+                    <MonthPickerDropdown
+                      isOpen={showMonthPicker}
+                      onClose={() => setShowMonthPicker(false)}
+                      currentYear={currentYear}
+                      currentMonth={currentMonth}
+                      onSelectMonth={(date) => {
+                        setCurrentDate(date)
+                        setSelectedDate(date)
+                      }}
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={goToToday}

@@ -34,226 +34,261 @@ function EmptyStateIllustration() {
   )
 }
 
-// Booking card component (Airbnb style)
+// Booking card component (Airbnb reservations style)
 function BookingCard({ booking, onView }) {
   const partyDate = new Date(booking.parties?.party_date)
-  const isToday = new Date().toDateString() === partyDate.toDateString()
-  const businessName = booking.supplier?.businessName
+  const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+  const customerName = booking.parties?.users?.first_name || booking.lead_name || booking.parties?.parent_name || 'Customer'
+  const businessName = booking.supplier?.business_name || booking.supplier?.businessName
+
+  // Status text like Airbnb
+  const getStatusText = () => {
+    if (daysUntilEvent < 0) return 'Completed'
+    if (daysUntilEvent === 0) return 'Today'
+    if (daysUntilEvent === 1) return 'Tomorrow'
+    if (daysUntilEvent <= 7) return `In ${daysUntilEvent} days`
+    return `In ${daysUntilEvent} days`
+  }
 
   return (
-    <button
-      onClick={() => onView(booking)}
-      className="block w-full text-left bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
-    >
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
+        {/* Business name badge */}
+        {businessName && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <Building2 className="w-3.5 h-3.5 text-primary-500" />
+            <span className="text-xs font-medium text-primary-600">{businessName}</span>
+          </div>
+        )}
+        {/* Status badge */}
+        <p className={`text-sm font-medium mb-1 ${daysUntilEvent < 0 ? 'text-gray-500' : 'text-green-600'}`}>
+          {getStatusText()}
+        </p>
+        <p className="text-sm text-gray-500 mb-4">
+          {booking.parties?.child_name}'s {booking.parties?.theme || ''} Party
+        </p>
+
+        {/* Customer name and date */}
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900">
-              {booking.parties?.party_name || `${booking.parties?.child_name}'s Party`}
+            <h3 className="text-xl font-semibold text-gray-900">
+              {customerName}
             </h3>
-            <p className="text-sm text-gray-500">
-              {booking.lead_name || booking.parties?.parent_name || 'Guest'}
+            <p className="text-gray-600">
+              {partyDate.toLocaleDateString('en-GB', {
+                month: 'short',
+                day: 'numeric'
+              })}
             </p>
           </div>
-          {isToday && (
-            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-              Today
-            </span>
-          )}
-        </div>
 
-        <div className="space-y-2 text-sm text-gray-600">
-          {/* Business name indicator */}
-          {businessName && (
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary-500" />
-              <span className="font-medium text-primary-600">{businessName}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span>
-              {partyDate.toLocaleDateString('en-GB', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short'
-              })}
-            </span>
+          {/* Customer avatar placeholder */}
+          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium text-lg">
+            {customerName.charAt(0).toUpperCase()}
           </div>
-          {booking.parties?.party_time && (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
-              <span>{booking.parties.party_time}</span>
-            </div>
-          )}
-          {booking.parties?.venue_location && (
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-400" />
-              <span className="truncate">{booking.parties.venue_location}</span>
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-sm text-gray-600">
-          {booking.service_type || 'Service booked'}
-        </span>
-        <ChevronRight className="h-4 w-4 text-gray-400" />
+      {/* Action buttons - Airbnb style */}
+      <div className="flex border-t border-gray-200">
+        <button
+          onClick={() => onView(booking)}
+          className="flex-1 py-3.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+        >
+          View details
+        </button>
       </div>
-    </button>
+    </div>
   )
 }
 
-// Pending enquiry card (needs response)
-function EnquiryCard({ enquiry, onRespond }) {
+// Pending enquiry card (Airbnb reservations style)
+function EnquiryCard({ enquiry, onAccept, onDecline }) {
   const partyDate = new Date(enquiry.parties?.party_date)
-  const businessName = enquiry.supplier?.businessName
+  const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+  const customerName = enquiry.parties?.users?.first_name || enquiry.lead_name || enquiry.parties?.parent_name || 'Customer'
+  const businessName = enquiry.supplier?.business_name || enquiry.supplier?.businessName
+
+  // Status text like Airbnb
+  const getStatusText = () => {
+    if (daysUntilEvent < 0) return 'Event passed'
+    if (daysUntilEvent === 0) return 'Event today'
+    if (daysUntilEvent === 1) return 'Event tomorrow'
+    if (daysUntilEvent <= 7) return `Event in ${daysUntilEvent} days`
+    return `Event in ${daysUntilEvent} days`
+  }
 
   return (
-    <button
-      onClick={() => onRespond(enquiry)}
-      className="block w-full text-left bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-shadow overflow-hidden"
-    >
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
+        {/* Business name badge */}
+        {businessName && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <Building2 className="w-3.5 h-3.5 text-primary-500" />
+            <span className="text-xs font-medium text-primary-600">{businessName}</span>
+          </div>
+        )}
+        {/* Status badge */}
+        <p className="text-sm font-medium text-primary-600 mb-1">
+          {getStatusText()}
+        </p>
+        <p className="text-sm text-gray-500 mb-4">
+          {enquiry.parties?.child_name}'s {enquiry.parties?.theme || ''} Party
+        </p>
+
+        {/* Customer name and date */}
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900">
-              {enquiry.parties?.party_name || `${enquiry.parties?.child_name}'s Party`}
+            <h3 className="text-xl font-semibold text-gray-900">
+              {customerName}
             </h3>
-            <p className="text-sm text-gray-500">
-              {enquiry.lead_name || enquiry.parties?.parent_name || 'New enquiry'}
+            <p className="text-gray-600">
+              {partyDate.toLocaleDateString('en-GB', {
+                month: 'short',
+                day: 'numeric'
+              })}
             </p>
           </div>
-          <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-full">
-            Needs response
-          </span>
-        </div>
 
-        <div className="space-y-2 text-sm text-gray-600">
-          {/* Business name indicator */}
-          {businessName && (
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary-500" />
-              <span className="font-medium text-primary-600">{businessName}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span>
-              {partyDate.toLocaleDateString('en-GB', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short'
-              })}
-            </span>
+          {/* Customer avatar placeholder */}
+          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium text-lg">
+            {customerName.charAt(0).toUpperCase()}
           </div>
         </div>
       </div>
 
-      <div className="px-5 py-3 bg-orange-50 border-t border-orange-100 flex items-center justify-between">
-        <span className="text-sm font-medium text-orange-700">
-          Respond to enquiry
-        </span>
-        <ChevronRight className="h-4 w-4 text-orange-500" />
+      {/* Action buttons - Airbnb style */}
+      <div className="flex border-t border-gray-200">
+        <button
+          onClick={() => onDecline(enquiry)}
+          className="flex-1 py-3.5 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors border-r border-gray-200"
+        >
+          Decline
+        </button>
+        <button
+          onClick={() => onAccept(enquiry)}
+          className="flex-1 py-3.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+        >
+          Accept
+        </button>
       </div>
-    </button>
+    </div>
   )
 }
 
 // Compact list view for enquiries
-function EnquiryListItem({ enquiry, onRespond }) {
+function EnquiryListItem({ enquiry, onAccept, onDecline }) {
   const partyDate = new Date(enquiry.parties?.party_date)
-  const businessName = enquiry.supplier?.businessName
+  const customerName = enquiry.parties?.users?.first_name || enquiry.lead_name || enquiry.parties?.parent_name || 'Customer'
   const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
-  const isUrgent = daysUntilEvent <= 7 && daysUntilEvent >= 0
+  const businessName = enquiry.supplier?.business_name || enquiry.supplier?.businessName
+
+  const getStatusText = () => {
+    if (daysUntilEvent < 0) return 'Event passed'
+    if (daysUntilEvent === 0) return 'Today'
+    if (daysUntilEvent === 1) return 'Tomorrow'
+    if (daysUntilEvent <= 7) return `In ${daysUntilEvent} days`
+    return `In ${daysUntilEvent} days`
+  }
 
   return (
-    <button
-      onClick={() => onRespond(enquiry)}
-      className="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all text-left"
-    >
+    <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
+      {/* Avatar */}
+      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium flex-shrink-0">
+        {customerName.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-medium text-gray-900 truncate">
-            {enquiry.parties?.party_name || `${enquiry.parties?.child_name}'s Party`}
-          </h3>
-          {isUrgent && (
-            <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">
-              {daysUntilEvent === 0 ? 'Today' : daysUntilEvent === 1 ? 'Tomorrow' : `${daysUntilEvent} days`}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3 text-sm text-gray-500">
-          <span>{enquiry.lead_name || enquiry.parties?.parent_name}</span>
-          <span className="text-gray-300">•</span>
-          <span>{partyDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-sm font-medium text-primary-600">{getStatusText()}</span>
           {businessName && (
             <>
               <span className="text-gray-300">•</span>
-              <span className="text-primary-600 truncate">{businessName}</span>
+              <span className="text-xs text-primary-600 truncate">{businessName}</span>
             </>
           )}
         </div>
+        <h3 className="font-medium text-gray-900 truncate">
+          {customerName}
+        </h3>
+        <p className="text-sm text-gray-500 truncate">
+          {enquiry.parties?.child_name}'s Party • {partyDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+        </p>
       </div>
-      <div className="flex-shrink-0 flex items-center gap-3">
-        <span className="hidden sm:block px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-full">
-          Needs response
-        </span>
-        <ChevronRight className="h-4 w-4 text-gray-400" />
+
+      {/* Actions */}
+      <div className="flex-shrink-0 flex items-center gap-2">
+        <button
+          onClick={() => onDecline(enquiry)}
+          className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Decline
+        </button>
+        <button
+          onClick={() => onAccept(enquiry)}
+          className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          Accept
+        </button>
       </div>
-    </button>
+    </div>
   )
 }
 
 // Compact list view for bookings
 function BookingListItem({ booking, onView }) {
   const partyDate = new Date(booking.parties?.party_date)
-  const isToday = new Date().toDateString() === partyDate.toDateString()
-  const businessName = booking.supplier?.businessName
+  const customerName = booking.parties?.users?.first_name || booking.lead_name || booking.parties?.parent_name || 'Customer'
   const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+  const businessName = booking.supplier?.business_name || booking.supplier?.businessName
+
+  const getStatusText = () => {
+    if (daysUntilEvent < 0) return 'Completed'
+    if (daysUntilEvent === 0) return 'Today'
+    if (daysUntilEvent === 1) return 'Tomorrow'
+    if (daysUntilEvent <= 7) return `In ${daysUntilEvent} days`
+    return `In ${daysUntilEvent} days`
+  }
 
   return (
-    <button
-      onClick={() => onView(booking)}
-      className="w-full flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all text-left"
-    >
+    <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
+      {/* Avatar */}
+      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium flex-shrink-0">
+        {customerName.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-medium text-gray-900 truncate">
-            {booking.parties?.party_name || `${booking.parties?.child_name}'s Party`}
-          </h3>
-          {isToday && (
-            <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-              Today
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3 text-sm text-gray-500">
-          <span>{booking.lead_name || booking.parties?.parent_name}</span>
-          <span className="text-gray-300">•</span>
-          <span>{partyDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-          {booking.parties?.party_time && (
-            <>
-              <span className="text-gray-300">•</span>
-              <span>{booking.parties.party_time}</span>
-            </>
-          )}
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={`text-sm font-medium ${daysUntilEvent < 0 ? 'text-gray-500' : 'text-green-600'}`}>
+            {getStatusText()}
+          </span>
           {businessName && (
             <>
               <span className="text-gray-300">•</span>
-              <span className="text-primary-600 truncate">{businessName}</span>
+              <span className="text-xs text-primary-600 truncate">{businessName}</span>
             </>
           )}
         </div>
+        <h3 className="font-medium text-gray-900 truncate">
+          {customerName}
+        </h3>
+        <p className="text-sm text-gray-500 truncate">
+          {booking.parties?.child_name}'s Party • {partyDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+        </p>
       </div>
-      <div className="flex-shrink-0 flex items-center gap-3">
-        <span className="hidden sm:block text-sm text-gray-500">
-          {daysUntilEvent > 0 ? `In ${daysUntilEvent} day${daysUntilEvent === 1 ? '' : 's'}` : daysUntilEvent === 0 ? 'Today' : 'Completed'}
-        </span>
-        <ChevronRight className="h-4 w-4 text-gray-400" />
+
+      {/* Actions */}
+      <div className="flex-shrink-0">
+        <button
+          onClick={() => onView(booking)}
+          className="px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          View
+        </button>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -406,15 +441,26 @@ export default function SupplierDashboard() {
   // Modal state for responding to enquiries
   const [selectedEnquiry, setSelectedEnquiry] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [initialResponseType, setInitialResponseType] = useState(null)
 
-  const handleOpenResponseModal = (enquiry) => {
+  const handleOpenResponseModal = (enquiry, responseType = null) => {
     setSelectedEnquiry(enquiry)
+    setInitialResponseType(responseType)
     setIsModalOpen(true)
+  }
+
+  const handleAcceptEnquiry = (enquiry) => {
+    handleOpenResponseModal(enquiry, 'accepted')
+  }
+
+  const handleDeclineEnquiry = (enquiry) => {
+    handleOpenResponseModal(enquiry, 'declined')
   }
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setSelectedEnquiry(null)
+    setInitialResponseType(null)
   }
 
   const handleResponseSent = async (enquiryId, responseType) => {
@@ -727,13 +773,23 @@ export default function SupplierDashboard() {
                   ) : enquiryViewMode === 'grid' ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {pendingEnquiries.map((enquiry) => (
-                        <EnquiryCard key={enquiry.id} enquiry={enquiry} onRespond={handleOpenResponseModal} />
+                        <EnquiryCard
+                          key={enquiry.id}
+                          enquiry={enquiry}
+                          onAccept={handleAcceptEnquiry}
+                          onDecline={handleDeclineEnquiry}
+                        />
                       ))}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {pendingEnquiries.map((enquiry) => (
-                        <EnquiryListItem key={enquiry.id} enquiry={enquiry} onRespond={handleOpenResponseModal} />
+                        <EnquiryListItem
+                          key={enquiry.id}
+                          enquiry={enquiry}
+                          onAccept={handleAcceptEnquiry}
+                          onDecline={handleDeclineEnquiry}
+                        />
                       ))}
                     </div>
                   )}
@@ -842,6 +898,7 @@ export default function SupplierDashboard() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onResponseSent={handleResponseSent}
+        initialResponseType={initialResponseType}
       />
     </BusinessProvider>
   )

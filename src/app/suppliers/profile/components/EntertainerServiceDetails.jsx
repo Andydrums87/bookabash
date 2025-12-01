@@ -766,41 +766,45 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
   // Listing Name Section Content - Airbnb style
   const renderListingName = () => (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-      {/* Character count */}
-      <p className="text-gray-500 text-base mb-4">
-        <span className="font-medium text-gray-900">{listingName.length}</span>/{MAX_NAME_LENGTH} available
+      {/* Character count - smaller, subtle */}
+      <p className="text-gray-400 text-sm mb-6">
+        <span className="font-semibold text-gray-600">{listingName.length}</span>/{MAX_NAME_LENGTH} available
       </p>
 
-      {/* Big editable title - using contentEditable for large text like Airbnb */}
-      <div
-        ref={listingNameRef}
+      {/* Big editable title using h1 with contentEditable - no input element restrictions */}
+      <h1
+        ref={(el) => {
+          // Only set initial content, don't update on every render to preserve cursor
+          if (el && el.textContent !== listingName && !el.dataset.initialized) {
+            el.textContent = listingName || ''
+            el.dataset.initialized = 'true'
+          }
+        }}
         contentEditable
         suppressContentEditableWarning
         onInput={(e) => {
           const text = e.currentTarget.textContent || ''
-          isInternalUpdate.current = true
           if (text.length <= MAX_NAME_LENGTH) {
             setListingName(text)
             checkChanges('listingName', text)
           } else {
-            // Truncate if over limit - need to fix DOM and cursor
-            const truncated = text.slice(0, MAX_NAME_LENGTH)
-
             // Save cursor position
-            const sel = window.getSelection()
-            const cursorPos = Math.min(sel?.anchorOffset || 0, MAX_NAME_LENGTH)
+            const selection = window.getSelection()
+            const range = selection?.getRangeAt(0)
+            const cursorPos = range?.startOffset || 0
 
+            // Truncate
+            const truncated = text.slice(0, MAX_NAME_LENGTH)
             e.currentTarget.textContent = truncated
             setListingName(truncated)
-            checkChanges('listingName', truncated)
 
-            // Restore cursor
+            // Restore cursor at end or original position
             if (e.currentTarget.firstChild) {
-              const range = document.createRange()
-              range.setStart(e.currentTarget.firstChild, cursorPos)
-              range.collapse(true)
-              sel?.removeAllRanges()
-              sel?.addRange(range)
+              const newRange = document.createRange()
+              newRange.setStart(e.currentTarget.firstChild, Math.min(cursorPos, truncated.length))
+              newRange.collapse(true)
+              selection?.removeAllRanges()
+              selection?.addRange(newRange)
             }
           }
         }}
@@ -809,15 +813,31 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
             e.preventDefault()
           }
         }}
-        style={{
-          fontSize: 'clamp(2rem, 10vw, 4.5rem)',
-          lineHeight: 1.1,
-          minHeight: '80px'
+        onBlur={(e) => {
+          // Sync state on blur
+          const text = e.currentTarget.textContent || ''
+          if (text !== listingName) {
+            setListingName(text.slice(0, MAX_NAME_LENGTH))
+          }
         }}
-        className="font-semibold text-center text-gray-900 border-none outline-none bg-transparent w-full max-w-3xl focus:ring-0"
-      >
-        {listingName}
-      </div>
+        data-placeholder="Enter listing name"
+        style={{
+          fontSize: '72px',
+          fontWeight: 500,
+          textAlign: 'center',
+          color: listingName ? '#111827' : '#d1d5db',
+          backgroundColor: 'transparent',
+          border: 'none',
+          outline: 'none',
+          boxShadow: 'none',
+          width: '100%',
+          maxWidth: '900px',
+          letterSpacing: '-0.02em',
+          lineHeight: 1.1,
+          minHeight: '90px',
+          cursor: 'text'
+        }}
+      />
 
       {/* Tip icon and save */}
       <div className="mt-16 flex flex-col items-center gap-6">
@@ -1321,13 +1341,13 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               onClick={() => handleArrayToggle(details.ageGroups, age, "ageGroups")}
               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
                 isSelected
-                  ? "border-blue-300 bg-blue-50"
+                  ? "border-[hsl(var(--primary-200))] bg-primary-50"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <span className="text-sm font-medium text-gray-900">{age}</span>
               {isSelected && (
-                <CheckCircle className="w-5 h-5 text-blue-600" />
+                <CheckCircle className="w-5 h-5 text-primary-600" />
               )}
             </div>
           )
@@ -1362,13 +1382,13 @@ const EntertainerServiceDetails = ({ serviceDetails, onUpdate, saving, supplierD
               onClick={() => handleArrayToggle(details.performanceStyle, style, "performanceStyle")}
               className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
                 isSelected
-                  ? "border-purple-300 bg-purple-50"
+                  ? "border-[hsl(var(--primary-200))] bg-primary-50"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <span className="text-sm font-medium text-gray-900">{style}</span>
               {isSelected && (
-                <CheckCircle className="w-5 h-5 text-purple-600" />
+                <CheckCircle className="w-5 h-5 text-primary-600" />
               )}
             </div>
           )

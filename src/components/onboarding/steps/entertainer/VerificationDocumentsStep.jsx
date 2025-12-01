@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Shield, Upload, CheckCircle, FileText, XCircle, Loader2 } from "lucide-react"
+import { Shield, Camera, MapPin, CheckCircle, Clock, ExternalLink, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export default function VerificationDocumentsStep({ documents, onChange, userId, supplierId }) {
@@ -12,6 +12,7 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
   })
 
   const [uploading, setUploading] = useState(null)
+  const [removing, setRemoving] = useState(null)
   const [uploadError, setUploadError] = useState(null)
 
   const fileInputRefs = {
@@ -21,27 +22,9 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
   }
 
   const documentTypes = [
-    {
-      id: "dbs",
-      title: "DBS/Background Check",
-      description: "Enhanced DBS certificate or equivalent background check",
-      icon: Shield,
-      required: true
-    },
-    {
-      id: "id",
-      title: "Photo ID",
-      description: "Passport or driving license",
-      icon: FileText,
-      required: true
-    },
-    {
-      id: "address",
-      title: "Proof of Address",
-      description: "Utility bill or bank statement (within 3 months)",
-      icon: FileText,
-      required: true
-    }
+    { id: 'dbs', icon: Shield, title: 'DBS Certificate' },
+    { id: 'id', icon: Camera, title: 'Photo ID' },
+    { id: 'address', icon: MapPin, title: 'Proof of Address' },
   ]
 
   const handleFileSelect = async (docType, event) => {
@@ -134,7 +117,31 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
     }
   }
 
-  const handleRemove = (docType) => {
+  const handleRemove = async (docType) => {
+    setRemoving(docType)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (session?.access_token && supplierId) {
+        // Call delete API
+        await fetch('/api/verification/delete', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            documentType: docType,
+            supplierId: supplierId
+          })
+        })
+      }
+    } catch (error) {
+      console.error('Delete failed:', error)
+    }
+
     const updated = {
       ...localDocs,
       [docType]: { file: null, fileName: '', uploaded: false }
@@ -146,18 +153,15 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
     if (fileInputRefs[docType].current) {
       fileInputRefs[docType].current.value = ''
     }
+
+    setRemoving(null)
   }
 
-  const allRequiredUploaded = documentTypes
-    .filter(doc => doc.required)
-    .every(doc => localDocs[doc.id]?.uploaded)
+  const allRequiredUploaded = documentTypes.every(doc => localDocs[doc.id]?.uploaded)
 
   return (
     <div className="py-12 max-w-3xl mx-auto">
       <div className="text-center mb-8">
-        {/* <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Shield className="w-8 h-8 text-primary-600" />
-        </div> */}
         <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
           Verification Documents
         </h1>
@@ -175,95 +179,65 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
         </div>
       )}
 
-      {/* Info Banner */}
-      {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-        <p className="text-sm text-blue-900">
-          <strong>Why verify?</strong> Verified entertainers get more bookings. Your documents are securely stored and only reviewed by our team.
-        </p>
-      </div> */}
-
-      {/* Document Upload Cards */}
-      <div className="space-y-4 mb-8">
-        {documentTypes.map((docType) => {
-          const Icon = docType.icon
-          const doc = localDocs[docType.id] || {}
-          const isUploading = uploading === docType.id
+      {/* Document Card - Minimal Style */}
+      <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        {documentTypes.map((doc) => {
+          const DocIcon = doc.icon
+          const docState = localDocs[doc.id] || {}
+          const isUploaded = docState.uploaded
+          const isUploading = uploading === doc.id
+          const isRemoving = removing === doc.id
 
           return (
-            <div
-              key={docType.id}
-              className="border-2 border-gray-200 rounded-xl p-6 hover:border-primary-300 transition-colors"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-gray-600" />
-                  </div>
+            <div key={doc.id} className="px-6 py-5">
+              <input
+                ref={fileInputRefs[doc.id]}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileSelect(doc.id, e)}
+                className="hidden"
+              />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <DocIcon className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
+                  <span className="text-[17px] font-semibold text-gray-900">
+                    {doc.title}
+                  </span>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {docType.title}
-                        {docType.required && (
-                          <span className="text-red-500 ml-1">*</span>
-                        )}
-                      </h3>
-                      <p className="text-sm text-gray-600">{docType.description}</p>
-                    </div>
+                <div className="flex items-center gap-4">
+                  {isUploaded ? (
+                    <>
+                      <span className="flex items-center gap-1.5 text-gray-500 font-medium text-sm">
+                        <Clock className="w-4 h-4" />
+                        In review
+                      </span>
 
-                    {doc.uploaded && (
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    )}
-                  </div>
-
-                  {doc.uploaded ? (
-                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-sm text-green-900 truncate">{doc.fileName}</span>
-                      </div>
                       <button
-                        type="button"
-                        onClick={() => handleRemove(docType.id)}
-                        className="text-red-600 hover:text-red-700 p-1 flex-shrink-0"
+                        onClick={() => handleRemove(doc.id)}
+                        disabled={isRemoving}
+                        className="text-gray-400 hover:text-gray-600 underline text-sm font-medium transition-colors"
                       >
-                        <XCircle className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mt-3">
-                      <input
-                        ref={fileInputRefs[docType.id]}
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileSelect(docType.id, e)}
-                        className="hidden"
-                        disabled={isUploading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRefs[docType.id].current?.click()}
-                        disabled={isUploading}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span className="text-sm font-medium">Uploading...</span>
-                          </>
+                        {isRemoving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <>
-                            <Upload className="w-4 h-4" />
-                            <span className="text-sm font-medium">Choose File</span>
-                          </>
+                          'Remove'
                         )}
                       </button>
-                      <p className="text-xs text-gray-500 mt-2">
-                        PDF or image (JPG, PNG) • Max 10MB
-                      </p>
-                    </div>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => fileInputRefs[doc.id].current.click()}
+                      disabled={isUploading}
+                      className="text-gray-900 hover:text-gray-600 underline text-[15px] font-semibold transition-colors"
+                    >
+                      {isUploading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Upload'
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
@@ -272,16 +246,21 @@ export default function VerificationDocumentsStep({ documents, onChange, userId,
         })}
       </div>
 
+      {/* Help text */}
+      <p className="mt-4 text-sm text-gray-400">
+        PDF, JPG, or PNG · Max 10MB
+      </p>
+
       {/* Progress Indicator */}
-      <div className="text-center">
+      <div className="text-center mt-8">
         {allRequiredUploaded ? (
           <div className="inline-flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg">
             <CheckCircle className="w-5 h-5" />
-            <span className="font-medium">All required documents uploaded</span>
+            <span className="font-medium">All documents uploaded</span>
           </div>
         ) : (
           <p className="text-sm text-gray-600">
-            {documentTypes.filter(d => d.required && localDocs[d.id]?.uploaded).length} of {documentTypes.filter(d => d.required).length} required documents uploaded
+            {documentTypes.filter(d => localDocs[d.id]?.uploaded).length} of {documentTypes.length} documents uploaded
           </p>
         )}
       </div>

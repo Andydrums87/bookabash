@@ -1,55 +1,53 @@
 "use client"
 
-import { Calendar, Check, ChevronRight } from "lucide-react"
-import Image from "next/image"
+import { useState } from "react"
+import { Check, Loader2 } from "lucide-react"
 
-// Google Calendar Icon Component
-const GoogleCalendarIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-12 h-12">
-    <path fill="#4285F4" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/>
-    <path fill="#fff" d="M19 20H5V9h14v11z"/>
-    <path fill="#EA4335" d="M11.5 14.5l-1.5 1.5-1.5-1.5 1.5-1.5z"/>
-    <path fill="#34A853" d="M15.5 14.5l1.5 1.5-1.5 1.5-1.5-1.5z"/>
-    <path fill="#FBBC04" d="M13.5 12.5l1.5-1.5 1.5 1.5-1.5 1.5z"/>
-    <path fill="#4285F4" d="M9.5 12.5l1.5-1.5 1.5 1.5-1.5 1.5z"/>
+// Google "G" Logo
+const GoogleLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
   </svg>
 )
 
-// Outlook Calendar Icon Component
-const OutlookCalendarIcon = () => (
-  <svg viewBox="0 0 48 48" className="w-12 h-12">
-    <path fill="#0078D4" d="M44 24c0 11.05-8.95 20-20 20S4 35.05 4 24 12.95 4 24 4s20 8.95 20 20z"/>
-    <path fill="#fff" d="M24 34c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-17c-3.87 0-7 3.13-7 7s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7z"/>
-    <path fill="#0078D4" d="M24 28c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+// Microsoft Logo
+const MicrosoftLogo = () => (
+  <svg viewBox="0 0 21 21" className="w-6 h-6">
+    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
   </svg>
 )
 
 export default function CalendarConnectionStep({ connectedCalendar, onConnect, onSkip, eventsSynced = 0 }) {
+  const [connecting, setConnecting] = useState(null)
+
   const calendars = [
     {
       id: "google",
-      name: "Google Calendar",
-      description: "Sync with Gmail calendar",
-      icon: GoogleCalendarIcon,
-      color: "bg-white hover:bg-blue-50",
-      iconBg: "bg-white"
+      name: "Google",
+      icon: GoogleLogo,
     },
     {
       id: "outlook",
-      name: "Outlook Calendar",
-      description: "Sync with Microsoft Outlook",
-      icon: OutlookCalendarIcon,
-      color: "bg-white hover:bg-blue-50",
-      iconBg: "bg-white"
+      name: "Outlook",
+      icon: MicrosoftLogo,
     }
   ]
 
+  const handleConnect = async (calendarId) => {
+    setConnecting(calendarId)
+    await onConnect(calendarId)
+    // Note: setConnecting(null) won't be called if page redirects, which is expected
+  }
+
   return (
-    <div className="py-12 max-w-2xl">
+    <div className="py-12 max-w-xl mx-auto">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Calendar className="w-8 h-8 text-primary-600" />
-        </div>
         <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
           Connect your calendar
         </h1>
@@ -58,66 +56,54 @@ export default function CalendarConnectionStep({ connectedCalendar, onConnect, o
         </p>
       </div>
 
-      <div className="space-y-4 mb-8">
+      {/* Calendar Options - Side by Side */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {calendars.map((calendar) => {
           const isConnected = connectedCalendar === calendar.id
+          const isConnecting = connecting === calendar.id
 
           return (
             <button
               key={calendar.id}
-              onClick={() => onConnect(calendar.id)}
-              disabled={isConnected}
+              onClick={() => handleConnect(calendar.id)}
+              disabled={isConnected || isConnecting}
               className={`
-                w-full p-6 rounded-xl border-2 transition-all duration-200 text-left
+                p-6 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-3
                 ${isConnected
                   ? 'border-green-500 bg-green-50 cursor-default'
-                  : `border-gray-300 ${calendar.color} hover:shadow-md hover:border-gray-400`
+                  : isConnecting
+                    ? 'border-gray-300 bg-gray-50 cursor-wait'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                 }
                 disabled:cursor-not-allowed
               `}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                  {/* Calendar Icon */}
-                  <div className={`w-16 h-16 ${calendar.iconBg} rounded-xl flex items-center justify-center shadow-sm border border-gray-100`}>
-                    <calendar.icon />
-                  </div>
+              {/* Logo or Spinner */}
+              {isConnecting ? (
+                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+              ) : (
+                <calendar.icon />
+              )}
 
-                  <div>
-                    <div className="font-semibold text-xl text-gray-900 mb-1">
-                      {calendar.name}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {calendar.description}
-                    </div>
-                  </div>
+              <span className="font-medium text-gray-900">
+                {isConnecting ? 'Connecting...' : calendar.name}
+              </span>
+
+              {isConnected && (
+                <div className="flex items-center gap-1.5 text-green-600 text-sm">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium">Connected</span>
                 </div>
-
-                {isConnected ? (
-                  <div className="flex flex-col items-end gap-1 text-green-600">
-                    <div className="flex items-center gap-2">
-                      <Check className="w-5 h-5" />
-                      <span className="font-medium">Connected</span>
-                    </div>
-                    {eventsSynced > 0 && (
-                      <span className="text-xs text-green-700">
-                        {eventsSynced} {eventsSynced === 1 ? 'event' : 'events'} synced
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                )}
-              </div>
+              )}
             </button>
           )
         })}
       </div>
 
       {/* Benefits Section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <h3 className="font-semibold text-blue-900 mb-3">Why connect your calendar?</h3>
-        <ul className="space-y-2 text-sm text-blue-800">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-6">
+        <h3 className="font-semibold text-blue-900 mb-2 text-sm">Why connect your calendar?</h3>
+        <ul className="space-y-1.5 text-sm text-blue-800">
           <li className="flex items-start gap-2">
             <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <span>Automatically block out dates when you're busy</span>
@@ -130,10 +116,6 @@ export default function CalendarConnectionStep({ connectedCalendar, onConnect, o
             <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <span>New bookings automatically added to your calendar</span>
           </li>
-          <li className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <span>Keep everything organized in one place</span>
-          </li>
         </ul>
       </div>
 
@@ -141,9 +123,9 @@ export default function CalendarConnectionStep({ connectedCalendar, onConnect, o
       <div className="text-center">
         <button
           onClick={onSkip}
-          className="text-gray-600 hover:text-gray-900 text-sm underline"
+          className="text-gray-500 hover:text-gray-900 text-sm underline"
         >
-          Skip for now (you can connect later)
+          Skip for now
         </button>
       </div>
     </div>

@@ -447,6 +447,10 @@ const TimeSlotAvailabilityContent = ({
   const [showMobileCalendarSync, setShowMobileCalendarSync] = useState(false) // Mobile calendar sync panel
   const [showMobileBusinessPicker, setShowMobileBusinessPicker] = useState(false) // Mobile business picker panel
   const [showDesktopBusinessDropdown, setShowDesktopBusinessDropdown] = useState(false) // Desktop business dropdown
+  const [showMonthPicker, setShowMonthPicker] = useState(false) // Month picker dropdown
+  const [monthPickerMonth, setMonthPickerMonth] = useState(currentMonth.getMonth()) // Track viewed month in picker
+  const [monthPickerYear, setMonthPickerYear] = useState(currentMonth.getFullYear()) // Track viewed year in picker
+  const monthPickerRef = useRef(null) // Ref for click outside detection
   const saveTimeoutRef = useRef(null)
   const lastSavedDataRef = useRef(null)
   const previousBusinessRef = useRef(selectedCalendarBusiness)
@@ -558,6 +562,27 @@ const TimeSlotAvailabilityContent = ({
       return () => clearTimeout(timer)
     }
   }, [selectedCalendarBusiness])
+
+  // Reset month picker view when opening
+  useEffect(() => {
+    if (showMonthPicker) {
+      setMonthPickerMonth(currentMonth.getMonth())
+      setMonthPickerYear(currentMonth.getFullYear())
+    }
+  }, [showMonthPicker, currentMonth])
+
+  // Close month picker on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (monthPickerRef.current && !monthPickerRef.current.contains(event.target)) {
+        setShowMonthPicker(false)
+      }
+    }
+    if (showMonthPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMonthPicker])
 
   // Fetch confirmed bookings from ALL businesses
   useEffect(() => {
@@ -1258,12 +1283,106 @@ const TimeSlotAvailabilityContent = ({
         {/* Calendar Header - Airbnb style */}
         <div className="flex items-center justify-between mb-6">
           {/* Month title with dropdown arrow */}
-          <button className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1 -ml-2 transition-colors">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {currentMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
-            </h1>
-            <ChevronDown className="w-5 h-5 text-gray-600" />
-          </button>
+          <div className="relative" ref={monthPickerRef}>
+            <button
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+              className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1 -ml-2 transition-colors"
+            >
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {currentMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+              </h1>
+              <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${showMonthPicker ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Month Picker Dropdown */}
+            {showMonthPicker && (
+              <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 z-50 w-[320px]">
+                {/* Month Navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => {
+                      if (monthPickerMonth === 0) {
+                        setMonthPickerMonth(11)
+                        setMonthPickerYear(monthPickerYear - 1)
+                      } else {
+                        setMonthPickerMonth(monthPickerMonth - 1)
+                      }
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="font-semibold text-gray-900">
+                    {new Date(monthPickerYear, monthPickerMonth).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (monthPickerMonth === 11) {
+                        setMonthPickerMonth(0)
+                        setMonthPickerYear(monthPickerYear + 1)
+                      } else {
+                        setMonthPickerMonth(monthPickerMonth + 1)
+                      }
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Day Headers */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
+                    <div key={i} className="text-center text-xs font-medium text-gray-500 py-1">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {(() => {
+                    const daysInMonth = new Date(monthPickerYear, monthPickerMonth + 1, 0).getDate()
+                    const firstDay = new Date(monthPickerYear, monthPickerMonth, 1).getDay()
+                    const startOffset = firstDay === 0 ? 6 : firstDay - 1
+                    const today = new Date()
+                    const days = []
+
+                    // Empty cells
+                    for (let i = 0; i < startOffset; i++) {
+                      days.push(<div key={`empty-${i}`} className="h-9" />)
+                    }
+
+                    // Day cells
+                    for (let day = 1; day <= daysInMonth; day++) {
+                      const isToday = day === today.getDate() &&
+                                      monthPickerMonth === today.getMonth() &&
+                                      monthPickerYear === today.getFullYear()
+
+                      days.push(
+                        <button
+                          key={day}
+                          onClick={() => {
+                            setCurrentMonth(new Date(monthPickerYear, monthPickerMonth, day))
+                            setShowMonthPicker(false)
+                          }}
+                          className={`
+                            h-9 w-full rounded-full text-sm transition-all
+                            hover:bg-gray-100
+                            ${isToday ? 'font-bold text-gray-900' : 'text-gray-700'}
+                          `}
+                        >
+                          {day}
+                        </button>
+                      )
+                    }
+
+                    return days
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Navigation arrows */}
           <div className="flex items-center gap-1">
