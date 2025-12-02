@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, Calendar, Users, MapPin, Clock, CheckCircle, XCircle, Loader2, Send, ChevronDown, Package, Mail, Phone } from "lucide-react"
+import { X, Calendar, Users, MapPin, Clock, CheckCircle, XCircle, Loader2, Send, ChevronDown, Mail, Phone } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
 import Link from "next/link"
@@ -23,6 +23,8 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
   const [messageTemplates, setMessageTemplates] = useState([])
   const [selectedTemplateId, setSelectedTemplateId] = useState(null)
   const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successData, setSuccessData] = useState(null)
   const textareaRef = useRef(null)
   const cursorPositionRef = useRef(null)
 
@@ -108,6 +110,8 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
       setSelectedTemplateId(null)
       setResponse(null)
       setResponseMessage("")
+      setShowSuccess(false)
+      setSuccessData(null)
 
       // If an initial response type is provided, flag to trigger it
       if (initialResponseType) {
@@ -142,7 +146,15 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
 
   const processTemplate = (template) => {
     if (!template || !enquiry) return template
-    const supplierData = enquiry.supplier?.data || enquiry.supplier || {}
+    // Get business name from multiple possible locations
+    const businessName = enquiry.businessName ||
+                         enquiry.supplier?.businessName ||
+                         enquiry.supplier?.business_name ||
+                         enquiry.supplier?.data?.name ||
+                         enquiry.supplier?.name ||
+                         enquiry.suppliers?.data?.name ||
+                         enquiry.suppliers?.name ||
+                         "Your supplier"
     return template
       .replace(/{customer_name}/g, customer?.first_name || "there")
       .replace(/{child_name}/g, party?.child_name || "your child")
@@ -153,7 +165,7 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
       .replace(/{final_price}/g, finalPrice || enquiry.quoted_price)
       .replace(/{total_price}/g, finalPrice || enquiry.quoted_price)
       .replace(/{guest_count}/g, party?.guest_count || "the children")
-      .replace(/{business_name}/g, supplierData?.name || enquiry.supplier?.name || "Your supplier")
+      .replace(/{business_name}/g, businessName)
       .replace(/{package_name}/g, enquiry.package_id?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "your package")
   }
 
@@ -251,8 +263,9 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
       })
 
       // Send email notification
+      let emailSent = false
       try {
-        await fetch("/api/email/customer-response", {
+        const emailResponse = await fetch("/api/email/customer-response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -270,16 +283,38 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
             dashboardLink: `${window.location.origin}/dashboard`,
           }),
         })
+        emailSent = emailResponse.ok
       } catch {}
 
-      onResponseSent?.(enquiry.id, response)
-      onClose()
+      // Store success data and show success state
+      const successInfo = {
+        responseType: response,
+        customerName: customer?.first_name,
+        childName: party?.child_name,
+        partyDate: party?.party_date,
+        price: finalPrice || enquiry.quoted_price,
+        emailSent,
+        enquiryId: enquiry.id,
+      }
+      setSuccessData(successInfo)
+      setShowSuccess(true)
+      setResponding(false)
+
     } catch (err) {
       console.error('Error submitting response:', err)
       alert('Something went wrong. Please try again.')
-    } finally {
       setResponding(false)
     }
+  }
+
+  const handleSuccessDone = () => {
+    // Notify parent that response was sent (for list refresh) when closing
+    if (successData) {
+      onResponseSent?.(successData.enquiryId, successData.responseType)
+    }
+    setShowSuccess(false)
+    setSuccessData(null)
+    onClose()
   }
 
   if (!isOpen || !enquiry) return null
@@ -300,29 +335,59 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <button
-              onClick={onClose}
+              onClick={showSuccess ? handleSuccessDone : onClose}
               className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
             <h2 className="font-semibold text-gray-900">
-              {isConfirmedBooking ? 'Booking details' : 'Respond to enquiry'}
+              {showSuccess
+                ? (successData?.responseType === 'accepted' ? 'Booking confirmed' : 'Response sent')
+                : isConfirmedBooking
+                  ? 'Booking details'
+                  : 'Respond to enquiry'}
             </h2>
             <div className="w-9" />
           </div>
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {/* Party summary */}
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                {party?.child_name}'s {party?.theme || ''} Party
-              </h3>
-              <p className="text-gray-500">{customer?.first_name} {customer?.last_name}</p>
-            </div>
+            {/* Success State */}
+            {showSuccess ? (
+              <div className="flex flex-col items-center text-center py-8">
+                {/* Green checkmark circle */}
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-6">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
 
-            {/* Quick details */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {successData?.responseType === 'accepted'
+                    ? 'Booking confirmed!'
+                    : 'Response sent'}
+                </h3>
+
+                <p className="text-gray-500 mb-4">
+                  {successData?.responseType === 'accepted'
+                    ? `You're all set for ${successData?.childName}'s party on ${formatDate(successData?.partyDate)}`
+                    : `${successData?.customerName} has been notified`}
+                </p>
+
+                <p className="text-sm text-gray-400">
+                  {successData?.customerName} will receive an email with your message
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Party summary */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                    {party?.child_name}'s {party?.theme || ''} Party
+                  </h3>
+                  <p className="text-gray-500">{customer?.first_name} {customer?.last_name}</p>
+                </div>
+
+                {/* Quick details */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-gray-600" />
@@ -521,10 +586,21 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
                 </div>
               </div>
             )}
+              </>
+            )}
           </div>
 
           {/* Footer */}
-          {isConfirmedBooking ? (
+          {showSuccess ? (
+            <div className="px-6 py-4 border-t border-gray-100 bg-white">
+              <button
+                onClick={handleSuccessDone}
+                className="w-full py-3 rounded-xl text-base font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          ) : isConfirmedBooking ? (
             <div className="px-6 py-4 border-t border-gray-100 bg-white">
               <button
                 onClick={onClose}

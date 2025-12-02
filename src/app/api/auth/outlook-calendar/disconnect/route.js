@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 
 async function deleteOutlookWebhook(accessToken, subscriptionId) {
@@ -19,6 +20,26 @@ async function deleteOutlookWebhook(accessToken, subscriptionId) {
 
 export async function POST(request) {
   try {
+    // Require Authorization header
+    const authHeader = request.headers.get("authorization")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+
+    // Validate session with Supabase
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+    }
+
     const { userId } = await request.json()
 
     if (!userId) {
@@ -26,6 +47,11 @@ export async function POST(request) {
         { error: "User ID is required" },
         { status: 400 }
       )
+    }
+
+    // Validate userId matches authenticated user
+    if (userId !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     // Get all suppliers for this user

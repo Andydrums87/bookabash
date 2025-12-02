@@ -47,6 +47,12 @@ function calculatePartyTimes(party) {
 }
 
 async function createCalendarEventsForBooking(enquiry, party, customer) {
+  // Get session token for authentication
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) {
+    throw new Error('No valid session for calendar sync')
+  }
+
   const { startDateTime, endDateTime } = calculatePartyTimes(party)
   const eventData = {
     title: `${party.theme} Party - ${party.child_name}`,
@@ -59,7 +65,10 @@ async function createCalendarEventsForBooking(enquiry, party, customer) {
   }
   const response = await fetch('/api/calendar/booking-sync', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
     body: JSON.stringify({ supplierId: enquiry.supplier_id, enquiryId: enquiry.id, eventData }),
   })
   if (!response.ok) throw new Error('Calendar sync failed')
@@ -173,7 +182,12 @@ export default function EnquiryDetailsPage() {
     if (!template || !enquiry) return template
     const customer = enquiry.parties?.users
     const party = enquiry.parties
-    const supplierData = enquiry.supplier?.data || enquiry.supplier || {}
+    // Get business name from supplier data - check multiple possible locations
+    const businessName = enquiry.supplier?.data?.name ||
+                         enquiry.supplier?.name ||
+                         enquiry.suppliers?.data?.name ||
+                         enquiry.suppliers?.name ||
+                         "Your supplier"
     return template
       .replace(/{customer_name}/g, customer?.first_name || "there")
       .replace(/{child_name}/g, party?.child_name || "your child")
@@ -184,7 +198,7 @@ export default function EnquiryDetailsPage() {
       .replace(/{final_price}/g, finalPrice || enquiry.quoted_price)
       .replace(/{total_price}/g, finalPrice || enquiry.quoted_price)
       .replace(/{guest_count}/g, party?.guest_count || "the children")
-      .replace(/{business_name}/g, supplierData?.name || enquiry.supplier?.name || "Your supplier")
+      .replace(/{business_name}/g, businessName)
       .replace(/{package_name}/g, enquiry.package_id?.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "your package")
   }
 

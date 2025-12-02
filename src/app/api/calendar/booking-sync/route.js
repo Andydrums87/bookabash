@@ -1,17 +1,37 @@
 // /src/app/api/calendar/booking-sync/route.js
 
 import { createClient } from '@supabase/supabase-js'
-import { 
-  createGoogleCalendarEvent, 
-  createOutlookCalendarEvent 
+import {
+  createGoogleCalendarEvent,
+  createOutlookCalendarEvent
 } from '@/lib/calendar-write-functions'
-import { 
-  getValidGoogleToken, 
-  getValidOutlookToken 
+import {
+  getValidGoogleToken,
+  getValidOutlookToken
 } from '@/lib/calendar-token-manager'
 
 export async function POST(req) {
   try {
+    // Require Authorization header
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+
+    // Validate session with Supabase
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+    if (authError || !user) {
+      return Response.json({ error: 'Invalid session' }, { status: 401 })
+    }
+
     const { supplierId, enquiryId, eventData } = await req.json()
 
     console.log('📥 Received booking sync request:', { supplierId, enquiryId })
@@ -28,10 +48,10 @@ export async function POST(req) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    // Fetch supplier's calendar connections
+    // Fetch supplier and verify ownership
     const { data: supplier, error: supplierError } = await supabase
       .from('suppliers')
-      .select('data')
+      .select('data, auth_user_id')
       .eq('id', supplierId)
       .single()
 
@@ -43,7 +63,13 @@ export async function POST(req) {
       )
     }
 
-    console.log('✅ Supplier found:', {
+    // Verify the authenticated user owns this supplier
+    if (supplier.auth_user_id !== user.id) {
+      console.error('❌ User does not own this supplier')
+      return Response.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    console.log('✅ Supplier found and ownership verified:', {
       hasGoogle: !!supplier.data?.googleCalendarSync?.connected,
       hasOutlook: !!supplier.data?.outlookCalendarSync?.connected
     })

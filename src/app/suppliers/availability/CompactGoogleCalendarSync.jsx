@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, RefreshCw, CheckCircle, X, Link2, Link2Off } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 // Calendar Provider Icons
 const GoogleCalendarIcon = ({ className }) => (
@@ -101,6 +102,13 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId, target
     }
 
     try {
+      // Get the current session token for authentication
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        console.error('No valid session')
+        return
+      }
+
       const endpoint = providerId === 'google'
         ? '/api/auth/google-calendar'
         : '/api/auth/outlook-calendar'
@@ -114,7 +122,10 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId, target
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
         body: JSON.stringify(body)
       })
 
@@ -185,13 +196,23 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId, target
     if (!authUserId) return
 
     try {
+      // Get the current session token for authentication
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        console.error('No valid session')
+        return
+      }
+
       const endpoint = providerId === 'google'
         ? '/api/auth/google-calendar/disconnect'
         : '/api/auth/outlook-calendar/disconnect'
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ userId: authUserId })
       })
 

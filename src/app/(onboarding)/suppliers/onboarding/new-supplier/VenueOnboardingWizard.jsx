@@ -1232,12 +1232,20 @@ export default function VenueOnboardingWizard() {
         return
       }
 
+      // Get the current session token for authentication
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        alert('Session expired. Please log in again.')
+        return
+      }
+
       if (provider === 'google') {
         // Trigger Google OAuth flow - include supplierId so callback knows which business to update
         const response = await fetch('/api/auth/google-calendar', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
             userId: `wizard-${userId}:supplier:${supplierId}`, // Include supplierId in state
@@ -1275,6 +1283,7 @@ export default function VenueOnboardingWizard() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
             userId: `wizard-${userId}:supplier:${supplierId}`, // Include supplierId in state

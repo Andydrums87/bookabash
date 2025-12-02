@@ -205,24 +205,23 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all suppliers
-    const { data: allSuppliers } = await supabase
-      .from('suppliers')
-      .select('*')
-
-    if (!allSuppliers) {
-      return NextResponse.json({ success: true })
-    }
-
     // Process each change notification
     for (const change of notification.value || []) {
       const { subscriptionId } = change
-      
+
       console.log(`Processing change for subscription: ${subscriptionId}`)
 
-      const primarySupplier = allSuppliers.find(s => 
-        s.data?.outlookCalendarSync?.subscriptionId === subscriptionId
-      )
+      // Use JSONB query to find supplier directly by subscriptionId (indexed lookup)
+      const { data: primarySupplier, error: fetchError } = await supabase
+        .from('suppliers')
+        .select('*')
+        .filter('data->outlookCalendarSync->>subscriptionId', 'eq', subscriptionId)
+        .maybeSingle()
+
+      if (fetchError) {
+        console.error('Database error:', fetchError.message)
+        continue
+      }
 
       if (!primarySupplier) {
         console.log('No supplier found for subscription:', subscriptionId)
@@ -231,13 +230,15 @@ export async function POST(request) {
 
       console.log('Found primary supplier:', primarySupplier.data.name)
 
-      const userSuppliers = allSuppliers.filter(s => 
-        s.auth_user_id === primarySupplier.auth_user_id
-      )
+      // Fetch only suppliers for this user (not all suppliers)
+      const { data: userSuppliers } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('auth_user_id', primarySupplier.auth_user_id)
 
-      console.log(`Found ${userSuppliers.length} total suppliers for this user`)
+      console.log(`Found ${userSuppliers?.length || 1} total suppliers for this user`)
 
-      await syncOutlookCalendar(primarySupplier, userSuppliers)
+      await syncOutlookCalendar(primarySupplier, userSuppliers || [primarySupplier])
     }
 
     return NextResponse.json({ success: true })

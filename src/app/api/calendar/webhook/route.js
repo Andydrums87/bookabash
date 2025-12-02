@@ -53,56 +53,63 @@ export async function POST(request) {
     }
     
     console.log('🔍 Searching database for channel:', channelId)
-    
+
     const supabaseAdmin = getSupabaseAdmin()
     console.log('✅ Supabase admin client created')
-    
-    const { data: allSuppliers, error: fetchError } = await supabaseAdmin
+
+    // Use JSONB query to find supplier directly by webhookChannelId (indexed lookup)
+    const { data: primarySupplier, error: fetchError } = await supabaseAdmin
       .from('suppliers')
       .select('*')
+      .eq('data->>googleCalendarSync->>webhookChannelId', channelId)
+      .maybeSingle()
+
+    // If the nested query doesn't work, try with containment operator
+    let supplier = primarySupplier
+    if (!supplier && !fetchError) {
+      console.log('🔍 Trying alternative JSONB query...')
+      const { data: altSupplier } = await supabaseAdmin
+        .from('suppliers')
+        .select('*')
+        .filter('data->googleCalendarSync->>webhookChannelId', 'eq', channelId)
+        .maybeSingle()
+      supplier = altSupplier
+    }
 
     if (fetchError) {
       console.error('❌ DATABASE ERROR:', fetchError.message)
       return new NextResponse(null, { status: 200 })
     }
 
-    if (!allSuppliers || allSuppliers.length === 0) {
-      console.log('⚠️ No suppliers found in database')
-      return new NextResponse(null, { status: 200 })
-    }
-    
-    console.log(`📊 Found ${allSuppliers.length} total suppliers`)
-    
-    const primarySupplier = allSuppliers?.find(s => 
-      s.data?.googleCalendarSync?.webhookChannelId === channelId
-    )
-    
-    if (!primarySupplier) {
+    if (!supplier) {
       console.log('❌ No supplier found with channel:', channelId)
       return new NextResponse(null, { status: 200 })
     }
-    
-    console.log('✅ Found supplier:', primarySupplier.data.name)
+
+    console.log('✅ Found supplier:', supplier.data.name)
 
     // Check if this is a per-business calendar connection
-    const isPerBusinessCalendar = primarySupplier.data.googleCalendarSync?.ownConnection === true
+    const isPerBusinessCalendar = supplier.data.googleCalendarSync?.ownConnection === true
 
     let suppliersToSync
     if (isPerBusinessCalendar) {
       // Per-business calendar: only sync this specific supplier
       console.log('📋 Per-business calendar - syncing only this supplier')
-      suppliersToSync = [primarySupplier]
+      suppliersToSync = [supplier]
     } else {
-      // Shared calendar: sync all suppliers for this user (inherited model)
-      suppliersToSync = allSuppliers.filter(s =>
-        s.auth_user_id === primarySupplier.auth_user_id
-      )
+      // Shared calendar: fetch only suppliers for this user (not all suppliers)
+      const { data: userSuppliers } = await supabaseAdmin
+        .from('suppliers')
+        .select('*')
+        .eq('auth_user_id', supplier.auth_user_id)
+
+      suppliersToSync = userSuppliers || [supplier]
       console.log(`📋 Shared calendar - found ${suppliersToSync.length} suppliers for user`)
     }
 
     console.log('🔄 Starting automatic sync...')
 
-    await triggerAutomaticSync(primarySupplier, suppliersToSync, supabaseAdmin)
+    await triggerAutomaticSync(supplier, suppliersToSync, supabaseAdmin)
     
     console.log('✅ Webhook processing complete')
     console.log(`🔔 === WEBHOOK ${requestId} END (success) ===\n`)

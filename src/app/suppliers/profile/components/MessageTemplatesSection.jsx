@@ -94,75 +94,72 @@ export default function MessageTemplatesSection({ supplier, currentBusiness }) {
         </p>
       </div>
 
-      {/* Default confirmation template */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-          Confirmation message
-        </h3>
-
-        {defaultTemplate ? (
-          <button
-            onClick={() => handleEditTemplate(defaultTemplate)}
-            className="w-full text-left p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 mb-1">{defaultTemplate.template_name}</p>
-                <p className="text-sm text-gray-500 line-clamp-2">
+      {/* Template cards grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Default template card */}
+          {defaultTemplate ? (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-primary-500" />
+                  <span className="text-xs font-medium text-primary-500">Default</span>
+                </div>
+                <p className="font-semibold text-gray-900 text-sm mb-1 truncate">{defaultTemplate.template_name}</p>
+                <p className="text-xs text-gray-500 line-clamp-2">
                   {defaultTemplate.message_template}
                 </p>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-3" />
-            </div>
-          </button>
-        ) : (
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <p className="text-sm text-gray-600 mb-3">
-                Save time when accepting bookings by creating a reusable confirmation message. You can personalise it with the customer's name, party date, and more.
-              </p>
               <button
-                onClick={handleCreateTemplate}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                onClick={() => handleEditTemplate(defaultTemplate)}
+                className="w-full px-4 py-2.5 border-t border-gray-100 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                Create template
+                Edit template
               </button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Other templates */}
-      {businessTemplates.filter(t => !t.is_default || t.template_type !== 'acceptance').length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-            Other templates
-          </h3>
-
-          <div className="space-y-2">
-            {businessTemplates
-              .filter(t => !t.is_default || t.template_type !== 'acceptance')
-              .map(template => (
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden border-dashed">
+              <div className="p-4">
+                <p className="text-xs text-gray-500 mb-3">
+                  Create a reusable confirmation message
+                </p>
                 <button
-                  key={template.id}
-                  onClick={() => handleEditTemplate(template)}
-                  className="w-full text-left p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+                  onClick={handleCreateTemplate}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 mb-1">{template.template_name}</p>
-                      <p className="text-sm text-gray-500 line-clamp-2">
-                        {template.message_template}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-3" />
-                  </div>
+                  <Plus className="w-3.5 h-3.5" />
+                  Create
                 </button>
-              ))}
-          </div>
-        </div>
-      )}
+              </div>
+            </div>
+          )}
+
+          {/* Other template cards */}
+          {businessTemplates
+            .filter(t => !t.is_default || t.template_type !== 'acceptance')
+            .map(template => (
+              <div
+                key={template.id}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="w-4 h-4 text-gray-400" />
+                    <span className="text-xs font-medium text-gray-400">Template</span>
+                  </div>
+                  <p className="font-semibold text-gray-900 text-sm mb-1 truncate">{template.template_name}</p>
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {template.message_template}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleEditTemplate(template)}
+                  className="w-full px-4 py-2.5 border-t border-gray-100 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                >
+                  Edit template
+                </button>
+              </div>
+            ))}
+      </div>
 
       {/* Add another template button */}
       {businessTemplates.length > 0 && (

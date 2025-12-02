@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID
 const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET
 const MICROSOFT_REDIRECT_URI = process.env.MICROSOFT_REDIRECT_URI
-const WEBHOOK_SECRET = process.env.OUTLOOK_WEBHOOK_SECRET || "your-random-secret-string"
+const WEBHOOK_SECRET = process.env.OUTLOOK_WEBHOOK_SECRET 
 
 export async function GET(request) {
   try {

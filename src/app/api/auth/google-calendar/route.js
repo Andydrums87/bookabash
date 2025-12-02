@@ -1,19 +1,32 @@
 // app/api/auth/google-calendar/route.js
 import { google } from 'googleapis'
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 // GET handler for dashboard (existing users with session)
 export async function GET(request) {
   try {
-    // Get current user from session
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    // Require Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    const token = authHeader.substring(7)
+
+    // Validate session with Supabase
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+    }
+
+    const userId = user.id
 
     console.log('Generating Google Calendar auth URL for user:', userId)
 
@@ -40,13 +53,47 @@ export async function GET(request) {
   }
 }
 
-// POST handler for wizard onboarding (no user session yet) and per-business connections
+// POST handler for wizard onboarding and per-business connections
 export async function POST(request) {
   try {
+    // Require Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+
+    // Validate session with Supabase
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
+    }
+
     const { userId, supplierId, perBusinessConnection } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
+    }
+
+    // Extract actual userId if using wizard format (wizard-{userId}:supplier:{supplierId})
+    let actualUserId = userId
+    if (userId.startsWith('wizard-')) {
+      const match = userId.match(/^wizard-([^:]+):supplier:/)
+      if (match) {
+        actualUserId = match[1]
+      }
+    }
+
+    // Validate actualUserId matches authenticated user
+    if (actualUserId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     console.log('Generating Google Calendar auth URL for user:', userId)
