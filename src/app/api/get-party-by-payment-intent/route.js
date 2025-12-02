@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request) {
   try {
@@ -13,6 +13,16 @@ export async function GET(request) {
       )
     }
 
+    // Get fresh admin client
+    const supabaseAdmin = getSupabaseAdmin()
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client not available')
+      return NextResponse.json(
+        { success: false, error: 'Database connection error' },
+        { status: 500 }
+      )
+    }
+
     // Fetch party by payment_intent_id
     const { data: party, error } = await supabaseAdmin
       .from('parties')
@@ -21,7 +31,7 @@ export async function GET(request) {
       .single()
 
     if (error) {
-      console.error('Error fetching party:', error)
+      console.error('Error fetching party:', error, 'Payment Intent:', paymentIntentId)
       return NextResponse.json(
         { success: false, error: 'Party not found' },
         { status: 404 }
