@@ -42,10 +42,15 @@ async function refreshOutlookToken(refreshToken, supplierId) {
     },
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("suppliers")
     .update({ data: updatedData })
     .eq("id", supplierId)
+
+  if (updateError) {
+    console.error('Failed to save refreshed Outlook token:', updateError)
+    throw new Error('Failed to save refreshed token to database')
+  }
 
   return tokens.access_token
 }

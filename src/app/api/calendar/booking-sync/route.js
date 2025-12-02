@@ -91,19 +91,27 @@ export async function POST(req) {
         })
 
         // Save Google event ID to enquiry
-        await supabase
+        const { error: updateError } = await supabase
           .from('enquiries')
           .update({ googleEventId: googleEvent.id })
           .eq('id', enquiryId)
 
-        results.push({ 
-          provider: 'google', 
-          success: true, 
-          eventId: googleEvent.id,
-          htmlLink: googleEvent.htmlLink 
-        })
-
-        console.log('✅ Google Calendar event created:', googleEvent.id)
+        if (updateError) {
+          console.error('❌ Failed to save Google event ID:', updateError)
+          results.push({
+            provider: 'google',
+            success: false,
+            error: 'Event created but failed to save to database'
+          })
+        } else {
+          results.push({
+            provider: 'google',
+            success: true,
+            eventId: googleEvent.id,
+            htmlLink: googleEvent.htmlLink
+          })
+          console.log('✅ Google Calendar event created:', googleEvent.id)
+        }
       } catch (error) {
         console.error('❌ Google Calendar sync failed:', error)
         results.push({ 
@@ -130,19 +138,27 @@ export async function POST(req) {
         })
 
         // Save Outlook event ID to enquiry
-        await supabase
+        const { error: updateError } = await supabase
           .from('enquiries')
           .update({ outlookEventId: outlookEvent.id })
           .eq('id', enquiryId)
 
-        results.push({ 
-          provider: 'outlook', 
-          success: true, 
-          eventId: outlookEvent.id,
-          webLink: outlookEvent.webLink 
-        })
-
-        console.log('✅ Outlook Calendar event created:', outlookEvent.id)
+        if (updateError) {
+          console.error('❌ Failed to save Outlook event ID:', updateError)
+          results.push({
+            provider: 'outlook',
+            success: false,
+            error: 'Event created but failed to save to database'
+          })
+        } else {
+          results.push({
+            provider: 'outlook',
+            success: true,
+            eventId: outlookEvent.id,
+            webLink: outlookEvent.webLink
+          })
+          console.log('✅ Outlook Calendar event created:', outlookEvent.id)
+        }
       } catch (error) {
         console.error('❌ Outlook Calendar sync failed:', error)
         results.push({ 

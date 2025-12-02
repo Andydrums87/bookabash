@@ -1,20 +1,16 @@
-"use client"
-
-import Nav from "@/components/Nav";
+// Server Component Layout - optimized for SSR and streaming
+import { NavServer } from "@/components/nav/NavServer";
 import Footer from "@/components/Footer";
-import { ToastProvider } from '@/components/ui/toast'
-import { CartProvider } from "@/contexts/CartContext" // Add this import
+import { Providers } from "./providers";
 
 export default function MainLayout({ children }) {
   return (
-    <CartProvider>
-      <ToastProvider>
-        <Nav />
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Footer />
-      </ToastProvider>
-    </CartProvider>
+    <Providers>
+      <NavServer />
+      <main className="flex-grow">
+        {children}
+      </main>
+      <Footer />
+    </Providers>
   );
 }

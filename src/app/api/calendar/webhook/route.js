@@ -57,24 +57,13 @@ export async function POST(request) {
     const supabaseAdmin = getSupabaseAdmin()
     console.log('✅ Supabase admin client created')
 
-    // Use JSONB query to find supplier directly by webhookChannelId (indexed lookup)
-    const { data: primarySupplier, error: fetchError } = await supabaseAdmin
+    // Use JSONB query to find supplier directly by webhookChannelId
+    // Syntax: data->jsonKey->>textKey (-> for object traversal, ->> for text extraction)
+    const { data: supplier, error: fetchError } = await supabaseAdmin
       .from('suppliers')
       .select('*')
-      .eq('data->>googleCalendarSync->>webhookChannelId', channelId)
+      .filter('data->googleCalendarSync->>webhookChannelId', 'eq', channelId)
       .maybeSingle()
-
-    // If the nested query doesn't work, try with containment operator
-    let supplier = primarySupplier
-    if (!supplier && !fetchError) {
-      console.log('🔍 Trying alternative JSONB query...')
-      const { data: altSupplier } = await supabaseAdmin
-        .from('suppliers')
-        .select('*')
-        .filter('data->googleCalendarSync->>webhookChannelId', 'eq', channelId)
-        .maybeSingle()
-      supplier = altSupplier
-    }
 
     if (fetchError) {
       console.error('❌ DATABASE ERROR:', fetchError.message)
@@ -86,7 +75,7 @@ export async function POST(request) {
       return new NextResponse(null, { status: 200 })
     }
 
-    console.log('✅ Found supplier:', supplier.data.name)
+    console.log('✅ Found supplier:', supplier.id)
 
     // Check if this is a per-business calendar connection
     const isPerBusinessCalendar = supplier.data.googleCalendarSync?.ownConnection === true
@@ -150,15 +139,20 @@ async function refreshGoogleToken(supplier, supabaseAdmin) {
       }
     }
 
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('suppliers')
       .update({ data: updatedData })
       .eq('id', supplier.id)
 
+    if (updateError) {
+      console.error('❌ Failed to save refreshed token:', updateError)
+      throw new Error('Failed to save refreshed token to database')
+    }
+
     return credentials.access_token
   } catch (error) {
     console.error('❌ Token refresh failed:', error.message)
-    
+
     // Mark the connection as broken
     const updatedData = {
       ...supplier.data,
@@ -170,10 +164,14 @@ async function refreshGoogleToken(supplier, supabaseAdmin) {
       }
     }
 
-    await supabaseAdmin
+    const { error: markError } = await supabaseAdmin
       .from('suppliers')
       .update({ data: updatedData })
       .eq('id', supplier.id)
+
+    if (markError) {
+      console.error('❌ Failed to mark connection as broken:', markError)
+    }
 
     throw error
   }

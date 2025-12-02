@@ -197,10 +197,27 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId, target
 
     try {
       // Get the current session token for authentication
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) {
-        console.error('No valid session')
+      let { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        console.error('Session error:', sessionError)
+        alert('Session error. Please refresh the page and try again.')
         return
+      }
+
+      if (!session?.access_token) {
+        console.error('No valid session - user may need to sign in again')
+        // Try to refresh the session
+        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
+
+        if (refreshError || !refreshedSession?.access_token) {
+          alert('Your session has expired. Please sign in again.')
+          window.location.href = '/signin'
+          return
+        }
+
+        // Use the refreshed session
+        session = refreshedSession
       }
 
       const endpoint = providerId === 'google'
@@ -220,9 +237,20 @@ const CompactCalendarSync = ({ onSyncToggle, currentSupplier, authUserId, target
         setConnectedProviders(prev => prev.filter(id => id !== providerId))
         setExpandedProvider(null)
         window.location.reload()
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Disconnect failed:', response.status, errorData)
+
+        if (response.status === 401) {
+          alert('Your session has expired. Please sign in again.')
+          window.location.href = '/signin'
+        } else {
+          alert(`Failed to disconnect calendar: ${errorData.error || 'Unknown error'}`)
+        }
       }
     } catch (error) {
       console.error("Disconnect failed:", error)
+      alert('Failed to disconnect calendar. Please try again.')
     }
   }
 

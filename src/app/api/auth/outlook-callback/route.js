@@ -29,7 +29,7 @@ export async function GET(request) {
 
     // Decode state to get userId
     const { userId } = JSON.parse(Buffer.from(state, 'base64').toString())
-    console.log("Processing Outlook OAuth for user:", userId)
+    console.log("Processing Outlook OAuth callback")
 
     // Exchange code for tokens
     const tokenResponse = await fetch(
@@ -97,12 +97,12 @@ export async function GET(request) {
       .eq("auth_user_id", userId)
 
     if (fetchError || !allSuppliers || allSuppliers.length === 0) {
-      console.error("No suppliers found for user:", userId)
+      console.error("No suppliers found for user")
       throw new Error("No supplier found for user")
     }
 
     const primaryBusiness = allSuppliers.find(s => s.is_primary || s.data?.isPrimary) || allSuppliers[0]
-    console.log(`Found ${allSuppliers.length} suppliers (primary: ${primaryBusiness.data.name})`)
+    console.log(`Found ${allSuppliers.length} suppliers (primary: ${primaryBusiness.id})`)
 
     // Create webhook subscription for primary business
     let subscriptionId = null
@@ -264,7 +264,7 @@ export async function GET(request) {
           updatedAt: new Date().toISOString(),
         }
 
-        console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data?.name}`)
+        console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.id}`)
         console.log(`  - Setting ${allBlocked.length} unavailable dates (${initialBlockedDates.length} from calendar)`)
 
         const { error: updateError } = await supabase
@@ -276,14 +276,14 @@ export async function GET(request) {
           .eq("id", supplier.id)
 
         if (updateError) {
-          console.error(`Failed to update supplier ${supplier.data?.name}:`, updateError)
+          console.error(`Failed to update supplier ${supplier.id}:`, updateError)
         } else {
           updateCount++
-          console.log(`Successfully updated: ${supplier.data?.name}`)
+          console.log(`Successfully updated supplier: ${supplier.id}`)
         }
 
       } catch (supplierError) {
-        console.error(`Error processing supplier ${supplier.data?.name}:`, supplierError)
+        console.error(`Error processing supplier ${supplier.id}:`, supplierError)
       }
     }
 

@@ -58,12 +58,7 @@ export async function GET(request) {
       userEmail = userInfo.email || 'unknown'
       userName = userInfo.name || 'Unknown User'
       
-      console.log('User info:', {
-        email: userEmail,
-        name: userName,
-        isWorkspace: isWorkspaceAccount,
-        domain: workspaceDomain
-      })
+      console.log('User info retrieved successfully')
       
     } catch (userInfoError) {
       console.error('Failed to get user info:', userInfoError.message)
@@ -348,7 +343,7 @@ export async function GET(request) {
           supplier = suppliers[0]
         }
 
-        console.log('✅ Found supplier:', supplier.id, supplier.data?.name || supplier.business_name)
+        console.log('✅ Found supplier:', supplier.id)
 
         // Set up webhook for real-time updates
         let webhookData = {
@@ -477,7 +472,7 @@ export async function GET(request) {
       return NextResponse.redirect(new URL('/suppliers/availability?calendar_error=no_primary', request.url))
     }
 
-    console.log(`Found primary supplier: ${primarySupplier.data?.name}`)
+    console.log('Found primary supplier:', primarySupplier.id)
     console.log(`Total suppliers to update: ${allSuppliers.length}`)
 
     // Prepare base calendar sync data for primary
@@ -509,8 +504,8 @@ export async function GET(request) {
       const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
       
       console.log('Testing calendar access...')
-      const calendarTest = await calendar.calendars.get({ calendarId: 'primary' })
-      console.log('Calendar access confirmed:', calendarTest.data.summary)
+      await calendar.calendars.get({ calendarId: 'primary' })
+      console.log('Calendar access confirmed')
       
       const channelId = `supplier-${primarySupplier.id}-${Date.now()}`
       const webhookUrl = `${process.env.NEXTAUTH_URL}/api/calendar/webhook`
@@ -643,7 +638,7 @@ export async function GET(request) {
           updatedAt: new Date().toISOString()
         }
 
-        console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.data?.name}`)
+        console.log(`Updating ${isPrimary ? 'primary' : 'themed'} supplier: ${supplier.id}`)
         console.log(`  - Setting ${allBlocked.length} unavailable dates (${initialBlockedDates.length} from calendar)`)
         
         // ✅ CHANGE: Use supabaseAdmin instead of supabase
@@ -653,14 +648,14 @@ export async function GET(request) {
           .eq('id', supplier.id)
 
         if (updateError) {
-          console.error(`Failed to update supplier ${supplier.data?.name}:`, updateError)
+          console.error(`Failed to update supplier ${supplier.id}:`, updateError)
         } else {
           updateCount++
-          console.log(`Successfully updated: ${supplier.data?.name}`)
+          console.log(`Successfully updated supplier: ${supplier.id}`)
         }
 
       } catch (supplierError) {
-        console.error(`Error processing supplier ${supplier.data?.name}:`, supplierError)
+        console.error(`Error processing supplier ${supplier.id}:`, supplierError)
       }
     }
 

@@ -92,8 +92,8 @@ export async function getValidGoogleToken(supplierId) {
       tokenExpiry: newExpiry.toISOString(),
       lastSync: new Date().toISOString()
     }
-  
-    await supabase
+
+    const { error: updateError } = await supabase
       .from('suppliers')
       .update({
         data: {
@@ -102,7 +102,12 @@ export async function getValidGoogleToken(supplierId) {
         }
       })
       .eq('id', primarySupplierId)
-  
+
+    if (updateError) {
+      console.error('❌ Failed to save refreshed Google token:', updateError)
+      throw new Error('Failed to save refreshed token to database')
+    }
+
     console.log('✅ Google token refreshed successfully')
   
     return {
@@ -206,8 +211,8 @@ export async function getValidOutlookToken(supplierId) {
       expiresAt: newExpiry.toISOString(),
       lastSync: new Date().toISOString()
     }
-  
-    await supabase
+
+    const { error: updateError } = await supabase
       .from('suppliers')
       .update({
         data: {
@@ -216,7 +221,12 @@ export async function getValidOutlookToken(supplierId) {
         }
       })
       .eq('id', primarySupplierId)
-  
+
+    if (updateError) {
+      console.error('❌ Failed to save refreshed Outlook token:', updateError)
+      throw new Error('Failed to save refreshed token to database')
+    }
+
     console.log('✅ Outlook token refreshed successfully')
   
     return {

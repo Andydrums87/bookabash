@@ -42,7 +42,7 @@ function calculateSupplierEarning(totalPrice) {
   return Math.round(totalPrice * (1 - platformFee) * 100) / 100
 }
 
-// Main payment processing function (idempotent)
+// Main payment processing function (idempotent, uses transaction via RPC)
 async function processPaymentSuccess(paymentIntent) {
   console.log('🚀 STARTING processPaymentSuccess function')
   console.log('💰 Payment Intent ID:', paymentIntent.id)
@@ -59,24 +59,7 @@ async function processPaymentSuccess(paymentIntent) {
 
   console.log(`🔄 Processing payment for party ${partyId}`)
 
-  // Step 1: Check if this payment has already been processed (idempotency check)
-  const { data: existingParty, error: fetchError } = await supabaseAdmin
-    .from('parties')
-    .select('payment_intent_id, payment_status, status')
-    .eq('id', partyId)
-    .single()
-
-  if (fetchError) {
-    throw new Error(`Failed to fetch party: ${fetchError.message}`)
-  }
-
-  // If this payment intent was already processed, skip duplicate processing
-  if (existingParty.payment_intent_id === paymentIntent.id && existingParty.payment_status !== 'pending') {
-    console.log(`✅ Payment ${paymentIntent.id} already processed for party ${partyId}. Skipping duplicate.`)
-    return { success: true, duplicate: true }
-  }
-
-  // Step 2: Get party details including enquiries
+  // Step 1: Get party details including enquiries (needed for RPC params and emails)
   const { data: party, error: partyError } = await supabaseAdmin
     .from('parties')
     .select('*, enquiries(*)')
@@ -87,7 +70,7 @@ async function processPaymentSuccess(paymentIntent) {
     throw new Error(`Failed to fetch party with enquiries: ${partyError.message}`)
   }
 
-  // Step 3: Get user details for emails
+  // Step 2: Get user details for emails
   const { data: user, error: userError } = await supabaseAdmin
     .from('users')
     .select('*')
@@ -98,88 +81,25 @@ async function processPaymentSuccess(paymentIntent) {
     console.warn('Failed to fetch user details:', userError)
   }
 
-  // Step 4: Parse payment breakdown from metadata
-  // Calculate totals
+  // Step 3: Calculate totals
   const totalAmount = paymentIntent.amount / 100 // Convert from pence to pounds
   const remainingBalance = parseFloat(paymentIntent.metadata.remaining_balance || '0')
 
-  // Step 5: Update party status and payment info
-  // Only update columns that exist in the parties table
-  const newPaymentStatus = remainingBalance > 0 ? 'partial_paid' : 'fully_paid'
-  const updateData = {
-    status: 'planned', // Change from 'draft' to 'planned'
-    payment_status: newPaymentStatus,
-    payment_intent_id: paymentIntent.id,
-    payment_date: new Date().toISOString(),
-    total_paid: totalAmount, // Set total_paid to the amount captured
-    deposit_amount: 0, // No deposits - full payment only
-    updated_at: new Date().toISOString()
-  }
-
-  console.log(`🔄 Updating party ${partyId} with:`, {
-    status: updateData.status,
-    payment_status: updateData.payment_status,
-    payment_intent_id: updateData.payment_intent_id,
-    total_paid: updateData.total_paid,
-    deposit_amount: updateData.deposit_amount,
-    remainingBalance
-  })
-
-  const { data: updateResult, error: updatePartyError } = await supabaseAdmin
-    .from('parties')
-    .update(updateData)
-    .eq('id', partyId)
-    .select('id, status, payment_status, payment_intent_id, total_paid, deposit_amount')
-
-  if (updatePartyError) {
-    console.error(`❌ Failed to update party:`, updatePartyError)
-    throw new Error(`Failed to update party: ${updatePartyError.message}`)
-  }
-
-  console.log(`✅ Party updated successfully:`, updateResult)
-
-  // Verify the update was applied
-  const { data: verifyParty, error: verifyError } = await supabaseAdmin
-    .from('parties')
-    .select('id, status, payment_status, payment_intent_id, total_paid, deposit_amount')
-    .eq('id', partyId)
-    .single()
-
-  if (verifyError) {
-    console.error(`⚠️  Could not verify party update:`, verifyError)
-  } else {
-    console.log(`🔍 Verified party data after update:`, verifyParty)
-
-    // Double-check payment_status is correct
-    if (verifyParty.payment_status !== 'fully_paid') {
-      console.error(`❌ CRITICAL: payment_status is "${verifyParty.payment_status}" but should be "fully_paid"!`)
-    } else {
-      console.log(`✅ CONFIRMED: payment_status is correctly set to "fully_paid"`)
-    }
-  }
-
-  // Step 6: Get or create enquiries for this party
+  // Step 4: Prepare enquiries data for RPC
+  let enquiriesToCreate = []
+  let enquiryIdsToUpdate = []
   let enquiries = party.enquiries || []
 
-  console.log(`🔍 Found ${enquiries.length} existing enquiries for party ${partyId}`)
-
   if (enquiries.length === 0) {
-    console.log('📝 No enquiries found, creating them from party plan')
-
-    // Parse party_plan to create enquiries
+    // No existing enquiries - prepare to create from party plan
     const partyPlan = party.party_plan || {}
     console.log('📦 Party plan categories:', Object.keys(partyPlan))
-    const enquiriesToCreate = []
 
     for (const [category, supplier] of Object.entries(partyPlan)) {
-      console.log(`🔍 Processing category: ${category}, supplier:`, supplier?.id || 'no id')
-
       if (!supplier || typeof supplier !== 'object' || ['addons', 'einvites'].includes(category)) {
-        console.log(`⏭️  Skipping ${category} - addons/einvites or invalid`)
         continue
       }
 
-      // ✅ Skip if supplier has no valid ID
       if (!supplier.id || supplier.id === 'null' || supplier.id === null) {
         console.warn(`⚠️  Skipping ${category} - no valid supplier ID`)
         continue
@@ -187,58 +107,58 @@ async function processPaymentSuccess(paymentIntent) {
 
       console.log(`✅ Adding enquiry for ${category} - supplier ${supplier.id}`)
       enquiriesToCreate.push({
-        party_id: partyId,
         supplier_id: supplier.id,
         supplier_category: category,
         message: 'BOOKING CONFIRMED - Customer has completed FULL payment',
-        status: 'accepted', // Auto-accept
-        auto_accepted: true, // ✅ IMPORTANT: Mark as auto-accepted so venue can manually accept later
-        payment_status: 'fully_paid', // We now take full payment for all suppliers
-        quoted_price: supplier.price || 0,
-        created_at: new Date().toISOString()
+        quoted_price: supplier.price || 0
       })
     }
 
     console.log(`📝 Prepared ${enquiriesToCreate.length} enquiries to create`)
-
-    if (enquiriesToCreate.length > 0) {
-      const { data: newEnquiries, error: enquiryError } = await supabaseAdmin
-        .from('enquiries')
-        .insert(enquiriesToCreate)
-        .select()
-
-      if (enquiryError) {
-        throw new Error(`Failed to create enquiries: ${enquiryError.message}`)
-      }
-
-      enquiries = newEnquiries
-      console.log(`✅ Created ${enquiries.length} enquiries`)
-    }
   } else {
-    // Update existing enquiries
-    console.log(`📝 Updating ${enquiries.length} existing enquiries`)
+    // Existing enquiries - collect IDs to update (excluding e-invites)
+    enquiryIdsToUpdate = enquiries
+      .filter(e => e.supplier_category !== 'einvites')
+      .map(e => e.id)
 
-    for (const enquiry of enquiries) {
-      if (enquiry.supplier_category === 'einvites') {
-        continue // Skip e-invites
-      }
+    console.log(`📝 Found ${enquiryIdsToUpdate.length} enquiries to update`)
+  }
 
-      const { error: updateEnquiryError } = await supabaseAdmin
-        .from('enquiries')
-        .update({
-          status: 'accepted', // Auto-accept
-          auto_accepted: true, // ✅ IMPORTANT: Mark as auto-accepted so venue can manually accept later
-          payment_status: 'fully_paid', // We now take full payment for all suppliers
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', enquiry.id)
+  // Step 5: Execute atomic transaction via RPC
+  console.log('🔄 Executing atomic payment processing transaction...')
 
-      if (updateEnquiryError) {
-        console.warn(`Failed to update enquiry ${enquiry.id}:`, updateEnquiryError)
-      }
-    }
+  const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc('process_payment_success', {
+    p_party_id: partyId,
+    p_payment_intent_id: paymentIntent.id,
+    p_total_amount: totalAmount,
+    p_remaining_balance: remainingBalance,
+    p_enquiries_to_create: enquiriesToCreate,
+    p_enquiry_ids_to_update: enquiryIdsToUpdate
+  })
 
-    console.log(`✅ Updated payment status for all enquiries`)
+  if (rpcError) {
+    console.error('❌ Transaction failed:', rpcError)
+    throw new Error(`Payment transaction failed: ${rpcError.message}`)
+  }
+
+  console.log('✅ Transaction completed:', rpcResult)
+
+  // Check if this was a duplicate
+  if (rpcResult.duplicate) {
+    console.log(`✅ Payment ${paymentIntent.id} already processed for party ${partyId}. Skipping duplicate.`)
+    return { success: true, duplicate: true }
+  }
+
+  // Step 6: Fetch the created/updated enquiries for email sending
+  const { data: updatedEnquiries, error: fetchEnquiriesError } = await supabaseAdmin
+    .from('enquiries')
+    .select('*')
+    .eq('party_id', partyId)
+
+  if (fetchEnquiriesError) {
+    console.warn('Failed to fetch enquiries for emails:', fetchEnquiriesError)
+  } else {
+    enquiries = updatedEnquiries || []
   }
 
   // Step 7: Send emails asynchronously (don't block webhook response)
