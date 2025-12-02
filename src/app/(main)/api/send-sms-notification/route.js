@@ -1,12 +1,22 @@
 import twilio from 'twilio';
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
 export async function POST(req) {
   try {
+    // Check for Twilio credentials at runtime
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+    if (!accountSid || !authToken) {
+      console.warn('Twilio credentials not configured - skipping SMS');
+      return new Response(JSON.stringify({
+        success: false,
+        skipped: true,
+        error: 'SMS not configured'
+      }), { status: 200 });
+    }
+
+    const client = twilio(accountSid, authToken);
+
     const {
       phoneNumber,
       supplierName,
