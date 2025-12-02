@@ -664,13 +664,13 @@ async getEnquiryDetails(enquiryId) {
         .single()
 
       if (!supplierError && supplier) {
-        // Parse the supplier data to get the name
-        const supplierInfo = typeof supplier.data === 'string' 
-          ? JSON.parse(supplier.data) 
+        // Parse the supplier data to get the name and contact info
+        const supplierInfo = typeof supplier.data === 'string'
+          ? JSON.parse(supplier.data)
           : supplier.data
-        
+
         enquiry.supplier = {
-          ...supplier,
+          ...supplierInfo,
           name: supplierInfo?.name || supplier.business_name || 'Supplier'
         }
       }

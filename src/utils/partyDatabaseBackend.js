@@ -171,7 +171,6 @@ class PartyDatabaseBackend {
   
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('⚠️ Party not found:', partyId);
           return { success: false, error: 'Party not found' };
         }
         throw error;
@@ -258,7 +257,6 @@ class PartyDatabaseBackend {
 
       if (error) throw error
 
-      console.log('✅ Party created:', newParty.id)
       return { success: true, party: newParty }
 
     } catch (error) {
@@ -272,14 +270,10 @@ class PartyDatabaseBackend {
    */
   async getCurrentParty() {
     try {
-      console.log('🔍 getCurrentParty: Getting current user...')
       const userResult = await this.getCurrentUser()
       if (!userResult.success) {
         throw new Error('User not found')
       }
-
-      console.log('👤 getCurrentParty: Current user ID:', userResult.user.id)
-      console.log('📧 getCurrentParty: Current user email:', userResult.user.email)
 
       const { data: party, error } = await supabase
         .from('parties')
@@ -291,17 +285,6 @@ class PartyDatabaseBackend {
         .maybeSingle()
 
       if (error) throw error
-
-      if (party) {
-        console.log('🎉 getCurrentParty: Found party:', {
-          id: party.id,
-          child_name: party.child_name,
-          user_id: party.user_id,
-          status: party.status
-        })
-      } else {
-        console.log('⚠️ getCurrentParty: No party found for this user')
-      }
 
       return { success: true, party }
 
@@ -387,7 +370,6 @@ async getPartyById(partyId) {
       return { success: false, error: error.message }
     }
 
-    console.log('✅ Loaded party:', party.id, '-', party.child_name)
     return { success: true, party }
 
   } catch (error) {
@@ -402,8 +384,7 @@ async getActivePlannedParty() {
     const userResult = await this.getCurrentUser()
     
     if (!userResult.success) {
-      // ✅ Instead of throwing, return gracefully for unauthenticated users
-      console.log('⚠️ No authenticated user - skipping database party lookup')
+      // Return gracefully for unauthenticated users
       return { success: false, data: null, reason: 'unauthenticated' }
     }
 
@@ -502,7 +483,6 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
     const validSuppliers = includedSuppliers.filter(cat => cat !== 'einvites')
 
     if (validSuppliers.length === 0) {
-      console.log('⚠️ No valid suppliers to update payment status for')
       return { success: true, updatedEnquiries: [] }
     }
 
@@ -520,7 +500,6 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
 
     if (error) throw error
 
-    console.log(`✅ Updated payment status for ${updatedEnquiries.length} enquiries`)
     return { success: true, updatedEnquiries }
 
   } catch (error) {
@@ -1161,7 +1140,6 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
       const existingCategories = new Set(
         (existingEnquiries || []).map(e => e.supplier_category)
       )
-      console.log('📋 Existing enquiry categories:', Array.from(existingCategories))
 
       const enquiries = []
 
@@ -1177,9 +1155,8 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
           continue
         }
 
-        // ✅ FIX: Skip if enquiry already exists for this category
+        // Skip if enquiry already exists for this category
         if (existingCategories.has(category)) {
-          console.log(`⏭️ Skipping ${category} - enquiry already exists`)
           continue
         }
 
@@ -1368,7 +1345,6 @@ async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
     if (categoriesToUpdate && Array.isArray(categoriesToUpdate)) {
       categoriesToUpdate = categoriesToUpdate.filter(cat => cat !== 'einvites')
       if (categoriesToUpdate.length === 0) {
-        console.log('⚠️ No valid categories to auto-accept')
         return { success: true, updatedEnquiries: [] }
       }
     }
@@ -1393,7 +1369,6 @@ async autoAcceptEnquiries(partyId, specificSupplierCategories = null) {
 
     if (error) throw error;
 
-    console.log(`✅ Auto-accepted ${updatedEnquiries.length} enquiries`)
     return { success: true, updatedEnquiries };
 
   } catch (error) {
@@ -1639,8 +1614,6 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         }
         
      
-      } else {
-        console.log('⚠️ No enquiry found to cancel');
       }
       
       // Step 2: Remove supplier from party plan (existing logic)
@@ -1919,7 +1892,6 @@ async createUnpaidBookingRecord(partyId, supplier, packageData, reason = null) {
 
     if (error) throw error;
 
-    console.log('Booking record created (supplier not contacted)');
     return { success: true, enquiry };
 
   } catch (error) {
@@ -2280,7 +2252,6 @@ async getPartyGiftRegistry(partyId) {
     if (registryError) {
       if (registryError.code === 'PGRST116') {
         // No registry found - this is normal
-        console.log('ℹ️ [Backend] No gift registry found for party:', partyId);
         return {
           success: true,
           registry: null,
@@ -2311,7 +2282,6 @@ async getPartyGiftRegistry(partyId) {
       
       if (!itemsError) {
         items = rawItems || [];
-        console.log('✅ [Backend] Loaded', items.length, 'registry items');
       } else {
         console.error('⚠️ [Backend] Error fetching registry items:', itemsError);
       }
@@ -2486,10 +2456,8 @@ async getPartyGiftRegistry(partyId) {
       if (verifyError) {
         console.error('⚠️ [Backend] Registry created but verification failed:', verifyError);
         // Still return success since the registry was created
-      } else {
-        console.log('✅ [Backend] Registry verified in database:', verifyRegistry.id);
       }
-      
+
       return {
         success: true,
         registry: newRegistry,
@@ -2785,10 +2753,7 @@ async findSuppliersByCategory(excludeId, category) {
     
     // Only add UUID exclusion if excludeId is a valid UUID
     if (excludeId && this.isValidUUID(excludeId)) {
-      console.log('✅ Valid UUID - adding exclusion filter')
       query = query.neq('id', excludeId)
-    } else {
-      console.log('⚠️ Invalid/test UUID - skipping exclusion filter')
     }
     
     const { data: allSuppliers, error } = await query
@@ -2815,11 +2780,7 @@ async findSuppliersByCategory(excludeId, category) {
       const reverseContainsMatch = category.toLowerCase().includes(supplierCategory.toLowerCase())
       
       const isMatch = exactMatch || containsMatch || reverseContainsMatch
-      
-      if (isMatch) {
-        console.log(`✅ Match found: "${supplierCategory}" matches "${category}"`)
-      }
-      
+
       return isMatch
     }) || []
     
@@ -2898,7 +2859,6 @@ async findReplacementSuppliers(rejectedSupplier, userPreferences = {}) {
     const exactMatches = await this.findSuppliersByCategory(rejectedSupplier.id, rejectedSupplier.category)
     
     if (exactMatches.length > 0) {
-      console.log(`✅ Found ${exactMatches.length} exact category matches`)
       return this.transformSupplierData(exactMatches, rejectedSupplier, userPreferences)
     }
     
@@ -2921,7 +2881,6 @@ async findReplacementSuppliers(rejectedSupplier, userPreferences = {}) {
     
     // Development fallback
     if (process.env.NODE_ENV === 'development') {
-      console.log('🧪 Creating mock replacement for development')
       return [{
         id: 'mock-replacement-' + Date.now(),
         name: `Better ${rejectedSupplier.category} Provider`,
@@ -2990,17 +2949,8 @@ transformSupplierData(suppliers, rejectedSupplier, userPreferences) {
     ...supplier,
     score: this.scoreReplacementSupplier(supplier, rejectedSupplier, userPreferences)
   })).sort((a, b) => b.score - a.score)
-  
-  console.log('🏆 Top 3 replacement options:', 
-    scoredAlternatives.slice(0, 3).map(s => ({
-      name: s.name,
-      price: s.price,
-      rating: s.rating,
-      score: s.score.toFixed(1),
-      category: s.category
-    }))
-  )
-  
+
+
   return scoredAlternatives.slice(0, 5) // Return top 5
 }
 
@@ -3580,8 +3530,7 @@ async getEInvites(partyId) {
     }
 
     const einvites = party.party_plan?.einvites || null;
-    console.log('📋 Found e-invites:', !!einvites);
-    
+
     return { success: true, einvites };
   } catch (error) {
     console.error('❌ Error in getEInvites:', error);
@@ -3661,10 +3610,8 @@ async getPublicInvite(inviteIdOrSlug) {
 
     if (looksLikeSlug) {
       query = query.eq('invite_slug', inviteIdOrSlug);
-      console.log('🔍 Looking up invite by slug:', inviteIdOrSlug);
     } else {
       query = query.eq('id', inviteIdOrSlug);
-      console.log('🔍 Looking up invite by ID:', inviteIdOrSlug);
     }
 
     const { data: invite, error } = await query.single();
@@ -3716,8 +3663,6 @@ async getPublicInvite(inviteIdOrSlug) {
       if (!partyError && party) {
 
         partyDetails = party;
-      } else {
-        console.log('⚠️ [Backend] Could not load party details:', partyError?.message || 'Unknown error');
       }
     }
 
@@ -3752,7 +3697,6 @@ async getPublicInvite(inviteIdOrSlug) {
  */
 async getInviteByRSVPCode(rsvpCode) {
   try {
-    console.log('🔍 Looking up invite by RSVP code:', rsvpCode);
 
     // Use PostgreSQL JSONB query to search directly in the database
     // This is MUCH faster than fetching all parties and iterating through them
@@ -3772,10 +3716,7 @@ async getInviteByRSVPCode(rsvpCode) {
       return { success: false, error: partiesError.message };
     }
 
-    console.log(`📊 Query returned ${parties?.length || 0} matching parties`);
-
     if (!parties || parties.length === 0) {
-      console.log('❌ No party found with RSVP code:', rsvpCode);
       return {
         success: false,
         error: 'Invalid or expired RSVP link',
@@ -3790,7 +3731,6 @@ async getInviteByRSVPCode(rsvpCode) {
     const matchedGuest = guestList.find(g => g.rsvpCode === rsvpCode);
 
     if (!matchedGuest) {
-      console.log('❌ Party found but guest not in list (shouldn\'t happen)');
       return {
         success: false,
         error: 'Invalid or expired RSVP link',
@@ -3798,8 +3738,6 @@ async getInviteByRSVPCode(rsvpCode) {
         party: null
       };
     }
-
-    console.log('✅ Found guest:', matchedGuest.childName, 'for party:', matchedParty.child_name);
 
     // Get the public invite for this party (if it exists)
     // Note: We need to check if invite_data is a JSONB column
@@ -3989,7 +3927,6 @@ async getPartyRSVPs(partyId) {
       .map(invite => invite.id);
 
     if (partyInviteIds.length === 0) {
-      console.log('📊 No invites found for party:', partyId);
       return { success: true, rsvps: [] };
     }
 
@@ -4005,7 +3942,6 @@ async getPartyRSVPs(partyId) {
       return { success: false, error: error.message };
     }
 
-    console.log(`✅ Found ${rsvps?.length || 0} RSVPs`);
     return { success: true, rsvps: rsvps || [] };
   } catch (error) {
     console.error('❌ Error in getPartyRSVPs:', error);
@@ -4098,8 +4034,6 @@ async updateGuestStatus(partyId, guestId, newStatus) {
  */
 async getPartyGuestList(partyId) {
   try {
-    console.log('📋 Getting party guest list:', partyId);
-    
     // Get the party data
     const { data: party, error: fetchError } = await supabase
       .from('parties')
@@ -4152,9 +4086,8 @@ async getPartyGuestList(partyId) {
       };
     });
 
-    console.log(`✅ Found ${mergedGuestList.length} guests in list`);
-    return { 
-      success: true, 
+    return {
+      success: true,
       guests: mergedGuestList,
       totalGuests: mergedGuestList.length,
       actualRSVPs: actualRSVPs.length
@@ -4171,8 +4104,6 @@ async getPartyGuestList(partyId) {
  */
 async addGuestToList(partyId, guestData) {
   try {
-    console.log('👤 Adding guest to party:', { partyId, guestName: guestData.name });
-    
     // Get current party data
     const { data: party, error: fetchError } = await supabase
       .from('parties')
@@ -4231,9 +4162,8 @@ async addGuestToList(partyId, guestData) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Guest added successfully');
-    return { 
-      success: true, 
+    return {
+      success: true,
       party: data,
       newGuest: newGuest
     };
@@ -4426,8 +4356,6 @@ async submitRSVP(inviteId, rsvpData) {
             .from('parties')
             .update({ party_plan: updatedPlan })
             .eq('id', rsvpData.partyId);
-
-          console.log('✅ Updated guest status in party_plan for RSVP code:', rsvpData.rsvpCode);
         }
       } catch (updateError) {
         console.error('⚠️ Error updating guest status in party_plan:', updateError);
@@ -4515,7 +4443,6 @@ async isPartyAwaitingResponses(partyId) {
       const enquiryResult = await this.hasPartyPendingEnquiries(partyId);
       
       if (enquiryResult.success && enquiryResult.hasPending) {
-        console.log('✅ Party is awaiting supplier responses');
         return {
           success: true,
           isAwaiting: true,
@@ -4833,7 +4760,6 @@ async removePartyGuest(partyId, guestId) {
       return { success: false, error: error.message };
     }
 
-    console.log('✅ Guest removed successfully');
     return { success: true };
     
   } catch (error) {

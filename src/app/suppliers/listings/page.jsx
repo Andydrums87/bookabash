@@ -15,6 +15,33 @@ function getBusinessImage(business) {
   return coverPhoto || firstPortfolioImage || null
 }
 
+// Format category to be singular and capitalized
+function formatCategory(serviceType) {
+  if (!serviceType) return "Service type not set"
+
+  // Normalize to lowercase for comparison
+  const normalized = serviceType.toLowerCase().trim()
+
+  // Map plural/lowercase to proper singular form
+  const categoryMap = {
+    'venues': 'Venue',
+    'venue': 'Venue',
+    'entertainment': 'Entertainment',
+    'catering': 'Catering',
+    'cakes': 'Cake',
+    'cake': 'Cake',
+    'decorations': 'Decoration',
+    'decoration': 'Decoration',
+    'photography': 'Photography',
+    'activities': 'Activity',
+    'activity': 'Activity',
+    'party bags': 'Party Bags',
+    'partybags': 'Party Bags',
+  }
+
+  return categoryMap[normalized] || serviceType.charAt(0).toUpperCase() + serviceType.slice(1)
+}
+
 // Action Modal - Airbnb style
 function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, removing }) {
   if (!business) return null
@@ -69,8 +96,7 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
               {business.name || "Untitled business"}
             </h3>
             <p className="text-gray-500 text-sm mt-0.5">
-              {business.serviceType || "Service type not set"}
-              {business.theme && ` · ${business.theme}`}
+              {formatCategory(business.serviceType)}
             </p>
           </div>
 
@@ -169,8 +195,7 @@ function BusinessCard({ business, onSelect, onClick }) {
           {business.name || "Untitled business"}
         </h3>
         <p className="text-gray-500 mt-0.5">
-          {business.serviceType || "Service type not set"}
-          {business.theme && ` · ${business.theme}`}
+          {formatCategory(business.serviceType)}
         </p>
       </div>
     </div>

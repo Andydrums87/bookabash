@@ -82,16 +82,8 @@ class PartyBuilderBackend {
     return 900;
   }
 
-  // ✅ UPDATED: Get cheapest package for supplier (budget-conscious)
+  // Get cheapest package for supplier (budget-conscious)
   getBasicPackageForSupplier(supplier, theme = 'no-theme') {
-    console.log('🔍 DEBUG getBasicPackageForSupplier called with:', {
-      supplierName: supplier.name,
-      hasPackages: !!supplier.packages,
-      packagesLength: supplier.packages?.length || 0,
-      packages: supplier.packages,
-      theme,
-      supplierKeys: Object.keys(supplier)
-    });
     // Check if supplier already has packages
     if (supplier.packages && supplier.packages.length > 0) {
       // Sort packages by price (cheapest first)
@@ -107,19 +99,16 @@ class PartyBuilderBackend {
       );
       
       if (themePackages.length > 0) {
-        console.log(`📦 Using cheapest theme package for ${supplier.name}:`, themePackages[0].name, `(£${themePackages[0].price})`);
         return themePackages[0];
       }
-      
+
       // Otherwise use the cheapest package overall
       const cheapestPackage = sortedPackages[0];
-      console.log(`📦 Using cheapest package for ${supplier.name}:`, cheapestPackage.name, `(£${cheapestPackage.price || cheapestPackage.originalPrice})`);
       return cheapestPackage;
     }
-    
+
     // Create a basic package if none exists
     const basicPackage = this.createBasicPackage(supplier, theme);
-    console.log(`📦 Created basic package for ${supplier.name}:`, basicPackage.name);
     return basicPackage;
   }
 
@@ -185,19 +174,11 @@ class PartyBuilderBackend {
     };
   }
 
-  // ✅ UPDATED: Enhanced supplier selection with package setup and unified pricing
+  // Enhanced supplier selection with package setup and unified pricing
   selectBestSupplier(suppliers, category, theme, timeSlot, duration, date, location, categoryBudget, partyDetails) {
-    console.log('🔍 DEBUG: selectBestSupplier called with:', {
-      category,
-      date,
-      dateType: typeof date,
-      partyDetails
-    });
     if (!suppliers || suppliers.length === 0) {
       return { supplier: null, reason: 'no-suppliers-found' };
     }
-    
-    console.log(`Selecting ${category} from ${suppliers.length} candidates (budget: £${categoryBudget})`);
     
     // Filter by budget first (with some flexibility)
     const budgetFiltered = suppliers.filter(s => s.priceFrom <= categoryBudget * 1.3);
@@ -245,14 +226,7 @@ class PartyBuilderBackend {
       // ✅ NEW: Calculate pricing using unified pricing system
       const pricingResult = calculateFinalPrice(enhancedSupplier, partyDetails, []);
       
-      console.log(`💰 Pricing for ${supplier.name}:`, {
-        originalPrice: enhancedSupplier.originalPrice,
-        finalPrice: pricingResult.finalPrice,
-        hasWeekendPremium: pricingResult.breakdown.weekend > 0,
-        breakdown: pricingResult.breakdown
-      });
-      
-      // ✅ NEW: Add enhanced pricing to supplier
+      // Add enhanced pricing to supplier
       enhancedSupplier.enhancedPrice = pricingResult.finalPrice;
       enhancedSupplier.enhancedPricing = pricingResult;
       
@@ -291,9 +265,8 @@ class PartyBuilderBackend {
     const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
     
     if (bestAvailable) {
-      console.log(`✅ Selected available ${category}: ${bestAvailable.name} (score: ${bestAvailable.compositeScore}, price: £${bestAvailable.enhancedPrice})`);
-      return { 
-        supplier: bestAvailable, 
+      return {
+        supplier: bestAvailable,
         reason: 'best-available-match',
         requiresConfirmation: false
       };
@@ -318,9 +291,6 @@ class PartyBuilderBackend {
 // Replace the selectMultipleVenuesForCarousel method with this updated version:
 
 selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, location, budget, partyDetails, count = 5) {
-  console.log(`🎪 Selecting top ${count} venues for carousel...`);
-  console.log(`📍 Party location: ${location}`);
-  
   const venueSuppliers = suppliers.filter(s => s.category === 'Venues');
   
   if (venueSuppliers.length === 0) {
@@ -353,41 +323,31 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
     if (locationCheck.canServe) {
       if (locationCheck.confidence === 'exact') {
         compositeScore += 150; // Exact postcode match - highest priority
-        console.log(`  📍 ${venue.name}: EXACT MATCH location (+150)`);
       } else if (locationCheck.confidence === 'high') {
         compositeScore += 100; // Same district or same area
-        console.log(`  📍 ${venue.name}: HIGH confidence location match (+100)`);
       } else {
         compositeScore += 50; // Nearby
-        console.log(`  📍 ${venue.name}: MEDIUM confidence location match (+50)`);
       }
     } else {
       compositeScore -= 100; // Cannot serve this location - major penalty
-      console.log(`  📍 ${venue.name}: CANNOT serve location (-100)`);
     }
-    
+
     // AVAILABILITY SCORING (0-50 points)
     if (availabilityCheck.available) {
       if (availabilityCheck.confidence === 'high') {
         compositeScore += 50; // Definitely available
-        console.log(`  ✅ ${venue.name}: HIGH confidence availability (+50)`);
       } else {
         compositeScore += 25; // Might be available
-        console.log(`  ✅ ${venue.name}: MEDIUM confidence availability (+25)`);
       }
     } else {
       compositeScore -= 50; // Not available - penalty
-      console.log(`  ❌ ${venue.name}: NOT available (-50)`);
     }
-    
+
     // RATING BONUS (0-10 points) - minor factor
     if (venue.rating) {
       const ratingBonus = venue.rating * 2;
       compositeScore += ratingBonus;
-      console.log(`  ⭐ ${venue.name}: Rating bonus +${ratingBonus}`);
     }
-    
-    console.log(`  🎯 ${venue.name}: TOTAL SCORE = ${compositeScore}`);
     
     return {
       ...enhancedVenue,
@@ -416,16 +376,7 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
   
   // Take top N venues
   const topVenues = sortedVenues.slice(0, Math.min(count, sortedVenues.length));
-  
-  console.log(`\n✅ Selected ${topVenues.length} venues for carousel:`);
-  topVenues.forEach((v, i) => {
-    console.log(`  ${i + 1}. ${v.name}`);
-    console.log(`     Location: ${v.locationScore > 0 ? '✓' : '✗'} (${v.locationScore})`);
-    console.log(`     Available: ${v.availabilityScore > 0 ? '✓' : '✗'} (${v.availabilityScore})`);
-    console.log(`     Total Score: ${v.compositeScore}`);
-    console.log(`     Price: £${v.enhancedPrice}`);
-  });
-  
+
   return {
     venues: topVenues,
     mainVenue: topVenues[0]
@@ -601,51 +552,42 @@ checkSupplierLocation(supplier, partyLocation) {
     const supplierPostcode = normalizePostcode(supplier.location);
     const partyPostcode = normalizePostcode(partyLocation);
     
-    // ✅ CHECK FOR EXACT POSTCODE MATCH FIRST
+    // Check for exact postcode match first
     if (supplierPostcode === partyPostcode) {
-      console.log(`🎯 EXACT MATCH: ${supplier.name} at ${supplier.location} matches party at ${partyLocation}`);
       return {
         canServe: true,
         reason: 'exact-postcode-match',
-        confidence: 'exact' // ← Changed from 'high' to 'exact'
+        confidence: 'exact'
       };
     }
-    
-    // ✅ CHECK FOR SAME DISTRICT (e.g., W4 4BZ and W4 5XX)
+
+    // Check for same district (e.g., W4 4BZ and W4 5XX)
     const supplierDistrict = LocationService.getPostcodeDistrict(supplier.location);
     const partyDistrict = LocationService.getPostcodeDistrict(partyLocation);
-    
+
     if (supplierDistrict && partyDistrict && supplierDistrict === partyDistrict) {
-      console.log(`📍 SAME DISTRICT: ${supplier.name} at ${supplierDistrict} matches party district`);
       return {
         canServe: true,
         reason: 'same-district',
         confidence: 'high'
       };
     }
-    
-    // ✅ CHECK FOR SAME AREA (e.g., W4 and W3 - both West London)
+
+    // Check for same area (e.g., W4 and W3 - both West London)
     const supplierArea = LocationService.getPostcodeArea(supplier.location);
     const partyArea = LocationService.getPostcodeArea(partyLocation);
-    
+
     if (supplierArea && partyArea && supplierArea === partyArea) {
-      console.log(`📍 SAME AREA: ${supplier.name} at ${supplierArea} matches party area (${partyArea})`);
       return {
         canServe: true,
         reason: 'same-area',
-        confidence: 'high' // Changed from medium to high for same area
+        confidence: 'high'
       };
     }
-    
+
     // Use LocationService for other checks (adjacent areas, etc.)
     const serviceRadius = LocationService.getServiceRadiusForSupplier(supplier);
     const canServe = LocationService.arePostcodesNearby(supplier.location, partyLocation, serviceRadius);
-    
-    if (canServe) {
-      console.log(`📍 NEARBY: ${supplier.name} can serve ${partyLocation}`);
-    } else {
-      console.log(`❌ TOO FAR: ${supplier.name} at ${supplier.location} too far from ${partyLocation}`);
-    }
     
     return {
       canServe,
@@ -729,21 +671,19 @@ checkSupplierLocation(supplier, partyLocation) {
       if (entertainmentResult.supplier) {
         selected.entertainment = entertainmentResult.supplier;
         remainingBudget -= entertainmentResult.supplier.enhancedPrice;
-        console.log(`Entertainment selected: ${entertainmentResult.supplier.name} (Enhanced price: £${entertainmentResult.supplier.enhancedPrice})`);
       }
     }
-    
+
     // Fallback to general entertainment if no themed entertainment selected
     if (!selected.entertainment) {
       const generalEntertainment = suppliers.filter(s => s.category === 'Entertainment');
       const entertainmentResult = this.selectBestSupplier(
         generalEntertainment, 'entertainment', theme, timeSlot, duration, date, location, entertainmentBudget, partyDetails
       );
-      
+
       if (entertainmentResult.supplier) {
         selected.entertainment = entertainmentResult.supplier;
         remainingBudget -= entertainmentResult.supplier.enhancedPrice;
-        console.log(`General entertainment selected: ${entertainmentResult.supplier.name} (Enhanced price: £${entertainmentResult.supplier.enhancedPrice})`);
       }
     }
     
@@ -776,16 +716,12 @@ checkSupplierLocation(supplier, partyLocation) {
         if (result.supplier) {
           selected[category] = result.supplier;
           remainingBudget -= result.supplier.enhancedPrice;
-          console.log(`${category} selected: ${result.supplier.name} (Enhanced price: £${result.supplier.enhancedPrice})`);
         }
       }
     }
-    
+
     // Summary (excluding venue since it's handled separately)
     const totalCost = Object.values(selected).reduce((sum, supplier) => sum + (supplier.enhancedPrice || supplier.priceFrom || 0), 0);
-    const budgetUsed = Math.round((totalCost / budget) * 100);
-    
-    console.log(`Supplier selection complete. Total cost (excluding venue): £${totalCost} (${budgetUsed}% of £${budget} budget)`);
     
     return selected;
   }
@@ -819,12 +755,8 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
     addons: []
   };
 
-  // ========================================
-  // NEW: Store venue carousel options
-  // ========================================
+  // Store venue carousel options
   if (selectedSuppliers.venueCarouselOptions && selectedSuppliers.venueCarouselOptions.length > 0) {
-    console.log(`💾 Storing ${selectedSuppliers.venueCarouselOptions.length} venue options for carousel`);
-    
     partyPlan.venueCarouselOptions = selectedSuppliers.venueCarouselOptions.map(venue => ({
       id: venue.id,
       name: venue.name,
@@ -860,7 +792,6 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
       canServeLocation: venue.canServeLocation
     }));
     
-    console.log('✅ Venue carousel options stored:', partyPlan.venueCarouselOptions.map(v => v.name).join(', '));
   }
 
   // Process all other suppliers (including main venue)
@@ -869,33 +800,14 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
     if (category === 'venueCarouselOptions') return;
 
     if (supplier && partyPlan.hasOwnProperty(category)) {
-      console.log(`🔍 Converting ${supplier.name} to party plan:`, {
-        originalPrice: supplier.originalPrice,
-        enhancedPrice: supplier.enhancedPrice,
-        hasWeekendPremium: !!supplier.weekendPremium,
-        weekendPremiumConfig: supplier.weekendPremium
-      });
-
       // Special handling for party bags - ensure quantity and metadata are preserved
       const isPartyBags = supplier.category === 'Party Bags' ||
                          supplier.category?.toLowerCase().includes('party bag');
 
-      // ✅ FIX: Calculate the correct price for party bags
+      // Calculate the correct price for party bags
       const priceToStore = isPartyBags
         ? (supplier.partyBagsMetadata?.totalPrice || supplier.enhancedPrice || supplier.priceFrom || 0)
         : (supplier.enhancedPrice || supplier.priceFrom || 0);
-
-      if (isPartyBags) {
-        console.log('🎁 [PartyBuilder] Storing Party Bags with price:', {
-          name: supplier.name,
-          metadataTotalPrice: supplier.partyBagsMetadata?.totalPrice,
-          enhancedPrice: supplier.enhancedPrice,
-          priceFrom: supplier.priceFrom,
-          finalPriceToStore: priceToStore,
-          quantity: supplier.partyBagsQuantity,
-          pricePerBag: supplier.partyBagsMetadata?.pricePerBag
-        });
-      }
 
       partyPlan[category] = {
         id: supplier.id,
@@ -937,14 +849,6 @@ convertSuppliersToPartyPlan(selectedSuppliers) {
         },
         isFallbackSelection: supplier.isFallbackSelection || false
       };
-
-      console.log(`✅ Stored ${supplier.name}:`, {
-        isPartyBags,
-        price: partyPlan[category].price,
-        partyBagsMetadata: isPartyBags ? partyPlan[category].partyBagsMetadata : undefined,
-        storedWeekendPremium: partyPlan[category].weekendPremium,
-        originalSupplierWeekendPremium: partyPlan[category].originalSupplier.weekendPremium
-      });
     }
   });
   
@@ -1001,13 +905,6 @@ async buildParty(partyDetails) {
       processedLastName = nameParts.slice(1).join(' ') || "Child";
     }
 
-    console.log(`Building party for ${processedChildName || `${processedFirstName} ${processedLastName}`} - Budget: £${finalBudget}, Theme: ${theme}, Date: ${date}`);
-
-    // NEW: Log venue preference
-    if (hasOwnVenue) {
-      console.log('🏠 User has their own venue - skipping venue selection');
-    }
-
     // Create enhanced party details for pricing
     const enhancedPartyDetails = {
       ...partyDetails,
@@ -1027,10 +924,7 @@ async buildParty(partyDetails) {
     const allSuppliers = await suppliersAPI.getAllSuppliers();
     const themedEntertainment = await suppliersAPI.getEntertainmentByTheme(theme);
     
-    // ========================================
-    // MODIFIED: Always get venue options, but only set main venue if needed
-    // ========================================
-    console.log('🎪 Getting venue carousel options...');
+    // Always get venue options, but only set main venue if needed
     const venueCarouselResult = this.selectMultipleVenuesForCarousel(
       allSuppliers,
       theme,
@@ -1042,10 +936,6 @@ async buildParty(partyDetails) {
       enhancedPartyDetails,
       5 // Get 5 venues for carousel
     );
-    
-    if (hasOwnVenue) {
-      console.log('⏭️  User has own venue - venues available but not selected');
-    }
 
     // Select other suppliers (entertainment, cakes, etc.)
     const selectedSuppliers = this.selectSuppliersForParty({
@@ -1062,26 +952,16 @@ async buildParty(partyDetails) {
       hasOwnVenue // NEW: Pass this flag
     });
 
-    // ========================================
-    // ALWAYS set venue carousel options - CRITICAL FIX
+    // Always set venue carousel options
     // Even if user has own venue, they can browse later
-    // ========================================
     if (!hasOwnVenue && venueCarouselResult.mainVenue) {
       selectedSuppliers.venue = venueCarouselResult.mainVenue;
-      console.log(`✅ Main venue selected: ${venueCarouselResult.mainVenue.name}`);
     } else if (hasOwnVenue) {
       selectedSuppliers.venue = null; // Explicitly set to null
-      console.log('✅ No venue selected - user has own venue (venues available in carousel)');
     }
-    
-    // ✅ CRITICAL: ALWAYS store venue options - this is the key line
+
+    // Always store venue options
     selectedSuppliers.venueCarouselOptions = venueCarouselResult.venues || [];
-    console.log(`✅ Saved ${(venueCarouselResult.venues || []).length} venue options to carousel`);
-    
-    if (hasOwnVenue && venueCarouselResult.venues && venueCarouselResult.venues.length > 0) {
-      console.log('💡 User can browse and select venues from carousel on dashboard');
-      console.log('💡 Venue options available:', venueCarouselResult.venues.map(v => v.name).join(', '));
-    }
 
     // Create party plan with venue carousel options
     const partyPlan = this.convertSuppliersToPartyPlan(selectedSuppliers);
@@ -1092,9 +972,7 @@ async buildParty(partyDetails) {
 
     const totalCost = this.calculateTotalCost(partyPlan);
 
-    console.log(`Party built successfully! Total cost: £${totalCost} (Budget: £${finalBudget})`);
-    
-    // NEW: Include venue info in response
+    // Include venue info in response
     const venueInfo = hasOwnVenue 
       ? 'User has own venue' 
       : (venueCarouselResult.mainVenue ? venueCarouselResult.mainVenue.name : 'No venue selected');
@@ -1199,8 +1077,8 @@ async buildParty(partyDetails) {
           specialRequirements: party.special_requirements
         };
       }
-    } catch (error) {
-      console.log('No database party found, checking localStorage...');
+    } catch {
+      // No database party found, fall through to localStorage
     }
 
     try {

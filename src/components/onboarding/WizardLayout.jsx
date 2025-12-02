@@ -12,9 +12,11 @@ export default function WizardLayout({
   totalSteps,
   onBack,
   onNext,
+  onSkip,
   onSaveExit,
   nextDisabled = false,
   showBack = true,
+  showSkip = false,
   nextLabel = "Next"
 }) {
   const router = useRouter()
@@ -88,13 +90,24 @@ export default function WizardLayout({
             <div />
           )}
 
-          <Button
-            className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-8 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={onNext}
-            disabled={nextDisabled}
-          >
-            {nextLabel}
-          </Button>
+          <div className="flex items-center gap-3">
+            {showSkip && (
+              <Button
+                variant="ghost"
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg px-4 py-3 font-medium"
+                onClick={onSkip}
+              >
+                Skip
+              </Button>
+            )}
+            <Button
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-8 py-3 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={onNext}
+              disabled={nextDisabled}
+            >
+              {nextLabel}
+            </Button>
+          </div>
         </div>
       </footer>
     </div>

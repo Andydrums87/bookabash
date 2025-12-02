@@ -135,9 +135,11 @@ export function useAllSupplierEnquiries(refreshKey = 0) {
           } : null,
           // Business context from suppliers table data.name
           businessName,
-          businessType, 
+          businessType,
           businessTheme,
-          isPrimaryBusiness: supplier?.is_primary || false
+          isPrimaryBusiness: supplier?.is_primary || false,
+          // Full supplier data for contact info (email, phone)
+          supplier: supplierData
         }
       })
 

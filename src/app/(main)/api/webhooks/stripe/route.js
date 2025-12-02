@@ -24,10 +24,11 @@ async function getSupplierContactDetails(supplierId) {
       return null
     }
 
-    // Extract email and name from suppliers.data JSONB field
+    // Extract email, phone and name from suppliers.data JSONB field
     const supplierData = data.data || {}
     return {
       email: supplierData.owner?.email || supplierData.email,
+      phone: supplierData.owner?.phone || supplierData.phone,
       name: supplierData.owner?.name || supplierData.name
     }
   } catch (error) {
@@ -226,6 +227,40 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         console.warn(`Failed to send email to ${supplierDetails.name}: ${emailResponse.status} ${errorText}`)
       } else {
         console.log(`✅ Email sent to ${supplierDetails.name}`)
+      }
+
+      // Also send SMS to supplier if they have a phone number
+      if (supplierDetails.phone) {
+        try {
+          const smsUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/send-sms-notification`
+          const smsPayload = {
+            phoneNumber: supplierDetails.phone,
+            supplierName: supplierDetails.name || 'Supplier',
+            customerName: user ? `${user.first_name} ${user.last_name}`.trim() : 'Customer',
+            childName: party.child_name,
+            theme: party.theme,
+            partyDate: party.party_date,
+            depositAmount: enquiry.quoted_price || 0,
+            supplierEarning: supplierEarning,
+            dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`
+          }
+
+          console.log(`📱 Sending SMS to ${supplierDetails.name} at ${supplierDetails.phone}`)
+          const smsResponse = await fetch(smsUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(smsPayload)
+          })
+
+          if (!smsResponse.ok) {
+            const smsError = await smsResponse.text()
+            console.warn(`Failed to send SMS to ${supplierDetails.name}: ${smsResponse.status} ${smsError}`)
+          } else {
+            console.log(`✅ SMS sent to ${supplierDetails.name}`)
+          }
+        } catch (smsError) {
+          console.warn(`Error sending SMS for enquiry ${enquiry.id}:`, smsError.message)
+        }
       }
     } catch (emailError) {
       console.warn(`Error sending email for enquiry ${enquiry.id}:`, emailError.message)
