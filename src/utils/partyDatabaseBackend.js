@@ -126,7 +126,13 @@ class PartyDatabaseBackend {
   async getCurrentUser() {
     try {
       const { data: authUser, error: authError } = await supabase.auth.getUser()
-      if (authError) throw authError
+      // Auth session missing is expected when user isn't logged in - not an error
+      if (authError) {
+        if (authError.name === 'AuthSessionMissingError') {
+          return { success: false, error: 'No authenticated user' }
+        }
+        throw authError
+      }
       
       const userId = authUser?.user?.id
       if (!userId) return { success: false, error: 'No authenticated user' }

@@ -400,19 +400,10 @@ export default function MobileSupplierNavigation({
       }
     }
 
-    // Handle remove supplier
+    // Handle remove supplier - opens confirmation dialog
     const handleRemoveSupplier = (type) => {
       if (handleDeleteSupplier) {
-        // Get supplier name before removing
-        const supplierName = suppliers[type]?.name || type
-
         handleDeleteSupplier(type)
-
-        // Show toast notification
-        toast({
-          title: "Supplier removed",
-          description: `${supplierName} has been removed from your party plan`,
-        })
       }
     }
 

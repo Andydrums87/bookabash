@@ -61,6 +61,8 @@ export default function Hero({ handleSearch, hasAttemptedSubmit, formData, postc
                     src="https://res.cloudinary.com/dghzq6xtd/image/upload/v1752828017/iStock-1149320278_srn8ti-removebg-preview_njfbhn.png"
                     alt="People celebrating at a party"
                     fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    priority
                     className="object-cover rounded-2xl"
                   />
                 </div>

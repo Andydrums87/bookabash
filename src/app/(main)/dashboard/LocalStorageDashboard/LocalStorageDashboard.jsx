@@ -6,14 +6,11 @@ import Link from "next/link"
 import Image from "next/image"
 import confetti from "canvas-confetti"
 import { useToast } from '@/components/ui/toast'
-
 // UI Components
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-
 // Icons
 import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building } from "lucide-react"
-
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
@@ -22,17 +19,13 @@ import CountdownWidget from "../components/ui/CountdownWidget"
 import PartyExcitementMeter from "../components/ui/PartyExcitementMeter"
 import DeleteConfirmDialog from "../components/Dialogs/DeleteConfirmDialog"
 import GoogleOneTap from "@/components/GoogleOneTap"
-
 // Supplier Components
 import SupplierCard from "../components/SupplierCard/SupplierCard"
 import MobileSupplierNavigation from "../components/MobileSupplierNavigation"
-
-
 // Addon Components
 import AddonsSection from "../components/AddonsSection"
 import { AddonProvider, RecommendedAddonsWrapper, AddonsSectionWrapper } from '../components/AddonProviderWrapper'
 import AddonDetailsModal from "@/components/AddonDetailsModal"
-
 // Other Components
 import BudgetControls from "@/components/budget-controls"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
@@ -44,14 +37,12 @@ import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDas
 // import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
 import PartySummarySection from "../components/PartySummarySection"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
-
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import { usePartyDetails } from '../hooks/usePartyDetails'
 import { useSupplierManager } from '../hooks/useSupplierManager'
 import { useBudgetManager } from '../hooks/useBudgetManager'
 import { usePartyPlan } from '@/utils/partyPlanBackend'
-
 import useDisableScroll from "@/hooks/useDisableScroll"
 import  SnappyLoader  from "@/components/ui/SnappyLoader"
 
@@ -237,11 +228,11 @@ const childPhotoRef = useRef(null)
   // ✅ PRODUCTION SAFE: Welcome popup detection with one-time-only logic
   useEffect(() => {
     if (!isMounted || !isClient) {
-      console.log('⏸️ Dashboard: Waiting for client-side mount...')
+
       return
     }
 
-    console.log('🔍 Dashboard: Starting welcome popup detection...')
+
 
     try {
       // Check URL parameters
@@ -249,7 +240,7 @@ const childPhotoRef = useRef(null)
       const sourceFromURL = searchParams.get("source")
       const timestampFromURL = searchParams.get("t")
 
-      console.log('📊 URL Check:', { showWelcomeFromURL, sourceFromURL, timestampFromURL })
+
 
       // Check localStorage with error handling
       let welcomeTrigger = null
@@ -326,7 +317,7 @@ const childPhotoRef = useRef(null)
 
 
       if (shouldShowWelcome) {
-        console.log('🎉 SHOWING WELCOME POPUP!')
+
 
         // ✅ NEW: Show popup immediately without delay to prevent flashing
         setShowWelcomePopup(true)
@@ -356,12 +347,12 @@ const childPhotoRef = useRef(null)
           localStorage.removeItem('show_welcome_popup')
           localStorage.removeItem('party_just_created')
           localStorage.removeItem('redirect_welcome')
-          console.log('🧹 Cleaned up welcome triggers')
+  
         } catch (cleanupError) {
           console.warn('⚠️ Cleanup error:', cleanupError)
         }
       } else {
-        console.log('❌ NOT showing welcome popup', welcomeCompleted ? '(already completed)' : '')
+      
         // ✅ NEW: Done checking, allow dashboard to render
         setIsCheckingWelcome(false)
       }
@@ -443,13 +434,12 @@ useEffect(() => {
 
       // Handle welcome popup scenario
       if (showWelcomePopup) {
-        console.log('⏸️ Welcome popup is showing, scroll will be handled after close')
+
         return
       }
 
       if (scrollToSupplier && lastAction === 'supplier-added') {
-        console.log(`🎯 Supplier added - handling navigation to: ${scrollToSupplier}`)
-        
+
         // ✅ MOBILE: Switch to the correct tab
         setActiveMobileSupplierType(scrollToSupplier)
         
@@ -610,7 +600,7 @@ useEffect(() => {
         const allSuppliers = await suppliersAPI.getAllSuppliers()
 
         const partyTheme = partyDetails?.theme || 'no-theme'
-        console.log('🎨 Loading recommendations for theme:', partyTheme)
+
 
         const categoryMap = {
           venue: 'Venues',
@@ -670,7 +660,7 @@ useEffect(() => {
                 const bestMatch = sortedByTheme[0].supplier
                 newRecommendations[categoryKey] = bestMatch
 
-                console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
+        
               } else if (allUnavailable) {
                 // ✅ Mark category as having no available suppliers
                 newRecommendations[categoryKey] = {
@@ -682,8 +672,6 @@ useEffect(() => {
                 console.log(`⚠️ ${categoryKey}: No available suppliers for party date`)
               }
             }
-          } else {
-            console.log(`⏭️ Skipping ${categoryKey} - already has supplier`)
           }
         })
 
@@ -1206,8 +1194,11 @@ const handleNameSubmit = (nameData) => {
 
 
   const enhancedTotalCost = useMemo(() => {
+    // Early return if partyDetails not loaded yet - avoids console warnings
+    if (!partyDetails) return 0;
+
     let total = 0;
-  
+
     // Calculate each supplier's cost using ALWAYS FRESH pricing
     Object.entries(suppliers).forEach(([type, supplier]) => {
       if (!supplier) return;
@@ -1556,7 +1547,6 @@ const handleCustomizationComplete = async (customizationData) => {
         return
       }
 
-      console.log('✅ Package updated successfully')
     }
 
     // Add any new addons that were selected
@@ -1570,9 +1560,6 @@ const handleCustomizationComplete = async (customizationData) => {
       console.log('✅ Addons added successfully')
     }
 
-    // ✅ CRITICAL: Refresh the party plan to update the UI
-    // The event emitter in savePartyPlan should trigger the update automatically
-    // But we'll force a refetch to be safe
     await new Promise(resolve => setTimeout(resolve, 200))
 
 

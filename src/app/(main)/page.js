@@ -55,7 +55,7 @@ export default function HomePage() {
 
   // IMPORTANT: This function handles all field changes
   const handleFieldChange = (field, value) => {
-    console.log('🔧 Field change:', field, '=', value); // Debug log
+    
     
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
@@ -68,7 +68,7 @@ export default function HomePage() {
         updated.time = timeSlotDefaults[value] || '14:00';
       }
       
-      console.log('📝 Updated formData:', updated); // Debug log
+
       return updated;
     });
   }
@@ -248,7 +248,7 @@ export default function HomePage() {
         }
       }
 
-      console.log('🎉 Building party with hasOwnVenue:', partyDetails.hasOwnVenue); // Debug
+  
 
       // ✅ Build party immediately without artificial delays
       const result = await buildParty(partyDetails)
@@ -305,7 +305,7 @@ export default function HomePage() {
         }
 
         const totalDuration = itemCount * 2500
-        console.log(`⏱️ Loader duration: ${itemCount} items × 2.5s = ${totalDuration}ms`)
+
         await new Promise((resolve) => setTimeout(resolve, totalDuration))
 
         try {

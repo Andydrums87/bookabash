@@ -84,21 +84,11 @@ const detectCategory = (supplier) => {
     supplier.serviceDetails.performanceSpecs
   );
 
-  console.log('🔍 ServiceDetailsRouter Debug:', {
-    supplierName: supplier?.name,
-    category: supplier?.category,
-    serviceType: supplier?.serviceType,
-    indicators,
-    hasEntertainmentStructure,
-    hasServiceDetails: !!supplier?.serviceDetails,
-    serviceDetailsKeys: supplier?.serviceDetails ? Object.keys(supplier.serviceDetails) : []
-  });
-
   // Venues
   if (indicators.some(i => 
     ['venue', 'venues', 'hall', 'function room', 'event space', 'party venue', 'community hall'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected as venues');
+
     return 'venues';
   }
 
@@ -106,7 +96,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['entertainment', 'entertainer', 'magician', 'clown', 'performer', 'character', 'princess', 'superhero'].some(k => i.includes(k))
   ) || hasEntertainmentStructure) {
-    console.log('✅ Detected as entertainment (by indicators or structure)');
+
     return 'entertainment';
   }
 
@@ -114,7 +104,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['catering', 'caterer', 'food', 'cake', 'baker', 'dessert', 'buffet'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected as catering');
+
     return 'catering';
   }
 
@@ -122,7 +112,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['face_painting', 'face painting', 'face painter', 'body painting'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected as face_painting');
+
     return 'face_painting';
   }
 
@@ -130,7 +120,7 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['bouncy', 'inflatable', 'soft play', 'activities', 'equipment'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected as activities');
+
     return 'activities';
   }
 
@@ -138,23 +128,17 @@ const detectCategory = (supplier) => {
   if (indicators.some(i => 
     ['decoration', 'balloon', 'styling', 'party planning'].some(k => i.includes(k))
   )) {
-    console.log('✅ Detected as decorations');
+
     return 'decorations';
   }
 
-  console.log('⚠️ Defaulting to basic display');
+
   return 'basic';
 };
 
 const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) => {
   const serviceDetails = supplier?.serviceDetails;
 
-  console.log('🚀 ServiceDetailsDisplayRouter called:', {
-    hasServiceDetails: !!serviceDetails,
-    isPreview,
-    supplierName: supplier?.name,
-    serviceType: supplier?.serviceType
-  });
 
   if (!serviceDetails) {
     return (

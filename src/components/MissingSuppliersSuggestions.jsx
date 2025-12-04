@@ -34,7 +34,7 @@ export default function MissingSuppliersSuggestions({
   useEffect(() => {
     const currentPlanHash = JSON.stringify(partyPlan)
     if (lastPlanHash && lastPlanHash !== currentPlanHash) {
-      console.log('🔄 Party plan changed, updating missing suppliers')
+
       setClickedSuppliers(new Set())
 
       if (onPlanUpdate) {

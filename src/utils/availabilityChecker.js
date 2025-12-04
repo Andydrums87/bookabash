@@ -2,6 +2,58 @@
 // Utility functions for checking supplier availability
 
 /**
+ * Parse human-readable date formats like "26th December, 2025"
+ * @param {string} dateStr - Human-readable date string
+ * @returns {Date|null} - Parsed Date object or null if parsing fails
+ */
+function parseHumanReadableDate(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+
+  try {
+    // Remove ordinal suffixes (st, nd, rd, th) from day numbers
+    const cleanedStr = dateStr.replace(/(\d+)(st|nd|rd|th)/gi, '$1');
+
+    // Try parsing the cleaned string
+    const date = new Date(cleanedStr);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+
+    // Try alternative parsing: "26 December, 2025" or "December 26, 2025"
+    const months = {
+      january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+      july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+    };
+
+    // Match patterns like "26 December, 2025" or "26 December 2025"
+    const dayFirstMatch = cleanedStr.match(/(\d{1,2})\s+(\w+),?\s+(\d{4})/i);
+    if (dayFirstMatch) {
+      const day = parseInt(dayFirstMatch[1], 10);
+      const month = months[dayFirstMatch[2].toLowerCase()];
+      const year = parseInt(dayFirstMatch[3], 10);
+      if (month !== undefined && day >= 1 && day <= 31) {
+        return new Date(year, month, day);
+      }
+    }
+
+    // Match patterns like "December 26, 2025"
+    const monthFirstMatch = cleanedStr.match(/(\w+)\s+(\d{1,2}),?\s+(\d{4})/i);
+    if (monthFirstMatch) {
+      const month = months[monthFirstMatch[1].toLowerCase()];
+      const day = parseInt(monthFirstMatch[2], 10);
+      const year = parseInt(monthFirstMatch[3], 10);
+      if (month !== undefined && day >= 1 && day <= 31) {
+        return new Date(year, month, day);
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check if a supplier is available on a given date and time
  * @param {Object} supplier - Supplier object with availability data
  * @param {string|Date} partyDate - Party date (ISO string or Date object)
@@ -20,12 +72,23 @@ export function checkSupplierAvailability(supplier, partyDate, partyTime = null,
   }
 
   try {
-    const date = typeof partyDate === 'string' ? new Date(partyDate) : partyDate;
+    let date;
+    if (typeof partyDate === 'string') {
+      // Try standard Date parsing first
+      date = new Date(partyDate);
+
+      // If invalid, try parsing human-readable formats like "26th December, 2025"
+      if (isNaN(date.getTime())) {
+        date = parseHumanReadableDate(partyDate);
+      }
+    } else {
+      date = partyDate;
+    }
 
     // Check if date is valid
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid party date provided:', partyDate);
-      return { available: true, reason: null }; // Allow if date is invalid
+    if (!date || isNaN(date.getTime())) {
+      // Silently allow if date can't be parsed - don't spam console
+      return { available: true, reason: null };
     }
 
     const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD format

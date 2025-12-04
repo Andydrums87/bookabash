@@ -225,7 +225,7 @@ export default function SnappyChatReviewPage() {
   const loadPartyDataFromLocalStorage = async () => {
     try {
       const details = JSON.parse(localStorage.getItem("party_details") || "{}");
-      console.log('party_details from localStorage:', details);
+ 
       
       const formatDateForDisplay = (dateInput) => {
         if (!dateInput) return "TBD";
@@ -768,7 +768,7 @@ export default function SnappyChatReviewPage() {
         throw new Error("Passwords do not match");
       }
 
-      console.log("🔐 Starting customer sign-up from review-book...");
+
 
       const [firstName, ...lastNameParts] = formData.parentName.trim().split(" ");
       const lastName = lastNameParts.join(" ");
@@ -791,7 +791,7 @@ export default function SnappyChatReviewPage() {
       const authenticatedUser = authData.user;
       if (!authenticatedUser) throw new Error("No user created");
 
-      console.log("✅ New customer account created:", authenticatedUser.id);
+     
 
       // Create customer profile
       const userResult = await partyDatabaseBackend.createOrGetUser({
@@ -807,7 +807,7 @@ export default function SnappyChatReviewPage() {
         throw new Error("Failed to create customer profile");
       }
 
-      console.log("✅ Customer profile created:", userResult.user.id);
+
 
       // Set the user and proceed to next step
       setUser(authenticatedUser);
@@ -1272,7 +1272,7 @@ export default function SnappyChatReviewPage() {
                     {/* Signup Form */}
                     {currentStepData.showSignupForm && (
                       <div className="max-w-md mx-auto">
-                        <div className="space-y-4">
+                        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
                           {/* Social Login Options */}
                           <div className="space-y-3">
                             <Button
@@ -1522,7 +1522,7 @@ export default function SnappyChatReviewPage() {
                               )}
                             </p>
                           </div>
-                        </div>
+                        </form>
                       </div>
                     )}
                   </div>

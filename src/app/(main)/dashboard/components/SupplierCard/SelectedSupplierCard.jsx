@@ -52,20 +52,12 @@ export default function SelectedSupplierCard({
     if (!supplier?.id) return
 
     try {
-      console.log('🔍 [SelectedSupplierCard] Fetching full supplier data for:', supplier.name)
-      console.log('🔍 [SelectedSupplierCard] Current supplier prop:', supplier)
+  
 
       const { suppliersAPI } = await import('@/utils/mockBackend')
       const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
 
-      // ✅ CRITICAL FIX: Merge the stored customization data with fetched supplier
-      console.log('🔍 [SelectedSupplierCard] Supplier data BEFORE merge:', {
-        supplierPackageId: supplier.packageId,
-        supplierPackageData: supplier.packageData,
-        supplierPackageDataId: supplier.packageData?.id,
-        fullSupplierData: fullSupplier,
-        supplierKeys: Object.keys(supplier)
-      });
+ 
 
       const mergedSupplier = {
         ...fullSupplier,
@@ -78,16 +70,8 @@ export default function SelectedSupplierCard({
         pricePerBag: supplier.pricePerBag,
       }
 
-      console.log('📦 [SelectedSupplierCard] Merged supplier data AFTER merge:', {
-        name: mergedSupplier.name,
-        hasPackages: !!mergedSupplier.packages,
-        packageCount: mergedSupplier.packages?.length || 0,
-        mergedPackageId: mergedSupplier.packageId,
-        mergedPackageData: mergedSupplier.packageData,
-        mergedPackageDataId: mergedSupplier.packageData?.id,
-      })
 
-      console.log('📦 [SelectedSupplierCard] About to open modal with supplier:', mergedSupplier)
+
       setFullSupplierData(mergedSupplier)
       setShowCustomizationModal(true)
 
@@ -193,6 +177,7 @@ export default function SelectedSupplierCard({
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 50vw, 33vw"
+                    priority={type === 'venue'}
                   />
                 </div>
 
@@ -401,14 +386,13 @@ export default function SelectedSupplierCard({
           onClose={() => setShowCustomizationModal(false)}
           supplier={fullSupplierData || supplier}
           onAddToPlan={async (data) => {
-            console.log('🎨 Customization completed:', data)
 
             // Call the handler if provided
             if (onCustomizationComplete) {
-              console.log('✅ onCustomizationComplete handler exists, calling it...')
+       
               try {
                 await onCustomizationComplete(data)
-                console.log('✅ onCustomizationComplete completed successfully')
+            
               } catch (error) {
                 console.error('❌ Error in onCustomizationComplete:', error)
               }

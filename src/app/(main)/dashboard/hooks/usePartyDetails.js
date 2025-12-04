@@ -108,9 +108,9 @@ export function usePartyDetails(user = null, currentParty = null, cachedPartyDet
       details = getPartyDetailsFromDatabase(currentParty);
     } else if (user === null && currentParty === null) {
       // Confirmed no user/party - use localStorage
-      console.log("📦 Loading party details from localStorage (user:", !!user, "currentParty:", !!currentParty, ")");
+
       details = getPartyDetailsFromLocalStorage();
-      console.log("✅ localStorage details processed:", details);
+
     } else {
       // Still waiting for data
       return;

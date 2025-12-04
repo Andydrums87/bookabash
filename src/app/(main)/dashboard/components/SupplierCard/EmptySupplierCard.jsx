@@ -332,16 +332,16 @@ export default function EmptySupplierCard({
   const isUnavailable = !availabilityCheck.available || isUnavailableCategory
 
   // Debug logging
-  useEffect(() => {
-    console.log(`🔍 EmptySupplierCard [${type}]:`, {
-      hasSupplier: !!recommendedSupplier,
-      isUnavailableCategory,
-      isUnavailable,
-      availabilityCheck,
-      isCompact,
-      supplierData: recommendedSupplier
-    })
-  }, [recommendedSupplier, type, isUnavailableCategory, isUnavailable, availabilityCheck, isCompact])
+  // useEffect(() => {
+  //   console.log(`🔍 EmptySupplierCard [${type}]:`, {
+  //     hasSupplier: !!recommendedSupplier,
+  //     isUnavailableCategory,
+  //     isUnavailable,
+  //     availabilityCheck,
+  //     isCompact,
+  //     supplierData: recommendedSupplier
+  //   })
+  // }, [recommendedSupplier, type, isUnavailableCategory, isUnavailable, availabilityCheck, isCompact])
 
   // Compact skeleton (but not for unavailable categories - they should render)
   if (!isMounted) {

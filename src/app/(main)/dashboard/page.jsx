@@ -291,7 +291,7 @@ export default function DashboardPage() {
           error: userResult.error
         }
         
-        console.log('📊 Auth Result:', debug.authCheck)
+
         
         // ============================================
         // AUTHENTICATED USER PATH
@@ -342,14 +342,13 @@ export default function DashboardPage() {
             isLocalStorageNewer
           }
 
-          console.log('🔍 NEW PARTY CHECK:', debug.newPartyCheck)
-
+          
           // ✅ PRIORITY: If localStorage party is newer than DB party, show LocalStorageDashboard
           if (isLocalStorageNewer && localStorageCheck.hasValidData) {
             debug.steps.push('🎉 LocalStorage party is NEWER → LOCALSTORAGE DASHBOARD (will be saved as new party)')
             debug.finalDecision = 'localStorage'
 
-            console.log('✅✅✅ SHOWING LOCALSTORAGE DASHBOARD FOR NEW PARTY')
+      
 
             setDebugInfo(debug)
             setUserType('localStorage')
@@ -392,7 +391,7 @@ export default function DashboardPage() {
               // ❌ Authenticated + No DB Party + No localStorage = WELCOME
               debug.steps.push('❌ No localStorage either → WELCOME SCREEN')
               debug.finalDecision = 'welcome'
-              console.log('⚠️⚠️⚠️ DECISION: WELCOME (auth but no data anywhere)')
+          
 
               setDebugInfo(debug)
               setUserType('welcome')
@@ -406,21 +405,21 @@ export default function DashboardPage() {
         // UNAUTHENTICATED USER PATH
         // ============================================
         debug.steps.push('❌ User NOT authenticated')
-        console.log('❌ User NOT authenticated')
+      
         
         // STEP 3: Check localStorage ONLY for unauthenticated users
         debug.steps.push('🔍 STEP 3: Checking localStorage...')
-        console.log('🔍 STEP 3: Checking localStorage...')
+      
         
         const localStorageCheck = checkLocalStorage()
         debug.localStorageCheck = localStorageCheck
-        console.log('📊 LocalStorage Check:', localStorageCheck)
+
         
         if (localStorageCheck.hasValidData) {
           // ✅ Unauthenticated + Has localStorage = LOCALSTORAGE DASHBOARD
           debug.steps.push('✅ Valid localStorage found → LOCALSTORAGE DASHBOARD')
           debug.finalDecision = 'localStorage'
-          console.log('✅✅✅ DECISION: LOCALSTORAGE DASHBOARD')
+       
           
           setDebugInfo(debug)
           setUserType('localStorage')
@@ -430,7 +429,7 @@ export default function DashboardPage() {
           // ❌ No data anywhere = WELCOME
           debug.steps.push('❌ No valid data found → WELCOME SCREEN')
           debug.finalDecision = 'welcome'
-          console.log('⚠️⚠️⚠️ DECISION: WELCOME (no data)')
+
           
           setDebugInfo(debug)
           setUserType('welcome')
@@ -454,7 +453,7 @@ export default function DashboardPage() {
   }, [refreshKey])
 
   const handleRefresh = () => {
-    console.log('🔄 Manual refresh triggered')
+
     setIsLoading(true)
     setRefreshKey(prev => prev + 1)
   }
@@ -464,7 +463,7 @@ export default function DashboardPage() {
   // ============================================
   useEffect(() => {
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      console.log('🐛 DEBUG INFO:', debugInfo)
+   
       // Store in window for easy access in console
       window.__dashboardDebug = debugInfo
     }
@@ -523,14 +522,14 @@ function checkLocalStorage() {
       party_details: localStorage.getItem('party_details')
     }
     
-    console.log('🔍 LocalStorage Keys Found:', Object.keys(checks).filter(k => checks[k]))
+
     
     // Check user_party_plan (newest format)
     if (checks.user_party_plan) {
       try {
         const parsed = JSON.parse(checks.user_party_plan)
         if (parsed && typeof parsed === 'object') {
-          console.log('✅ Valid user_party_plan found')
+
           return { 
             hasValidData: true, 
             source: 'user_party_plan',

@@ -84,7 +84,7 @@ const setCachedPartyPlan = (data) => {
       data,
       timestamp: Date.now()
     }));
-    console.log('💾 Party plan cached');
+
   } catch (error) {
     console.error('Error caching party plan:', error);
   }
@@ -192,9 +192,9 @@ class PartyPlanBackend {
       // ✅ CRITICAL: Update the cache so refetch gets fresh data
       setCachedPartyPlan(cleanPlan);
 
-      console.log('📢 Emitting partyPlanUpdated event with updated plan');
+      
       eventEmitter.emit('partyPlanUpdated', cleanPlan);
-      console.log('✅ Event emitted successfully');
+    
       return true;
     } catch (error) {
       console.error('Error saving party plan:', error);
@@ -210,14 +210,7 @@ addSupplierToPlan(supplier, selectedPackage = null) {
   }
 
   try {
-    // DEBUG: Check what supplier data we're receiving
-    console.log('🔍 addSupplierToPlan called with:', {
-      supplierName: supplier.name,
-      supplierCategory: supplier.category,
-      hasWeekendPremium: !!supplier.weekendPremium,
-      weekendPremium: supplier.weekendPremium,
-      supplierKeys: Object.keys(supplier)
-    });
+
 
     // ✅ CHECK AVAILABILITY: Get party details and validate supplier availability
     let partyDate = null;
@@ -249,7 +242,7 @@ addSupplierToPlan(supplier, selectedPackage = null) {
         };
       }
 
-      console.log('✅ Supplier is available on', partyDate);
+    
     }
 
     const plan = this.getPartyPlan();
@@ -321,12 +314,7 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       partyBagsMetadata: partyBagsMetadata // Store party bags metadata
     };
 
-    // DEBUG: Check what we're about to save
-    console.log('🔍 About to save supplierData:', {
-      name: supplierData.name,
-      hasWeekendPremium: !!supplierData.weekendPremium,
-      weekendPremium: supplierData.weekendPremium
-    });
+
 
     plan[supplierType] = supplierData;
 
@@ -342,7 +330,7 @@ addSupplierToPlan(supplier, selectedPackage = null) {
       if (!venueExists) {
         // Add the full supplier object to carousel options
         plan.venueCarouselOptions.push(supplier);
-        console.log('✅ Added venue to carousel options:', supplier.name);
+
       }
     }
 
@@ -572,15 +560,7 @@ addAddonToPlan(addon) {
       const plan = this.getPartyPlan();
       let updated = false;
 
-      console.log('🔍 updateSupplierPackage called:', {
-        lookingFor: supplierId,
-        slotsWithSuppliers: Object.keys(plan).filter(key => plan[key] && plan[key].id).map(key => ({
-          slot: key,
-          id: plan[key].id,
-          name: plan[key].name,
-          matches: plan[key].id === supplierId
-        }))
-      });
+  
 
       // Check main supplier slots - INCLUDE ALL POSSIBLE SLOTS
       const mainSlots = [
@@ -599,11 +579,7 @@ addAddonToPlan(addon) {
 
       for (const slot of mainSlots) {
         if (plan[slot] && plan[slot].id === supplierId) {
-          console.log('📦 Updating supplier package for', slot, ':', {
-            oldPrice: plan[slot].price,
-            newPrice: newPackage.price,
-            packageId: newPackage.id
-          });
+        
 
           // Update the package info
           plan[slot].price = newPackage.price;
@@ -626,10 +602,7 @@ addAddonToPlan(addon) {
           if (newPackage.partyBagsQuantity !== undefined) {
             plan[slot].partyBagsQuantity = newPackage.partyBagsQuantity;
             plan[slot].pricePerBag = newPackage.pricePerBag;
-            console.log('🎒 Saved party bags quantity to supplier:', {
-              quantity: newPackage.partyBagsQuantity,
-              pricePerBag: newPackage.pricePerBag
-            });
+          
           }
 
           // ✅ CRITICAL: Save partyBagsMetadata for single source of truth pricing
@@ -641,9 +614,7 @@ addAddonToPlan(addon) {
             }
             plan[slot].packageData.partyBagsMetadata = newPackage.partyBagsMetadata;
             plan[slot].packageData.totalPrice = newPackage.partyBagsMetadata.totalPrice;
-            console.log('🎒 Saved party bags metadata to supplier:', {
-              metadata: newPackage.partyBagsMetadata
-            });
+          
           }
 
           // ✅ Save totalPrice if provided (for all suppliers, especially party bags)
@@ -659,13 +630,6 @@ addAddonToPlan(addon) {
           if (newPackage.description) {
             plan[slot].description = newPackage.description;
           }
-
-          console.log('✅ Supplier package updated:', {
-            slot,
-            newPrice: plan[slot].price,
-            hasPackageData: !!plan[slot].packageData,
-            hasCakeCustomization: !!plan[slot].packageData?.cakeCustomization
-          });
 
           updated = true;
           break;
@@ -685,9 +649,9 @@ addAddonToPlan(addon) {
       }
       
       if (updated) {
-        console.log('💾 Saving updated party plan to localStorage...');
+       
         this.savePartyPlan(plan);
-        console.log('✅ Party plan saved successfully');
+ 
         return { success: true, message: 'Package updated successfully' };
       } else {
         console.error('❌ Supplier not found - checked all slots');
@@ -878,7 +842,7 @@ export function usePartyPlan() {
     if (isClient) {
       // ✅ If we have cache, skip loading immediately
       if (hasCache) {
-        console.log('⚡ usePartyPlan: Using cached data');
+
         setLoading(false);
         // Still load fresh data in background
         setTimeout(loadPartyPlan, 100);
@@ -887,16 +851,12 @@ export function usePartyPlan() {
       }
       
       const unsubscribe = partyPlanBackend.onUpdate((updatedPlan) => {
-        console.log('📨 usePartyPlan: Received partyPlanUpdated event', {
-          hasVenue: !!updatedPlan.venue,
-          hasCakes: !!updatedPlan.cakes,
-          cakesPrice: updatedPlan.cakes?.price
-        });
+
         setPartyPlan(updatedPlan);
         setVenueCarouselOptions(updatedPlan.venueCarouselOptions || []);
         // ✅ Update cache when data changes
         setCachedPartyPlan(updatedPlan);
-        console.log('✅ usePartyPlan: State updated with new plan');
+
       });
 
       const handleStorageChange = (e) => {

@@ -202,7 +202,7 @@ export class LocationService {
       
       // For exact distance requirement (venues), stop here if not same area
       if (maxDistance === 'exact') {
-        console.log(`❌ Different areas: ${supplierArea} vs ${targetArea}, maxDistance=exact`);
+    
         return false;
       }
       

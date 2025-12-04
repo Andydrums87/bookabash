@@ -51,7 +51,7 @@ const MicroConfettiWrapper = ({
 
   useEffect(() => {
     return () => {
-      console.log('🧹 MicroConfetti unmounting')
+
       if (animationTimeout.current) {
         clearTimeout(animationTimeout.current)
       }

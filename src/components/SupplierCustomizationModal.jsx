@@ -203,18 +203,18 @@ export default function SupplierCustomizationModal({
   desktopHeight = "md:h-[90vh]", // Desktop height (default 90vh)
 }) {
   // ✅ DEBUG: Log when modal receives new supplier prop
-  useEffect(() => {
-    if (isOpen && supplier) {
-      console.log('🎯 [Modal] Received supplier prop:', {
-        name: supplier.name,
-        packageId: supplier.packageId,
-        packageData: supplier.packageData,
-        packageDataId: supplier.packageData?.id,
-        hasPackageData: !!supplier.packageData,
-        supplierKeys: Object.keys(supplier)
-      });
-    }
-  }, [isOpen, supplier]);
+  // useEffect(() => {
+  //   if (isOpen && supplier) {
+  //     console.log('🎯 [Modal] Received supplier prop:', {
+  //       name: supplier.name,
+  //       packageId: supplier.packageId,
+  //       packageData: supplier.packageData,
+  //       packageDataId: supplier.packageData?.id,
+  //       hasPackageData: !!supplier.packageData,
+  //       supplierKeys: Object.keys(supplier)
+  //     });
+  //   }
+  // }, [isOpen, supplier]);
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [showPendingModal, setShowPendingModal] = useState(false)
@@ -260,7 +260,7 @@ export default function SupplierCustomizationModal({
                                supplier?.partyBagsMetadata?.quantity;
 
       if (existingQuantity) {
-        console.log('🎒 Restoring party bags quantity:', existingQuantity);
+
         setPartyBagsQuantity(Number(existingQuantity));
       } else {
         // Default to guest count
@@ -308,7 +308,7 @@ export default function SupplierCustomizationModal({
   const effectivePartyDetails = useMemo(() => {
     // Priority 1: Use provided partyDetails prop
     if (partyDetails) {
-      console.log("🎭 Modal: Using provided party details:", partyDetails)
+
       return partyDetails
     }
 
@@ -322,7 +322,7 @@ export default function SupplierCustomizationModal({
       if (databasePartyData.date) date = databasePartyData.date
       if (databasePartyData.duration) duration = databasePartyData.duration
       if (databasePartyData.guestCount) guestCount = databasePartyData.guestCount
-      console.log("🎭 Modal: Using database party data for pricing")
+  
     }
 
     // Try to get from localStorage
@@ -339,7 +339,7 @@ export default function SupplierCustomizationModal({
           if (duration === 2 && parsed.startTime && parsed.endTime) {
             duration = getPartyDuration(parsed)
           }
-          console.log("🎭 Modal: Enhanced with localStorage party details")
+
         }
       } catch (error) {
         console.warn("Could not get party details from localStorage:", error)
@@ -353,7 +353,7 @@ export default function SupplierCustomizationModal({
       guestCount,
     }
 
-    console.log("🎭 Modal: Final party details for pricing:", finalDetails)
+
     return finalDetails
   }, [partyDetails, partyDate, selectedDate, userType, databasePartyData])
 
@@ -375,7 +375,7 @@ export default function SupplierCustomizationModal({
   const calculatePackageEnhancedPrice = useMemo(() => {
     return (packagePrice) => {
       if (!supplier || !effectivePartyDetails) {
-        console.log("🎭 Modal: No supplier or party details for pricing")
+   
         return packagePrice
       }
 
@@ -548,7 +548,7 @@ export default function SupplierCustomizationModal({
 
       if (existingCakeData) {
         // Restore previous customization
-        console.log('🎂 Restoring cake customization:', existingCakeData);
+      
         setSelectedFlavor(existingCakeData.flavor || availableFlavors[0].id);
         setCustomMessage(existingCakeData.customMessage || "");
         setShowCakeCustomization(true); // Show customization if it exists
@@ -562,7 +562,7 @@ export default function SupplierCustomizationModal({
 
     // Reset when modal closes
     if (!isOpen) {
-      console.log('🔄 Modal closed, resetting cake customization');
+
       setShowCakeCustomization(false);
       setCustomMessage("");
     }
@@ -574,36 +574,26 @@ export default function SupplierCustomizationModal({
       // Check if supplier already has a selected package
       const existingPackageId = supplier?.packageData?.id || supplier?.packageId;
 
-      console.log('🔍 Initializing package selection:', {
-        existingPackageId,
-        currentSelectedId: selectedPackageId,
-        availablePackages: packages.map(p => p.id),
-        // ✅ ADD: Debug what supplier actually has
-        supplierPackageId: supplier?.packageId,
-        supplierPackageDataId: supplier?.packageData?.id,
-        supplierPackageData: supplier?.packageData,
-        supplierKeys: supplier ? Object.keys(supplier) : [],
-        fullSupplier: supplier
-      });
+    
 
       if (existingPackageId) {
         // Verify the package still exists in the packages array
         const packageExists = packages.some(pkg => pkg.id === existingPackageId);
         if (packageExists) {
-          console.log('🎯 Restoring previously selected package:', existingPackageId);
+
           setSelectedPackageId(existingPackageId);
           return;
         }
       }
 
       // Default to first package if no existing selection
-      console.log('📦 Defaulting to first package:', packages[0].id);
+
       setSelectedPackageId(packages[0].id)
     }
 
     // Reset when modal closes
     if (!isOpen) {
-      console.log('🔄 Modal closed, resetting package selection');
+
       setSelectedPackageId(null);
     }
   }, [isOpen, packages, supplier])
@@ -616,7 +606,7 @@ export default function SupplierCustomizationModal({
 
       if (existingAddons.length > 0) {
         const existingAddonIds = existingAddons.map(addon => addon.id);
-        console.log('🎯 Restoring previously selected addons:', existingAddonIds);
+
         setSelectedAddons(existingAddonIds);
       } else {
         // Reset addons if no existing selection
@@ -626,7 +616,7 @@ export default function SupplierCustomizationModal({
 
     // Reset when modal closes
     if (!isOpen) {
-      console.log('🔄 Modal closed, resetting addon selection');
+
       setSelectedAddons([]);
     }
   }, [isOpen, supplier])
@@ -769,14 +759,7 @@ export default function SupplierCustomizationModal({
       autoEnquiry: false,
     }
 
-    console.log("🎭 Modal: Sending data with unified pricing:", {
-      packagePrice: finalPackage.price,
-      originalPrice: finalPackage.originalPrice,
-      totalPrice: dataToSend.totalPrice,
-      enhancedPricingApplied: calculateModalPricing.hasEnhancedPricing,
-      duration: effectivePartyDetails?.duration,
-      supplierType: supplierTypeDetection,
-    })
+   
 
     try {
       const result = onAddToPlan(dataToSend)

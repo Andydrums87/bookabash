@@ -36,7 +36,7 @@ export function useGeolocation() {
       })
 
       const { latitude, longitude } = position.coords
-      console.log('📍 Got coordinates:', { latitude, longitude })
+
 
       // Reverse geocode using free postcodes.io API
       // Add radius parameter to search within 1km
@@ -55,8 +55,8 @@ export function useGeolocation() {
         const closestResult = data.result[0]
         const postcode = closestResult.postcode
 
-        console.log('✅ Found postcode:', postcode)
-        console.log('📍 Location:', closestResult.admin_district, closestResult.region)
+       
+        
 
         setIsLoading(false)
         return {

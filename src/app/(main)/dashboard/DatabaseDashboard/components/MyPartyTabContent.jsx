@@ -85,9 +85,6 @@ export default function MyPartyTabContent({
     if (!supplier?.id) return
 
     try {
-      console.log('🔍 [MyPartyTab] Fetching supplier data for:', supplier.name)
-      console.log('🔍 [MyPartyTab] Current supplier prop:', supplier)
-
       const { suppliersAPI } = await import('@/utils/mockBackend')
       const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
 
@@ -102,13 +99,6 @@ export default function MyPartyTabContent({
         selectedAddons: supplier.selectedAddons,
         pricePerBag: supplier.pricePerBag,
       }
-
-      console.log('📦 [MyPartyTab] Merged supplier data:', {
-        name: mergedSupplier.name,
-        packageId: mergedSupplier.packageId,
-        packageDataId: mergedSupplier.packageData?.id,
-        hasPackageData: !!mergedSupplier.packageData,
-      })
 
       setSelectedSupplierForCustomize(mergedSupplier)
     } catch (error) {
@@ -384,17 +374,7 @@ export default function MyPartyTabContent({
     // ✅ DEBUG: Log party bags data
     const isPartyBags = supplier.category === 'Party Bags' || supplier.category?.toLowerCase().includes('party bag')
     if (isPartyBags) {
-      console.log('🎁 [MyPartyTab] Party Bags Supplier Data:', {
-        name: supplier.name,
-        price: supplier.price,
-        originalPrice: supplier.originalPrice,
-        priceFrom: supplier.priceFrom,
-        partyBagsQuantity: supplier.partyBagsQuantity,
-        partyBagsMetadata: supplier.partyBagsMetadata,
-        packageData: supplier.packageData,
-        partyDetailsGuestCount: partyDetails?.guestCount,
-        supplierKeys: Object.keys(supplier)
-      })
+
     }
 
     // ✅ USE: Unified pricing function if available
@@ -948,12 +928,7 @@ export default function MyPartyTabContent({
                         // ✅ FIX: For party bags, use supplier.price (total) not packageData.price (per bag)
                         if (isPartyBags) {
                           displayPrice = supplier.partyBagsMetadata?.totalPrice || supplier.price || supplier.packageData?.price || 0
-                          console.log('🎁 [Summary] NO PRICING FUNCTION - Fallback:', {
-                            usingTotalPrice: displayPrice,
-                            metadata: supplier.partyBagsMetadata?.totalPrice,
-                            supplierPrice: supplier.price,
-                            packagePrice: supplier.packageData?.price
-                          })
+                        
                         } else {
                           displayPrice = supplier.packageData?.price || supplier.price || 0
                         }
@@ -1083,8 +1058,7 @@ export default function MyPartyTabContent({
           isOpen={!!selectedSupplierForCustomize}
           onClose={() => setSelectedSupplierForCustomize(null)}
           onAddToPlan={async (data) => {
-            console.log('🎨 MyPartyTab: Customization completed:', data)
-
+          
             // Call the handler if provided
             if (onCustomizationComplete) {
               await onCustomizationComplete(data)
