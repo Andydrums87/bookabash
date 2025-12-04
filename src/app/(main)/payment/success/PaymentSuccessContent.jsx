@@ -29,27 +29,44 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const loadBookingDetails = async () => {
       try {
-        // ✅ NEW: Fetch party details from database using payment intent
+        // ✅ Fetch party details from database using payment intent
+        // Retry up to 10 times with 1 second delay to allow webhook to complete
         if (paymentIntentId) {
-          const response = await fetch(`/api/get-party-by-payment-intent?payment_intent_id=${paymentIntentId}`)
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success && data.party) {
-              setBookingDetails({
-                childName: data.party.child_name,
-                theme: data.party.theme,
-                date: data.party.party_date,
-                time: data.party.party_time,
-                location: data.party.location,
-                guestCount: data.party.guest_count,
-                email: data.party.email,
-                childAge: data.party.child_age
-              })
-              setLoading(false)
-              await markPaid()
-              return
+          const maxRetries = 10
+          const retryDelay = 1000 // 1 second
+
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`🔄 Attempt ${attempt}/${maxRetries} to fetch party by payment intent...`)
+
+            const response = await fetch(`/api/get-party-by-payment-intent?payment_intent_id=${paymentIntentId}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (data.success && data.party) {
+                console.log('✅ Party found!', data.party.child_name)
+                setBookingDetails({
+                  childName: data.party.child_name,
+                  theme: data.party.theme,
+                  date: data.party.party_date,
+                  time: data.party.party_time,
+                  location: data.party.location,
+                  guestCount: data.party.guest_count,
+                  email: data.party.email,
+                  childAge: data.party.child_age
+                })
+                setLoading(false)
+                await markPaid()
+                return
+              }
+            }
+
+            // If not found and we have more retries, wait and try again
+            if (attempt < maxRetries) {
+              console.log(`⏳ Party not found yet, waiting ${retryDelay}ms before retry...`)
+              await new Promise(resolve => setTimeout(resolve, retryDelay))
             }
           }
+
+          console.log('⚠️ Max retries reached, falling back to URL params')
         }
 
         // Fallback to URL params if payment intent lookup fails
