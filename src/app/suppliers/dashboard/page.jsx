@@ -605,6 +605,15 @@ export default function SupplierDashboard() {
     return filtered
   }, [allPendingEnquiries, enquirySearch, enquiryFilterBy, enquirySortBy])
 
+  // Helper to check if an order is completed (delivered or past party date)
+  const isOrderCompleted = (booking) => {
+    // Delivered orders are always completed
+    if (booking.order_status === 'delivered') return true
+    // Past party date is also completed
+    if (getEventDaysAway(booking) < 0) return true
+    return false
+  }
+
   // Filtered and sorted confirmed bookings
   const confirmedBookings = useMemo(() => {
     let filtered = allConfirmedBookings
@@ -614,19 +623,21 @@ export default function SupplierDashboard() {
 
     // Apply filter
     if (bookingFilterBy === 'upcoming') {
-      filtered = filtered.filter(b => getEventDaysAway(b) >= 0)
+      // Upcoming = not completed (not delivered AND party date in future)
+      filtered = filtered.filter(b => !isOrderCompleted(b))
     } else if (bookingFilterBy === 'this_week') {
       filtered = filtered.filter(b => {
         const days = getEventDaysAway(b)
-        return days >= 0 && days <= 7
+        return days >= 0 && days <= 7 && !isOrderCompleted(b)
       })
     } else if (bookingFilterBy === 'this_month') {
       filtered = filtered.filter(b => {
         const days = getEventDaysAway(b)
-        return days >= 0 && days <= 30
+        return days >= 0 && days <= 30 && !isOrderCompleted(b)
       })
     } else if (bookingFilterBy === 'past') {
-      filtered = filtered.filter(b => getEventDaysAway(b) < 0)
+      // Past = completed (delivered OR party date passed)
+      filtered = filtered.filter(b => isOrderCompleted(b))
     }
 
     // Apply sort
@@ -666,16 +677,19 @@ export default function SupplierDashboard() {
   }, [allPendingEnquiries])
 
   const bookingFilterCounts = useMemo(() => {
-    const upcoming = allConfirmedBookings.filter(b => getEventDaysAway(b) >= 0).length
+    // Helper inline since isOrderCompleted is outside useMemo
+    const checkCompleted = (b) => b.order_status === 'delivered' || getEventDaysAway(b) < 0
+
+    const upcoming = allConfirmedBookings.filter(b => !checkCompleted(b)).length
     const thisWeek = allConfirmedBookings.filter(b => {
       const days = getEventDaysAway(b)
-      return days >= 0 && days <= 7
+      return days >= 0 && days <= 7 && !checkCompleted(b)
     }).length
     const thisMonth = allConfirmedBookings.filter(b => {
       const days = getEventDaysAway(b)
-      return days >= 0 && days <= 30
+      return days >= 0 && days <= 30 && !checkCompleted(b)
     }).length
-    const past = allConfirmedBookings.filter(b => getEventDaysAway(b) < 0).length
+    const past = allConfirmedBookings.filter(b => checkCompleted(b)).length
     return { upcoming, thisWeek, thisMonth, past, all: allConfirmedBookings.length }
   }, [allConfirmedBookings])
 

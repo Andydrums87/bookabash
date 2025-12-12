@@ -13,8 +13,10 @@ export async function POST(req) {
       partyDate,
       cakeName,
       trackingUrl,
+      trackingNumber,
       courierName,
-      cakeCustomization
+      cakeCustomization,
+      cakeImage
     } = await req.json();
 
     if (!customerEmail || !customerEmail.includes('@')) {
@@ -29,8 +31,10 @@ export async function POST(req) {
         cakeName={cakeName || 'Your cake'}
         partyDate={partyDate}
         trackingUrl={trackingUrl}
+        trackingNumber={trackingNumber}
         courierName={courierName}
         cakeCustomization={cakeCustomization || {}}
+        cakeImage={cakeImage}
       />
     );
 

@@ -16,7 +16,7 @@ export function generateRSVPCode() {
 export function getRSVPUrl(code) {
   const baseUrl = typeof window !== 'undefined'
     ? window.location.origin
-    : 'https://bookabash.com'
+    : 'https://partysnap.co.uk'
 
   return `${baseUrl}/e-invites/${code}`
 }

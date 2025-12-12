@@ -707,10 +707,13 @@ async getEnquiryDetails(enquiryId) {
  * @param {string} enquiryId - The enquiry ID
  * @param {string} orderStatus - New status: 'confirmed', 'preparing', 'dispatched', 'delivered'
  * @param {string} trackingUrl - Optional tracking URL (for dispatched status)
+ * @param {string} courierCode - Optional courier code
+ * @param {string} courierName - Optional courier name
+ * @param {string} trackingNumber - Optional tracking number
  */
-async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode = null, courierName = null) {
+async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode = null, courierName = null, trackingNumber = null) {
   try {
-    console.log('📦 Updating order status:', { enquiryId, orderStatus, trackingUrl, courierCode, courierName })
+    console.log('📦 Updating order status:', { enquiryId, orderStatus, trackingUrl, courierCode, courierName, trackingNumber })
 
     const updateData = {
       order_status: orderStatus,
@@ -729,6 +732,9 @@ async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode 
       if (courierName) {
         updateData.courier_name = courierName
       }
+      if (trackingNumber) {
+        updateData.tracking_number = trackingNumber
+      }
     } else if (orderStatus === 'delivered') {
       updateData.delivered_at = new Date().toISOString()
     }
@@ -737,12 +743,70 @@ async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode 
       .from('enquiries')
       .update(updateData)
       .eq('id', enquiryId)
-      .select()
+      .select(`
+        *,
+        parties (
+          child_name,
+          party_date,
+          user_id,
+          users (
+            email,
+            first_name
+          )
+        ),
+        supplier:suppliers (
+          business_name,
+          data
+        )
+      `)
       .single()
 
     if (error) throw error
 
     console.log('✅ Order status updated:', updatedEnquiry)
+
+    // Send customer dispatch email if status is dispatched
+    if (orderStatus === 'dispatched') {
+      try {
+        const customer = updatedEnquiry.parties?.users
+        const party = updatedEnquiry.parties
+        const supplier = updatedEnquiry.supplier
+        const cakeCustomization = updatedEnquiry.addon_details?.cakeCustomization || {}
+
+        // Get cake image from supplier data
+        const supplierData = supplier?.data || {}
+        const cakeImage = supplierData.photos?.[0] || supplierData.coverImage || supplierData.image || null
+
+        if (customer?.email) {
+          console.log('📧 Sending dispatch email to:', customer.email)
+          const response = await fetch('/api/send-dispatch-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerEmail: customer.email,
+              customerName: customer.first_name || 'there',
+              childName: party?.child_name || 'your child',
+              partyDate: party?.party_date,
+              cakeName: supplier?.business_name || 'Your cake',
+              trackingUrl: trackingUrl || null,
+              trackingNumber: trackingNumber || null,
+              courierName: courierName || null,
+              cakeCustomization,
+              cakeImage
+            })
+          })
+
+          if (response.ok) {
+            console.log('✅ Dispatch email sent successfully')
+          } else {
+            console.warn('⚠️ Dispatch email failed:', await response.text())
+          }
+        }
+      } catch (emailError) {
+        console.warn('⚠️ Failed to send dispatch email:', emailError)
+        // Don't fail the status update if email fails
+      }
+    }
 
     return { success: true, enquiry: updatedEnquiry }
 

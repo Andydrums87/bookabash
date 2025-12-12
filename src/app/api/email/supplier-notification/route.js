@@ -6,7 +6,7 @@ const client = new ServerClient(process.env.POSTMARK_API_TOKEN);
 
 export async function POST(req) {
   try {
-    const { 
+    const {
       supplierEmail,
       supplierName,
       customerName,
@@ -22,7 +22,9 @@ export async function POST(req) {
       depositAmount,
       supplierEarning,
       paymentType, // 'deposit' or 'full_payment'
-      dashboardLink = 'http://localhost:3000/suppliers/dashboard'
+      dashboardLink = 'http://localhost:3000/suppliers/dashboard',
+      statusUpdateLink = null, // Quick status update link for cake orders
+      isCakeOrder = false // Whether this is a cake order
     } = await req.json();
 
     if (!supplierEmail || !supplierEmail.includes('@')) {
@@ -84,6 +86,8 @@ export async function POST(req) {
         supplierEarning={supplierEarning || '0'}
         paymentType={paymentType || 'deposit'}
         dashboardLink={dashboardLink}
+        statusUpdateLink={statusUpdateLink}
+        isCakeOrder={isCakeOrder}
       />
     );
 

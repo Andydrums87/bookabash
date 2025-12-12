@@ -73,16 +73,20 @@ export async function GET(request, { params }) {
     // Get party details (limited info for security)
     const { data: party, error: partyError } = await supabaseAdmin
       .from('parties')
-      .select('party_date, party_time, location, child_name')
+      .select('party_date, party_time, location, child_name, full_delivery_address, delivery_address_line_1, delivery_address_line_2, delivery_postcode, postcode')
       .eq('id', enquiry.party_id)
       .single()
 
-    // Get supplier name
+    // Get supplier name and data
     const { data: supplier, error: supplierError } = await supabaseAdmin
       .from('suppliers')
-      .select('business_name')
+      .select('business_name, data')
       .eq('id', enquiry.supplier_id)
       .single()
+
+    // Extract supplier name from data JSON or business_name field
+    const supplierData = supplier?.data || {}
+    const supplierName = supplierData.businessName || supplierData.name || supplier?.business_name || 'Cake Order'
 
     // Extract cake customization from addon_details
     const cakeCustomization = enquiry.addon_details?.cakeCustomization || {}
@@ -107,9 +111,13 @@ export async function GET(request, { params }) {
           date: party.party_date,
           time: party.party_time,
           location: party.location,
-          childName: party.child_name
+          childName: party.child_name,
+          fullAddress: party.full_delivery_address || null,
+          addressLine1: party.delivery_address_line_1 || null,
+          addressLine2: party.delivery_address_line_2 || null,
+          deliveryPostcode: party.delivery_postcode || party.postcode || null
         } : null,
-        supplierName: supplier?.business_name || 'Unknown'
+        supplierName: supplierName
       }
     })
 
@@ -127,7 +135,7 @@ export async function POST(request, { params }) {
   try {
     const { token } = await params
     const body = await request.json()
-    const { status, trackingUrl, courierCode, courierName } = body
+    const { status, trackingUrl, trackingNumber, courierCode, courierName } = body
 
     if (!token) {
       return NextResponse.json(
@@ -206,6 +214,9 @@ export async function POST(request, { params }) {
       if (trackingUrl) {
         updateData.tracking_url = trackingUrl
       }
+      if (trackingNumber) {
+        updateData.tracking_number = trackingNumber
+      }
       if (courierCode) {
         updateData.courier_code = courierCode
       }
@@ -221,7 +232,7 @@ export async function POST(request, { params }) {
       .from('enquiries')
       .update(updateData)
       .eq('id', enquiry.id)
-      .select('id, order_status, tracking_url, courier_code, courier_name, dispatched_at, delivered_at')
+      .select('id, order_status, tracking_url, tracking_number, courier_code, courier_name, dispatched_at, delivered_at')
       .single()
 
     if (updateError) {
@@ -254,15 +265,17 @@ export async function POST(request, { params }) {
           .eq('id', party?.user_id)
           .single()
 
-        // Get supplier/cake name
+        // Get supplier/cake name and image
         const { data: supplier } = await supabaseAdmin
           .from('suppliers')
-          .select('business_name')
+          .select('business_name, data')
           .eq('id', enquiry.supplier_id)
           .single()
 
-        // Extract cake customization
+        // Extract cake customization and image
         const cakeCustomization = enquiry.addon_details?.cakeCustomization || {}
+        const supplierData = supplier?.data || {}
+        const cakeImage = supplierData.photos?.[0] || supplierData.coverImage || supplierData.image || null
 
         if (customer?.email) {
           // Send customer dispatch email
@@ -277,8 +290,10 @@ export async function POST(request, { params }) {
               partyDate: party?.party_date,
               cakeName: supplier?.business_name || 'Your cake',
               trackingUrl: trackingUrl || null,
+              trackingNumber: trackingNumber || null,
               courierName: courierName || null,
-              cakeCustomization
+              cakeCustomization,
+              cakeImage
             })
           })
           console.log('✅ Customer dispatch email sent to:', customer.email)
@@ -295,6 +310,7 @@ export async function POST(request, { params }) {
         id: updatedEnquiry.id,
         status: updatedEnquiry.order_status,
         trackingUrl: updatedEnquiry.tracking_url,
+        trackingNumber: updatedEnquiry.tracking_number,
         courierCode: updatedEnquiry.courier_code,
         courierName: updatedEnquiry.courier_name,
         dispatchedAt: updatedEnquiry.dispatched_at,

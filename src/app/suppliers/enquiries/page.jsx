@@ -191,9 +191,14 @@ export default function SupplierEnquiriesPage() {
               </div>
 
               <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center space-x-2 text-sm">
-                  <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <span className="truncate">{party?.location}</span>
+                <div className="flex items-start space-x-2 text-sm">
+                  <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">
+                    {party?.full_delivery_address ||
+                     (party?.delivery_address_line_1
+                       ? `${party.delivery_address_line_1}, ${party.delivery_postcode || party.postcode}`
+                       : party?.location)}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm">
                   <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />

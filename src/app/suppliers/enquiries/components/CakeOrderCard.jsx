@@ -46,7 +46,7 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
     return `In ${daysUntilEvent} days`
   }
 
-  const handleStatusUpdate = async (newStatus, trackingUrl = null, courierCode = null, courierName = null) => {
+  const handleStatusUpdate = async (newStatus, trackingUrl = null, courierCode = null, courierName = null, trackingNumber = null) => {
     setIsUpdating(true)
     try {
       const result = await supplierEnquiryBackend.updateOrderStatus(
@@ -54,7 +54,8 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
         newStatus,
         trackingUrl,
         courierCode,
-        courierName
+        courierName,
+        trackingNumber
       )
 
       if (result.success) {
@@ -75,8 +76,8 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
     }
   }
 
-  const handleDispatchWithTracking = ({ trackingUrl, courier, courierLabel }) => {
-    handleStatusUpdate(ORDER_STATUS.DISPATCHED, trackingUrl, courier, courierLabel)
+  const handleDispatchWithTracking = ({ trackingUrl, trackingNumber, courier, courierLabel }) => {
+    handleStatusUpdate(ORDER_STATUS.DISPATCHED, trackingUrl, courier, courierLabel, trackingNumber)
     setShowTrackingModal(false)
   }
 

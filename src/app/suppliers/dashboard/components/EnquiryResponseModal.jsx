@@ -427,14 +427,24 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
                   <p className="font-medium text-gray-900">{party?.guest_count} children</p>
                 </div>
               </div>
-              {party?.location && (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+              {(party?.full_delivery_address || party?.delivery_address_line_1 || party?.location) && (
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-5 h-5 text-gray-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium text-gray-900 truncate">{party.location}</p>
+                    <p className="text-sm text-gray-500">Delivery Address</p>
+                    {party?.full_delivery_address ? (
+                      <p className="font-medium text-gray-900 whitespace-pre-line">{party.full_delivery_address}</p>
+                    ) : party?.delivery_address_line_1 ? (
+                      <div className="font-medium text-gray-900">
+                        <p>{party.delivery_address_line_1}</p>
+                        {party.delivery_address_line_2 && <p>{party.delivery_address_line_2}</p>}
+                        <p>{party.delivery_postcode || party.postcode}</p>
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">{party.location}</p>
+                    )}
                   </div>
                 </div>
               )}

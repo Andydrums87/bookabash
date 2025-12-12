@@ -217,7 +217,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
       // Check if this is a cake order for quick status update link
       const isCakeOrder = ['cakes', 'Cakes', 'cake', 'Cake'].includes(enquiry.supplier_category)
       const statusUpdateLink = isCakeOrder && enquiry.status_update_token
-        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/order-status/${enquiry.status_update_token}`
+        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/order-status/${enquiry.status_update_token}`
         : ''
 
       const emailPayload = {
@@ -235,7 +235,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         depositAmount: enquiry.quoted_price || 0,
         supplierEarning: supplierEarning,
         paymentType: paymentType,
-        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`,
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/suppliers/dashboard`,
         statusUpdateLink: statusUpdateLink,
         isCakeOrder: isCakeOrder
       }
@@ -269,7 +269,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
             partyDate: party.party_date,
             depositAmount: enquiry.quoted_price || 0,
             supplierEarning: supplierEarning,
-            dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`,
+            dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/suppliers/dashboard`,
             statusUpdateLink: statusUpdateLink,
             isCakeOrder: isCakeOrder
           }
@@ -334,7 +334,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         paymentMethod: 'Card',
         services: services,
         addons: addons,
-        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/dashboard`
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/dashboard`
       }
 
       const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/email/payment-confirmation`, {

@@ -137,9 +137,23 @@ export default function CakeOrderDetailModal({
                 <Clock className="w-4 h-4 text-gray-400" />
                 <span>{formatTime(party?.party_time)}</span>
               </div>
-              <div className="flex items-center gap-2 text-gray-600">
-                <MapPin className="w-4 h-4 text-gray-400" />
-                <span>{party?.location}</span>
+              <div className="flex items-start gap-2 text-gray-600">
+                <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                <div>
+                  {party?.full_delivery_address ? (
+                    <span className="whitespace-pre-line">{party.full_delivery_address}</span>
+                  ) : party?.delivery_address_line_1 ? (
+                    <>
+                      <span>{party.delivery_address_line_1}</span>
+                      {party.delivery_address_line_2 && (
+                        <span className="block">{party.delivery_address_line_2}</span>
+                      )}
+                      <span className="block">{party.delivery_postcode || party.postcode}</span>
+                    </>
+                  ) : (
+                    <span>{party?.location}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Users className="w-4 h-4 text-gray-400" />
