@@ -670,7 +670,7 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 const getAllSuppliers = async () => {
   try {
 
-    
+
     const { data, error } = await supabase
       .from('suppliers')
       .select(`
@@ -680,8 +680,14 @@ const getAllSuppliers = async () => {
         is_primary,
         business_slug,
         data,
-        created_at
+        created_at,
+        is_active,
+        profile_status,
+        can_go_live
       `)
+      .eq('is_active', true)
+      .eq('profile_status', 'live')
+      .eq('can_go_live', true)
       .order('created_at', { ascending: false })
     
     if (error) {

@@ -1144,6 +1144,61 @@ const getRecommendedSupplierForType = (categoryType) => {
   return recommendedSuppliers[categoryType] || null
 }
 
+// Helper function to auto-select cake package and defaults based on guest count
+const getAutoCakeDefaults = (supplier, guestCount) => {
+  const packages = supplier?.packages || supplier?.data?.packages || []
+  if (packages.length === 0) return null
+
+  // Find the best package that feeds at least the guest count
+  // Sort by serves/feeds to find the smallest one that fits
+  const sortedPackages = [...packages].sort((a, b) => {
+    const aServes = a.serves || a.feeds || 10
+    const bServes = b.serves || b.feeds || 10
+    return aServes - bServes
+  })
+
+  // Find first package that can feed the guest count (or largest if none fit)
+  let selectedPackage = sortedPackages.find(pkg => {
+    const serves = pkg.serves || pkg.feeds || 10
+    return serves >= guestCount
+  }) || sortedPackages[sortedPackages.length - 1] // Fallback to largest
+
+  // Get first available flavor
+  const flavours = supplier?.serviceDetails?.flavours || supplier?.flavours || []
+  const defaultFlavor = flavours.length > 0
+    ? flavours[0].toLowerCase().replace(/\s+/g, '-')
+    : 'vanilla'
+  const defaultFlavorName = flavours.length > 0 ? flavours[0] : 'Vanilla Sponge'
+
+  // Get delivery fee
+  const fulfilment = supplier?.serviceDetails?.fulfilment || {}
+  const deliveryFee = selectedPackage?.deliveryFee ?? fulfilment?.deliveryFee ?? 0
+
+  // Build package data with defaults
+  return {
+    ...selectedPackage,
+    id: selectedPackage.id || 'auto-selected',
+    price: selectedPackage.price,
+    totalPrice: selectedPackage.price + deliveryFee,
+    enhancedPrice: selectedPackage.price + deliveryFee,
+    cakeCustomization: {
+      size: selectedPackage.name,
+      servings: selectedPackage.serves || selectedPackage.feeds || null,
+      tiers: selectedPackage.tiers || 1,
+      flavor: defaultFlavor,
+      flavorName: defaultFlavorName,
+      dietaryOptions: [],
+      dietaryNames: [],
+      dietaryName: 'Standard',
+      customMessage: '',
+      fulfillmentMethod: 'delivery',
+      deliveryFee: deliveryFee,
+      basePrice: selectedPackage.price,
+      totalPrice: selectedPackage.price + deliveryFee,
+    }
+  }
+}
+
 // In DatabaseDashboard.jsx - REPLACE the handleAddRecommendedSupplier function
 
 const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNavigate = true) => {
@@ -1156,10 +1211,21 @@ const handleAddRecommendedSupplier = async (categoryType, supplier, shouldNaviga
     // Close any open modals first
     setShowSupplierModal(false)
 
+    // Auto-select cake defaults if it's a cake supplier without packageData
+    let packageData = supplier.packageData || null
+    const isCakeSupplier = categoryType === 'cakes' ||
+      supplier?.category?.toLowerCase().includes('cake')
+
+    if (isCakeSupplier && !packageData) {
+      const guestCount = partyDetails?.guestCount || 15
+      packageData = getAutoCakeDefaults(supplier, guestCount)
+      console.log('🎂 Auto-selected cake defaults:', { guestCount, packageData })
+    }
+
     // Prepare the supplier data for the confirmation modal
     const supplierData = {
       supplier: supplier,
-      package: supplier.packageData || null
+      package: packageData
     }
 
     // Show the confirmation modal (same as regular supplier selection)

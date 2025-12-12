@@ -83,28 +83,78 @@ class PartyBuilderBackend {
   }
 
   // Get cheapest package for supplier (budget-conscious)
-  getBasicPackageForSupplier(supplier, theme = 'no-theme') {
+  getBasicPackageForSupplier(supplier, theme = 'no-theme', partyDetails = null) {
     // Check if supplier already has packages
     if (supplier.packages && supplier.packages.length > 0) {
-      // Sort packages by price (cheapest first)
-      const sortedPackages = [...supplier.packages].sort((a, b) => {
-        const priceA = a.price || a.originalPrice || 0;
-        const priceB = b.price || b.originalPrice || 0;
-        return priceA - priceB;
-      });
-      
-      // Try to find cheapest theme-specific package first
-      const themePackages = sortedPackages.filter(pkg => 
-        pkg.theme === theme || pkg.themes?.includes(theme)
-      );
-      
-      if (themePackages.length > 0) {
-        return themePackages[0];
+      const isCakeSupplier = supplier.category === 'Cakes' ||
+        supplier.category?.toLowerCase().includes('cake');
+
+      let selectedPackage;
+
+      if (isCakeSupplier && partyDetails?.guestCount) {
+        // For cakes, select based on guest count (not cheapest)
+        const guestCount = partyDetails.guestCount || 15;
+        const sortedByServings = [...supplier.packages].sort((a, b) => {
+          const aServes = parseInt(a.serves) || parseInt(a.feeds) || 10;
+          const bServes = parseInt(b.serves) || parseInt(b.feeds) || 10;
+          return aServes - bServes;
+        });
+
+        selectedPackage = sortedByServings.find(pkg => {
+          const serves = parseInt(pkg.serves) || parseInt(pkg.feeds) || 10;
+          return serves >= guestCount;
+        }) || sortedByServings[sortedByServings.length - 1];
+      } else {
+        // Sort packages by price (cheapest first)
+        const sortedPackages = [...supplier.packages].sort((a, b) => {
+          const priceA = a.price || a.originalPrice || 0;
+          const priceB = b.price || b.originalPrice || 0;
+          return priceA - priceB;
+        });
+
+        // Try to find cheapest theme-specific package first
+        const themePackages = sortedPackages.filter(pkg =>
+          pkg.theme === theme || pkg.themes?.includes(theme)
+        );
+
+        selectedPackage = themePackages.length > 0 ? themePackages[0] : sortedPackages[0];
       }
 
-      // Otherwise use the cheapest package overall
-      const cheapestPackage = sortedPackages[0];
-      return cheapestPackage;
+      // For cake suppliers, add delivery fee and customization
+      if (isCakeSupplier) {
+        const fulfilment = supplier.serviceDetails?.fulfilment || {};
+        const deliveryFee = selectedPackage.deliveryFee ?? fulfilment.deliveryFee ?? 0;
+        const flavours = supplier.serviceDetails?.flavours || supplier.flavours || [];
+        const defaultFlavor = flavours.length > 0
+          ? flavours[0].toLowerCase().replace(/\s+/g, '-')
+          : 'vanilla';
+        const defaultFlavorName = flavours.length > 0 ? flavours[0] : 'Vanilla Sponge';
+
+        return {
+          ...selectedPackage,
+          price: selectedPackage.price,
+          totalPrice: selectedPackage.price + deliveryFee,
+          enhancedPrice: selectedPackage.price + deliveryFee,
+          deliveryFee: deliveryFee,
+          cakeCustomization: {
+            size: selectedPackage.name,
+            servings: selectedPackage.serves || selectedPackage.feeds || null,
+            tiers: selectedPackage.tiers || 1,
+            flavor: defaultFlavor,
+            flavorName: defaultFlavorName,
+            dietaryOptions: [],
+            dietaryNames: [],
+            dietaryName: 'Standard',
+            customMessage: '',
+            fulfillmentMethod: 'delivery',
+            deliveryFee: deliveryFee,
+            basePrice: selectedPackage.price,
+            totalPrice: selectedPackage.price + deliveryFee,
+          }
+        };
+      }
+
+      return selectedPackage;
     }
 
     // Create a basic package if none exists
@@ -194,8 +244,8 @@ class PartyBuilderBackend {
       const locationCheck = this.checkSupplierLocation(supplier, location);
       const themeScore = this.scoreSupplierWithTheme(supplier, theme, timeSlot, duration);
       
-      // ✅ NEW: Set up basic package for supplier
-      const basicPackage = this.getBasicPackageForSupplier(supplier, theme);
+      // ✅ NEW: Set up basic package for supplier (pass partyDetails for cakes)
+      const basicPackage = this.getBasicPackageForSupplier(supplier, theme, partyDetails);
       
       // ✅ NEW: Create enhanced supplier with package data
       const enhancedSupplier = {
@@ -225,28 +275,53 @@ class PartyBuilderBackend {
 
       // ✅ NEW: Calculate pricing using unified pricing system
       const pricingResult = calculateFinalPrice(enhancedSupplier, partyDetails, []);
-      
+
       // Add enhanced pricing to supplier
       enhancedSupplier.enhancedPrice = pricingResult.finalPrice;
       enhancedSupplier.enhancedPricing = pricingResult;
-      
+
+      // Check if this is a cake supplier that offers delivery
+      const isCakeSupplier = supplier.category === 'Cakes' ||
+        supplier.category?.toLowerCase().includes('cake');
+      const offersDelivery = supplier.serviceDetails?.fulfilment?.offersDelivery ||
+        supplier.fulfilment?.offersDelivery ||
+        supplier.offersDelivery;
+
       // Calculate composite score
       let compositeScore = themeScore;
-      
+
+      // For cakes, boost theme score significantly - theme is most important
+      if (isCakeSupplier && themeScore > 60) {
+        compositeScore += 30; // Extra boost for themed cakes
+      }
+
       // Availability bonuses/penalties
       if (availabilityCheck.available) {
         compositeScore += availabilityCheck.confidence === 'high' ? 25 : 10;
       } else {
         compositeScore -= 30;
       }
-      
-      // Location bonuses/penalties
-      if (locationCheck.canServe) {
-        compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
+
+      // Location bonuses/penalties - relaxed for cake suppliers that deliver
+      let effectiveCanServeLocation = locationCheck.canServe;
+      if (isCakeSupplier && offersDelivery) {
+        // Cake suppliers that deliver can serve anywhere (with delivery fee)
+        effectiveCanServeLocation = true;
+        // Small penalty for distance but don't disqualify
+        if (!locationCheck.canServe) {
+          compositeScore -= 5; // Minor penalty instead of -20
+        } else {
+          compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
+        }
       } else {
-        compositeScore -= 20;
+        // Standard location scoring for non-cake suppliers
+        if (locationCheck.canServe) {
+          compositeScore += locationCheck.confidence === 'high' ? 15 : 5;
+        } else {
+          compositeScore -= 20;
+        }
       }
-      
+
       return {
         ...enhancedSupplier,
         compositeScore,
@@ -254,13 +329,14 @@ class PartyBuilderBackend {
         availabilityCheck,
         locationCheck,
         isAvailable: availabilityCheck.available,
-        canServeLocation: locationCheck.canServe
+        canServeLocation: effectiveCanServeLocation,
+        isCakeWithDelivery: isCakeSupplier && offersDelivery
       };
     });
-    
+
     // Sort by composite score
     const sorted = scoredSuppliers.sort((a, b) => b.compositeScore - a.compositeScore);
-    
+
     // Try to find the best available supplier first
     const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
     

@@ -536,6 +536,7 @@ export default function EmptySupplierCard({
               {pricing.finalPrice > 0 && (
                 <p className="text-xs text-gray-500 mb-3">
                   from <span className="font-bold text-gray-900">£{pricing.finalPrice}</span>
+                  {isCakeSupplier && <span className="text-gray-400 ml-1">(incl. delivery)</span>}
                 </p>
               )}
 

@@ -277,6 +277,13 @@ export default function SelectedSupplierCard({
                             {showDurationInfo && ` + ${pricing.details.extraHours}h £${pricing.breakdown.extraHours}`}
                           </div>
                         )}
+
+                        {/* Show delivery included for cake suppliers */}
+                        {isCakeSupplier && cakeCustomization?.fulfillmentMethod === 'delivery' && (
+                          <div className="text-xs text-white/90 mt-1 drop-shadow flex items-center gap-1">
+                            <span>✓ Delivery included</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
