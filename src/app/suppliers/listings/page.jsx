@@ -2,10 +2,28 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, LayoutGrid, Building2, Loader2, Trash2, X } from "lucide-react"
+import { Plus, LayoutGrid, Building2, Loader2, Trash2, X, Settings, Cake } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useBusiness } from "@/contexts/BusinessContext"
 import Image from "next/image"
+
+// Check if the primary business is a cake supplier
+function isCakeSupplier(businesses) {
+  const primaryBusiness = businesses?.find(b => b.is_primary || b.isPrimary)
+  if (!primaryBusiness) return false
+  const category = (primaryBusiness.serviceType || primaryBusiness.data?.serviceType || primaryBusiness.data?.category || '').toLowerCase()
+  return category === 'cakes' || category === 'cake'
+}
+
+// Get the primary business (for cake suppliers, this is the business shell)
+function getPrimaryBusiness(businesses) {
+  return businesses?.find(b => b.is_primary || b.isPrimary)
+}
+
+// Get cake products (non-primary businesses for cake suppliers)
+function getCakeProducts(businesses) {
+  return businesses?.filter(b => !b.is_primary && !b.isPrimary) || []
+}
 
 // Get business image helper
 function getBusinessImage(business) {
@@ -43,7 +61,7 @@ function formatCategory(serviceType) {
 }
 
 // Action Modal - Airbnb style
-function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, removing }) {
+function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, removing, isCake }) {
   if (!business) return null
 
   const imageUrl = getBusinessImage(business)
@@ -85,7 +103,11 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-gray-300" />
+                {isCake ? (
+                  <Cake className="w-8 h-8 text-gray-300" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-gray-300" />
+                )}
               </div>
             )}
           </div>
@@ -93,11 +115,13 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
           {/* Business Info */}
           <div className="text-center mb-6">
             <h3 className="font-semibold text-gray-900">
-              {business.name || "Untitled business"}
+              {business.name || (isCake ? "Untitled cake" : "Untitled business")}
             </h3>
-            <p className="text-gray-500 text-sm mt-0.5">
-              {formatCategory(business.serviceType)}
-            </p>
+            {!isCake && (
+              <p className="text-gray-500 text-sm mt-0.5">
+                {formatCategory(business.serviceType)}
+              </p>
+            )}
           </div>
 
           {/* Actions */}
@@ -107,7 +131,10 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
               className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-12 font-medium"
               disabled={removing}
             >
-              {hasCompletedOnboarding ? "Edit listing" : "Continue setup"}
+              {hasCompletedOnboarding
+                ? (isCake ? "Edit cake" : "Edit listing")
+                : "Continue setup"
+              }
             </Button>
 
             <button
@@ -120,7 +147,7 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
               ) : (
                 <Trash2 className="w-4 h-4" />
               )}
-              {removing ? "Removing..." : "Remove listing"}
+              {removing ? "Removing..." : (isCake ? "Remove cake" : "Remove listing")}
             </button>
           </div>
         </div>
@@ -130,7 +157,7 @@ function ListingActionModal({ business, isOpen, onClose, onEdit, onRemove, remov
 }
 
 // Business card component - Airbnb style
-function BusinessCard({ business, onSelect, onClick }) {
+function BusinessCard({ business, onSelect, onClick, isCake }) {
   const imageUrl = getBusinessImage(business)
   const hasImage = !!imageUrl
 
@@ -160,6 +187,20 @@ function BusinessCard({ business, onSelect, onClick }) {
 
   const status = getStatus()
 
+  // Get price range for cakes from packages
+  const getPriceRange = () => {
+    const packages = business.data?.packages || []
+    if (packages.length === 0) return null
+    const prices = packages.map(p => p.price).filter(p => p > 0)
+    if (prices.length === 0) return null
+    const min = Math.min(...prices)
+    const max = Math.max(...prices)
+    if (min === max) return `£${min}`
+    return `£${min} - £${max}`
+  }
+
+  const priceRange = isCake ? getPriceRange() : null
+
   return (
     <div
       onClick={() => onClick(business)}
@@ -176,7 +217,11 @@ function BusinessCard({ business, onSelect, onClick }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <Building2 className="w-16 h-16 text-gray-300" />
+            {isCake ? (
+              <Cake className="w-16 h-16 text-gray-300" />
+            ) : (
+              <Building2 className="w-16 h-16 text-gray-300" />
+            )}
           </div>
         )}
 
@@ -192,30 +237,46 @@ function BusinessCard({ business, onSelect, onClick }) {
       {/* Business Info - Below image like Airbnb */}
       <div>
         <h3 className="font-semibold text-gray-900">
-          {business.name || "Untitled business"}
+          {business.name || (isCake ? "Untitled cake" : "Untitled business")}
         </h3>
-        <p className="text-gray-500 mt-0.5">
-          {formatCategory(business.serviceType)}
-        </p>
+        {isCake ? (
+          // For cakes, show price range instead of category
+          priceRange && (
+            <p className="text-gray-500 mt-0.5">{priceRange}</p>
+          )
+        ) : (
+          <p className="text-gray-500 mt-0.5">
+            {formatCategory(business.serviceType)}
+          </p>
+        )}
       </div>
     </div>
   )
 }
 
 // Empty state
-function EmptyState({ onCreateClick }) {
+function EmptyState({ onCreateClick, isCake }) {
   return (
     <div className="text-center py-16">
       <div className="w-24 h-24 bg-[hsl(var(--primary-50))] rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-[hsl(var(--primary-200))]">
-        <Building2 className="w-10 h-10 text-[hsl(var(--primary-300))]" />
+        {isCake ? (
+          <Cake className="w-10 h-10 text-[hsl(var(--primary-300))]" />
+        ) : (
+          <Building2 className="w-10 h-10 text-[hsl(var(--primary-300))]" />
+        )}
       </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">No businesses yet</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        {isCake ? "No cakes yet" : "No businesses yet"}
+      </h2>
       <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-        Create your first business listing to start receiving bookings.
+        {isCake
+          ? "Add your first cake to start receiving orders from customers."
+          : "Create your first business listing to start receiving bookings."
+        }
       </p>
       <Button onClick={onCreateClick} className="bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white rounded-full px-6">
         <Plus className="w-4 h-4 mr-2" />
-        Create a listing
+        {isCake ? "Add Cake" : "Create a listing"}
       </Button>
     </div>
   )
@@ -235,9 +296,28 @@ export default function ListingsPage() {
   const [selectedBusiness, setSelectedBusiness] = useState(null)
   const [removing, setRemoving] = useState(false)
 
+  // Check if this is a cake supplier
+  const isCake = isCakeSupplier(businesses)
+  const primaryBusiness = getPrimaryBusiness(businesses)
+
+  // For cake suppliers, only show products (non-primary), not the business shell
+  const displayedBusinesses = isCake ? getCakeProducts(businesses) : businesses
+
   // Navigate to onboarding wizard for creating new listing
   const handleCreateNewListing = () => {
-    router.push('/suppliers/onboarding/new-supplier?newBusiness=true')
+    if (isCake) {
+      // For cake suppliers, add a new cake product
+      router.push('/suppliers/onboarding/new-supplier?newBusiness=true&productType=cake')
+    } else {
+      router.push('/suppliers/onboarding/new-supplier?newBusiness=true')
+    }
+  }
+
+  // Navigate to business settings for cake suppliers
+  const handleOpenSettings = () => {
+    if (primaryBusiness) {
+      router.push(`/suppliers/listings/${primaryBusiness.id}?settings=true`)
+    }
   }
 
   const handleCardClick = (business) => {
@@ -312,36 +392,72 @@ export default function ListingsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
-            {businesses?.length === 1 ? "Your listing" : "Your listings"}
-          </h1>
+          <div>
+            {isCake ? (
+              <>
+                <h1 className="text-3xl md:text-4xl font-semibold text-gray-900">
+                  {primaryBusiness?.name || primaryBusiness?.data?.businessName || "Your cake business"}
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  {displayedBusinesses?.length || 0} {displayedBusinesses?.length === 1 ? "cake" : "cakes"}
+                </p>
+              </>
+            ) : (
+              <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+                {businesses?.length === 1 ? "Your listing" : "Your listings"}
+              </h1>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
+            {/* Settings button - only for cake suppliers */}
+            {isCake && (
+              <button
+                onClick={handleOpenSettings}
+                className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors"
+                title="Business Settings"
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
+
             {/* View toggle - future feature */}
             <button className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] hidden sm:flex transition-colors">
               <LayoutGrid className="w-5 h-5 text-gray-600" />
             </button>
 
             {/* Add button */}
-            <button
-              onClick={handleCreateNewListing}
-              className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors"
-            >
-              <Plus className="w-5 h-5 text-gray-600" />
-            </button>
+            {isCake ? (
+              <button
+                onClick={handleCreateNewListing}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Cake
+              </button>
+            ) : (
+              <button
+                onClick={handleCreateNewListing}
+                className="p-2.5 border border-[hsl(var(--primary-200))] rounded-xl hover:bg-[hsl(var(--primary-50))] transition-colors"
+              >
+                <Plus className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Content */}
-        {!businesses || businesses.length === 0 ? (
-          <EmptyState onCreateClick={handleCreateNewListing} />
+        {/* For cake suppliers, show empty state if no products (even if primary exists) */}
+        {(isCake ? displayedBusinesses.length === 0 : (!businesses || businesses.length === 0)) ? (
+          <EmptyState onCreateClick={handleCreateNewListing} isCake={isCake} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {businesses.map((business) => (
+            {displayedBusinesses.map((business) => (
               <BusinessCard
                 key={business.id}
                 business={business}
                 onClick={handleCardClick}
+                isCake={isCake}
               />
             ))}
           </div>
@@ -356,6 +472,7 @@ export default function ListingsPage() {
         onEdit={handleEditBusiness}
         onRemove={handleRemoveBusiness}
         removing={removing}
+        isCake={isCake}
       />
     </div>
   )

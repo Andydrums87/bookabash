@@ -20,8 +20,35 @@ import PricingPackagesStep from "@/components/onboarding/steps/entertainer/Prici
 import VerificationDocumentsStep from "@/components/onboarding/steps/entertainer/VerificationDocumentsStep"
 import CalendarConnectionStep from "@/components/onboarding/steps/CalendarConnectionStep"
 import AccountCreationStep from "@/components/onboarding/steps/AccountCreationStep"
+// Cake supplier steps (initial onboarding)
+import CakeBusinessStep from "@/components/onboarding/steps/cake/CakeBusinessStep"
+import CakeLocationStep from "@/components/onboarding/steps/cake/CakeLocationStep"
+import CakeFulfilmentStep from "@/components/onboarding/steps/cake/CakeFulfilmentStep"
+import CakeLeadTimeStep from "@/components/onboarding/steps/cake/CakeLeadTimeStep"
+// Cake product steps (add cake wizard)
+import CakeNameStep from "@/components/onboarding/steps/cake/CakeNameStep"
+import CakeAboutStep from "@/components/onboarding/steps/cake/CakeAboutStep"
+import CakeFlavoursStep from "@/components/onboarding/steps/cake/CakeFlavoursStep"
+import CakeDietaryStep from "@/components/onboarding/steps/cake/CakeDietaryStep"
+import CakePackagesStep from "@/components/onboarding/steps/cake/CakePackagesStep"
+import CakeThemesStep from "@/components/onboarding/steps/cake/CakeThemesStep"
 
 const STORAGE_KEY = 'supplierOnboardingData'
+
+// Helper to normalize category names to match database conventions
+// e.g., 'cakes' -> 'Cakes', 'entertainment' -> 'Entertainment', 'venues' -> 'Venues'
+const normalizeCategory = (supplierType) => {
+  const categoryMap = {
+    'cakes': 'Cakes',
+    'entertainment': 'Entertainment',
+    'venues': 'Venues',
+    'decorations': 'Decorations',
+    'catering': 'Catering',
+    'photography': 'Photography',
+    'party-bags': 'Party Bags',
+  }
+  return categoryMap[supplierType?.toLowerCase()] || supplierType
+}
 
 export default function VenueOnboardingWizard() {
   const router = useRouter()
@@ -29,6 +56,8 @@ export default function VenueOnboardingWizard() {
   const isEditMode = searchParams.get('edit') === 'true'
   const isNewBusinessMode = searchParams.get('newBusiness') === 'true' // Creating new business as existing user
   const resumeBusinessId = searchParams.get('businessId') // Resume incomplete business by ID
+  const productType = searchParams.get('productType') // 'cake' when adding a new cake product
+  const isAddingCakeProduct = productType === 'cake' && isNewBusinessMode
   const [currentStep, setCurrentStep] = useState(isEditMode ? 3 : 1) // Start at step 3 in edit mode
   const [userId, setUserId] = useState(null) // Auth user ID after account creation
   const [supplierId, setSupplierId] = useState(null) // Supplier record ID
@@ -100,6 +129,37 @@ export default function VenueOnboardingWizard() {
       id: { file: null, fileName: '', uploaded: false },
       address: { file: null, fileName: '', uploaded: false }
     },
+    // Cake supplier-specific fields
+    cakeBusinessDetails: {
+      businessName: "",
+      phone: "",
+      postcode: "",
+      city: "",
+      fullAddress: "",
+      latitude: null,
+      longitude: null
+    },
+    cakeFulfilment: {
+      offersPickup: true,
+      offersDelivery: false,
+      deliveryRadius: 10,
+      deliveryFee: 0
+    },
+    cakeLeadTime: {
+      minimum: 3,
+      standard: 7
+    },
+    // Cake product fields (for adding individual cakes)
+    parentBusinessId: null, // ID of the primary cake business (for linking products)
+    cakeProductName: "",
+    cakeProductDescription: "", // About this cake
+    cakeProductPhotos: [],
+    cakeProductFlavours: [], // Array of flavour strings
+    cakeProductDietaryInfo: [], // Array of dietary option IDs
+    cakeProductThemes: [],
+    cakeProductPackages: [
+      { id: '1', name: '', price: '', serves: '', tiers: '', sizeInches: '', deliveryFee: '' }
+    ],
     // Shared fields
     calendar: {
       connected: false,
@@ -118,7 +178,11 @@ export default function VenueOnboardingWizard() {
   // Calculate total steps based on supplier type (use useMemo to recalculate when supplier type changes)
   // Entertainment: 11 steps (Type, Account, Entertainer Type, Company Name, About Service, Service Area, Photos, Pricing, Verification, Calendar, Review)
   // Venues: 11 steps
-  const TOTAL_STEPS = wizardData.supplierType === 'entertainment' ? 11 : 11
+  // Cakes: 6 steps (Type, Account, Business Details, Fulfilment, Lead Times, Complete)
+  // Add Cake Product: 8 steps (Name, About, Photos, Flavours, Dietary, Themes, Packages, Complete)
+  const isCake = wizardData.supplierType === 'cakes'
+  // Cake business onboarding: 7 steps (Type, Account, Business, Location, Fulfilment, LeadTime, Complete)
+  const TOTAL_STEPS = isAddingCakeProduct ? 8 : (isCake ? 7 : (wizardData.supplierType === 'entertainment' ? 11 : 11))
 
   // Load saved data on mount OR load current business data in edit mode
   useEffect(() => {
@@ -225,7 +289,62 @@ export default function VenueOnboardingWizard() {
         return
       }
 
-      // If creating new business as existing user
+      // If adding a cake product (mini wizard for existing cake supplier)
+      if (isAddingCakeProduct && !newBusinessModeLoaded) {
+        try {
+          console.log('🎂 Add Cake Product mode - loading parent business...')
+
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            console.log('No authenticated user found, redirecting to login')
+            router.push('/suppliers/onboarding')
+            return
+          }
+
+          console.log('✅ Found existing user:', user.id)
+          setUserId(user.id)
+
+          // Get the primary cake business (parent)
+          const { data: primaryBusiness, error } = await supabase
+            .from('suppliers')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .eq('is_primary', true)
+            .single()
+
+          if (error || !primaryBusiness) {
+            console.error('No primary cake business found:', error)
+            router.push('/suppliers/listings')
+            return
+          }
+
+          console.log('✅ Found primary cake business:', primaryBusiness.id)
+
+          // Store parent business ID for later use when creating the cake product
+          setWizardData(prev => ({
+            ...prev,
+            supplierType: 'cakes', // Ensure we're in cake mode
+            parentBusinessId: primaryBusiness.id,
+            account: {
+              ...prev.account,
+              fullName: primaryBusiness.data?.owner?.name || '',
+              email: primaryBusiness.data?.owner?.email || user.email || '',
+              phone: primaryBusiness.data?.owner?.phone || '',
+              agreedToTerms: true
+            }
+          }))
+
+          setNewBusinessModeLoaded(true)
+          setCurrentStep(1) // Start at step 1 for cake product wizard
+          localStorage.removeItem(STORAGE_KEY)
+
+        } catch (e) {
+          console.error('Error in add cake product mode:', e)
+        }
+        return
+      }
+
+      // If creating new business as existing user (non-cake)
       if (isNewBusinessMode && !newBusinessModeLoaded) {
         try {
           console.log('🆕 New business mode - checking for existing user...')
@@ -384,7 +503,7 @@ export default function VenueOnboardingWizard() {
     }
 
     loadData()
-  }, [isEditMode, editModeLoaded, isNewBusinessMode, newBusinessModeLoaded, resumeBusinessId, resumeBusinessLoaded, router])
+  }, [isEditMode, editModeLoaded, isNewBusinessMode, newBusinessModeLoaded, resumeBusinessId, resumeBusinessLoaded, isAddingCakeProduct, router])
 
   // Check for OAuth calendar callback and restore wizard state
   useEffect(() => {
@@ -533,8 +652,22 @@ export default function VenueOnboardingWizard() {
       businessName: wizardData.serviceDetails?.businessName,
       supplierId: supplierId,
       isNewBusinessMode,
+      isAddingCakeProduct,
       userId
     })
+
+    // CAKE PRODUCT WIZARD: Handle separately from main business onboarding
+    if (isAddingCakeProduct) {
+      if (currentStep < TOTAL_STEPS) {
+        // Just navigate to next step
+        setCurrentStep(currentStep + 1)
+        window.scrollTo(0, 0)
+      } else {
+        // Final step - create the cake product
+        await createCakeProduct()
+      }
+      return
+    }
 
     // NEW BUSINESS MODE: After step 1 (supplier type), create supplier and skip to step 3
     if (currentStep === 1 && isNewBusinessMode && userId && !supplierId) {
@@ -672,11 +805,13 @@ export default function VenueOnboardingWizard() {
     try {
       console.log('🆕 Creating new supplier for existing user...')
 
+      const normalizedCategory = normalizeCategory(wizardData.supplierType)
       const supplierData = {
         name: wizardData.account.fullName || 'New Business',
         businessName: wizardData.account.fullName || 'New Business',
-        serviceType: wizardData.supplierType,
-        category: wizardData.supplierType,
+        serviceType: normalizedCategory,
+        category: normalizedCategory,
+        subcategory: normalizedCategory,
         location: "",
         owner: {
           name: wizardData.account.fullName,
@@ -763,6 +898,149 @@ export default function VenueOnboardingWizard() {
     }
   }
 
+  // Create a new cake product (for cake suppliers adding cakes)
+  const createCakeProduct = async () => {
+    try {
+      console.log('🎂 Creating new cake product...')
+
+      if (!userId || !wizardData.parentBusinessId) {
+        alert('Error: Missing user or parent business. Please try again.')
+        return
+      }
+
+      // First, get the primary business to inherit business info
+      const { data: primaryBusiness, error: fetchError } = await supabase
+        .from('suppliers')
+        .select('data')
+        .eq('id', wizardData.parentBusinessId)
+        .single()
+
+      if (fetchError || !primaryBusiness) {
+        console.error('Failed to fetch primary business:', fetchError)
+        throw new Error('Failed to load business data. Please try again.')
+      }
+
+      // Calculate price from packages
+      const packages = wizardData.cakeProductPackages.filter(p => p.name && p.price)
+      const prices = packages.map(p => parseFloat(p.price)).filter(p => p > 0)
+      const priceFrom = prices.length > 0 ? Math.min(...prices) : 0
+
+      // Build the cake product data
+      const cakeProductData = {
+        // Cake product identity
+        name: wizardData.cakeProductName,
+        businessName: wizardData.cakeProductName, // Product name, not business name
+        serviceType: 'Cakes',
+        category: 'Cakes',
+        subcategory: 'Cakes',
+
+        // Inherited from primary business
+        location: primaryBusiness.data.location || '',
+        owner: primaryBusiness.data.owner || {},
+        contactInfo: primaryBusiness.data.contactInfo || {},
+
+        // Cake product specific data
+        description: wizardData.cakeProductName,
+        businessDescription: wizardData.cakeProductName,
+        portfolioImages: wizardData.cakeProductPhotos || [],
+        image: wizardData.cakeProductPhotos?.[0]?.src || '',
+        coverPhoto: wizardData.cakeProductPhotos?.[0]?.src || '',
+
+        // Packages (sizes & pricing)
+        packages: packages.map(p => ({
+          id: p.id,
+          name: p.name,
+          price: parseFloat(p.price) || 0,
+          serves: p.serves || '',
+          feeds: p.serves || '', // Alias for serves
+          tiers: p.tiers || '',
+          sizeInches: p.sizeInches || '',
+          deliveryFee: p.deliveryFee ? parseFloat(p.deliveryFee) : 0
+        })),
+
+        // Description
+        description: wizardData.cakeProductDescription || "",
+
+        // Flavours & dietary
+        flavours: wizardData.cakeProductFlavours || [],
+        dietaryInfo: wizardData.cakeProductDietaryInfo || [],
+
+        // Themes (for party matching)
+        themes: wizardData.cakeProductThemes?.length > 0 ? wizardData.cakeProductThemes : ["general"],
+
+        // Service details (inherited from parent + product specific)
+        serviceDetails: {
+          ...primaryBusiness.data.serviceDetails,
+          productName: wizardData.cakeProductName,
+          description: wizardData.cakeProductDescription || "",
+          flavours: wizardData.cakeProductFlavours || [],
+          dietaryInfo: wizardData.cakeProductDietaryInfo || [],
+          themes: wizardData.cakeProductThemes || [],
+          packages: packages.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: parseFloat(p.price) || 0,
+            serves: p.serves || '',
+            feeds: p.serves || '',
+            tiers: p.tiers || '',
+            sizeInches: p.sizeInches || '',
+            deliveryFee: p.deliveryFee ? parseFloat(p.deliveryFee) : 0
+          }))
+        },
+
+        // Pricing
+        priceFrom: priceFrom,
+        priceUnit: "per cake",
+
+        // Standard fields
+        rating: 0,
+        reviewCount: 0,
+        bookingCount: 0,
+        badges: ["New"],
+        availability: "Contact for availability",
+
+        // Status
+        isComplete: true,
+        onboardingCompleted: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdFrom: "cake_product_wizard"
+      }
+
+      // Create the cake product as a new supplier record
+      const supplierRecord = {
+        auth_user_id: userId,
+        data: cakeProductData,
+        is_primary: false, // This is a product, not the primary business
+        parent_business_id: wizardData.parentBusinessId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data: newCakeProduct, error: createError } = await supabase
+        .from("suppliers")
+        .insert(supplierRecord)
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('❌ Failed to create cake product:', createError)
+        throw new Error('Failed to create cake product. Please try again.')
+      }
+
+      console.log('✅ Cake product created:', newCakeProduct.id)
+
+      // Clean up and redirect
+      localStorage.removeItem(STORAGE_KEY)
+      localStorage.setItem('justAddedCake', 'true')
+      router.push('/suppliers/listings')
+
+    } catch (error) {
+      console.error('💥 Error creating cake product:', error)
+      alert(error.message || 'An unexpected error occurred. Please try again.')
+    }
+  }
+
   const handleAccountCreation = async () => {
     try {
       console.log('🔐 Creating account at step 2...')
@@ -844,11 +1122,13 @@ export default function VenueOnboardingWizard() {
 
       // If we get here, email is verified (or verification not required)
       // NOW create the supplier profile
+      const normalizedCategory = normalizeCategory(wizardData.supplierType)
       const supplierData = {
         name: wizardData.account.fullName,
         businessName: wizardData.account.fullName,
-        serviceType: wizardData.supplierType,
-        category: wizardData.supplierType,
+        serviceType: normalizedCategory,
+        category: normalizedCategory,
+        subcategory: normalizedCategory,
         location: "",
         owner: {
           name: wizardData.account.fullName,
@@ -958,6 +1238,7 @@ export default function VenueOnboardingWizard() {
 
     const isVenue = wizardData.supplierType === 'venues'
     const isEntertainer = wizardData.supplierType === 'entertainment'
+    const isCakeSupplier = wizardData.supplierType === 'cakes'
 
     try {
       console.log('💾 Updating supplier record...', supplierId)
@@ -1096,6 +1377,54 @@ export default function VenueOnboardingWizard() {
         }
       }
 
+      // CAKE SUPPLIER DATA UPDATE
+      if (isCakeSupplier) {
+        updatedData = {
+          ...currentSupplier.data,
+          name: wizardData.cakeBusinessDetails.businessName || currentSupplier.data.name,
+          businessName: wizardData.cakeBusinessDetails.businessName || currentSupplier.data.businessName,
+          location: wizardData.cakeBusinessDetails.postcode || wizardData.cakeBusinessDetails.city || currentSupplier.data.location,
+          contactInfo: {
+            ...currentSupplier.data.contactInfo,
+            phone: wizardData.cakeBusinessDetails.phone || currentSupplier.data.contactInfo?.phone,
+            postcode: wizardData.cakeBusinessDetails.postcode || currentSupplier.data.contactInfo?.postcode
+          },
+          owner: {
+            ...currentSupplier.data.owner,
+            phone: wizardData.cakeBusinessDetails.phone || currentSupplier.data.owner?.phone
+          },
+          serviceDetails: {
+            ...currentSupplier.data.serviceDetails,
+            businessName: wizardData.cakeBusinessDetails.businessName || currentSupplier.data.serviceDetails?.businessName,
+            location: {
+              city: wizardData.cakeBusinessDetails.city || currentSupplier.data.serviceDetails?.location?.city,
+              postcode: wizardData.cakeBusinessDetails.postcode || currentSupplier.data.serviceDetails?.location?.postcode,
+              fullAddress: wizardData.cakeBusinessDetails.fullAddress || currentSupplier.data.serviceDetails?.location?.fullAddress,
+              latitude: wizardData.cakeBusinessDetails.latitude || currentSupplier.data.serviceDetails?.location?.latitude,
+              longitude: wizardData.cakeBusinessDetails.longitude || currentSupplier.data.serviceDetails?.location?.longitude
+            },
+            fulfilment: {
+              offersPickup: wizardData.cakeFulfilment.offersPickup,
+              offersDelivery: wizardData.cakeFulfilment.offersDelivery,
+              deliveryRadius: wizardData.cakeFulfilment.deliveryRadius,
+              deliveryFee: wizardData.cakeFulfilment.deliveryFee
+            },
+            leadTime: {
+              minimum: wizardData.cakeLeadTime.minimum,
+              standard: wizardData.cakeLeadTime.standard
+            }
+          },
+          // Cake suppliers have no packages/photos in initial onboarding - they add products later
+          portfolioImages: currentSupplier.data.portfolioImages || [],
+          packages: currentSupplier.data.packages || [],
+          description: "Cake business - add your cakes to complete your profile",
+          businessDescription: "Cake business - add your cakes to complete your profile",
+          priceFrom: 0,
+          priceUnit: "per cake",
+          updatedAt: new Date().toISOString()
+        }
+      }
+
       console.log('💾 Saving updated data to Supabase...')
       console.log('📊 Data being saved:', {
         businessName: updatedData.businessName,
@@ -1167,12 +1496,19 @@ export default function VenueOnboardingWizard() {
       })
 
       // Mark supplier as complete - PRESERVE ALL EXISTING DATA
+      // For cake suppliers, the business shell is complete but they need to add products
+      const isCakeSupplier = wizardData.supplierType === 'cakes'
       const updatedData = {
         ...currentSupplier.data,
         onboardingCompleted: true,
-        isComplete: true,
-        description: currentSupplier.data.businessDescription || currentSupplier.data.description || "Venue ready for bookings",
-        businessDescription: currentSupplier.data.businessDescription || currentSupplier.data.description || "Venue ready for bookings",
+        // Cake suppliers need to add products before they're truly "complete"
+        isComplete: isCakeSupplier ? false : true,
+        description: isCakeSupplier
+          ? "Cake business - add your cakes to start receiving orders"
+          : (currentSupplier.data.businessDescription || currentSupplier.data.description || "Ready for bookings"),
+        businessDescription: isCakeSupplier
+          ? "Cake business - add your cakes to start receiving orders"
+          : (currentSupplier.data.businessDescription || currentSupplier.data.description || "Ready for bookings"),
         updatedAt: new Date().toISOString()
       }
 
@@ -1334,8 +1670,36 @@ export default function VenueOnboardingWizard() {
   const isStepValid = () => {
     const isVenue = wizardData.supplierType === 'venues'
     const isEntertainer = wizardData.supplierType === 'entertainment'
+    const isCakeSupplier = wizardData.supplierType === 'cakes'
 
-    // Shared steps
+    // CAKE PRODUCT WIZARD VALIDATION (8 steps: Name, About, Photos, Flavours, Dietary, Themes, Packages, Complete)
+    if (isAddingCakeProduct) {
+      switch (currentStep) {
+        case 1: // Cake Name
+          return wizardData.cakeProductName && wizardData.cakeProductName.trim().length > 0
+        case 2: // About this cake (required)
+          return wizardData.cakeProductDescription && wizardData.cakeProductDescription.trim().length > 0
+        case 3: // Photos
+          return wizardData.cakeProductPhotos && wizardData.cakeProductPhotos.length >= 1
+        case 4: // Flavours (optional)
+          return true // Optional - can proceed without selecting any
+        case 5: // Dietary (optional)
+          return true // Optional - can proceed without selecting any
+        case 6: // Themes (optional)
+          return true // Optional - can proceed without selecting any
+        case 7: // Packages (at least one complete package required)
+          const hasCompletePackage = wizardData.cakeProductPackages.some(
+            p => p.name?.trim() && parseFloat(p.price) > 0
+          )
+          return hasCompletePackage
+        case 8: // Complete
+          return true
+        default:
+          return true
+      }
+    }
+
+    // Shared steps (for initial business onboarding)
     if (currentStep === 1) {
       return wizardData.supplierType !== ""
     }
@@ -1353,6 +1717,35 @@ export default function VenueOnboardingWizard() {
         wizardData.account.phone &&
         wizardData.account.phone.trim().length > 0
       )
+    }
+
+    // CAKE SUPPLIER VALIDATION (7 steps total)
+    if (isCakeSupplier) {
+      switch (currentStep) {
+        case 3: // Business Details (name only - phone collected earlier)
+          return (
+            wizardData.cakeBusinessDetails.businessName &&
+            wizardData.cakeBusinessDetails.businessName.trim().length > 0
+          )
+        case 4: // Location
+          return (
+            wizardData.cakeBusinessDetails.postcode || wizardData.cakeBusinessDetails.city
+          )
+        case 5: // Fulfilment
+          return (
+            wizardData.cakeFulfilment.offersPickup || wizardData.cakeFulfilment.offersDelivery
+          )
+        case 6: // Lead Times
+          return (
+            wizardData.cakeLeadTime.minimum > 0 &&
+            wizardData.cakeLeadTime.standard > 0 &&
+            wizardData.cakeLeadTime.standard >= wizardData.cakeLeadTime.minimum
+          )
+        case 7: // Complete
+          return true
+        default:
+          return true
+      }
     }
 
     // VENUE VALIDATION
@@ -1432,10 +1825,134 @@ export default function VenueOnboardingWizard() {
   const renderStep = () => {
     const isVenue = wizardData.supplierType === 'venues'
     const isEntertainer = wizardData.supplierType === 'entertainment'
+    const isCakeSupplier = wizardData.supplierType === 'cakes'
 
-    console.log('🎨 Rendering step:', currentStep, 'Supplier type:', wizardData.supplierType, 'isEntertainer:', isEntertainer)
+    console.log('🎨 Rendering step:', currentStep, 'Supplier type:', wizardData.supplierType, 'isEntertainer:', isEntertainer, 'isCake:', isCakeSupplier, 'isAddingCakeProduct:', isAddingCakeProduct)
 
-    // Steps 1-2 are shared for all supplier types
+    // CAKE PRODUCT WIZARD (mini wizard for adding cakes to existing cake supplier)
+    // 8 steps: Name, About, Photos, Flavours, Dietary, Themes, Packages, Complete
+    if (isAddingCakeProduct) {
+      switch (currentStep) {
+        case 1: // Cake Name
+          return (
+            <CakeNameStep
+              cakeName={wizardData.cakeProductName}
+              onChange={(name) => setWizardData({ ...wizardData, cakeProductName: name })}
+            />
+          )
+        case 2: // About this cake
+          return (
+            <CakeAboutStep
+              description={wizardData.cakeProductDescription}
+              onChange={(description) => setWizardData({ ...wizardData, cakeProductDescription: description })}
+            />
+          )
+        case 3: // Photos
+          return (
+            <VenuePhotosStep
+              photos={wizardData.cakeProductPhotos}
+              onChange={(photos) => setWizardData({ ...wizardData, cakeProductPhotos: photos })}
+              minPhotos={1}
+              title="Add photos of this cake"
+              subtitle="Upload at least 1 photo showing your cake from different angles"
+            />
+          )
+        case 4: // Flavours
+          return (
+            <CakeFlavoursStep
+              flavours={wizardData.cakeProductFlavours}
+              onChange={(flavours) => setWizardData({ ...wizardData, cakeProductFlavours: flavours })}
+            />
+          )
+        case 5: // Dietary
+          return (
+            <CakeDietaryStep
+              dietaryInfo={wizardData.cakeProductDietaryInfo}
+              onChange={(dietaryInfo) => setWizardData({ ...wizardData, cakeProductDietaryInfo: dietaryInfo })}
+            />
+          )
+        case 6: // Themes
+          return (
+            <CakeThemesStep
+              themes={wizardData.cakeProductThemes}
+              onChange={(themes) => setWizardData({ ...wizardData, cakeProductThemes: themes })}
+            />
+          )
+        case 7: // Packages (sizes & pricing)
+          return (
+            <CakePackagesStep
+              cakePackages={wizardData.cakeProductPackages}
+              onChange={(packages) => setWizardData({ ...wizardData, cakeProductPackages: packages })}
+            />
+          )
+        case 8: // Complete
+          return (
+            <div className="py-12 text-center max-w-2xl mx-auto">
+              <div className="mb-8">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">
+                  {wizardData.cakeProductName || "Your cake"} is ready!
+                </h1>
+                <p className="text-lg text-gray-600 mb-8">
+                  Your cake has been added to your listings. Click complete to finish.
+                </p>
+              </div>
+
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-left">
+                <h3 className="text-lg font-semibold text-green-900 mb-3">
+                  Summary
+                </h3>
+                <div className="space-y-2 text-green-800">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>{wizardData.cakeProductName}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{wizardData.cakeProductPhotos?.length || 0} photo(s)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{wizardData.cakeProductFlavours?.length || 0} flavour(s)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{wizardData.cakeProductDietaryInfo?.length || 0} dietary option(s)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{wizardData.cakeProductThemes?.length || 0} theme(s)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{wizardData.cakeProductPackages?.filter(p => p.name && p.price).length || 0} size(s)/package(s)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        default:
+          return null
+      }
+    }
+
+    // Steps 1-2 are shared for all supplier types (initial business onboarding)
     if (currentStep === 1) {
       return (
         <SupplierTypeStep
@@ -1452,6 +1969,92 @@ export default function VenueOnboardingWizard() {
           onChange={(account) => setWizardData({ ...wizardData, account })}
         />
       )
+    }
+
+    // CAKE SUPPLIER FLOW (7 steps total)
+    if (isCakeSupplier) {
+      switch (currentStep) {
+        case 3: // Business Details
+          return (
+            <CakeBusinessStep
+              cakeBusinessDetails={wizardData.cakeBusinessDetails}
+              onChange={(details) => setWizardData({ ...wizardData, cakeBusinessDetails: details })}
+            />
+          )
+        case 4: // Location
+          return (
+            <CakeLocationStep
+              cakeBusinessDetails={wizardData.cakeBusinessDetails}
+              onChange={(details) => setWizardData({ ...wizardData, cakeBusinessDetails: details })}
+            />
+          )
+        case 5: // Fulfilment
+          return (
+            <CakeFulfilmentStep
+              cakeFulfilment={wizardData.cakeFulfilment}
+              onChange={(fulfilment) => setWizardData({ ...wizardData, cakeFulfilment: fulfilment })}
+            />
+          )
+        case 6: // Lead Times
+          return (
+            <CakeLeadTimeStep
+              cakeLeadTime={wizardData.cakeLeadTime}
+              onChange={(leadTime) => setWizardData({ ...wizardData, cakeLeadTime: leadTime })}
+            />
+          )
+        case 7: // Complete
+          return (
+            <div className="py-12 text-center max-w-2xl mx-auto">
+              <div className="mb-8">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">
+                  Your business is set up!
+                </h1>
+                <p className="text-lg text-gray-600 mb-8">
+                  Now it's time to add your first cake to start receiving orders.
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-left">
+                <h3 className="text-lg font-semibold text-amber-900 mb-3">
+                  What happens next?
+                </h3>
+                <div className="space-y-3 text-amber-800">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
+                      1
+                    </div>
+                    <p className="text-sm">
+                      You'll be taken to your <strong>Cakes dashboard</strong> where you can add your first cake product.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
+                      2
+                    </div>
+                    <p className="text-sm">
+                      Add photos, flavours, sizes and pricing for each cake you offer.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
+                      3
+                    </div>
+                    <p className="text-sm">
+                      Once you've added at least one cake, customers will be able to <strong>find and order from you</strong>!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        default:
+          return null
+      }
     }
 
     // VENUE FLOW (11 steps total)
@@ -1694,18 +2297,29 @@ export default function VenueOnboardingWizard() {
   // Adjust step numbers for display
   // Edit mode: step 3 becomes step 1 (skip steps 1-2)
   // New business mode: step 1 stays as 1, step 3+ becomes step 2+ (skip step 2)
+  // Cake product wizard: steps 1-5 displayed as-is
   const getDisplayStep = () => {
+    if (isAddingCakeProduct) return currentStep // No adjustment needed for cake product wizard
     if (isEditMode) return currentStep - 2
     if (isNewBusinessMode && currentStep >= 3) return currentStep - 1
     return currentStep
   }
   const getDisplayTotalSteps = () => {
+    if (isAddingCakeProduct) return TOTAL_STEPS // No adjustment needed for cake product wizard
     if (isEditMode) return TOTAL_STEPS - 2
     if (isNewBusinessMode) return TOTAL_STEPS - 1 // One less step since we skip account creation
     return TOTAL_STEPS
   }
   const displayStep = getDisplayStep()
   const displayTotalSteps = getDisplayTotalSteps()
+
+  // Determine next button label
+  const getNextLabel = () => {
+    if (isAddingCakeProduct) {
+      return currentStep === TOTAL_STEPS ? "Add cake" : "Next"
+    }
+    return currentStep === TOTAL_STEPS ? "Complete profile" : "Next"
+  }
 
   return (
     <WizardLayout
@@ -1715,8 +2329,8 @@ export default function VenueOnboardingWizard() {
       onNext={handleNext}
       onSaveExit={handleSaveExit}
       nextDisabled={!isStepValid()}
-      showBack={isEditMode ? true : (isNewBusinessMode ? currentStep > 1 : currentStep > 1)}
-      nextLabel={currentStep === TOTAL_STEPS ? "Complete profile" : "Next"}
+      showBack={isAddingCakeProduct ? currentStep > 1 : (isEditMode ? true : (isNewBusinessMode ? currentStep > 1 : currentStep > 1))}
+      nextLabel={getNextLabel()}
       isEditMode={isEditMode}
     >
       {renderStep()}

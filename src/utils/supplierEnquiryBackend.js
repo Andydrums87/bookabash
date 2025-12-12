@@ -179,16 +179,28 @@ let enquiriesQuery = supabase
           businessName = supplierData?.businessName || supplierData?.name || supplier.business_name || 'Unknown Business'
         }
 
+        // Parse full supplier data for additional fields
+        let supplierData = null
+        if (supplier) {
+          const parsedData = typeof supplier.data === 'string'
+            ? JSON.parse(supplier.data)
+            : supplier.data
+          supplierData = {
+            id: supplier.id,
+            businessName: businessName,
+            business_name: businessName,
+            portfolioImages: parsedData?.portfolioImages || [],
+            category: parsedData?.category || parsedData?.serviceType || null
+          }
+        }
+
         return {
           ...enquiry,
           parties: party ? {
             ...party,
             users: user || null
           } : null,
-          supplier: supplier ? {
-            id: supplier.id,
-            businessName: businessName
-          } : null
+          supplier: supplierData
         }
       })
 
@@ -689,6 +701,170 @@ async getEnquiryDetails(enquiryId) {
     return { success: false, error: error.message }
   }
 }
+
+/**
+ * Update cake/product order status
+ * @param {string} enquiryId - The enquiry ID
+ * @param {string} orderStatus - New status: 'confirmed', 'preparing', 'dispatched', 'delivered'
+ * @param {string} trackingUrl - Optional tracking URL (for dispatched status)
+ */
+async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode = null, courierName = null) {
+  try {
+    console.log('📦 Updating order status:', { enquiryId, orderStatus, trackingUrl, courierCode, courierName })
+
+    const updateData = {
+      order_status: orderStatus,
+      updated_at: new Date().toISOString()
+    }
+
+    // Add timestamps for specific statuses
+    if (orderStatus === 'dispatched') {
+      updateData.dispatched_at = new Date().toISOString()
+      if (trackingUrl) {
+        updateData.tracking_url = trackingUrl
+      }
+      if (courierCode) {
+        updateData.courier_code = courierCode
+      }
+      if (courierName) {
+        updateData.courier_name = courierName
+      }
+    } else if (orderStatus === 'delivered') {
+      updateData.delivered_at = new Date().toISOString()
+    }
+
+    const { data: updatedEnquiry, error } = await supabase
+      .from('enquiries')
+      .update(updateData)
+      .eq('id', enquiryId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    console.log('✅ Order status updated:', updatedEnquiry)
+
+    return { success: true, enquiry: updatedEnquiry }
+
+  } catch (error) {
+    console.error('❌ Error updating order status:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Update tracking URL for an order
+ * @param {string} enquiryId - The enquiry ID
+ * @param {string} trackingUrl - The tracking URL
+ */
+async updateTrackingUrl(enquiryId, trackingUrl) {
+  try {
+    console.log('🔗 Updating tracking URL:', { enquiryId, trackingUrl })
+
+    const { data: updatedEnquiry, error } = await supabase
+      .from('enquiries')
+      .update({
+        tracking_url: trackingUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', enquiryId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    console.log('✅ Tracking URL updated:', updatedEnquiry)
+
+    return { success: true, enquiry: updatedEnquiry }
+
+  } catch (error) {
+    console.error('❌ Error updating tracking URL:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get cake/product orders by status for a supplier
+ * @param {string} orderStatus - Filter by order status (optional)
+ */
+async getCakeOrders(orderStatus = null) {
+  try {
+    const { data: authUser, error: authError } = await supabase.auth.getUser()
+    if (authError || !authUser?.user) {
+      throw new Error('No authenticated user')
+    }
+
+    // Get supplier IDs
+    const { data: supplierRecords, error: supplierError } = await supabase
+      .from('suppliers')
+      .select('id')
+      .eq('auth_user_id', authUser.user.id)
+
+    if (supplierError || !supplierRecords || supplierRecords.length === 0) {
+      return { success: true, orders: [] }
+    }
+
+    const supplierIds = supplierRecords.map(s => s.id)
+
+    // Build query for cake orders
+    let query = supabase
+      .from('enquiries')
+      .select('*')
+      .in('supplier_id', supplierIds)
+      .eq('status', 'accepted') // Only accepted (paid) orders
+      .in('payment_status', ['paid', 'fully_paid', 'deposit_paid'])
+      .in('supplier_category', ['cakes', 'Cakes', 'cake', 'Cake'])
+      .order('created_at', { ascending: false })
+
+    if (orderStatus) {
+      query = query.eq('order_status', orderStatus)
+    }
+
+    const { data: orders, error } = await query
+
+    if (error) throw error
+
+    // Get party and user data for each order
+    const result = await this.manualJoinEnquiries(supplierIds, null)
+
+    // Filter to only cake orders
+    const cakeOrders = result.enquiries?.filter(e =>
+      e.status === 'accepted' &&
+      ['paid', 'fully_paid', 'deposit_paid'].includes(e.payment_status) &&
+      ['cakes', 'Cakes', 'cake', 'Cake'].includes(e.supplier_category)
+    ) || []
+
+    return { success: true, orders: cakeOrders }
+
+  } catch (error) {
+    console.error('❌ Error getting cake orders:', error)
+    return { success: false, error: error.message }
+  }
+}
+}
+
+// Cake/product order status constants
+export const ORDER_STATUS = {
+  CONFIRMED: 'confirmed',     // Payment received, order confirmed
+  PREPARING: 'preparing',     // Baker/supplier preparing the order
+  DISPATCHED: 'dispatched',   // Order sent for delivery
+  DELIVERED: 'delivered',     // Order delivered to customer
+}
+
+// Order status display labels
+export const ORDER_STATUS_LABELS = {
+  [ORDER_STATUS.CONFIRMED]: 'Order Confirmed',
+  [ORDER_STATUS.PREPARING]: 'Preparing',
+  [ORDER_STATUS.DISPATCHED]: 'Dispatched',
+  [ORDER_STATUS.DELIVERED]: 'Delivered',
+}
+
+// Order status colors for UI
+export const ORDER_STATUS_COLORS = {
+  [ORDER_STATUS.CONFIRMED]: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  [ORDER_STATUS.PREPARING]: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  [ORDER_STATUS.DISPATCHED]: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+  [ORDER_STATUS.DELIVERED]: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
 }
 
 // Create singleton instance

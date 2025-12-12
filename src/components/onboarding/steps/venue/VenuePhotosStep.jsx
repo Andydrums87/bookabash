@@ -3,7 +3,13 @@
 import { Camera, Upload, X } from "lucide-react"
 import { useState } from "react"
 
-export default function VenuePhotosStep({ photos, onChange }) {
+export default function VenuePhotosStep({
+  photos,
+  onChange,
+  minPhotos: customMinPhotos,
+  title,
+  subtitle
+}) {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
 
@@ -61,16 +67,20 @@ export default function VenuePhotosStep({ photos, onChange }) {
     onChange(photos.filter(p => p.id !== id))
   }
 
-  const minPhotos = 5
+  const minPhotos = customMinPhotos ?? 5
   const photosNeeded = Math.max(0, minPhotos - photos.length)
+
+  // Use custom title/subtitle or defaults
+  const displayTitle = title || "Add some photos of your venue"
+  const displaySubtitle = subtitle || `You'll need at least ${minPhotos} photos to get started. You can add more or make changes later.`
 
   return (
     <div className="py-12">
       <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
-        Add some photos of your venue
+        {displayTitle}
       </h1>
       <p className="text-lg text-gray-600 mb-4">
-        You'll need at least {minPhotos} photos to get started. You can add more or make changes later.
+        {displaySubtitle}
       </p>
 
       {photosNeeded > 0 && (

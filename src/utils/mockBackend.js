@@ -1187,12 +1187,21 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
         ...current.serviceDetails,
         ...updatedData.serviceDetails,
         // Ensure arrays are properly handled
-        addOnServices: updatedData.serviceDetails.addOnServices !== undefined ? 
+        addOnServices: updatedData.serviceDetails.addOnServices !== undefined ?
           updatedData.serviceDetails.addOnServices : (current.serviceDetails?.addOnServices || []),
-        ageGroups: updatedData.serviceDetails.ageGroups !== undefined ? 
+        ageGroups: updatedData.serviceDetails.ageGroups !== undefined ?
           updatedData.serviceDetails.ageGroups : (current.serviceDetails?.ageGroups || []),
-        themes: updatedData.serviceDetails.themes !== undefined ? 
-          updatedData.serviceDetails.themes : (current.serviceDetails?.themes || [])
+        themes: updatedData.serviceDetails.themes !== undefined ?
+          updatedData.serviceDetails.themes : (current.serviceDetails?.themes || []),
+        // Cake-specific arrays
+        flavours: updatedData.serviceDetails.flavours !== undefined ?
+          updatedData.serviceDetails.flavours : (current.serviceDetails?.flavours || []),
+        dietaryInfo: updatedData.serviceDetails.dietaryInfo !== undefined ?
+          updatedData.serviceDetails.dietaryInfo : (current.serviceDetails?.dietaryInfo || []),
+        packages: updatedData.serviceDetails.packages !== undefined ?
+          updatedData.serviceDetails.packages : (current.serviceDetails?.packages || []),
+        description: updatedData.serviceDetails.description !== undefined ?
+          updatedData.serviceDetails.description : (current.serviceDetails?.description || '')
       } : (current.serviceDetails || {}),
 
       // Availability and scheduling
@@ -1254,6 +1263,9 @@ updateSupplierProfile: async (supplierId, updatedData, packages = null) => {
         ...(packages.length > 0 ? ['Packages Available'] : ['New Provider']),
         ...(current.badges || []).filter(b => !['New Provider', 'Packages Available'].includes(b))
       ] : (current.badges || ['New Provider']),
+
+      // ✅ THEMES: Update if explicitly provided (for cake products and themed suppliers)
+      themes: updatedData.themes !== undefined ? updatedData.themes : (current.themes || []),
 
       // Owner/Contact information
       owner: {

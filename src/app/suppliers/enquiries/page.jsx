@@ -24,9 +24,11 @@ import {
   Gift,
   Loader2,
   Building2,
+  Cake,
 } from "lucide-react"
 import Link from "next/link"
 import { useSupplierEnquiries } from "@/utils/supplierEnquiryBackend"
+import CakeOrderCard from "./components/CakeOrderCard"
 
 export default function SupplierEnquiriesPage() {
   const searchParams = useSearchParams()
@@ -40,6 +42,19 @@ export default function SupplierEnquiriesPage() {
   // Helper to check if supplier has responded
   const hasSupplierResponded = (e) => {
     return e.supplier_response || (e.status === 'accepted' && !e.auto_accepted)
+  }
+
+  // Helper to check if this is a cake order
+  const isCakeOrder = (e) => {
+    const category = e.supplier_category?.toLowerCase() || ''
+    return category.includes('cake') || category === 'cakes'
+  }
+
+  // Handle cake order status updates
+  const handleCakeStatusUpdate = (enquiryId, newStatus, trackingUrl) => {
+    // The enquiry list will be refetched automatically via real-time subscription
+    console.log('Cake order status updated:', { enquiryId, newStatus, trackingUrl })
+    refetch()
   }
 
   // Group enquiries by status for tabs
@@ -370,9 +385,22 @@ export default function SupplierEnquiriesPage() {
                 </Card>
               ) : (
                 <div className="space-y-4 sm:space-y-6">
-                  {statusEnquiries.map((enquiry) => (
-                    <EnquiryCard key={enquiry.id} enquiry={enquiry} />
-                  ))}
+                  {statusEnquiries.map((enquiry) => {
+                    const isCake = isCakeOrder(enquiry)
+                    // Show CakeOrderCard for accepted cake orders (including auto-accepted)
+                    const isAcceptedCake = enquiry.status === 'accepted'
+                    const shouldShowCakeCard = isCake && isAcceptedCake
+
+                    return shouldShowCakeCard ? (
+                      <CakeOrderCard
+                        key={enquiry.id}
+                        enquiry={enquiry}
+                        onStatusUpdate={handleCakeStatusUpdate}
+                      />
+                    ) : (
+                      <EnquiryCard key={enquiry.id} enquiry={enquiry} />
+                    )
+                  })}
                 </div>
               )}
             </TabsContent>

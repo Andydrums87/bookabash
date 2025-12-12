@@ -13,6 +13,17 @@ const transformSupplierData = (backendSupplier) => {
 
   if (!backendSupplier) return null
 
+  // Debug: log cake-related data
+  if (backendSupplier?.category?.toLowerCase().includes('cake')) {
+    console.log('🎂 Transforming cake supplier data:', {
+      name: backendSupplier.name,
+      flavours: backendSupplier.flavours,
+      dietaryInfo: backendSupplier.dietaryInfo,
+      serviceDetailsFlavours: backendSupplier.serviceDetails?.flavours,
+      serviceDetailsDietaryInfo: backendSupplier.serviceDetails?.dietaryInfo,
+    });
+  }
+
   return {
     id: backendSupplier.id,
     name: backendSupplier.name,
@@ -48,8 +59,12 @@ const transformSupplierData = (backendSupplier) => {
     stats: backendSupplier?.stats,
     ownerName: backendSupplier?.ownerName,
     owner: backendSupplier?.owner,
-    weekendPremium: backendSupplier.weekendPremium, // ✅ ADD THIS LINE
-    venueAddress: backendSupplier?.venueAddress
+    weekendPremium: backendSupplier.weekendPremium,
+    venueAddress: backendSupplier?.venueAddress,
+    // Cake-specific fields (also in serviceDetails, but expose at root for convenience)
+    flavours: backendSupplier.flavours || backendSupplier.serviceDetails?.flavours,
+    dietaryInfo: backendSupplier.dietaryInfo || backendSupplier.serviceDetails?.dietaryInfo,
+    themes: backendSupplier.themes || backendSupplier.serviceDetails?.themes,
   }
 }
 
@@ -217,8 +232,8 @@ const detectCakeSupplier = (supplier) => {
     }
     
     // Check if they have cake flavors defined (from your backend form)
-    if (serviceDetails?.cakeFlavors?.length > 0) {
-
+    // Check both spellings: flavours (British) and cakeFlavors (American)
+    if (serviceDetails?.cakeFlavors?.length > 0 || serviceDetails?.flavours?.length > 0) {
       return true
     }
     

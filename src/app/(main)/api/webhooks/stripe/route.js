@@ -107,12 +107,31 @@ async function processPaymentSuccess(paymentIntent) {
       }
 
       console.log(`✅ Adding enquiry for ${category} - supplier ${supplier.id}`)
-      enquiriesToCreate.push({
+      console.log(`📦 Supplier data for ${category}:`, JSON.stringify({
+        packageId: supplier.packageId,
+        packageDataId: supplier.packageData?.id,
+        packageDataName: supplier.packageData?.name,
+        hasCakeCustomization: !!supplier.packageData?.cakeCustomization,
+        cakeCustomization: supplier.packageData?.cakeCustomization
+      }, null, 2))
+
+      // Build addon_details with cake customization if present
+      const addonDetailsObj = {}
+      if (supplier.packageData?.cakeCustomization) {
+        addonDetailsObj.cakeCustomization = supplier.packageData.cakeCustomization
+        console.log(`🎂 Including cake customization for ${category}`)
+      }
+
+      const enquiryData = {
         supplier_id: supplier.id,
         supplier_category: category,
         message: 'BOOKING CONFIRMED - Customer has completed FULL payment',
-        quoted_price: supplier.price || 0
-      })
+        quoted_price: supplier.price || 0,
+        package_id: supplier.packageId || supplier.packageData?.id || supplier.packageData?.name || null,
+        addon_details: Object.keys(addonDetailsObj).length > 0 ? addonDetailsObj : null
+      }
+      console.log(`📋 Enquiry data for ${category}:`, JSON.stringify(enquiryData, null, 2))
+      enquiriesToCreate.push(enquiryData)
     }
 
     console.log(`📝 Prepared ${enquiriesToCreate.length} enquiries to create`)
@@ -195,6 +214,12 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
       const paymentType = 'full_payment' // We now take full payment for all suppliers
       const supplierEarning = calculateSupplierEarning(enquiry.quoted_price || 0)
 
+      // Check if this is a cake order for quick status update link
+      const isCakeOrder = ['cakes', 'Cakes', 'cake', 'Cake'].includes(enquiry.supplier_category)
+      const statusUpdateLink = isCakeOrder && enquiry.status_update_token
+        ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/order-status/${enquiry.status_update_token}`
+        : ''
+
       const emailPayload = {
         supplierEmail: supplierDetails.email,
         supplierName: supplierDetails.name || 'Supplier',
@@ -210,7 +235,9 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         depositAmount: enquiry.quoted_price || 0,
         supplierEarning: supplierEarning,
         paymentType: paymentType,
-        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`
+        dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`,
+        statusUpdateLink: statusUpdateLink,
+        isCakeOrder: isCakeOrder
       }
 
       const emailUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/email/supplier-notification`
@@ -242,7 +269,9 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
             partyDate: party.party_date,
             depositAmount: enquiry.quoted_price || 0,
             supplierEarning: supplierEarning,
-            dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`
+            dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bookabash.com'}/suppliers/dashboard`,
+            statusUpdateLink: statusUpdateLink,
+            isCakeOrder: isCakeOrder
           }
 
           console.log(`📱 Sending SMS to ${supplierDetails.name} at ${supplierDetails.phone}`)

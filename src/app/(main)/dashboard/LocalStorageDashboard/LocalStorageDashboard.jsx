@@ -2206,6 +2206,10 @@ const handleChildPhotoUpload = async (file) => {
                       const isPartyBags = supplier.category === 'Party Bags' ||
                                          supplier.category?.toLowerCase().includes('party bag')
 
+                      // Check if this is a cake supplier
+                      const isCake = supplier.category?.toLowerCase().includes('cake') ||
+                                    supplier.serviceType?.toLowerCase().includes('cake')
+
                       let displayPrice = supplier.packageData?.price || supplier.price || 0
 
                       if (isPartyBags) {
@@ -2218,6 +2222,12 @@ const handleChildPhotoUpload = async (file) => {
                         if (!displayPrice) {
                           displayPrice = supplier.price || supplier.priceFrom || 0
                         }
+                      } else if (isCake) {
+                        // For cakes, use totalPrice which includes delivery fee
+                        displayPrice = supplier.packageData?.totalPrice ||
+                                      supplier.packageData?.enhancedPrice ||
+                                      supplier.packageData?.price ||
+                                      supplier.price || 0
                       }
 
                       return (

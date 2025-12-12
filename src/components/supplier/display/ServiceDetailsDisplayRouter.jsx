@@ -6,6 +6,7 @@ import React from 'react';
 const VenueDisplay = React.lazy(() => import('./VenueDisplay'));
 const EntertainerDisplay = React.lazy(() => import('./EntertainerDisplay'));
 const CateringDisplay = React.lazy(() => import('./CateringDisplay'));
+const CakeDisplay = React.lazy(() => import('./CakeDisplay'));
 const DecorationsDisplay = React.lazy(() => import('./DecorationsDisplay'));
 const ActivitiesDisplay = React.lazy(() => import('./ActivitiesDisplay'));
 const FacePaintingDisplay = React.lazy(() => import('./FacePaintingDisplay'));
@@ -100,11 +101,17 @@ const detectCategory = (supplier) => {
     return 'entertainment';
   }
 
-  // Catering
-  if (indicators.some(i => 
-    ['catering', 'caterer', 'food', 'cake', 'baker', 'dessert', 'buffet'].some(k => i.includes(k))
+  // Cakes - Check before general catering
+  if (indicators.some(i =>
+    ['cake', 'cakes', 'baker', 'bakery'].some(k => i.includes(k))
   )) {
+    return 'cakes';
+  }
 
+  // Catering (general food)
+  if (indicators.some(i =>
+    ['catering', 'caterer', 'food', 'dessert', 'buffet'].some(k => i.includes(k))
+  )) {
     return 'catering';
   }
 
@@ -180,7 +187,10 @@ const ServiceDetailsDisplayRouter = ({ supplier, isPreview, themeAccentColor }) 
             
             case 'catering':
               return <CateringDisplay {...displayProps} />;
-            
+
+            case 'cakes':
+              return <CakeDisplay {...displayProps} />;
+
             case 'decorations':
               return <DecorationsDisplay {...displayProps} />;
             

@@ -171,6 +171,20 @@ const getTrueBasePrice = (supplier, partyDetails = {}) => {
     return total;
   }
 
+  // Special handling for cakes - use originalPrice (base price without delivery)
+  const isCake = supplier.category?.toLowerCase().includes('cake') ||
+                 supplier.serviceType?.toLowerCase().includes('cake')
+
+  if (isCake) {
+    // For cakes, prioritize originalPrice which is the base cake price without delivery
+    const cakeBasePrice = supplier.packageData?.originalPrice ||
+                          supplier.packageData?.price ||
+                          supplier.originalPrice ||
+                          supplier.price ||
+                          supplier.priceFrom || 0
+    return cakeBasePrice
+  }
+
   // Use the price we explicitly set (package-specific), don't fall back to priceFrom
   let basePrice = 0;
 
@@ -206,14 +220,16 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
   if (!supplier) {
     return {
       finalPrice: 0,
-      breakdown: { base: 0, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0 },
-      details: { 
-        isWeekend: false, 
-        extraHours: 0, 
-        hasAddons: false, 
+      breakdown: { base: 0, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0, deliveryFee: 0 },
+      details: {
+        isWeekend: false,
+        extraHours: 0,
+        hasAddons: false,
         isLeadBased: false,
         additionalEntertainers: 0,
-        guestsPerEntertainer: 0
+        guestsPerEntertainer: 0,
+        cakeDeliveryFee: 0,
+        fulfillmentMethod: null
       }
     }
   }
@@ -222,17 +238,20 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
   if (!partyDetails) {
     console.warn('⚠️ calculateFinalPrice: No party details provided for', supplier.name);
     const basePrice = getTrueBasePrice(supplier, {});
+    const cakeDeliveryFee = supplier.packageData?.cakeCustomization?.deliveryFee || 0;
     return {
-      finalPrice: basePrice,
+      finalPrice: basePrice + cakeDeliveryFee,
       basePrice,
-      breakdown: { base: basePrice, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0 },
-      details: { 
-        isWeekend: false, 
-        extraHours: 0, 
-        hasAddons: false, 
+      breakdown: { base: basePrice, weekend: 0, extraHours: 0, addons: 0, additionalEntertainers: 0, deliveryFee: cakeDeliveryFee },
+      details: {
+        isWeekend: false,
+        extraHours: 0,
+        hasAddons: false,
         isLeadBased: isLeadBasedSupplier(supplier),
         additionalEntertainers: 0,
-        guestsPerEntertainer: 0
+        guestsPerEntertainer: 0,
+        cakeDeliveryFee,
+        fulfillmentMethod: supplier.packageData?.cakeCustomization?.fulfillmentMethod || null
       }
     };
   }
@@ -283,8 +302,11 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
   // 5. Calculate addons total
   const addonsTotal = addons.reduce((sum, addon) => sum + (addon.price || 0), 0);
 
-  // 6. Calculate final price (including additional entertainers)
-  const finalPrice = basePrice + weekendPremium + extraHourCost + addonsTotal + entertainerCalc.additionalEntertainerCost;
+  // 6. Calculate cake delivery fee (if applicable)
+  const cakeDeliveryFee = supplier.packageData?.cakeCustomization?.deliveryFee || 0;
+
+  // 7. Calculate final price (including additional entertainers and cake delivery)
+  const finalPrice = basePrice + weekendPremium + extraHourCost + addonsTotal + entertainerCalc.additionalEntertainerCost + cakeDeliveryFee;
 
   return {
     finalPrice,
@@ -294,7 +316,8 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
       weekend: weekendPremium,
       extraHours: extraHourCost,
       addons: addonsTotal,
-      additionalEntertainers: entertainerCalc.additionalEntertainerCost
+      additionalEntertainers: entertainerCalc.additionalEntertainerCost,
+      deliveryFee: cakeDeliveryFee
     },
     details: {
       isWeekend,
@@ -307,7 +330,9 @@ export const calculateFinalPrice = (supplier, partyDetails = {}, addons = []) =>
       isVenue: supplier.serviceType === 'venue' || supplier.category === 'Venues',
       additionalEntertainers: entertainerCalc.additionalEntertainers,
       guestsPerEntertainer: entertainerCalc.guestsPerEntertainer,
-      additionalEntertainerPrice: supplier.serviceDetails?.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0
+      additionalEntertainerPrice: supplier.serviceDetails?.additionalEntertainerPrice || supplier.additionalEntertainerPrice || 0,
+      cakeDeliveryFee,
+      fulfillmentMethod: supplier.packageData?.cakeCustomization?.fulfillmentMethod || null
     }
   }
 }

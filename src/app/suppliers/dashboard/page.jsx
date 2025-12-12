@@ -8,6 +8,7 @@ import { BusinessProvider } from "../../../contexts/BusinessContext"
 import Link from "next/link"
 import { Calendar, MapPin, Clock, ChevronRight, CheckCircle2, Building2, Search, ChevronDown, X, ArrowUpDown, LayoutGrid, LayoutList } from "lucide-react"
 import EnquiryResponseModal from "./components/EnquiryResponseModal"
+import CakeOrderCard from "../enquiries/components/CakeOrderCard"
 
 // Empty state illustration component (Airbnb style)
 function EmptyStateIllustration() {
@@ -436,7 +437,13 @@ export default function SupplierDashboard() {
   const { supplier, supplierData, loading } = useSupplier()
   // Fetch enquiries for ALL businesses (pass null for specificBusinessId)
   const { enquiries, loading: enquiriesLoading, refetch } = useSupplierEnquiries(null, null)
-  const [activeTab, setActiveTab] = useState("enquiries")
+
+  // Check if this is a cake-only supplier (product-based, no enquiries flow)
+  const isCakeSupplier = supplierData?.category?.toLowerCase()?.includes('cake') ||
+                         supplierData?.serviceType?.toLowerCase()?.includes('cake')
+
+  // For cake suppliers, default to "bookings" (orders) tab since they don't have enquiries
+  const [activeTab, setActiveTab] = useState(isCakeSupplier ? "bookings" : "enquiries")
 
   // Modal state for responding to enquiries
   const [selectedEnquiry, setSelectedEnquiry] = useState(null)
@@ -470,6 +477,20 @@ export default function SupplierDashboard() {
     }
   }
 
+  // Helper to check if an enquiry is a cake order
+  const isCakeOrder = (enquiry) => {
+    const category = enquiry?.supplier_category?.toLowerCase() || ''
+    return category.includes('cake') || category === 'cakes'
+  }
+
+  // Handle cake order status updates
+  const handleCakeStatusUpdate = (enquiryId, newStatus, trackingUrl) => {
+    console.log('Cake order status updated:', { enquiryId, newStatus, trackingUrl })
+    if (refetch) {
+      refetch()
+    }
+  }
+
   // Filter, sort, and view state for enquiries
   const [enquirySearch, setEnquirySearch] = useState('')
   const [enquirySortBy, setEnquirySortBy] = useState('newest')
@@ -493,15 +514,31 @@ export default function SupplierDashboard() {
       return e.supplier_response || (e.status === 'accepted' && !e.auto_accepted)
     }
 
+    // Helper to check if this is a cake order
+    const checkIsCakeOrder = (e) => {
+      const category = e?.supplier_category?.toLowerCase() || ''
+      return category.includes('cake') || category === 'cakes'
+    }
+
     // Confirmed bookings = Supplier has manually accepted/confirmed
+    // OR cake orders that are auto-accepted (paid in full - show in Bookings with CakeOrderCard)
     const allConfirmedBookings = enquiries
-      .filter(e => e.status === 'accepted' && hasSupplierResponded(e))
+      .filter(e => {
+        if (e.status !== 'accepted') return false
+        // Include if supplier has responded
+        if (hasSupplierResponded(e)) return true
+        // Include auto-accepted cake orders (paid in full)
+        if (e.auto_accepted && checkIsCakeOrder(e)) return true
+        return false
+      })
 
     // Pending enquiries = Awaiting supplier response
+    // Exclude auto-accepted cake orders (they go to Bookings)
     const allPendingEnquiries = enquiries
       .filter(e => {
         if (e.status === 'pending' || e.status === 'viewed') return true
-        if (e.status === 'accepted' && e.auto_accepted && !e.supplier_response) return true
+        // Auto-accepted non-cake orders still need supplier response
+        if (e.status === 'accepted' && e.auto_accepted && !e.supplier_response && !checkIsCakeOrder(e)) return true
         return false
       })
 
@@ -689,43 +726,52 @@ export default function SupplierDashboard() {
       <div className="min-h-screen bg-white">
         <div className="px-4 sm:px-6 lg:px-8 py-8">
           {/* Enquiries/Bookings Toggle - Airbnb style */}
-          <div className="flex justify-center mb-8">
-            <div className="inline-flex bg-gray-100 rounded-full p-1">
-              <button
-                onClick={() => setActiveTab("enquiries")}
-                className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
-                  activeTab === "enquiries"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Enquiries
-                {hasEnquiries && (
-                  <span className="bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                    {pendingEnquiries.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab("bookings")}
-                className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
-                  activeTab === "bookings"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Bookings
-                {hasBookings && (
-                  <span className="bg-gray-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                    {confirmedBookings.length}
-                  </span>
-                )}
-              </button>
+          {/* For cake suppliers, only show Orders tab (no enquiries flow) */}
+          {isCakeSupplier ? (
+            <div className="flex justify-center mb-8">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {allConfirmedBookings.length} order{allConfirmedBookings.length !== 1 ? 's' : ''}
+              </h2>
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-center mb-8">
+              <div className="inline-flex bg-gray-100 rounded-full p-1">
+                <button
+                  onClick={() => setActiveTab("enquiries")}
+                  className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
+                    activeTab === "enquiries"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Enquiries
+                  {hasEnquiries && (
+                    <span className="bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                      {pendingEnquiries.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("bookings")}
+                  className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
+                    activeTab === "bookings"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Bookings
+                  {hasBookings && (
+                    <span className="bg-gray-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                      {confirmedBookings.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Enquiries Tab Content */}
-          {activeTab === "enquiries" && (
+          {/* Enquiries Tab Content - Not shown for cake suppliers */}
+          {activeTab === "enquiries" && !isCakeSupplier && (
             <>
               {!hasEnquiries ? (
                 <div className="max-w-md mx-auto text-center py-12">
@@ -798,22 +844,24 @@ export default function SupplierDashboard() {
             </>
           )}
 
-          {/* Bookings Tab Content */}
-          {activeTab === "bookings" && (
+          {/* Bookings/Orders Tab Content - Always show for cake suppliers */}
+          {(activeTab === "bookings" || isCakeSupplier) && (
             <>
               {!hasBookings ? (
                 <div className="max-w-md mx-auto text-center py-12">
                   <EmptyStateIllustration />
                   <h2 className="mt-6 text-2xl font-semibold text-gray-900">
-                    No confirmed bookings yet
+                    {isCakeSupplier ? "No orders yet" : "No confirmed bookings yet"}
                   </h2>
                   <p className="mt-2 text-gray-500">
-                    {hasEnquiries
-                      ? `You have ${allPendingEnquiries.length} enquir${allPendingEnquiries.length === 1 ? 'y' : 'ies'} waiting for a response.`
-                      : "When you accept an enquiry, the booking will appear here."
+                    {isCakeSupplier
+                      ? "When customers order your cakes, they'll appear here."
+                      : hasEnquiries
+                        ? `You have ${allPendingEnquiries.length} enquir${allPendingEnquiries.length === 1 ? 'y' : 'ies'} waiting for a response.`
+                        : "When you accept an enquiry, the booking will appear here."
                     }
                   </p>
-                  {hasEnquiries && (
+                  {hasEnquiries && !isCakeSupplier && (
                     <Button
                       onClick={() => setActiveTab("enquiries")}
                       className="mt-6 bg-gray-900 hover:bg-gray-800 text-white rounded-lg px-6"
@@ -824,9 +872,12 @@ export default function SupplierDashboard() {
                 </div>
               ) : (
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    {allConfirmedBookings.length} confirmed booking{allConfirmedBookings.length === 1 ? '' : 's'}
-                  </h2>
+                  {/* Hide header for cake suppliers since we already show order count above */}
+                  {!isCakeSupplier && (
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                      {allConfirmedBookings.length} confirmed booking{allConfirmedBookings.length === 1 ? '' : 's'}
+                    </h2>
+                  )}
 
                   <FilterSortControls
                     searchQuery={bookingSearch}
@@ -858,13 +909,29 @@ export default function SupplierDashboard() {
                   ) : bookingViewMode === 'grid' ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {confirmedBookings.map((booking) => (
-                        <BookingCard key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                        isCakeOrder(booking) ? (
+                          <CakeOrderCard
+                            key={booking.id}
+                            enquiry={booking}
+                            onStatusUpdate={handleCakeStatusUpdate}
+                          />
+                        ) : (
+                          <BookingCard key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                        )
                       ))}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {confirmedBookings.map((booking) => (
-                        <BookingListItem key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                        isCakeOrder(booking) ? (
+                          <CakeOrderCard
+                            key={booking.id}
+                            enquiry={booking}
+                            onStatusUpdate={handleCakeStatusUpdate}
+                          />
+                        ) : (
+                          <BookingListItem key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                        )
                       ))}
                     </div>
                   )}

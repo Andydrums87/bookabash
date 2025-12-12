@@ -7,6 +7,7 @@ import CateringServiceDetails from './profile/components/CateringServiceDetails'
 import BouncyCastleServiceDetails from './profile/components/BouncyCastleServiceDetails';
 import DecorationsServiceDetails from './profile/components/DecorationsServiceDetails';
 import PartyBagsServiceDetails from './profile/components/PartyBagServiceDetails';
+import CakeServiceDetails from './profile/components/CakeServiceDetails';
 
 
 const ServiceDetailsRouter = ({
@@ -60,7 +61,11 @@ const ServiceDetailsRouter = ({
       case 'catering':
       case 'caterer':
         return <CateringServiceDetails {...commonProps} />;
-        
+
+      case 'cake':
+      case 'cakes':
+        return <CakeServiceDetails {...commonProps} />;
+
       default:
         return <EntertainerServiceDetails {...commonProps} serviceType={serviceType} />;
     }

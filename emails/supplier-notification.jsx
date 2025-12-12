@@ -29,6 +29,8 @@ export default function SupplierNotification({
   supplierEarning = '0',
   paymentType = 'deposit', // 'deposit' or 'full_payment'
   dashboardLink = 'http://localhost:3000/suppliers/dashboard',
+  statusUpdateLink = null, // Quick status update link for cake orders
+  isCakeOrder = false, // Whether this is a cake order
 }) {
   const paymentTypeDetail = paymentType === 'full_payment'
     ? 'Full payment received: No remaining balance to collect'
@@ -154,6 +156,23 @@ export default function SupplierNotification({
               </Button>
               <Text style={styles.linkText}>Or copy this link: {dashboardLink}</Text>
             </Section>
+
+            {/* Quick Status Update for Cake Orders */}
+            {isCakeOrder && statusUpdateLink && (
+              <Section style={styles.quickUpdateBox}>
+                <Heading as="h4" style={styles.quickUpdateHeading}>🍰 Quick Order Updates</Heading>
+                <Text style={styles.quickUpdateText}>
+                  Update your order status instantly without logging in! Use this link to mark your order as
+                  Confirmed → Preparing → Dispatched → Delivered.
+                </Text>
+                <Button href={statusUpdateLink} style={styles.quickUpdateButton}>
+                  📦 UPDATE ORDER STATUS
+                </Button>
+                <Text style={styles.quickUpdateNote}>
+                  Bookmark this link for easy access when preparing and delivering the cake.
+                </Text>
+              </Section>
+            )}
 
             <Text style={styles.closing}>
               Time is money - and this customer is ready to pay!<br/>
@@ -443,5 +462,42 @@ const styles = {
     opacity: 0.8,
     margin: '5px 0',
     color: '#FFFFFF',
+  },
+  quickUpdateBox: {
+    backgroundColor: '#fdf4ff',
+    borderRadius: '12px',
+    padding: '20px',
+    margin: '20px 0',
+    border: '2px solid #e879f9',
+    textAlign: 'center',
+  },
+  quickUpdateHeading: {
+    color: '#a21caf',
+    marginBottom: '10px',
+    fontSize: '18px',
+    fontWeight: 'bold',
+  },
+  quickUpdateText: {
+    color: '#86198f',
+    margin: '0 0 15px 0',
+    fontSize: '14px',
+    lineHeight: '1.5',
+  },
+  quickUpdateButton: {
+    backgroundColor: '#a21caf',
+    color: 'white',
+    padding: '14px 28px',
+    borderRadius: '20px',
+    fontWeight: 'bold',
+    fontSize: '16px',
+    textDecoration: 'none',
+    display: 'inline-block',
+    border: '2px solid #a21caf',
+  },
+  quickUpdateNote: {
+    color: '#9333ea',
+    margin: '15px 0 0 0',
+    fontSize: '12px',
+    fontStyle: 'italic',
   },
 };

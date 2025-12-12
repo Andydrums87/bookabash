@@ -426,7 +426,13 @@ const SupplierPackagesRouter = ({
     if (isCakeSupplier && !addonData && selectedPackageId) {
       const selectedPackage = packages.find(pkg => pkg.id === selectedPackageId)
       if (selectedPackage) {
-        console.log('🎂 Intercepting add to plan for cake customization:', selectedPackage.name)
+        console.log('🎂 Intercepting add to plan for cake customization:', {
+          packageName: selectedPackage.name,
+          packageId: selectedPackage.id,
+          deliveryFee: selectedPackage.deliveryFee,
+          allPackageKeys: Object.keys(selectedPackage),
+          fullPackage: selectedPackage
+        })
         setSelectedPackageForCake(selectedPackage)
         setShowCakeModal(true)
         return // Don't proceed with regular add to plan

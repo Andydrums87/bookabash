@@ -140,6 +140,23 @@ export const useSectionManager = (supplierData, updateProfile, supplier) => {
               },
               bookingTerms: serviceDetails.bookingTerms || '',
             }
+          },
+
+          // Cake-specific sections
+          flavours: {
+            originalValue: serviceDetails.flavours || [],
+          },
+          dietary: {
+            originalValue: serviceDetails.dietaryInfo || [],
+          },
+          themes: {
+            originalValue: serviceDetails.themes || [],
+          },
+          description: {
+            originalValue: serviceDetails.description || '',
+          },
+          packages: {
+            originalValue: serviceDetails.packages || [],
           }
         };
 

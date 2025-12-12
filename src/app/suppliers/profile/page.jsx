@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { useSupplierDashboard } from "@/utils/mockBackend"
 import ServiceSpecificDetails from "./components/EntertainerServiceDetails"
 import ServiceDetailsRouter from "../ServiceDetailsRouter"
+import CakeBusinessSettings from "./components/CakeBusinessSettings"
 
 // Dynamic imports for photos, packages, and verification
 const MediaPageContent = dynamic(
@@ -48,7 +50,11 @@ import {
   Package,
   Shield,
   X,
-  MessageSquare
+  MessageSquare,
+  Palette,
+  Leaf,
+  Cake,
+  Truck
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -415,6 +421,7 @@ export default function SupplierProfilePage() {
   // ✅ Use business-aware hooks
   const { supplier, supplierData, setSupplierData, loading, error, refresh, currentBusiness } = useSupplier()
   const { saving, updateProfile } = useSupplierDashboard()
+  const searchParams = useSearchParams()
 
   const [activeTab, setActiveTab] = useState("general")
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -664,9 +671,12 @@ if (loading) {
     )
   }
 
+  const isSettingsMode = searchParams.get('settings') === 'true'
+
   const isNewSupplier = supplierData && !supplierData.isComplete
   const categoryLower = (supplierData?.category || supplierData?.serviceType || '')?.toLowerCase()
   const isVenue = categoryLower === 'venues' || categoryLower === 'venue'
+  const isCakeBusiness = (categoryLower === 'cakes' || categoryLower === 'cake') && (supplierData?.is_primary || currentBusiness?.is_primary)
 
   // Sidebar sections based on service type
   const venueSections = [
@@ -702,7 +712,31 @@ if (loading) {
     { id: 'messageTemplates', label: 'Message templates', icon: MessageSquare },
   ]
 
-  const sections = isVenue ? venueSections : entertainerSections
+  // Cake product sections (for individual cake products, not business shell)
+  const cakeSections = [
+    { id: 'listingName', label: 'Cake name', icon: Cake },
+    { id: 'photos', label: 'Photos', icon: Camera },
+    { id: 'about', label: 'About this cake', icon: FileText },
+    { id: 'flavours', label: 'Flavours', icon: Palette },
+    { id: 'dietary', label: 'Dietary info', icon: Leaf },
+    { id: 'themes', label: 'Party themes', icon: Sparkles },
+    { id: 'packages', label: 'Sizes', icon: Package },
+  ]
+
+  // Cake business settings sections (for the primary business shell)
+  const cakeBusinessSections = [
+    { id: 'businessName', label: 'Business name', icon: Building2 },
+    { id: 'contact', label: 'Contact info', icon: MessageSquare },
+    { id: 'location', label: 'Location', icon: MapPin },
+    { id: 'fulfilment', label: 'Fulfilment options', icon: Truck },
+    { id: 'leadTimes', label: 'Lead times', icon: Clock },
+  ]
+
+  const isCake = categoryLower === 'cakes' || categoryLower === 'cake'
+  // Show business settings sections if in settings mode for a cake primary business
+  const sections = (isSettingsMode && isCakeBusiness)
+    ? cakeBusinessSections
+    : (isCake ? cakeSections : (isVenue ? venueSections : entertainerSections))
 
   return (
     <div className="min-h-screen bg-white">
@@ -846,12 +880,14 @@ if (loading) {
                 )
 
               case 'about':
-                const aboutText = serviceDetails.aboutUs || supplierData?.description || ''
+                // For cakes, description is in serviceDetails.description; for others it's in aboutUs
+                const aboutText = serviceDetails.description || serviceDetails.aboutUs || supplierData?.description || ''
                 const truncatedAbout = aboutText.trim().slice(0, 80)
+                const isCakeAbout = categoryLower === 'cakes' || categoryLower === 'cake'
                 return (
                   <div>
-                    <h3 className="text-sm text-gray-500 mb-1">About</h3>
-                    <p className="text-gray-900">{truncatedAbout ? `${truncatedAbout}${aboutText.length > 80 ? '...' : ''}` : 'Tell your story'}</p>
+                    <h3 className="text-sm text-gray-500 mb-1">{isCakeAbout ? 'About this cake' : 'About'}</h3>
+                    <p className="text-gray-900">{truncatedAbout ? `${truncatedAbout}${aboutText.length > 80 ? '...' : ''}` : (isCakeAbout ? 'Describe this cake' : 'Tell your story')}</p>
                   </div>
                 )
 
@@ -1077,21 +1113,39 @@ if (loading) {
                 )
 
               case 'themes':
-                const mobileThemes = (Array.isArray(serviceDetails.themes) ? serviceDetails.themes : []).filter(t => typeof t === 'string')
+                const mobileThemes = (Array.isArray(serviceDetails.themes) ? serviceDetails.themes : (Array.isArray(supplierData?.data?.themes) ? supplierData.data.themes : [])).filter(t => typeof t === 'string')
+                const mobileThemeLabels = {
+                  'superhero': 'Superhero',
+                  'princess': 'Princess',
+                  'unicorn': 'Unicorn',
+                  'dinosaur': 'Dinosaur',
+                  'space': 'Space',
+                  'under-the-sea': 'Under the Sea',
+                  'safari': 'Safari / Jungle',
+                  'sports': 'Sports',
+                  'gaming': 'Gaming',
+                  'fairy': 'Fairy / Enchanted',
+                  'pirate': 'Pirate',
+                  'construction': 'Construction',
+                  'farm': 'Farm Animals',
+                  'ballet': 'Ballet / Dance',
+                  'music': 'Music / Pop Star',
+                  'general': 'Any Theme'
+                }
                 return (
                   <div>
-                    <h3 className="text-sm text-gray-500 mb-1">Themes</h3>
+                    <h3 className="text-sm text-gray-500 mb-1">Party themes</h3>
                     {mobileThemes.length > 0 ? (
                       <div className="space-y-0.5">
                         {mobileThemes.slice(0, 3).map((theme, i) => (
-                          <p key={i} className="font-medium text-gray-900">{String(theme).charAt(0).toUpperCase() + String(theme).slice(1)}</p>
+                          <p key={i} className="font-medium text-gray-900">{mobileThemeLabels[theme] || (String(theme).charAt(0).toUpperCase() + String(theme).slice(1))}</p>
                         ))}
                         {mobileThemes.length > 3 && (
                           <p className="text-sm text-gray-500">+{mobileThemes.length - 3} more</p>
                         )}
                       </div>
                     ) : (
-                      <p className="font-medium text-gray-900">Add themes</p>
+                      <p className="font-medium text-gray-900">Select party themes</p>
                     )}
                   </div>
                 )
@@ -1127,6 +1181,56 @@ if (loading) {
                   <div>
                     <h3 className="text-sm text-gray-500 mb-1">Message templates</h3>
                     <p className="font-medium text-gray-900">Create templates for booking confirmations</p>
+                  </div>
+                )
+
+              // Cake-specific mobile sections
+              case 'flavours':
+                const mobileFlavours = serviceDetails.flavours || []
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Flavours</h3>
+                    {mobileFlavours.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileFlavours.slice(0, 3).map((flavour, i) => (
+                          <p key={i} className="font-medium text-gray-900">{flavour}</p>
+                        ))}
+                        {mobileFlavours.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileFlavours.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Select available flavours</p>
+                    )}
+                  </div>
+                )
+
+              case 'dietary':
+                const mobileDietary = serviceDetails.dietaryInfo || []
+                const mobileDietaryLabels = {
+                  'vegetarian': 'Vegetarian',
+                  'vegan': 'Vegan',
+                  'gluten-free': 'Gluten Free',
+                  'dairy-free': 'Dairy Free',
+                  'nut-free': 'Nut Free',
+                  'egg-free': 'Egg Free',
+                  'halal': 'Halal'
+                }
+                return (
+                  <div>
+                    <h3 className="text-sm text-gray-500 mb-1">Dietary info</h3>
+                    {mobileDietary.length > 0 ? (
+                      <div className="space-y-0.5">
+                        {mobileDietary.slice(0, 3).map((diet, i) => (
+                          <p key={i} className="font-medium text-gray-900">{mobileDietaryLabels[diet] || diet}</p>
+                        ))}
+                        {mobileDietary.length > 3 && (
+                          <p className="text-sm text-gray-500">+{mobileDietary.length - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium text-gray-900">Select dietary options</p>
+                    )}
                   </div>
                 )
 
@@ -1199,6 +1303,16 @@ if (loading) {
                   <MessageTemplatesSection
                     supplier={supplier}
                     currentBusiness={currentBusiness}
+                  />
+                </div>
+              ) : (isSettingsMode && isCakeBusiness) ? (
+                <div className="p-6">
+                  <CakeBusinessSettings
+                    serviceDetails={supplierData?.serviceDetails || {}}
+                    supplierData={supplierData}
+                    currentBusiness={currentBusiness}
+                    onUpdate={handleServiceDetailsUpdate}
+                    saving={saving}
                   />
                 </div>
               ) : (
@@ -1479,13 +1593,15 @@ if (loading) {
                     )
 
                   case 'about':
-                    const aboutText = serviceDetails.aboutUs || supplierData?.description || ''
-                    const truncatedAbout = aboutText.trim().slice(0, 60)
+                    // For cakes, description is in serviceDetails.description; for others it's in aboutUs
+                    const desktopAboutText = serviceDetails.description || serviceDetails.aboutUs || supplierData?.description || ''
+                    const desktopTruncatedAbout = desktopAboutText.trim().slice(0, 60)
+                    const isCakeAboutDesktop = categoryLower === 'cakes' || categoryLower === 'cake'
                     return (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">About</h3>
+                        <h3 className="font-semibold text-gray-900 mb-1">{isCakeAboutDesktop ? 'About this cake' : 'About'}</h3>
                         <p className="text-sm text-gray-500">
-                          {truncatedAbout ? `${truncatedAbout}${aboutText.length > 60 ? '...' : ''}` : 'Tell your story'}
+                          {desktopTruncatedAbout ? `${desktopTruncatedAbout}${desktopAboutText.length > 60 ? '...' : ''}` : (isCakeAboutDesktop ? 'Describe this cake' : 'Tell your story')}
                         </p>
                       </div>
                     )
@@ -1648,21 +1764,39 @@ if (loading) {
                     )
 
                   case 'themes':
-                    const themes = (Array.isArray(serviceDetails.themes) ? serviceDetails.themes : []).filter(t => typeof t === 'string')
+                    const themes = (Array.isArray(serviceDetails.themes) ? serviceDetails.themes : (Array.isArray(supplierData?.data?.themes) ? supplierData.data.themes : [])).filter(t => typeof t === 'string')
+                    const themeLabels = {
+                      'superhero': 'Superhero',
+                      'princess': 'Princess',
+                      'unicorn': 'Unicorn',
+                      'dinosaur': 'Dinosaur',
+                      'space': 'Space',
+                      'under-the-sea': 'Under the Sea',
+                      'safari': 'Safari / Jungle',
+                      'sports': 'Sports',
+                      'gaming': 'Gaming',
+                      'fairy': 'Fairy / Enchanted',
+                      'pirate': 'Pirate',
+                      'construction': 'Construction',
+                      'farm': 'Farm Animals',
+                      'ballet': 'Ballet / Dance',
+                      'music': 'Music / Pop Star',
+                      'general': 'Any Theme'
+                    }
                     return (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-2">Themes</h3>
+                        <h3 className="font-semibold text-gray-900 mb-2">Party themes</h3>
                         {themes.length > 0 ? (
                           <div className="space-y-1">
                             {themes.slice(0, 4).map((theme, i) => (
-                              <p key={i} className="text-sm text-gray-500">{String(theme).charAt(0).toUpperCase() + String(theme).slice(1)}</p>
+                              <p key={i} className="text-sm text-gray-500">{themeLabels[theme] || (String(theme).charAt(0).toUpperCase() + String(theme).slice(1))}</p>
                             ))}
                             {themes.length > 4 && (
                               <p className="text-sm text-gray-400">+{themes.length - 4} more</p>
                             )}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-500">Add themes</p>
+                          <p className="text-sm text-gray-500">Select party themes</p>
                         )}
                       </div>
                     )
@@ -1700,6 +1834,56 @@ if (loading) {
                         <p className="text-sm text-gray-500">
                           Create templates for booking confirmations
                         </p>
+                      </div>
+                    )
+
+                  // Cake-specific sections
+                  case 'flavours':
+                    const cakeFlavours = serviceDetails.flavours || []
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Flavours</h3>
+                        {cakeFlavours.length > 0 ? (
+                          <div className="space-y-1">
+                            {cakeFlavours.slice(0, 4).map((flavour, i) => (
+                              <p key={i} className="text-sm text-gray-500">{flavour}</p>
+                            ))}
+                            {cakeFlavours.length > 4 && (
+                              <p className="text-sm text-gray-400">+{cakeFlavours.length - 4} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Select available flavours</p>
+                        )}
+                      </div>
+                    )
+
+                  case 'dietary':
+                    const cakeDietary = serviceDetails.dietaryInfo || []
+                    const dietaryLabels = {
+                      'vegetarian': 'Vegetarian',
+                      'vegan': 'Vegan',
+                      'gluten-free': 'Gluten Free',
+                      'dairy-free': 'Dairy Free',
+                      'nut-free': 'Nut Free',
+                      'egg-free': 'Egg Free',
+                      'halal': 'Halal'
+                    }
+                    return (
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-2">Dietary info</h3>
+                        {cakeDietary.length > 0 ? (
+                          <div className="space-y-1">
+                            {cakeDietary.slice(0, 4).map((diet, i) => (
+                              <p key={i} className="text-sm text-gray-500">{dietaryLabels[diet] || diet}</p>
+                            ))}
+                            {cakeDietary.length > 4 && (
+                              <p className="text-sm text-gray-400">+{cakeDietary.length - 4} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Select dietary options</p>
+                        )}
                       </div>
                     )
 
@@ -1750,6 +1934,16 @@ if (loading) {
               <MessageTemplatesSection
                 supplier={supplier}
                 currentBusiness={currentBusiness}
+              />
+            </div>
+          ) : (isSettingsMode && isCakeBusiness) ? (
+            <div className="p-6 lg:p-12">
+              <CakeBusinessSettings
+                serviceDetails={supplierData?.serviceDetails || {}}
+                supplierData={supplierData}
+                currentBusiness={currentBusiness}
+                onUpdate={handleServiceDetailsUpdate}
+                saving={saving}
               />
             </div>
           ) : (

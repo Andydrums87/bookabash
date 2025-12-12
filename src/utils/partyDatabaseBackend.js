@@ -854,26 +854,27 @@ async sendIndividualEnquiry(partyId, supplier, selectedPackage = null, customMes
     }
        
     // ✅ ENHANCED: Create enquiry data with cake customization
+    // Build addon_details object - include both addons and cake customization
+    const addonDetailsObj = {
+      addons: relevantAddons.length > 0 ? relevantAddons : [],
+      // Include cake customization if present
+      ...(selectedPackage?.cakeCustomization && {
+        cakeCustomization: selectedPackage.cakeCustomization
+      })
+    }
+
     const enquiryData = {
       party_id: partyId,
       supplier_id: supplier.id,
       supplier_category: supplierCategory,
-      package_id: selectedPackage?.id || null,
+      package_id: selectedPackage?.id || selectedPackage?.name || null,
       addon_ids: relevantAddons.length > 0 ? relevantAddons.map(a => a.id) : null,
-      addon_details: relevantAddons.length > 0 ? JSON.stringify(relevantAddons) : null,
+      addon_details: JSON.stringify(addonDetailsObj),
       message: enquiryMessage,
       special_requests: party.special_requirements || null,
       quoted_price: totalQuotedPrice,
       status: 'pending',
-      created_at: new Date().toISOString(),
-      
-      // ✅ NEW: Add cake customization data to enquiry
-      customization_data: selectedPackage?.cakeCustomization ? JSON.stringify({
-        type: 'cake',
-        details: selectedPackage.cakeCustomization,
-        packageType: selectedPackage.packageType,
-        supplierType: selectedPackage.supplierType
-      }) : null
+      created_at: new Date().toISOString()
     }
        
     

@@ -26,7 +26,9 @@ export async function POST(req) {
       partyDate,
       depositAmount,
       supplierEarning,
-      dashboardLink
+      dashboardLink,
+      statusUpdateLink, // Quick status update link for cake orders
+      isCakeOrder // Whether this is a cake order
     } = await req.json();
 
     if (!phoneNumber) {
@@ -41,7 +43,7 @@ export async function POST(req) {
         : `+44${phoneNumber}`;
 
     // Create urgent SMS message
-    const message = `URGENT BOOKING - PartySnap
+    let message = `URGENT BOOKING - PartySnap
 
 £${supplierEarning} PAID BOOKING CONFIRMED
 
@@ -49,7 +51,16 @@ ${customerName} paid £${depositAmount} for ${childName}'s ${theme} party on ${p
 
 RESPOND WITHIN 2 HOURS
 
-Dashboard: ${dashboardLink}
+Dashboard: ${dashboardLink}`;
+
+    // Add quick status update link for cake orders
+    if (isCakeOrder && statusUpdateLink) {
+      message += `
+
+Quick Status Update: ${statusUpdateLink}`;
+    }
+
+    message += `
 
 Reply STOP to opt out`;
 

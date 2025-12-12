@@ -213,7 +213,7 @@ export function transformSupplierRecord(row) {
     description,
     category,
     subcategory: d.subcategory ?? undefined,
-    weekendPremium, 
+    weekendPremium,
     location,
     priceFrom,
     priceUnit,
@@ -227,7 +227,7 @@ export function transformSupplierRecord(row) {
     availabilityNotes,
     advanceBookingDays,
     maxBookingDays,
-venueAddress,
+    venueAddress,
     packages,
     portfolioImages,
     portfolioVideos,
@@ -240,6 +240,11 @@ venueAddress,
 
     ownerName: d.ownerName,
     owner: d.owner,
+
+    // Cake-specific fields (expose at root for convenience)
+    flavours: d.flavours ?? serviceDetails.flavours ?? [],
+    dietaryInfo: d.dietaryInfo ?? serviceDetails.dietaryInfo ?? [],
+    themes: d.themes ?? serviceDetails.themes ?? [],
   };
 }
 

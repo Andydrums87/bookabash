@@ -13,8 +13,13 @@ import {
   X,
   ChevronLeft,
   Upload,
-  MessageSquare
+  MessageSquare,
+  Truck,
+  MapPin,
+  Clock,
+  Package
 } from "lucide-react"
+import { useBusiness } from "@/contexts/BusinessContext"
 import MessageTemplatesSection from "../profile/components/MessageTemplatesSection"
 import { useSupplier } from "@/hooks/useSupplier"
 import { useSupplierDashboard } from "@/utils/mockBackend"
@@ -142,6 +147,13 @@ export default function Settings() {
 
   const { supplier, supplierData, setSupplierData, loading } = useSupplier()
   const { updateProfile } = useSupplierDashboard()
+  const { businesses, currentBusiness } = useBusiness()
+
+  // Check if this is a cake supplier (check primary business)
+  const primaryBusiness = businesses?.find(b => b.is_primary || b.isPrimary)
+  const isCakeSupplier = primaryBusiness?.category?.toLowerCase() === 'cakes' ||
+                         primaryBusiness?.serviceType?.toLowerCase() === 'cakes' ||
+                         supplierData?.category?.toLowerCase() === 'cakes'
 
   // Form state
   const [personalInfo, setPersonalInfo] = useState({
@@ -164,6 +176,16 @@ export default function Settings() {
     emailMarketing: false,
     smsBookings: true,
     smsReminders: true,
+  })
+
+  // Cake-specific settings (only used for cake suppliers)
+  const [cakeSettings, setCakeSettings] = useState({
+    offersPickup: true,
+    offersDelivery: false,
+    deliveryRadius: 10,
+    deliveryFee: 0,
+    minimumLeadTime: 3,
+    standardLeadTime: 7,
   })
 
   // Load data from supplier
@@ -192,6 +214,24 @@ export default function Settings() {
       })
     }
   }, [supplierData])
+
+  // Load cake settings from primary business
+  useEffect(() => {
+    if (primaryBusiness && isCakeSupplier) {
+      const serviceDetails = primaryBusiness.serviceDetails || primaryBusiness.data?.serviceDetails || {}
+      const fulfilment = serviceDetails.fulfilment || {}
+      const leadTime = serviceDetails.leadTime || {}
+
+      setCakeSettings({
+        offersPickup: fulfilment.offersPickup ?? true,
+        offersDelivery: fulfilment.offersDelivery ?? false,
+        deliveryRadius: fulfilment.deliveryRadius ?? 10,
+        deliveryFee: fulfilment.deliveryFee ?? 0,
+        minimumLeadTime: leadTime.minimum ?? 3,
+        standardLeadTime: leadTime.standard ?? 7,
+      })
+    }
+  }, [primaryBusiness, isCakeSupplier])
 
   const handlePhotoUpload = async (event) => {
     const file = event.target.files[0]
@@ -302,9 +342,87 @@ export default function Settings() {
       setBusinessInfo(prev => ({ ...prev, businessName: editValue.businessName || '' }))
     } else if (editField === 'postcode') {
       setBusinessInfo(prev => ({ ...prev, operatingPostcode: editValue.postcode || '' }))
+    } else if (editField === 'fulfilment' || editField === 'deliveryFee' || editField === 'leadTimes') {
+      // Update cake settings and save to primary business
+      const updatedCakeSettings = {
+        ...cakeSettings,
+        ...editValue,
+      }
+      setCakeSettings(updatedCakeSettings)
+      await handleCakeSettingsSave(updatedCakeSettings)
+      return // Don't call regular handleSave
     }
 
     await handleSave()
+  }
+
+  // Save cake settings to the primary business AND propagate to all child products
+  const handleCakeSettingsSave = async (settings) => {
+    if (!primaryBusiness) return
+
+    setSaving(true)
+    try {
+      const fulfilmentData = {
+        offersPickup: settings.offersPickup,
+        offersDelivery: settings.offersDelivery,
+        deliveryRadius: settings.deliveryRadius,
+        deliveryFee: settings.deliveryFee,
+      }
+
+      const leadTimeData = {
+        minimum: settings.minimumLeadTime,
+        standard: settings.standardLeadTime,
+      }
+
+      // 1. Update the primary business
+      const updatedPrimaryBusiness = {
+        ...primaryBusiness,
+        serviceDetails: {
+          ...(primaryBusiness.serviceDetails || {}),
+          fulfilment: fulfilmentData,
+          leadTime: leadTimeData,
+        },
+      }
+
+      const primaryResult = await updateProfile(updatedPrimaryBusiness, null, primaryBusiness.id)
+
+      if (!primaryResult.success) {
+        throw new Error(primaryResult.error)
+      }
+
+      // 2. Find all child businesses (cake products) and update them too
+      const childBusinesses = businesses?.filter(b =>
+        b.parent_business_id === primaryBusiness.id ||
+        b.parentBusinessId === primaryBusiness.id
+      ) || []
+
+      // Update each child business with the new fulfilment/lead time settings
+      const updatePromises = childBusinesses.map(async (child) => {
+        const updatedChild = {
+          ...child,
+          serviceDetails: {
+            ...(child.serviceDetails || {}),
+            fulfilment: fulfilmentData,
+            leadTime: leadTimeData,
+          },
+        }
+        return updateProfile(updatedChild, null, child.id)
+      })
+
+      // Wait for all child updates to complete
+      await Promise.all(updatePromises)
+
+      console.log(`✅ Updated primary business and ${childBusinesses.length} cake product(s)`)
+
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2000)
+      setEditField(null)
+    } catch (error) {
+      console.error('Failed to save cake settings:', error)
+      alert('Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -471,6 +589,69 @@ export default function Settings() {
                   description="This helps customers find you in local searches"
                   onEdit={() => openEditModal('postcode', { postcode: businessInfo.operatingPostcode })}
                 />
+
+                {/* Cake-specific settings */}
+                {isCakeSupplier && (
+                  <>
+                    <div className="pt-6 mt-6 border-t border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Truck className="w-5 h-5" />
+                        Fulfilment Options
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        How customers can receive their cakes
+                      </p>
+                    </div>
+
+                    <SettingRow
+                      label="Collection available"
+                      value={cakeSettings.offersPickup ? 'Yes - customers can collect from your location' : 'No'}
+                      onEdit={() => openEditModal('fulfilment', { ...cakeSettings })}
+                    />
+
+                    <SettingRow
+                      label="Delivery available"
+                      value={cakeSettings.offersDelivery
+                        ? `Yes - within ${cakeSettings.deliveryRadius} miles`
+                        : 'No'
+                      }
+                      onEdit={() => openEditModal('fulfilment', { ...cakeSettings })}
+                    />
+
+                    {cakeSettings.offersDelivery && (
+                      <SettingRow
+                        label="Delivery fee"
+                        value={cakeSettings.deliveryFee > 0 ? `£${cakeSettings.deliveryFee}` : 'Free delivery'}
+                        description="This fee is added to customer orders when they choose delivery"
+                        onEdit={() => openEditModal('deliveryFee', { deliveryFee: cakeSettings.deliveryFee })}
+                      />
+                    )}
+
+                    <div className="pt-6 mt-6 border-t border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Lead Times
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        How much notice you need for orders
+                      </p>
+                    </div>
+
+                    <SettingRow
+                      label="Minimum notice"
+                      value={`${cakeSettings.minimumLeadTime} days`}
+                      description="The shortest notice period you can accept"
+                      onEdit={() => openEditModal('leadTimes', { ...cakeSettings })}
+                    />
+
+                    <SettingRow
+                      label="Recommended notice"
+                      value={`${cakeSettings.standardLeadTime} days`}
+                      description="The ideal notice period for best results"
+                      onEdit={() => openEditModal('leadTimes', { ...cakeSettings })}
+                    />
+                  </>
+                )}
               </div>
             )}
 
@@ -673,6 +854,215 @@ export default function Settings() {
           <p className="text-sm text-gray-500 mt-2">
             This helps customers find you when searching for services in their area.
           </p>
+        </div>
+      </EditModal>
+
+      {/* Cake-specific edit modals */}
+      <EditModal
+        isOpen={editField === 'fulfilment'}
+        onClose={() => setEditField(null)}
+        title="Fulfilment options"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div className="space-y-6">
+          {/* Pickup toggle */}
+          <div
+            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              editValue.offersPickup ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
+            }`}
+            onClick={() => {
+              // Don't allow both to be off
+              if (editValue.offersPickup && !editValue.offersDelivery) return
+              setEditValue(prev => ({ ...prev, offersPickup: !prev.offersPickup }))
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Package className="w-5 h-5 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Collection / Pickup</p>
+                  <p className="text-sm text-gray-500">Customers collect from your location</p>
+                </div>
+              </div>
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                editValue.offersPickup ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
+              }`}>
+                {editValue.offersPickup && (
+                  <Check className="w-4 h-4 text-white" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery toggle */}
+          <div
+            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              editValue.offersDelivery ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
+            }`}
+            onClick={() => {
+              // Don't allow both to be off
+              if (editValue.offersDelivery && !editValue.offersPickup) return
+              setEditValue(prev => ({ ...prev, offersDelivery: !prev.offersDelivery }))
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Truck className="w-5 h-5 text-gray-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Delivery</p>
+                  <p className="text-sm text-gray-500">You deliver to customer's location</p>
+                </div>
+              </div>
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                editValue.offersDelivery ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
+              }`}>
+                {editValue.offersDelivery && (
+                  <Check className="w-4 h-4 text-white" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery radius - only show if delivery enabled */}
+          {editValue.offersDelivery && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Delivery radius (miles)</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[5, 10, 15, 20, 25, 30, 40, 50].map(radius => (
+                  <button
+                    key={radius}
+                    type="button"
+                    onClick={() => setEditValue(prev => ({ ...prev, deliveryRadius: radius }))}
+                    className={`py-3 rounded-xl text-sm font-medium transition-all ${
+                      editValue.deliveryRadius === radius
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {radius}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-500 bg-amber-50 p-3 rounded-lg border border-amber-200">
+            You must offer at least one fulfilment option
+          </p>
+        </div>
+      </EditModal>
+
+      <EditModal
+        isOpen={editField === 'deliveryFee'}
+        onClose={() => setEditField(null)}
+        title="Edit delivery fee"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery fee</label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg font-medium">£</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={editValue.deliveryFeeInput ?? (editValue.deliveryFee === 0 ? '' : editValue.deliveryFee)}
+              onChange={(e) => {
+                // Allow digits, one decimal point, and up to 2 decimal places
+                let value = e.target.value.replace(/[^0-9.]/g, '')
+                // Prevent multiple decimal points
+                const parts = value.split('.')
+                if (parts.length > 2) {
+                  value = parts[0] + '.' + parts.slice(1).join('')
+                }
+                // Limit to 2 decimal places
+                if (parts.length === 2 && parts[1].length > 2) {
+                  value = parts[0] + '.' + parts[1].slice(0, 2)
+                }
+                setEditValue(prev => ({
+                  ...prev,
+                  deliveryFeeInput: value,
+                  deliveryFee: value === '' ? 0 : parseFloat(value) || 0
+                }))
+              }}
+              className="w-full pl-10 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            />
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            Leave empty or set to 0 for free delivery. This fee is added to customer orders (e.g. 5.50)
+          </p>
+        </div>
+      </EditModal>
+
+      <EditModal
+        isOpen={editField === 'leadTimes'}
+        onClose={() => setEditField(null)}
+        title="Lead times"
+        onSave={handleEditSave}
+        saving={saving}
+      >
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Minimum notice required</label>
+            <p className="text-sm text-gray-500 mb-3">The shortest notice period you can accept for orders</p>
+            <div className="grid grid-cols-7 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7].map(days => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => {
+                    setEditValue(prev => ({
+                      ...prev,
+                      minimumLeadTime: days,
+                      // Auto-adjust standard if it's less than minimum
+                      standardLeadTime: prev.standardLeadTime < days ? days : prev.standardLeadTime
+                    }))
+                  }}
+                  className={`py-3 rounded-xl text-center transition-all ${
+                    editValue.minimumLeadTime === days
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="text-sm font-semibold">{days}</span>
+                  <span className="block text-xs">{days === 1 ? 'day' : 'days'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Recommended notice</label>
+            <p className="text-sm text-gray-500 mb-3">The ideal notice period for best results</p>
+            <div className="grid grid-cols-6 gap-2">
+              {[3, 5, 7, 10, 14, 21].map(days => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setEditValue(prev => ({ ...prev, standardLeadTime: days }))}
+                  disabled={days < editValue.minimumLeadTime}
+                  className={`py-3 rounded-xl text-center transition-all ${
+                    editValue.standardLeadTime === days
+                      ? 'bg-gray-900 text-white'
+                      : days < editValue.minimumLeadTime
+                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="text-sm font-semibold">{days}</span>
+                  <span className="block text-xs">days</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              Customers will see: <strong>"{editValue.minimumLeadTime}+ days notice required, {editValue.standardLeadTime} days recommended"</strong>
+            </p>
+          </div>
         </div>
       </EditModal>
     </div>

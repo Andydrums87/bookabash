@@ -1,18 +1,19 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, Clock, CheckCircle, ImageIcon, MoreHorizontal } from "lucide-react"
+import { Edit, Trash2, Clock, CheckCircle, ImageIcon, MoreHorizontal, Users, Layers, Ruler, Truck } from "lucide-react"
 import Image from "next/image"
 import { useState } from "react"
 
-export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
+export function SupplierPackageCard({ packageData, onEdit, onDelete, isCake = false }) {
   const [showMenu, setShowMenu] = useState(false)
 
   if (!packageData) {
     return null
   }
 
-  const { name, description, price, priceType, duration, whatsIncluded, image } = packageData
+  const { name, description, price, priceType, duration, whatsIncluded, image, feeds, serves, tiers, sizeInches, deliveryFee } = packageData
+  const feedsValue = feeds || serves
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
@@ -77,11 +78,46 @@ export function SupplierPackageCard({ packageData, onEdit, onDelete }) {
           <span className="font-semibold text-gray-900 whitespace-nowrap">£{price || "0"}</span>
         </div>
 
-        {/* Duration */}
-        <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
-          <Clock className="h-3.5 w-3.5" />
-          <span>{duration || "Duration TBC"}</span>
-          {priceType && <span className="text-gray-400">• {priceType}</span>}
+        {/* Duration or Cake Details */}
+        <div className="text-sm text-gray-500 mb-2">
+          {isCake ? (
+            <div className="space-y-1">
+              {/* Tiers and Size */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {tiers && (
+                  <span className="flex items-center gap-1">
+                    <Layers className="h-3.5 w-3.5" />
+                    {tiers} tier{tiers !== '1' ? 's' : ''}
+                  </span>
+                )}
+                {sizeInches && (
+                  <span className="flex items-center gap-1">
+                    <Ruler className="h-3.5 w-3.5" />
+                    {sizeInches}"
+                  </span>
+                )}
+                {feedsValue && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5" />
+                    Feeds {feedsValue}
+                  </span>
+                )}
+              </div>
+              {/* Delivery fee */}
+              {deliveryFee > 0 && (
+                <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <Truck className="h-3 w-3" />
+                  +£{parseFloat(deliveryFee).toFixed(2)} delivery
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{duration || "Duration TBC"}</span>
+              {priceType && <span className="text-gray-400">• {priceType}</span>}
+            </div>
+          )}
         </div>
 
         {/* Description - truncated */}

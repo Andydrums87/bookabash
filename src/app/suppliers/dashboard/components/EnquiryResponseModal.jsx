@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { X, Calendar, Users, MapPin, Clock, CheckCircle, XCircle, Loader2, Send, ChevronDown, Mail, Phone } from "lucide-react"
+import { X, Calendar, Users, MapPin, Clock, CheckCircle, XCircle, Loader2, Send, ChevronDown, Mail, Phone, Cake, Truck } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { supplierEnquiryBackend } from "@/utils/supplierEnquiryBackend"
 import Link from "next/link"
@@ -32,6 +32,16 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
   const customer = party?.users
   const [supplierResponseMessage, setSupplierResponseMessage] = useState(null)
   const [loadingResponse, setLoadingResponse] = useState(false)
+
+  // Check if this is a cake order and parse customization data
+  const isCakeOrder = enquiry?.supplier_category?.toLowerCase()?.includes('cake')
+
+  // Parse cake customization info from addon_details
+  const addonDetails = typeof enquiry?.addon_details === 'string'
+    ? JSON.parse(enquiry.addon_details || '{}')
+    : enquiry?.addon_details || {}
+
+  const cakeCustomization = addonDetails?.cakeCustomization || {}
 
   const handleTextareaBlur = () => {
     const textarea = textareaRef.current
@@ -435,6 +445,61 @@ export default function EnquiryResponseModal({ enquiry, isOpen, onClose, onRespo
               <span className="text-gray-600">{isConfirmedBooking ? 'Price' : 'Quoted price'}</span>
               <span className="text-xl font-semibold text-gray-900">£{enquiry.final_price || enquiry.quoted_price}</span>
             </div>
+
+            {/* Cake Order Details */}
+            {isCakeOrder && (cakeCustomization.flavorName || cakeCustomization.fulfillmentMethod || cakeCustomization.customMessage || enquiry.package_id) && (
+              <div className="bg-pink-50 rounded-lg p-4 border border-pink-100 mb-6">
+                <h4 className="font-semibold text-pink-900 flex items-center gap-2 mb-3">
+                  <Cake className="w-4 h-4" />
+                  Cake Order Details
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {enquiry.package_id && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-pink-700 font-medium">Size:</span>
+                      <span className="text-pink-900">{enquiry.package_id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                    </div>
+                  )}
+                  {cakeCustomization.flavorName && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-pink-700 font-medium">Flavour:</span>
+                      <span className="text-pink-900">{cakeCustomization.flavorName}</span>
+                    </div>
+                  )}
+                  {cakeCustomization.dietaryName && cakeCustomization.dietaryName !== 'Standard' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-pink-700 font-medium">Dietary:</span>
+                      <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                        {cakeCustomization.dietaryName}
+                      </span>
+                    </div>
+                  )}
+                  {cakeCustomization.fulfillmentMethod && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-pink-700 font-medium">Fulfilment:</span>
+                      <span className="text-pink-900 capitalize flex items-center gap-1">
+                        {cakeCustomization.fulfillmentMethod === 'delivery' ? (
+                          <>
+                            <Truck className="w-3 h-3" /> Delivery
+                            {cakeCustomization.deliveryFee > 0 && ` (+£${cakeCustomization.deliveryFee})`}
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-3 h-3" /> Pickup
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {cakeCustomization.customMessage && (
+                    <div className="mt-2 p-2 bg-white rounded border border-pink-200">
+                      <span className="text-pink-700 font-medium block text-xs mb-1">Custom Message:</span>
+                      <p className="text-pink-900 text-sm italic">"{cakeCustomization.customMessage}"</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Confirmed booking view */}
             {isConfirmedBooking ? (

@@ -207,27 +207,148 @@ export default function SupplierQuickViewModal({
                 {/* Content with padding */}
                 <div className="px-4 pt-12 pb-5 sm:px-6 sm:pt-16 sm:pb-6 space-y-6">
 
-                {/* 1. WHAT TO EXPECT - The Story (FIRST) */}
-                {displaySupplier?.serviceDetails?.aboutUs && (
-                  <div className="prose prose-sm sm:prose max-w-none">
-                    <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                      What to Expect
-                      <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                    </h2>
-                    <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                      {displaySupplier.serviceDetails.aboutUs}
-                    </p>
-                  </div>
-                )}
+                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for cakes since CakeDisplay shows description */}
+                {(() => {
+                  const category = displaySupplier?.category?.toLowerCase() || ''
+                  const isCake = category === 'cakes' || category === 'cake'
+
+                  // For cakes, show description instead of aboutUs
+                  if (isCake) {
+                    const cakeDescription = displaySupplier?.serviceDetails?.description
+                    if (!cakeDescription) return null
+
+                    return (
+                      <div className="prose prose-sm sm:prose max-w-none">
+                        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                          About This Cake
+                          <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                        </h2>
+                        <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                          {cakeDescription}
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  // For non-cakes, show aboutUs as before
+                  if (!displaySupplier?.serviceDetails?.aboutUs) return null
+
+                  return (
+                    <div className="prose prose-sm sm:prose max-w-none">
+                      <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                        What to Expect
+                        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                      </h2>
+                      <p className="text-base text-gray-700 leading-relaxed whitespace-pre-line">
+                        {displaySupplier.serviceDetails.aboutUs}
+                      </p>
+                    </div>
+                  )
+                })()}
 
                 {/* 2. WHAT'S INCLUDED - Simple List (SECOND) */}
                 {(() => {
-                  // Try multiple sources for package data
+                  const category = displaySupplier?.category?.toLowerCase() || ''
+                  const isCake = category === 'cakes' || category === 'cake'
+
+                  // For cakes, show flavours/dietary/sizes instead of package features
+                  if (isCake) {
+                    const cakeFlavours = displaySupplier?.flavours || displaySupplier?.serviceDetails?.flavours || []
+                    const cakeDietary = displaySupplier?.dietaryInfo || displaySupplier?.serviceDetails?.dietaryInfo || []
+                    const packages = displaySupplier?.packages || []
+
+                    // Skip if no cake data
+                    if (cakeFlavours.length === 0 && cakeDietary.length === 0 && packages.length === 0) {
+                      return null
+                    }
+
+                    const backgroundImage = displaySupplier?.coverPhoto
+
+                    // Dietary label helper
+                    const DIETARY_LABELS = {
+                      'vegetarian': 'Vegetarian',
+                      'vegan': 'Vegan',
+                      'gluten-free': 'Gluten Free',
+                      'dairy-free': 'Dairy Free',
+                      'nut-free': 'Nut Free',
+                      'egg-free': 'Egg Free',
+                      'halal': 'Halal',
+                    }
+
+                    return (
+                      <div className="relative rounded-2xl overflow-hidden p-6 sm:p-8">
+                        {backgroundImage && (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{
+                              backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${backgroundImage})`
+                            }}
+                          />
+                        )}
+
+                        <div className="relative z-10 space-y-6">
+                          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                            What You Need to Know
+                            <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                          </h2>
+
+                          {/* Available Flavours */}
+                          {cakeFlavours.length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-gray-900 mb-2">Available Flavours</h3>
+                              <div className="flex flex-wrap gap-2">
+                                {cakeFlavours.map((flavour, index) => (
+                                  <span key={index} className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm">
+                                    {flavour}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Dietary Options */}
+                          {cakeDietary.length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-gray-900 mb-2">Dietary Options Available</h3>
+                              <div className="flex flex-wrap gap-2">
+                                {cakeDietary.map((dietary, index) => (
+                                  <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                                    {DIETARY_LABELS[dietary] || dietary}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Sizes & Pricing */}
+                          {packages.length > 0 && (
+                            <div>
+                              <h3 className="font-semibold text-gray-900 mb-2">Sizes & Pricing</h3>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                {packages.map((pkg, index) => (
+                                  <div key={index} className="p-3 bg-white/80 rounded-lg border border-gray-200">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium text-gray-900">{pkg.name}</span>
+                                      <span className="font-bold text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                    </div>
+                                    {(pkg.serves || pkg.feeds) && (
+                                      <p className="text-sm text-gray-600 mt-1">Feeds {pkg.serves || pkg.feeds} people</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // For non-cakes, show package features as before
                   const packageData = displaySupplier?.packageData ||
                                      displaySupplier?.selectedPackage ||
                                      displaySupplier?.packages?.[0]
 
-                  // Try multiple sources for features
                   let packageFeatures = []
 
                   if (packageData?.features && Array.isArray(packageData.features)) {
@@ -238,15 +359,12 @@ export default function SupplierQuickViewModal({
                     packageFeatures = packageData.included
                   }
 
-                  // Only hide if we truly have no package data at all
                   if (packageFeatures.length === 0 && !packageData) return null
 
-                  // Use supplier's cover photo for background
                   const backgroundImage = displaySupplier?.coverPhoto;
 
                   return (
                     <div className="relative rounded-2xl overflow-hidden p-6 sm:p-8">
-                      {/* Themed background image */}
                       {backgroundImage && (
                         <div
                           className="absolute inset-0 bg-cover bg-center"
@@ -256,7 +374,6 @@ export default function SupplierQuickViewModal({
                         />
                       )}
 
-                      {/* Content */}
                       <div className="relative z-10">
                         <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
                           What's Included
