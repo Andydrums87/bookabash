@@ -5,13 +5,16 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 // Valid status transitions (can only progress forward)
+// Supports both delivery flow (dispatched → delivered) and pickup flow (ready_for_collection → collected)
 const VALID_TRANSITIONS = {
   null: ['confirmed'],
   undefined: ['confirmed'],
   'confirmed': ['preparing'],
-  'preparing': ['dispatched'],
+  'preparing': ['dispatched', 'ready_for_collection'], // Either delivery or pickup
   'dispatched': ['delivered'],
-  'delivered': [] // Terminal state
+  'delivered': [], // Terminal state for delivery
+  'ready_for_collection': ['collected'],
+  'collected': [] // Terminal state for pickup
 }
 
 // GET - Fetch order details by token
@@ -102,10 +105,14 @@ export async function GET(request, { params }) {
         price: enquiry.quoted_price,
         createdAt: enquiry.created_at,
         cakeDetails: {
+          size: cakeCustomization.size || null,
+          servings: cakeCustomization.servings || null,
+          tiers: cakeCustomization.tiers || null,
           flavor: cakeCustomization.flavorName,
           dietary: cakeCustomization.dietaryName,
           fulfillment: cakeCustomization.fulfillmentMethod,
-          message: cakeCustomization.customMessage
+          message: cakeCustomization.customMessage,
+          pickupLocation: cakeCustomization.pickupLocation || null
         },
         party: party ? {
           date: party.party_date,
@@ -151,8 +158,8 @@ export async function POST(request, { params }) {
       )
     }
 
-    // Validate status value
-    const validStatuses = ['confirmed', 'preparing', 'dispatched', 'delivered']
+    // Validate status value (supports both delivery and pickup flows)
+    const validStatuses = ['confirmed', 'preparing', 'dispatched', 'delivered', 'ready_for_collection', 'collected']
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { success: false, error: 'Invalid status value' },
@@ -225,6 +232,10 @@ export async function POST(request, { params }) {
       }
     } else if (status === 'delivered') {
       updateData.delivered_at = new Date().toISOString()
+    } else if (status === 'ready_for_collection') {
+      updateData.ready_for_collection_at = new Date().toISOString()
+    } else if (status === 'collected') {
+      updateData.collected_at = new Date().toISOString()
     }
 
     // Update the order
@@ -301,6 +312,60 @@ export async function POST(request, { params }) {
       } catch (emailError) {
         // Don't fail the status update if email fails
         console.error('⚠️ Failed to send dispatch email:', emailError)
+      }
+    }
+
+    // Send customer "Ready for Collection" notification email if status is ready_for_collection
+    if (status === 'ready_for_collection') {
+      try {
+        // Get party and customer info
+        const { data: party } = await supabaseAdmin
+          .from('parties')
+          .select('child_name, party_date, user_id')
+          .eq('id', enquiry.party_id)
+          .single()
+
+        // Get customer email
+        const { data: customer } = await supabaseAdmin
+          .from('users')
+          .select('email, first_name')
+          .eq('id', party?.user_id)
+          .single()
+
+        // Get supplier/cake name and image
+        const { data: supplier } = await supabaseAdmin
+          .from('suppliers')
+          .select('business_name, data')
+          .eq('id', enquiry.supplier_id)
+          .single()
+
+        // Extract cake customization and image
+        const cakeCustomization = enquiry.addon_details?.cakeCustomization || {}
+        const supplierData = supplier?.data || {}
+        const cakeImage = supplierData.photos?.[0] || supplierData.coverImage || supplierData.image || null
+
+        if (customer?.email) {
+          // Send customer ready for collection email
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+          await fetch(`${baseUrl}/api/send-collection-ready-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerEmail: customer.email,
+              customerName: customer.first_name || 'there',
+              childName: party?.child_name || 'your child',
+              partyDate: party?.party_date,
+              cakeName: supplier?.business_name || 'Your cake',
+              pickupLocation: cakeCustomization.pickupLocation || null,
+              cakeCustomization,
+              cakeImage
+            })
+          })
+          console.log('✅ Customer collection ready email sent to:', customer.email)
+        }
+      } catch (emailError) {
+        // Don't fail the status update if email fails
+        console.error('⚠️ Failed to send collection ready email:', emailError)
       }
     }
 

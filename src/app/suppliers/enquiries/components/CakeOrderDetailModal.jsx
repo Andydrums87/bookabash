@@ -19,6 +19,7 @@ import {
   Truck,
   ExternalLink,
   Cake,
+  Package,
 } from "lucide-react"
 import {
   ORDER_STATUS,
@@ -33,6 +34,7 @@ export default function CakeOrderDetailModal({
   localTrackingUrl,
   onStatusUpdate,
   isUpdating,
+  isPickupOrder,
   onOpenTrackingModal,
 }) {
   const party = enquiry?.parties
@@ -44,6 +46,26 @@ export default function CakeOrderDetailModal({
     : enquiry?.addon_details || {}
 
   const cakeCustomization = addonDetails?.cakeCustomization || {}
+
+  // Calculate delivery date (Friday before weekend event)
+  const getDeliveryDate = () => {
+    if (!party?.party_date) return null
+    const partyDate = new Date(party.party_date)
+    const dayOfWeek = partyDate.getDay() // 0 = Sunday, 6 = Saturday
+    let deliveryDate = new Date(partyDate)
+    if (dayOfWeek === 0) {
+      // Sunday - deliver Friday (2 days before)
+      deliveryDate.setDate(partyDate.getDate() - 2)
+    } else if (dayOfWeek === 6) {
+      // Saturday - deliver Friday (1 day before)
+      deliveryDate.setDate(partyDate.getDate() - 1)
+    } else {
+      // Weekday event - deliver day before
+      deliveryDate.setDate(partyDate.getDate() - 1)
+    }
+    return deliveryDate
+  }
+  const deliveryDate = getDeliveryDate()
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-GB", {
@@ -62,37 +84,68 @@ export default function CakeOrderDetailModal({
     })
   }
 
-  // Determine next action based on current status
+  // Determine next action based on current status and fulfillment method
   const getNextAction = () => {
-    switch (localOrderStatus) {
-      case null:
-      case undefined:
-        return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
-      case ORDER_STATUS.CONFIRMED:
-        return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
-      case ORDER_STATUS.PREPARING:
-        return { status: ORDER_STATUS.DISPATCHED, label: 'Mark as Dispatched', icon: Truck, needsTracking: true }
-      case ORDER_STATUS.DISPATCHED:
-        return { status: ORDER_STATUS.DELIVERED, label: 'Mark as Delivered', icon: CheckCircle }
-      default:
-        return null
+    if (isPickupOrder) {
+      // Pickup flow: Confirmed → Preparing → Ready for Collection → Collected
+      switch (localOrderStatus) {
+        case null:
+        case undefined:
+          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
+        case ORDER_STATUS.CONFIRMED:
+          return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
+        case ORDER_STATUS.PREPARING:
+          return { status: ORDER_STATUS.READY_FOR_COLLECTION, label: 'Mark Ready for Collection', icon: Package }
+        case ORDER_STATUS.READY_FOR_COLLECTION:
+          return { status: ORDER_STATUS.COLLECTED, label: 'Mark as Collected', icon: CheckCircle }
+        default:
+          return null
+      }
+    } else {
+      // Delivery flow: Confirmed → Preparing → Dispatched → Delivered
+      switch (localOrderStatus) {
+        case null:
+        case undefined:
+          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
+        case ORDER_STATUS.CONFIRMED:
+          return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
+        case ORDER_STATUS.PREPARING:
+          return { status: ORDER_STATUS.DISPATCHED, label: 'Mark as Dispatched', icon: Truck, needsTracking: true }
+        case ORDER_STATUS.DISPATCHED:
+          return { status: ORDER_STATUS.DELIVERED, label: 'Mark as Delivered', icon: CheckCircle }
+        default:
+          return null
+      }
     }
   }
 
   const nextAction = getNextAction()
 
-  // Get progress step (0-4)
+  // Get progress step (0-4) - handles both delivery and pickup
   const getProgressStep = () => {
-    switch (localOrderStatus) {
-      case ORDER_STATUS.CONFIRMED: return 1
-      case ORDER_STATUS.PREPARING: return 2
-      case ORDER_STATUS.DISPATCHED: return 3
-      case ORDER_STATUS.DELIVERED: return 4
-      default: return 0
+    if (isPickupOrder) {
+      switch (localOrderStatus) {
+        case ORDER_STATUS.CONFIRMED: return 1
+        case ORDER_STATUS.PREPARING: return 2
+        case ORDER_STATUS.READY_FOR_COLLECTION: return 3
+        case ORDER_STATUS.COLLECTED: return 4
+        default: return 0
+      }
+    } else {
+      switch (localOrderStatus) {
+        case ORDER_STATUS.CONFIRMED: return 1
+        case ORDER_STATUS.PREPARING: return 2
+        case ORDER_STATUS.DISPATCHED: return 3
+        case ORDER_STATUS.DELIVERED: return 4
+        default: return 0
+      }
     }
   }
 
   const progressStep = getProgressStep()
+
+  // Check if order is complete (handles both delivery and pickup)
+  const isOrderComplete = localOrderStatus === ORDER_STATUS.DELIVERED || localOrderStatus === ORDER_STATUS.COLLECTED
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -120,10 +173,40 @@ export default function CakeOrderDetailModal({
             <div className="flex justify-between text-xs text-gray-500">
               <span>Order</span>
               <span>Preparing</span>
-              <span>Dispatched</span>
-              <span>Delivered</span>
+              <span>{isPickupOrder ? 'Ready' : 'Dispatched'}</span>
+              <span>{isPickupOrder ? 'Collected' : 'Delivered'}</span>
             </div>
           </div>
+
+          {/* Delivery/Collection Date - Highlighted */}
+          {deliveryDate && !isOrderComplete && (
+            <div className="bg-primary-50 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                {isPickupOrder ? (
+                  <Package className="w-4 h-4 text-primary-500" />
+                ) : (
+                  <Truck className="w-4 h-4 text-primary-500" />
+                )}
+                <div>
+                  <p className="text-xs text-primary-600 font-medium">
+                    {isPickupOrder ? 'Collection Required' : 'Delivery Required'}
+                  </p>
+                  <p className="text-sm text-gray-900 font-semibold">
+                    {deliveryDate.toLocaleDateString('en-GB', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long'
+                    })}
+                  </p>
+                  {isPickupOrder && cakeCustomization.pickupLocation && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      Customer collecting from: {cakeCustomization.pickupLocation}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Party Details */}
           <div className="space-y-2">
@@ -185,6 +268,13 @@ export default function CakeOrderDetailModal({
               <span className="font-semibold text-gray-900">£{enquiry?.quoted_price}</span>
             </div>
             <div className="space-y-1 text-sm text-gray-600">
+              {cakeCustomization.size && (
+                <p className="font-medium text-gray-900">
+                  Size: {cakeCustomization.size}
+                  {cakeCustomization.servings && ` (serves ${cakeCustomization.servings})`}
+                  {cakeCustomization.tiers && ` - ${cakeCustomization.tiers} tier${cakeCustomization.tiers > 1 ? 's' : ''}`}
+                </p>
+              )}
               {cakeCustomization.flavorName && (
                 <p>Flavour: {cakeCustomization.flavorName}</p>
               )}
@@ -220,7 +310,7 @@ export default function CakeOrderDetailModal({
           )}
 
           {/* Action Button */}
-          {nextAction && localOrderStatus !== ORDER_STATUS.DELIVERED ? (
+          {nextAction && !isOrderComplete ? (
             <Button
               onClick={() => {
                 if (nextAction.needsTracking) {
@@ -230,11 +320,11 @@ export default function CakeOrderDetailModal({
                 }
               }}
               disabled={isUpdating}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white"
             >
               {isUpdating ? 'Updating...' : nextAction.label}
             </Button>
-          ) : localOrderStatus === ORDER_STATUS.DELIVERED ? (
+          ) : isOrderComplete ? (
             <div className="text-center py-3 text-green-600 font-medium flex items-center justify-center gap-2">
               <CheckCircle className="w-5 h-5" />
               Order Complete

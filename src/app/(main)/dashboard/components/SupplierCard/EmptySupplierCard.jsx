@@ -9,7 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Lightbulb, Sparkles, Star, Heart, Smile, Gift, Camera, Music, Search, Info, CheckCircle, X } from "lucide-react"
 import { calculateFinalPrice } from '@/utils/unifiedPricing'
 import SupplierQuickViewModal from '@/components/SupplierQuickViewModal'
+import SupplierCustomizationModal from '@/components/SupplierCustomizationModal'
 import { checkSupplierAvailability } from '@/utils/availabilityChecker'
+import { supabase } from '@/lib/supabase'
 
 // Generic category images mapping
 const CATEGORY_IMAGES = {
@@ -216,7 +218,36 @@ export default function EmptySupplierCard({
   const [showTipsModal, setShowTipsModal] = useState(false)
   const [showQuickView, setShowQuickView] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false)
+  const [fullSupplierData, setFullSupplierData] = useState(null)
   const router = useRouter()
+
+  // Check if this is a cake supplier that needs customization first
+  const isCakeSupplier = type === 'cakes'
+
+  // Fetch full supplier data with packages when needed for cake customization
+  const fetchFullSupplierData = async (supplierId) => {
+    try {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('id', supplierId)
+        .single()
+
+      if (error) throw error
+
+      // Extract packages from the data field
+      const supplierData = data?.data || {}
+      return {
+        ...data,
+        ...supplierData,
+        packages: supplierData.packages || supplierData.pricing?.packages || [],
+      }
+    } catch (error) {
+      console.error('Error fetching supplier data:', error)
+      return null
+    }
+  }
 
   useEffect(() => {
     setIsMounted(true)
@@ -238,15 +269,39 @@ export default function EmptySupplierCard({
     e.stopPropagation()
     if (!recommendedSupplier || isAdding) return
 
-    // ✅ Don't allow adding unavailable categories
+    // Don't allow adding unavailable categories
     if (isUnavailable || isUnavailableCategory) {
-      console.log('❌ Cannot add unavailable supplier/category')
+      console.log('Cannot add unavailable supplier/category')
       return
     }
 
     // If onCustomize is provided, open customization modal instead
     if (onCustomize) {
       onCustomize(recommendedSupplier, type)
+      return
+    }
+
+    // For cake suppliers, open customization modal first to select size, flavor, etc.
+    if (isCakeSupplier) {
+      setIsAdding(true)
+      try {
+        // Fetch full supplier data with packages
+        const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+        if (fullData) {
+          setFullSupplierData(fullData)
+          setShowCustomizationModal(true)
+        } else {
+          // Fallback to basic supplier data if fetch fails
+          setFullSupplierData(recommendedSupplier)
+          setShowCustomizationModal(true)
+        }
+      } catch (error) {
+        console.error('Error preparing customization:', error)
+        // Fallback: still open modal with what we have
+        setFullSupplierData(recommendedSupplier)
+        setShowCustomizationModal(true)
+      }
+      setIsAdding(false)
       return
     }
 
@@ -276,6 +331,55 @@ export default function EmptySupplierCard({
       }
     } catch (error) {
       console.error('Error adding supplier:', error)
+      setIsAdding(false)
+    }
+  }
+
+  // Handle customization complete - add supplier with customization data
+  const handleCustomizationComplete = async (customizationData) => {
+    setShowCustomizationModal(false)
+    setIsAdding(true)
+
+    try {
+      // Extract the package data from customizationData
+      const { package: selectedPackage, addons: selectedAddons = [], totalPrice } = customizationData
+
+      // Build the supplier object with packageData in the format addSupplier expects
+      const supplierWithCustomization = {
+        ...recommendedSupplier,
+        // Include the full supplier data from customizationData if available
+        ...(customizationData.supplier || {}),
+        // Set packageData - this is what handleAddRecommendedSupplier uses
+        packageData: {
+          ...selectedPackage,
+          // Include cake customization if present
+          cakeCustomization: selectedPackage?.cakeCustomization,
+          // Ensure price reflects the full total including delivery
+          price: selectedPackage?.totalPrice || selectedPackage?.enhancedPrice || selectedPackage?.price,
+          totalPrice: totalPrice || selectedPackage?.totalPrice,
+        },
+        // Also set selectedPackage for backwards compatibility
+        selectedPackage: selectedPackage,
+        selectedAddons: selectedAddons,
+      }
+
+      await onAddSupplier(type, supplierWithCustomization, customizationData)
+
+      // Only show success state if not disabled
+      if (!disableSuccessState) {
+        setIsAdding(false)
+        setJustAdded(true)
+
+        // Trigger confetti animation
+        setShowConfetti(true)
+        setTimeout(() => {
+          setShowConfetti(false)
+        }, 3000)
+      } else {
+        setIsAdding(false)
+      }
+    } catch (error) {
+      console.error('Error adding customized supplier:', error)
       setIsAdding(false)
     }
   }
@@ -486,6 +590,17 @@ export default function EmptySupplierCard({
           partyDetails={partyDetails}
           type={type}
         />
+
+        {/* Customization Modal for Cakes */}
+        {isCakeSupplier && (
+          <SupplierCustomizationModal
+            isOpen={showCustomizationModal}
+            onClose={() => setShowCustomizationModal(false)}
+            supplier={fullSupplierData || recommendedSupplier}
+            onAddToPlan={handleCustomizationComplete}
+            partyDetails={partyDetails}
+          />
+        )}
       </>
     )
   }
@@ -641,6 +756,17 @@ export default function EmptySupplierCard({
           partyDetails={partyDetails}
           type={type}
         />
+
+        {/* Customization Modal for Cakes */}
+        {isCakeSupplier && (
+          <SupplierCustomizationModal
+            isOpen={showCustomizationModal}
+            onClose={() => setShowCustomizationModal(false)}
+            supplier={fullSupplierData || recommendedSupplier}
+            onAddToPlan={handleCustomizationComplete}
+            partyDetails={partyDetails}
+          />
+        )}
       </>
     )
   }
@@ -797,6 +923,17 @@ export default function EmptySupplierCard({
         partyDetails={partyDetails}
         type={type}
       />
+
+      {/* Customization Modal for Cakes */}
+      {isCakeSupplier && (
+        <SupplierCustomizationModal
+          isOpen={showCustomizationModal}
+          onClose={() => setShowCustomizationModal(false)}
+          supplier={fullSupplierData || recommendedSupplier}
+          onAddToPlan={handleCustomizationComplete}
+          partyDetails={partyDetails}
+        />
+      )}
     </>
   )
 }

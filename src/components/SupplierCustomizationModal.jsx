@@ -193,7 +193,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Dietary Options Available</h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {cakeDietary.map((option, i) => (
-                  <span key={i} className="bg-green-100 text-green-800 text-xs font-medium px-3 py-1.5 rounded-full">
+                  <span key={i} className="bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
                     {dietaryLabels[option] || option}
                   </span>
                 ))}
@@ -235,8 +235,8 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
             onClick={handleChoosePackage}
             className={`w-full h-12 sm:h-14 font-bold text-base sm:text-lg rounded-xl transition-all ${
               isSelected
-                ? "bg-gray-200 hover:bg-green-600 text-white"
-                : "bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))] text-white shadow-lg"
+                ? "bg-primary-500 hover:bg-primary-600 text-white"
+                : "bg-primary-500 hover:bg-primary-600 text-white shadow-lg"
             }`}
           >
             {isSelected ? (
@@ -297,7 +297,7 @@ export default function SupplierCustomizationModal({
 
   // Cake customization state
   const [selectedFlavor, setSelectedFlavor] = useState("vanilla")
-  const [selectedDietary, setSelectedDietary] = useState("standard")
+  const [selectedDietaryOptions, setSelectedDietaryOptions] = useState([]) // Array for multiple selections
   const [customMessage, setCustomMessage] = useState("")
   const [fulfillmentMethod, setFulfillmentMethod] = useState("delivery") // "delivery" or "pickup"
 
@@ -589,10 +589,15 @@ export default function SupplierCustomizationModal({
   const availableAddons = supplier?.serviceDetails?.addOnServices || []
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId)
   const selectedFlavorObj = availableFlavors.find((f) => f.id === selectedFlavor) || availableFlavors[0]
-  const selectedDietaryObj = availableDietaryOptions.find(d => d.id === selectedDietary)
-  const dietaryDisplayName = selectedDietary === 'standard'
+
+  // Get display names for selected dietary options
+  const selectedDietaryNames = selectedDietaryOptions.map(id => {
+    const option = availableDietaryOptions.find(d => d.id === id)
+    return option?.name || DIETARY_LABELS[id] || id
+  })
+  const dietaryDisplayName = selectedDietaryOptions.length === 0
     ? 'Standard'
-    : (selectedDietaryObj?.name || selectedDietary)
+    : selectedDietaryNames.join(', ')
 
   // Helper to format duration for venues
   const formatDurationText = (duration) => {
@@ -690,19 +695,27 @@ export default function SupplierCustomizationModal({
       if (existingCakeData) {
         // Restore previous customization
         setSelectedFlavor(existingCakeData.flavor || availableFlavors[0].id);
-        setSelectedDietary(existingCakeData.dietary || "standard");
+        // Handle both old single dietary and new array format
+        const existingDietary = existingCakeData.dietaryOptions || existingCakeData.dietary;
+        if (Array.isArray(existingDietary)) {
+          setSelectedDietaryOptions(existingDietary);
+        } else if (existingDietary && existingDietary !== 'standard') {
+          setSelectedDietaryOptions([existingDietary]);
+        } else {
+          setSelectedDietaryOptions([]);
+        }
         setCustomMessage(existingCakeData.customMessage || "");
       } else {
         // Set default flavor only on first open
         setSelectedFlavor(availableFlavors[0].id);
-        setSelectedDietary("standard");
+        setSelectedDietaryOptions([]);
         setCustomMessage("");
       }
     }
 
     // Reset when modal closes
     if (!isOpen) {
-      setSelectedDietary("standard");
+      setSelectedDietaryOptions([]);
       setCustomMessage("");
     }
   }, [isOpen, availableFlavors, supplier])
@@ -807,22 +820,34 @@ export default function SupplierCustomizationModal({
 
         // Enhanced cake customization data
         cakeCustomization: {
+          // Size/package info
+          size: selectedPackage.name,
+          servings: selectedPackage.serves || selectedPackage.feeds || null,
+          tiers: selectedPackage.tiers || null,
+          sizeInches: selectedPackage.sizeInches || null,
+          packageDescription: selectedPackage.description || null,
+          // Flavor and dietary
           flavor: selectedFlavor,
           flavorName: selectedFlavorObj?.name || "Custom Flavor",
-          dietary: selectedDietary,
-          dietaryName: dietaryDisplayName,
+          dietaryOptions: selectedDietaryOptions, // Array of selected dietary options
+          dietaryNames: selectedDietaryNames, // Array of display names
+          dietaryName: dietaryDisplayName, // Comma-separated string for display
           customMessage: customMessage.trim(),
           customizationType: "cake_specialist",
+          // Fulfillment
           fulfillmentMethod: fulfillmentMethod,
           deliveryFee: fulfillmentMethod === "delivery" ? calculateModalPricing.deliveryFee : 0,
           pickupLocation: fulfillmentMethod === "pickup" ? cakeFulfillmentOptions.location : null,
+          // Pricing
+          basePrice: selectedPackage.price,
+          totalPrice: calculateModalPricing.totalPrice,
         },
 
         // Update package features
         features: [
           ...(selectedPackage.features || []),
           `${selectedFlavorObj?.name || "Custom"} flavour`,
-          ...(selectedDietary !== 'standard' ? [dietaryDisplayName] : []),
+          ...(selectedDietaryOptions.length > 0 ? [dietaryDisplayName] : []),
           "Professional cake decoration",
           "Pre-party delivery included",
         ],
@@ -1056,82 +1081,70 @@ export default function SupplierCustomizationModal({
                   </div>
                 </div>
 
-                {/* Customization Options Card */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* Customization Options */}
+                <div className="space-y-4">
                   {/* Flavour Selection */}
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-[hsl(var(--primary-50))] flex items-center justify-center flex-shrink-0">
-                        <Cake className="w-5 h-5 text-[hsl(var(--primary-500))]" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">Cake Flavour</p>
-                        <p className="text-xs text-gray-500">Choose your preferred flavour</p>
-                      </div>
-                    </div>
-                    <div className="ml-13">
-                      {availableFlavors.length === 0 ? (
-                        <span className="text-sm text-gray-500">Contact baker</span>
-                      ) : (
-                        <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-                          <SelectTrigger className="w-full h-11 px-4 bg-gray-50 border-gray-200 rounded-lg text-sm font-medium">
-                            <SelectValue placeholder="Select a flavour" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableFlavors.map((flavor) => (
-                              <SelectItem key={flavor.id} value={flavor.id} className="text-sm py-2.5">
-                                {flavor.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Dietary Requirements */}
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">Dietary Requirements</p>
-                        <p className="text-xs text-gray-500">Any special dietary needs</p>
-                      </div>
-                    </div>
-                    <div className="ml-13">
-                      <Select value={selectedDietary} onValueChange={setSelectedDietary}>
-                        <SelectTrigger className="w-full h-11 px-4 bg-gray-50 border-gray-200 rounded-lg text-sm font-medium">
-                          <SelectValue placeholder="Select dietary option" />
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm mb-2">Cake Flavour</p>
+                    {availableFlavors.length === 0 ? (
+                      <span className="text-sm text-gray-500">Contact baker</span>
+                    ) : (
+                      <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
+                        <SelectTrigger className="w-full h-11 px-4 bg-gray-50 border-gray-200 rounded-lg text-sm">
+                          <SelectValue placeholder="Select a flavour" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="standard" className="text-sm py-2.5">
-                            Standard (no special requirements)
-                          </SelectItem>
-                          {availableDietaryOptions.map((option) => (
-                            <SelectItem key={option.id} value={option.id} className="text-sm py-2.5">
-                              {option.name}
+                          {availableFlavors.map((flavor) => (
+                            <SelectItem key={flavor.id} value={flavor.id} className="text-sm py-2.5">
+                              {flavor.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Dietary Requirements - Multi-select */}
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm mb-2">Dietary Requirements</p>
+                    {availableDietaryOptions.length === 0 ? (
+                      <p className="text-sm text-gray-500">Standard (no special options available)</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {availableDietaryOptions.map((option) => {
+                          const isSelected = selectedDietaryOptions.includes(option.id)
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDietaryOptions(prev =>
+                                  isSelected
+                                    ? prev.filter(id => id !== option.id)
+                                    : [...prev, option.id]
+                                )
+                              }}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                isSelected
+                                  ? "bg-primary-500 text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
+                              {option.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {selectedDietaryOptions.length === 0 && availableDietaryOptions.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-2">No dietary requirements selected (standard)</p>
+                    )}
                   </div>
 
                   {/* Delivery Method */}
-                  <div className="p-4">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                        <Truck className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">Delivery Method</p>
-                        <p className="text-xs text-gray-500">How you'll receive your cake</p>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm mb-3">Delivery Method</p>
 
                     <div className="grid grid-cols-2 gap-3">
                       {/* Delivery Option */}
@@ -1139,24 +1152,19 @@ export default function SupplierCustomizationModal({
                         <button
                           type="button"
                           onClick={() => setFulfillmentMethod("delivery")}
-                          className={`relative p-4 rounded-xl border-2 text-left transition-all flex flex-col ${
+                          className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
                             fulfillmentMethod === "delivery"
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300 bg-gray-50"
+                              ? "border-[hsl(var(--primary-300))] bg-primary-50"
+                              : "border-gray-200 hover:border-gray-300 bg-white"
                           }`}
                         >
                           {/* Header row */}
                           <div className="flex items-center justify-between w-full mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`p-1.5 rounded-md ${fulfillmentMethod === "delivery" ? "bg-[hsl(var(--primary-100))]" : "bg-gray-200"}`}>
-                                <Truck className={`w-4 h-4 ${fulfillmentMethod === "delivery" ? "text-[hsl(var(--primary-600))]" : "text-gray-500"}`} />
-                              </div>
-                              <span className={`font-semibold ${fulfillmentMethod === "delivery" ? "text-[hsl(var(--primary-700))]" : "text-gray-700"}`}>
-                                Delivery
-                              </span>
-                            </div>
+                            <span className={`font-semibold ${fulfillmentMethod === "delivery" ? "text-gray-900" : "text-gray-700"}`}>
+                              Delivery
+                            </span>
                             {fulfillmentMethod === "delivery" && (
-                              <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+                              <CheckCircle className="w-5 h-5 text-primary-500" />
                             )}
                           </div>
 
@@ -1172,18 +1180,11 @@ export default function SupplierCustomizationModal({
                                 ? parseFloat(pkgDeliveryFee) || 0
                                 : cakeFulfillmentOptions.deliveryFee || 0
                               return (
-                                <span className={`text-lg font-bold ${effectiveDeliveryFee > 0 ? "text-[hsl(var(--primary-600))]" : "text-green-600"}`}>
+                                <span className={`text-base font-bold ${effectiveDeliveryFee > 0 ? "text-gray-900" : "text-gray-900"}`}>
                                   {effectiveDeliveryFee > 0 ? `+£${effectiveDeliveryFee.toFixed(2)}` : "Free"}
                                 </span>
                               )
                             })()}
-                            <div className="group relative">
-                              <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-44 z-50">
-                                Delivered to your address with tracking updates.
-                                <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900"></div>
-                              </div>
-                            </div>
                           </div>
                         </button>
                       )}
@@ -1193,24 +1194,19 @@ export default function SupplierCustomizationModal({
                         <button
                           type="button"
                           onClick={() => setFulfillmentMethod("pickup")}
-                          className={`relative p-4 rounded-xl border-2 text-left transition-all flex flex-col ${
+                          className={`relative p-4 rounded-xl border text-left transition-all flex flex-col ${
                             fulfillmentMethod === "pickup"
-                              ? "border-[hsl(var(--primary-500))] bg-[hsl(var(--primary-50))]"
-                              : "border-gray-200 hover:border-gray-300 bg-gray-50"
+                              ? "border-[hsl(var(--primary-300))] bg-primary-50"
+                              : "border-gray-200 hover:border-gray-300 bg-white"
                           }`}
                         >
                           {/* Header row */}
                           <div className="flex items-center justify-between w-full mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`p-1.5 rounded-md ${fulfillmentMethod === "pickup" ? "bg-[hsl(var(--primary-100))]" : "bg-gray-200"}`}>
-                                <MapPin className={`w-4 h-4 ${fulfillmentMethod === "pickup" ? "text-[hsl(var(--primary-600))]" : "text-gray-500"}`} />
-                              </div>
-                              <span className={`font-semibold ${fulfillmentMethod === "pickup" ? "text-[hsl(var(--primary-700))]" : "text-gray-700"}`}>
-                                Pickup
-                              </span>
-                            </div>
+                            <span className={`font-semibold ${fulfillmentMethod === "pickup" ? "text-gray-900" : "text-gray-700"}`}>
+                              Pickup
+                            </span>
                             {fulfillmentMethod === "pickup" && (
-                              <CheckCircle className="w-5 h-5 text-[hsl(var(--primary-500))]" />
+                              <CheckCircle className="w-5 h-5 text-primary-500" />
                             )}
                           </div>
 
@@ -1218,15 +1214,8 @@ export default function SupplierCustomizationModal({
                           <p className="text-xs text-gray-500 mb-3">Collect from the baker's location</p>
 
                           {/* Price row */}
-                          <div className="flex items-center justify-between w-full mt-auto">
-                            <span className="text-lg font-bold text-green-600">Free</span>
-                            <div className="group relative">
-                              <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                              <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-44 z-50">
-                                Collect from baker. Pickup time confirmed after booking.
-                                <div className="absolute top-full right-3 border-4 border-transparent border-t-gray-900"></div>
-                              </div>
-                            </div>
+                          <div className="flex items-center w-full mt-auto">
+                            <span className="text-base font-bold text-gray-900">Free</span>
                           </div>
                         </button>
                       )}
@@ -1234,30 +1223,20 @@ export default function SupplierCustomizationModal({
 
                     {/* Pickup Location Info */}
                     {fulfillmentMethod === "pickup" && cakeFulfillmentOptions.location && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex items-center gap-2 text-sm text-blue-700">
-                          <MapPin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-2 text-sm text-gray-700">
+                          <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
                           <span><strong>Pickup:</strong> {cakeFulfillmentOptions.location}</span>
                         </div>
-                        <p className="text-xs text-blue-600 mt-1 ml-6">Exact address shared after booking</p>
+                        <p className="text-xs text-gray-500 mt-1 ml-6">Exact address shared after booking</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Special Requests */}
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">Special Requests</p>
-                      <p className="text-xs text-gray-500">Custom message or decorating notes</p>
-                    </div>
-                  </div>
+                <div>
+                  <p className="font-medium text-gray-900 text-sm mb-2">Special Requests <span className="font-normal text-gray-400">(optional)</span></p>
                   <Textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
@@ -1308,7 +1287,7 @@ export default function SupplierCustomizationModal({
                     {fulfillmentMethod === "pickup" && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-gray-600">Pickup</span>
-                        <span className="font-medium text-green-600">Free</span>
+                        <span className="font-medium text-gray-900">Free</span>
                       </div>
                     )}
                     <div className="border-t border-gray-200 pt-2 mt-2">

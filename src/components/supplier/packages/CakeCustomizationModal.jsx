@@ -155,12 +155,22 @@ const CakeCustomizationModal = ({
 
       // Cake customization data
       cakeCustomization: {
+        // Size/package info
+        size: selectedPackage.name,
+        servings: selectedPackage.servings || selectedPackage.serves || null,
+        tiers: selectedPackage.tiers || null,
+        packageDescription: selectedPackage.description || null,
+        // Flavor and dietary
         flavor: selectedFlavor,
         flavorName: selectedFlavorObj.name,
         dietary: selectedDietary,
         dietaryName: dietaryDisplayName,
         customMessage: customMessage.trim(),
-        customizationType: 'cake_specialist'
+        customizationType: 'cake_specialist',
+        // Pricing
+        basePrice: packagePrice,
+        deliveryFee: deliveryFee,
+        totalPrice: totalPrice
       },
 
       // Update package features
