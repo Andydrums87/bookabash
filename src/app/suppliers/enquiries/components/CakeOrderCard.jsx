@@ -7,6 +7,8 @@ import {
   ChefHat,
   Truck,
   Cake,
+  Package,
+  MapPin,
 } from "lucide-react"
 import {
   ORDER_STATUS,
@@ -16,8 +18,9 @@ import {
 import TrackingUrlModal from "./TrackingUrlModal"
 import CakeOrderDetailModal from "./CakeOrderDetailModal"
 
-export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
+export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
   const [showTrackingModal, setShowTrackingModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [localOrderStatus, setLocalOrderStatus] = useState(enquiry.order_status)
@@ -32,10 +35,39 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
   // Cake image from supplier portfolio images
   const cakeImage = supplier?.portfolioImages?.[0]?.src || supplier?.portfolioImages?.[0] || null
 
+  // Parse cake customization from addon_details
+  const addonDetails = typeof enquiry?.addon_details === 'string'
+    ? JSON.parse(enquiry?.addon_details || '{}')
+    : enquiry?.addon_details || {}
+  const cakeCustomization = addonDetails?.cakeCustomization || {}
+
+  // Check if this is a pickup order
+  const isPickupOrder = cakeCustomization.fulfillmentMethod === 'pickup'
+
   // Customer name for subtitle
   const customerName = party?.users?.first_name || enquiry.lead_name || party?.parent_name || 'Customer'
   const partyDate = new Date(party?.party_date)
   const daysUntilEvent = Math.ceil((partyDate - new Date()) / (1000 * 60 * 60 * 24))
+
+  // Calculate delivery date (Friday before weekend event)
+  const getDeliveryDate = () => {
+    if (!party?.party_date) return null
+    const dayOfWeek = partyDate.getDay() // 0 = Sunday, 6 = Saturday
+    let deliveryDate = new Date(partyDate)
+    if (dayOfWeek === 0) {
+      // Sunday - deliver Friday (2 days before)
+      deliveryDate.setDate(partyDate.getDate() - 2)
+    } else if (dayOfWeek === 6) {
+      // Saturday - deliver Friday (1 day before)
+      deliveryDate.setDate(partyDate.getDate() - 1)
+    } else {
+      // Weekday event - deliver day before
+      deliveryDate.setDate(partyDate.getDate() - 1)
+    }
+    return deliveryDate
+  }
+  const deliveryDate = getDeliveryDate()
+  const daysUntilDelivery = deliveryDate ? Math.ceil((deliveryDate - new Date()) / (1000 * 60 * 60 * 24)) : null
 
   // Status text like Airbnb
   const getStatusText = () => {
@@ -81,35 +113,84 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
     setShowTrackingModal(false)
   }
 
-  // Get progress step (0-4)
+  const handleArchive = async () => {
+    setIsArchiving(true)
+    try {
+      const result = await supplierEnquiryBackend.archiveOrder(enquiry.id, true)
+      if (result.success) {
+        if (onArchive) {
+          onArchive(enquiry.id)
+        }
+      } else {
+        console.error('Failed to archive order:', result.error)
+      }
+    } catch (error) {
+      console.error('Error archiving order:', error)
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
+  // Get progress step (0-4) - handles both delivery and pickup orders
   const getProgressStep = () => {
-    switch (localOrderStatus) {
-      case ORDER_STATUS.CONFIRMED: return 1
-      case ORDER_STATUS.PREPARING: return 2
-      case ORDER_STATUS.DISPATCHED: return 3
-      case ORDER_STATUS.DELIVERED: return 4
-      default: return 0
+    if (isPickupOrder) {
+      switch (localOrderStatus) {
+        case ORDER_STATUS.CONFIRMED: return 1
+        case ORDER_STATUS.PREPARING: return 2
+        case ORDER_STATUS.READY_FOR_COLLECTION: return 3
+        case ORDER_STATUS.COLLECTED: return 4
+        default: return 0
+      }
+    } else {
+      switch (localOrderStatus) {
+        case ORDER_STATUS.CONFIRMED: return 1
+        case ORDER_STATUS.PREPARING: return 2
+        case ORDER_STATUS.DISPATCHED: return 3
+        case ORDER_STATUS.DELIVERED: return 4
+        default: return 0
+      }
     }
   }
 
   const progressStep = getProgressStep()
 
-  // Determine next action based on current status
+  // Determine next action based on current status - handles both delivery and pickup
   const getNextAction = () => {
-    switch (localOrderStatus) {
-      case null:
-      case undefined:
-        return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm', icon: CheckCircle }
-      case ORDER_STATUS.CONFIRMED:
-        return { status: ORDER_STATUS.PREPARING, label: 'Preparing', icon: ChefHat }
-      case ORDER_STATUS.PREPARING:
-        return { status: ORDER_STATUS.DISPATCHED, label: 'Dispatch', icon: Truck, needsTracking: true }
-      case ORDER_STATUS.DISPATCHED:
-        return { status: ORDER_STATUS.DELIVERED, label: 'Delivered', icon: CheckCircle }
-      default:
-        return null
+    if (isPickupOrder) {
+      // Pickup flow: Confirmed → Preparing → Ready for Collection → Collected
+      switch (localOrderStatus) {
+        case null:
+        case undefined:
+          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm', icon: CheckCircle }
+        case ORDER_STATUS.CONFIRMED:
+          return { status: ORDER_STATUS.PREPARING, label: 'Preparing', icon: ChefHat }
+        case ORDER_STATUS.PREPARING:
+          return { status: ORDER_STATUS.READY_FOR_COLLECTION, label: 'Ready', icon: Package }
+        case ORDER_STATUS.READY_FOR_COLLECTION:
+          return { status: ORDER_STATUS.COLLECTED, label: 'Collected', icon: CheckCircle }
+        default:
+          return null
+      }
+    } else {
+      // Delivery flow: Confirmed → Preparing → Dispatched → Delivered
+      switch (localOrderStatus) {
+        case null:
+        case undefined:
+          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm', icon: CheckCircle }
+        case ORDER_STATUS.CONFIRMED:
+          return { status: ORDER_STATUS.PREPARING, label: 'Preparing', icon: ChefHat }
+        case ORDER_STATUS.PREPARING:
+          return { status: ORDER_STATUS.DISPATCHED, label: 'Dispatch', icon: Truck, needsTracking: true }
+        case ORDER_STATUS.DISPATCHED:
+          return { status: ORDER_STATUS.DELIVERED, label: 'Delivered', icon: CheckCircle }
+        default:
+          return null
+      }
     }
   }
+
+  // Check if order is complete (handles both delivery and pickup)
+  const isOrderComplete = localOrderStatus === ORDER_STATUS.DELIVERED || localOrderStatus === ORDER_STATUS.COLLECTED
 
   const nextAction = getNextAction()
 
@@ -123,9 +204,30 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
           </p>
 
           {/* Customer and party info */}
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-500 mb-3">
             {customerName} · {party?.child_name}'s Party
           </p>
+
+          {/* Delivery/Pickup Date - Highlighted */}
+          {deliveryDate && daysUntilDelivery >= 0 && !isOrderComplete && (
+            <div className="bg-primary-50 rounded-lg px-3 py-2 mb-4">
+              <p className="text-xs text-primary-600 font-medium flex items-center gap-1">
+                {isPickupOrder ? (
+                  <>
+                    <MapPin className="w-3 h-3" />
+                    Collection by {deliveryDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </>
+                ) : (
+                  <>
+                    Deliver by {deliveryDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </>
+                )}
+                {daysUntilDelivery === 0 && <span className="ml-1 text-primary-700 font-semibold">· Today!</span>}
+                {daysUntilDelivery === 1 && <span className="ml-1 text-primary-700 font-semibold">· Tomorrow</span>}
+                {daysUntilDelivery > 1 && daysUntilDelivery <= 3 && <span className="ml-1">· In {daysUntilDelivery} days</span>}
+              </p>
+            </div>
+          )}
 
           {/* Cake name and date with image */}
           <div className="flex items-center justify-between mb-4">
@@ -133,12 +235,20 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
               <h3 className="text-xl font-semibold text-gray-900">
                 {cakeName}
               </h3>
-              <p className="text-gray-600">
-                {partyDate.toLocaleDateString('en-GB', {
-                  month: 'short',
-                  day: 'numeric'
-                })}
+              {/* Size and flavor info */}
+              <p className="text-gray-600 text-sm">
+                {cakeCustomization.size && <span className="font-medium">{cakeCustomization.size}</span>}
+                {cakeCustomization.size && cakeCustomization.flavorName && ' · '}
+                {cakeCustomization.flavorName && <span>{cakeCustomization.flavorName}</span>}
+                {!cakeCustomization.size && !cakeCustomization.flavorName && (
+                  <span>Party {partyDate.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                )}
               </p>
+              {(cakeCustomization.size || cakeCustomization.flavorName) && (
+                <p className="text-gray-500 text-xs">
+                  Party {partyDate.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </p>
+              )}
             </div>
 
             {/* Cake image */}
@@ -181,7 +291,7 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
           >
             View details
           </button>
-          {nextAction && localOrderStatus !== ORDER_STATUS.DELIVERED ? (
+          {nextAction && !isOrderComplete ? (
             <button
               onClick={() => {
                 if (nextAction.needsTracking) {
@@ -196,9 +306,13 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
               {isUpdating ? 'Updating...' : nextAction.label}
             </button>
           ) : (
-            <div className="flex-1 py-3.5 text-center text-sm font-medium text-green-600">
-              Complete
-            </div>
+            <button
+              onClick={handleArchive}
+              disabled={isArchiving}
+              className="flex-1 py-3.5 text-center text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            >
+              {isArchiving ? 'Archiving...' : 'Move to Past'}
+            </button>
           )}
         </div>
       </div>
@@ -220,6 +334,7 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
         localTrackingUrl={localTrackingUrl}
         onStatusUpdate={handleStatusUpdate}
         isUpdating={isUpdating}
+        isPickupOrder={isPickupOrder}
         onOpenTrackingModal={() => {
           setShowDetailModal(false)
           setShowTrackingModal(true)

@@ -37,7 +37,7 @@ export default function SupplierEnquiriesPage() {
 
   // Load enquiries based on active tab
   const statusFilter = activeTab === "all" ? null : activeTab
-  const { enquiries, loading, error, refetch } = useSupplierEnquiries(statusFilter)
+  const { enquiries, loading, error, refetch, setEnquiries } = useSupplierEnquiries(statusFilter)
 
   // Helper to check if supplier has responded
   const hasSupplierResponded = (e) => {
@@ -57,17 +57,31 @@ export default function SupplierEnquiriesPage() {
     refetch()
   }
 
+  // Handle archive - optimistically update UI then refetch
+  const handleArchive = (enquiryId) => {
+    console.log('Order archived:', enquiryId)
+    // Optimistic update - immediately mark as archived in local state
+    setEnquiries(prev => prev.map(e =>
+      e.id === enquiryId ? { ...e, archived: true } : e
+    ))
+  }
+
+  // Filter out archived enquiries for active tabs, show only archived in "past" tab
+  const activeEnquiries = enquiries.filter(e => !e.archived)
+  const archivedEnquiries = enquiries.filter(e => e.archived)
+
   // Group enquiries by status for tabs
   // Auto-accepted enquiries without supplier response go to "pending"
   const enquiriesByStatus = {
-    all: enquiries,
-    pending: enquiries.filter((e) =>
+    all: activeEnquiries,
+    pending: activeEnquiries.filter((e) =>
       e.status === "pending" ||
       (e.status === "accepted" && e.auto_accepted && !e.supplier_response)
     ),
-    viewed: enquiries.filter((e) => e.status === "viewed"),
-    accepted: enquiries.filter((e) => e.status === "accepted" && hasSupplierResponded(e)),
-    declined: enquiries.filter((e) => e.status === "declined"),
+    viewed: activeEnquiries.filter((e) => e.status === "viewed"),
+    accepted: activeEnquiries.filter((e) => e.status === "accepted" && hasSupplierResponded(e)),
+    declined: activeEnquiries.filter((e) => e.status === "declined"),
+    past: archivedEnquiries,
   }
 
   const formatDate = (dateString) => {
@@ -325,7 +339,7 @@ export default function SupplierEnquiriesPage() {
 
         {/* Status Tabs - Mobile optimized */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm h-auto">
+          <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm h-auto">
             <TabsTrigger value="all" className="relative text-xs sm:text-sm p-2 sm:p-3">
               <span className="hidden sm:inline">All</span>
               <span className="sm:hidden">All</span>
@@ -367,6 +381,15 @@ export default function SupplierEnquiriesPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="past" className="relative text-xs sm:text-sm p-2 sm:p-3">
+              <span className="hidden sm:inline">Past</span>
+              <span className="sm:hidden">Past</span>
+              {enquiriesByStatus.past.length > 0 && (
+                <Badge className="ml-1 sm:ml-2 bg-gray-400 text-white text-xs">
+                  {enquiriesByStatus.past.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Tab Content - Mobile optimized spacing */}
@@ -401,6 +424,7 @@ export default function SupplierEnquiriesPage() {
                         key={enquiry.id}
                         enquiry={enquiry}
                         onStatusUpdate={handleCakeStatusUpdate}
+                        onArchive={handleArchive}
                       />
                     ) : (
                       <EnquiryCard key={enquiry.id} enquiry={enquiry} />

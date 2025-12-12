@@ -737,6 +737,10 @@ async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode 
       }
     } else if (orderStatus === 'delivered') {
       updateData.delivered_at = new Date().toISOString()
+    } else if (orderStatus === 'ready_for_collection') {
+      updateData.ready_for_collection_at = new Date().toISOString()
+    } else if (orderStatus === 'collected') {
+      updateData.collected_at = new Date().toISOString()
     }
 
     const { data: updatedEnquiry, error } = await supabase
@@ -808,6 +812,47 @@ async updateOrderStatus(enquiryId, orderStatus, trackingUrl = null, courierCode 
       }
     }
 
+    // Send customer collection ready email if status is ready_for_collection
+    if (orderStatus === 'ready_for_collection') {
+      try {
+        const customer = updatedEnquiry.parties?.users
+        const party = updatedEnquiry.parties
+        const supplier = updatedEnquiry.supplier
+        const cakeCustomization = updatedEnquiry.addon_details?.cakeCustomization || {}
+
+        // Get cake image from supplier data
+        const supplierData = supplier?.data || {}
+        const cakeImage = supplierData.photos?.[0] || supplierData.coverImage || supplierData.image || null
+
+        if (customer?.email) {
+          console.log('📧 Sending collection ready email to:', customer.email)
+          const response = await fetch('/api/send-collection-ready-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerEmail: customer.email,
+              customerName: customer.first_name || 'there',
+              childName: party?.child_name || 'your child',
+              partyDate: party?.party_date,
+              cakeName: supplier?.business_name || 'Your cake',
+              pickupLocation: cakeCustomization.pickupLocation || null,
+              cakeCustomization,
+              cakeImage
+            })
+          })
+
+          if (response.ok) {
+            console.log('✅ Collection ready email sent successfully')
+          } else {
+            console.warn('⚠️ Collection ready email failed:', await response.text())
+          }
+        }
+      } catch (emailError) {
+        console.warn('⚠️ Failed to send collection ready email:', emailError)
+        // Don't fail the status update if email fails
+      }
+    }
+
     return { success: true, enquiry: updatedEnquiry }
 
   } catch (error) {
@@ -843,6 +888,37 @@ async updateTrackingUrl(enquiryId, trackingUrl) {
 
   } catch (error) {
     console.error('❌ Error updating tracking URL:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Archive an order (move to past orders)
+ * @param {string} enquiryId - The enquiry ID
+ * @param {boolean} archived - Whether to archive or unarchive
+ */
+async archiveOrder(enquiryId, archived = true) {
+  try {
+    console.log('📦 Archiving order:', { enquiryId, archived })
+
+    const { data: updatedEnquiry, error } = await supabase
+      .from('enquiries')
+      .update({
+        archived: archived,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', enquiryId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    console.log('✅ Order archived:', updatedEnquiry)
+
+    return { success: true, enquiry: updatedEnquiry }
+
+  } catch (error) {
+    console.error('❌ Error archiving order:', error)
     return { success: false, error: error.message }
   }
 }
@@ -909,10 +985,14 @@ async getCakeOrders(orderStatus = null) {
 
 // Cake/product order status constants
 export const ORDER_STATUS = {
-  CONFIRMED: 'confirmed',     // Payment received, order confirmed
-  PREPARING: 'preparing',     // Baker/supplier preparing the order
-  DISPATCHED: 'dispatched',   // Order sent for delivery
-  DELIVERED: 'delivered',     // Order delivered to customer
+  CONFIRMED: 'confirmed',           // Payment received, order confirmed
+  PREPARING: 'preparing',           // Baker/supplier preparing the order
+  // Delivery statuses
+  DISPATCHED: 'dispatched',         // Order sent for delivery
+  DELIVERED: 'delivered',           // Order delivered to customer
+  // Pickup/collection statuses
+  READY_FOR_COLLECTION: 'ready_for_collection',  // Order ready for customer pickup
+  COLLECTED: 'collected',           // Customer has collected the order
 }
 
 // Order status display labels
@@ -921,6 +1001,8 @@ export const ORDER_STATUS_LABELS = {
   [ORDER_STATUS.PREPARING]: 'Preparing',
   [ORDER_STATUS.DISPATCHED]: 'Dispatched',
   [ORDER_STATUS.DELIVERED]: 'Delivered',
+  [ORDER_STATUS.READY_FOR_COLLECTION]: 'Ready for Collection',
+  [ORDER_STATUS.COLLECTED]: 'Collected',
 }
 
 // Order status colors for UI
@@ -929,6 +1011,8 @@ export const ORDER_STATUS_COLORS = {
   [ORDER_STATUS.PREPARING]: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
   [ORDER_STATUS.DISPATCHED]: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
   [ORDER_STATUS.DELIVERED]: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
+  [ORDER_STATUS.READY_FOR_COLLECTION]: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-300' },
+  [ORDER_STATUS.COLLECTED]: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
 }
 
 // Create singleton instance
@@ -1010,6 +1094,7 @@ export function useSupplierEnquiries(status = null, specificBusinessId = null, f
 
   return {
     enquiries,
+    setEnquiries,
     loading,
     error,
     refetch: loadEnquiries,
