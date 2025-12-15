@@ -112,7 +112,7 @@ const PackageDetailsModal = ({ pkg, isOpen, onClose, onChoosePackage, isSelected
       style={{ touchAction: 'none' }}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full h-[85vh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
+        className="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         style={{ touchAction: 'auto' }}
@@ -1083,24 +1083,32 @@ export default function SupplierCustomizationModal({
 
                 {/* Customization Options */}
                 <div className="space-y-4">
-                  {/* Flavour Selection */}
+                  {/* Flavour Selection - Pills like dietary */}
                   <div>
                     <p className="font-medium text-gray-900 text-sm mb-2">Cake Flavour</p>
                     {availableFlavors.length === 0 ? (
                       <span className="text-sm text-gray-500">Contact baker</span>
                     ) : (
-                      <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
-                        <SelectTrigger className="w-full h-11 px-4 bg-gray-50 border-gray-200 rounded-lg text-sm">
-                          <SelectValue placeholder="Select a flavour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableFlavors.map((flavor) => (
-                            <SelectItem key={flavor.id} value={flavor.id} className="text-sm py-2.5">
+                      <div className="flex flex-wrap gap-2">
+                        {availableFlavors.map((flavor) => {
+                          const isSelected = selectedFlavor === flavor.id
+                          return (
+                            <button
+                              key={flavor.id}
+                              type="button"
+                              onClick={() => setSelectedFlavor(flavor.id)}
+                              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                isSelected
+                                  ? "bg-primary-500 text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
                               {flavor.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            </button>
+                          )
+                        })}
+                      </div>
                     )}
                   </div>
 
