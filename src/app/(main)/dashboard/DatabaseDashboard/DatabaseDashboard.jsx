@@ -748,6 +748,28 @@ const childPhotoRef = useRef(null)
     return () => clearTimeout(scrollTimeout)
   }, [searchParams, router, showWelcomePopup, showSupplierAddedModal, activeMobileSupplierType, isClient])
 
+  // Handle upgrade complete notification
+  useEffect(() => {
+    const upgradeComplete = searchParams.get('upgrade_complete')
+    if (upgradeComplete === 'true') {
+      // Use setTimeout to avoid render loop
+      setTimeout(() => {
+        toast.success('Your booking has been updated successfully!', {
+          title: 'Upgrade Complete',
+          duration: 4000
+        })
+      }, 100)
+      // Clear the param from URL immediately
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.delete('upgrade_complete')
+      const newURL = newSearchParams.toString() ?
+        `/dashboard?${newSearchParams.toString()}` :
+        '/dashboard'
+      router.replace(newURL, { scroll: false })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
   // Add this effect to load recommendations for empty supplier slots
 // In DatabaseDashboard.jsx - Update the recommendations effect with more logging
 
@@ -1195,22 +1217,55 @@ useEffect(() => {
 
     console.log('💰 Price comparison:', { originalPrice, newPrice, priceDiff })
 
-    // If price increased, show payment modal first
+    // If price increased, redirect to upgrade payment page
     if (priceDiff > 0) {
-      console.log('💳 Price increased by £' + priceDiff.toFixed(2) + ' - showing payment modal')
-      // Store supplier type and supplier info in pending data to ensure they're preserved
-      setPendingEditData({
+      console.log('💳 Price increased by £' + priceDiff.toFixed(2) + ' - redirecting to upgrade payment page')
+
+      // Store pending edit data in sessionStorage for after payment
+      const pendingUpgrade = {
         ...updatedData,
         _editContext: {
           supplierType: editingSupplierType,
-          supplier: editingSupplier,
+          supplierId: editingSupplier?.id,
+          supplierName: editingSupplier?.name || updatedData.supplier?.name,
           originalPrice,
           newPrice
         }
+      }
+      const upgradeKey = `upgrade_${partyId}_${Date.now()}`
+      sessionStorage.setItem(upgradeKey, JSON.stringify(pendingUpgrade))
+
+      // Calculate what changed for display
+      const changes = []
+      if (updatedData.package?.name !== currentSupplier?.packageData?.name) {
+        changes.push({ type: 'package_changed', from: currentSupplier?.packageData?.name, to: updatedData.package?.name })
+      }
+      if (updatedData.selectedFlavor !== currentSupplier?.selectedFlavor) {
+        changes.push({ type: 'cake_flavor_changed', from: currentSupplier?.selectedFlavor, to: updatedData.selectedFlavor })
+      }
+      if (updatedData.dietaryOption !== currentSupplier?.dietaryOption) {
+        changes.push({ type: 'dietary_changed', from: currentSupplier?.dietaryOption, to: updatedData.dietaryOption })
+      }
+
+      // Close the edit modal
+      setShowEditModal(false)
+      setEditingSupplier(null)
+      setEditingSupplierType(null)
+
+      // Build redirect URL
+      const upgradeParams = new URLSearchParams({
+        partyId,
+        supplierType: editingSupplierType,
+        supplierName: editingSupplier?.name || updatedData.supplier?.name || 'Supplier',
+        supplierImage: editingSupplier?.image || editingSupplier?.coverPhoto || '',
+        amount: priceDiff.toFixed(2),
+        originalPrice: originalPrice.toFixed(2),
+        newPrice: newPrice.toFixed(2),
+        upgradeKey,
+        changes: encodeURIComponent(JSON.stringify(changes))
       })
-      setOriginalEditPrice(originalPrice)
-      setShowEditModal(false) // Close the edit modal
-      setShowPricePaymentModal(true) // Show payment modal
+
+      router.push(`/payment/upgrade?${upgradeParams.toString()}`)
       return
     }
 

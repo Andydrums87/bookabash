@@ -26,8 +26,75 @@ export default function PaymentSuccessPage() {
   const supplierName = searchParams.get("supplier_name")
   const supplierCategory = searchParams.get("supplier_category")
 
+  // Upgrade payment params
+  const isUpgrade = searchParams.get("type") === "upgrade"
+  const upgradeKey = searchParams.get("upgrade_key")
+  const upgradeSupplierType = searchParams.get("supplier_type")
+  const upgradeSupplierName = searchParams.get("supplier_name")
+  const upgradeAmount = searchParams.get("amount")
+  const upgradePartyId = searchParams.get("party_id")
+
+  const [upgradeCompleted, setUpgradeCompleted] = useState(false)
+  const [upgradeError, setUpgradeError] = useState(null)
+
+  // Handle upgrade completion
+  useEffect(() => {
+    const completeUpgrade = async () => {
+      if (!isUpgrade || !upgradeKey) return
+
+      try {
+        // Retrieve pending upgrade data from sessionStorage
+        const pendingDataStr = sessionStorage.getItem(upgradeKey)
+        if (!pendingDataStr) {
+          console.warn('⚠️ No pending upgrade data found for key:', upgradeKey)
+          // Still mark as completed if no pending data (might be a refresh)
+          setUpgradeCompleted(true)
+          return
+        }
+
+        const pendingData = JSON.parse(pendingDataStr)
+        console.log('📦 Found pending upgrade data:', pendingData)
+
+        // Call API to complete the supplier update
+        const response = await fetch('/api/complete-upgrade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partyId: upgradePartyId || pendingData._editContext?.partyId,
+            supplierType: upgradeSupplierType || pendingData._editContext?.supplierType,
+            updatedData: pendingData,
+            paymentIntentId
+          })
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          console.log('✅ Upgrade completed successfully')
+          // Clear the pending data
+          sessionStorage.removeItem(upgradeKey)
+          setUpgradeCompleted(true)
+        } else {
+          console.error('❌ Failed to complete upgrade:', result.error)
+          setUpgradeError(result.error || 'Failed to complete upgrade')
+        }
+      } catch (error) {
+        console.error('❌ Error completing upgrade:', error)
+        setUpgradeError(error.message || 'Failed to complete upgrade')
+      }
+    }
+
+    completeUpgrade()
+  }, [isUpgrade, upgradeKey, upgradePartyId, upgradeSupplierType, paymentIntentId])
+
   useEffect(() => {
     const loadBookingDetails = async () => {
+      // Skip loading booking details for upgrade payments - not needed
+      if (isUpgrade) {
+        setLoading(false)
+        return
+      }
+
       try {
         // ✅ Fetch party details from database using payment intent
         // Retry up to 10 times with 1 second delay to allow webhook to complete
@@ -111,7 +178,7 @@ export default function PaymentSuccessPage() {
     }
 
     loadBookingDetails()
-  }, [searchParams, paymentIntentId])
+  }, [searchParams, paymentIntentId, isUpgrade])
 
   const handleAddToCalendar = () => {
     if (!bookingDetails) return
@@ -219,6 +286,119 @@ export default function PaymentSuccessPage() {
     return dateStr
   }
 
+  // Upgrade payment success page - show immediately, don't wait for booking details
+  if (isUpgrade) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Success Banner */}
+        <div className="bg-green-50 border-b-2 border-green-200 py-3 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="text-center">
+                <span className="text-sm font-semibold text-green-900">
+                  Payment successful
+                </span>
+                <span className="text-sm text-green-800 mx-2 hidden sm:inline">•</span>
+                <span className="text-sm text-green-800 block sm:inline mt-1 sm:mt-0">
+                  Your booking has been updated
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-2xl">
+
+            {/* Success Message */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Booking Updated Successfully!
+              </h1>
+              <p className="text-gray-600 text-lg">
+                {upgradeSupplierName ? (
+                  <>Your {upgradeSupplierName} booking has been updated.</>
+                ) : (
+                  <>Your booking changes have been saved.</>
+                )}
+              </p>
+            </div>
+
+            {/* Payment Summary */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Payment Summary</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Upgrade payment</span>
+                <span className="text-lg font-semibold text-gray-900">
+                  £{parseFloat(upgradeAmount || 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Processing Status */}
+            {!upgradeCompleted && !upgradeError && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                  <p className="text-sm text-blue-800">
+                    Updating your booking details...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {upgradeCompleted && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-green-800 font-medium">
+                  ✅ Your supplier has been notified of the changes.
+                </p>
+              </div>
+            )}
+
+            {upgradeError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-800">
+                  ⚠️ There was an issue updating your booking: {upgradeError}
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  Don't worry - your payment was successful. Please contact support if this persists.
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => {
+                  // Clear party data cache to force refresh with updated data
+                  sessionStorage.removeItem('party_data_cache')
+                  sessionStorage.removeItem('party_plan_cache')
+                  router.push('/dashboard?upgrade_complete=true')
+                }}
+                className="flex-1 bg-primary-500 hover:bg-[hsl(var(--primary-700))] text-white py-3"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Return to Dashboard
+              </Button>
+            </div>
+
+            {/* Reference Number */}
+            {paymentIntentId && (
+              <p className="text-xs text-gray-400 text-center mt-6">
+                Payment Reference: {paymentIntentId.slice(-8).toUpperCase()}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Loading state for non-upgrade pages
   if (loading || !bookingDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
