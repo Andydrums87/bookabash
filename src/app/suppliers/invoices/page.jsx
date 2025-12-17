@@ -54,7 +54,7 @@ function EmptyState({ status }) {
 }
 
 export default function SupplierInvoicesPage() {
-  const { supplier, loading: supplierLoading } = useSupplier()
+  const { supplier, currentBusiness, loading: supplierLoading } = useSupplier()
   const [invoices, setInvoices] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -64,9 +64,12 @@ export default function SupplierInvoicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
 
+  // Get supplier ID - try supplier.id first, then currentBusiness.id
+  const supplierId = supplier?.id || currentBusiness?.id
+
   // Fetch invoices
   const fetchInvoices = useCallback(async () => {
-    if (!supplier?.id) return
+    if (!supplierId) return
 
     setLoading(true)
     setError(null)
@@ -76,7 +79,7 @@ export default function SupplierInvoicesPage() {
       if (statusFilter !== "all") {
         params.append("status", statusFilter)
       }
-      params.append("supplier_id", supplier.id)
+      params.append("supplier_id", supplierId)
 
       const response = await fetch(`/api/invoices?${params.toString()}`)
       const data = await response.json()
@@ -93,13 +96,13 @@ export default function SupplierInvoicesPage() {
     } finally {
       setLoading(false)
     }
-  }, [supplier?.id, statusFilter])
+  }, [supplierId, statusFilter])
 
   useEffect(() => {
-    if (supplier?.id) {
+    if (supplierId) {
       fetchInvoices()
     }
-  }, [supplier?.id, statusFilter, fetchInvoices])
+  }, [supplierId, statusFilter, fetchInvoices])
 
   // Handle approve
   const handleApprove = async (invoice) => {
