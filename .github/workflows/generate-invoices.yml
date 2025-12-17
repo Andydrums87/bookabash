@@ -1,0 +1,77 @@
+name: Generate Weekly Invoices
+
+on:
+  schedule:
+    # Runs every Monday at 6 AM UTC
+    - cron: '0 6 * * 1'
+
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: 'Start date (YYYY-MM-DD) - optional'
+        required: false
+      end_date:
+        description: 'End date (YYYY-MM-DD) - optional'
+        required: false
+      dry_run:
+        description: 'Dry run (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  generate-invoices:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Invoices
+        run: |
+          # Build the URL with optional parameters
+          BASE_URL="https://www.partysnap.co.uk"
+          URL="${BASE_URL}/api/invoices/generate-batch"
+          PARAMS=""
+
+          if [ -n "${{ github.event.inputs.start_date }}" ]; then
+            PARAMS="${PARAMS}startDate=${{ github.event.inputs.start_date }}&"
+          fi
+
+          if [ -n "${{ github.event.inputs.end_date }}" ]; then
+            PARAMS="${PARAMS}endDate=${{ github.event.inputs.end_date }}&"
+          fi
+
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            PARAMS="${PARAMS}dryRun=true&"
+          fi
+
+          # Remove trailing & if present
+          PARAMS="${PARAMS%&}"
+
+          if [ -n "$PARAMS" ]; then
+            URL="${URL}?${PARAMS}"
+          fi
+
+          echo "Calling: $URL"
+
+          # Make the API call
+          RESPONSE=$(curl -s -w "\n%{http_code}" "$URL")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response Body: $BODY"
+
+          # Check if successful
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "✅ Invoice generation completed successfully"
+          else
+            echo "❌ Invoice generation failed"
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Invoice Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type:** ${{ github.event_name == 'schedule' && 'Scheduled' || 'Manual' }}" >> $GITHUB_STEP_SUMMARY

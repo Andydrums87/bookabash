@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Suspense } from "react"
-import { Calendar, Building2, Inbox, Settings } from "lucide-react"
+import { Calendar, Building2, Inbox, Settings, FileText } from "lucide-react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { UserMenu } from "./UserMenu"
@@ -19,6 +19,7 @@ function SupplierLayoutContent({ children }) {
   // Main navigation items (Airbnb-style - horizontal)
   const mainNavItems = [
     { href: "/suppliers/dashboard", label: "Bookings" },
+    { href: "/suppliers/invoices", label: "Invoices" },
     { href: "/suppliers/availability", label: "Calendar" },
     { href: "/suppliers/listings", label: "Listings" },
   ]
@@ -91,6 +92,7 @@ function SupplierLayoutContent({ children }) {
               const isActive = pathname === item.href
               const icons = {
                 "Bookings": Inbox,
+                "Invoices": FileText,
                 "Calendar": Calendar,
                 "Listings": Building2,
               }
