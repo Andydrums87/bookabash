@@ -86,26 +86,24 @@ const detectCategory = (supplier) => {
   );
 
   // Venues
-  if (indicators.some(i => 
+  if (indicators.some(i =>
     ['venue', 'venues', 'hall', 'function room', 'event space', 'party venue', 'community hall'].some(k => i.includes(k))
   )) {
-
     return 'venues';
   }
 
-  // Entertainment - Enhanced detection for themed businesses
-  if (indicators.some(i => 
-    ['entertainment', 'entertainer', 'magician', 'clown', 'performer', 'character', 'princess', 'superhero'].some(k => i.includes(k))
-  ) || hasEntertainmentStructure) {
-
-    return 'entertainment';
-  }
-
-  // Cakes - Check before general catering
+  // Cakes - Check BEFORE entertainment (themed cakes like Spiderman shouldn't match entertainment)
   if (indicators.some(i =>
     ['cake', 'cakes', 'baker', 'bakery'].some(k => i.includes(k))
   )) {
     return 'cakes';
+  }
+
+  // Entertainment - Enhanced detection for themed businesses
+  if (indicators.some(i =>
+    ['entertainment', 'entertainer', 'magician', 'clown', 'performer', 'character', 'princess', 'superhero'].some(k => i.includes(k))
+  ) || hasEntertainmentStructure) {
+    return 'entertainment';
   }
 
   // Catering (general food)

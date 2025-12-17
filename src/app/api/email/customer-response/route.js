@@ -48,6 +48,10 @@ export async function POST(req) {
     }
 
     // Choose template and subject based on response type
+    const baseUrl = dashboardLink ? dashboardLink.replace('/dashboard', '') : 'https://partysnap.co.uk'
+    const einvitesLink = `${baseUrl}/dashboard?tab=invites`
+    const isVenue = serviceType?.toLowerCase()?.includes('venue')
+
     let emailHtml, subject;
     if (responseType === 'accepted') {
       emailHtml = await render(
@@ -62,9 +66,13 @@ export async function POST(req) {
           serviceType={serviceType || 'party services'}
           supplierMessage={supplierMessage || 'Thank you for choosing our services!'}
           dashboardLink={dashboardLink || 'https://partysnap.co.uk/dashboard'}
+          einvitesLink={einvitesLink}
         />
       );
-      subject = `🎭 ${supplierName || 'Your supplier'} can't wait to meet you!`;
+      // Special subject for venue confirmations
+      subject = isVenue
+        ? `🎉 Great news! Your venue is confirmed for ${childName}'s party!`
+        : `🎭 ${supplierName || 'Your supplier'} can't wait to meet you!`;
     } else {
       emailHtml = await render(
         <CustomerResponseDeclined

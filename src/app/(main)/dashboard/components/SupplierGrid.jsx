@@ -169,6 +169,7 @@ export default function SupplierGrid({
             enhancedPricing={enhancedPricing}
             recommendedSupplier={getRecommendedSupplierForType ? getRecommendedSupplierForType(type) : null}
             onAddSupplier={onAddRecommendedSupplier}
+            selectedVenue={suppliers.venue}
           />
         )
       })}

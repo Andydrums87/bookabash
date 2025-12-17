@@ -145,18 +145,37 @@ export function checkSupplierAvailability(supplier, partyDate, partyTime = null,
       }
     }
 
-    // 4. Check advance booking requirements
-    if (supplier.advanceBookingDays) {
+    // 4. Check advance booking / lead time requirements
+    // Check multiple possible locations for minimum lead time:
+    // - supplier.advanceBookingDays (legacy)
+    // - supplier.leadTimeSettings.minLeadTimeDays (lead-based suppliers)
+    // - supplier.data.serviceDetails.leadTime.minimum (cake suppliers)
+    // - supplier.serviceDetails.leadTime.minimum (alternate location)
+    const minLeadTime =
+      supplier.advanceBookingDays ||
+      supplier.leadTimeSettings?.minLeadTimeDays ||
+      supplier.data?.serviceDetails?.leadTime?.minimum ||
+      supplier.serviceDetails?.leadTime?.minimum ||
+      0;
+
+    if (minLeadTime > 0) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      date.setHours(0, 0, 0, 0);
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
 
-      const daysUntilParty = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+      const daysUntilParty = Math.ceil((checkDate - today) / (1000 * 60 * 60 * 24));
 
-      if (daysUntilParty < supplier.advanceBookingDays) {
+      if (daysUntilParty < minLeadTime) {
+        const leadTimeLabel = minLeadTime === 7 ? '1 week' :
+                              minLeadTime === 14 ? '2 weeks' :
+                              minLeadTime === 21 ? '3 weeks' :
+                              minLeadTime === 28 ? '4 weeks' :
+                              `${minLeadTime} days`;
         return {
           available: false,
-          reason: `${supplier.name} requires at least ${supplier.advanceBookingDays} days advance booking. Your party is in ${daysUntilParty} days.`
+          reason: `${supplier.name || 'This supplier'} requires at least ${leadTimeLabel} advance notice. Your party is in ${daysUntilParty} days.`,
+          requiredLeadTime: minLeadTime
         };
       }
     }

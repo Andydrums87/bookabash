@@ -590,18 +590,20 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
 
  const generateVenuePackages = (venueServiceDetails, supplierData = null) => {
   const hourlyRate = venueServiceDetails.pricing?.hourlyRate || 0
-  const minimumHours = venueServiceDetails.availability?.minimumBookingHours || 4
+  const totalVenueHours = venueServiceDetails.availability?.minimumBookingHours || 4
   const setupTime = 1 // Always 1 hour
   const cleanupTime = 1 // Always 1 hour
+  // Party time is total venue hours minus setup and cleanup
+  const partyTime = Math.max(totalVenueHours - setupTime - cleanupTime, 1)
   const capacity = venueServiceDetails.capacity?.max || 50
   const venueType = venueServiceDetails.venueType || 'Venue'
-  
+
   console.log('🏢 Generating venue packages with:', {
     hourlyRate,
-    minimumHours,
+    totalVenueHours,
     setupTime,
     cleanupTime,
-    totalHours: minimumHours + setupTime + cleanupTime
+    partyTime
   })
 
   if (hourlyRate <= 0) {
@@ -609,30 +611,29 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
     return []
   }
 
-  const totalVenueHours = minimumHours + setupTime + cleanupTime
   const packagePrice = hourlyRate * totalVenueHours
-  
+
   // Use portfolio image if available, fallback to default venue image
-  const packageImage = supplierData?.portfolioImages?.length > 0 
-    ? supplierData.portfolioImages[0] 
+  const packageImage = supplierData?.portfolioImages?.length > 0
+    ? supplierData.portfolioImages[0]
     : "https://res.cloudinary.com/dghzq6xtd/image/upload/v1753361706/xpqvbguxzwdbtxnez0ew.png"
 
   const venuePackage = {
     id: "venue-standard",
-    name: `${minimumHours}-Hour Party Package`,
+    name: `${partyTime}-Hour Party Package`,
     price: packagePrice,
-    duration: `${minimumHours} hours party time`,
+    duration: `${partyTime} hours party time`,
     priceType: "flat",
     features: [
-      `${minimumHours} hours party time`,
+      `${partyTime} hour${partyTime > 1 ? 's' : ''} party time`,
       "1 hour setup time included",
-      "1 hour cleanup time included", 
+      "1 hour cleanup time included",
       `Total venue access: ${totalVenueHours} hours`,
       `Accommodates up to ${capacity} guests`,
       "Tables and chairs included",
       `Additional hours: £${hourlyRate}/hour`
     ],
-    description: `Perfect for children's birthday parties. ${minimumHours}-hour celebration with setup and cleanup time included.`,
+    description: `Perfect for children's birthday parties. ${partyTime}-hour celebration with setup and cleanup time included.`,
     image: packageImage,
     popular: true,
     venueSpecific: true,
@@ -641,13 +642,13 @@ const getDefaultPackagesForServiceType = (serviceType, theme = 'general') => {
     // Enhanced pricing breakdown for transparency
     pricing: {
       hourlyRate: hourlyRate,
-      partyHours: minimumHours,
+      partyHours: partyTime,
       setupHours: setupTime,
       cleanupHours: cleanupTime,
       totalHours: totalVenueHours,
       calculation: `£${hourlyRate} × ${totalVenueHours} hours = £${packagePrice}`,
       breakdown: {
-        partyTime: `${minimumHours} hours × £${hourlyRate} = £${minimumHours * hourlyRate}`,
+        partyTime: `${partyTime} hours × £${hourlyRate} = £${partyTime * hourlyRate}`,
         setupTime: `${setupTime} hour × £${hourlyRate} = £${setupTime * hourlyRate}`,
         cleanupTime: `${cleanupTime} hour × £${hourlyRate} = £${cleanupTime * hourlyRate}`,
         total: `Total: £${packagePrice}`
@@ -760,11 +761,22 @@ export const suppliersAPI = {
         return null
       }
 
-      return {
+      const supplier = {
         id: data[0].id,
         legacyId: data[0].legacy_id,
         ...data[0].data ?? data[0], // Adjust for your schema
       }
+
+      // Regenerate venue packages on-the-fly to ensure correct party time calculation
+      const isVenue = supplier.category === 'Venues' || supplier.category?.toLowerCase() === 'venue'
+      if (isVenue && supplier.serviceDetails) {
+        const freshPackages = generateVenuePackages(supplier.serviceDetails, supplier)
+        if (freshPackages.length > 0) {
+          supplier.packages = freshPackages
+        }
+      }
+
+      return supplier
     } catch (err) {
       console.error("💥 Exception in getSupplierById:", err)
       return null

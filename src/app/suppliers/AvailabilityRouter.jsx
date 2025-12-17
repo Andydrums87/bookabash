@@ -2,6 +2,7 @@
 import React from 'react';
 import TimeSlotAvailabilityContent from './availability/TimeSlotAvailability';
 import LeadTimeAvailabilityContent from './availability/LeadTimeAvailability';
+import CakeAvailabilityContent from './availability/CakeAvailability';
 import { getAvailabilityType, AVAILABILITY_TYPES } from './utils/supplierTypes';
 
 const AvailabilityRouter = ({ 
@@ -41,6 +42,14 @@ const AvailabilityRouter = ({
       };
   
       switch (availabilityType) {
+        case AVAILABILITY_TYPES.CAKE_CALENDAR:
+          return (
+            <CakeAvailabilityContent
+              {...commonProps}
+              supplierCategory={category}
+            />
+          );
+
         case AVAILABILITY_TYPES.LEAD_TIME_BASED:
           return (
             <LeadTimeAvailabilityContent
@@ -48,7 +57,7 @@ const AvailabilityRouter = ({
               supplierCategory={category}
             />
           );
-          
+
         case AVAILABILITY_TYPES.TIME_SLOT_BASED:
         default:
           return (

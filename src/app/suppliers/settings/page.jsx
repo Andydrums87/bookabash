@@ -186,6 +186,15 @@ export default function Settings() {
     deliveryFee: 0,
     minimumLeadTime: 3,
     standardLeadTime: 7,
+    collectionHours: {
+      monday: { open: true, from: '09:00', to: '17:00' },
+      tuesday: { open: true, from: '09:00', to: '17:00' },
+      wednesday: { open: true, from: '09:00', to: '17:00' },
+      thursday: { open: true, from: '09:00', to: '17:00' },
+      friday: { open: true, from: '09:00', to: '17:00' },
+      saturday: { open: true, from: '10:00', to: '16:00' },
+      sunday: { open: false, from: '10:00', to: '16:00' }
+    }
   })
 
   // Load data from supplier
@@ -229,6 +238,15 @@ export default function Settings() {
         deliveryFee: fulfilment.deliveryFee ?? 0,
         minimumLeadTime: leadTime.minimum ?? 3,
         standardLeadTime: leadTime.standard ?? 7,
+        collectionHours: fulfilment.collectionHours ?? {
+          monday: { open: true, from: '09:00', to: '17:00' },
+          tuesday: { open: true, from: '09:00', to: '17:00' },
+          wednesday: { open: true, from: '09:00', to: '17:00' },
+          thursday: { open: true, from: '09:00', to: '17:00' },
+          friday: { open: true, from: '09:00', to: '17:00' },
+          saturday: { open: true, from: '10:00', to: '16:00' },
+          sunday: { open: false, from: '10:00', to: '16:00' }
+        }
       })
     }
   }, [primaryBusiness, isCakeSupplier])
@@ -367,6 +385,7 @@ export default function Settings() {
         offersDelivery: settings.offersDelivery,
         deliveryRadius: settings.deliveryRadius,
         deliveryFee: settings.deliveryFee,
+        collectionHours: settings.collectionHours,
       }
 
       const leadTimeData = {
@@ -609,6 +628,26 @@ export default function Settings() {
                       onEdit={() => openEditModal('fulfilment', { ...cakeSettings })}
                     />
 
+                    {cakeSettings.offersPickup && (
+                      <SettingRow
+                        label="Collection hours"
+                        value={(() => {
+                          const hours = cakeSettings.collectionHours
+                          const openDays = Object.entries(hours).filter(([_, day]) => day.open).length
+                          if (openDays === 0) return 'No hours set'
+                          if (openDays === 7) return 'Open every day'
+                          if (openDays === 5) {
+                            const weekdaysOpen = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+                              .every(d => hours[d]?.open)
+                            if (weekdaysOpen) return 'Mon-Fri'
+                          }
+                          return `${openDays} days per week`
+                        })()}
+                        description="When customers can collect their orders"
+                        onEdit={() => openEditModal('collectionHours', { collectionHours: cakeSettings.collectionHours })}
+                      />
+                    )}
+
                     <SettingRow
                       label="Delivery available"
                       value={cakeSettings.offersDelivery
@@ -639,15 +678,15 @@ export default function Settings() {
 
                     <SettingRow
                       label="Minimum notice"
-                      value={`${cakeSettings.minimumLeadTime} days`}
+                      value={(() => {
+                        const days = cakeSettings.minimumLeadTime
+                        if (days === 7) return '1 week'
+                        if (days === 14) return '2 weeks'
+                        if (days === 21) return '3 weeks'
+                        if (days === 28) return '4 weeks'
+                        return `${days} ${days === 1 ? 'day' : 'days'}`
+                      })()}
                       description="The shortest notice period you can accept"
-                      onEdit={() => openEditModal('leadTimes', { ...cakeSettings })}
-                    />
-
-                    <SettingRow
-                      label="Recommended notice"
-                      value={`${cakeSettings.standardLeadTime} days`}
-                      description="The ideal notice period for best results"
                       onEdit={() => openEditModal('leadTimes', { ...cakeSettings })}
                     />
                   </>
@@ -954,6 +993,101 @@ export default function Settings() {
       </EditModal>
 
       <EditModal
+        isOpen={editField === 'collectionHours'}
+        onClose={() => setEditField(null)}
+        title="Collection hours"
+        onSave={() => {
+          const updatedSettings = { ...cakeSettings, collectionHours: editValue.collectionHours }
+          setCakeSettings(updatedSettings)
+          handleCakeSettingsSave(updatedSettings)
+        }}
+        saving={saving}
+      >
+        <div className="space-y-2">
+          {[
+            { key: 'monday', label: 'Mon' },
+            { key: 'tuesday', label: 'Tue' },
+            { key: 'wednesday', label: 'Wed' },
+            { key: 'thursday', label: 'Thu' },
+            { key: 'friday', label: 'Fri' },
+            { key: 'saturday', label: 'Sat' },
+            { key: 'sunday', label: 'Sun' }
+          ].map(({ key, label }) => {
+            const dayData = editValue.collectionHours?.[key] || { open: false, from: '09:00', to: '17:00' }
+            return (
+              <div key={key} className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditValue(prev => ({
+                      ...prev,
+                      collectionHours: {
+                        ...prev.collectionHours,
+                        [key]: { ...dayData, open: !dayData.open }
+                      }
+                    }))
+                  }}
+                  className={`w-14 h-10 rounded-lg font-medium text-sm transition-all flex-shrink-0 ${
+                    dayData.open
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white border border-gray-300 text-gray-400'
+                  }`}
+                >
+                  {label}
+                </button>
+
+                {dayData.open ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <select
+                      value={dayData.from}
+                      onChange={(e) => {
+                        setEditValue(prev => ({
+                          ...prev,
+                          collectionHours: {
+                            ...prev.collectionHours,
+                            [key]: { ...dayData, from: e.target.value }
+                          }
+                        }))
+                      }}
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-gray-900 focus:outline-none bg-white"
+                    >
+                      {['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map(time => {
+                        const hour = parseInt(time.split(':')[0])
+                        const formatted = hour === 0 ? '12am' : hour === 12 ? '12pm' : hour > 12 ? `${hour - 12}pm` : `${hour}am`
+                        return <option key={time} value={time}>{formatted}</option>
+                      })}
+                    </select>
+                    <span className="text-gray-400 text-sm">to</span>
+                    <select
+                      value={dayData.to}
+                      onChange={(e) => {
+                        setEditValue(prev => ({
+                          ...prev,
+                          collectionHours: {
+                            ...prev.collectionHours,
+                            [key]: { ...dayData, to: e.target.value }
+                          }
+                        }))
+                      }}
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-gray-900 focus:outline-none bg-white"
+                    >
+                      {['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'].map(time => {
+                        const hour = parseInt(time.split(':')[0])
+                        const formatted = hour === 0 ? '12am' : hour === 12 ? '12pm' : hour > 12 ? `${hour - 12}pm` : `${hour}am`
+                        return <option key={time} value={time}>{formatted}</option>
+                      })}
+                    </select>
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-400">Closed</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </EditModal>
+
+      <EditModal
         isOpen={editField === 'deliveryFee'}
         onClose={() => setEditField(null)}
         title="Edit delivery fee"
@@ -999,60 +1133,35 @@ export default function Settings() {
       <EditModal
         isOpen={editField === 'leadTimes'}
         onClose={() => setEditField(null)}
-        title="Lead times"
+        title="Minimum notice"
         onSave={handleEditSave}
         saving={saving}
       >
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Minimum notice required</label>
-            <p className="text-sm text-gray-500 mb-3">The shortest notice period you can accept for orders</p>
-            <div className="grid grid-cols-7 gap-2">
-              {[1, 2, 3, 4, 5, 6, 7].map(days => (
+            <p className="text-sm text-gray-500 mb-4">How much notice do you need for orders?</p>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { value: 1, label: '1 day' },
+                { value: 2, label: '2 days' },
+                { value: 3, label: '3 days' },
+                { value: 5, label: '5 days' },
+                { value: 7, label: '1 week' },
+                { value: 14, label: '2 weeks' },
+                { value: 21, label: '3 weeks' },
+                { value: 28, label: '4 weeks' },
+              ].map(option => (
                 <button
-                  key={days}
+                  key={option.value}
                   type="button"
-                  onClick={() => {
-                    setEditValue(prev => ({
-                      ...prev,
-                      minimumLeadTime: days,
-                      // Auto-adjust standard if it's less than minimum
-                      standardLeadTime: prev.standardLeadTime < days ? days : prev.standardLeadTime
-                    }))
-                  }}
+                  onClick={() => setEditValue(prev => ({ ...prev, minimumLeadTime: option.value }))}
                   className={`py-3 rounded-xl text-center transition-all ${
-                    editValue.minimumLeadTime === days
+                    editValue.minimumLeadTime === option.value
                       ? 'bg-gray-900 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  <span className="text-sm font-semibold">{days}</span>
-                  <span className="block text-xs">{days === 1 ? 'day' : 'days'}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Recommended notice</label>
-            <p className="text-sm text-gray-500 mb-3">The ideal notice period for best results</p>
-            <div className="grid grid-cols-6 gap-2">
-              {[3, 5, 7, 10, 14, 21].map(days => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => setEditValue(prev => ({ ...prev, standardLeadTime: days }))}
-                  disabled={days < editValue.minimumLeadTime}
-                  className={`py-3 rounded-xl text-center transition-all ${
-                    editValue.standardLeadTime === days
-                      ? 'bg-gray-900 text-white'
-                      : days < editValue.minimumLeadTime
-                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <span className="text-sm font-semibold">{days}</span>
-                  <span className="block text-xs">days</span>
+                  <span className="text-sm font-medium">{option.label}</span>
                 </button>
               ))}
             </div>
@@ -1060,7 +1169,7 @@ export default function Settings() {
 
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800">
-              Customers will see: <strong>"{editValue.minimumLeadTime}+ days notice required, {editValue.standardLeadTime} days recommended"</strong>
+              Customers won't be able to book orders less than <strong>{editValue.minimumLeadTime} {editValue.minimumLeadTime === 1 ? 'day' : 'days'}</strong> in advance
             </p>
           </div>
         </div>

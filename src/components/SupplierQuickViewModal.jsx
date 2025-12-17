@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { X } from "lucide-react"
+import { X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 // Import the swipeable carousel
@@ -19,6 +19,9 @@ export default function SupplierQuickViewModal({
 }) {
   const [fullSupplier, setFullSupplier] = useState(null)
   const [isLoadingSupplier, setIsLoadingSupplier] = useState(false)
+  const [showLightbox, setShowLightbox] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [carouselIndex, setCarouselIndex] = useState(0)
 
   // Detect theme from supplier name/description
   const getSupplierTheme = (supplier) => {
@@ -80,6 +83,67 @@ export default function SupplierQuickViewModal({
   };
 
   const themeImage = getThemeImage();
+
+  // Get all supplier images for lightbox - MUST match SwipeableSupplierCarousel logic exactly
+  const getSupplierImages = (supplier) => {
+    if (!supplier) return [];
+
+    const imageList = [];
+    const seenUrls = new Set();
+
+    const addImage = (url) => {
+      if (url && !seenUrls.has(url)) {
+        imageList.push(url);
+        seenUrls.add(url);
+      }
+    };
+
+    // Add cover photo (check both locations) - same order as carousel
+    if (supplier.coverPhoto) {
+      addImage(supplier.coverPhoto);
+    } else if (supplier.originalSupplier?.coverPhoto) {
+      addImage(supplier.originalSupplier.coverPhoto);
+    } else if (supplier.image) {
+      addImage(supplier.image);
+    } else if (supplier.originalSupplier?.image) {
+      addImage(supplier.originalSupplier.image);
+    } else if (supplier.imageUrl) {
+      addImage(supplier.imageUrl);
+    }
+
+    // Process image in different formats
+    const processImage = (img) => {
+      if (typeof img === 'string') {
+        addImage(img);
+      } else if (img?.src) {
+        addImage(img.src);
+      } else if (img?.url) {
+        addImage(img.url);
+      } else if (img?.image) {
+        addImage(img.image);
+      } else if (img?.public_id) {
+        const cloudinaryUrl = `https://res.cloudinary.com/${img.cloud_name || 'dghzq6xtd'}/image/upload/${img.public_id}`;
+        addImage(cloudinaryUrl);
+      }
+    };
+
+    // Add portfolio images from multiple possible locations - same order as carousel
+    const portfolioFields = ['portfolioImages', 'portfolio_images', 'images', 'gallery', 'photos'];
+
+    portfolioFields.forEach(field => {
+      if (supplier[field] && Array.isArray(supplier[field])) {
+        supplier[field].forEach(processImage);
+      }
+      if (supplier.originalSupplier?.[field] && Array.isArray(supplier.originalSupplier[field])) {
+        supplier.originalSupplier[field].forEach(processImage);
+      }
+    });
+
+    // Limit to 6 images - same as carousel
+    return imageList.slice(0, 6);
+  };
+
+  const supplierImages = getSupplierImages(fullSupplier || supplier);
 
   // Disable body scroll when modal is open - Enhanced for mobile
   useEffect(() => {
@@ -183,38 +247,147 @@ export default function SupplierQuickViewModal({
               </div>
             ) : (
               <>
-                {/* ✅ FULL-WIDTH EXCITING IMAGE CAROUSEL - EDGE TO EDGE */}
+                {/* Mobile: Carousel | Desktop: Gallery Grid */}
                 <div className="relative">
-                  <div className="relative h-72 sm:h-96 md:h-[500px]">
+                  {/* Mobile carousel (hidden on lg+) */}
+                  <div className="lg:hidden relative h-56 sm:h-64 md:h-72">
                     <SwipeableSupplierCarousel
                       supplier={displaySupplier}
                       className="h-full"
                       aspectRatio="h-full"
+                      onIndexChange={setCarouselIndex}
                     />
-                    {/* Themed gradient overlay at bottom */}
-                    <div
-                      className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-                      style={{
-                        background: themeAccentColor
-                          ? `linear-gradient(to top, ${themeAccentColor}40, transparent)`
-                          : 'linear-gradient(to top, rgba(0,0,0,0.2), transparent)'
-                      }}
-                    />
+                    {/* Maximize button */}
+                    {supplierImages.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setLightboxIndex(carouselIndex)
+                          setShowLightbox(true)
+                        }}
+                        className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg"
+                      >
+                        <Maximize2 className="w-4 h-4 text-white" />
+                        <span className="text-white text-xs font-medium">View</span>
+                      </button>
+                    )}
                   </div>
 
+                  {/* Desktop gallery grid (hidden below lg) */}
+                  <div className="hidden lg:block">
+                    <div className="grid grid-cols-3 gap-2 h-80">
+                      {/* Main large image */}
+                      <div
+                        className="col-span-2 relative rounded-bl-2xl overflow-hidden cursor-pointer group"
+                        onClick={() => {
+                          setLightboxIndex(0)
+                          setShowLightbox(true)
+                        }}
+                      >
+                        <Image
+                          src={supplierImages[0] || '/placeholder.png'}
+                          alt="Main image"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          sizes="(min-width: 1024px) 66vw, 100vw"
+                        />
+                        {/* View button */}
+                        <button
+                          className="absolute top-3 left-3 z-20 px-3 py-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center gap-1.5 transition-all shadow-lg"
+                        >
+                          <Maximize2 className="w-4 h-4 text-white" />
+                          <span className="text-white text-xs font-medium">View</span>
+                        </button>
+                      </div>
+
+                      {/* Side images stack */}
+                      <div className="flex flex-col gap-2">
+                        {/* Top side image */}
+                        <div
+                          className={`relative flex-1 overflow-hidden ${supplierImages[1] ? 'cursor-pointer group' : ''}`}
+                          onClick={() => {
+                            if (supplierImages[1]) {
+                              setLightboxIndex(1)
+                              setShowLightbox(true)
+                            }
+                          }}
+                        >
+                          {supplierImages[1] ? (
+                            <Image
+                              src={supplierImages[1]}
+                              alt="Gallery image 2"
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              sizes="(min-width: 1024px) 33vw, 100vw"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                              <div className="text-gray-300">
+                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bottom side image with +X overlay */}
+                        <div
+                          className={`relative flex-1 rounded-br-2xl overflow-hidden ${supplierImages[2] ? 'cursor-pointer group' : ''}`}
+                          onClick={() => {
+                            if (supplierImages[2]) {
+                              setLightboxIndex(2)
+                              setShowLightbox(true)
+                            }
+                          }}
+                        >
+                          {supplierImages[2] ? (
+                            <>
+                              <Image
+                                src={supplierImages[2]}
+                                alt="Gallery image 3"
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                sizes="(min-width: 1024px) 33vw, 100vw"
+                              />
+                              {/* +X more overlay */}
+                              {supplierImages.length > 3 && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                  <span className="text-white text-2xl font-bold">+{supplierImages.length - 3}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                              <div className="text-gray-300">
+                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Content with padding */}
-                <div className="px-4 pt-12 pb-5 sm:px-6 sm:pt-16 sm:pb-6 space-y-6">
+                <div className="px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6 space-y-6">
 
-                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for cakes since CakeDisplay shows description */}
+                {/* 1. WHAT TO EXPECT - The Story (FIRST) - Hide for venues since VenueDisplay handles it */}
                 {(() => {
                   const category = displaySupplier?.category?.toLowerCase() || ''
                   const isCake = category === 'cakes' || category === 'cake'
+                  const isVenue = category === 'venues' || category === 'venue'
 
-                  // For cakes, show description instead of aboutUs
+                  // Skip for venues - VenueDisplay handles the aboutUs section
+                  if (isVenue) return null
+
+                  // For cakes, show description as "About This Cake"
                   if (isCake) {
-                    const cakeDescription = displaySupplier?.serviceDetails?.description
+                    const cakeDescription = displaySupplier?.description ||
+                                            displaySupplier?.serviceDetails?.description ||
+                                            displaySupplier?.businessDescription || ''
                     if (!cakeDescription) return null
 
                     return (
@@ -230,7 +403,7 @@ export default function SupplierQuickViewModal({
                     )
                   }
 
-                  // For non-cakes, show aboutUs as before
+                  // For non-cakes/non-venues, show aboutUs as before
                   if (!displaySupplier?.serviceDetails?.aboutUs) return null
 
                   return (
@@ -251,18 +424,24 @@ export default function SupplierQuickViewModal({
                   const category = displaySupplier?.category?.toLowerCase() || ''
                   const isCake = category === 'cakes' || category === 'cake'
 
-                  // For cakes, show flavours/dietary/sizes instead of package features
+                  // For cakes, show flavours/dietary/sizes and delivery options
                   if (isCake) {
                     const cakeFlavours = displaySupplier?.flavours || displaySupplier?.serviceDetails?.flavours || []
                     const cakeDietary = displaySupplier?.dietaryInfo || displaySupplier?.serviceDetails?.dietaryInfo || []
                     const packages = displaySupplier?.packages || []
-
-                    // Skip if no cake data
-                    if (cakeFlavours.length === 0 && cakeDietary.length === 0 && packages.length === 0) {
-                      return null
-                    }
-
-                    const backgroundImage = displaySupplier?.coverPhoto
+                    const fulfilment = displaySupplier?.serviceDetails?.fulfilment || {}
+                    const offersDelivery = fulfilment.offersDelivery !== false
+                    const offersCollection = fulfilment.offersCollection !== false
+                    const deliveryFee = fulfilment.deliveryFee || 0
+                    // Build collection address from available location data
+                    const locationData = displaySupplier?.location
+                    const locationString = typeof locationData === 'string' ? locationData :
+                                           locationData?.address || locationData?.postcode || ''
+                    const collectionAddress = displaySupplier?.serviceDetails?.businessAddress ||
+                                              displaySupplier?.businessAddress ||
+                                              displaySupplier?.address ||
+                                              locationString ||
+                                              displaySupplier?.postcode || ''
 
                     // Dietary label helper
                     const DIETARY_LABELS = {
@@ -276,69 +455,105 @@ export default function SupplierQuickViewModal({
                     }
 
                     return (
-                      <div className="relative rounded-2xl overflow-hidden p-6 sm:p-8">
-                        {backgroundImage && (
-                          <div
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{
-                              backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url(${backgroundImage})`
-                            }}
-                          />
+                      <div className="space-y-6">
+                        {/* Available Flavours */}
+                        {cakeFlavours.length > 0 && (
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-900 mb-3">Available Flavours</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {cakeFlavours.map((flavour, index) => (
+                                <span key={index} className="px-4 py-2 bg-[hsl(var(--primary-50))] text-[hsl(var(--primary-700))] rounded-full text-base">
+                                  {flavour}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         )}
 
-                        <div className="relative z-10 space-y-6">
+                        {/* Dietary Options */}
+                        {cakeDietary.length > 0 && (
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-900 mb-3">Dietary Options Available</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {cakeDietary.map((dietary, index) => (
+                                <span key={index} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-base">
+                                  {DIETARY_LABELS[dietary] || dietary}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sizes & Pricing */}
+                        {packages.length > 0 && (
+                          <div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                              Sizes & Pricing
+                              <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                            </h2>
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              {packages.map((pkg, index) => (
+                                <div key={index} className="p-4 bg-gray-50 rounded-xl">
+                                  <div className="flex justify-between items-start">
+                                    <span className="font-bold text-lg text-gray-900">{pkg.name}</span>
+                                    <span className="font-black text-xl text-[hsl(var(--primary-500))]">£{pkg.price}</span>
+                                  </div>
+                                  {(pkg.serves || pkg.feeds) && (
+                                    <p className="text-base text-gray-600 mt-2">Feeds {pkg.serves || pkg.feeds} people</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Delivery & Collection Options */}
+                        <div>
                           <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-4 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                            What You Need to Know
+                            Delivery & Collection
                             <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
                           </h2>
-
-                          {/* Available Flavours */}
-                          {cakeFlavours.length > 0 && (
-                            <div>
-                              <h3 className="font-semibold text-gray-900 mb-2">Available Flavours</h3>
-                              <div className="flex flex-wrap gap-2">
-                                {cakeFlavours.map((flavour, index) => (
-                                  <span key={index} className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm">
-                                    {flavour}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Dietary Options */}
-                          {cakeDietary.length > 0 && (
-                            <div>
-                              <h3 className="font-semibold text-gray-900 mb-2">Dietary Options Available</h3>
-                              <div className="flex flex-wrap gap-2">
-                                {cakeDietary.map((dietary, index) => (
-                                  <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                                    {DIETARY_LABELS[dietary] || dietary}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Sizes & Pricing */}
-                          {packages.length > 0 && (
-                            <div>
-                              <h3 className="font-semibold text-gray-900 mb-2">Sizes & Pricing</h3>
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                {packages.map((pkg, index) => (
-                                  <div key={index} className="p-3 bg-white/80 rounded-lg border border-gray-200">
-                                    <div className="flex justify-between items-center">
-                                      <span className="font-medium text-gray-900">{pkg.name}</span>
-                                      <span className="font-bold text-[hsl(var(--primary-500))]">£{pkg.price}</span>
-                                    </div>
-                                    {(pkg.serves || pkg.feeds) && (
-                                      <p className="text-sm text-gray-600 mt-1">Feeds {pkg.serves || pkg.feeds} people</p>
+                          <div className="space-y-4">
+                            {offersDelivery && (
+                              <div className="p-4 bg-blue-50 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl">🚚</span>
+                                  <div>
+                                    <h4 className="font-bold text-lg text-gray-900">Delivery Available</h4>
+                                    <p className="text-base text-gray-700 mt-1">
+                                      Your cake will be delivered on the Friday before your party weekend to ensure freshness.
+                                    </p>
+                                    {deliveryFee > 0 && (
+                                      <p className="text-base font-semibold text-[hsl(var(--primary-500))] mt-2">
+                                        Delivery fee: £{deliveryFee}
+                                      </p>
+                                    )}
+                                    {deliveryFee === 0 && (
+                                      <p className="text-base font-semibold text-green-600 mt-2">
+                                        Free delivery
+                                      </p>
                                     )}
                                   </div>
-                                ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                            {offersCollection && (
+                              <div className="p-4 bg-gray-50 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl">📍</span>
+                                  <div>
+                                    <h4 className="font-bold text-lg text-gray-900">Collection Available</h4>
+                                    <p className="text-base text-gray-700 mt-1">
+                                      Collect your cake from our location on the Friday before your party.
+                                    </p>
+                                    <p className="text-base text-gray-600 mt-2">
+                                      <span className="font-medium">Location:</span> {collectionAddress || 'Address provided after booking'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )
@@ -421,6 +636,70 @@ export default function SupplierQuickViewModal({
           </Button>
         </div>
       </div>
+
+      {/* Fullscreen Image Lightbox */}
+      {showLightbox && supplierImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center"
+          onClick={() => setShowLightbox(false)}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          {/* Image counter */}
+          {supplierImages.length > 1 && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 bg-black/60 backdrop-blur-sm rounded-full text-white text-sm font-medium">
+              {lightboxIndex + 1} / {supplierImages.length}
+            </div>
+          )}
+
+          {/* Previous button */}
+          {supplierImages.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex((prev) => (prev === 0 ? supplierImages.length - 1 : prev - 1))
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+            >
+              <ChevronLeft className="w-8 h-8 text-white" />
+            </button>
+          )}
+
+          {/* Image */}
+          <div
+            className="relative w-full h-full max-w-5xl max-h-[85vh] mx-16 sm:mx-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={supplierImages[lightboxIndex] || '/placeholder.png'}
+              alt={`Image ${lightboxIndex + 1}`}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          </div>
+
+          {/* Next button */}
+          {supplierImages.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex((prev) => (prev === supplierImages.length - 1 ? 0 : prev + 1))
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+            >
+              <ChevronRight className="w-8 h-8 text-white" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -276,20 +276,44 @@ export default function SupplierCustomizationModal({
   userType = null,
   mobileHeight = "max-h-[85vh]", // Mobile height (default 85vh)
   desktopHeight = "md:h-[90vh]", // Desktop height (default 90vh)
+  // ✅ EDIT MODE: New props for editing booked suppliers
+  mode = "add", // "add" | "edit"
+  onSaveChanges = null, // Callback for edit mode
+  originalTotalPrice = null, // Original price for diff calculation
 }) {
   // ✅ DEBUG: Log when modal receives new supplier prop
-  // useEffect(() => {
-  //   if (isOpen && supplier) {
-  //     console.log('🎯 [Modal] Received supplier prop:', {
-  //       name: supplier.name,
-  //       packageId: supplier.packageId,
-  //       packageData: supplier.packageData,
-  //       packageDataId: supplier.packageData?.id,
-  //       hasPackageData: !!supplier.packageData,
-  //       supplierKeys: Object.keys(supplier)
-  //     });
-  //   }
-  // }, [isOpen, supplier]);
+  useEffect(() => {
+    if (isOpen && supplier) {
+      console.log('🎯 [Modal] Received supplier prop:', {
+        name: supplier.name,
+        category: supplier.category,
+        serviceType: supplier.serviceType,
+        service_type: supplier.service_type,
+        type: supplier.type,
+        supplierKeys: Object.keys(supplier),
+        serviceDetails: supplier.serviceDetails,
+        service_details: supplier.service_details,
+        packages: supplier.packages,
+        dataPackages: supplier.data?.packages,
+      });
+
+      // Log serviceDetails structure
+      const sd = supplier.serviceDetails || supplier.service_details || {}
+      console.log('🎂 [Modal] ServiceDetails structure:', {
+        hasServiceDetails: !!supplier.serviceDetails,
+        hasService_details: !!supplier.service_details,
+        sdKeys: Object.keys(sd),
+        flavours: sd.flavours,
+        cakeFlavors: sd.cakeFlavors,
+        cake_flavors: sd.cake_flavors,
+        dietaryInfo: sd.dietaryInfo,
+        dietary_info: sd.dietary_info,
+        packages: sd.packages,
+        fulfilment: sd.fulfilment,
+        cakeFulfilment: sd.cakeFulfilment,
+      });
+    }
+  }, [isOpen, supplier]);
   const [selectedPackageId, setSelectedPackageId] = useState(null)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [showPendingModal, setShowPendingModal] = useState(false)
@@ -352,25 +376,50 @@ export default function SupplierCustomizationModal({
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
 
+    // Get data from supplier.data JSONB column
+    const dataObj = supplier?.data || {}
+    const serviceDetails = supplier?.serviceDetails || supplier?.service_details || dataObj?.serviceDetails || dataObj?.service_details || {}
 
-    // Detect if this is a cake supplier
+    // Detect if this is a cake supplier - check multiple fields
+    const categoryStr = (
+      supplier?.category ||
+      dataObj?.category ||
+      supplier?.serviceType ||
+      dataObj?.serviceType ||
+      supplier?.service_type ||
+      supplier?.subcategory ||
+      ''
+    ).toLowerCase()
+
     const isCakeSupplier =
-      supplier?.category?.toLowerCase().includes("cake") ||
-      supplier?.type?.toLowerCase().includes("cake") ||
-      (supplier?.category?.toLowerCase().includes("catering") &&
-        (supplier?.serviceDetails?.cateringType?.toLowerCase().includes("cake") ||
-          supplier?.serviceDetails?.cateringType?.toLowerCase().includes("baker") ||
-          supplier?.serviceDetails?.cakeFlavors?.length > 0 ||
-          supplier?.serviceDetails?.cakeSpecialist === true)) ||
-      `${supplier?.name || ""} ${supplier?.description || ""}`.toLowerCase().includes("cake")
+      categoryStr.includes("cake") ||
+      supplier?.type?.toLowerCase()?.includes("cake") ||
+      (categoryStr.includes("catering") &&
+        (serviceDetails?.cateringType?.toLowerCase()?.includes("cake") ||
+          serviceDetails?.cateringType?.toLowerCase()?.includes("baker") ||
+          serviceDetails?.cakeFlavors?.length > 0 ||
+          serviceDetails?.cakeSpecialist === true)) ||
+      `${supplier?.name || dataObj?.name || ""} ${supplier?.description || dataObj?.description || ""}`.toLowerCase().includes("cake") ||
+      // Also check if serviceDetails has cake-specific fields
+      serviceDetails?.cakeFlavors?.length > 0 ||
+      serviceDetails?.packages?.some(p => p.serves || p.feeds) ||
+      // Check data directly
+      dataObj?.flavours?.length > 0 ||
+      dataObj?.packages?.some(p => p.serves || p.feeds)
 
     // Detect if this is a party bags supplier
     const isPartyBagsSupplier =
       supplier?.category === "Party Bags" ||
+      dataObj?.category === "Party Bags" ||
       supplier?.category?.toLowerCase().includes("party bag") ||
       supplier?.type?.toLowerCase().includes("party bag")
 
-
+    console.log('🔍 [Type Detection] Checking supplier type:', {
+      category: categoryStr,
+      isCake: isCakeSupplier,
+      hasDataFlavours: dataObj?.flavours?.length > 0,
+      hasDataPackages: dataObj?.packages?.length > 0
+    })
 
     return {
       isLeadBased,
@@ -437,12 +486,29 @@ export default function SupplierCustomizationModal({
   const availableFlavors = useMemo(() => {
     if (!supplier) return DEFAULT_CAKE_FLAVORS
 
+    // Get serviceDetails from multiple possible locations
+    // Database stores data in supplier.data JSONB column
+    const dataObj = supplier?.data || {}
+    const serviceDetails = supplier?.serviceDetails || supplier?.service_details || dataObj?.serviceDetails || dataObj?.service_details || {}
+
     // Check multiple locations for flavours data
-    const flavourData = 
-                        supplier?.serviceDetails?.flavours ||
-                        supplier?.serviceDetails?.cakeFlavors ||
-                        // supplier?.flavours ||
+    // 1. Top level on supplier
+    // 2. Inside supplier.data (database JSONB)
+    // 3. Inside serviceDetails
+    const flavourData =
+                        supplier?.flavours ||
+                        dataObj?.flavours ||
+                        serviceDetails?.flavours ||
+                        serviceDetails?.cakeFlavors ||
+                        serviceDetails?.cake_flavors ||
                         []
+
+    console.log('🎂 [Flavours] Looking for flavours:', {
+      supplierFlavours: supplier?.flavours,
+      dataFlavours: dataObj?.flavours,
+      serviceDetailsFlavours: serviceDetails?.flavours,
+      found: flavourData
+    })
 
     if (flavourData?.length > 0) {
       return flavourData.map((flavor, index) => ({
@@ -459,11 +525,30 @@ export default function SupplierCustomizationModal({
   const availableDietaryOptions = useMemo(() => {
     if (!supplier) return []
 
+    // Get serviceDetails from multiple possible locations
+    // Database stores data in supplier.data JSONB column
+    const dataObj = supplier?.data || {}
+    const serviceDetails = supplier?.serviceDetails || supplier?.service_details || dataObj?.serviceDetails || dataObj?.service_details || {}
+
     // Check multiple locations for dietary info
-    const dietaryData = 
-                        supplier?.serviceDetails?.dietaryInfo ||
-                        // supplier?.dietaryInfo ||
+    // 1. Top level on supplier
+    // 2. Inside supplier.data (database JSONB)
+    // 3. Inside serviceDetails
+    const dietaryData =
+                        supplier?.dietaryInfo ||
+                        dataObj?.dietaryInfo ||
+                        serviceDetails?.dietaryInfo ||
+                        serviceDetails?.dietary_info ||
+                        serviceDetails?.dietaryOptions ||
+                        serviceDetails?.dietary_options ||
                         []
+
+    console.log('🥗 [Dietary] Looking for dietary options:', {
+      supplierDietary: supplier?.dietaryInfo,
+      dataDietary: dataObj?.dietaryInfo,
+      serviceDetailsDietary: serviceDetails?.dietaryInfo,
+      found: dietaryData
+    })
 
     if (dietaryData?.length > 0) {
       return dietaryData.map(option => ({
@@ -477,17 +562,43 @@ export default function SupplierCustomizationModal({
 
   // Get cake fulfillment options from supplier
   const cakeFulfillmentOptions = useMemo(() => {
-    if (!supplier) return { offersDelivery: true, offersPickup: true, deliveryFee: 0, location: '' }
+    if (!supplier) return { offersDelivery: true, offersPickup: true, deliveryFee: 0, location: '', address: null, collectionHours: null }
 
-    const serviceDetails = supplier?.serviceDetails || {}
-    const fulfilment = serviceDetails?.fulfilment || serviceDetails?.cakeFulfilment || {}
+    // Get serviceDetails from multiple possible locations
+    // Database stores data in supplier.data JSONB column
+    const dataObj = supplier?.data || {}
+    const serviceDetails = supplier?.serviceDetails || supplier?.service_details || dataObj?.serviceDetails || dataObj?.service_details || {}
+
+    // Check for fulfilment in multiple locations
+    const fulfilment = serviceDetails?.fulfilment ||
+                       serviceDetails?.cakeFulfilment ||
+                       serviceDetails?.cake_fulfilment ||
+                       serviceDetails?.fulfillment ||
+                       dataObj?.cakeFulfilment ||
+                       dataObj?.fulfilment ||
+                       {}
+
+    // Get full address
+    const address = supplier?.address || serviceDetails?.address || dataObj?.address || null
+
+    // Get collection hours
+    const collectionHours = fulfilment?.collectionHours || null
+
+    console.log('🚚 [Fulfilment] Looking for fulfilment options:', {
+      serviceDetailsFulfilment: serviceDetails?.fulfilment,
+      dataFulfilment: dataObj?.fulfilment,
+      dataCakeFulfilment: dataObj?.cakeFulfilment,
+      found: fulfilment
+    })
 
     return {
       offersDelivery: fulfilment?.offersDelivery ?? true,
       offersPickup: fulfilment?.offersPickup ?? true,
       deliveryFee: fulfilment?.deliveryFee ?? 0,
       deliveryRadius: fulfilment?.deliveryRadius ?? null,
-      location: supplier?.location || serviceDetails?.location || ''
+      location: supplier?.location || serviceDetails?.location || dataObj?.location || '',
+      address,
+      collectionHours
     }
   }, [supplier])
 
@@ -519,8 +630,29 @@ export default function SupplierCustomizationModal({
   const packages = useMemo(() => {
     if (!supplier) return []
 
-    // Check both supplier.packages and supplier.data.packages (for database suppliers)
-    const supplierPackages = supplier.packages || supplier.data?.packages || []
+    // Get serviceDetails from multiple possible locations
+    // Database stores data in supplier.data JSONB column
+    const dataObj = supplier?.data || {}
+    const serviceDetails = supplier?.serviceDetails || supplier?.service_details || dataObj?.serviceDetails || dataObj?.service_details || {}
+
+    // Check multiple locations for packages (different supplier types store them differently)
+    // Cake suppliers store packages in multiple places:
+    // 1. supplier.packages
+    // 2. supplier.data.packages (direct on JSONB data)
+    // 3. supplier.data.serviceDetails.packages
+    // 4. supplier.serviceDetails.packages
+    const supplierPackages = supplier.packages ||
+      dataObj?.packages ||
+      serviceDetails?.packages ||
+      []
+
+    console.log('📦 [Packages] Looking for packages:', {
+      supplierPackages: supplier.packages,
+      dataPackages: dataObj?.packages,
+      serviceDetailsPackages: serviceDetails?.packages,
+      found: supplierPackages?.length,
+      firstPackage: supplierPackages?.[0]
+    })
 
     if (supplierPackages.length > 0) {
       return supplierPackages.slice(0, 3).map((pkg, index) => {
@@ -586,7 +718,12 @@ export default function SupplierCustomizationModal({
     ]
   }, [supplier, calculatePackageEnhancedPrice])
 
-  const availableAddons = supplier?.serviceDetails?.addOnServices || []
+  // Check multiple locations for add-on services (database stores in data JSONB)
+  const availableAddons = supplier?.serviceDetails?.addOnServices ||
+                          supplier?.data?.serviceDetails?.addOnServices ||
+                          supplier?.addOnServices ||
+                          supplier?.data?.addOnServices ||
+                          []
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId)
   const selectedFlavorObj = availableFlavors.find((f) => f.id === selectedFlavor) || availableFlavors[0]
 
@@ -686,6 +823,12 @@ export default function SupplierCustomizationModal({
   // Use the calculated totals
   const totalPrice = calculateModalPricing.totalPrice
 
+  // ✅ EDIT MODE: Calculate price difference
+  const priceDiff = useMemo(() => {
+    if (mode !== "edit" || originalTotalPrice === null) return 0
+    return totalPrice - originalTotalPrice
+  }, [mode, originalTotalPrice, totalPrice])
+
   // ✅ Initialize cake customization from existing data or defaults
   useEffect(() => {
     if (isOpen && availableFlavors.length > 0) {
@@ -705,11 +848,16 @@ export default function SupplierCustomizationModal({
           setSelectedDietaryOptions([]);
         }
         setCustomMessage(existingCakeData.customMessage || "");
+        // Restore fulfillment method (delivery or pickup)
+        if (existingCakeData.fulfillmentMethod) {
+          setFulfillmentMethod(existingCakeData.fulfillmentMethod);
+        }
       } else {
         // Set default flavor only on first open
         setSelectedFlavor(availableFlavors[0].id);
         setSelectedDietaryOptions([]);
         setCustomMessage("");
+        setFulfillmentMethod("delivery"); // Default to delivery
       }
     }
 
@@ -717,6 +865,7 @@ export default function SupplierCustomizationModal({
     if (!isOpen) {
       setSelectedDietaryOptions([]);
       setCustomMessage("");
+      setFulfillmentMethod("delivery");
     }
   }, [isOpen, availableFlavors, supplier])
 
@@ -892,12 +1041,13 @@ export default function SupplierCustomizationModal({
       }
     } else {
       // ✅ UPDATED: For non-cake, non-party-bags suppliers, still apply unified pricing
+      // ✅ FIX: Use totalPrice (includes add-ons) not just packagePrice
       finalPackage = {
         ...selectedPackage,
         price: selectedPackage.price, // Keep original price
         originalPrice: selectedPackage.price,
         enhancedPrice: calculateModalPricing.packagePrice, // Store enhanced price separately
-        totalPrice: calculateModalPricing.packagePrice,
+        totalPrice: calculateModalPricing.totalPrice, // ✅ FIXED: Include add-ons in total
         enhancedPricing: calculateModalPricing.pricingInfo,
         partyDuration: effectivePartyDetails?.duration,
         isTimeBased: supplierTypeDetection.isTimeBased,
@@ -932,20 +1082,35 @@ export default function SupplierCustomizationModal({
    
 
     try {
-      const result = onAddToPlan(dataToSend)
+      // ✅ EDIT MODE: Call appropriate handler based on mode
+      if (mode === "edit" && onSaveChanges) {
+        onSaveChanges(dataToSend)
+      } else {
+        onAddToPlan(dataToSend)
+      }
       onClose()
     } catch (error) {
-      console.error("Error calling onAddToPlan:", error)
+      console.error("Error calling handler:", error)
     }
   }
 
   const getButtonText = () => {
     if (isAdding) {
-      return "Adding..."
+      return mode === "edit" ? "Saving..." : "Adding..."
     }
 
-    if (!canAddCheck.canAdd) {
+    if (!canAddCheck.canAdd && mode !== "edit") {
       return currentPhase === "awaiting_responses" ? "Slot Occupied" : "Enquiry Pending"
+    }
+
+    // Edit mode button text
+    if (mode === "edit") {
+      if (priceDiff > 0) {
+        return `Save Changes (+£${priceDiff.toFixed(2)})`
+      } else if (priceDiff < 0) {
+        return `Save Changes (-£${Math.abs(priceDiff).toFixed(2)})`
+      }
+      return "Save Changes"
     }
 
     if (supplierTypeDetection.isCake) {
@@ -981,7 +1146,7 @@ export default function SupplierCustomizationModal({
               <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2">
                 {supplierTypeDetection.isCake && <span className="flex-shrink-0">🎂</span>}
                 {supplierTypeDetection.isPartyBags && <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" />}
-                <span className="truncate">{supplier.name}</span>
+                <span className="truncate">{supplier.name || supplier.data?.name || 'Supplier'}</span>
               </h2>
             </div>
           </div>
@@ -1230,13 +1395,70 @@ export default function SupplierCustomizationModal({
                     </div>
 
                     {/* Pickup Location Info */}
-                    {fulfillmentMethod === "pickup" && cakeFulfillmentOptions.location && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span><strong>Pickup:</strong> {cakeFulfillmentOptions.location}</span>
+                    {fulfillmentMethod === "pickup" && (cakeFulfillmentOptions.location || cakeFulfillmentOptions.address) && (
+                      <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                        {/* Address */}
+                        <div>
+                          <div className="flex items-start gap-2 text-sm">
+                            <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-gray-900">Collection Address</p>
+                              {cakeFulfillmentOptions.address ? (
+                                <div className="text-gray-600 mt-1">
+                                  {cakeFulfillmentOptions.address.line1 && <p>{cakeFulfillmentOptions.address.line1}</p>}
+                                  {cakeFulfillmentOptions.address.line2 && <p>{cakeFulfillmentOptions.address.line2}</p>}
+                                  {cakeFulfillmentOptions.address.city && <p>{cakeFulfillmentOptions.address.city}</p>}
+                                  {cakeFulfillmentOptions.address.postcode && <p>{cakeFulfillmentOptions.address.postcode}</p>}
+                                </div>
+                              ) : (
+                                <p className="text-gray-600 mt-1">{cakeFulfillmentOptions.location}</p>
+                              )}
+                            </div>
+                          </div>
+                          {/* Map Link */}
+                          {(cakeFulfillmentOptions.address?.postcode || cakeFulfillmentOptions.location) && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                cakeFulfillmentOptions.address
+                                  ? `${cakeFulfillmentOptions.address.line1 || ''} ${cakeFulfillmentOptions.address.city || ''} ${cakeFulfillmentOptions.address.postcode || ''}`
+                                  : cakeFulfillmentOptions.location
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 mt-2 ml-6"
+                            >
+                              <span>View on map</span>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 ml-6">Exact address shared after booking</p>
+
+                        {/* Collection Hours */}
+                        {cakeFulfillmentOptions.collectionHours && (
+                          <div className="border-t border-gray-200 pt-3">
+                            <div className="flex items-start gap-2 text-sm">
+                              <Clock className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-medium text-gray-900">Collection Hours</p>
+                                <div className="text-gray-600 mt-1 space-y-0.5 text-xs">
+                                  {Object.entries(cakeFulfillmentOptions.collectionHours)
+                                    .filter(([_, hours]) => hours.isOpen)
+                                    .map(([day, hours]) => (
+                                      <div key={day} className="flex justify-between gap-4">
+                                        <span className="capitalize">{day}</span>
+                                        <span>{hours.from} - {hours.to}</span>
+                                      </div>
+                                    ))}
+                                  {Object.values(cakeFulfillmentOptions.collectionHours).every(h => !h.isOpen) && (
+                                    <p className="text-gray-500 italic">Collection times arranged after booking</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1258,6 +1480,22 @@ export default function SupplierCustomizationModal({
 
                 {/* Cake Price Summary */}
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  {/* ✅ EDIT MODE: Price diff banner for cakes */}
+                  {mode === "edit" && priceDiff !== 0 && (
+                    <div className={`mb-3 p-3 rounded-lg flex items-center gap-2 ${
+                      priceDiff > 0
+                        ? "bg-amber-50 border border-amber-200"
+                        : "bg-green-50 border border-green-200"
+                    }`}>
+                      <Info className={`w-4 h-4 flex-shrink-0 ${priceDiff > 0 ? "text-amber-600" : "text-green-600"}`} />
+                      <p className={`text-sm ${priceDiff > 0 ? "text-amber-800" : "text-green-800"}`}>
+                        {priceDiff > 0
+                          ? `This change will increase the price by £${priceDiff.toFixed(2)}`
+                          : `This change will reduce the price by £${Math.abs(priceDiff).toFixed(2)}`
+                        }
+                      </p>
+                    </div>
+                  )}
                   <h4 className="font-semibold text-gray-900 text-base mb-3">Price Summary</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-start text-sm">
@@ -1557,6 +1795,22 @@ export default function SupplierCustomizationModal({
 
             {!supplierTypeDetection.isCake && !supplierTypeDetection.isPartyBags && (
               <section className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                {/* ✅ EDIT MODE: Price diff banner */}
+                {mode === "edit" && priceDiff !== 0 && (
+                  <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                    priceDiff > 0
+                      ? "bg-amber-50 border border-amber-200"
+                      : "bg-green-50 border border-green-200"
+                  }`}>
+                    <Info className={`w-4 h-4 flex-shrink-0 ${priceDiff > 0 ? "text-amber-600" : "text-green-600"}`} />
+                    <p className={`text-sm ${priceDiff > 0 ? "text-amber-800" : "text-green-800"}`}>
+                      {priceDiff > 0
+                        ? `This change will increase the price by £${priceDiff.toFixed(2)}`
+                        : `This change will reduce the price by £${Math.abs(priceDiff).toFixed(2)}`
+                      }
+                    </p>
+                  </div>
+                )}
                 <div className="mb-4">
                   <h4 className="font-semibold text-gray-900 text-base">Price Summary</h4>
                 </div>

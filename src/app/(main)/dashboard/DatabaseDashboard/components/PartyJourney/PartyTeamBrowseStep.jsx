@@ -87,6 +87,7 @@ export function PartyTeamBrowseStep({
                   handleCancelEnquiry={handleCancelEnquiry}
                   partyDetails={partyDetails}
                   enhancedPricing={enhancedPricing}
+                  selectedVenue={suppliers?.venue}
                 />
               )
             })}

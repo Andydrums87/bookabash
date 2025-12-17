@@ -161,11 +161,11 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
       switch (localOrderStatus) {
         case null:
         case undefined:
-          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm', icon: CheckCircle }
+          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
         case ORDER_STATUS.CONFIRMED:
-          return { status: ORDER_STATUS.PREPARING, label: 'Preparing', icon: ChefHat }
+          return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
         case ORDER_STATUS.PREPARING:
-          return { status: ORDER_STATUS.READY_FOR_COLLECTION, label: 'Ready', icon: Package }
+          return { status: ORDER_STATUS.READY_FOR_COLLECTION, label: 'Ready for Collection', icon: Package }
         case ORDER_STATUS.READY_FOR_COLLECTION:
           return { status: ORDER_STATUS.COLLECTED, label: 'Collected', icon: CheckCircle }
         default:
@@ -176,11 +176,11 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
       switch (localOrderStatus) {
         case null:
         case undefined:
-          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm', icon: CheckCircle }
+          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
         case ORDER_STATUS.CONFIRMED:
-          return { status: ORDER_STATUS.PREPARING, label: 'Preparing', icon: ChefHat }
+          return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
         case ORDER_STATUS.PREPARING:
-          return { status: ORDER_STATUS.DISPATCHED, label: 'Dispatch', icon: Truck, needsTracking: true }
+          return { status: ORDER_STATUS.DISPATCHED, label: 'Ready to Dispatch', icon: Truck, needsTracking: true }
         case ORDER_STATUS.DISPATCHED:
           return { status: ORDER_STATUS.DELIVERED, label: 'Delivered', icon: CheckCircle }
         default:
@@ -287,7 +287,7 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
         <div className="flex border-t border-gray-200">
           <button
             onClick={() => setShowDetailModal(true)}
-            className="flex-1 py-3.5 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors border-r border-gray-200"
+            className="flex-1 py-3.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200"
           >
             View details
           </button>
@@ -301,7 +301,7 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
                 }
               }}
               disabled={isUpdating}
-              className="flex-1 py-3.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+              className="flex-1 py-3.5 text-center text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors"
             >
               {isUpdating ? 'Updating...' : nextAction.label}
             </button>

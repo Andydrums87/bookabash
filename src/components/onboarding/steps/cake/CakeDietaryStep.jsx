@@ -65,10 +65,10 @@ export default function CakeDietaryStep({ dietaryInfo = [], onChange }) {
     <div className="py-12 max-w-3xl mx-auto">
       <div className="text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
-          Dietary information
+          Dietary options available
         </h1>
         <p className="text-lg text-gray-600">
-          Select any dietary options this cake meets
+          Select which dietary requirements you can accommodate for this cake
         </p>
       </div>
 

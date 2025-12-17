@@ -104,6 +104,7 @@ export function AddSuppliersSection({
                   onAddRecommendedSupplier?.(categoryType, supplier) // Then add supplier
                 }}
                 isCompact={true} // ✅ Pass compact prop
+                selectedVenue={suppliers?.venue}
               />
             </div>
           )

@@ -185,7 +185,7 @@ async function processPaymentSuccess(paymentIntent) {
   console.log('📧 Queueing emails to send...')
 
   // Send emails in background without blocking
-  sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntent.id).catch(error => {
+  sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntent.id, paymentIntent.metadata).catch(error => {
     console.error('Error in async email sending:', error)
   })
 
@@ -194,7 +194,7 @@ async function processPaymentSuccess(paymentIntent) {
 }
 
 // Send emails asynchronously without blocking webhook response
-async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntentId) {
+async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentIntentId, paymentMetadata = {}) {
   // Step 1: Send supplier notification emails
   console.log('📧 Sending supplier notification emails...')
 
@@ -299,22 +299,47 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
   // Step 2: Send customer confirmation email
   try {
     if (user?.email) {
-      // Parse party plan to get service details
       const partyPlan = party.party_plan || {}
       const services = []
       const addons = []
 
-      for (const [category, supplier] of Object.entries(partyPlan)) {
-        if (!supplier || typeof supplier !== 'object') continue
+      // Check if this is a single supplier addition (not full party checkout)
+      const isSingleSupplierAddition = paymentMetadata.supplier_type && paymentMetadata.supplier_name
 
-        if (category === 'addons' && Array.isArray(supplier)) {
-          addons.push(...supplier)
-        } else if (category !== 'einvites' && supplier.id) {
+      if (isSingleSupplierAddition) {
+        // Only include the supplier that was just added
+        console.log(`📧 Single supplier addition: ${paymentMetadata.supplier_name} (${paymentMetadata.supplier_type})`)
+        const supplierType = paymentMetadata.supplier_type
+        const supplier = partyPlan[supplierType]
+
+        if (supplier && supplier.id) {
           services.push({
-            name: supplier.name || category,
-            price: supplier.price || 0,
-            category: category
+            name: supplier.name || paymentMetadata.supplier_name,
+            price: supplier.totalPrice || supplier.price || totalAmount,
+            category: supplierType
           })
+        } else {
+          // Fallback to metadata if supplier not found in plan
+          services.push({
+            name: paymentMetadata.supplier_name,
+            price: totalAmount,
+            category: supplierType
+          })
+        }
+      } else {
+        // Full party checkout - include all suppliers
+        for (const [category, supplier] of Object.entries(partyPlan)) {
+          if (!supplier || typeof supplier !== 'object') continue
+
+          if (category === 'addons' && Array.isArray(supplier)) {
+            addons.push(...supplier)
+          } else if (category !== 'einvites' && supplier.id) {
+            services.push({
+              name: supplier.name || category,
+              price: supplier.totalPrice || supplier.price || 0,
+              category: category
+            })
+          }
         }
       }
 
@@ -333,7 +358,7 @@ async function sendEmailsAsync(enquiries, party, user, totalAmount, paymentInten
         paymentIntentId: paymentIntentId,
         paymentMethod: 'Card',
         services: services,
-        addons: addons,
+        addons: isSingleSupplierAddition ? [] : addons, // Don't show all addons for single supplier addition
         dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://partysnap.co.uk'}/dashboard`
       }
 
@@ -400,12 +425,67 @@ export async function POST(request) {
     switch (event.type) {
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object
+        const paymentType = paymentIntent.metadata?.payment_type
+
         console.log('✅ Payment succeeded:', {
           id: paymentIntent.id,
           amount: paymentIntent.amount,
           party_id: paymentIntent.metadata.party_id,
+          payment_type: paymentType,
           payment_method: paymentIntent.payment_method_types
         })
+
+        // Skip full processing for booking upgrades - these are just additional payments
+        // for existing bookings, not new bookings that need confirmation emails
+        if (paymentType === 'booking_upgrade') {
+          console.log('💳 Booking upgrade payment - skipping confirmation emails')
+
+          // Just record the payment in the database
+          try {
+            const partyId = paymentIntent.metadata.party_id
+            if (partyId && partyId !== 'unknown') {
+              await supabaseAdmin
+                .from('payments')
+                .insert({
+                  party_id: partyId,
+                  stripe_payment_intent_id: paymentIntent.id,
+                  amount: paymentIntent.amount / 100,
+                  currency: 'gbp',
+                  status: 'succeeded',
+                  payment_type: 'upgrade',
+                  metadata: {
+                    supplier_type: paymentIntent.metadata.supplier_type,
+                    supplier_name: paymentIntent.metadata.supplier_name,
+                    upgrade_amount: paymentIntent.metadata.upgrade_amount
+                  }
+                })
+
+              // Update the party's total_paid amount
+              const { data: party } = await supabaseAdmin
+                .from('parties')
+                .select('total_paid')
+                .eq('id', partyId)
+                .single()
+
+              if (party) {
+                const newTotal = (party.total_paid || 0) + (paymentIntent.amount / 100)
+                await supabaseAdmin
+                  .from('parties')
+                  .update({
+                    total_paid: newTotal,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', partyId)
+              }
+
+              console.log('✅ Upgrade payment recorded for party:', partyId)
+            }
+          } catch (upgradeError) {
+            console.warn('⚠️ Failed to record upgrade payment:', upgradeError)
+          }
+
+          break
+        }
 
         try {
           const result = await processPaymentSuccess(paymentIntent)
