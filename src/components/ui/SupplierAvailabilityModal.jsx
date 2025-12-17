@@ -24,8 +24,11 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
     // Use your existing availability check logic here
     const unavailable = []
 
+    // Skip non-supplier fields
+    const nonSupplierFields = ['payment_status', 'estimated_cost', 'deposit_amount', 'addons', 'einvites', 'venueCarouselOptions']
+
     for (const [type, supplier] of Object.entries(suppliers)) {
-      if (!supplier || type === "einvites" || type === "addons") continue
+      if (!supplier || nonSupplierFields.includes(type)) continue
 
       // Your existing availability check logic
       const checkDate = newDetails.date instanceof Date ? newDetails.date : new Date(newDetails.date)
@@ -35,10 +38,10 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
           : "afternoon"
         : "afternoon"
 
-      const isAvailable = checkSupplierAvailability(supplier, checkDate, timeSlot)
+      const availabilityResult = checkSupplierAvailability(supplier, checkDate, timeSlot)
 
-      if (!isAvailable) {
-        unavailable.push({ type, supplier })
+      if (!availabilityResult.available) {
+        unavailable.push({ type, supplier, reason: availabilityResult.reason })
       }
     }
 
@@ -49,17 +52,79 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
   }
 
   const checkSupplierAvailability = (supplier, date, timeSlot) => {
-    if (!supplier || !date) return true
+    if (!supplier || !date) return { available: true }
 
     // Use your date helper instead of toISOString()
     const dateString = getDateStringForComparison(date)
 
     // Try to get unavailable dates from originalSupplier first
     const unavailableDates = supplier.unavailableDates || supplier.originalSupplier?.unavailableDates
+    const originalSupplier = supplier.originalSupplier || {}
 
     console.log("Checking supplier:", supplier.name)
     console.log("Date string:", dateString)
     console.log("Unavailable dates:", unavailableDates)
+
+    // Check lead time requirements first - prioritize serviceDetails.leadTime.minimum over advanceBookingDays
+    const minLeadTime =
+      // In serviceDetails (preferred location for cake suppliers)
+      supplier.serviceDetails?.leadTime?.minimum ||
+      supplier.serviceDetails?.fulfilment?.leadTime?.minimum ||
+      // In data (JSONB column)
+      supplier.data?.serviceDetails?.leadTime?.minimum ||
+      supplier.data?.leadTime?.minimum ||
+      supplier.data?.fulfilment?.leadTime?.minimum ||
+      // Direct on supplier
+      supplier.leadTime?.minimum ||
+      supplier.leadTimeSettings?.minLeadTimeDays ||
+      // In originalSupplier - same priority order
+      originalSupplier.serviceDetails?.leadTime?.minimum ||
+      originalSupplier.serviceDetails?.fulfilment?.leadTime?.minimum ||
+      originalSupplier.data?.serviceDetails?.leadTime?.minimum ||
+      originalSupplier.data?.leadTime?.minimum ||
+      originalSupplier.data?.fulfilment?.leadTime?.minimum ||
+      originalSupplier.leadTime?.minimum ||
+      originalSupplier.leadTimeSettings?.minLeadTimeDays ||
+      // Legacy fallback (advanceBookingDays) - only use if nothing else found
+      supplier.advanceBookingDays ||
+      originalSupplier.advanceBookingDays ||
+      0;
+
+    console.log("🔍 Lead time check for", supplier.name, ":", {
+      minLeadTime,
+      locations: {
+        advanceBookingDays: supplier.advanceBookingDays,
+        leadTimeSettings: supplier.leadTimeSettings?.minLeadTimeDays,
+        leadTime: supplier.leadTime?.minimum,
+        dataServiceDetails: supplier.data?.serviceDetails?.leadTime?.minimum,
+        dataLeadTime: supplier.data?.leadTime?.minimum,
+        dataFulfilment: supplier.data?.fulfilment?.leadTime?.minimum,
+        serviceDetails: supplier.serviceDetails?.leadTime?.minimum,
+        serviceDetailsFulfilment: supplier.serviceDetails?.fulfilment?.leadTime?.minimum,
+        originalSupplier: originalSupplier?.serviceDetails?.leadTime?.minimum
+      }
+    })
+
+    if (minLeadTime > 0) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const checkDate = new Date(date)
+      checkDate.setHours(0, 0, 0, 0)
+      const daysUntilParty = Math.ceil((checkDate - today) / (1000 * 60 * 60 * 24))
+
+      if (daysUntilParty < minLeadTime) {
+        const leadTimeLabel = minLeadTime === 7 ? '1 week' :
+                              minLeadTime === 14 ? '2 weeks' :
+                              minLeadTime === 21 ? '3 weeks' :
+                              minLeadTime === 28 ? '4 weeks' :
+                              `${minLeadTime} days`;
+        console.log("UNAVAILABLE: Lead time issue -", daysUntilParty, "days until party, needs", minLeadTime)
+        return {
+          available: false,
+          reason: `Requires ${leadTimeLabel} notice (party is ${daysUntilParty} days away)`
+        }
+      }
+    }
 
     // Check unavailable dates
     if (unavailableDates && Array.isArray(unavailableDates)) {
@@ -71,14 +136,14 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
 
           if (ud.timeSlots && ud.timeSlots.includes(timeSlot)) {
             console.log("UNAVAILABLE: Time slot blocked")
-            return false
+            return { available: false, reason: "Not available at this time" }
           }
         }
       }
     }
 
     console.log("AVAILABLE")
-    return true
+    return { available: true }
   }
 
   const handleFindReplacements = async () => {
@@ -202,28 +267,31 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
 
         {!isChecking && !isRebuilding && unavailableSuppliers.length > 0 && (
           <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <XCircle className="w-4 h-4 text-red-600" />
-                <h4 className="font-medium text-red-900">These suppliers aren't available:</h4>
+                <AlertTriangle className="w-4 h-4 text-primary-600" />
+                <h4 className="font-medium text-gray-900">These suppliers aren't available for this date:</h4>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {unavailableSuppliers.map((item, i) => (
-                  <div key={i} className="text-sm text-red-800 pl-6">
-                    • {getSupplierDisplayName(item.type)}: {item.supplier.name}
+                  <div key={i} className="text-sm text-gray-700 pl-6">
+                    <div className="font-medium">• {getSupplierDisplayName(item.type)}: {item.supplier.name}</div>
+                    {item.reason && (
+                      <div className="text-xs text-gray-500 pl-3 mt-0.5">{item.reason}</div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">What would you like to do?</h4>
-              <div className="text-sm text-blue-800 space-y-1">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <h4 className="font-medium text-gray-900 mb-2">What would you like to do?</h4>
+              <div className="text-sm text-gray-600 space-y-1">
                 <p>
-                  • <strong>Keep Original:</strong> Save the new date/time and deal with unavailable suppliers later
+                  • <strong>Keep Original:</strong> Keep your current date and don't make changes
                 </p>
                 <p>
-                  • <strong>Find Others:</strong> We'll automatically find replacement suppliers who are available
+                  • <strong>Find Others:</strong> Save the new date and find replacement suppliers who are available
                 </p>
               </div>
             </div>
@@ -232,12 +300,12 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
 
         {!isChecking && !isRebuilding && unavailableSuppliers.length === 0 && (
           <div className="text-center py-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Calendar className="w-5 h-5 text-green-600" />
-                <h4 className="font-medium text-green-900">Perfect! All suppliers are available</h4>
+                <Calendar className="w-5 h-5 text-primary-600" />
+                <h4 className="font-medium text-gray-900">Perfect! All suppliers are available</h4>
               </div>
-              <p className="text-sm text-green-700">Your entire team can make the new date and time.</p>
+              <p className="text-sm text-gray-600">Your entire team can make the new date and time.</p>
             </div>
           </div>
         )}
@@ -251,7 +319,7 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
                 onConfirm(newDetails)
                 onClose()
               }}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white"
             >
               Save Changes
             </Button>
@@ -260,13 +328,13 @@ const SupplierAvailabilityModal = ({ isOpen, onClose, onConfirm, currentDetails,
               <Button
                 onClick={handleKeepThisDate}
                 variant="outline"
-                className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50 bg-transparent"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
               >
                 Keep Original
               </Button>
               <Button
                 onClick={handleFindReplacements}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
                 disabled={isRebuilding}
               >
                 {isRebuilding ? (

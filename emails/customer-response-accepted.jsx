@@ -23,7 +23,10 @@ export default function CustomerResponseAccepted({
   serviceType = 'party services',
   supplierMessage = 'Thank you for choosing our services!',
   dashboardLink = 'https://partysnap.co.uk/dashboard',
+  einvitesLink = 'https://partysnap.co.uk/dashboard?tab=invites',
 }) {
+  // Check if this is a venue confirmation
+  const isVenue = serviceType?.toLowerCase()?.includes('venue');
   return (
     <Html>
       <Head />
@@ -83,6 +86,19 @@ export default function CustomerResponseAccepted({
                 View Booking Details
               </Button>
             </Section>
+
+            {/* E-Invites Section - Only shown for venue confirmations */}
+            {isVenue && (
+              <Section style={styles.einvitesSection}>
+                <Heading as="h3" style={styles.einvitesHeading}>Ready to Send Invites?</Heading>
+                <Text style={styles.einvitesText}>
+                  Now that your venue is confirmed, it's time to spread the word! Use our free digital e-invite system to send beautiful invitations to your guests.
+                </Text>
+                <Button href={einvitesLink} style={styles.einvitesButton}>
+                  Create Your E-Invites
+                </Button>
+              </Section>
+            )}
 
             <Text style={styles.closing}>
               Best regards,<br/>
@@ -235,6 +251,36 @@ const styles = {
     borderRadius: '6px',
     fontWeight: '600',
     fontSize: '16px',
+    textDecoration: 'none',
+    display: 'inline-block',
+  },
+  einvitesSection: {
+    backgroundColor: '#fef3c7',
+    borderRadius: '8px',
+    padding: '20px',
+    margin: '25px 0',
+    borderLeft: '4px solid #f59e0b',
+    textAlign: 'center',
+  },
+  einvitesHeading: {
+    color: '#92400e',
+    margin: '0 0 10px 0',
+    fontSize: '18px',
+    fontWeight: '600',
+  },
+  einvitesText: {
+    color: '#78350f',
+    margin: '0 0 15px 0',
+    fontSize: '14px',
+    lineHeight: '1.6',
+  },
+  einvitesButton: {
+    backgroundColor: '#f59e0b',
+    color: 'white',
+    padding: '12px 24px',
+    borderRadius: '6px',
+    fontWeight: '600',
+    fontSize: '14px',
     textDecoration: 'none',
     display: 'inline-block',
   },

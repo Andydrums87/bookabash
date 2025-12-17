@@ -421,116 +421,14 @@ export default function QuickStatusUpdatePage() {
           </div>
         </div>
 
-        {/* Progress Steps */}
-        <div className="px-6 pb-8">
-          <div className="max-w-lg mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              {STEPS.map((step, index) => {
-                const isCompleted = index <= currentStepIndex
-                const isCurrent = index === currentStepIndex + 1
-                const StepIcon = step.icon
-
-                return (
-                  <div key={step.status} className="flex flex-col items-center flex-1">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
-                      isCompleted ? 'bg-white' : isCurrent ? 'bg-white/30 ring-2 ring-white/50' : 'bg-primary-600/50'
-                    }`}>
-                      {isCompleted ? (
-                        <CheckCircle className="w-6 h-6 text-primary-500" />
-                      ) : (
-                        <StepIcon className={`w-6 h-6 ${isCurrent ? 'text-white' : 'text-primary-300'}`} />
-                      )}
-                    </div>
-                    <span className={`text-xs font-medium text-center ${
-                      isCompleted ? 'text-white' : isCurrent ? 'text-white' : 'text-primary-200'
-                    }`}>
-                      {step.shortLabel || step.label.split(' ')[0]}
-                    </span>
-                    {index < STEPS.length - 1 && (
-                      <div className={`absolute h-0.5 w-full top-6 left-1/2 -z-10 ${
-                        index < currentStepIndex ? 'bg-white' : 'bg-primary-600/50'
-                      }`} style={{ width: 'calc(100% - 3rem)' }} />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Area */}
+        {/* Action Area - Clickable Steps */}
         <div className="flex-1 bg-white rounded-t-3xl px-6 py-8">
           <div className="max-w-lg mx-auto">
-            {isComplete ? (
-              /* Completed State */
-              <div className="text-center py-8">
-                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="w-12 h-12 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Complete!</h2>
-                <p className="text-gray-500">
-                  {isPickupOrder
-                    ? 'This cake has been collected successfully.'
-                    : 'This cake has been delivered successfully.'}
-                </p>
-              </div>
-            ) : nextStep ? (
-              /* Next Action */
-              <div className="space-y-6">
-                <div className="text-center">
-                  <p className="text-gray-500 text-sm mb-2">Next step</p>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-1">{nextStep.label}</h2>
-                  <p className="text-gray-500">{nextStep.description}</p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (nextStep.needsTracking) {
-                      setShowTrackingModal(true)
-                    } else {
-                      updateStatus(nextStep.status)
-                    }
-                  }}
-                  disabled={updating}
-                  className={`w-full py-5 rounded-2xl text-white font-semibold text-lg transition-all disabled:opacity-50 flex items-center justify-center gap-3 ${nextStep.activeColor}`}
-                >
-                  {updating ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <nextStep.icon className="w-6 h-6" />
-                  )}
-                  {updating ? 'Updating...' : nextStep.label}
-                </button>
-              </div>
-            ) : (
-              /* First step - Confirm */
-              <div className="space-y-6">
-                <div className="text-center">
-                  <p className="text-gray-500 text-sm mb-2">Action required</p>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-1">Confirm Order</h2>
-                  <p className="text-gray-500">Accept this order to begin</p>
-                </div>
-
-                <button
-                  onClick={() => updateStatus(ORDER_STATUS.CONFIRMED)}
-                  disabled={updating}
-                  className="w-full py-5 rounded-2xl text-white font-semibold text-lg bg-primary-500 hover:bg-primary-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                >
-                  {updating ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-6 h-6" />
-                  )}
-                  {updating ? 'Updating...' : 'Confirm Order'}
-                </button>
-              </div>
-            )}
-
-            {/* Order Details Accordion */}
-            <div className="mt-8 border-t border-gray-200 pt-6">
+            {/* Order Details Accordion - At Top */}
+            <div className="mb-6 border-b border-gray-200 pb-6">
               <button
                 onClick={() => setShowDetails(!showDetails)}
-                className="w-full flex items-center justify-between py-3 text-left"
+                className="w-full flex items-center justify-between py-2 text-left"
               >
                 <span className="font-semibold text-gray-900">Order Details</span>
                 {showDetails ? (
@@ -541,7 +439,7 @@ export default function QuickStatusUpdatePage() {
               </button>
 
               {showDetails && (
-                <div className="space-y-4 pb-4 animate-in slide-in-from-top-2">
+                <div className="space-y-4 pt-4 animate-in slide-in-from-top-2">
                   {/* Delivery/Collection Date */}
                   {deliveryDate && (
                     <div className="bg-primary-50 rounded-xl p-4">
@@ -694,6 +592,124 @@ export default function QuickStatusUpdatePage() {
                 </div>
               )}
             </div>
+
+            {isComplete ? (
+              /* Completed State */
+              <div className="text-center py-8">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="w-12 h-12 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Order Complete!</h2>
+                <p className="text-gray-500">
+                  {isPickupOrder
+                    ? 'This cake has been collected successfully.'
+                    : 'This cake has been delivered successfully.'}
+                </p>
+              </div>
+            ) : (
+              /* Step Cards - Click to complete */
+              <div className="space-y-3">
+                <p className="text-center text-gray-500 text-sm mb-4">
+                  Tap a step when you've completed it
+                </p>
+
+                {STEPS.map((step, index) => {
+                  const isCompleted = index <= currentStepIndex
+                  const isNext = index === currentStepIndex + 1
+                  const isFuture = index > currentStepIndex + 1
+                  const StepIcon = step.icon
+
+                  const handleStepClick = () => {
+                    if (isCompleted || isFuture || updating) return
+                    if (step.needsTracking) {
+                      setShowTrackingModal(true)
+                    } else {
+                      updateStatus(step.status)
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={step.status}
+                      onClick={handleStepClick}
+                      disabled={isCompleted || isFuture || updating}
+                      className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center gap-4 text-left ${
+                        isCompleted
+                          ? 'bg-green-50 cursor-default'
+                          : isNext
+                            ? 'bg-white hover:shadow-md cursor-pointer'
+                            : 'bg-gray-50 cursor-not-allowed opacity-50'
+                      }`}
+                      style={{
+                        borderColor: isCompleted
+                          ? 'hsl(142, 76%, 80%)'
+                          : isNext
+                            ? 'hsl(24, 100%, 70%)'
+                            : 'hsl(220, 13%, 85%)'
+                      }}
+                    >
+                      {/* Step Number/Icon */}
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        isCompleted
+                          ? 'bg-green-500'
+                          : isNext
+                            ? 'bg-primary-500'
+                            : 'bg-gray-300'
+                      }`}>
+                        {isCompleted ? (
+                          <CheckCircle className="w-6 h-6 text-white" />
+                        ) : updating && isNext ? (
+                          <Loader2 className="w-6 h-6 text-white animate-spin" />
+                        ) : (
+                          <StepIcon className="w-6 h-6 text-white" />
+                        )}
+                      </div>
+
+                      {/* Step Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${
+                            isCompleted
+                              ? 'text-green-700'
+                              : isNext
+                                ? 'text-gray-900'
+                                : 'text-gray-400'
+                          }`}>
+                            {step.shortLabel}
+                          </span>
+                          {isCompleted && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                              Done
+                            </span>
+                          )}
+                          {isNext && (
+                            <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">
+                              Next
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-sm mt-0.5 ${
+                          isCompleted
+                            ? 'text-green-600'
+                            : isNext
+                              ? 'text-gray-500'
+                              : 'text-gray-400'
+                        }`}>
+                          {isCompleted ? 'Completed' : step.description}
+                        </p>
+                      </div>
+
+                      {/* Tap indicator for next step */}
+                      {isNext && !updating && (
+                        <div className="flex-shrink-0 text-primary-500">
+                          <span className="text-sm font-medium">Tap</span>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

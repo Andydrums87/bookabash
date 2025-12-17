@@ -146,19 +146,19 @@ const DateEditModal = ({ isOpen, onClose, currentDate, onSave }) => {
 
   return (
     <UniversalModal isOpen={isOpen} onClose={onClose} size="sm" theme="fun">
-      <ModalHeader 
-        title="Change Party Date" 
+      <ModalHeader
+        title="Change Party Date"
         subtitle="Pick the perfect date for your celebration"
         theme="fun"
         icon={<Calendar className="w-6 h-6" />}
       />
-      
+
       <ModalContent>
         <div className="space-y-4">
-          <CalendarPicker 
-            mode="single" 
-            selected={selectedDate} 
-            onSelect={setSelectedDate} 
+          <CalendarPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={setSelectedDate}
             className="rounded-md border w-full"
           />
         </div>
@@ -166,14 +166,14 @@ const DateEditModal = ({ isOpen, onClose, currentDate, onSave }) => {
 
       <ModalFooter theme="fun">
         <div className="flex gap-3">
-          <Button 
-            onClick={onClose} 
-            variant="outline" 
+          <Button
+            onClick={onClose}
+            variant="outline"
             className="flex-1"
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
           >

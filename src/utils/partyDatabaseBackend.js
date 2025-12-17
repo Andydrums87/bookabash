@@ -513,6 +513,247 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
     return { success: false, error: error.message }
   }
 }
+
+  /**
+   * Update a booked supplier's details (for editing after payment)
+   * @param {string} partyId - The party ID
+   * @param {string} supplierType - The supplier type/category (e.g., 'cake', 'entertainer')
+   * @param {object} updatedData - The updated supplier and package data from modal
+   * @returns {object} - { success, changes: [] } for notification logic
+   */
+  async updateBookedSupplier(partyId, supplierType, updatedData) {
+    try {
+      const { supplier, package: packageData, addons = [], totalPrice } = updatedData
+
+      console.log('📝 updateBookedSupplier called with:', {
+        partyId,
+        supplierType,
+        supplierId: supplier?.id,
+        packageId: packageData?.id,
+        totalPrice
+      })
+
+      // 1. Get current party plan
+      const { data: party, error: fetchError } = await supabase
+        .from('parties')
+        .select('party_plan')
+        .eq('id', partyId)
+        .maybeSingle() // Use maybeSingle to get null instead of error if not found
+
+      if (fetchError) throw fetchError
+      if (!party) throw new Error(`Party not found: ${partyId}`)
+
+      const currentPlan = party.party_plan || {}
+      const currentSupplier = currentPlan[supplierType]
+
+      // Track what changed for notifications
+      const changes = []
+
+      if (currentSupplier) {
+        // Check for package change
+        if (currentSupplier.packageData?.id !== packageData?.id) {
+          changes.push({
+            type: 'package_changed',
+            from: currentSupplier.packageData?.name,
+            to: packageData?.name
+          })
+        }
+
+        // Check for price change (> £5 difference)
+        const oldPrice = currentSupplier.totalPrice || currentSupplier.price || 0
+        const newPrice = totalPrice || 0
+        if (Math.abs(newPrice - oldPrice) > 5) {
+          changes.push({
+            type: 'price_changed',
+            from: oldPrice,
+            to: newPrice
+          })
+        }
+
+        // Check for cake customization changes
+        const oldCake = currentSupplier.packageData?.cakeCustomization || {}
+        const newCake = packageData?.cakeCustomization || {}
+
+        // Check flavor change
+        const oldFlavor = oldCake.flavor || null
+        const newFlavor = newCake.flavor || null
+        if (oldFlavor !== newFlavor && (oldFlavor || newFlavor)) {
+          changes.push({
+            type: 'cake_flavor_changed',
+            from: oldCake.flavorName || 'Not specified',
+            to: newCake.flavorName || 'Not specified'
+          })
+        }
+
+        // Compare dietary options (arrays)
+        const oldDietary = [...(oldCake.dietaryOptions || [])].sort()
+        const newDietary = [...(newCake.dietaryOptions || [])].sort()
+        if (JSON.stringify(oldDietary) !== JSON.stringify(newDietary)) {
+          changes.push({
+            type: 'dietary_changed',
+            from: oldCake.dietaryName || 'Standard',
+            to: newCake.dietaryName || 'Standard'
+          })
+        }
+
+        // Check fulfillment method change
+        const oldFulfillment = oldCake.fulfillmentMethod || null
+        const newFulfillment = newCake.fulfillmentMethod || null
+        if (oldFulfillment !== newFulfillment && (oldFulfillment || newFulfillment)) {
+          changes.push({
+            type: 'fulfillment_changed',
+            from: oldFulfillment || 'Not specified',
+            to: newFulfillment || 'Not specified'
+          })
+        }
+
+        // Check custom message change (only if significantly different)
+        const oldMessage = (oldCake.customMessage || '').trim()
+        const newMessage = (newCake.customMessage || '').trim()
+        if (oldMessage !== newMessage && (oldMessage.length > 0 || newMessage.length > 0)) {
+          changes.push({
+            type: 'message_changed',
+            from: oldMessage || '(No message)',
+            to: newMessage || '(No message)'
+          })
+        }
+
+        // Check for party bags quantity change
+        const oldQuantity = currentSupplier.packageData?.partyBagsQuantity ||
+                           currentSupplier.partyBagsMetadata?.quantity
+        const newQuantity = packageData?.partyBagsQuantity ||
+                           packageData?.partyBagsMetadata?.quantity
+        if (oldQuantity && newQuantity && oldQuantity !== newQuantity) {
+          changes.push({
+            type: 'quantity_changed',
+            from: oldQuantity,
+            to: newQuantity
+          })
+        }
+
+        // Check for cake size change (when package name changes for cakes)
+        const oldSize = oldCake.size || currentSupplier.packageData?.name
+        const newSize = newCake.size || packageData?.name
+        if (oldSize !== newSize && oldCake.size && newCake.size) {
+          changes.push({
+            type: 'cake_size_changed',
+            from: oldSize,
+            to: newSize
+          })
+        }
+
+        // Check for add-on changes
+        const oldAddons = currentSupplier.selectedAddons || []
+        const newAddons = addons || []
+        const oldAddonIds = oldAddons.map(a => a.id).sort()
+        const newAddonIds = newAddons.map(a => a.id).sort()
+
+        if (JSON.stringify(oldAddonIds) !== JSON.stringify(newAddonIds)) {
+          // Find added add-ons
+          const addedAddons = newAddons.filter(a => !oldAddonIds.includes(a.id))
+          const removedAddons = oldAddons.filter(a => !newAddonIds.includes(a.id))
+
+          if (addedAddons.length > 0) {
+            changes.push({
+              type: 'addons_added',
+              from: null,
+              to: addedAddons.map(a => a.name).join(', ')
+            })
+          }
+
+          if (removedAddons.length > 0) {
+            changes.push({
+              type: 'addons_removed',
+              from: removedAddons.map(a => a.name).join(', '),
+              to: null
+            })
+          }
+        }
+
+        // Check for venue-specific changes (duration, guest count)
+        const oldDuration = currentSupplier.packageData?.duration
+        const newDuration = packageData?.duration
+        if (oldDuration !== newDuration && (oldDuration || newDuration)) {
+          changes.push({
+            type: 'duration_changed',
+            from: oldDuration || 'Not specified',
+            to: newDuration || 'Not specified'
+          })
+        }
+      }
+
+      // 2. Update supplier data in party_plan
+      const updatedPlan = {
+        ...currentPlan,
+        [supplierType]: {
+          ...supplier,
+          packageId: packageData?.id,
+          packageData: packageData,
+          selectedAddons: addons,
+          totalPrice: totalPrice,
+          price: totalPrice, // Keep both for compatibility
+          updatedAt: new Date().toISOString()
+        }
+      }
+
+      // 3. Save updated party plan
+      const { success: planSuccess, error: planError } = await this.updatePartyPlan(partyId, updatedPlan)
+      if (!planSuccess) throw new Error(planError)
+
+      // 4. Update enquiry record (if exists)
+      const { data: enquiry, error: enquiryFetchError } = await supabase
+        .from('enquiries')
+        .select('id')
+        .eq('party_id', partyId)
+        .eq('supplier_id', supplier.id)
+        .maybeSingle() // Use maybeSingle to avoid error when no enquiry exists
+
+      if (enquiry && !enquiryFetchError) {
+        // Build addon_details including cakeCustomization for supplier dashboard
+        const addonDetailsObj = {
+          ...(addons.length > 0 ? { addons } : {}),
+          ...(packageData?.cakeCustomization ? { cakeCustomization: packageData.cakeCustomization } : {}),
+          // Include package details for reference
+          packageName: packageData?.name,
+          packageSize: packageData?.size || packageData?.cakeCustomization?.size
+        }
+
+        const { error: enquiryUpdateError } = await supabase
+          .from('enquiries')
+          .update({
+            quoted_price: totalPrice,
+            package_id: packageData?.id,
+            addon_details: Object.keys(addonDetailsObj).length > 0 ? JSON.stringify(addonDetailsObj) : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', enquiry.id)
+
+        if (enquiryUpdateError) {
+          console.warn('⚠️ Failed to update enquiry:', enquiryUpdateError)
+        } else {
+          console.log('✅ Updated enquiry with cake customization:', addonDetailsObj)
+        }
+      }
+
+      console.log('✅ Updated booked supplier:', {
+        supplierType,
+        supplierId: supplier.id,
+        changes,
+        newPrice: totalPrice
+      })
+
+      return {
+        success: true,
+        changes,
+        hasMajorChanges: changes.length > 0
+      }
+
+    } catch (error) {
+      console.error('❌ Error updating booked supplier:', error)
+      return { success: false, error: error.message, changes: [] }
+    }
+  }
+
   /**
    * Add supplier to party plan
    */
@@ -520,8 +761,14 @@ async updateEnquiriesPaymentStatus(partyId, includedSuppliers) {
 // In partyDatabaseBackend.js - Ensure createEnquiry creates accepted status:
 async createEnquiry(partyId, supplier, packageData, message = '', specialRequests = '') {
   try {
- 
-    
+    // Build addon_details including cakeCustomization for supplier dashboard
+    const addonDetailsObj = {
+      ...(packageData.addons?.length > 0 ? { addons: packageData.addons } : {}),
+      ...(packageData.cakeCustomization ? { cakeCustomization: packageData.cakeCustomization } : {}),
+      packageName: packageData.name,
+      packageSize: packageData.size || packageData.cakeCustomization?.size
+    }
+
     const enquiryData = {
       party_id: partyId,
       supplier_id: supplier.id,
@@ -530,16 +777,16 @@ async createEnquiry(partyId, supplier, packageData, message = '', specialRequest
       quoted_price: packageData.totalPrice || packageData.price,
       message: message,
       special_requests: specialRequests,
-      
+
       // ✅ CRITICAL: Create as accepted for immediate booking
       status: 'accepted',
       auto_accepted: true,
       payment_status: 'unpaid',
-      
+
       supplier_response_date: new Date().toISOString(),
       supplier_response: 'Auto-confirmed for immediate booking - ready for deposit payment',
-      
-      addon_details: packageData.addons ? JSON.stringify(packageData.addons) : null,
+
+      addon_details: Object.keys(addonDetailsObj).length > 0 ? JSON.stringify(addonDetailsObj) : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -686,11 +933,16 @@ async addSupplierToParty(partyId, supplier, selectedPackage = null) {
 
 
     // ✅ ENHANCED: Create supplier data with cake customization and party bags metadata
+    // ✅ FIX: Use totalPrice from package (includes add-ons, delivery) when available
+    const basePrice = selectedPackage ? selectedPackage.price : supplier.priceFrom
+    const totalPrice = selectedPackage?.totalPrice || basePrice
+
     const supplierData = {
       id: supplier.id,
       name: supplier.name,
       description: supplier.description,
-      price: selectedPackage ? selectedPackage.price : supplier.priceFrom,
+      price: basePrice, // Base package price
+      totalPrice: totalPrice, // ✅ FIX: Total including add-ons and delivery
       status: "accepted",
       image: supplier.image,
       category: supplier.category, // ✅ Explicitly preserve category
@@ -1216,23 +1468,28 @@ const allAddons = partyPlan.addons || []
 
 
 // Filter add-ons for this supplier (either linked to this supplier or general add-ons)
-const categoryAddons = allAddons.filter(addon => 
-  addon.supplierId === supplierInfo.id || 
+const categoryAddons = allAddons.filter(addon =>
+  addon.supplierId === supplierInfo.id ||
   addon.supplierName === supplierInfo.name ||
   !addon.supplierId || // General add-ons
   addon.supplierId === null
 )
 
+// Build addon_details including cakeCustomization for supplier dashboard
+const addonDetailsObj = {
+  ...(categoryAddons.length > 0 ? { addons: categoryAddons } : {}),
+  ...(supplierInfo.packageData?.cakeCustomization ? { cakeCustomization: supplierInfo.packageData.cakeCustomization } : {}),
+  packageName: supplierInfo.packageData?.name,
+  packageSize: supplierInfo.packageData?.size || supplierInfo.packageData?.cakeCustomization?.size
+}
 
-
-       
 const enquiryData = {
   party_id: partyId,
   supplier_id: actualSupplierId,
   supplier_category: category,
   package_id: supplierInfo.packageId || null,
   addon_ids: categoryAddons.length > 0 ? categoryAddons.map(a => a.id) : null,
-  addon_details: categoryAddons.length > 0 ? JSON.stringify(categoryAddons) : null, // Store full addon details
+  addon_details: Object.keys(addonDetailsObj).length > 0 ? JSON.stringify(addonDetailsObj) : null,
   message: message || null,
   special_requests: specialRequests || null,
   quoted_price: (supplierInfo.price || 0) + categoryAddons.reduce((sum, addon) => sum + (addon.price || 0), 0),
@@ -1699,6 +1956,14 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
       const addonsPrice = relevantAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
       const totalQuotedPrice = supplierPrice + addonsPrice
   
+      // Build addon_details including cakeCustomization for supplier dashboard
+      const addonDetailsObj = {
+        ...(relevantAddons.length > 0 ? { addons: relevantAddons } : {}),
+        ...(selectedPackage?.cakeCustomization ? { cakeCustomization: selectedPackage.cakeCustomization } : {}),
+        packageName: selectedPackage?.name,
+        packageSize: selectedPackage?.size || selectedPackage?.cakeCustomization?.size
+      }
+
       // Create enquiry data
       const enquiryData = {
         party_id: partyId,
@@ -1706,14 +1971,12 @@ async respondToEnquiry(enquiryId, response, finalPrice = null, message = '', isD
         supplier_category: supplierCategory,
         package_id: selectedPackage?.id || null,
         addon_ids: relevantAddons.length > 0 ? relevantAddons.map(a => a.id) : null,
-        addon_details: relevantAddons.length > 0 ? JSON.stringify(relevantAddons) : null,
+        addon_details: Object.keys(addonDetailsObj).length > 0 ? JSON.stringify(addonDetailsObj) : null,
         message: customMessage || `Individual enquiry for ${party.child_name || 'child'}'s ${party.theme || 'themed'} party`,
         special_requests: party.special_requirements || null,
         quoted_price: totalQuotedPrice,
         status: 'accepted',
         created_at: new Date().toISOString(),
-          
-
       }
   
 

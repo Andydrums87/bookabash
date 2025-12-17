@@ -2,7 +2,8 @@
 
 export const AVAILABILITY_TYPES = {
     TIME_SLOT_BASED: 'time_slot_based',
-    LEAD_TIME_BASED: 'lead_time_based'
+    LEAD_TIME_BASED: 'lead_time_based',
+    CAKE_CALENDAR: 'cake_calendar'
   }
   
   // Map supplier categories to availability types
@@ -25,14 +26,16 @@ export const AVAILABILITY_TYPES = {
     'balloon artist': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     'balloon designer': AVAILABILITY_TYPES.TIME_SLOT_BASED,
     
+    // Cake suppliers (simplified calendar)
+    'cakes': AVAILABILITY_TYPES.CAKE_CALENDAR,
+    'cake': AVAILABILITY_TYPES.CAKE_CALENDAR,
+    'baker': AVAILABILITY_TYPES.CAKE_CALENDAR,
+    'bakery': AVAILABILITY_TYPES.CAKE_CALENDAR,
+
     // Lead time based suppliers (stock/product based)
     'party bags': AVAILABILITY_TYPES.LEAD_TIME_BASED,
     'partybags': AVAILABILITY_TYPES.LEAD_TIME_BASED,
     'party_bags': AVAILABILITY_TYPES.LEAD_TIME_BASED,
-    'cakes': AVAILABILITY_TYPES.LEAD_TIME_BASED,
-    'cake': AVAILABILITY_TYPES.LEAD_TIME_BASED,
-    'baker': AVAILABILITY_TYPES.LEAD_TIME_BASED,
-    'bakery': AVAILABILITY_TYPES.LEAD_TIME_BASED,
     'bouncy_castle': AVAILABILITY_TYPES.LEAD_TIME_BASED,
     'bouncy castle hire': AVAILABILITY_TYPES.LEAD_TIME_BASED,
     'inflatable hire': AVAILABILITY_TYPES.LEAD_TIME_BASED,

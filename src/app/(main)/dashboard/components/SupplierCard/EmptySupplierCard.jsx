@@ -211,6 +211,7 @@ export default function EmptySupplierCard({
   showJustAdded = false,
   onCustomize, // NEW: If provided, clicking will open customization modal instead
   disableSuccessState = false, // NEW: If true, don't show "In Plan" state or confetti
+  selectedVenue = null, // Venue data to check for restrictions (e.g., bouncy castles not allowed)
 }) {
   const [isMounted, setIsMounted] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
@@ -220,10 +221,52 @@ export default function EmptySupplierCard({
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   const [fullSupplierData, setFullSupplierData] = useState(null)
+  const [showUnavailableInfo, setShowUnavailableInfo] = useState(false)
   const router = useRouter()
 
   // Check if this is a cake supplier that needs customization first
   const isCakeSupplier = type === 'cakes'
+
+  // Check if this category is restricted by the selected venue
+  const isVenueRestricted = useMemo(() => {
+    // Debug logging for bouncy castle cards
+    if (type === 'bouncyCastle' || type === 'bouncy-castle' || type === 'bouncy_castle') {
+      console.log('🏰 Bouncy Castle Card - Venue Restriction Check:', {
+        hasVenue: !!selectedVenue,
+        venueName: selectedVenue?.name || selectedVenue?.businessName,
+        serviceDetails: selectedVenue?.serviceDetails,
+        dataServiceDetails: selectedVenue?.data?.serviceDetails,
+        restrictedItems: selectedVenue?.serviceDetails?.restrictedItems || selectedVenue?.data?.serviceDetails?.restrictedItems || 'none found'
+      })
+    }
+
+    if (!selectedVenue) return false
+
+    // Get restricted items from venue's serviceDetails - check multiple possible paths
+    const restrictedItems = selectedVenue?.serviceDetails?.restrictedItems ||
+                           selectedVenue?.data?.serviceDetails?.restrictedItems ||
+                           selectedVenue?.restrictedItems ||
+                           selectedVenue?.data?.restrictedItems ||
+                           []
+
+    // Check if bouncy castles are restricted and this is a bouncy castle card
+    if (type === 'bouncyCastle' || type === 'bouncy-castle' || type === 'bouncy_castle') {
+      const isRestricted = Array.isArray(restrictedItems) && restrictedItems.some(item =>
+        typeof item === 'string' && (
+          item.toLowerCase().includes('bouncy castle') ||
+          item.toLowerCase().includes('bouncy castles')
+        )
+      )
+      console.log('🏰 Bouncy Castle Restriction Result:', { isRestricted, restrictedItems })
+      return isRestricted
+    }
+
+    return false
+  }, [selectedVenue, type])
+
+  const venueRestrictionMessage = isVenueRestricted
+    ? "Not allowed at your venue"
+    : null
 
   // Fetch full supplier data with packages when needed for cake customization
   const fetchFullSupplierData = async (supplierId) => {
@@ -419,8 +462,17 @@ export default function EmptySupplierCard({
 
   // ✅ Check supplier availability
   const availabilityCheck = useMemo(() => {
+    // Check venue restrictions first (e.g., bouncy castles not allowed)
+    if (isVenueRestricted) {
+      return { available: false, reason: venueRestrictionMessage }
+    }
     if (isUnavailableCategory) {
-      return { available: false, reason: 'No suppliers available on your party date' }
+      // Pass through lead time info if available (for helpful "pick a later date" messaging)
+      return {
+        available: false,
+        reason: recommendedSupplier?.unavailabilityReason || 'No suppliers available on your party date',
+        requiredLeadTime: recommendedSupplier?.requiredLeadTime
+      }
     }
     if (!recommendedSupplier || !partyDetails?.date) {
       return { available: true, reason: null }
@@ -431,9 +483,28 @@ export default function EmptySupplierCard({
       partyDetails.time || partyDetails.startTime,
       partyDetails.duration || 2
     )
-  }, [recommendedSupplier, partyDetails, isUnavailableCategory])
+  }, [recommendedSupplier, partyDetails, isUnavailableCategory, isVenueRestricted, venueRestrictionMessage])
 
-  const isUnavailable = !availabilityCheck.available || isUnavailableCategory
+  const isUnavailable = !availabilityCheck.available || isUnavailableCategory || isVenueRestricted
+
+  // Get explanation for unavailability - use the reason from availability checker
+  const getUnavailabilityExplanation = () => {
+    if (isVenueRestricted) {
+      if (type === 'activities' || type === 'bouncyCastle') {
+        return "Your venue doesn't allow bouncy castles. Choose a different venue or skip this."
+      }
+      return venueRestrictionMessage || "Not permitted at your selected venue."
+    }
+
+    // Use the actual reason from the availability checker (has correct lead time per supplier)
+    if (availabilityCheck.reason) {
+      return availabilityCheck.reason
+    }
+
+    return null
+  }
+
+  const unavailabilityExplanation = isUnavailable ? getUnavailabilityExplanation() : null
 
   // Debug logging
   // useEffect(() => {
@@ -508,9 +579,21 @@ export default function EmptySupplierCard({
             {/* Image section - clickable and smaller */}
             <div
               className="relative h-32 w-full flex-shrink-0 cursor-pointer group/img"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation()
-                setShowQuickView(true)
+                // For cake suppliers, open customization modal instead of quick view
+                if (isCakeSupplier) {
+                  try {
+                    const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+                    setFullSupplierData(fullData || recommendedSupplier)
+                    setShowCustomizationModal(true)
+                  } catch (error) {
+                    setFullSupplierData(recommendedSupplier)
+                    setShowCustomizationModal(true)
+                  }
+                } else {
+                  setShowQuickView(true)
+                }
               }}
             >
               <Image
@@ -523,6 +606,37 @@ export default function EmptySupplierCard({
 
               {/* Subtle overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/40 transition-opacity group-hover/img:opacity-80" />
+
+              {/* Info icon - shows unavailability reason when unavailable */}
+              {isUnavailable && unavailabilityExplanation && (
+                <div className="absolute top-2 right-2 z-10">
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowUnavailableInfo(!showUnavailableInfo)
+                      }}
+                      className="w-7 h-7 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+                    >
+                      <Info className="w-3.5 h-3.5 text-white" />
+                    </button>
+                    {showUnavailableInfo && (
+                      <div className="absolute top-9 right-0 w-56 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-50">
+                        <p className="text-xs text-gray-600 leading-snug">{unavailabilityExplanation}</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowUnavailableInfo(false)
+                          }}
+                          className="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Content section below image */}
@@ -533,7 +647,7 @@ export default function EmptySupplierCard({
               </h3>
 
               {/* Price */}
-              {pricing.finalPrice > 0 && (
+              {pricing.finalPrice > 0 && !isUnavailable && (
                 <p className="text-xs text-gray-500 mb-3">
                   from <span className="font-bold text-gray-900">£{pricing.finalPrice}</span>
                   {isCakeSupplier && <span className="text-gray-400 ml-1">(incl. delivery)</span>}
@@ -551,12 +665,18 @@ export default function EmptySupplierCard({
                 }`}
                 onClick={handleAddToParty}
                 disabled={isAdding || isAddedToParty || isUnavailable}
-                title={isUnavailable ? availabilityCheck.reason : ''}
+                title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
               >
                 {isUnavailable ? (
                   <>
                     <X className="w-3.5 h-3.5 mr-1" />
-                    <span className="font-semibold">Unavailable</span>
+                    <span className="font-semibold">
+                      {isVenueRestricted
+                        ? "Not at venue"
+                        : availabilityCheck.requiredLeadTime
+                          ? "Needs more notice"
+                          : "Unavailable"}
+                    </span>
                   </>
                 ) : isAdding ? (
                   <>
@@ -646,10 +766,22 @@ export default function EmptySupplierCard({
             {/* Generic Category Image */}
             <div
               className={isUnavailableCategory ? "absolute inset-0" : "absolute inset-0 cursor-pointer"}
-              onClick={(e) => {
+              onClick={async (e) => {
                 if (isUnavailableCategory) return
                 e.stopPropagation()
-                setShowQuickView(true)
+                // For cake suppliers, open customization modal instead of quick view
+                if (isCakeSupplier) {
+                  try {
+                    const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+                    setFullSupplierData(fullData || recommendedSupplier)
+                    setShowCustomizationModal(true)
+                  } catch (error) {
+                    setFullSupplierData(recommendedSupplier)
+                    setShowCustomizationModal(true)
+                  }
+                } else {
+                  setShowQuickView(true)
+                }
               }}
             >
               <Image
@@ -664,18 +796,48 @@ export default function EmptySupplierCard({
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
 
-            {/* Info icon for quick view - hide for unavailable categories */}
+            {/* Info icon - shows supplier details OR unavailability reason */}
             {!isUnavailableCategory && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowQuickView(true)
-                }}
-                className="absolute top-2 right-2 z-10 w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-                title="View supplier details"
-              >
-                <Info className="w-4 h-4 text-white" />
-              </button>
+              <div className="absolute top-2 right-2 z-10">
+                {isUnavailable && unavailabilityExplanation ? (
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowUnavailableInfo(!showUnavailableInfo)
+                      }}
+                      className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+                    >
+                      <Info className="w-4 h-4 text-white" />
+                    </button>
+                    {showUnavailableInfo && (
+                      <div className="absolute top-10 right-0 w-64 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-50">
+                        <p className="text-sm text-gray-600 leading-snug">{unavailabilityExplanation}</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowUnavailableInfo(false)
+                          }}
+                          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowQuickView(true)
+                    }}
+                    className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
+                    title="View supplier details"
+                  >
+                    <Info className="w-4 h-4 text-white" />
+                  </button>
+                )}
+              </div>
             )}
 
 
@@ -711,12 +873,18 @@ export default function EmptySupplierCard({
               }`}
               onClick={handleAddToParty}
               disabled={isAdding || isAddedToParty || isUnavailable}
-              title={isUnavailable ? availabilityCheck.reason : ''}
+              title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
             >
               {isUnavailable ? (
                 <>
                   <X className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">Unavailable on this date</span>
+                  <span className="text-xs font-semibold">
+                    {isVenueRestricted
+                      ? "Not allowed at venue"
+                      : availabilityCheck.requiredLeadTime
+                        ? "Needs more notice"
+                        : "Unavailable"}
+                  </span>
                 </>
               ) : isAdding ? (
                 <>
@@ -811,9 +979,21 @@ export default function EmptySupplierCard({
           {/* Generic Category Image */}
           <div
             className="absolute inset-0 cursor-pointer"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation()
-              setShowQuickView(true)
+              // For cake suppliers, open customization modal instead of quick view
+              if (isCakeSupplier) {
+                try {
+                  const fullData = await fetchFullSupplierData(recommendedSupplier.id)
+                  setFullSupplierData(fullData || recommendedSupplier)
+                  setShowCustomizationModal(true)
+                } catch (error) {
+                  setFullSupplierData(recommendedSupplier)
+                  setShowCustomizationModal(true)
+                }
+              } else {
+                setShowQuickView(true)
+              }
             }}
           >
             <Image
@@ -828,17 +1008,47 @@ export default function EmptySupplierCard({
           {/* Darker overlay for greyed effect */}
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-800/60 to-gray-900/80 pointer-events-none" />
 
-           {/* Info icon for quick view */}
-           <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowQuickView(true)
-              }}
-              className="absolute top-2 cursor-pointer right-2 z-10 w-8 h-8  hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110"
-              title="View supplier details"
-            >
-              <Info className="w-6 h-6 text-white" />
-            </button>
+           {/* Info icon - shows supplier details OR unavailability reason */}
+           <div className="absolute top-2 right-2 z-10">
+              {isUnavailable && unavailabilityExplanation ? (
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowUnavailableInfo(!showUnavailableInfo)
+                    }}
+                    className="w-8 h-8 bg-primary-500 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 cursor-pointer"
+                  >
+                    <Info className="w-4 h-4 text-white" />
+                  </button>
+                  {showUnavailableInfo && (
+                    <div className="absolute top-10 right-0 w-64 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-50">
+                      <p className="text-sm text-gray-600 leading-snug">{unavailabilityExplanation}</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowUnavailableInfo(false)
+                        }}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowQuickView(true)
+                  }}
+                  className="w-8 h-8 hover:bg-primary-600 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 cursor-pointer"
+                  title="View supplier details"
+                >
+                  <Info className="w-6 h-6 text-white" />
+                </button>
+              )}
+            </div>
 
           {/* Category badge */}
           {/* <div className="absolute top-4 left-4 z-10">
@@ -878,12 +1088,16 @@ export default function EmptySupplierCard({
             size="lg"
             onClick={handleAddToParty}
             disabled={isAdding || isAddedToParty || isUnavailable}
-            title={isUnavailable ? availabilityCheck.reason : ''}
+            title={isUnavailable ? (unavailabilityExplanation || availabilityCheck.reason) : ''}
           >
             {isUnavailable ? (
               <>
                 <X className="w-5 h-5 mr-2" />
-                Unavailable on this date
+                {isVenueRestricted
+                  ? "Not allowed at your venue"
+                  : availabilityCheck.requiredLeadTime
+                    ? "Needs more notice"
+                    : "Unavailable"}
               </>
             ) : isAdding ? (
               <>

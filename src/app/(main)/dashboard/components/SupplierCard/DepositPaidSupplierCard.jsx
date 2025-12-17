@@ -2,11 +2,26 @@
 
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { PartyPopper, Gift } from "lucide-react"
+import { PartyPopper, Gift, Pencil, Lock } from "lucide-react"
+import { canEditBooking } from "@/utils/editDeadline"
 
-export default function DepositPaidSupplierCard({ type, supplier, supplierAddons = [], isDeleting = false, onClick }) {
-  const displayPrice = supplier.totalPrice || supplier.price || 0
+export default function DepositPaidSupplierCard({
+  type,
+  supplier,
+  supplierAddons = [],
+  isDeleting = false,
+  onClick,
+  onEdit,
+  partyDate,
+  totalPrice // ✅ FIX: Use calculated totalPrice prop (includes add-ons, delivery)
+}) {
+  // Check if editing is allowed (48 hours before party)
+  const canEdit = partyDate ? canEditBooking(partyDate) : true
+
+  // ✅ FIX: Prefer calculated totalPrice prop, fallback to supplier data
+  const displayPrice = totalPrice || supplier.totalPrice || supplier.price || 0
 
   // Extract cake customization data
   const cakeCustomization = supplier?.packageData?.cakeCustomization
@@ -73,7 +88,41 @@ export default function DepositPaidSupplierCard({ type, supplier, supplierAddons
 
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
               <p className="text-base font-semibold text-gray-800 mb-2">{supplier.name} is all yours!</p>
-              <p className="text-sm text-gray-600">They'll be in touch within 24 hours with all the details.</p>
+              <p className="text-sm text-gray-600 mb-4">They'll be in touch within 24 hours with all the details.</p>
+
+              {onEdit && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    canEdit && onEdit(type, supplier)
+                  }}
+                  disabled={!canEdit}
+                  variant="outline"
+                  className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    canEdit
+                      ? "border-gray-300 text-gray-700 hover:bg-gray-100"
+                      : "border-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {canEdit ? (
+                    <>
+                      <Pencil className="w-4 h-4 inline mr-2" />
+                      Edit Booking
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 inline mr-2" />
+                      Edits Locked
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {onEdit && !canEdit && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Edits locked 48 hours before party
+                </p>
+              )}
             </div>
           </div>
         </div>

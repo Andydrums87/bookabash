@@ -339,20 +339,28 @@ useEffect(() => {
       return { available: false, reason: 'past-date' }
     }
     
-    // Check lead time requirements
+    // Check lead time requirements from multiple possible locations:
+    // - supplier.leadTimeSettings.minLeadTimeDays (lead-based suppliers like party bags)
+    // - supplier.data.serviceDetails.leadTime.minimum (cake suppliers)
+    // - supplier.serviceDetails.leadTime.minimum (alternate location)
+    // - supplier.advanceBookingDays (legacy/fallback)
     const leadTimeSettings = supplier.leadTimeSettings || {}
-    const minLeadTime = leadTimeSettings.minLeadTimeDays || 3
+    const cakeLeadTime = supplier.data?.serviceDetails?.leadTime?.minimum ||
+                         supplier.serviceDetails?.leadTime?.minimum || 0
+    const minLeadTime = cakeLeadTime || leadTimeSettings.minLeadTimeDays || 3
     const advanceBooking = supplier.advanceBookingDays || 0
-    
+
+    const totalLeadTime = Math.max(minLeadTime, advanceBooking)
+
     const minBookingDate = new Date(today)
-    minBookingDate.setDate(today.getDate() + minLeadTime + advanceBooking)
+    minBookingDate.setDate(today.getDate() + totalLeadTime)
     minBookingDate.setHours(0, 0, 0, 0)
-    
+
     if (checkDate < minBookingDate) {
-      return { 
-        available: false, 
+      return {
+        available: false,
         reason: 'insufficient-lead-time',
-        requiredLeadTime: minLeadTime + advanceBooking
+        requiredLeadTime: totalLeadTime
       }
     }
     
@@ -372,10 +380,10 @@ useEffect(() => {
       }
     }
     
-    return { 
-      available: true, 
+    return {
+      available: true,
       reason: 'available',
-      leadTimeDays: minLeadTime + advanceBooking
+      leadTimeDays: totalLeadTime
     }
   }
 

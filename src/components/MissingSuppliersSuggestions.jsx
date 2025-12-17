@@ -431,6 +431,7 @@ export default function MissingSuppliersSuggestions({
                 showJustAdded={!disableConfetti && isJustAdded}
                 onCustomize={onCustomize}
                 disableSuccessState={disableConfetti}
+                selectedVenue={partyPlan?.venue}
               />
             </div>
           );

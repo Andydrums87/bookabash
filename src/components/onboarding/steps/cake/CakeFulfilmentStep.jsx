@@ -1,17 +1,26 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Package, Truck, MapPin, PoundSterling } from "lucide-react"
+import { Package, Truck } from "lucide-react"
 
 export default function CakeFulfilmentStep({ cakeFulfilment, onChange }) {
   const [localData, setLocalData] = useState(cakeFulfilment || {
     offersPickup: true,
     offersDelivery: false,
     deliveryRadius: 10,
-    deliveryFee: 0
+    deliveryFee: 0,
+    collectionHours: {
+      monday: { open: true, from: '09:00', to: '17:00' },
+      tuesday: { open: true, from: '09:00', to: '17:00' },
+      wednesday: { open: true, from: '09:00', to: '17:00' },
+      thursday: { open: true, from: '09:00', to: '17:00' },
+      friday: { open: true, from: '09:00', to: '17:00' },
+      saturday: { open: true, from: '10:00', to: '16:00' },
+      sunday: { open: false, from: '10:00', to: '16:00' }
+    }
   })
 
-  // Sync with props when they change (e.g., from localStorage restore)
+  // Sync with props when they change
   useEffect(() => {
     if (cakeFulfilment) {
       setLocalData(prev => ({
@@ -19,13 +28,7 @@ export default function CakeFulfilmentStep({ cakeFulfilment, onChange }) {
         ...cakeFulfilment
       }))
     }
-  }, [cakeFulfilment?.deliveryFee, cakeFulfilment?.offersDelivery, cakeFulfilment?.offersPickup, cakeFulfilment?.deliveryRadius])
-
-  const handleChange = (field, value) => {
-    const updated = { ...localData, [field]: value }
-    setLocalData(updated)
-    onChange(updated)
-  }
+  }, [cakeFulfilment?.offersDelivery, cakeFulfilment?.offersPickup])
 
   const handleToggle = (field) => {
     const updated = { ...localData, [field]: !localData[field] }
@@ -36,15 +39,6 @@ export default function CakeFulfilmentStep({ cakeFulfilment, onChange }) {
     setLocalData(updated)
     onChange(updated)
   }
-
-  const radiusOptions = [
-    { value: 5, label: "5 miles" },
-    { value: 10, label: "10 miles" },
-    { value: 15, label: "15 miles" },
-    { value: 20, label: "20 miles" },
-    { value: 30, label: "30 miles" },
-    { value: 50, label: "50+ miles" }
-  ]
 
   return (
     <div className="py-12 max-w-2xl mx-auto">
@@ -57,7 +51,7 @@ export default function CakeFulfilmentStep({ cakeFulfilment, onChange }) {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Pickup Option */}
         <button
           type="button"
@@ -138,81 +132,10 @@ export default function CakeFulfilmentStep({ cakeFulfilment, onChange }) {
           </div>
         </button>
 
-        {/* Delivery Details - shown when delivery is selected */}
-        {localData.offersDelivery && (
-          <div className="space-y-6 pt-4 pl-4 border-l-2 border-gray-200 ml-6">
-            {/* Delivery Radius */}
-            <div>
-              <label className="flex items-center gap-2 text-base font-medium text-gray-900 mb-3">
-                <MapPin className="w-5 h-5 text-gray-500" />
-                Delivery radius
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {radiusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleChange('deliveryRadius', option.value)}
-                    className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${
-                      localData.deliveryRadius === option.value
-                        ? 'border-gray-900 bg-gray-900 text-white'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Delivery Fee */}
-            <div>
-              <label className="flex items-center gap-2 text-base font-medium text-gray-900 mb-2">
-                <PoundSterling className="w-5 h-5 text-gray-500" />
-                Delivery fee
-              </label>
-              <p className="text-sm text-gray-500 mb-3">
-                Leave empty or set to 0 for free delivery (e.g. 5.50)
-              </p>
-              <div className="relative w-48">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">£</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={localData.deliveryFeeInput ?? (localData.deliveryFee === 0 ? '' : localData.deliveryFee)}
-                  onChange={(e) => {
-                    // Allow digits, one decimal point, and up to 2 decimal places
-                    let value = e.target.value.replace(/[^0-9.]/g, '')
-                    // Prevent multiple decimal points
-                    const parts = value.split('.')
-                    if (parts.length > 2) {
-                      value = parts[0] + '.' + parts.slice(1).join('')
-                    }
-                    // Limit to 2 decimal places
-                    if (parts.length === 2 && parts[1].length > 2) {
-                      value = parts[0] + '.' + parts[1].slice(0, 2)
-                    }
-                    // Store both the display value and numeric value
-                    const updated = {
-                      ...localData,
-                      deliveryFeeInput: value,
-                      deliveryFee: value === '' ? 0 : parseFloat(value) || 0
-                    }
-                    setLocalData(updated)
-                    onChange(updated)
-                  }}
-                  className="w-full pl-10 pr-4 py-4 border-2 border-gray-300 rounded-xl text-lg focus:border-gray-900 focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Help text */}
         <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
           <p className="text-sm text-amber-800">
-            💡 You must select at least one fulfilment option. You can change these settings later.
+            You must select at least one option. You can change these settings later.
           </p>
         </div>
       </div>

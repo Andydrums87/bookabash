@@ -15,7 +15,8 @@ if (typeof document !== 'undefined') {
 import { supabase } from "@/lib/supabase"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Lock, Users, Mail, Gift, Trash2 } from "lucide-react"
+import { Lock, Users, Mail, Gift, Trash2, Pencil } from "lucide-react"
+import { canEditBooking, getOrderStatusEditBlockReason } from "@/utils/editDeadline"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ import { usePartyPhase } from '../hooks/usePartyPhase'
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
 import { usePartyDetails } from "../hooks/usePartyDetails"
 import SupplierSelectionModal from "@/components/supplier-selection-modal"
+import SupplierCustomizationModal from "@/components/SupplierCustomizationModal"
 import { useBudgetManager } from "../hooks/useBudgetManager"
 import { useSupplierManager } from "../hooks/useSupplierManager"
 import NextStepsWelcomeCard from "./components/NextStepsWelcomeCard"
@@ -62,6 +64,7 @@ import PartyChecklistModal from "./components/PartyChecklistModal"
 import WeatherWidget from "./components/WeatherWidget"
 import PartyTimeline from "./components/PartyTimeline"
 import EmergencyContacts from "./components/EmergencyContacts"
+import PriceDifferencePaymentModal from "@/components/PriceDifferencePaymentModal"
 
 
 
@@ -120,6 +123,17 @@ export default function DatabaseDashboard() {
   const [showChecklistModal, setShowChecklistModal] = useState(false)
   const [recommendedSuppliers, setRecommendedSuppliers] = useState({})
   const [recommendationsLoaded, setRecommendationsLoaded] = useState(false)
+
+  // ✅ NEW: Edit booked supplier state
+  const [editingSupplier, setEditingSupplier] = useState(null)
+  const [editingSupplierType, setEditingSupplierType] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+
+  // ✅ NEW: Price difference payment state
+  const [showPricePaymentModal, setShowPricePaymentModal] = useState(false)
+  const [pendingEditData, setPendingEditData] = useState(null)
+  const [originalEditPrice, setOriginalEditPrice] = useState(null)
 
   // Toast notifications
   const { toast } = useToast()
@@ -260,6 +274,7 @@ const childPhotoRef = useRef(null)
       try {
         const { suppliersAPI } = await import('@/utils/mockBackend')
         const { scoreSupplierWithTheme } = await import('@/utils/partyBuilderBackend')
+        const { checkSupplierAvailability } = await import('@/utils/availabilityChecker')
         const allSuppliers = await suppliersAPI.getAllSuppliers()
 
         const partyTheme = partyDetails?.theme || 'no-theme'
@@ -285,17 +300,56 @@ const childPhotoRef = useRef(null)
             const categorySuppliers = allSuppliers.filter(s => s.category === categoryName)
 
             if (categorySuppliers.length > 0) {
-              // Sort by theme score
-              const sortedByTheme = categorySuppliers
-                .map(supplier => ({
-                  supplier,
-                  themeScore: scoreSupplierWithTheme(supplier, partyTheme)
-                }))
-                .sort((a, b) => b.themeScore - a.themeScore)
+              // Filter by availability if party date is set
+              let availableSuppliers = categorySuppliers
+              let allUnavailable = false
+              let unavailabilityReason = null
 
-              const bestMatch = sortedByTheme[0].supplier
-              newRecommendations[categoryKey] = bestMatch
-              console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
+              if (partyDetails?.date) {
+                let firstUnavailableReason = null
+                availableSuppliers = categorySuppliers.filter(supplier => {
+                  const availabilityCheck = checkSupplierAvailability(
+                    supplier,
+                    partyDetails.date,
+                    partyDetails.time || partyDetails.startTime,
+                    partyDetails.duration || 2
+                  )
+                  if (!availabilityCheck.available && !firstUnavailableReason) {
+                    firstUnavailableReason = availabilityCheck
+                  }
+                  return availabilityCheck.available
+                })
+
+                if (availableSuppliers.length === 0 && categorySuppliers.length > 0) {
+                  allUnavailable = true
+                  unavailabilityReason = firstUnavailableReason
+                }
+              }
+
+              if (availableSuppliers.length > 0) {
+                // Sort by theme score
+                const sortedByTheme = availableSuppliers
+                  .map(supplier => ({
+                    supplier,
+                    themeScore: scoreSupplierWithTheme(supplier, partyTheme)
+                  }))
+                  .sort((a, b) => b.themeScore - a.themeScore)
+
+                const bestMatch = sortedByTheme[0].supplier
+                newRecommendations[categoryKey] = bestMatch
+                console.log(`✅ ${categoryKey}: ${bestMatch.name} (score: ${sortedByTheme[0].themeScore})`)
+              } else if (allUnavailable) {
+                // Mark category as having no available suppliers
+                newRecommendations[categoryKey] = {
+                  unavailable: true,
+                  category: categoryName,
+                  categoryKey: categoryKey,
+                  totalSuppliers: categorySuppliers.length,
+                  requiredLeadTime: unavailabilityReason?.requiredLeadTime,
+                  unavailabilityReason: unavailabilityReason?.reason
+                }
+                console.log(`⚠️ ${categoryKey}: No available suppliers for party date`, unavailabilityReason)
+              }
             }
           }
         })
@@ -1041,6 +1095,398 @@ useEffect(() => {
     }
   }
 
+  // ✅ NEW: Handle editing a booked supplier
+  const handleEditSupplier = async (supplierType, supplier) => {
+    console.log('📝 Opening edit modal for:', supplierType, supplier.name || supplier.data?.name)
+
+    // First, check if the order can be edited based on order_status
+    try {
+      const { data: enquiry, error: enquiryError } = await supabase
+        .from('enquiries')
+        .select('order_status')
+        .eq('party_id', partyId)
+        .eq('supplier_id', supplier.id)
+        .single()
+
+      if (!enquiryError && enquiry?.order_status) {
+        const blockReason = getOrderStatusEditBlockReason(enquiry.order_status)
+        if (blockReason) {
+          toast.error(blockReason, {
+            title: 'Cannot Edit Order',
+            duration: 4000
+          })
+          return
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not check order status:', err)
+      // Continue with edit if we can't check status
+    }
+
+    setEditingSupplierType(supplierType)
+
+    // Fetch full supplier data including packages from database
+    try {
+      const { data: fullSupplierData, error } = await supabase
+        .from('suppliers')
+        .select('*')
+        .eq('id', supplier.id)
+        .single()
+
+      if (error) {
+        console.warn('⚠️ Could not fetch full supplier data, using saved data:', error)
+        setEditingSupplier(supplier)
+      } else {
+        // ✅ FIX: Extract data from JSONB column and flatten for easier access
+        // The database stores supplier details in a `data` JSONB column
+        const dataFromDb = fullSupplierData.data || {}
+
+        // Merge the full supplier data with the saved customization data
+        const mergedSupplier = {
+          ...fullSupplierData,
+          // ✅ Flatten key fields from data JSONB for easier access
+          name: dataFromDb.name || supplier.name,
+          description: dataFromDb.description || supplier.description,
+          category: dataFromDb.category || supplier.category,
+          image: dataFromDb.image || supplier.image,
+          priceFrom: dataFromDb.priceFrom || supplier.priceFrom,
+          location: dataFromDb.location || supplier.location,
+          // Keep the full data object for nested access
+          data: dataFromDb,
+          // Preserve the saved package selection and customizations
+          packageId: supplier.packageId,
+          packageData: supplier.packageData,
+          selectedAddons: supplier.selectedAddons,
+          totalPrice: supplier.totalPrice,
+          price: supplier.price,
+        }
+        console.log('✅ Fetched full supplier data:', {
+          name: mergedSupplier.name,
+          packages: dataFromDb.packages?.length || dataFromDb.serviceDetails?.packages?.length || 0,
+          flavours: dataFromDb.flavours?.length || dataFromDb.serviceDetails?.flavours?.length || 0
+        })
+        setEditingSupplier(mergedSupplier)
+      }
+    } catch (fetchError) {
+      console.error('❌ Error fetching supplier data:', fetchError)
+      setEditingSupplier(supplier)
+    }
+
+    setShowEditModal(true)
+  }
+
+  // ✅ NEW: Handle saving edited supplier
+  const handleSaveEditedSupplier = async (updatedData) => {
+    if (!partyId || !editingSupplierType) {
+      console.error('Missing partyId or supplierType')
+      return
+    }
+
+    // Get the original price from the current supplier in the party plan
+    const currentSupplier = visibleSuppliers[editingSupplierType]
+    const originalPrice = currentSupplier?.totalPrice ||
+                          currentSupplier?.price ||
+                          currentSupplier?.packageData?.totalPrice ||
+                          currentSupplier?.packageData?.price ||
+                          0
+
+    const newPrice = updatedData.totalPrice || 0
+    const priceDiff = newPrice - originalPrice
+
+    console.log('💰 Price comparison:', { originalPrice, newPrice, priceDiff })
+
+    // If price increased, show payment modal first
+    if (priceDiff > 0) {
+      console.log('💳 Price increased by £' + priceDiff.toFixed(2) + ' - showing payment modal')
+      // Store supplier type and supplier info in pending data to ensure they're preserved
+      setPendingEditData({
+        ...updatedData,
+        _editContext: {
+          supplierType: editingSupplierType,
+          supplier: editingSupplier,
+          originalPrice,
+          newPrice
+        }
+      })
+      setOriginalEditPrice(originalPrice)
+      setShowEditModal(false) // Close the edit modal
+      setShowPricePaymentModal(true) // Show payment modal
+      return
+    }
+
+    // If price decreased, process refund
+    if (priceDiff < 0) {
+      const refundAmount = Math.abs(priceDiff)
+      console.log('💸 Price decreased by £' + refundAmount.toFixed(2) + ' - processing refund')
+
+      let refundProcessed = false
+
+      try {
+        const response = await fetch('/api/process-refund', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partyId,
+            supplierId: editingSupplier?.id,
+            supplierType: editingSupplierType,
+            refundAmount,
+            reason: 'booking_downgrade'
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          console.error('❌ Refund failed:', result.error)
+          toast.error(result.error || 'Failed to process refund', {
+            title: 'Refund Error',
+            duration: 4000
+          })
+          // Still proceed with the update - refund can be processed manually
+        } else {
+          console.log('✅ Refund processed:', result)
+          toast.success(`Refund of £${refundAmount.toFixed(2)} processed to your card`, {
+            title: 'Refund Processed',
+            duration: 4000
+          })
+          refundProcessed = true
+        }
+      } catch (error) {
+        console.error('❌ Refund error:', error)
+        toast.error('Could not process refund - please contact support', {
+          title: 'Refund Error',
+          duration: 4000
+        })
+        // Still proceed with the update
+      }
+
+      // Store price change info for customer email (sent after update completes)
+      updatedData._priceChange = {
+        type: 'refund',
+        originalPrice,
+        newPrice,
+        refundAmount,
+        refundProcessed
+      }
+    }
+
+    // Price same or decreased - proceed with save
+    await performSupplierUpdate(updatedData)
+  }
+
+  // ✅ NEW: Actually perform the supplier update (called after payment or for non-price-increase edits)
+  const performSupplierUpdate = async (updatedData) => {
+    setIsSavingEdit(true)
+
+    // Extract context from pending data if available (for post-payment updates)
+    const editContext = updatedData._editContext
+    const priceChange = updatedData._priceChange
+    const supplierType = editContext?.supplierType || editingSupplierType
+    const supplierInfo = editContext?.supplier || editingSupplier
+
+    // Remove the _editContext and _priceChange from the data before saving
+    const { _editContext, _priceChange, ...cleanedData } = updatedData
+
+    console.log('📝 Performing supplier update:', {
+      supplierType,
+      supplierName: supplierInfo?.name || supplierInfo?.data?.name,
+      hasEditContext: !!editContext
+    })
+
+    if (!supplierType) {
+      console.error('❌ No supplier type available for update!')
+      toast.error('Failed to update booking: Missing supplier type', {
+        title: 'Error',
+        duration: 4000
+      })
+      setIsSavingEdit(false)
+      return
+    }
+
+    try {
+      // Use the backend function to update the booked supplier
+      const result = await partyDatabaseBackend.updateBookedSupplier(
+        partyId,
+        supplierType,
+        cleanedData
+      )
+
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+
+      // Send notification email to supplier for ALL changes
+      console.log('📝 Update result:', { changes: result.changes, changeCount: result.changes?.length })
+
+      if (result.changes && result.changes.length > 0) {
+        try {
+          // Get supplier email from the supplier data - check multiple locations
+          // The supplier data structure varies, so we check many paths
+          const supplierEmail = supplierInfo?.email ||
+                               supplierInfo?.contactEmail ||
+                               supplierInfo?.contact_email ||
+                               supplierInfo?.data?.email ||
+                               supplierInfo?.data?.contactEmail ||
+                               supplierInfo?.data?.contact_email ||
+                               supplierInfo?.data?.contactInfo?.email ||
+                               supplierInfo?.data?.owner?.email ||
+                               // Also check in nested supplier object
+                               supplierInfo?.supplier?.email ||
+                               supplierInfo?.supplier?.contact_email
+
+          console.log('📧 Looking for supplier email:', {
+            found: !!supplierEmail,
+            email: supplierEmail,
+            supplierInfoKeys: Object.keys(supplierInfo || {}),
+            dataKeys: Object.keys(supplierInfo?.data || {})
+          })
+
+          if (supplierEmail) {
+            const response = await fetch('/api/email/booking-updated', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                supplierEmail,
+                supplierName: supplierInfo?.name || supplierInfo?.data?.name || 'Supplier',
+                customerName: partyData?.parent_first_name || 'Customer',
+                childName: partyData?.child_name || 'Child',
+                theme: partyData?.theme || 'themed',
+                partyDate: partyDetails?.date,
+                changes: result.changes,
+                dashboardLink: `${window.location.origin}/suppliers/dashboard`
+              })
+            })
+            const emailResult = await response.json()
+            console.log('📧 Supplier notification email result:', emailResult)
+          } else {
+            console.warn('⚠️ No supplier email found - skipping supplier notification. Full supplierInfo:', JSON.stringify(supplierInfo, null, 2))
+          }
+        } catch (emailError) {
+          console.warn('⚠️ Failed to send supplier notification:', emailError)
+          // Don't fail the whole operation if email fails
+        }
+      } else {
+        console.log('ℹ️ No changes detected - skipping supplier notification')
+      }
+
+      // ✅ Send customer email ONLY for financial changes (upgrade/refund receipts)
+      const customerEmail = user?.email || partyData?.email || partyData?.parent_email
+      const hasFinancialChange = priceChange && (priceChange.refundProcessed || priceChange.paymentProcessed)
+
+      console.log('📧 Checking customer email conditions:', {
+        hasFinancialChange,
+        priceChangeType: priceChange?.type,
+        refundProcessed: priceChange?.refundProcessed,
+        paymentProcessed: priceChange?.paymentProcessed,
+        customerEmail
+      })
+
+      if (hasFinancialChange && customerEmail) {
+        try {
+          const emailType = priceChange.refundProcessed ? 'refund' : 'upgrade'
+
+          const emailPayload = {
+            customerEmail,
+            customerName: partyData?.parent_first_name || 'there',
+            childName: partyData?.child_name || 'Child',
+            theme: partyData?.theme || 'themed',
+            partyDate: partyDetails?.date,
+            supplierName: supplierInfo?.name || supplierInfo?.data?.name || 'Supplier',
+            supplierType: supplierType,
+            previousTotal: priceChange.originalPrice,
+            newTotal: priceChange.newPrice,
+            changes: result.changes || [],
+            type: emailType,
+            dashboardLink: `${window.location.origin}/dashboard`
+          }
+
+          // Add refund or upgrade specific fields
+          if (emailType === 'refund') {
+            emailPayload.refundAmount = priceChange.refundAmount
+          } else {
+            emailPayload.amountPaid = priceChange.amountPaid
+          }
+
+          console.log('📧 Sending customer receipt email:', emailPayload)
+          const emailResponse = await fetch('/api/email/customer-booking-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailPayload)
+          })
+          const emailResult = await emailResponse.json()
+          console.log(`📧 Customer ${emailType} receipt response:`, emailResult, 'status:', emailResponse.status)
+        } catch (emailError) {
+          console.warn(`⚠️ Failed to send customer receipt:`, emailError)
+        }
+      } else {
+        console.log('ℹ️ No financial change - skipping customer receipt email')
+      }
+
+      // Refresh party data to show updates
+      await refreshPartyData()
+
+      // Show success toast
+      const displayName = supplierInfo?.name || supplierInfo?.data?.name || 'Supplier'
+      toast.success(`${displayName} has been notified of your changes.`, {
+        title: 'Booking Updated',
+        duration: 4000
+      })
+
+      // Close modals and reset state
+      setShowEditModal(false)
+      setShowPricePaymentModal(false)
+      setEditingSupplier(null)
+      setEditingSupplierType(null)
+      setPendingEditData(null)
+      setOriginalEditPrice(null)
+
+    } catch (error) {
+      console.error('❌ Error saving edited supplier:', error)
+      toast.error(`Failed to update booking: ${error.message}`, {
+        title: 'Error',
+        duration: 4000
+      })
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
+
+  // ✅ NEW: Handle successful payment for price difference
+  const handlePricePaymentSuccess = async (paymentIntent) => {
+    console.log('✅ Price difference payment successful:', paymentIntent.id)
+
+    if (pendingEditData) {
+      const editContext = pendingEditData._editContext
+      const amountPaid = (paymentIntent.amount / 100) // Convert from pence to pounds
+
+      // Store upgrade payment info for customer email (sent after update completes with changes)
+      const updatedPendingData = {
+        ...pendingEditData,
+        _priceChange: {
+          type: 'upgrade',
+          originalPrice: editContext?.originalPrice || originalEditPrice,
+          newPrice: editContext?.newPrice,
+          amountPaid: amountPaid,
+          paymentProcessed: true
+        }
+      }
+
+      // Now perform the actual supplier update (which will send the customer email)
+      await performSupplierUpdate(updatedPendingData)
+    }
+  }
+
+  // ✅ NEW: Handle closing payment modal without completing
+  const handlePricePaymentClose = () => {
+    setShowPricePaymentModal(false)
+    // Re-open the edit modal so user can adjust their changes
+    if (pendingEditData) {
+      setShowEditModal(true)
+    }
+    setPendingEditData(null)
+    setOriginalEditPrice(null)
+  }
+
   const handleCancelEnquiry = async (supplierType) => {
     if (isCancelling || !partyId) {
       console.log('Exiting early - isCancelling:', isCancelling, 'partyId:', partyId)
@@ -1448,8 +1894,45 @@ const addSuppliersSection = (
           hasEnquiriesPending={hasEnquiriesPending}
           isSignedIn={true}
           currentPartyId={partyId}
-          onAddToPlan={handleSupplierSelection} 
+          onAddToPlan={handleSupplierSelection}
         />
+
+        {/* Edit Booked Supplier Modal */}
+        {showEditModal && editingSupplier && (
+          <SupplierCustomizationModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingSupplier(null)
+              setEditingSupplierType(null)
+            }}
+            supplier={editingSupplier}
+            onAddToPlan={() => {}} // Not used in edit mode
+            mode="edit"
+            onSaveChanges={handleSaveEditedSupplier}
+            originalTotalPrice={editingSupplier?.totalPrice || editingSupplier?.price || 0}
+            isAdding={isSavingEdit}
+            partyDate={partyDetails?.date}
+            partyDetails={partyDetails}
+            databasePartyData={partyData}
+            userType="DATABASE_USER"
+          />
+        )}
+
+        {/* Price Difference Payment Modal */}
+        {showPricePaymentModal && pendingEditData && (
+          <PriceDifferencePaymentModal
+            isOpen={showPricePaymentModal}
+            onClose={handlePricePaymentClose}
+            amount={pendingEditData.totalPrice - (originalEditPrice || 0)}
+            partyId={partyId}
+            supplierType={editingSupplierType}
+            supplierName={editingSupplier?.name || editingSupplier?.data?.name || 'Supplier'}
+            onPaymentSuccess={handlePricePaymentSuccess}
+            originalPrice={originalEditPrice || 0}
+            newPrice={pendingEditData.totalPrice || 0}
+          />
+        )}
 
         {partyId && (
           <ReplacementManager
@@ -1526,6 +2009,8 @@ const addSuppliersSection = (
   onAddRecommendedSupplier={handleAddRecommendedSupplier}
   recommendationsLoaded={recommendationsLoaded}
   onDataUpdate={setPartyToolsData}
+  onEditSupplier={handleEditSupplier}
+  partyDate={partyDetails?.date}
   />
 
             {/* Mobile: Total Cost Summary Card */}
@@ -1650,8 +2135,21 @@ const addSuppliersSection = (
                         basePrice = supplier.packageData?.price || supplier.price || 0
                       }
 
-                      const totalPrice = basePrice + addonsCost
-                      const supplierName = supplier.name || 'Unknown Supplier'
+                      // ✅ FIX: Use supplier.totalPrice first (includes add-ons, delivery)
+                      // Only fall back to calculation if totalPrice not available
+                      let totalPrice
+                      if (supplier.totalPrice) {
+                        // Use pre-calculated totalPrice which includes everything
+                        totalPrice = supplier.totalPrice
+                      } else {
+                        // Fall back to calculating: base + global addons + selected addons + delivery
+                        const selectedAddonsCost = (supplier.selectedAddons || []).reduce(
+                          (sum, addon) => sum + (addon.price || 0), 0
+                        )
+                        const cakeDeliveryFee = supplier.packageData?.cakeCustomization?.deliveryFee || 0
+                        totalPrice = basePrice + addonsCost + selectedAddonsCost + cakeDeliveryFee
+                      }
+                      const supplierName = supplier.name || supplier.data?.name || 'Unknown Supplier'
                       const categoryName = categoryNames[type] || type.charAt(0).toUpperCase() + type.slice(1)
 
                       // Check if supplier is paid
@@ -1719,6 +2217,36 @@ const addSuppliersSection = (
                               >
                                 <Trash2 className="w-4 h-4" />
                                 Remove from Plan
+                              </button>
+                            )}
+
+                            {/* Edit Button for Paid Suppliers */}
+                            {isPaid && (
+                              <button
+                                onClick={() => {
+                                  const canEdit = canEditBooking(partyDetails?.date)
+                                  if (canEdit) {
+                                    handleEditSupplier(type, supplier)
+                                  }
+                                }}
+                                disabled={!canEditBooking(partyDetails?.date)}
+                                className={`mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-semibold border ${
+                                  canEditBooking(partyDetails?.date)
+                                    ? "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300"
+                                    : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                }`}
+                              >
+                                {canEditBooking(partyDetails?.date) ? (
+                                  <>
+                                    <Pencil className="w-4 h-4" />
+                                    Edit Booking
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="w-4 h-4" />
+                                    Edits Locked
+                                  </>
+                                )}
                               </button>
                             )}
                           </div>

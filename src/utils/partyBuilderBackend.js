@@ -9,6 +9,28 @@ import { LocationService } from './locationService';
 import { partyDatabaseBackend } from './partyDatabaseBackend';
 import { calculateFinalPrice } from './unifiedPricing'; // ✅ Import unified pricing
 
+// ✅ Utility function to calculate total attendees (children + adults)
+// For parties, assume 1.5 adults per child on average (1-2 parents, sometimes siblings)
+const ADULTS_PER_CHILD_RATIO = 1.5;
+
+export const calculateTotalAttendees = (childrenCount, options = {}) => {
+  const children = parseInt(childrenCount) || 10;
+  const adultsRatio = options.adultsRatio ?? ADULTS_PER_CHILD_RATIO;
+  const adults = Math.ceil(children * adultsRatio);
+
+  return {
+    children,
+    adults,
+    total: children + adults,
+    // For cake sizing, everyone wants cake
+    forCake: children + adults,
+    // For party bags, typically just children
+    forPartyBags: children,
+    // For venue capacity, total people
+    forVenueCapacity: children + adults
+  };
+};
+
 const THEMES = {
   'no-theme': {
     name: "No Theme",
@@ -92,8 +114,13 @@ class PartyBuilderBackend {
       let selectedPackage;
 
       if (isCakeSupplier && partyDetails?.guestCount) {
-        // For cakes, select based on guest count (not cheapest)
-        const guestCount = partyDetails.guestCount || 15;
+        // For cakes, select based on total attendees (children + adults)
+        // Adults want cake too!
+        const attendees = calculateTotalAttendees(partyDetails.guestCount);
+        const totalForCake = attendees.forCake;
+
+        console.log(`🎂 Cake sizing: ${attendees.children} children + ${attendees.adults} adults = ${totalForCake} people`);
+
         const sortedByServings = [...supplier.packages].sort((a, b) => {
           const aServes = parseInt(a.serves) || parseInt(a.feeds) || 10;
           const bServes = parseInt(b.serves) || parseInt(b.feeds) || 10;
@@ -102,7 +129,7 @@ class PartyBuilderBackend {
 
         selectedPackage = sortedByServings.find(pkg => {
           const serves = parseInt(pkg.serves) || parseInt(pkg.feeds) || 10;
-          return serves >= guestCount;
+          return serves >= totalForCake;
         }) || sortedByServings[sortedByServings.length - 1];
       } else {
         // Sort packages by price (cheapest first)
@@ -339,7 +366,7 @@ class PartyBuilderBackend {
 
     // Try to find the best available supplier first
     const bestAvailable = sorted.find(s => s.isAvailable && s.canServeLocation);
-    
+
     if (bestAvailable) {
       return {
         supplier: bestAvailable,
@@ -347,19 +374,14 @@ class PartyBuilderBackend {
         requiresConfirmation: false
       };
     }
-    
-    // Fallback: Best supplier regardless of availability
-    const bestFallback = sorted[0];
-    
-    return { 
-      supplier: {
-        ...bestFallback,
-        isFallbackSelection: true
-      }, 
-      reason: 'best-fallback-match',
-      requiresConfirmation: true,
-      availabilityIssue: !bestFallback.isAvailable,
-      locationIssue: !bestFallback.canServeLocation
+
+    // No available supplier found - return null instead of fallback
+    // This ensures we don't add suppliers that can't fulfill the order
+    // (e.g., insufficient lead time, location too far, etc.)
+    return {
+      supplier: null,
+      reason: 'no-available-suppliers',
+      requiresConfirmation: false
     };
   }
 
@@ -464,15 +486,47 @@ selectMultipleVenuesForCarousel(suppliers, theme, timeSlot, duration, date, loca
     if (!supplier || !date) {
       return { available: true, reason: 'no-date-provided', confidence: 'low' };
     }
-    
+
     try {
       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
       const dateString = date.toISOString().split('T')[0];
-      
+
+      // Check lead time requirements FIRST
+      // Check multiple possible locations for minimum lead time:
+      // - supplier.advanceBookingDays (legacy)
+      // - supplier.leadTimeSettings.minLeadTimeDays (party bags, etc.)
+      // - supplier.data.serviceDetails.leadTime.minimum (cake suppliers)
+      // - supplier.serviceDetails.leadTime.minimum (alternate)
+      const minLeadTime =
+        supplier.advanceBookingDays ||
+        supplier.leadTimeSettings?.minLeadTimeDays ||
+        supplier.data?.serviceDetails?.leadTime?.minimum ||
+        supplier.serviceDetails?.leadTime?.minimum ||
+        0;
+
+      if (minLeadTime > 0) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+
+        const daysUntilParty = Math.ceil((checkDate - today) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilParty < minLeadTime) {
+          return {
+            available: false,
+            reason: 'insufficient-lead-time',
+            confidence: 'high',
+            requiredLeadTime: minLeadTime,
+            daysUntilParty
+          };
+        }
+      }
+
       // Check if supplier has any availability data
       const hasAvailabilityData = !!(
-        supplier.workingHours || 
-        supplier.unavailableDates || 
+        supplier.workingHours ||
+        supplier.unavailableDates ||
         supplier.busyDates ||
         supplier.availability
       );

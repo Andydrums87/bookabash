@@ -41,7 +41,12 @@ export default function SupplierCard({
   onCustomizationComplete, // ✅ NEW PROP - handler for customization
   // Props for venue browsing
   showBrowseVenues = false,
-  onBrowseVenues
+  onBrowseVenues,
+  // Venue data for restriction checks (e.g., bouncy castles not allowed)
+  selectedVenue = null,
+  // Props for editing booked suppliers
+  onEdit = null,
+  partyDate = null
 }) {
   const router = useRouter()
 
@@ -229,7 +234,10 @@ export default function SupplierCard({
     onAddSupplier: onAddSupplier,
     onCustomizationComplete: onCustomizationComplete,
     showBrowseVenues: showBrowseVenues,
-    onBrowseVenues: onBrowseVenues
+    onBrowseVenues: onBrowseVenues,
+    // Edit mode props
+    onEdit: onEdit,
+    partyDate: partyDate
   }
 
   // Debug log to verify prop is received
@@ -250,7 +258,8 @@ export default function SupplierCard({
     partyDetails,
     recommendedSupplier: recommendedSupplier,
     onAddSupplier: onAddSupplier,
-    isCompact: isCompact // ✅ PASS IT HERE
+    isCompact: isCompact, // ✅ PASS IT HERE
+    selectedVenue: selectedVenue // ✅ Pass venue for restriction checks (e.g., bouncy castles)
   }
 
   const enquiry = enquiries.find(e => e.supplier_category === type)

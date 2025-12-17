@@ -1,12 +1,13 @@
 // components/VenueBrowserModal.jsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
-import { X, MapPin, Users, CheckCircle, Star, Building } from "lucide-react"
+import { X, MapPin, Users, CheckCircle, Star, Building, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import SupplierQuickViewModal from "@/components/SupplierQuickViewModal"
+import { calculateTotalAttendees } from "@/utils/partyBuilderBackend"
 
 export default function VenueBrowserModal({
   venues = [],
@@ -17,6 +18,31 @@ export default function VenueBrowserModal({
   partyDetails
 }) {
   const [selectedForPreview, setSelectedForPreview] = useState(null)
+
+  // Calculate total attendees (children + adults)
+  const attendees = useMemo(() => {
+    return calculateTotalAttendees(partyDetails?.guestCount || 10);
+  }, [partyDetails?.guestCount]);
+
+  // Check if venue has enough capacity
+  const checkVenueCapacity = (venue) => {
+    const capacity = venue.serviceDetails?.venueDetails?.capacity ||
+                    venue.data?.serviceDetails?.venueDetails?.capacity ||
+                    venue.capacity ||
+                    null;
+
+    if (!capacity) return { hasCapacity: true, capacity: null }; // Unknown capacity, allow
+
+    const numCapacity = parseInt(capacity);
+    const hasCapacity = numCapacity >= attendees.forVenueCapacity;
+
+    return {
+      hasCapacity,
+      capacity: numCapacity,
+      needed: attendees.forVenueCapacity,
+      shortBy: hasCapacity ? 0 : attendees.forVenueCapacity - numCapacity
+    };
+  };
 
   // Lock scroll when modal is open
   useEffect(() => {
@@ -84,6 +110,7 @@ export default function VenueBrowserModal({
               {venues.map((venue) => {
                 const isSelected = selectedVenue?.id === venue.id
                 const venuePackage = venue.packages?.[0] || {}
+                const capacityCheck = checkVenueCapacity(venue)
 
                 // Get venue name with fallbacks
                 const venueName = venue.name || venue.businessName || venue.data?.name || 'Unnamed Venue'
@@ -99,9 +126,11 @@ export default function VenueBrowserModal({
                   <div
                     key={venue.id}
                     className={`relative rounded-xl border-2 overflow-hidden transition-all duration-200 ${
-                      isSelected
-                        ? 'border-teal-500 shadow-lg ring-2 ring-teal-200'
-                        : 'border-gray-200 hover:border-[hsl(var(--primary-300))] hover:shadow-md'
+                      !capacityCheck.hasCapacity
+                        ? 'border-red-300 opacity-75'
+                        : isSelected
+                          ? 'border-[hsl(var(--primary-500))] shadow-lg'
+                          : 'border-gray-200 hover:border-[hsl(var(--primary-300))] hover:shadow-md'
                     }`}
                   >
                     {/* Image */}
@@ -118,9 +147,19 @@ export default function VenueBrowserModal({
                       {/* Selected Badge */}
                       {isSelected && (
                         <div className="absolute top-2 right-2">
-                          <Badge className="bg-teal-500 text-white shadow-lg">
+                          <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Selected
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Under Capacity Warning Badge */}
+                      {!capacityCheck.hasCapacity && !isSelected && (
+                        <div className="absolute top-2 right-2">
+                          <Badge className="bg-red-500 text-white shadow-lg">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Too Small
                           </Badge>
                         </div>
                       )}
@@ -135,6 +174,18 @@ export default function VenueBrowserModal({
 
                     {/* Info */}
                     <div className="p-3 bg-white">
+                      {/* Capacity Warning */}
+                      {!capacityCheck.hasCapacity && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-2">
+                          <div className="flex items-center gap-1.5 text-xs text-red-700">
+                            <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                            <span>
+                              Only fits {capacityCheck.capacity} people (need {capacityCheck.needed})
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Price */}
                       <div className="mb-2">
                         <span className="text-2xl font-bold text-[hsl(var(--primary-600))]">
@@ -155,10 +206,10 @@ export default function VenueBrowserModal({
                             <span className="line-clamp-1">{venue.location || venue.data?.location}</span>
                           </div>
                         )}
-                        {venue.serviceDetails?.venueDetails?.capacity && (
-                          <div className="flex items-center gap-1">
+                        {capacityCheck.capacity && (
+                          <div className={`flex items-center gap-1 ${!capacityCheck.hasCapacity ? 'text-red-600' : ''}`}>
                             <Users className="w-3 h-3" />
-                            <span>{venue.serviceDetails.venueDetails.capacity} capacity</span>
+                            <span>{capacityCheck.capacity} capacity</span>
                           </div>
                         )}
                         {venue.rating && (
@@ -182,11 +233,13 @@ export default function VenueBrowserModal({
                         <Button
                           size="sm"
                           onClick={() => handleSelectVenue(venue)}
-                          disabled={isSelected}
+                          disabled={isSelected || !capacityCheck.hasCapacity}
                           className={`flex-1 ${
-                            isSelected
-                              ? 'bg-teal-500 hover:bg-teal-600'
-                              : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
+                            !capacityCheck.hasCapacity
+                              ? 'bg-gray-300 cursor-not-allowed'
+                              : isSelected
+                                ? 'bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))]'
+                                : 'bg-gradient-to-r from-[hsl(var(--primary-500))] to-[hsl(var(--primary-600))] hover:from-[hsl(var(--primary-600))] hover:to-[hsl(var(--primary-700))]'
                           }`}
                         >
                           <span className="text-xs">
@@ -195,6 +248,8 @@ export default function VenueBrowserModal({
                                 <CheckCircle className="w-3 h-3 mr-1 inline" />
                                 Selected
                               </>
+                            ) : !capacityCheck.hasCapacity ? (
+                              'Too Small'
                             ) : (
                               'Select'
                             )}

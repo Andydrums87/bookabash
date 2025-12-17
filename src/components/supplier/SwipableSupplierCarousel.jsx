@@ -3,10 +3,11 @@ import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 
-const SwipeableSupplierCarousel = ({ 
-  supplier, 
+const SwipeableSupplierCarousel = ({
+  supplier,
   className = "",
-  aspectRatio = "aspect-[4/3]"
+  aspectRatio = "aspect-[4/3]",
+  onIndexChange = null
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
@@ -99,6 +100,13 @@ const SwipeableSupplierCarousel = ({
       setCurrentImageIndex(0)
     }
   }, [totalImages, currentImageIndex])
+
+  // Notify parent of index changes
+  useEffect(() => {
+    if (onIndexChange) {
+      onIndexChange(currentImageIndex)
+    }
+  }, [currentImageIndex, onIndexChange])
 
   const minSwipeDistance = 50
 

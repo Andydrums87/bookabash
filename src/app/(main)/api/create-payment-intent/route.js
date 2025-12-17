@@ -103,6 +103,18 @@ export async function POST(request) {
       categories: suppliers.map(s => s.category.substring(0, 15)).join(',').substring(0, 490)
     };
 
+    // If single supplier, add specific supplier info for targeted receipt emails
+    if (suppliers.length === 1) {
+      const singleSupplier = suppliers[0]
+      metadata.supplier_type = singleSupplier.category || ''
+      metadata.supplier_name = (singleSupplier.name || '').substring(0, 100) // Stripe metadata limit
+      metadata.supplier_id = singleSupplier.id?.toString() || ''
+      console.log('📦 Single supplier payment - adding targeted metadata:', {
+        supplier_type: metadata.supplier_type,
+        supplier_name: metadata.supplier_name
+      })
+    }
+
     // Determine which payment methods to enable
     const paymentMethodTypes = ['card'];
     

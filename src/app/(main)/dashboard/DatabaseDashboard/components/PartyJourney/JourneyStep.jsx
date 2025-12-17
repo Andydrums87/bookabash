@@ -16,8 +16,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-export function JourneyStep({ 
-  step, 
+export function JourneyStep({
+  step,
   isLast,
   partyId,
   partyDetails,
@@ -37,6 +37,9 @@ export function JourneyStep({
   onPaymentReady,
   handleCancelEnquiry,
   getSupplierDisplayPricing,
+  // Edit booked supplier props
+  onEditSupplier,
+  partyDate,
 }) {
   // All steps collapsed by default
   const [isExpanded, setIsExpanded] = useState(false)
@@ -156,9 +159,11 @@ case 'party_team_browse':
             handleCancelEnquiry={handleCancelEnquiry}
             getSupplierDisplayPricing={getSupplierDisplayPricing}
             excludeVenue={true} // ✅ NEW: Tell it to exclude venue
+            onEditSupplier={onEditSupplier}
+            partyDate={partyDate}
           />
         )
-      
+
       case 'suppliers_confirm':
         return (
           <SupplierJourneyStep
@@ -177,6 +182,8 @@ case 'party_team_browse':
             onPaymentReady={onPaymentReady}
             handleCancelEnquiry={handleCancelEnquiry}
             getSupplierDisplayPricing={getSupplierDisplayPricing}
+            onEditSupplier={onEditSupplier}
+            partyDate={partyDate}
           />
         )
       

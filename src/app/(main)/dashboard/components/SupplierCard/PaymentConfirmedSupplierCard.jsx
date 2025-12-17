@@ -4,14 +4,27 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Gift, CheckCircle2, Mail, Phone, CheckCircle, RotateCcw, Contact } from "lucide-react"
+import { Gift, CheckCircle2, Mail, Phone, CheckCircle, RotateCcw, Contact, Pencil, Lock } from "lucide-react"
 import { useState } from "react"
+import { canEditBooking, formatEditDeadline } from "@/utils/editDeadline"
 
-export default function PaymentConfirmedSupplierCard({ type, supplier, addons = [], isDeleting = false }) {
+export default function PaymentConfirmedSupplierCard({
+  type,
+  supplier,
+  addons = [],
+  isDeleting = false,
+  onEdit,
+  partyDate,
+  totalPrice // ✅ FIX: Use calculated totalPrice prop (includes add-ons, delivery)
+}) {
   const [isFlipped, setIsFlipped] = useState(false)
 
+  // Check if editing is allowed (48 hours before party)
+  const canEdit = partyDate ? canEditBooking(partyDate) : true
+
   const supplierAddons = addons.filter((addon) => addon.supplierId === supplier?.id)
-  const displayPrice = supplier.totalPrice || supplier.price || 0
+  // ✅ FIX: Prefer calculated totalPrice prop, fallback to supplier data
+  const displayPrice = totalPrice || supplier.totalPrice || supplier.price || 0
 
   const cakeCustomization = supplier?.packageData?.cakeCustomization
   const isCakeSupplier = !!cakeCustomization
@@ -119,14 +132,46 @@ export default function PaymentConfirmedSupplierCard({ type, supplier, addons = 
 
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3 text-center">
                   <p className="text-base font-semibold text-gray-800 mb-4">{supplier.name} is confirmed!</p>
-                  {/* <p className="text-sm text-gray-600">All payments complete. Contact details below.</p> */}
-                  <Button
-                  onClick={() => setIsFlipped(true)}
-                  className="w-full bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
-                >
-                  <Contact className="w-4 h-4 inline mr-2" />
-                  View Contact Details
-                </Button>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => setIsFlipped(true)}
+                      className="w-full bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                    >
+                      <Contact className="w-4 h-4 inline mr-2" />
+                      View Contact Details
+                    </Button>
+
+                    {onEdit && (
+                      <Button
+                        onClick={() => canEdit && onEdit(type, supplier)}
+                        disabled={!canEdit}
+                        variant="outline"
+                        className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                          canEdit
+                            ? "border-gray-300 text-gray-700 hover:bg-gray-100"
+                            : "border-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        {canEdit ? (
+                          <>
+                            <Pencil className="w-4 h-4 inline mr-2" />
+                            Edit Booking
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4 inline mr-2" />
+                            Edits Locked
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    {onEdit && !canEdit && (
+                      <p className="text-xs text-gray-500">
+                        Edits locked 48 hours before party
+                      </p>
+                    )}
+                  </div>
                 </div>
 
             

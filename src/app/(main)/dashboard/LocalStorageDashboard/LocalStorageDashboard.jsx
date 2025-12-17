@@ -9,8 +9,9 @@ import { useToast } from '@/components/ui/toast'
 // UI Components
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { UniversalModal, ModalHeader, ModalContent, ModalFooter } from "@/components/ui/UniversalModal"
 // Icons
-import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building } from "lucide-react"
+import { RefreshCw, ChevronRight, Plus, Check, Sparkles, X, Building, AlertTriangle } from "lucide-react"
 // Custom Components
 import { ContextualBreadcrumb } from "@/components/ContextualBreadcrumb"
 import EnquirySuccessBanner from "@/components/enquirySuccessBanner"
@@ -113,6 +114,8 @@ export default function LocalStorageDashboard() {
   const [isSelectingVenue, setIsSelectingVenue] = useState(false)
   const [showVenueBrowserModal, setShowVenueBrowserModal] = useState(false)
   const [showDesktopCompleteCTA, setShowDesktopCompleteCTA] = useState(false)
+  const [showVenueConflictModal, setShowVenueConflictModal] = useState(false)
+  const [venueConflictData, setVenueConflictData] = useState(null)
   // Add these state variables near your other useState declarations
 
 
@@ -630,8 +633,10 @@ useEffect(() => {
               // ✅ Filter by availability if party date is set
               let availableSuppliers = categorySuppliers
               let allUnavailable = false
+              let unavailabilityReason = null
 
               if (partyDetails?.date) {
+                let firstUnavailableReason = null
                 availableSuppliers = categorySuppliers.filter(supplier => {
                   const availabilityCheck = checkSupplierAvailability(
                     supplier,
@@ -639,12 +644,18 @@ useEffect(() => {
                     partyDetails.time || partyDetails.startTime,
                     partyDetails.duration || 2
                   )
+                  // Store the first unavailability reason (for lead time messages)
+                  if (!availabilityCheck.available && !firstUnavailableReason) {
+                    firstUnavailableReason = availabilityCheck
+                  }
                   return availabilityCheck.available
                 })
 
                 // Check if all suppliers are unavailable
                 if (availableSuppliers.length === 0 && categorySuppliers.length > 0) {
                   allUnavailable = true
+                  // Store the reason for unavailability
+                  unavailabilityReason = firstUnavailableReason
                 }
               }
 
@@ -663,13 +674,17 @@ useEffect(() => {
         
               } else if (allUnavailable) {
                 // ✅ Mark category as having no available suppliers
+                // Include the unavailability reason so UI can show helpful messages
                 newRecommendations[categoryKey] = {
                   unavailable: true,
                   category: categoryName,
                   categoryKey: categoryKey,
-                  totalSuppliers: categorySuppliers.length
+                  totalSuppliers: categorySuppliers.length,
+                  // Pass through lead time info for helpful messaging
+                  requiredLeadTime: unavailabilityReason?.requiredLeadTime,
+                  unavailabilityReason: unavailabilityReason?.reason
                 }
-                console.log(`⚠️ ${categoryKey}: No available suppliers for party date`)
+                console.log(`⚠️ ${categoryKey}: No available suppliers for party date`, unavailabilityReason)
               }
             }
           }
@@ -1470,30 +1485,63 @@ const handleNameSubmit = (nameData) => {
 
 
 
- const handleSelectVenue = async (venue) => {
+ const handleSelectVenue = async (venue, skipConflictCheck = false) => {
   setIsSelectingVenue(true)
-  
-  try {
 
-    
+  try {
+    // Check for bouncy castle conflict (unless we're skipping the check)
+    if (!skipConflictCheck) {
+      const hasBouncyCastle = suppliers.bouncyCastle || suppliers.activities || suppliers.softPlay
+
+      if (hasBouncyCastle) {
+        // Check if venue restricts bouncy castles
+        const restrictedItems = venue?.serviceDetails?.restrictedItems ||
+                               venue?.data?.serviceDetails?.restrictedItems ||
+                               venue?.restrictedItems ||
+                               venue?.data?.restrictedItems ||
+                               []
+
+        const venueRestrictsBouncyCastles = Array.isArray(restrictedItems) && restrictedItems.some(item =>
+          typeof item === 'string' && (
+            item.toLowerCase().includes('bouncy castle') ||
+            item.toLowerCase().includes('bouncy castles') ||
+            item.toLowerCase().includes('inflatables')
+          )
+        )
+
+        if (venueRestrictsBouncyCastles) {
+          // Show conflict modal
+          setVenueConflictData({
+            venue,
+            conflictingSupplier: suppliers.bouncyCastle || suppliers.activities || suppliers.softPlay,
+            conflictType: 'bouncyCastle'
+          })
+          setShowVenueConflictModal(true)
+          setIsSelectingVenue(false)
+          return // Don't proceed until user makes a choice
+        }
+      }
+    }
+
     // Use the addSupplier function from usePartyPlan hook
     const result = await addSupplier(venue, venue.packageData || null)
-    
+
     if (result.success) {
       // Update party details to clear hasOwnVenue flag
       const updatedPartyDetails = {
         ...partyDetails,
         hasOwnVenue: false
       }
-      
+
       localStorage.setItem('party_details', JSON.stringify(updatedPartyDetails))
-      
+
       // Trigger party details update
       handlePartyDetailsUpdate(updatedPartyDetails)
-      
 
+      // Close venue browser modal if open
+      setShowVenueBrowserModal(false)
     }
-    
+
   } catch (error) {
     console.error('❌ Error selecting venue:', error)
     alert('Failed to select venue. Please try again.')
@@ -2003,6 +2051,7 @@ const handleChildPhotoUpload = async (file) => {
                                     onAddSupplier={handleAddRecommendedSupplier}
                                     enhancedPricing={isDeleting ? null : (supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null)}
                                     onCustomizationComplete={handleCustomizationComplete}
+                                    selectedVenue={suppliers.venue}
                                   />
 
                                   {/* Browse Venues button underneath venue card */}
@@ -2191,6 +2240,81 @@ const handleChildPhotoUpload = async (file) => {
         onSelectVenue={handleSelectVenue}
         partyDetails={partyDetails}
       />
+
+      {/* Venue Conflict Modal - Bouncy Castle Restriction */}
+      <UniversalModal
+        isOpen={showVenueConflictModal}
+        onClose={() => {
+          setShowVenueConflictModal(false)
+          setVenueConflictData(null)
+        }}
+        size="md"
+        theme="fun"
+      >
+        <ModalHeader
+          title="Venue Restriction"
+          subtitle="This venue has some restrictions"
+          theme="fun"
+          icon={<AlertTriangle className="w-6 h-6" />}
+        />
+
+        <ModalContent className="space-y-4">
+          <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-gray-900">
+                  {venueConflictData?.venue?.name || 'This venue'} doesn't allow bouncy castles
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  You currently have <strong>{venueConflictData?.conflictingSupplier?.name || 'a bouncy castle'}</strong> in your party plan.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <h4 className="font-medium text-gray-900 mb-2">What would you like to do?</h4>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>• <strong>Find Another Venue:</strong> Browse venues that allow bouncy castles</p>
+              <p>• <strong>Remove Bouncy Castle:</strong> Keep this venue and remove the bouncy castle</p>
+            </div>
+          </div>
+        </ModalContent>
+
+        <ModalFooter>
+          <div className="flex gap-3 w-full">
+            <Button
+              onClick={() => {
+                setShowVenueConflictModal(false)
+                setVenueConflictData(null)
+                // Keep venue browser open so user can choose another
+              }}
+              variant="outline"
+              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
+            >
+              Find Another Venue
+            </Button>
+            <Button
+              onClick={async () => {
+                // Remove bouncy castle and add venue
+                if (venueConflictData?.conflictType === 'bouncyCastle') {
+                  removeSupplier('bouncyCastle')
+                  removeSupplier('activities')
+                  removeSupplier('softPlay')
+                }
+                // Now add the venue
+                await handleSelectVenue(venueConflictData?.venue, true)
+                setShowVenueConflictModal(false)
+                setVenueConflictData(null)
+              }}
+              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
+            >
+              Remove Bouncy Castle
+            </Button>
+          </div>
+        </ModalFooter>
+      </UniversalModal>
 
       {/* Party Plan Review Modal - Desktop Only */}
       {showDesktopCompleteCTA && (

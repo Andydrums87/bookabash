@@ -23,7 +23,8 @@ import AccountCreationStep from "@/components/onboarding/steps/AccountCreationSt
 // Cake supplier steps (initial onboarding)
 import CakeBusinessStep from "@/components/onboarding/steps/cake/CakeBusinessStep"
 import CakeLocationStep from "@/components/onboarding/steps/cake/CakeLocationStep"
-import CakeFulfilmentStep from "@/components/onboarding/steps/cake/CakeFulfilmentStep"
+import CakeCollectionStep from "@/components/onboarding/steps/cake/CakeCollectionStep"
+import CakeDeliveryStep from "@/components/onboarding/steps/cake/CakeDeliveryStep"
 import CakeLeadTimeStep from "@/components/onboarding/steps/cake/CakeLeadTimeStep"
 // Cake product steps (add cake wizard)
 import CakeNameStep from "@/components/onboarding/steps/cake/CakeNameStep"
@@ -143,11 +144,19 @@ export default function VenueOnboardingWizard() {
       offersPickup: true,
       offersDelivery: false,
       deliveryRadius: 10,
-      deliveryFee: 0
+      deliveryFee: 0,
+      collectionHours: {
+        monday: { open: true, from: '09:00', to: '17:00' },
+        tuesday: { open: true, from: '09:00', to: '17:00' },
+        wednesday: { open: true, from: '09:00', to: '17:00' },
+        thursday: { open: true, from: '09:00', to: '17:00' },
+        friday: { open: true, from: '09:00', to: '17:00' },
+        saturday: { open: true, from: '10:00', to: '16:00' },
+        sunday: { open: false, from: '10:00', to: '16:00' }
+      }
     },
     cakeLeadTime: {
-      minimum: 3,
-      standard: 7
+      minimum: 7
     },
     // Cake product fields (for adding individual cakes)
     parentBusinessId: null, // ID of the primary cake business (for linking products)
@@ -178,11 +187,11 @@ export default function VenueOnboardingWizard() {
   // Calculate total steps based on supplier type (use useMemo to recalculate when supplier type changes)
   // Entertainment: 11 steps (Type, Account, Entertainer Type, Company Name, About Service, Service Area, Photos, Pricing, Verification, Calendar, Review)
   // Venues: 11 steps
-  // Cakes: 6 steps (Type, Account, Business Details, Fulfilment, Lead Times, Complete)
+  // Cakes: 8 steps (Type, Account, Business Details, Location, Fulfilment, FulfilmentDetails, Lead Times, Complete)
   // Add Cake Product: 8 steps (Name, About, Photos, Flavours, Dietary, Themes, Packages, Complete)
   const isCake = wizardData.supplierType === 'cakes'
-  // Cake business onboarding: 7 steps (Type, Account, Business, Location, Fulfilment, LeadTime, Complete)
-  const TOTAL_STEPS = isAddingCakeProduct ? 8 : (isCake ? 7 : (wizardData.supplierType === 'entertainment' ? 11 : 11))
+  // Cake business onboarding: 8 steps (Type, Account, Business, Location, Fulfilment, FulfilmentDetails, LeadTime, Complete)
+  const TOTAL_STEPS = isAddingCakeProduct ? 8 : (isCake ? 8 : (wizardData.supplierType === 'entertainment' ? 11 : 11))
 
   // Load saved data on mount OR load current business data in edit mode
   useEffect(() => {
@@ -1407,11 +1416,11 @@ export default function VenueOnboardingWizard() {
               offersPickup: wizardData.cakeFulfilment.offersPickup,
               offersDelivery: wizardData.cakeFulfilment.offersDelivery,
               deliveryRadius: wizardData.cakeFulfilment.deliveryRadius,
-              deliveryFee: wizardData.cakeFulfilment.deliveryFee
+              deliveryFee: wizardData.cakeFulfilment.deliveryFee,
+              collectionHours: wizardData.cakeFulfilment.collectionHours
             },
             leadTime: {
-              minimum: wizardData.cakeLeadTime.minimum,
-              standard: wizardData.cakeLeadTime.standard
+              minimum: wizardData.cakeLeadTime.minimum
             }
           },
           // Cake suppliers have no packages/photos in initial onboarding - they add products later
@@ -1731,17 +1740,15 @@ export default function VenueOnboardingWizard() {
           return (
             wizardData.cakeBusinessDetails.postcode || wizardData.cakeBusinessDetails.city
           )
-        case 5: // Fulfilment
+        case 5: // Collection
+          return true // User can say yes or no
+        case 6: // Delivery - ensure at least one fulfilment method is selected
           return (
             wizardData.cakeFulfilment.offersPickup || wizardData.cakeFulfilment.offersDelivery
           )
-        case 6: // Lead Times
-          return (
-            wizardData.cakeLeadTime.minimum > 0 &&
-            wizardData.cakeLeadTime.standard > 0 &&
-            wizardData.cakeLeadTime.standard >= wizardData.cakeLeadTime.minimum
-          )
-        case 7: // Complete
+        case 7: // Lead Times
+          return wizardData.cakeLeadTime.minimum > 0
+        case 8: // Complete
           return true
         default:
           return true
@@ -1886,65 +1893,67 @@ export default function VenueOnboardingWizard() {
             />
           )
         case 8: // Complete
+          const cakeImage = wizardData.cakeProductPhotos?.[0]?.src || wizardData.cakeProductPhotos?.[0]?.preview
+          const lowestPrice = wizardData.cakeProductPackages
+            ?.filter(p => p.name && p.price)
+            ?.reduce((min, p) => Math.min(min, Number(p.price) || Infinity), Infinity)
+
           return (
-            <div className="py-12 text-center max-w-2xl mx-auto">
-              <div className="mb-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">
-                  {wizardData.cakeProductName || "Your cake"} is ready!
+            <div className="py-12 max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
+                  Check your cake
                 </h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Your cake has been added to your listings. Click complete to finish.
+                <p className="text-lg text-gray-600">
+                  Please confirm everything looks correct
                 </p>
               </div>
 
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-left">
-                <h3 className="text-lg font-semibold text-green-900 mb-3">
-                  Summary
-                </h3>
-                <div className="space-y-2 text-green-800">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span><strong>{wizardData.cakeProductName}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{wizardData.cakeProductPhotos?.length || 0} photo(s)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{wizardData.cakeProductFlavours?.length || 0} flavour(s)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{wizardData.cakeProductDietaryInfo?.length || 0} dietary option(s)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{wizardData.cakeProductThemes?.length || 0} theme(s)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{wizardData.cakeProductPackages?.filter(p => p.name && p.price).length || 0} size(s)/package(s)</span>
+              {/* Cake Preview Card */}
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm mb-6">
+                <div className="flex flex-col sm:flex-row">
+                  {/* Image */}
+                  {cakeImage ? (
+                    <div className="sm:w-48 h-48 sm:h-auto flex-shrink-0">
+                      <img
+                        src={cakeImage}
+                        alt={wizardData.cakeProductName}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="sm:w-48 h-48 sm:h-auto flex-shrink-0 bg-gray-100 flex items-center justify-center">
+                      <span className="text-4xl">🎂</span>
+                    </div>
+                  )}
+
+                  {/* Details */}
+                  <div className="p-5 flex-1">
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">
+                      {wizardData.cakeProductName || "Your Cake"}
+                    </h2>
+                    {lowestPrice && lowestPrice !== Infinity && (
+                      <p className="text-lg text-primary-600 font-semibold mb-3">
+                        From £{lowestPrice}
+                      </p>
+                    )}
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p>{wizardData.cakeProductFlavours?.length || 0} flavours</p>
+                      <p>{wizardData.cakeProductPackages?.filter(p => p.name && p.price).length || 0} sizes</p>
+                      {wizardData.cakeProductDietaryInfo?.length > 0 && (
+                        <p>{wizardData.cakeProductDietaryInfo.length} dietary options</p>
+                      )}
+                      {wizardData.cakeProductThemes?.length > 0 && (
+                        <p>{wizardData.cakeProductThemes.length} themes</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <p className="text-center text-sm text-gray-500">
+                You can edit this cake anytime from your dashboard.
+              </p>
             </div>
           )
         default:
@@ -1988,68 +1997,76 @@ export default function VenueOnboardingWizard() {
               onChange={(details) => setWizardData({ ...wizardData, cakeBusinessDetails: details })}
             />
           )
-        case 5: // Fulfilment
+        case 5: // Collection
           return (
-            <CakeFulfilmentStep
+            <CakeCollectionStep
               cakeFulfilment={wizardData.cakeFulfilment}
+              cakeBusinessDetails={wizardData.cakeBusinessDetails}
               onChange={(fulfilment) => setWizardData({ ...wizardData, cakeFulfilment: fulfilment })}
             />
           )
-        case 6: // Lead Times
+        case 6: // Delivery
+          return (
+            <CakeDeliveryStep
+              cakeFulfilment={wizardData.cakeFulfilment}
+              cakeBusinessDetails={wizardData.cakeBusinessDetails}
+              onChange={(fulfilment) => setWizardData({ ...wizardData, cakeFulfilment: fulfilment })}
+            />
+          )
+        case 7: // Lead Times
           return (
             <CakeLeadTimeStep
               cakeLeadTime={wizardData.cakeLeadTime}
               onChange={(leadTime) => setWizardData({ ...wizardData, cakeLeadTime: leadTime })}
             />
           )
-        case 7: // Complete
+        case 8: // Complete
+          const getLeadTimeLabel = (days) => {
+            if (days === 1) return "24 hours"
+            if (days === 2) return "48 hours"
+            if (days === 7) return "1 week"
+            if (days === 14) return "2 weeks"
+            if (days === 21) return "3 weeks"
+            return `${days} days`
+          }
+
+          const fulfilmentMethods = []
+          if (wizardData.cakeFulfilment.offersPickup) fulfilmentMethods.push("Collection")
+          if (wizardData.cakeFulfilment.offersDelivery) fulfilmentMethods.push("Delivery")
+
           return (
-            <div className="py-12 text-center max-w-2xl mx-auto">
-              <div className="mb-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">
-                  Your business is set up!
+            <div className="py-12 max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
+                  Check your details
                 </h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Now it's time to add your first cake to start receiving orders.
+                <p className="text-lg text-gray-600">
+                  Please confirm everything looks correct
                 </p>
               </div>
 
-              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 text-left">
-                <h3 className="text-lg font-semibold text-amber-900 mb-3">
-                  What happens next?
-                </h3>
-                <div className="space-y-3 text-amber-800">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      1
-                    </div>
-                    <p className="text-sm">
-                      You'll be taken to your <strong>Cakes dashboard</strong> where you can add your first cake product.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      2
-                    </div>
-                    <p className="text-sm">
-                      Add photos, flavours, sizes and pricing for each cake you offer.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      3
-                    </div>
-                    <p className="text-sm">
-                      Once you've added at least one cake, customers will be able to <strong>find and order from you</strong>!
-                    </p>
-                  </div>
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Business name</span>
+                  <span className="font-medium text-gray-900">{wizardData.cakeBusinessDetails.businessName || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Location</span>
+                  <span className="font-medium text-gray-900 text-right max-w-[250px]">{wizardData.cakeBusinessDetails.fullAddress || `${wizardData.cakeBusinessDetails.city}${wizardData.cakeBusinessDetails.postcode ? `, ${wizardData.cakeBusinessDetails.postcode}` : ''}` || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Fulfilment</span>
+                  <span className="font-medium text-gray-900">{fulfilmentMethods.join(" & ") || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-gray-600">Minimum notice</span>
+                  <span className="font-medium text-gray-900">{getLeadTimeLabel(wizardData.cakeLeadTime.minimum)}</span>
                 </div>
               </div>
+
+              <p className="text-center text-sm text-gray-500 mt-6">
+                You can update these details anytime from your dashboard.
+              </p>
             </div>
           )
         default:
@@ -2119,53 +2136,46 @@ export default function VenueOnboardingWizard() {
             />
           )
         case 11: // Review & Complete
+          const venueLocation = wizardData.venueAddress.fullAddress ||
+            `${wizardData.venueAddress.addressLine1 ? wizardData.venueAddress.addressLine1 + ', ' : ''}${wizardData.venueAddress.city}${wizardData.venueAddress.postcode ? ', ' + wizardData.venueAddress.postcode : ''}`
+
           return (
-            <div className="py-12 text-center max-w-2xl mx-auto">
-              <div className="mb-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">
-                  You're all set!
+            <div className="py-12 max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
+                  Check your details
                 </h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Your venue profile is complete and ready to submit.
+                <p className="text-lg text-gray-600">
+                  Please confirm everything looks correct
                 </p>
               </div>
 
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-left">
-                <h3 className="text-lg font-semibold text-blue-900 mb-3">
-                  What happens next?
-                </h3>
-                <div className="space-y-3 text-blue-800">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      1
-                    </div>
-                    <p className="text-sm">
-                      Our team will <strong>review your profile within 24 hours</strong> to ensure everything meets our quality standards.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      2
-                    </div>
-                    <p className="text-sm">
-                      You'll receive an <strong>email notification</strong> once your venue is approved and live on our platform.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      3
-                    </div>
-                    <p className="text-sm">
-                      Once live, customers will be able to <strong>find and book your venue</strong> for their events!
-                    </p>
-                  </div>
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Venue name</span>
+                  <span className="font-medium text-gray-900">{wizardData.venueAddress.businessName || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Venue type</span>
+                  <span className="font-medium text-gray-900 capitalize">{wizardData.venueType?.replace(/-/g, ' ') || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Location</span>
+                  <span className="font-medium text-gray-900 text-right max-w-[250px]">{venueLocation || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Capacity</span>
+                  <span className="font-medium text-gray-900">Up to {wizardData.capacity.max} guests</span>
+                </div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-gray-600">Hourly rate</span>
+                  <span className="font-medium text-gray-900">£{wizardData.pricing.hourlyRate}</span>
                 </div>
               </div>
+
+              <p className="text-center text-sm text-gray-500 mt-6">
+                You can update these details anytime from your dashboard.
+              </p>
             </div>
           )
         default:
@@ -2237,53 +2247,51 @@ export default function VenueOnboardingWizard() {
             />
           )
         case 11: // Review & Complete
+          const entertainerLocation = wizardData.serviceArea.fullAddress ||
+            `${wizardData.serviceArea.baseLocation}${wizardData.serviceArea.postcode ? ', ' + wizardData.serviceArea.postcode : ''}`
+
+          const formatEntertainerType = (type) => {
+            if (!type) return "—"
+            return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+          }
+
           return (
-            <div className="py-12 text-center max-w-2xl mx-auto">
-              <div className="mb-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">
-                  You're all set!
+            <div className="py-12 max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl md:text-5xl font-semibold text-gray-900 mb-3">
+                  Check your details
                 </h1>
-                <p className="text-lg text-gray-600 mb-8">
-                  Your profile is complete and ready to submit.
+                <p className="text-lg text-gray-600">
+                  Please confirm everything looks correct
                 </p>
               </div>
 
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-left">
-                <h3 className="text-lg font-semibold text-blue-900 mb-3">
-                  What happens next?
-                </h3>
-                <div className="space-y-3 text-blue-800">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      1
-                    </div>
-                    <p className="text-sm">
-                      Our team will <strong>review your profile and verification documents within 24 hours</strong> to ensure everything meets our quality and safety standards.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      2
-                    </div>
-                    <p className="text-sm">
-                      You'll receive an <strong>email notification</strong> once you're approved and live on our platform.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
-                      3
-                    </div>
-                    <p className="text-sm">
-                      Once live, customers will be able to <strong>find and book your services</strong> for their events!
-                    </p>
-                  </div>
+              <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Business name</span>
+                  <span className="font-medium text-gray-900">{wizardData.serviceDetails.businessName || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Service type</span>
+                  <span className="font-medium text-gray-900">{formatEntertainerType(wizardData.entertainerType)}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Location</span>
+                  <span className="font-medium text-gray-900 text-right max-w-[250px]">{entertainerLocation || "—"}</span>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-600">Travel radius</span>
+                  <span className="font-medium text-gray-900">{wizardData.serviceArea.travelRadius} miles</span>
+                </div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-gray-600">Starting price</span>
+                  <span className="font-medium text-gray-900">£{wizardData.entertainerPricing.basePrice}/hr</span>
                 </div>
               </div>
+
+              <p className="text-center text-sm text-gray-500 mt-6">
+                You can update these details anytime from your dashboard.
+              </p>
             </div>
           )
         default:

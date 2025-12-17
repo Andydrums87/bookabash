@@ -9,7 +9,7 @@ const libraries = ["places"]
 const mapContainerStyle = {
   width: '100%',
   height: '200px',
-  borderRadius: '16px'
+  borderRadius: '12px'
 }
 
 export default function CakeLocationStep({ cakeBusinessDetails, onChange }) {
@@ -41,6 +41,7 @@ export default function CakeLocationStep({ cakeBusinessDetails, onChange }) {
       const place = autocomplete.getPlace()
 
       if (!place.geometry) {
+        console.log("No details available for input: '" + place.name + "'")
         return
       }
 
@@ -100,8 +101,8 @@ export default function CakeLocationStep({ cakeBusinessDetails, onChange }) {
               onPlaceChanged={onPlaceChanged}
               options={{
                 componentRestrictions: { country: ["gb", "ie"] },
-                fields: ["address_components", "geometry", "formatted_address"],
-                types: ["(regions)"]
+                fields: ["address_components", "geometry", "formatted_address", "name"],
+                types: ["geocode"]
               }}
             >
               <div className="relative">
@@ -120,7 +121,7 @@ export default function CakeLocationStep({ cakeBusinessDetails, onChange }) {
           </div>
 
           {/* Map preview */}
-          {hasCoordinates && mapsLoaded && (
+          {hasCoordinates && (
             <div className="overflow-hidden rounded-2xl border border-gray-200">
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}

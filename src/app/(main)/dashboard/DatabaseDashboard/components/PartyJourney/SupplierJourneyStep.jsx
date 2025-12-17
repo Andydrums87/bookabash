@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import SupplierCard from '../../../components/SupplierCard/SupplierCard'
 
-export function SupplierJourneyStep({ 
-  suppliers, 
+export function SupplierJourneyStep({
+  suppliers,
   enquiries,
   onAddSupplier,
   onRemoveSupplier,
@@ -28,7 +28,11 @@ export function SupplierJourneyStep({
   // ✅ NEW: Recommendations props
   getRecommendedSupplierForType,
   onAddRecommendedSupplier,
-  recommendationsLoaded
+  recommendationsLoaded,
+  // ✅ NEW: Edit booked supplier props
+  onEditSupplier,
+  partyDate,
+  excludeVenue
 }) {
   const [isExpanded, setIsExpanded] = useState(!allConfirmed)
 
@@ -189,6 +193,9 @@ export function SupplierJourneyStep({
                   handleCancelEnquiry={handleCancelEnquiry}
                   partyDetails={partyDetails}
                   enhancedPricing={enhancedPricing}
+                  selectedVenue={suppliers?.venue}
+                  onEdit={onEditSupplier}
+                  partyDate={partyDate}
                 />
               </div>
             )

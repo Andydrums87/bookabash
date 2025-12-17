@@ -35,6 +35,9 @@ export default function PartyPhaseContent({
   onAddRecommendedSupplier,
   recommendationsLoaded,
   onDataUpdate,
+  // Edit booked supplier props
+  onEditSupplier,
+  partyDate,
 }) {
   const [guestList, setGuestList] = useState([])
   const [rsvps, setRsvps] = useState([])
@@ -502,6 +505,8 @@ export default function PartyPhaseContent({
             onPaymentReady={onPaymentReady}
             handleCancelEnquiry={handleCancelEnquiry}
             getSupplierDisplayPricing={getSupplierDisplayPricing}
+            onEditSupplier={onEditSupplier}
+            partyDate={partyDate}
           />
         ))}
       </div>

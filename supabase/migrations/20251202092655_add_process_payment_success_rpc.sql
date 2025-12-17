@@ -1,5 +1,6 @@
 -- RPC function to process payment success atomically
 -- This wraps party update + enquiry create/update in a single transaction
+-- FIXED: Don't skip when unpaid enquiries exist (only skip if same payment_intent_id AND enquiries are paid)
 
 CREATE OR REPLACE FUNCTION process_payment_success(
   p_party_id UUID,
@@ -17,23 +18,43 @@ DECLARE
   v_payment_status TEXT;
   v_existing_payment_intent TEXT;
   v_existing_payment_status TEXT;
+  v_existing_paid_enquiry_count INT;
   v_result JSONB;
   v_enquiry JSONB;
   v_created_enquiries JSONB := '[]'::jsonb;
   v_updated_count INT := 0;
+  v_inserted_count INT := 0;
 BEGIN
-  -- Step 1: Check idempotency - has this payment already been processed?
+  -- Step 1: Check idempotency - has this EXACT payment already been processed?
   SELECT payment_intent_id, payment_status
   INTO v_existing_payment_intent, v_existing_payment_status
   FROM parties
   WHERE id = p_party_id;
 
-  IF v_existing_payment_intent = p_payment_intent_id AND v_existing_payment_status != 'pending' THEN
-    -- Already processed, return early
+  IF v_existing_payment_intent = p_payment_intent_id AND v_existing_payment_status NOT IN ('pending', 'failed') THEN
+    -- Same payment intent already processed, return early
     RETURN jsonb_build_object(
       'success', true,
       'duplicate', true,
       'message', 'Payment already processed'
+    );
+  END IF;
+
+  -- Step 1b: Check if PAID enquiries already exist for THIS payment intent (handles race condition)
+  -- Only skip if enquiries are already FULLY PAID AND same payment intent
+  SELECT COUNT(*) INTO v_existing_paid_enquiry_count
+  FROM enquiries
+  WHERE party_id = p_party_id
+    AND status = 'accepted'
+    AND auto_accepted = true
+    AND payment_status = 'fully_paid';
+
+  IF v_existing_paid_enquiry_count > 0 AND v_existing_payment_intent = p_payment_intent_id THEN
+    -- Same payment already processed enquiries
+    RETURN jsonb_build_object(
+      'success', true,
+      'duplicate', true,
+      'message', 'Enquiries already paid'
     );
   END IF;
 
@@ -72,6 +93,8 @@ BEGIN
         auto_accepted,
         payment_status,
         quoted_price,
+        package_id,
+        addon_details,
         created_at
       )
       VALUES (
@@ -83,13 +106,20 @@ BEGIN
         true,
         'fully_paid',
         COALESCE((v_enquiry->>'quoted_price')::DECIMAL, 0),
+        v_enquiry->>'package_id',
+        v_enquiry->'addon_details',
         NOW()
-      );
+      )
+      ON CONFLICT (party_id, supplier_id) DO NOTHING;
 
-      v_created_enquiries := v_created_enquiries || jsonb_build_object(
-        'supplier_id', v_enquiry->>'supplier_id',
-        'category', v_enquiry->>'supplier_category'
-      );
+      GET DIAGNOSTICS v_inserted_count = ROW_COUNT;
+
+      IF v_inserted_count > 0 THEN
+        v_created_enquiries := v_created_enquiries || jsonb_build_object(
+          'supplier_id', v_enquiry->>'supplier_id',
+          'category', v_enquiry->>'supplier_category'
+        );
+      END IF;
     END LOOP;
   END IF;
 
