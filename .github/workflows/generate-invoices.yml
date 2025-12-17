@@ -15,7 +15,7 @@ on:
         description: 'End date (YYYY-MM-DD) - optional'
         required: false
       dry_run:
-        description: 'Dry run (true/false)'
+        description: 'Dry run only - do not create invoices (true/false)'
         required: false
         default: 'false'
 
@@ -24,49 +24,77 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Generate Invoices
+      - name: Get enquiries needing invoices
+        id: get-enquiries
         run: |
-          # Build the URL with optional parameters
           BASE_URL="https://www.partysnap.co.uk"
-          URL="${BASE_URL}/api/invoices/generate-batch"
-          PARAMS=""
 
+          # Build date params
+          PARAMS="dryRun=true"
           if [ -n "${{ github.event.inputs.start_date }}" ]; then
-            PARAMS="${PARAMS}startDate=${{ github.event.inputs.start_date }}&"
+            PARAMS="${PARAMS}&startDate=${{ github.event.inputs.start_date }}"
           fi
-
           if [ -n "${{ github.event.inputs.end_date }}" ]; then
-            PARAMS="${PARAMS}endDate=${{ github.event.inputs.end_date }}&"
+            PARAMS="${PARAMS}&endDate=${{ github.event.inputs.end_date }}"
           fi
 
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            PARAMS="${PARAMS}dryRun=true&"
-          fi
+          echo "Fetching enquiries from: ${BASE_URL}/api/invoices/generate-batch?${PARAMS}"
 
-          # Remove trailing & if present
-          PARAMS="${PARAMS%&}"
+          RESPONSE=$(curl -s "${BASE_URL}/api/invoices/generate-batch?${PARAMS}")
+          echo "Response: $RESPONSE"
 
-          if [ -n "$PARAMS" ]; then
-            URL="${URL}?${PARAMS}"
-          fi
+          # Extract enquiry IDs using jq
+          ENQUIRY_IDS=$(echo "$RESPONSE" | jq -r '.enquiries[]?.enquiryId // empty' | tr '\n' ' ')
+          COUNT=$(echo "$RESPONSE" | jq -r '.wouldGenerate // 0')
 
-          echo "Calling: $URL"
+          echo "Found $COUNT enquiries needing invoices"
+          echo "enquiry_ids=$ENQUIRY_IDS" >> $GITHUB_OUTPUT
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
 
-          # Make the API call
-          RESPONSE=$(curl -s -w "\n%{http_code}" "$URL")
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
+      - name: Generate invoices one by one
+        if: steps.get-enquiries.outputs.count != '0' && github.event.inputs.dry_run != 'true'
+        run: |
+          BASE_URL="https://www.partysnap.co.uk"
+          ENQUIRY_IDS="${{ steps.get-enquiries.outputs.enquiry_ids }}"
 
-          echo "Response Code: $HTTP_CODE"
-          echo "Response Body: $BODY"
+          SUCCESS=0
+          FAILED=0
 
-          # Check if successful
-          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Invoice generation completed successfully"
-          else
-            echo "❌ Invoice generation failed"
-            exit 1
-          fi
+          for ID in $ENQUIRY_IDS; do
+            echo "Generating invoice for enquiry: $ID"
+
+            RESPONSE=$(curl -s -X POST "${BASE_URL}/api/invoices/generate" \
+              -H "Content-Type: application/json" \
+              -d "{\"enquiryId\": \"$ID\"}")
+
+            # Check if successful
+            if echo "$RESPONSE" | jq -e '.success == true' > /dev/null 2>&1; then
+              INVOICE_NUM=$(echo "$RESPONSE" | jq -r '.results.success[0].invoiceNumber // "unknown"')
+              echo "✅ Created $INVOICE_NUM"
+              SUCCESS=$((SUCCESS + 1))
+            else
+              echo "❌ Failed: $RESPONSE"
+              FAILED=$((FAILED + 1))
+            fi
+
+            # Small delay to avoid rate limiting
+            sleep 1
+          done
+
+          echo ""
+          echo "========================================"
+          echo "Summary: $SUCCESS created, $FAILED failed"
+          echo "========================================"
+
+          # Save for summary
+          echo "SUCCESS=$SUCCESS" >> $GITHUB_ENV
+          echo "FAILED=$FAILED" >> $GITHUB_ENV
+
+      - name: Dry run summary
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "🔍 DRY RUN - No invoices created"
+          echo "Would generate ${{ steps.get-enquiries.outputs.count }} invoices"
 
       - name: Summary
         if: always()
@@ -75,3 +103,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered:** $(date -u)" >> $GITHUB_STEP_SUMMARY
           echo "- **Type:** ${{ github.event_name == 'schedule' && 'Scheduled' || 'Manual' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Enquiries found:** ${{ steps.get-enquiries.outputs.count }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.dry_run }}" != "true" ]; then
+            echo "- **Created:** ${SUCCESS:-0}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Failed:** ${FAILED:-0}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Mode:** Dry run (no invoices created)" >> $GITHUB_STEP_SUMMARY
+          fi
