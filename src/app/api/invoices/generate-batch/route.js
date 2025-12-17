@@ -306,9 +306,9 @@ export async function GET(request) {
           throw createError
         }
 
-        // Send email notification
+        // Send email notification (fire and forget - don't block)
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`
-        const emailResult = await sendInvoiceEmail(invoice, enquiry, baseUrl)
+        sendInvoiceEmail(invoice, enquiry, baseUrl).catch(err => console.error('Email error:', err))
 
         results.success.push({
           invoiceId: invoice.id,
@@ -316,12 +316,10 @@ export async function GET(request) {
           enquiryId: enquiry.id,
           supplierId: enquiry.supplier_id,
           supplierName: enquiry.suppliers?.business_name,
-          netAmount: netAmount,
-          emailSent: emailResult.sent,
-          emailTo: emailResult.email
+          netAmount: netAmount
         })
 
-        console.log(`✅ Created invoice ${invoiceNumber} for ${enquiry.suppliers?.business_name}${emailResult.sent ? ` (email sent to ${emailResult.email})` : ''}`)
+        console.log(`✅ Created invoice ${invoiceNumber} for ${enquiry.suppliers?.business_name}`)
 
       } catch (err) {
         console.error(`❌ Failed to create invoice for enquiry ${enquiry.id}:`, err)
