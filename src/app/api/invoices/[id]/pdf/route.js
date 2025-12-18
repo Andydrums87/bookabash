@@ -37,6 +37,38 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     }
 
+    // Fetch payout details for the supplier (or parent if child account)
+    let payoutDetails = null
+    if (invoice.supplier_id) {
+      // First try to get payout details for this supplier
+      const { data: payoutData } = await supabaseAdmin
+        .from('payout_details')
+        .select('*')
+        .eq('supplier_id', invoice.supplier_id)
+        .single()
+
+      if (payoutData) {
+        payoutDetails = payoutData
+      } else {
+        // If no payout details, check if this is a child supplier and get parent's payout details
+        const { data: supplier } = await supabaseAdmin
+          .from('suppliers')
+          .select('parent_business_id')
+          .eq('id', invoice.supplier_id)
+          .single()
+
+        if (supplier?.parent_business_id) {
+          const { data: parentPayoutData } = await supabaseAdmin
+            .from('payout_details')
+            .select('*')
+            .eq('supplier_id', supplier.parent_business_id)
+            .single()
+
+          payoutDetails = parentPayoutData
+        }
+      }
+    }
+
     // Enrich booking_details with supplier name if not present
     const enrichedInvoice = {
       ...invoice,
@@ -46,7 +78,8 @@ export async function GET(request, { params }) {
           ...invoice.booking_details?.supplier,
           name: invoice.booking_details?.supplier?.name || invoice.suppliers?.business_name || 'Supplier'
         }
-      }
+      },
+      payout_details: payoutDetails
     }
 
     // Generate PDF buffer

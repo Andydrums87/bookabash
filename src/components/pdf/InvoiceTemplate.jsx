@@ -295,6 +295,38 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: colors.gray,
     lineHeight: 1.5
+  },
+  // Payout details
+  payoutSection: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: colors.lightGray,
+    borderRadius: 6
+  },
+  payoutTitle: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: colors.secondary,
+    marginBottom: 12
+  },
+  payoutGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
+  },
+  payoutItem: {
+    width: '50%',
+    marginBottom: 8
+  },
+  payoutLabel: {
+    fontSize: 8,
+    color: colors.gray,
+    textTransform: 'uppercase',
+    marginBottom: 2
+  },
+  payoutValue: {
+    fontSize: 10,
+    color: colors.secondary,
+    fontWeight: 500
   }
 })
 
@@ -328,11 +360,18 @@ const getStatusStyle = (status) => {
   }
 }
 
+// Format sort code with dashes
+const formatSortCode = (sortCode) => {
+  if (!sortCode) return 'N/A'
+  return sortCode.replace(/(\d{2})(\d{2})(\d{2})/, '$1-$2-$3')
+}
+
 export default function InvoiceTemplate({ invoice }) {
   const bookingDetails = invoice.booking_details || {}
   const party = bookingDetails.party || {}
   const service = bookingDetails.service || {}
   const supplier = bookingDetails.supplier || {}
+  const payoutDetails = invoice.payout_details || null
 
   return (
     <Document>
@@ -419,16 +458,29 @@ export default function InvoiceTemplate({ invoice }) {
           <View style={styles.table}>
             <View style={styles.tableHeader}>
               <Text style={[styles.tableHeaderText, styles.col1]}>Description</Text>
-              <Text style={[styles.tableHeaderText, styles.col2]}>Rate</Text>
+              <Text style={[styles.tableHeaderText, styles.col2]}>Qty</Text>
               <Text style={[styles.tableHeaderText, styles.col3]}>Amount</Text>
             </View>
+            {/* Base service/product */}
             <View style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.col1]}>
-                {service.category || 'Service'} - {party.childName ? `${party.childName}'s Party` : 'Party Service'}
+                {service.packageName || service.category || 'Service'}{party.childName ? ` - ${party.childName}'s Party` : ''}
               </Text>
-              <Text style={[styles.tableCell, styles.col2]}>-</Text>
-              <Text style={[styles.tableCell, styles.col3]}>{formatCurrency(invoice.gross_amount)}</Text>
+              <Text style={[styles.tableCell, styles.col2]}>1</Text>
+              <Text style={[styles.tableCell, styles.col3]}>
+                {formatCurrency(service.deliveryFee ? (invoice.gross_amount - service.deliveryFee) : invoice.gross_amount)}
+              </Text>
             </View>
+            {/* Delivery fee if applicable */}
+            {service.deliveryFee > 0 && (
+              <View style={[styles.tableRow, styles.tableRowAlt]}>
+                <Text style={[styles.tableCell, styles.col1]}>
+                  Delivery Fee{service.fulfilmentMethod ? ` (${service.fulfilmentMethod})` : ''}
+                </Text>
+                <Text style={[styles.tableCell, styles.col2]}>1</Text>
+                <Text style={[styles.tableCell, styles.col3]}>{formatCurrency(service.deliveryFee)}</Text>
+              </View>
+            )}
           </View>
 
           {/* Totals */}
@@ -448,13 +500,40 @@ export default function InvoiceTemplate({ invoice }) {
           </View>
         </View>
 
+        {/* Payout Details */}
+        {payoutDetails && (
+          <View style={styles.payoutSection}>
+            <Text style={styles.payoutTitle}>Payout Details</Text>
+            <View style={styles.payoutGrid}>
+              {payoutDetails.bank_name && (
+                <View style={styles.payoutItem}>
+                  <Text style={styles.payoutLabel}>Bank</Text>
+                  <Text style={styles.payoutValue}>{payoutDetails.bank_name}</Text>
+                </View>
+              )}
+              <View style={styles.payoutItem}>
+                <Text style={styles.payoutLabel}>Account Holder</Text>
+                <Text style={styles.payoutValue}>{payoutDetails.account_holder_name}</Text>
+              </View>
+              <View style={styles.payoutItem}>
+                <Text style={styles.payoutLabel}>Sort Code</Text>
+                <Text style={styles.payoutValue}>{formatSortCode(payoutDetails.sort_code)}</Text>
+              </View>
+              <View style={styles.payoutItem}>
+                <Text style={styles.payoutLabel}>Account Number</Text>
+                <Text style={styles.payoutValue}>••••{payoutDetails.account_number?.slice(-4)}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Notes */}
         <View style={styles.notesSection}>
           <Text style={styles.notesTitle}>Important Information</Text>
           <Text style={styles.notesText}>
-            Please review this invoice and approve it to receive your payout. If you have any questions
-            or need to dispute any charges, please decline with a reason and our team will be in touch.
-            Payouts are typically processed within 5-7 business days after approval.
+            {payoutDetails
+              ? 'Please review this invoice and approve it to receive your payout to the account shown above. Payouts are typically processed within 5-7 business days after approval.'
+              : 'Please add your bank details in Settings → Payout Details to receive payouts. Once added, your bank details will appear on future invoices.'}
           </Text>
         </View>
 

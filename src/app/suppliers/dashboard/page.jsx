@@ -500,7 +500,7 @@ export default function SupplierDashboard() {
   // Filter, sort, and view state for bookings
   const [bookingSearch, setBookingSearch] = useState('')
   const [bookingSortBy, setBookingSortBy] = useState('event_date')
-  const [bookingFilterBy, setBookingFilterBy] = useState('all')
+  const [bookingFilterBy, setBookingFilterBy] = useState('upcoming') // Default to upcoming
   const [bookingViewMode, setBookingViewMode] = useState('grid')
 
   // Filter and categorize enquiries (base data)
@@ -658,6 +658,35 @@ export default function SupplierDashboard() {
 
     return filtered
   }, [allConfirmedBookings, bookingSearch, bookingFilterBy, bookingSortBy])
+
+  // Separate lists for "All" view - upcoming and completed
+  const { upcomingBookings, completedBookings } = useMemo(() => {
+    let filtered = allConfirmedBookings.filter(b => matchesSearch(b, bookingSearch))
+
+    const upcoming = filtered.filter(b => !isOrderCompleted(b))
+    const completed = filtered.filter(b => isOrderCompleted(b))
+
+    // Sort both by event date
+    const sortFn = (a, b) => {
+      switch (bookingSortBy) {
+        case 'event_date':
+          return new Date(a.parties?.party_date || 0) - new Date(b.parties?.party_date || 0)
+        case 'event_date_desc':
+          return new Date(b.parties?.party_date || 0) - new Date(a.parties?.party_date || 0)
+        case 'newest':
+          return new Date(b.created_at) - new Date(a.created_at)
+        case 'oldest':
+          return new Date(a.created_at) - new Date(b.created_at)
+        default:
+          return new Date(a.parties?.party_date || 0) - new Date(b.parties?.party_date || 0)
+      }
+    }
+
+    upcoming.sort(sortFn)
+    completed.sort((a, b) => new Date(b.parties?.party_date || 0) - new Date(a.parties?.party_date || 0)) // Most recent first for completed
+
+    return { upcomingBookings: upcoming, completedBookings: completed }
+  }, [allConfirmedBookings, bookingSearch, bookingSortBy])
 
   // Calculate filter counts for chips
   const enquiryFilterCounts = useMemo(() => {
@@ -919,6 +948,85 @@ export default function SupplierDashboard() {
                       >
                         Clear filters
                       </button>
+                    </div>
+                  ) : bookingFilterBy === 'all' ? (
+                    // Show separate sections for "All" view
+                    <div className="space-y-8">
+                      {/* Upcoming section */}
+                      {upcomingBookings.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+                            Upcoming ({upcomingBookings.length})
+                          </h3>
+                          {bookingViewMode === 'grid' ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                              {upcomingBookings.map((booking) => (
+                                isCakeOrder(booking) ? (
+                                  <CakeOrderCard
+                                    key={booking.id}
+                                    enquiry={booking}
+                                    onStatusUpdate={handleCakeStatusUpdate}
+                                  />
+                                ) : (
+                                  <BookingCard key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                                )
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {upcomingBookings.map((booking) => (
+                                isCakeOrder(booking) ? (
+                                  <CakeOrderCard
+                                    key={booking.id}
+                                    enquiry={booking}
+                                    onStatusUpdate={handleCakeStatusUpdate}
+                                  />
+                                ) : (
+                                  <BookingListItem key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                                )
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Completed section */}
+                      {completedBookings.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+                            Completed ({completedBookings.length})
+                          </h3>
+                          {bookingViewMode === 'grid' ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                              {completedBookings.map((booking) => (
+                                isCakeOrder(booking) ? (
+                                  <CakeOrderCard
+                                    key={booking.id}
+                                    enquiry={booking}
+                                    onStatusUpdate={handleCakeStatusUpdate}
+                                  />
+                                ) : (
+                                  <BookingCard key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                                )
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {completedBookings.map((booking) => (
+                                isCakeOrder(booking) ? (
+                                  <CakeOrderCard
+                                    key={booking.id}
+                                    enquiry={booking}
+                                    onStatusUpdate={handleCakeStatusUpdate}
+                                  />
+                                ) : (
+                                  <BookingListItem key={booking.id} booking={booking} onView={handleOpenResponseModal} />
+                                )
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : bookingViewMode === 'grid' ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
