@@ -1,11 +1,13 @@
 // components/BusinessPageWrapper.js
 "use client"
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useBusiness } from '@/contexts/BusinessContext';
-import { Loader2, Building2, AlertTriangle } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
 
 const BusinessPageWrapper = ({ children, requiresBusiness = true }) => {
+  const router = useRouter();
   const { currentBusiness, loading, switching, businesses, initialized } = useBusiness();
 
   // OPTIMIZED: Simplified state logic - no complex timers or pageReady state
@@ -23,6 +25,13 @@ const BusinessPageWrapper = ({ children, requiresBusiness = true }) => {
     // Everything is ready - let children handle their own loading states
     return 'ready';
   }, [initialized, loading, requiresBusiness, currentBusiness, businesses]);
+
+  // Redirect to onboarding if no business is found
+  useEffect(() => {
+    if (wrapperState === 'no-business') {
+      router.replace('/suppliers/onboarding');
+    }
+  }, [wrapperState, router]);
 
   // ONLY show spinner during initial BusinessContext loading
   if (wrapperState === 'loading') {
@@ -51,28 +60,24 @@ const BusinessPageWrapper = ({ children, requiresBusiness = true }) => {
     );
   }
 
-  // Show error state if business is required but not available
+  // Redirect to onboarding if business is required but not available
   if (wrapperState === 'no-business') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-          <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-primary-600" />
+          </div>
+          <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
         </div>
-        
+
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-1">
-            No Business Found
+            Redirecting to onboarding...
           </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            You need to have at least one business to access this page.
+          <p className="text-sm text-gray-500">
+            Please wait while we set up your account.
           </p>
-          
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Reload Page
-          </button>
         </div>
       </div>
     );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useSupplier } from "@/hooks/useSupplier"
-import { FileText, Clock, CheckCircle2, XCircle, DollarSign, Filter, RefreshCw } from "lucide-react"
+import { FileText, Clock, CheckCircle2, XCircle, DollarSign, Filter, RefreshCw, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import InvoiceCard from "./components/InvoiceCard"
 import InvoiceDetailModal from "./components/InvoiceDetailModal"
@@ -63,6 +63,7 @@ export default function SupplierInvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+  const [showStats, setShowStats] = useState(false)
 
   // Get supplier ID - try supplier.id first, then currentBusiness.id
   const supplierId = supplier?.id || currentBusiness?.id
@@ -213,36 +214,85 @@ export default function SupplierInvoicesPage() {
         <p className="text-gray-600 mt-1">Review and approve your invoices to receive payment</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats - Collapsible on mobile, always visible on desktop */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            icon={FileText}
-            label="Total Invoices"
-            value={stats.total}
-            color="gray"
-          />
-          <StatCard
-            icon={Clock}
-            label="Pending"
-            value={stats.pending}
-            subValue={formatCurrency(stats.pendingEarnings)}
-            color="yellow"
-          />
-          <StatCard
-            icon={CheckCircle2}
-            label="Approved"
-            value={stats.approved}
-            subValue={formatCurrency(stats.approvedEarnings)}
-            color="green"
-          />
-          <StatCard
-            icon={DollarSign}
-            label="Total Earnings"
-            value={formatCurrency(stats.totalEarnings)}
-            color="blue"
-          />
-        </div>
+        <>
+          {/* Mobile: Summary bar with toggle */}
+          <div className="md:hidden mb-4">
+            <button
+              onClick={() => setShowStats(!showStats)}
+              className="w-full flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3"
+            >
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-gray-900 font-medium">{formatCurrency(stats.totalEarnings)}</span>
+                <span className="text-gray-500">{stats.pending} pending</span>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showStats ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Expanded stats */}
+            {showStats && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <StatCard
+                  icon={FileText}
+                  label="Total Invoices"
+                  value={stats.total}
+                  color="gray"
+                />
+                <StatCard
+                  icon={Clock}
+                  label="Pending"
+                  value={stats.pending}
+                  subValue={formatCurrency(stats.pendingEarnings)}
+                  color="yellow"
+                />
+                <StatCard
+                  icon={CheckCircle2}
+                  label="Approved"
+                  value={stats.approved}
+                  subValue={formatCurrency(stats.approvedEarnings)}
+                  color="green"
+                />
+                <StatCard
+                  icon={DollarSign}
+                  label="Total Earnings"
+                  value={formatCurrency(stats.totalEarnings)}
+                  color="blue"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Desktop: Always show stats grid */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4 mb-6">
+            <StatCard
+              icon={FileText}
+              label="Total Invoices"
+              value={stats.total}
+              color="gray"
+            />
+            <StatCard
+              icon={Clock}
+              label="Pending"
+              value={stats.pending}
+              subValue={formatCurrency(stats.pendingEarnings)}
+              color="yellow"
+            />
+            <StatCard
+              icon={CheckCircle2}
+              label="Approved"
+              value={stats.approved}
+              subValue={formatCurrency(stats.approvedEarnings)}
+              color="green"
+            />
+            <StatCard
+              icon={DollarSign}
+              label="Total Earnings"
+              value={formatCurrency(stats.totalEarnings)}
+              color="blue"
+            />
+          </div>
+        </>
       )}
 
       {/* Filter and Actions */}
@@ -289,20 +339,31 @@ export default function SupplierInvoicesPage() {
         </div>
       )}
 
-      {/* Invoices Grid */}
+      {/* Invoices Table */}
       {!loading && !error && (
         <>
           {invoices.length === 0 ? (
             <EmptyState status={statusFilter} />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {invoices.map((invoice) => (
-                <InvoiceCard
-                  key={invoice.id}
-                  invoice={invoice}
-                  onView={handleViewInvoice}
-                />
-              ))}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* Table Header */}
+              <div className="grid grid-cols-[1fr_100px_100px_80px] items-center gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="text-sm font-medium text-gray-500">Customer</div>
+                <div className="text-sm font-medium text-gray-500">Date</div>
+                <div className="text-sm font-medium text-gray-500 text-right">Amount</div>
+                <div className="text-sm font-medium text-gray-500 text-right">Status</div>
+              </div>
+
+              {/* Table Body */}
+              <div>
+                {invoices.map((invoice) => (
+                  <InvoiceCard
+                    key={invoice.id}
+                    invoice={invoice}
+                    onView={handleViewInvoice}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </>

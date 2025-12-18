@@ -1,44 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { X, FileText, Calendar, MapPin, Clock, CheckCircle2, XCircle, AlertCircle, Download, ExternalLink } from "lucide-react"
+import { X, FileText, Calendar, MapPin, Clock, CheckCircle2, XCircle, AlertCircle, Download, ExternalLink, Cake, PartyPopper } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-// Status badge component
-function StatusBadge({ status }) {
-  const statusConfig = {
-    pending: {
-      label: "Pending Approval",
-      className: "bg-yellow-100 text-yellow-700",
-      icon: Clock
-    },
-    approved: {
-      label: "Approved",
-      className: "bg-green-100 text-green-700",
-      icon: CheckCircle2
-    },
-    declined: {
-      label: "Declined",
-      className: "bg-red-100 text-red-700",
-      icon: XCircle
-    },
-    paid: {
-      label: "Paid",
-      className: "bg-blue-100 text-blue-700",
-      icon: CheckCircle2
-    }
-  }
-
-  const config = statusConfig[status] || statusConfig.pending
-  const Icon = config.icon
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${config.className}`}>
-      <Icon className="w-4 h-4" />
-      {config.label}
-    </span>
-  )
-}
 
 export default function InvoiceDetailModal({ invoice, isOpen, onClose, onApprove, onDecline, loading }) {
   const [declineReason, setDeclineReason] = useState("")
@@ -46,13 +10,12 @@ export default function InvoiceDetailModal({ invoice, isOpen, onClose, onApprove
 
   if (!isOpen || !invoice) return null
 
-  // Format date
-  const formatDate = (dateString) => {
+  // Format date - short version
+  const formatDateShort = (dateString) => {
     if (!dateString) return "N/A"
     return new Date(dateString).toLocaleDateString("en-GB", {
-      weekday: "long",
       day: "numeric",
-      month: "long",
+      month: "short",
       year: "numeric"
     })
   }
@@ -69,7 +32,6 @@ export default function InvoiceDetailModal({ invoice, isOpen, onClose, onApprove
   const bookingDetails = invoice.booking_details || {}
   const partyDetails = bookingDetails.party || {}
   const serviceDetails = bookingDetails.service || {}
-  const enquiryDetails = bookingDetails.enquiry || {}
 
   // Handle decline
   const handleDecline = () => {
@@ -89,174 +51,113 @@ export default function InvoiceDetailModal({ invoice, isOpen, onClose, onApprove
     onClose()
   }
 
+  // Status config
+  const statusConfig = {
+    pending: { label: "Awaiting Approval", className: "text-amber-600 bg-amber-50", icon: Clock },
+    approved: { label: "Approved", className: "text-green-600 bg-green-50", icon: CheckCircle2 },
+    declined: { label: "Declined", className: "text-red-600 bg-red-50", icon: XCircle },
+    paid: { label: "Paid", className: "text-blue-600 bg-blue-50", icon: CheckCircle2 }
+  }
+  const status = statusConfig[invoice.status] || statusConfig.pending
+  const StatusIcon = status.icon
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 transition-opacity"
-        onClick={handleClose}
-      />
+      <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-gray-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{invoice.invoice_number}</h2>
-                <p className="text-sm text-gray-500">Invoice Details</p>
-              </div>
+      <div className="flex min-h-full items-end sm:items-center justify-center">
+        <div className="relative bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+
+          {/* Header - Compact */}
+          <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-500">{invoice.invoice_number}</span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.className}`}>
+                <StatusIcon className="w-3 h-3" />
+                {status.label}
+              </span>
             </div>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
+            <button onClick={handleClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
-            {/* Status */}
-            <div className="flex justify-center">
-              <StatusBadge status={invoice.status} />
+          <div className="flex-1 overflow-y-auto px-5 pb-5">
+            {/* Hero - Your Earnings */}
+            <div className="text-center py-6">
+              <p className="text-sm text-gray-500 mb-1">Your earnings</p>
+              <p className="text-4xl font-bold text-gray-900">{formatCurrency(invoice.net_amount)}</p>
+              <p className="text-sm text-gray-400 mt-2">
+                {formatCurrency(invoice.gross_amount)} booking − {formatCurrency(invoice.platform_fee)} fee
+              </p>
             </div>
 
-            {/* PDF Actions */}
-            <div className="flex gap-3 justify-center">
-              <Button
-                variant="outline"
-                size="sm"
+            {/* Service Summary Card */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+                  {serviceDetails.category?.toLowerCase() === 'cakes' ? (
+                    <Cake className="w-5 h-5 text-pink-500" />
+                  ) : (
+                    <PartyPopper className="w-5 h-5 text-purple-500" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">
+                    {serviceDetails.packageName || serviceDetails.category || 'Service'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {partyDetails.childName ? `${partyDetails.childName}'s ${partyDetails.theme || ''} Party` : 'Party Service'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span>{formatDateShort(invoice.service_date)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="truncate">{partyDetails.postcode || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* PDF Actions - Small */}
+            <div className="flex gap-2 mb-4">
+              <button
                 onClick={() => window.open(`/api/invoices/${invoice.id}/pdf`, '_blank')}
-                className="flex items-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ExternalLink className="w-4 h-4" />
                 View PDF
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </button>
+              <button
                 onClick={() => {
                   const link = document.createElement('a')
                   link.href = `/api/invoices/${invoice.id}/pdf`
                   link.download = `${invoice.invoice_number}.pdf`
                   link.click()
                 }}
-                className="flex items-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Download className="w-4 h-4" />
                 Download
-              </Button>
-            </div>
-
-            {/* Amount breakdown */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="font-medium text-gray-900 mb-3">Payment Breakdown</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Booking amount</span>
-                  <span className="text-gray-900">{formatCurrency(invoice.gross_amount)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Platform fee (15%)</span>
-                  <span className="text-gray-500">-{formatCurrency(invoice.platform_fee)}</span>
-                </div>
-                <div className="border-t border-gray-200 pt-2 mt-2">
-                  <div className="flex justify-between">
-                    <span className="font-medium text-gray-900">Your earnings</span>
-                    <span className="text-xl font-bold text-green-600">{formatCurrency(invoice.net_amount)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Service details */}
-            <div>
-              <h3 className="font-medium text-gray-900 mb-3">Service Details</h3>
-              <div className="space-y-3">
-                {invoice.service_date && (
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Service Date</p>
-                      <p className="text-sm text-gray-600">{formatDate(invoice.service_date)}</p>
-                    </div>
-                  </div>
-                )}
-
-                {partyDetails.childName && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center mt-0.5">
-                      <span className="text-xs">🎂</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Event</p>
-                      <p className="text-sm text-gray-600">
-                        {partyDetails.childName}'s {partyDetails.theme ? `${partyDetails.theme} ` : ""}Party
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {partyDetails.location && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Location</p>
-                      <p className="text-sm text-gray-600">{partyDetails.location}</p>
-                      {partyDetails.postcode && (
-                        <p className="text-sm text-gray-500">{partyDetails.postcode}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {serviceDetails.category && (
-                  <div className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Service Category</p>
-                      <p className="text-sm text-gray-600 capitalize">{serviceDetails.category}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Invoice dates */}
-            <div className="border-t border-gray-200 pt-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Invoice Date</p>
-                  <p className="text-gray-900">{formatDate(invoice.invoice_date || invoice.created_at)}</p>
-                </div>
-                {invoice.approved_at && (
-                  <div>
-                    <p className="text-gray-500">Approved</p>
-                    <p className="text-gray-900">{formatDate(invoice.approved_at)}</p>
-                  </div>
-                )}
-                {invoice.declined_at && (
-                  <div>
-                    <p className="text-gray-500">Declined</p>
-                    <p className="text-gray-900">{formatDate(invoice.declined_at)}</p>
-                  </div>
-                )}
-              </div>
+              </button>
             </div>
 
             {/* Decline reason if present */}
             {invoice.decline_reason && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-red-700">Decline Reason</p>
-                    <p className="text-sm text-red-600 mt-1">{invoice.decline_reason}</p>
+                    <p className="text-sm font-medium text-red-700">Decline reason</p>
+                    <p className="text-sm text-red-600 mt-0.5">{invoice.decline_reason}</p>
                   </div>
                 </div>
               </div>
@@ -264,60 +165,69 @@ export default function InvoiceDetailModal({ invoice, isOpen, onClose, onApprove
 
             {/* Decline form */}
             {showDeclineForm && invoice.status === "pending" && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-red-700 mb-2">Why are you declining this invoice?</p>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
+                <p className="text-sm font-medium text-red-700 mb-2">Why are you declining?</p>
                 <textarea
                   value={declineReason}
                   onChange={(e) => setDeclineReason(e.target.value)}
                   placeholder="Enter reason (optional)"
-                  className="w-full p-3 border border-red-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
-                  rows={3}
+                  className="w-full p-3 bg-white border border-red-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+                  rows={2}
                 />
               </div>
             )}
           </div>
 
-          {/* Footer actions */}
+          {/* Footer CTAs */}
           {invoice.status === "pending" && (
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3 rounded-b-2xl">
+            <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
               {showDeclineForm ? (
-                <>
-                  <Button
-                    variant="outline"
+                <div className="flex gap-3">
+                  <button
                     onClick={() => setShowDeclineForm(false)}
-                    className="flex-1"
                     disabled={loading}
+                    className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
                     Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
+                  </button>
+                  <button
                     onClick={handleDecline}
-                    className="flex-1"
                     disabled={loading}
+                    className="flex-1 py-3 px-4 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
                   >
                     {loading ? "Declining..." : "Confirm Decline"}
-                  </Button>
-                </>
+                  </button>
+                </div>
               ) : (
-                <>
-                  <Button
-                    variant="outline"
+                <div className="flex gap-3">
+                  <button
                     onClick={handleDecline}
-                    className="flex-1"
                     disabled={loading}
+                    className="py-3 px-6 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
                   >
                     Decline
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={() => onApprove(invoice)}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                     disabled={loading}
+                    className="flex-1 py-3 px-4 text-sm font-medium text-white bg-green-600 rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
                   >
                     {loading ? "Approving..." : "Approve Invoice"}
-                  </Button>
-                </>
+                  </button>
+                </div>
               )}
+            </div>
+          )}
+
+          {/* For non-pending invoices, show close button */}
+          {invoice.status !== "pending" && (
+            <div className="px-5 py-4 border-t border-gray-100">
+              <button
+                onClick={handleClose}
+                className="w-full py-3 px-4 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
             </div>
           )}
         </div>

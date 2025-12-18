@@ -17,8 +17,44 @@ import {
   Truck,
   MapPin,
   Clock,
-  Package
+  Package,
+  Lock,
+  AlertCircle,
+  CheckCircle2,
+  Landmark
 } from "lucide-react"
+import {
+  getBankNameFromSortCode,
+  modulusCheck,
+  formatSortCode,
+  cleanSortCode
+} from "@/utils/ukBankValidation"
+
+// Bank-specific card colors
+const getBankCardStyle = (bankName) => {
+  if (!bankName) return 'bg-gradient-to-br from-slate-800 to-slate-900'
+
+  const bank = bankName.toLowerCase()
+
+  if (bank.includes('monzo')) return 'bg-gradient-to-br from-[#FF5A5F] to-[#E04347]'
+  if (bank.includes('starling')) return 'bg-gradient-to-br from-[#6B5CE7] to-[#4B3CC2]'
+  if (bank.includes('revolut')) return 'bg-gradient-to-br from-[#0075EB] to-[#0052A3]'
+  if (bank.includes('halifax')) return 'bg-gradient-to-br from-[#0066B3] to-[#004080]'
+  if (bank.includes('lloyds')) return 'bg-gradient-to-br from-[#006A4D] to-[#004D38]'
+  if (bank.includes('barclays')) return 'bg-gradient-to-br from-[#00AEEF] to-[#0077B3]'
+  if (bank.includes('hsbc')) return 'bg-gradient-to-br from-[#DB0011] to-[#A3000D]'
+  if (bank.includes('natwest') || bank.includes('national westminster')) return 'bg-gradient-to-br from-[#5C2D91] to-[#3D1D61]'
+  if (bank.includes('royal bank of scotland') || bank.includes('rbs')) return 'bg-gradient-to-br from-[#0A2F5C] to-[#061D3A]'
+  if (bank.includes('santander')) return 'bg-gradient-to-br from-[#EC0000] to-[#B30000]'
+  if (bank.includes('nationwide')) return 'bg-gradient-to-br from-[#003366] to-[#002244]'
+  if (bank.includes('tsb')) return 'bg-gradient-to-br from-[#0050AA] to-[#003878]'
+  if (bank.includes('metro')) return 'bg-gradient-to-br from-[#00A1DE] to-[#0077A3]'
+  if (bank.includes('co-operative') || bank.includes('cooperative')) return 'bg-gradient-to-br from-[#00B1EB] to-[#0085B2]'
+  if (bank.includes('bank of scotland')) return 'bg-gradient-to-br from-[#002D72] to-[#001D4A]'
+  if (bank.includes('clydesdale')) return 'bg-gradient-to-br from-[#D31245] to-[#A30E36]'
+
+  return 'bg-gradient-to-br from-slate-800 to-slate-900'
+}
 import { useBusiness } from "@/contexts/BusinessContext"
 import MessageTemplatesSection from "../profile/components/MessageTemplatesSection"
 import { useSupplier } from "@/hooks/useSupplier"
@@ -29,6 +65,7 @@ import { useRouter } from "next/navigation"
 const settingsSections = [
   { id: 'personal', label: 'Personal information', icon: User },
   { id: 'business', label: 'Business details', icon: Building },
+  { id: 'payout', label: 'Payout details', icon: CreditCard },
   { id: 'templates', label: 'Message templates', icon: MessageSquare },
   { id: 'notifications', label: 'Notifications', icon: Bell },
 ]
@@ -178,6 +215,13 @@ export default function Settings() {
     smsReminders: true,
   })
 
+  const [payoutDetails, setPayoutDetails] = useState({
+    bankName: '',
+    accountHolderName: '',
+    sortCode: '',
+    accountNumber: '',
+  })
+
   // Cake-specific settings (only used for cake suppliers)
   const [cakeSettings, setCakeSettings] = useState({
     offersPickup: true,
@@ -221,8 +265,34 @@ export default function Settings() {
         smsBookings: supplierData.notifications?.smsBookings ?? true,
         smsReminders: supplierData.notifications?.smsReminders ?? true,
       })
+
     }
   }, [supplierData])
+
+  // Fetch payout details from dedicated table
+  useEffect(() => {
+    const fetchPayoutDetails = async () => {
+      if (!supplier?.id) return
+
+      try {
+        const response = await fetch(`/api/payout-details?supplier_id=${supplier.id}`)
+        const data = await response.json()
+
+        if (data.payoutDetails) {
+          setPayoutDetails({
+            bankName: data.payoutDetails.bank_name || '',
+            accountHolderName: data.payoutDetails.account_holder_name || '',
+            sortCode: data.payoutDetails.sort_code || '',
+            accountNumber: data.payoutDetails.account_number || '',
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching payout details:', error)
+      }
+    }
+
+    fetchPayoutDetails()
+  }, [supplier?.id])
 
   // Load cake settings from primary business
   useEffect(() => {
@@ -360,6 +430,45 @@ export default function Settings() {
       setBusinessInfo(prev => ({ ...prev, businessName: editValue.businessName || '' }))
     } else if (editField === 'postcode') {
       setBusinessInfo(prev => ({ ...prev, operatingPostcode: editValue.postcode || '' }))
+    } else if (editField === 'bankDetails') {
+      // Save to dedicated payout_details table
+      try {
+        const response = await fetch('/api/payout-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supplier_id: supplier?.id,
+            supplier_name: supplierData?.name || supplierData?.businessName || businessInfo.businessName || null,
+            bank_name: editValue.bankName || null,
+            account_holder_name: editValue.accountHolderName,
+            sort_code: editValue.sortCode,
+            account_number: editValue.accountNumber,
+          })
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to save payout details')
+        }
+
+        setPayoutDetails({
+          bankName: editValue.bankName || '',
+          accountHolderName: editValue.accountHolderName || '',
+          sortCode: editValue.sortCode || '',
+          accountNumber: editValue.accountNumber || '',
+        })
+
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 2000)
+        setEditField(null)
+      } catch (error) {
+        console.error('Error saving payout details:', error)
+        alert(error.message || 'Failed to save bank details')
+      } finally {
+        setSaving(false)
+      }
+      return // Don't call regular handleSave
     } else if (editField === 'fulfilment' || editField === 'deliveryFee' || editField === 'leadTimes') {
       // Update cake settings and save to primary business
       const updatedCakeSettings = {
@@ -690,6 +799,55 @@ export default function Settings() {
                       onEdit={() => openEditModal('leadTimes', { ...cakeSettings })}
                     />
                   </>
+                )}
+              </div>
+            )}
+
+            {/* Payout Details Section */}
+            {selectedSection === 'payout' && (
+              <div>
+                <p className="text-gray-500 mb-6">
+                  Enter your bank details so we can pay you for completed bookings
+                </p>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <p className="text-sm text-amber-800">
+                    Your bank details are stored securely and only used to process payouts for approved invoices.
+                  </p>
+                </div>
+
+                <SettingRow
+                  label="Bank name"
+                  value={payoutDetails.bankName}
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                <SettingRow
+                  label="Account holder name"
+                  value={payoutDetails.accountHolderName}
+                  description="Name as it appears on your bank account"
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                <SettingRow
+                  label="Sort code"
+                  value={payoutDetails.sortCode ? payoutDetails.sortCode.replace(/(\d{2})(\d{2})(\d{2})/, '$1-$2-$3') : null}
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                <SettingRow
+                  label="Account number"
+                  value={payoutDetails.accountNumber ? '••••' + payoutDetails.accountNumber.slice(-4) : null}
+                  onEdit={() => openEditModal('bankDetails', { ...payoutDetails })}
+                />
+
+                {(!payoutDetails.bankName || !payoutDetails.accountHolderName || !payoutDetails.sortCode || !payoutDetails.accountNumber) && (
+                  <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-700 font-medium">Bank details incomplete</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      Please add your bank details to receive payouts for completed bookings.
+                    </p>
+                  </div>
                 )}
               </div>
             )}
@@ -1174,6 +1332,213 @@ export default function Settings() {
           </div>
         </div>
       </EditModal>
+
+      {/* Professional Bank Details Modal */}
+      {editField === 'bankDetails' && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setEditField(null)} />
+          <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+            <div
+              className="bg-white w-full lg:w-full lg:max-w-lg lg:rounded-2xl rounded-t-2xl max-h-[90vh] lg:max-h-[85vh] overflow-hidden flex flex-col shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <button
+                  onClick={() => setEditField(null)}
+                  className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+                <div className="flex items-center gap-2">
+                  <Landmark className="w-5 h-5 text-gray-700" />
+                  <h2 className="font-semibold text-gray-900">Bank Account Details</h2>
+                </div>
+                <div className="w-9" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {/* Security Banner */}
+                <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl mb-6">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-green-800">Secure & Encrypted</p>
+                    <p className="text-xs text-green-600">Your bank details are protected with bank-grade encryption</p>
+                  </div>
+                </div>
+
+                {/* Bank Card Preview */}
+                <div className={`${getBankCardStyle(editValue.bankName || getBankNameFromSortCode(cleanSortCode(editValue.sortCode)))} rounded-2xl p-5 mb-6 text-white shadow-lg transition-all duration-300`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                        <Landmark className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium text-white/80">
+                        {editValue.bankName || getBankNameFromSortCode(cleanSortCode(editValue.sortCode)) || 'Your Bank'}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-white/50 uppercase tracking-wider">Account</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Account Holder</p>
+                      <p className="font-mono text-lg tracking-wide">
+                        {editValue.accountHolderName || 'Your Name'}
+                      </p>
+                    </div>
+                    <div className="flex gap-8">
+                      <div>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Sort Code</p>
+                        <p className="font-mono text-lg tracking-wider">
+                          {formatSortCode(editValue.sortCode) || '00-00-00'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Account Number</p>
+                        <p className="font-mono text-lg tracking-wider">
+                          {editValue.accountNumber || '00000000'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Fields */}
+                <div className="space-y-4">
+                  {/* Account Holder Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Account holder name
+                    </label>
+                    <input
+                      type="text"
+                      value={editValue.accountHolderName || ''}
+                      onChange={(e) => setEditValue(prev => ({ ...prev, accountHolderName: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent transition-all"
+                      placeholder="Name on your bank account"
+                    />
+                  </div>
+
+                  {/* Sort Code & Account Number Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Sort code
+                      </label>
+                      <input
+                        type="text"
+                        value={formatSortCode(editValue.sortCode) || ''}
+                        onChange={(e) => {
+                          const cleaned = cleanSortCode(e.target.value)
+                          const detectedBank = getBankNameFromSortCode(cleaned)
+                          setEditValue(prev => ({
+                            ...prev,
+                            sortCode: cleaned,
+                            bankName: detectedBank || prev.bankName
+                          }))
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent font-mono transition-all"
+                        placeholder="00-00-00"
+                        maxLength={8}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Account number
+                      </label>
+                      <input
+                        type="text"
+                        value={editValue.accountNumber || ''}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 8)
+                          setEditValue(prev => ({ ...prev, accountNumber: value }))
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 focus:border-transparent font-mono transition-all"
+                        placeholder="00000000"
+                        maxLength={8}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Auto-detected Bank */}
+                  {editValue.sortCode?.length === 6 && (
+                    <div className={`flex items-center gap-2 p-3 rounded-xl ${
+                      getBankNameFromSortCode(editValue.sortCode)
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-amber-50 border border-amber-200'
+                    }`}>
+                      {getBankNameFromSortCode(editValue.sortCode) ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <p className="text-sm text-blue-800">
+                            <span className="font-medium">{getBankNameFromSortCode(editValue.sortCode)}</span> detected
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <p className="text-sm text-amber-800">
+                            Bank not recognized - please verify sort code
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Validation Message */}
+                  {editValue.sortCode?.length === 6 && editValue.accountNumber?.length === 8 && (() => {
+                    const validation = modulusCheck(editValue.sortCode, editValue.accountNumber)
+                    if (validation.warning) {
+                      return (
+                        <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <p className="text-sm text-amber-800">{validation.message}</p>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setEditField(null)}
+                    className="text-base font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEditSave}
+                    disabled={saving || !editValue.accountHolderName || editValue.sortCode?.length !== 6 || editValue.accountNumber?.length !== 8}
+                    className="px-6 py-3 rounded-xl text-base font-medium bg-slate-900 text-white hover:bg-slate-800 disabled:bg-gray-300 disabled:text-gray-500 transition-all flex items-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        Save securely
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

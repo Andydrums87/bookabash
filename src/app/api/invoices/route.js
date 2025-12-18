@@ -12,8 +12,29 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const supplierId = searchParams.get('supplier_id')
+    const enquiryId = searchParams.get('enquiry_id')
     const limit = parseInt(searchParams.get('limit') || '50', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
+
+    // If enquiry_id is provided, fetch invoice by enquiry directly
+    if (enquiryId) {
+      const supabaseAdmin = getSupabaseAdmin()
+      if (!supabaseAdmin) {
+        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+      }
+
+      const { data: invoices, error: invoiceError } = await supabaseAdmin
+        .from('invoices')
+        .select('*')
+        .eq('enquiry_id', enquiryId)
+
+      if (invoiceError) {
+        console.error('Error fetching invoice by enquiry:', invoiceError)
+        return NextResponse.json({ error: 'Failed to fetch invoice' }, { status: 500 })
+      }
+
+      return NextResponse.json({ invoices: invoices || [] })
+    }
 
     // Supplier ID is required - it comes from the authenticated useSupplier hook on client
     if (!supplierId) {

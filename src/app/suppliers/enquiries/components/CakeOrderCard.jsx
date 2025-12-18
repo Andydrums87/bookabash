@@ -1,15 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import {
-  CheckCircle,
-  ChefHat,
-  Truck,
   Cake,
-  Package,
   MapPin,
+  FileText,
 } from "lucide-react"
+import Link from "next/link"
 import {
   ORDER_STATUS,
   ORDER_STATUS_LABELS,
@@ -18,9 +15,8 @@ import {
 import TrackingUrlModal from "./TrackingUrlModal"
 import CakeOrderDetailModal from "./CakeOrderDetailModal"
 
-export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
+export default function CakeOrderCard({ enquiry, onStatusUpdate }) {
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isArchiving, setIsArchiving] = useState(false)
   const [showTrackingModal, setShowTrackingModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [localOrderStatus, setLocalOrderStatus] = useState(enquiry.order_status)
@@ -71,7 +67,9 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
 
   // Status text like Airbnb
   const getStatusText = () => {
-    if (daysUntilEvent < 0) return 'Completed'
+    // Check if order is complete first (delivered/collected)
+    const orderComplete = localOrderStatus === ORDER_STATUS.DELIVERED || localOrderStatus === ORDER_STATUS.COLLECTED
+    if (orderComplete || daysUntilEvent < 0) return 'Completed'
     if (daysUntilEvent === 0) return 'Today'
     if (daysUntilEvent === 1) return 'Tomorrow'
     if (daysUntilEvent <= 7) return `In ${daysUntilEvent} days`
@@ -113,24 +111,6 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
     setShowTrackingModal(false)
   }
 
-  const handleArchive = async () => {
-    setIsArchiving(true)
-    try {
-      const result = await supplierEnquiryBackend.archiveOrder(enquiry.id, true)
-      if (result.success) {
-        if (onArchive) {
-          onArchive(enquiry.id)
-        }
-      } else {
-        console.error('Failed to archive order:', result.error)
-      }
-    } catch (error) {
-      console.error('Error archiving order:', error)
-    } finally {
-      setIsArchiving(false)
-    }
-  }
-
   // Get progress step (0-4) - handles both delivery and pickup orders
   const getProgressStep = () => {
     if (isPickupOrder) {
@@ -154,45 +134,8 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
 
   const progressStep = getProgressStep()
 
-  // Determine next action based on current status - handles both delivery and pickup
-  const getNextAction = () => {
-    if (isPickupOrder) {
-      // Pickup flow: Confirmed → Preparing → Ready for Collection → Collected
-      switch (localOrderStatus) {
-        case null:
-        case undefined:
-          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
-        case ORDER_STATUS.CONFIRMED:
-          return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
-        case ORDER_STATUS.PREPARING:
-          return { status: ORDER_STATUS.READY_FOR_COLLECTION, label: 'Ready for Collection', icon: Package }
-        case ORDER_STATUS.READY_FOR_COLLECTION:
-          return { status: ORDER_STATUS.COLLECTED, label: 'Collected', icon: CheckCircle }
-        default:
-          return null
-      }
-    } else {
-      // Delivery flow: Confirmed → Preparing → Dispatched → Delivered
-      switch (localOrderStatus) {
-        case null:
-        case undefined:
-          return { status: ORDER_STATUS.CONFIRMED, label: 'Confirm Order', icon: CheckCircle }
-        case ORDER_STATUS.CONFIRMED:
-          return { status: ORDER_STATUS.PREPARING, label: 'Start Preparing', icon: ChefHat }
-        case ORDER_STATUS.PREPARING:
-          return { status: ORDER_STATUS.DISPATCHED, label: 'Ready to Dispatch', icon: Truck, needsTracking: true }
-        case ORDER_STATUS.DISPATCHED:
-          return { status: ORDER_STATUS.DELIVERED, label: 'Delivered', icon: CheckCircle }
-        default:
-          return null
-      }
-    }
-  }
-
   // Check if order is complete (handles both delivery and pickup)
   const isOrderComplete = localOrderStatus === ORDER_STATUS.DELIVERED || localOrderStatus === ORDER_STATUS.COLLECTED
-
-  const nextAction = getNextAction()
 
   return (
     <>
@@ -283,35 +226,22 @@ export default function CakeOrderCard({ enquiry, onStatusUpdate, onArchive }) {
           </p>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex border-t border-gray-200">
-          <button
-            onClick={() => setShowDetailModal(true)}
-            className="flex-1 py-3.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200"
-          >
-            View details
-          </button>
-          {nextAction && !isOrderComplete ? (
+        {/* Action button */}
+        <div className="border-t border-gray-200">
+          {isOrderComplete ? (
             <button
-              onClick={() => {
-                if (nextAction.needsTracking) {
-                  setShowTrackingModal(true)
-                } else {
-                  handleStatusUpdate(nextAction.status)
-                }
-              }}
-              disabled={isUpdating}
-              className="flex-1 py-3.5 text-center text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+              onClick={() => setShowDetailModal(true)}
+              className="w-full py-3.5 flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              {isUpdating ? 'Updating...' : nextAction.label}
+              <FileText className="w-4 h-4" />
+              View invoice
             </button>
           ) : (
             <button
-              onClick={handleArchive}
-              disabled={isArchiving}
-              className="flex-1 py-3.5 text-center text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+              onClick={() => setShowDetailModal(true)}
+              className="w-full py-3.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              {isArchiving ? 'Archiving...' : 'Move to Past'}
+              View details
             </button>
           )}
         </div>
