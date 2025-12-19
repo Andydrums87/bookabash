@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Shield, Loader2, Lock, UserPlus } from 'lucide-react'
 
-const ADMIN_EMAILS = ['andrew@partysnap.co.uk', 'neil@partysnap.co.uk']
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
 export default function AdminLogin() {
   const router = useRouter()
