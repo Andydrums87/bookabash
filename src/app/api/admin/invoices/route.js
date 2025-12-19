@@ -5,8 +5,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
-// Admin emails that can access this endpoint
-const ADMIN_EMAILS = ['andrew@partysnap.co.uk', 'neil@partysnap.co.uk']
+// Admin emails that can access this endpoint (from env variable)
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
 export async function GET(request) {
   try {

@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase"
 import { Shield, FileText, CheckCircle, XCircle, Clock, Loader2, Lock, Eye, ExternalLink, PoundSterling, FileSearch, Search, Download } from 'lucide-react'
 
 // Admin emails
-const ADMIN_EMAILS = ['andrew@partysnap.co.uk', 'neil@partysnap.co.uk']
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
 
 export default function AdminDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false)
