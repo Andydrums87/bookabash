@@ -282,7 +282,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-8 rounded-lg shadow text-center">
           <Shield className="h-12 w-12 mx-auto mb-4 text-red-500" />
           <h1 className="text-xl font-bold mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-4">You don't have admin access.</p>
+          <p className="text-gray-600 mb-4">You don&apos;t have admin access.</p>
           <p className="text-sm text-gray-500 mb-4">{user.email}</p>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/admin/login' }} className="text-blue-600">Sign Out</button>
         </div>
