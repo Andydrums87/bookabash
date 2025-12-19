@@ -81,7 +81,11 @@ function UpgradePaymentForm({
       <PaymentElement
         options={{
           layout: 'tabs',
-          paymentMethodOrder: ['card', 'klarna', 'apple_pay', 'google_pay'],
+          paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
+          wallets: {
+            applePay: 'auto',
+            googlePay: 'auto',
+          },
         }}
       />
 

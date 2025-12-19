@@ -122,7 +122,7 @@ enabled = true
 # in emails.
 site_url = "http://localhost:3001"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:3001/suppliers/onboarding/email-verified", "http://127.0.0.1:3001/suppliers/onboarding/email-verified"]
+additional_redirect_urls = ["http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:3001/**", "http://127.0.0.1:3001/**", "http://localhost:3001/auth/callback/customer", "http://localhost:3001/auth/callback/supplier", "http://127.0.0.1:3001/auth/callback/customer", "http://127.0.0.1:3001/auth/callback/supplier", "http://localhost:3001/suppliers/onboarding/email-verified", "http://127.0.0.1:3001/suppliers/onboarding/email-verified"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # Path to JWT signing key. DO NOT commit your signing keys file to git.

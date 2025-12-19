@@ -10,13 +10,33 @@ export function MobileNavWrapper({ initialUser }) {
   const [currentPartyId, setCurrentPartyId] = useState(null)
 
   useEffect(() => {
+    // If we have initial user from server, no need to check again
     if (initialUser) {
       setLoading(false)
+    } else {
+      // Check auth on client if no server user (important for OAuth redirects)
+      const checkAuth = async () => {
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser()
+          if (!error && user) {
+            setUser({
+              id: user.id,
+              email: user.email,
+              fullName: user.user_metadata?.full_name || null,
+            })
+          }
+        } catch (error) {
+          console.error('Error checking auth:', error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      checkAuth()
     }
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setUser(session?.user ? {
           id: session.user.id,
           email: session.user.email,
@@ -73,6 +93,7 @@ export function MobileNavWrapper({ initialUser }) {
 
   // Convert user format for MobileNav
   const mobileNavUser = user ? {
+    id: user.id,
     email: user.email,
     user_metadata: {
       full_name: user.fullName

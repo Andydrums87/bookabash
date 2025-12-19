@@ -414,6 +414,7 @@ export default function SelectedSupplierCard({
           partyDetails={partyDetails}
           selectedDate={partyDetails?.date}
           partyDate={partyDetails?.date}
+          supplierType={type}
         />
       </MicroConfettiWrapper>
     </TooltipProvider>

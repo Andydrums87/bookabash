@@ -34,6 +34,7 @@ export default function MyPartyTabContent({
   const [showMissingSuggestions, setShowMissingSuggestions] = useState(true)
   const [selectedSupplierForQuickView, setSelectedSupplierForQuickView] = useState(null)
   const [selectedSupplierForCustomize, setSelectedSupplierForCustomize] = useState(null)
+  const [selectedSupplierType, setSelectedSupplierType] = useState(null) // Track supplier type for modal
   const [showPlanInfo, setShowPlanInfo] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -81,7 +82,7 @@ export default function MyPartyTabContent({
   }
 
   // Fetch full supplier data for customization
-  const fetchFullSupplierData = async (supplier) => {
+  const fetchFullSupplierData = async (supplier, supplierType = null) => {
     if (!supplier?.id) return
 
     try {
@@ -89,8 +90,11 @@ export default function MyPartyTabContent({
       const fullSupplier = await suppliersAPI.getSupplierById(supplier.id)
 
       // ✅ CRITICAL FIX: Merge the stored customization data with fetched supplier
+      // Also ensure category is properly extracted from all possible locations
       const mergedSupplier = {
         ...fullSupplier,
+        // Ensure category is preserved from all possible sources (critical for cake detection)
+        category: fullSupplier?.category || fullSupplier?.data?.category || supplier.category || supplier.data?.category,
         // Preserve customization data from localStorage/database
         packageId: supplier.packageId,
         packageData: supplier.packageData,
@@ -100,9 +104,20 @@ export default function MyPartyTabContent({
         pricePerBag: supplier.pricePerBag,
       }
 
+      console.log('🎯 [fetchFullSupplierData] Merged supplier:', {
+        name: mergedSupplier.name,
+        category: mergedSupplier.category,
+        supplierType,
+        fullSupplierCategory: fullSupplier?.category,
+        fullSupplierDataCategory: fullSupplier?.data?.category,
+        originalCategory: supplier.category,
+      })
+
+      setSelectedSupplierType(supplierType)
       setSelectedSupplierForCustomize(mergedSupplier)
     } catch (error) {
       console.error('❌ Error fetching supplier data:', error)
+      setSelectedSupplierType(supplierType)
       setSelectedSupplierForCustomize(supplier)
     }
   }
@@ -519,7 +534,7 @@ export default function MyPartyTabContent({
           <Button
             onClick={(e) => {
               e.stopPropagation()
-              fetchFullSupplierData(supplier)
+              fetchFullSupplierData(supplier, type)
             }}
             className="flex-1 bg-primary-500 hover:bg-primary-600 text-white"
           >
@@ -801,16 +816,18 @@ export default function MyPartyTabContent({
         </div>
       )}
 
-      {/* Anything Missing Section - Subtle styling */}
-      {showMissingSuggestions && allSuppliers.length > 0 && (
+      {/* Anything Missing Section - Always show so users can add suppliers */}
+      {showMissingSuggestions && (
         <>
           <div className="bg-gray-50/50 border border-gray-200/60 rounded-xl p-5">
             <div className="mb-4">
               <h3 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <span>Anything else you'd like to add?</span>
+                <span>{allSuppliers.length > 0 ? "Anything else you'd like to add?" : "Start building your party"}</span>
               </h3>
               <p className="text-sm text-gray-500">
-                Here are some suggestions to make your party even better
+                {allSuppliers.length > 0
+                  ? "Here are some suggestions to make your party even better"
+                  : "Add suppliers to create your perfect party plan"}
               </p>
             </div>
 
@@ -846,7 +863,8 @@ export default function MyPartyTabContent({
             />
           </div>
 
-          {/* Party Plan Summary */}
+          {/* Party Plan Summary - Only show when there are suppliers */}
+          {allSuppliers.length > 0 && (
           <div className="mt-6 bg-gradient-to-br from-gray-50 to-white rounded-xl border-2 border-gray-200 p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-[hsl(var(--primary-500))]" />
@@ -998,8 +1016,10 @@ export default function MyPartyTabContent({
               ) : null
             })()}
           </div>
+          )}
 
-          {/* Complete Booking CTA - Single click to start booking */}
+          {/* Complete Booking CTA - Only show when there are suppliers */}
+          {allSuppliers.length > 0 && (
           <div className="mt-4">
             <Button
               onClick={handleImHappy}
@@ -1037,6 +1057,7 @@ export default function MyPartyTabContent({
               You'll review your full party plan before any payment
             </p>
           </div>
+          )}
         </>
       )}
 
@@ -1056,15 +1077,19 @@ export default function MyPartyTabContent({
           supplier={selectedSupplierForCustomize}
           partyDetails={partyDetails}
           isOpen={!!selectedSupplierForCustomize}
-          onClose={() => setSelectedSupplierForCustomize(null)}
+          onClose={() => {
+            setSelectedSupplierForCustomize(null)
+            setSelectedSupplierType(null)
+          }}
           onAddToPlan={async (data) => {
-          
+
             // Call the handler if provided
             if (onCustomizationComplete) {
               await onCustomizationComplete(data)
             }
 
             setSelectedSupplierForCustomize(null)
+            setSelectedSupplierType(null)
           }}
           isAdding={false}
           currentPhase="planning"
@@ -1072,6 +1097,7 @@ export default function MyPartyTabContent({
           partyDate={partyDetails?.date}
           mobileHeight="max-h-[92vh]"
           desktopHeight="md:h-[95vh]"
+          supplierType={selectedSupplierType}
         />
       )}
     </div>

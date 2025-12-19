@@ -926,7 +926,11 @@ export default function PaymentPageContent() {
         })
 
         const paymentAmount = Math.round(breakdown.totalPaymentToday * 100)
-        
+
+        // Only enable Klarna for orders £600+ (60000 pence) due to high fees
+        const KLARNA_MINIMUM_AMOUNT = 60000 // £600 in pence
+        const shouldEnableKlarna = paymentAmount >= KLARNA_MINIMUM_AMOUNT
+
         if (paymentAmount > 0) {
           const response = await fetch('/api/create-payment-intent', {
             method: 'POST',
@@ -938,7 +942,7 @@ export default function PaymentPageContent() {
               suppliers: supplierList,
               addons: partyResult.party.party_plan?.addons || [],
               paymentType: 'unified',
-              enableKlarna: true
+              enableKlarna: shouldEnableKlarna
             }),
           })
 

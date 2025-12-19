@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Calendar, Mail, Gift, Users, Star, ChevronDown } from "lucide-react"
+import { Calendar, Mail, Gift, Users, Star, ChevronDown, PartyPopper } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
@@ -11,6 +11,7 @@ export function DashboardDropdown({ initialUser }) {
   const [activePartyId, setActivePartyId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(initialUser)
+  const [hasDatabaseParties, setHasDatabaseParties] = useState(false)
   const router = useRouter()
   const dropdownRef = useRef(null)
 
@@ -25,11 +26,52 @@ export function DashboardDropdown({ initialUser }) {
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
         setActivePartyId(null)
+        setHasDatabaseParties(false)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Check if user has any fully paid parties in database
+  useEffect(() => {
+    const checkDatabaseParties = async () => {
+      if (!user?.id) {
+        setHasDatabaseParties(false)
+        return
+      }
+
+      try {
+        // First, get the public user ID from auth_user_id
+        const { data: publicUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle()
+
+        if (publicUser) {
+          const { data: parties, error } = await supabase
+            .from('parties')
+            .select('id')
+            .eq('user_id', publicUser.id)
+            .eq('payment_status', 'fully_paid')
+            .limit(1)
+
+          if (!error && parties && parties.length > 0) {
+            setHasDatabaseParties(true)
+          } else {
+            setHasDatabaseParties(false)
+          }
+        } else {
+          setHasDatabaseParties(false)
+        }
+      } catch (error) {
+        console.error('Error checking database parties:', error)
+      }
+    }
+
+    checkDatabaseParties()
+  }, [user?.id])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -232,6 +274,19 @@ export function DashboardDropdown({ initialUser }) {
               <Star className="w-4 h-4 mr-3 text-gray-500" />
               <span>Start New Party</span>
             </button>
+
+            {hasDatabaseParties && (
+              <button
+                onClick={() => {
+                  setIsOpen(false)
+                  router.push('/dashboard?view=parties')
+                }}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <PartyPopper className="w-4 h-4 mr-3 text-gray-500" />
+                <span>My Planned Parties</span>
+              </button>
+            )}
           </div>
         </div>
       )}

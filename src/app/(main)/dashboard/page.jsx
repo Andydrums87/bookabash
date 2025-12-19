@@ -245,19 +245,36 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { partyDatabaseBackend } from '@/utils/partyDatabaseBackend'
 import LocalStorageDashboard from './LocalStorageDashboard/LocalStorageDashboard'
 import DatabaseDashboard from './DatabaseDashboard/DatabaseDashboard'
 import DashboardWelcome from "./components/DashboardWelcome"
 import SnappyLoader from "@/components/ui/SnappyLoader"
 
-// ✅ SIMPLIFIED: Remove complex caching logic that's causing confusion
+// Wrapper component to handle Suspense for useSearchParams
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <SnappyLoader text="Loading your party..." />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
+// Main dashboard content
+function DashboardContent() {
 
   const router = useRouter()
-  
+  const searchParams = useSearchParams()
+
+  // Check if user explicitly wants to view their database parties
+  const forcePartiesView = searchParams.get('view') === 'parties'
+
   const [userType, setUserType] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [debugInfo, setDebugInfo] = useState({})
@@ -311,6 +328,18 @@ export default function DashboardPage() {
             hasParty: !!partyResult.party,
             partyId: partyResult.party?.id,
             error: partyResult.error
+          }
+
+          // ✅ If user explicitly requested parties view (from ?view=parties),
+          // skip localStorage check and go straight to database dashboard
+          if (forcePartiesView && partyResult.success && partyResult.party) {
+            debug.steps.push('🎯 User requested parties view → DATABASE DASHBOARD (forced)')
+            debug.finalDecision = 'database-forced'
+
+            setDebugInfo(debug)
+            setUserType('database')
+            setIsLoading(false)
+            return
           }
 
           // ✅ NEW: Check if localStorage party is newer than database party
@@ -450,7 +479,7 @@ export default function DashboardPage() {
     }
    
     determineUserType()
-  }, [refreshKey])
+  }, [refreshKey, forcePartiesView])
 
   const handleRefresh = () => {
 
@@ -474,18 +503,8 @@ export default function DashboardPage() {
   // ============================================
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <SnappyLoader text="Loading your party..." />
-        
-        {/* Debug info visible during loading in dev mode */}
-        {process.env.NODE_ENV === 'development' && debugInfo.steps?.length > 0 && (
-          <div className="mt-8 p-4 bg-gray-100 rounded-lg max-w-md text-xs">
-            <h3 className="font-bold mb-2">Debug Steps:</h3>
-            {debugInfo.steps.map((step, i) => (
-              <div key={i} className="mb-1">{step}</div>
-            ))}
-          </div>
-        )}
       </div>
     )
   }

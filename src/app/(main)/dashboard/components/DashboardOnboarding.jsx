@@ -319,6 +319,18 @@ export default function DashboardOnboardingRedesigned({ onFormSubmit, isSubmitti
         theme={selectedTheme}
         childName="your child"
         progress={loaderProgress}
+        partyDetails={{
+          budget: formData.budget,
+          guestCount: formData.guestCount
+        }}
+        onRetry={() => {
+          // Reset and retry
+          setLoaderProgress(0)
+          handleSubmit({ preventDefault: () => {} })
+        }}
+        onTimeout={() => {
+          console.log('Party building timed out - user can retry')
+        }}
       />
 
       <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--primary-50))] via-white to-[hsl(var(--primary-100))]">

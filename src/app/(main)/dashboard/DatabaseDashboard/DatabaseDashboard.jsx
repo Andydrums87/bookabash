@@ -1971,6 +1971,7 @@ const addSuppliersSection = (
             partyDetails={partyDetails}
             databasePartyData={partyData}
             userType="DATABASE_USER"
+            supplierType={editingSupplierType}
           />
         )}
 

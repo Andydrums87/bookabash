@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import Lottie from "lottie-react"
 import partyAnimation from "@/../../public/animations/#0101J_S_07 (1).json"
 import clownJugglingAnimation from "@/../../public/animations/clown-juggling.json"
@@ -7,9 +7,54 @@ import mapPinAnimation from "@/../../public/animations/map-pin-location.json"
 import shoppingBagAnimation from "@/../../public/animations/shopping-bag.json"
 import birthdayConfettiAnimation from "@/../../public/animations/birthday-confetti-balloon.json"
 import trampolineAnimation from "@/../../public/animations/trampoline.json"
+import { RefreshCw, WifiOff, AlertCircle } from "lucide-react"
 
-export default function PartyBuilderLoader({ isVisible, theme, childName, progress, partyDetails, partyPlan }) {
+export default function PartyBuilderLoader({ isVisible, theme, childName, progress, partyDetails, partyPlan, onRetry, onTimeout }) {
   const [completedItems, setCompletedItems] = useState(0)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [showSlowMessage, setShowSlowMessage] = useState(false)
+  const [showTimeoutMessage, setShowTimeoutMessage] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
+
+  // Time thresholds (in seconds)
+  const SLOW_THRESHOLD = 15  // Show "taking longer" message
+  const TIMEOUT_THRESHOLD = 30  // Show timeout/retry option
+
+  // Progressive messages for slow loading
+  const slowLoadingMessages = [
+    "Still working on it...",
+    "Finding the best options for you...",
+    "Almost there, just a moment longer...",
+    "Your party is worth the wait..."
+  ]
+
+  const getSlowMessage = useCallback(() => {
+    if (elapsedTime < SLOW_THRESHOLD) return null
+    const messageIndex = Math.min(
+      Math.floor((elapsedTime - SLOW_THRESHOLD) / 5),
+      slowLoadingMessages.length - 1
+    )
+    return slowLoadingMessages[messageIndex]
+  }, [elapsedTime])
+
+  // Handle retry
+  const handleRetry = useCallback(async () => {
+    setIsRetrying(true)
+    setShowTimeoutMessage(false)
+    setElapsedTime(0)
+    setCompletedItems(0)
+
+    if (onRetry) {
+      try {
+        await onRetry()
+      } catch (error) {
+        console.error('Retry failed:', error)
+        setShowTimeoutMessage(true)
+      }
+    }
+
+    setIsRetrying(false)
+  }, [onRetry])
 
   // Determine what's being built based on budget and guest count
   const checklistItems = useMemo(() => {
@@ -102,6 +147,39 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
     }
   }, [isVisible, checklistItems.length])
 
+  // Track elapsed time
+  useEffect(() => {
+    if (!isVisible) {
+      setElapsedTime(0)
+      setShowSlowMessage(false)
+      setShowTimeoutMessage(false)
+      return
+    }
+
+    const timer = setInterval(() => {
+      setElapsedTime(prev => {
+        const newTime = prev + 1
+
+        // Show slow message after threshold
+        if (newTime >= SLOW_THRESHOLD && !showTimeoutMessage) {
+          setShowSlowMessage(true)
+        }
+
+        // Show timeout after threshold
+        if (newTime >= TIMEOUT_THRESHOLD) {
+          setShowTimeoutMessage(true)
+          if (onTimeout) {
+            onTimeout()
+          }
+        }
+
+        return newTime
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [isVisible, showTimeoutMessage, onTimeout])
+
   if (!isVisible) return null
 
   return (
@@ -110,8 +188,8 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
       <div className="relative z-10 w-full max-w-md">
         {/* Custom Lottie Animation */}
         <div className="text-center space-y-6">
-          {/* Show current item's Lottie Animation */}
-          {completedItems >= 0 && completedItems < checklistItems.length && (
+          {/* Show current item's Lottie Animation - hide during timeout */}
+          {!showTimeoutMessage && completedItems >= 0 && completedItems < checklistItems.length && (
             <>
               <div className="flex justify-center mb-6">
                 <div className="w-64 h-64 md:w-80 md:h-80">
@@ -134,32 +212,85 @@ export default function PartyBuilderLoader({ isVisible, theme, childName, progre
           )}
 
           {/* Show "Nearly there..." after last item completes */}
-          {completedItems === checklistItems.length && (
+          {completedItems === checklistItems.length && !showTimeoutMessage && (
             <div className="animate-fade-in text-center">
               <h2 className="text-xl font-bold text-gray-900">
-                Nearly there...
+                {getSlowMessage() || "Nearly there..."}
               </h2>
+              {showSlowMessage && !showTimeoutMessage && (
+                <p className="text-sm text-gray-500 mt-2 animate-fade-in">
+                  This is taking a bit longer than usual
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Timeout message with retry option */}
+          {showTimeoutMessage && (
+            <div className="animate-fade-in text-center space-y-4">
+              <div className="w-16 h-16 mx-auto bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                <WifiOff className="w-8 h-8 text-amber-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Taking longer than expected
+              </h2>
+              <p className="text-sm text-gray-600 max-w-xs mx-auto">
+                This might be due to a slow connection. Would you like to try again?
+              </p>
+              <div className="flex flex-col gap-3 pt-4">
+                <button
+                  onClick={handleRetry}
+                  disabled={isRetrying}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-[hsl(var(--primary-500))] hover:bg-[hsl(var(--primary-600))] text-white rounded-full font-medium transition-all disabled:opacity-70"
+                >
+                  {isRetrying ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Retrying...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Try Again
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="px-6 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+                >
+                  Go back home
+                </button>
+              </div>
             </div>
           )}
 
 
-          {/* Progress indicator */}
-          <div className="pt-8">
-            <div className="flex justify-center gap-2">
-              {checklistItems.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    index < completedItems
-                      ? 'w-8 bg-[hsl(var(--primary-500))]'
-                      : index === completedItems
-                      ? 'w-12 bg-[hsl(var(--primary-400))]'
-                      : 'w-8 bg-gray-200'
-                  }`}
-                />
-              ))}
+          {/* Progress indicator - hide during timeout */}
+          {!showTimeoutMessage && (
+            <div className="pt-8">
+              <div className="flex justify-center gap-2">
+                {checklistItems.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      index < completedItems
+                        ? 'w-8 bg-[hsl(var(--primary-500))]'
+                        : index === completedItems
+                        ? 'w-12 bg-[hsl(var(--primary-400))]'
+                        : 'w-8 bg-gray-200'
+                    }`}
+                  />
+                ))}
+              </div>
+              {/* Elapsed time indicator for slow loads */}
+              {showSlowMessage && elapsedTime > SLOW_THRESHOLD && (
+                <p className="text-xs text-gray-400 text-center mt-3">
+                  {elapsedTime}s elapsed
+                </p>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
