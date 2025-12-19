@@ -720,6 +720,7 @@ export default function EmptySupplierCard({
             supplier={fullSupplierData || recommendedSupplier}
             onAddToPlan={handleCustomizationComplete}
             partyDetails={partyDetails}
+            supplierType={type}
           />
         )}
       </>
@@ -934,6 +935,7 @@ export default function EmptySupplierCard({
             supplier={fullSupplierData || recommendedSupplier}
             onAddToPlan={handleCustomizationComplete}
             partyDetails={partyDetails}
+            supplierType={type}
           />
         )}
       </>
@@ -1147,6 +1149,7 @@ export default function EmptySupplierCard({
           supplier={fullSupplierData || recommendedSupplier}
           onAddToPlan={handleCustomizationComplete}
           partyDetails={partyDetails}
+          supplierType={type}
         />
       )}
     </>

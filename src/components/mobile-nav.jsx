@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Menu, X, Calendar, User, Home, Search, Heart, BookOpen, Mail, Gift, Users, ShoppingCart } from "lucide-react"
+import { Menu, X, Calendar, User, Home, Search, Heart, BookOpen, Mail, Gift, Users, ShoppingCart, Briefcase, PartyPopper } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -86,12 +86,90 @@ export default function MobileNav({ user, onSignOut, loading, currentPartyId }) 
   const [dashboardExpanded, setDashboardExpanded] = useState(false)
   const [activePartyId, setActivePartyId] = useState(null)
   const [loadingPartyData, setLoadingPartyData] = useState(false)
+  const [isSupplier, setIsSupplier] = useState(false)
+  const [hasDatabaseParties, setHasDatabaseParties] = useState(false)
   const router = useRouter()
+
+// Check if user is a supplier
+useEffect(() => {
+  const checkSupplierStatus = async () => {
+    if (!user) {
+      setIsSupplier(false)
+      return
+    }
+
+    // Get user ID - handle both formats (from prop or from user object)
+    const userId = user.id || user.user_metadata?.sub
+    if (!userId) return
+
+    try {
+      const { data: supplier, error } = await supabase
+        .from('suppliers')
+        .select('id')
+        .eq('auth_user_id', userId)
+        .eq('is_primary', true)
+        .maybeSingle()
+
+      if (!error && supplier) {
+        setIsSupplier(true)
+      } else {
+        setIsSupplier(false)
+      }
+    } catch (error) {
+      console.error('Error checking supplier status:', error)
+    }
+  }
+
+  checkSupplierStatus()
+}, [user])
+
+// Check if user has any paid parties in database
+useEffect(() => {
+  const checkDatabaseParties = async () => {
+    if (!user) {
+      setHasDatabaseParties(false)
+      return
+    }
+
+    const authUserId = user.id || user.user_metadata?.sub
+    if (!authUserId) return
+
+    try {
+      // First, get the public user ID from auth_user_id
+      const { data: publicUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle()
+
+      if (publicUser) {
+        const { data: parties, error } = await supabase
+          .from('parties')
+          .select('id')
+          .eq('user_id', publicUser.id)
+          .eq('payment_status', 'fully_paid')
+          .limit(1)
+
+        if (!error && parties && parties.length > 0) {
+          setHasDatabaseParties(true)
+        } else {
+          setHasDatabaseParties(false)
+        }
+      } else {
+        setHasDatabaseParties(false)
+      }
+    } catch (error) {
+      console.error('Error checking database parties:', error)
+    }
+  }
+
+  checkDatabaseParties()
+}, [user])
 
 // Load party data when component mounts or user changes
 useEffect(() => {
   const loadPartyData = async () => {
-    if (user) {
+    if (user && !isSupplier) {
       try {
         setLoadingPartyData(true)
         const result = await partyDatabaseBackend.getCurrentParty()
@@ -109,7 +187,7 @@ useEffect(() => {
   }
 
   loadPartyData()
-}, [user])
+}, [user, isSupplier])
 
 
   // Add this function inside MobileNav component
@@ -311,7 +389,7 @@ useEffect(() => {
                 className="block w-full hover:text-white/80 transition-colors duration-200"
               >
                 <h2 className="text-lg font-bold text-white mb-1">{getUserDisplayName()}</h2>
-                <p className="text-white/80 text-xs">Party Planner • Tap for settings</p>
+                <p className="text-white/80 text-xs">{isSupplier ? "Business Owner" : "Party Planner"} • Tap for settings</p>
               </button>
             </>
           ) : (
@@ -354,36 +432,63 @@ useEffect(() => {
             Snap Suppliers
           </Link>
 
-          <div className="space-y-3">
+          {isSupplier ? (
+            /* Supplier: Direct link to Business Dashboard */
             <button
-              onClick={() => setDashboardExpanded(!dashboardExpanded)}
-              className="flex items-center justify-between w-full py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
+              onClick={() => {
+                closeMenu()
+                router.push("/suppliers/dashboard")
+              }}
+              className="flex items-center py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
             >
-              <span>My Snapboard</span>
-              <svg
-                className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? "rotate-180" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <Briefcase className="w-5 h-5 mr-3" />
+              Business Dashboard
             </button>
+          ) : (
+            /* Customer: Expandable My Snapboard menu */
+            <div className="space-y-3">
+              <button
+                onClick={() => setDashboardExpanded(!dashboardExpanded)}
+                className="flex items-center justify-between w-full py-2 text-white text-lg font-light transition-colors duration-200 hover:text-white/80"
+              >
+                <span>My Snapboard</span>
+                <svg
+                  className={`w-4 h-4 transition-transform duration-200 ${dashboardExpanded ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-            {dashboardExpanded && (
-              <div className="pl-4 space-y-3">
-                {dashboardItems.map((item) => (
-                  <button
-                    key={item.href}
-                    onClick={() => handleDashboardNavigation(item)}
-                    className="block w-full text-left py-1 text-white/80 hover:text-white text-base font-light transition-colors duration-200"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              {dashboardExpanded && (
+                <div className="pl-4 space-y-3">
+                  {dashboardItems.map((item) => (
+                    <button
+                      key={item.href}
+                      onClick={() => handleDashboardNavigation(item)}
+                      className="block w-full text-left py-1 text-white/80 hover:text-white text-base font-light transition-colors duration-200"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                  {hasDatabaseParties && (
+                    <button
+                      onClick={() => {
+                        closeMenu()
+                        router.push("/dashboard?view=parties")
+                      }}
+                      className="flex items-center w-full text-left py-1 text-white/80 hover:text-white text-base font-light transition-colors duration-200"
+                    >
+                      <PartyPopper className="w-4 h-4 mr-2" />
+                      My Planned Parties
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <Link
             href="/blog"

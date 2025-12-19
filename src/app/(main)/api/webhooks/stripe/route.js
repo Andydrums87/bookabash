@@ -426,13 +426,16 @@ export async function POST(request) {
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object
         const paymentType = paymentIntent.metadata?.payment_type
+        const paymentMethodType = paymentIntent.payment_method_types?.[0] || 'unknown'
 
         console.log('✅ Payment succeeded:', {
           id: paymentIntent.id,
           amount: paymentIntent.amount,
           party_id: paymentIntent.metadata.party_id,
           payment_type: paymentType,
-          payment_method: paymentIntent.payment_method_types
+          payment_method: paymentIntent.payment_method_types,
+          payment_method_type: paymentMethodType,
+          is_klarna: paymentMethodType === 'klarna'
         })
 
         // Skip full processing for booking upgrades - these are just additional payments
@@ -615,6 +618,51 @@ export async function POST(request) {
             .eq('id', refundedParty.id)
 
           console.log(`✅ Marked party ${refundedParty.id} as refunded`)
+        }
+
+        break
+
+      case 'charge.succeeded':
+        // Handle charge.succeeded as backup for Klarna/other redirect-based payments
+        const charge = event.data.object
+        const chargePaymentIntent = charge.payment_intent
+
+        console.log('💳 Charge succeeded (backup handler):', {
+          charge_id: charge.id,
+          payment_intent: chargePaymentIntent,
+          payment_method_details: charge.payment_method_details?.type,
+          amount: charge.amount
+        })
+
+        // Only process if this is a Klarna payment (as backup)
+        if (charge.payment_method_details?.type === 'klarna') {
+          console.log('🔄 Klarna charge detected - checking if payment_intent.succeeded was already processed')
+
+          // Check if party was already updated by payment_intent.succeeded
+          if (chargePaymentIntent) {
+            const { data: existingParty } = await supabaseAdmin
+              .from('parties')
+              .select('id, payment_status, payment_intent_id')
+              .eq('payment_intent_id', chargePaymentIntent)
+              .single()
+
+            if (existingParty && existingParty.payment_status !== 'paid') {
+              console.log('⚠️ Klarna payment not yet marked as paid - fetching payment intent to process')
+
+              // Fetch the full payment intent to process
+              try {
+                const fullPaymentIntent = await stripe.paymentIntents.retrieve(chargePaymentIntent)
+                if (fullPaymentIntent.status === 'succeeded') {
+                  console.log('🔄 Processing Klarna payment via charge.succeeded backup')
+                  await processPaymentSuccess(fullPaymentIntent)
+                }
+              } catch (retrieveError) {
+                console.error('❌ Failed to retrieve payment intent for Klarna backup:', retrieveError)
+              }
+            } else if (existingParty) {
+              console.log('✅ Klarna payment already processed via payment_intent.succeeded')
+            }
+          }
         }
 
         break

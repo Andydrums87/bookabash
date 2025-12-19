@@ -32,12 +32,14 @@ export async function POST(request) {
       newPrice
     })
 
-    // Create the payment intent
+    // Create the payment intent - no Klarna for upgrades (amounts too small to warrant it)
+    // Using allow_redirects: 'never' disables redirect-based methods like Klarna
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount, // Already in pence
       currency: 'gbp',
       automatic_payment_methods: {
         enabled: true,
+        allow_redirects: 'never', // Disables Klarna, keeps Apple/Google Pay
       },
       metadata: {
         party_id: partyId,

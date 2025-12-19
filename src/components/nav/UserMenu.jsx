@@ -1,19 +1,67 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { User, LogOut, Settings, Calendar } from "lucide-react"
+import { User, LogOut, Settings, Calendar, Briefcase, PartyPopper } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 
 export function UserMenu({ initialUser }) {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState(initialUser)
+  const [isSupplier, setIsSupplier] = useState(false)
+  const [hasDatabaseParties, setHasDatabaseParties] = useState(false)
   const menuRef = useRef(null)
+
+  // Check if user is a supplier and if they have database parties
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (!user?.id) return
+
+      try {
+        // Check if supplier
+        const { data: supplier, error: supplierError } = await supabase
+          .from('suppliers')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .eq('is_primary', true)
+          .maybeSingle()
+
+        if (!supplierError && supplier) {
+          setIsSupplier(true)
+        }
+
+        // Check if user has any paid parties in database
+        // First, get the public user ID from auth_user_id
+        const { data: publicUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle()
+
+        if (publicUser) {
+          const { data: parties, error: partiesError } = await supabase
+            .from('parties')
+            .select('id')
+            .eq('user_id', publicUser.id)
+            .eq('payment_status', 'fully_paid')
+            .limit(1)
+
+          if (!partiesError && parties && parties.length > 0) {
+            setHasDatabaseParties(true)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user status:', error)
+      }
+    }
+
+    checkUserStatus()
+  }, [user?.id])
 
   // Listen for auth changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setUser(session?.user ? {
           id: session.user.id,
           email: session.user.email,
@@ -21,6 +69,7 @@ export function UserMenu({ initialUser }) {
         } : null)
       } else if (event === 'SIGNED_OUT') {
         setUser(null)
+        setIsSupplier(false)
       }
     })
 
@@ -118,14 +167,37 @@ export function UserMenu({ initialUser }) {
           </div>
 
           <div className="py-2">
-            <Link
-              href="/dashboard"
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setIsOpen(false)}
-            >
-              <Calendar className="w-4 h-4 mr-3" />
-              My Party Dashboard
-            </Link>
+            {isSupplier ? (
+              <Link
+                href="/suppliers/dashboard"
+                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setIsOpen(false)}
+              >
+                <Briefcase className="w-4 h-4 mr-3" />
+                Business Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Calendar className="w-4 h-4 mr-3" />
+                  My Party Dashboard
+                </Link>
+                {hasDatabaseParties && (
+                  <Link
+                    href="/dashboard?view=parties"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <PartyPopper className="w-4 h-4 mr-3" />
+                    My Planned Parties
+                  </Link>
+                )}
+              </>
+            )}
 
             <Link
               href="/profile"

@@ -280,6 +280,8 @@ export default function SupplierCustomizationModal({
   mode = "add", // "add" | "edit"
   onSaveChanges = null, // Callback for edit mode
   originalTotalPrice = null, // Original price for diff calculation
+  // ✅ NEW: Allow parent to override supplier type detection
+  supplierType = null, // e.g., "cakes", "partyBags" - forces specific UI mode
 }) {
   // ✅ DEBUG: Log when modal receives new supplier prop
   useEffect(() => {
@@ -376,14 +378,35 @@ export default function SupplierCustomizationModal({
     const isLeadBased = isLeadBasedSupplier(supplier)
     const isTimeBased = isTimeBasedSupplier(supplier)
 
+    // ✅ If supplierType prop is provided, use it as the primary source
+    if (supplierType) {
+      const isCakeFromType = supplierType === 'cakes' || supplierType.toLowerCase().includes('cake')
+      const isPartyBagsFromType = supplierType === 'partyBags' || supplierType.toLowerCase().includes('party')
+
+      console.log('🔍 [Type Detection] Using supplierType prop override:', {
+        supplierType,
+        isCake: isCakeFromType,
+        isPartyBags: isPartyBagsFromType
+      })
+
+      return {
+        isLeadBased,
+        isTimeBased,
+        isCake: isCakeFromType,
+        isPartyBags: isPartyBagsFromType,
+      }
+    }
+
     // Get data from supplier.data JSONB column
     const dataObj = supplier?.data || {}
     const serviceDetails = supplier?.serviceDetails || supplier?.service_details || dataObj?.serviceDetails || dataObj?.service_details || {}
 
     // Detect if this is a cake supplier - check multiple fields
+    // Check all possible locations where category might be stored
     const categoryStr = (
       supplier?.category ||
       dataObj?.category ||
+      supplier?.data?.category ||  // Nested in data object
       supplier?.serviceType ||
       dataObj?.serviceType ||
       supplier?.service_type ||
@@ -427,7 +450,7 @@ export default function SupplierCustomizationModal({
       isCake: isCakeSupplier,
       isPartyBags: isPartyBagsSupplier,
     }
-  }, [supplier])
+  }, [supplier, supplierType])
 
   // ✅ UPDATED: Create comprehensive party details for pricing
   const effectivePartyDetails = useMemo(() => {
@@ -1124,11 +1147,11 @@ export default function SupplierCustomizationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-0 sm:p-4 sm:flex sm:items-center sm:justify-center"
       onClick={onClose}
     >
       <div
-        className={`mt-auto sm:mt-0 bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full md:max-h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
+        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full h-[90vh] sm:max-h-[90vh] sm:h-auto overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-primary-500">

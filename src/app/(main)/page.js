@@ -370,6 +370,15 @@ export default function HomePage() {
           guestCount: formData.guestCount
         }}
         partyPlan={builtPartyPlan}
+        onRetry={() => {
+          // Reset states and retry party building
+          setBuildingProgress(0)
+          setBuiltPartyPlan(null)
+          proceedWithPartyCreation(formData)
+        }}
+        onTimeout={() => {
+          console.log('Party building timed out - user can retry')
+        }}
       />
 
       <Hero
