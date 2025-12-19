@@ -1186,10 +1186,56 @@ export default function SupplierCustomizationModal({
             {/* Cake Suppliers - Single Page Form */}
             {supplierTypeDetection.isCake && (
               <section className="space-y-5">
-                {/* Choose Size - Horizontal Cards */}
+                {/* Choose Size - Pill buttons on mobile, cards on desktop */}
                 <div>
                   <Label className="text-base font-semibold text-gray-900 mb-3 block">Choose Size</Label>
-                  <div className="relative -mx-6">
+
+                  {/* Mobile: Compact pill buttons */}
+                  <div className="sm:hidden">
+                    <div className="flex flex-wrap gap-2">
+                      {packages.map((pkg) => {
+                        const isSelected = selectedPackageId === pkg.id;
+                        return (
+                          <button
+                            key={pkg.id}
+                            type="button"
+                            onClick={() => setSelectedPackageId(pkg.id)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                              isSelected
+                                ? "bg-primary-500 text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 inline mr-1.5" />}
+                            {pkg.name} · £{pkg.price}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Show details for selected size */}
+                    {selectedPackage && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        {[
+                          selectedPackage.sizeInches && `${selectedPackage.sizeInches}"`,
+                          (() => {
+                            const tiers = selectedPackage.tiers || (() => {
+                              const name = selectedPackage.name?.toLowerCase() || '';
+                              if (name.includes('small') || name.includes('6"') || name.includes('6 inch')) return 1;
+                              if (name.includes('medium') || name.includes('8"') || name.includes('8 inch')) return 1;
+                              if (name.includes('large') || name.includes('10"') || name.includes('10 inch')) return 2;
+                              if (name.includes('xl') || name.includes('extra') || name.includes('12"') || name.includes('12 inch')) return 2;
+                              return 1;
+                            })();
+                            return `${tiers} ${tiers === 1 ? 'tier' : 'tiers'}`;
+                          })(),
+                          (selectedPackage.serves || selectedPackage.feeds) && `Feeds ${selectedPackage.serves || selectedPackage.feeds}`
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Desktop: Horizontal scroll cards */}
+                  <div className="hidden sm:block relative -mx-6">
                     <div
                       className="flex gap-4 overflow-x-auto scrollbar-hide py-3 px-6 snap-x snap-mandatory"
                       style={{
