@@ -44,25 +44,26 @@ export default function VenueBrowserModal({
     };
   };
 
-  // Lock scroll when modal is open
+  // Lock scroll when modal is open (iOS Safari compatible)
   useEffect(() => {
     if (isOpen) {
-      // Lock scroll
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.width = '100%'
       document.body.style.overflow = 'hidden'
-      document.documentElement.style.overflow = 'hidden'
-      document.body.classList.add('modal-open')
-    } else {
-      // Unlock scroll
-      document.body.style.overflow = 'unset'
-      document.documentElement.style.overflow = 'unset'
-      document.body.classList.remove('modal-open')
-    }
 
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = 'unset'
-      document.documentElement.style.overflow = 'unset'
-      document.body.classList.remove('modal-open')
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.width = ''
+        document.body.style.overflow = ''
+        window.scrollTo(0, scrollY)
+      }
     }
   }, [isOpen])
 
@@ -80,7 +81,7 @@ export default function VenueBrowserModal({
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-t-3xl sm:rounded-3xl max-w-6xl w-full md:max-h-[92vh] max-h-[90vh] sm:h-auto overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
+          className="bg-white rounded-t-3xl sm:rounded-3xl max-w-6xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -139,14 +140,15 @@ export default function VenueBrowserModal({
                         src={venue.coverPhoto || venue.image || venue.imageUrl || venue.data?.coverPhoto || '/placeholder.png'}
                         alt={venueName}
                         fill
-                        className="object-cover"
+                        className="object-cover z-0"
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        priority
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-[1] pointer-events-none" />
 
                       {/* Selected Badge */}
                       {isSelected && (
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 z-[2]">
                           <Badge className="bg-[hsl(var(--primary-500))] text-white shadow-lg">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Selected
@@ -156,7 +158,7 @@ export default function VenueBrowserModal({
 
                       {/* Under Capacity Warning Badge */}
                       {!capacityCheck.hasCapacity && !isSelected && (
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 z-[2]">
                           <Badge className="bg-red-500 text-white shadow-lg">
                             <AlertTriangle className="w-3 h-3 mr-1" />
                             Too Small
@@ -165,7 +167,10 @@ export default function VenueBrowserModal({
                       )}
 
                       {/* Venue Name Overlay */}
-                      <div className="absolute bottom-2 left-2 right-2">
+                      <div
+                        className="absolute bottom-2 left-2 right-2 z-[2]"
+                        style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+                      >
                         <h3 className="text-base font-bold text-white drop-shadow-lg line-clamp-1">
                           {venueName}
                         </h3>
