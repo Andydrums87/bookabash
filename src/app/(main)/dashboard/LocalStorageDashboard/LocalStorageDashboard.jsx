@@ -36,7 +36,8 @@ import ReferFriend from "@/components/ReferFriend"
 // Make sure you have this import
 import { SnappyDashboardTour, useDashboardTour } from '@/components/ui/SnappyDashboardTour'
 // import SimpleMobileBottomTabBar from "../components/SimpleMobileBottomBar"
-import PartySummarySection from "../components/PartySummarySection"
+// import PartySummarySection from "../components/PartySummarySection" // Removed - functionality moved to SmartStickyBottomBar
+import SmartStickyBottomBar from "../components/SmartStickyBottomBar"
 import VenueBrowserModal from "@/components/VenueBrowserModal"
 // Hooks
 import { useContextualNavigation } from '@/hooks/useContextualNavigation'
@@ -114,6 +115,7 @@ export default function LocalStorageDashboard() {
   const [isSelectingVenue, setIsSelectingVenue] = useState(false)
   const [showVenueBrowserModal, setShowVenueBrowserModal] = useState(false)
   const [showDesktopCompleteCTA, setShowDesktopCompleteCTA] = useState(false)
+  const [showStickyBottomCTA, setShowStickyBottomCTA] = useState(false)
   const [showVenueConflictModal, setShowVenueConflictModal] = useState(false)
   const [venueConflictData, setVenueConflictData] = useState(null)
   // Add these state variables near your other useState declarations
@@ -158,6 +160,20 @@ const childPhotoRef = useRef(null)
     setIsMounted(true)
     setIsClient(typeof window !== 'undefined')
     // Note: isCheckingWelcome starts as true, so loading screen shows immediately
+  }, [])
+
+  // Show sticky bottom CTA after scrolling 400px (desktop only)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowStickyBottomCTA(true)
+      } else {
+        setShowStickyBottomCTA(false)
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Hooks - only run after mounting
@@ -1781,10 +1797,10 @@ const handleChildPhotoUpload = async (file) => {
         </div>
 
         {/* Container for rest of content */}
-        <div className="container min-w-screen px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
+        <div className="container min-w-screen px-4 sm:px-6 lg:px-8 pb-8 lg:pb-20">
+          <div>
             {/* Main Content */}
-            <main className="lg:col-span-2 space-y-8">
+            <main className="space-y-8">
               <div className="hidden md:flex justify-between mb-4 items-start" data-tour="supplier-section">
                 <div className="flex justify-center">
                   <Image
@@ -1831,7 +1847,7 @@ const handleChildPhotoUpload = async (file) => {
 {/* Supplier Grid */}
 <div className="w-full">
                 {/* Desktop Grid */}
-                <div className="hidden md:grid md:grid-cols-3 gap-6">
+                <div className="hidden md:grid md:grid-cols-4 gap-6">
                   {(!recommendationsLoaded) ? (
                     // Show skeleton cards while recommendations load
                     <>
@@ -1978,96 +1994,123 @@ const handleChildPhotoUpload = async (file) => {
                           );
                         };
 
-                        // Render all suppliers with category headers
+                        // Split suppliers into selected and available
+                        const selectedTypes = supplierOrder.filter(type => {
+                          const supplier = suppliers[type];
+                          const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
+                          return supplier && !isDeleting;
+                        });
+
+                        const availableTypes = supplierOrder.filter(type => {
+                          const supplier = suppliers[type];
+                          const recommendedSupplier = getRecommendedSupplierForType(type);
+                          const isLoading = loadingCards[type];
+                          const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
+                          const alwaysShowCategories = ['photography', 'bouncyCastle'];
+                          const shouldAlwaysShow = alwaysShowCategories.includes(type);
+
+                          // Show if: no supplier AND (has recommendation OR is loading OR is deleting OR should always show)
+                          const hasNoSupplier = !supplier || isDeleting;
+                          const shouldShow = recommendedSupplier || isLoading || isDeleting || shouldAlwaysShow;
+                          return hasNoSupplier && shouldShow;
+                        });
+
+                        // Helper to render a supplier card
+                        const renderSupplierCard = (type) => {
+                          const supplier = suppliers[type];
+                          const recommendedSupplier = getRecommendedSupplierForType(type);
+                          const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
+
+                          const supplierAddons = addons.filter(addon =>
+                            addon.supplierId === supplier?.id ||
+                            addon.supplierType === type ||
+                            addon.attachedToSupplier === type
+                          );
+
+                          const categoryName = getCategoryName(type);
+                          const categoryTagline = getCategoryTagline(type);
+                          const categoryIcon = getCategoryIcon(type);
+
+                          return (
+                            <div key={type} className="flex flex-col">
+                              {/* Category Header */}
+                              <div className="mb-4">
+                                <div className="flex items-center gap-3 mb-2">
+                                  {categoryIcon && (
+                                    <img
+                                      src={categoryIcon}
+                                      alt={categoryName}
+                                      className="w-10 h-10 object-contain flex-shrink-0"
+                                    />
+                                  )}
+                                  <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+                                    {categoryName}
+                                    <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
+                                  </h3>
+                                </div>
+                                {categoryTagline && (
+                                  <p className="text-sm text-gray-600">{categoryTagline}</p>
+                                )}
+                              </div>
+
+                              {/* Supplier Card */}
+                              <SupplierCard
+                                type={type}
+                                supplier={isDeleting ? null : (supplier || null)}
+                                loadingCards={loadingCards}
+                                suppliersToDelete={suppliersToDelete}
+                                openSupplierModal={openSupplierModal}
+                                handleDeleteSupplier={handleDeleteSupplier}
+                                getSupplierDisplayName={getSupplierDisplayName}
+                                addons={supplierAddons}
+                                handleRemoveAddon={handleRemoveAddon}
+                                enquiryStatus={getEnquiryStatus(type)}
+                                enquirySentAt={getEnquiryTimestamp(type)}
+                                isSignedIn={false}
+                                isPaymentConfirmed={false}
+                                enquiries={[]}
+                                partyDetails={partyDetails}
+                                currentPhase="planning"
+                                recommendedSupplier={recommendedSupplier}
+                                onAddSupplier={handleAddRecommendedSupplier}
+                                enhancedPricing={isDeleting ? null : (supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null)}
+                                onCustomizationComplete={handleCustomizationComplete}
+                                selectedVenue={suppliers.venue}
+                              />
+
+                              {/* Browse Venues button underneath venue card */}
+                              {type === 'venue' && supplier && !isDeleting && venueCarouselOptions && venueCarouselOptions.length > 0 && (
+                                <div className="mt-3 text-center">
+                                  <button
+                                    onClick={() => setShowVenueBrowserModal(true)}
+                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium underline decoration-dotted underline-offset-2 transition-colors"
+                                  >
+                                    Want to change venue? Browse other options
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        };
+
                         return (
                           <>
-                            {supplierOrder.map(type => {
-                              const supplier = suppliers[type];
-                              const recommendedSupplier = getRecommendedSupplierForType(type);
-                              const isLoading = loadingCards[type];
-                              const isDeleting = suppliersToDelete.includes(type) || recentlyDeleted.includes(type);
+                            {/* Selected suppliers */}
+                            {selectedTypes.map(type => renderSupplierCard(type))}
 
-                              // Always show photography and bouncyCastle even when empty
-                              const alwaysShowCategories = ['photography', 'bouncyCastle'];
-                              const shouldAlwaysShow = alwaysShowCategories.includes(type);
-
-                              // Hide card if no supplier, no recommended supplier, AND not in loading/deleting state
-                              // EXCEPT for categories that should always show
-                              if (!supplier && !recommendedSupplier && !isLoading && !isDeleting && !shouldAlwaysShow) {
-                                return null;
-                              }
-
-                              const supplierAddons = addons.filter(addon =>
-                                addon.supplierId === supplier?.id ||
-                                addon.supplierType === type ||
-                                addon.attachedToSupplier === type
-                              );
-
-                              const categoryName = getCategoryName(type);
-                              const categoryTagline = getCategoryTagline(type);
-                              const categoryIcon = getCategoryIcon(type);
-
-                              return (
-                                <div key={type} className="flex flex-col">
-                                  {/* Category Header */}
-                                  <div className="mb-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                      {categoryIcon && (
-                                        <img
-                                          src={categoryIcon}
-                                          alt={categoryName}
-                                          className="w-10 h-10 object-contain flex-shrink-0"
-                                        />
-                                      )}
-                                      <h3 className="text-2xl font-black text-gray-900 inline-block relative tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-                                        {categoryName}
-                                        <div className="absolute -bottom-1 left-0 w-full h-2 bg-primary-500 -skew-x-12 opacity-70"></div>
-                                      </h3>
-                                    </div>
-                                    {categoryTagline && (
-                                      <p className="text-sm text-gray-600">{categoryTagline}</p>
-                                    )}
-                                  </div>
-
-                                  {/* Supplier Card */}
-                                  <SupplierCard
-                                    type={type}
-                                    supplier={isDeleting ? null : (supplier || null)}
-                                    loadingCards={loadingCards}
-                                    suppliersToDelete={suppliersToDelete}
-                                    openSupplierModal={openSupplierModal}
-                                    handleDeleteSupplier={handleDeleteSupplier}
-                                    getSupplierDisplayName={getSupplierDisplayName}
-                                    addons={supplierAddons}
-                                    handleRemoveAddon={handleRemoveAddon}
-                                    enquiryStatus={getEnquiryStatus(type)}
-                                    enquirySentAt={getEnquiryTimestamp(type)}
-                                    isSignedIn={false}
-                                    isPaymentConfirmed={false}
-                                    enquiries={[]}
-                                    partyDetails={partyDetails}
-                                    currentPhase="planning"
-                                    recommendedSupplier={recommendedSupplier}
-                                    onAddSupplier={handleAddRecommendedSupplier}
-                                    enhancedPricing={isDeleting ? null : (supplier ? getSupplierDisplayPricing(supplier, partyDetails, supplierAddons) : null)}
-                                    onCustomizationComplete={handleCustomizationComplete}
-                                    selectedVenue={suppliers.venue}
-                                  />
-
-                                  {/* Browse Venues button underneath venue card */}
-                                  {type === 'venue' && supplier && !isDeleting && venueCarouselOptions && venueCarouselOptions.length > 0 && (
-                                    <div className="mt-3 text-center">
-                                      <button
-                                        onClick={() => setShowVenueBrowserModal(true)}
-                                        className="text-sm text-primary-600 hover:text-primary-700 font-medium underline decoration-dotted underline-offset-2 transition-colors"
-                                      >
-                                        Want to change venue? Browse other options
-                                      </button>
-                                    </div>
-                                  )}
+                            {/* Divider between selected and available */}
+                            {selectedTypes.length > 0 && availableTypes.length > 0 && (
+                              <div className="col-span-full flex items-center gap-4 my-6">
+                                <div className="flex-1 h-px bg-gray-200"></div>
+                                <div className="px-4 py-2 bg-primary-50 rounded-full border border-primary-200">
+                                  <span className="text-sm font-medium text-primary-600">Level Up Your Party</span>
                                 </div>
-                              );
-                            })}
+                                <div className="flex-1 h-px bg-gray-200"></div>
+                              </div>
+                            )}
+
+                            {/* Available suppliers */}
+                            {availableTypes.map(type => renderSupplierCard(type))}
                           </>
                         );
                       })()}
@@ -2116,62 +2159,23 @@ const handleChildPhotoUpload = async (file) => {
                 </div>
               </div>
 
-              {/* Complete Booking CTA */}
-              <div data-tour="review-book" className="max-w-2xl mx-auto md:block hidden">
-                <div className="bg-gradient-to-br from-[hsl(var(--primary-400))] to-[hsl(var(--primary-500))] rounded-xl p-6 text-white shadow-lg">
-                  <h3 className="font-bold text-xl mb-2">Ready to Book?</h3>
-                  <p className="text-sm text-white/90 mb-4">
-                    Review your party plan and complete your booking
-                  </p>
-                  <Button
-                    onClick={() => setShowDesktopCompleteCTA(true)}
-                    className="w-full bg-white hover:bg-gray-100 text-[hsl(var(--primary-600))] font-bold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 relative overflow-hidden group"
-                  >
-                    {/* Animated shine effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
-                    <span className="relative flex items-center justify-center gap-2">
-                      <Sparkles className="w-5 h-5" />
-                      Continue to Book
-                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </span>
-                  </Button>
-                </div>
-              </div>
-
-              {/* <div className="md:block hidden w-screen pr-6 md:pr-20">
-                <RecommendedAddonsWrapper
-                  context="dashboard"
-                  maxItems={4}
-                  onAddonClick={handleAddonClick}
-                />
-              </div> */}
-
-              {/* <PartySummarySection
-  partyDetails={partyDetails}
-  suppliers={suppliers}
-  totalCost={totalCost}
-  addons={addons}
-/> */}
-              
               <div className="md:hidden block">
                 <ReferFriend />
               </div>
-            </main>
 
-            {/* Sidebar */}
-            <aside className="hidden lg:block space-y-6">
-            <div data-tour="budget-tracker">
-                <BudgetControls {...budgetControlProps} />
-              </div>
-              <CountdownWidget partyDate={partyDetails?.date} />
-              <ReferFriend />
-            </aside>
+              {/* Desktop Party Summary removed - now handled by SmartStickyBottomBar */}
+            </main>
           </div>
         </div>
       </AddonProvider>
+
+      {/* Sticky Bottom CTA - Desktop Only */}
+      <SmartStickyBottomBar
+        suppliers={suppliers}
+        totalCost={totalCost}
+        onContinue={() => setShowDesktopCompleteCTA(true)}
+        isVisible={showStickyBottomCTA}
+      />
 
       {/* Loading Overlay */}
       {isUpdating && (

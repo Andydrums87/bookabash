@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Calendar, Mail, Gift, Users, Star, ChevronDown, PartyPopper } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { partyDatabaseBackend } from "@/utils/partyDatabaseBackend"
 
@@ -179,9 +179,9 @@ export function DashboardDropdown({ initialUser }) {
   }
 
   const dashboardItems = [
-    { href: "/dashboard", label: "Party Dashboard", icon: Calendar, description: "Overview & planning" },
-    { href: "/e-invites", label: "E-Invites", icon: Mail, description: "Digital invitations" },
-    { href: "/rsvps", label: "RSVP Management", icon: Users, description: "Track responses", requiresPartyId: true },
+    { href: "/dashboard", label: "Party Dashboard" },
+    { href: "/e-invites", label: "E-Invites" },
+    { href: "/rsvps", label: "RSVPs", requiresPartyId: true },
   ]
 
   return (
@@ -195,99 +195,36 @@ export function DashboardDropdown({ initialUser }) {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50">
           {/* Main Dashboard */}
           <button
             onClick={() => handleNavigation({ href: "/dashboard" })}
-            className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+            className="w-full px-4 py-2.5 text-left text-[15px] font-semibold text-gray-900 hover:bg-gray-50 transition-colors"
           >
-            <Calendar className="w-4 h-4 mr-3 text-gray-500" />
-            <div className="text-left">
-              <div className="font-medium">Party Dashboard</div>
-              <div className="text-xs text-gray-500">Overview & planning</div>
-            </div>
+            Party Dashboard
           </button>
 
-          {/* Party Tools Section */}
-          <div className="py-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Party Tools
-            </div>
+          <div className="h-px bg-gray-100 my-1.5" />
 
-            {/* E-Invites */}
-            <button
-              onClick={() => handleNavigation(dashboardItems[1])}
-              disabled={loading}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              <Mail className="w-4 h-4 mr-3 text-gray-500" />
-              <div className="text-left">
-                <div>E-Invites</div>
-              </div>
-            </button>
+          {/* Start New Party */}
+          <button
+            onClick={() => handleNavigation({ href: "/dashboard?action=new-party" })}
+            className="w-full px-4 py-2.5 text-left text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Start New Party
+          </button>
 
-            {/* Gift Registry */}
+          {hasDatabaseParties && (
             <button
               onClick={() => {
                 setIsOpen(false)
-                if (!user) {
-                  router.push('/signin')
-                } else {
-                  router.push('/gift-registry')
-                }
+                router.push('/dashboard?view=parties')
               }}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full px-4 py-2.5 text-left text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <Gift className="w-4 h-4 mr-3 text-gray-500" />
-              <div className="text-left">
-                <div>Gift Registry</div>
-                <div className="text-xs text-gray-500">Manage gift wishlists</div>
-              </div>
+              My Parties
             </button>
-
-            {/* RSVP Management */}
-            <button
-              onClick={() => handleNavigation(dashboardItems[2])}
-              disabled={loading}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              <Users className="w-4 h-4 mr-3 text-gray-500" />
-              <div className="text-left">
-                <div>RSVP Management</div>
-                {dashboardItems[2].requiresPartyId && !activePartyId && !loading && (
-                  <div className="text-xs text-orange-500">Requires active party</div>
-                )}
-              </div>
-            </button>
-          </div>
-
-          {/* Quick Actions Section */}
-          <div className="border-t border-gray-100 py-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Quick Actions
-            </div>
-
-            <button
-              onClick={() => handleNavigation({ href: "/dashboard?action=new-party" })}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Star className="w-4 h-4 mr-3 text-gray-500" />
-              <span>Start New Party</span>
-            </button>
-
-            {hasDatabaseParties && (
-              <button
-                onClick={() => {
-                  setIsOpen(false)
-                  router.push('/dashboard?view=parties')
-                }}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <PartyPopper className="w-4 h-4 mr-3 text-gray-500" />
-                <span>My Planned Parties</span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
       )}
     </div>

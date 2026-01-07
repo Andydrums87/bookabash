@@ -25,7 +25,7 @@ const ThemeEditModal = ({ isOpen, onClose, currentTheme, onSave }) => {
   const getThemeImage = (themeName) => {
     if (!themeName) return null
     const themeImages = {
-      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296152/iStock-1433142692_ukadz6.jpg",
+      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767786111/Bw03WlVwGPhiAAAAAElFTkSuQmCC_jmiin0.png",
       superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296218/iStock-1150984736_evfnwn.jpg",
       dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761295969/iStock-1126856615_wg9qil.jpg",
       unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296364/iStock-1202380918_flcyof.jpg",
@@ -666,20 +666,20 @@ export default function LocalStoragePartyHeader({
     if (!theme) return null
 
     const themeImages = {
-      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296152/iStock-1433142692_ukadz6.jpg",
-      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296218/iStock-1150984736_evfnwn.jpg",
-      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761295969/iStock-1126856615_wg9qil.jpg",
-      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296364/iStock-1202380918_flcyof.jpg",
-      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380880/iStock-1603218889_xq4kqi.jpg",
-      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761209443/iStock-1165735224_ayrkw1.jpg",
-      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380937/iStock-2201784646_cdvevq.jpg",
+      princess: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791480/1paNDhEPzRXugvgrEmX9l_ubbhj1.jpg",
+      superhero: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791428/nNAor0prdHfwXYCj44qtf_gukhjg.jpg",
+      dinosaur: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791380/9fpzmYZwz3Q0V7y4eCatN_q1tglx.jpg",
+      unicorn: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791323/NIvB0Qp0gLZh_t2dRVagW_ioijc9.jpg",
+      science: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790720/-4ekVLuxH1k-NRC5127zk_u0giw9.jpg",
+      spiderman: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790933/DYYZJyytsfTnK1lItjaDg_vlzski.jpg",
+      "taylor-swift": "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791231/UoiwdGcwxYcJL17kXfL4M_j3gbsv.jpg",
       cars: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754380995/iStock-2176668301_cstncj.jpg",
-      pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296485/iStock-1283573104_bzl4zs.jpg",
-      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296596/iStock-2221104953_mhafl2.jpg",
+      pirate: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767788504/sEGDLFceS0EXSbhZPGIMT_1_tfmfyp.jpg",
+      jungle: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791142/mLmRQAtoQdVyJEbqFxmQk_awaj82.jpg",
       football: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1754381299/iStock-488844390_wmv5zq.jpg",
-      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761296848/iStock-1474868329_hxmo8u.jpg",
-      mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297169/iStock-1434335578_h3dzbb.jpg",
-      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1761297237/iStock-1061608412_thapyw.jpg"
+      space: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767790848/kdCpGcClPNAYijCYdlmto_oaivns.jpg",
+      mermaid: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791019/7mgi6PngzuJcBxy6aTpj6_mr1asx.jpg",
+      underwater: "https://res.cloudinary.com/dghzq6xtd/image/upload/v1767791096/W4Ekv0RJHEAvOdRTAtlv__gapq6i.jpg"
     }
 
     return themeImages[theme.toLowerCase()] || null
@@ -974,10 +974,10 @@ export default function LocalStoragePartyHeader({
             <img
               src={getThemeImage()}
               alt={capitalizedTheme}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-bottom"
             />
-            {/* Dark overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
+            {/* Subtle dark overlay for text readability - preserves theme colors */}
+            {/* <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40"></div> */}
           </div>
         )}
 

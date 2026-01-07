@@ -347,8 +347,15 @@ export default function DatabasePartyHeader({
             alt={currentTheme}
             className="w-full h-full object-cover"
           />
+          {/* Coral/Primary tint overlay for brand consistency */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(to right, hsla(14, 100%, 64%, 0.45), hsla(14, 100%, 64%, 0.35), hsla(14, 100%, 64%, 0.45))'
+            }}
+          ></div>
           {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/25 to-black/40"></div>
         </div>
       )}
 

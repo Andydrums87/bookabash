@@ -16,6 +16,7 @@ import PartyOverrideConfirmation from '@/components/party-override-confirmation'
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import FeaturesGrid from "@/components/Home/FeaturesGrid"
+import VideoSection from "@/components/Home/VideoSection"
 import { initTracking, trackStep } from '@/utils/partyTracking'
 
 export default function HomePage() {
@@ -405,6 +406,8 @@ export default function HomePage() {
         hasAttemptedSubmit={hasAttemptedSubmit}
       />
 
+      <TrustIndicators />
+
       {/* Confirmation Dialog */}
       <PartyOverrideConfirmation
         isOpen={showOverrideDialog}
@@ -415,6 +418,7 @@ export default function HomePage() {
 
       <CategoryGrid />
       <FeaturesGrid />
+      <VideoSection />
       <CustomerStories />
       <FinalCTA />
    

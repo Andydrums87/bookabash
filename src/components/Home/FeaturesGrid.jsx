@@ -1,126 +1,76 @@
 "use client"
 
-import { Heart, Star } from "lucide-react"
+import { Palette, LayoutDashboard, ShieldCheck } from "lucide-react"
 import Image from "next/image"
 
 export default function FeaturesGrid() {
+  const features = [
+    {
+      icon: Palette,
+      title: "Choose your theme",
+      description: "Dinosaurs, princesses, superheroes—pick a theme and we'll match you with suppliers who nail it.",
+      image: "/themeselection.png",
+      alt: "PartySnap theme selection interface",
+    },
+    {
+      icon: LayoutDashboard,
+      title: "Everything in one place",
+      description: "Budget, countdown, bookings, messages. Your personal dashboard keeps it all organised.",
+      image: "/userdashboard2.png",
+      alt: "PartySnap user dashboard",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Vetted suppliers only",
+      description: "Every supplier is verified with real reviews. Book instantly, no back-and-forth.",
+      image: "/supplierpage.png",
+      alt: "PartySnap supplier profile page",
+    },
+  ]
+
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="hidden md:block py-16 md:py-20 px-4 md:px-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-20">
-          <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-8 leading-tight">
-            Lets party the smart way!
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
+            Party planning, simplified
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {
-              "Snappy's got this! No more endless Googling or ghosted calls. Just fun, fast, party magic—all in one place."
-            }
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Everything you need to plan the perfect party, all in one place.
           </p>
         </div>
 
-        <div className="space-y-32">
-          {/* 1. Theme Selection - Text Left, Cards Right */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mb-6">
-                <Star className="w-8 h-8 text-white" fill="currentColor" />
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
+            >
+              {/* Screenshot */}
+              <div className="relative h-48 md:h-56 overflow-hidden bg-gray-100">
+                <Image
+                  src={feature.image}
+                  alt={feature.alt}
+                  fill
+                  className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
               </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-6">Pick a theme, unlock the magic!</h3>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                From Dino Dig to Princess Palaces, we&apos;ve got kid-approved, parent-impressing themes that turn
-                &apos;just a party&apos; into THE party. Browse trending 2025 themes or choose from our most popular
-                options.
-              </p>
-            </div>
 
-            <div className="relative">
-              {/* Floating UI Card */}
-              <div className="transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                  <div className="relative w-full h-80">
-                    <Image
-                      src="/themeselection.png"
-                      alt="PartySnap theme selection interface"
-                      fill
-                      className="object-contain md:object-cover object-top"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  </div>
+              {/* Content */}
+              <div className="p-6">
+                <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-primary-600" />
                 </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
               </div>
-              {/* Background decoration */}
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-orange-200 rounded-full opacity-40 -z-10"></div>
-              <div className="absolute -bottom-8 -left-4 w-16 h-16 bg-pink-200 rounded-full opacity-30 -z-10"></div>
             </div>
-          </div>
-
-          {/* 2. Dashboard - Cards Left, Text Right */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="lg:order-2">
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mb-6">
-                <Heart className="w-8 h-8 text-white" fill="currentColor" />
-              </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-6">Track everything in one place</h3>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                Your personal party dashboard keeps everything organized. Track your budget, countdown to the big day,
-                and manage all your suppliers from one beautiful interface.
-              </p>
-            </div>
-
-            <div className="lg:order-1 relative">
-              {/* Floating UI Card */}
-              <div className="transform -rotate-1 hover:rotate-0 transition-transform duration-300">
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                  <div className="relative w-full h-80">
-                    <Image
-                      src="/userdashboard2.png"
-                      alt="PartySnap user dashboard"
-                      fill
-                      className="object-contain md:object-cover object-top"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* Background decoration */}
-              <div className="absolute -top-4 -left-8 w-20 h-20 bg-blue-200 rounded-full opacity-30 -z-10"></div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-yellow-200 rounded-full opacity-20 -z-10"></div>
-            </div>
-          </div>
-
-          {/* 3. Supplier Profile - Text Left, Cards Right */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mb-6">
-                <div className="w-8 h-8 bg-orange-600 rounded-sm transform rotate-45"></div>
-              </div>
-              <h3 className="text-4xl font-bold text-gray-900 mb-6">Only the best in Snappy&apos;s squad!</h3>
-              <p className="text-xl text-gray-600 leading-relaxed">
-                No randoms here—just handpicked, party-perfect pros who&apos;ve passed the vibe check. Verified
-                suppliers, real reviews, and instant booking. Trusted. Vetted. Ready to wow.
-              </p>
-            </div>
-
-            <div className="relative">
-              {/* Floating UI Card */}
-              <div className="transform rotate-1 hover:rotate-0 transition-transform duration-300">
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                  <div className="relative w-full h-80">
-                    <Image
-                      src="/supplierpage.png"
-                      alt="PartySnap supplier profile page"
-                      fill
-                      className="object-contain md:object-cover md:object-top"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* Background decoration */}
-              <div className="absolute -top-8 -right-4 w-28 h-28 bg-green-200 rounded-full opacity-25 -z-10"></div>
-              <div className="absolute -bottom-4 -left-8 w-18 h-18 bg-purple-200 rounded-full opacity-35 -z-10"></div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>
