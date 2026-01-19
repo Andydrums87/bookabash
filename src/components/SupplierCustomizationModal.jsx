@@ -1464,7 +1464,7 @@ export default function SupplierCustomizationModal({
       onClick={onClose}
     >
       <div
-        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full md:max-h-[85vh] max-h-[95vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
+        className={`fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto sm:left-auto sm:right-auto sm:mx-auto bg-white rounded-t-3xl sm:rounded-3xl max-w-3xl w-full md:max-h-[85vh] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-6 flex items-center justify-between flex-shrink-0 bg-primary-500">
@@ -1968,10 +1968,77 @@ export default function SupplierCustomizationModal({
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-primary-500" />
                   <h3 className="text-lg font-semibold text-gray-900">Choose Your Items</h3>
-                  <span className="text-sm text-gray-500">(select one or more)</span>
                 </div>
 
-                <div className="space-y-3">
+                {/* Mobile: Horizontal scroll */}
+                <div className="sm:hidden relative -mx-6">
+                  <div
+                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    style={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch'
+                    }}
+                  >
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackageIds.includes(pkg.id)
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative flex-shrink-0 w-[140px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                            isSelected
+                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
+                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                          }`}
+                          onClick={() => {
+                            setSelectedPackageIds(prev =>
+                              prev.includes(pkg.id)
+                                ? prev.filter(id => id !== pkg.id)
+                                : [...prev, pkg.id]
+                            )
+                          }}
+                        >
+                          {/* Item Image */}
+                          <div className="relative w-full h-28">
+                            {pkg.image || pkg.imageUrl ? (
+                              <Image
+                                src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
+                                alt={pkg.name}
+                                fill
+                                className="object-cover"
+                                sizes="140px"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-gray-400" />
+                              </div>
+                            )}
+                            {/* Selection checkmark overlay */}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          {/* Item Info */}
+                          <div className="p-2.5 bg-white">
+                            <h4 className="font-bold text-gray-800 text-sm mb-1 truncate">
+                              {pkg.name}
+                            </h4>
+                            <p className="font-bold text-[hsl(var(--primary-600))] text-base">
+                              £{pkg.price}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Desktop: Vertical list */}
+                <div className="hidden sm:block space-y-3">
                   {packages.map((pkg) => {
                     const isSelected = selectedPackageIds.includes(pkg.id)
                     return (
@@ -2064,7 +2131,73 @@ export default function SupplierCustomizationModal({
                   <h3 className="text-lg font-semibold text-gray-900">Choose Your Lunchbox</h3>
                 </div>
 
-                <div className="space-y-4">
+                {/* Mobile: Horizontal scroll */}
+                <div className="sm:hidden relative -mx-6">
+                  <div
+                    className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-6 snap-x snap-mandatory"
+                    style={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch'
+                    }}
+                  >
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackageId === pkg.id
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative flex-shrink-0 w-[160px] rounded-2xl cursor-pointer transition-all duration-200 snap-center overflow-hidden border-2 ${
+                            isSelected
+                              ? "border-[hsl(var(--primary-500))] shadow-lg scale-[1.02]"
+                              : "border-gray-200 hover:border-[hsl(var(--primary-300))] shadow-sm hover:shadow-md"
+                          }`}
+                          onClick={() => setSelectedPackageId(pkg.id)}
+                        >
+                          {/* Lunchbox Image */}
+                          <div className="relative w-full h-28">
+                            <Image
+                              src={typeof pkg.image === 'object' ? pkg.image.src : (pkg.image || pkg.imageUrl || "/placeholder.png")}
+                              alt={pkg.name}
+                              fill
+                              className="object-cover"
+                              sizes="160px"
+                            />
+                            {/* Selection checkmark overlay */}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] flex items-center justify-center shadow-md">
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          {/* Lunchbox Info */}
+                          <div className="p-2.5 bg-white">
+                            <h4 className="font-bold text-gray-800 text-sm mb-1 truncate">
+                              {pkg.name}
+                            </h4>
+                            <div className="flex items-center gap-1">
+                              <span className="font-bold text-[hsl(var(--primary-600))] text-base">
+                                £{pkg.price.toFixed(2)}
+                              </span>
+                              <span className="text-[10px] text-gray-400">per child</span>
+                            </div>
+                            {/* Show first 2 contents items */}
+                            {pkg.contents && pkg.contents.length > 0 && (
+                              <p className="text-[10px] text-gray-500 mt-1 truncate">
+                                {pkg.contents.slice(0, 2).join(', ')}
+                                {pkg.contents.length > 2 && '...'}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Desktop: Vertical list with full details */}
+                <div className="hidden sm:block space-y-4">
                   {packages.map((pkg) => {
                     const isSelected = selectedPackageId === pkg.id
                     return (
